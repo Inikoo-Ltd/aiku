@@ -270,7 +270,7 @@ const cleanedDescription = computed(() => {
 
 
 .discount-wrapper :deep(.gr-wrapper) {
-  @apply flex items-center gap-1 rounded-lg border shadow-sm px-3 min-h-[40px] h-full mb-0;
+  @apply flex items-center gap-1 rounded-lg border shadow-sm px-3 min-h-[43px] h-full mb-0 md:w-[47%] w-full;
 }
 
 
@@ -330,8 +330,6 @@ const cleanedDescription = computed(() => {
   font-size: 18px;
   color: #111;
 
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.08);
 
   transition: 0.2s ease;
 }

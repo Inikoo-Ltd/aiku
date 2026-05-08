@@ -2,7 +2,7 @@ vcl 4.1;
 
 import std;
 import querystring;
-
+import directors;
 
 # Base Varnish 8 configuration for Iris/Laravel
 # - Separates cache by login state using X-Varnish-Logged-In (derived from iris_vua cookie)
@@ -10,7 +10,39 @@ import querystring;
 # - Long TTL for static assets
 # - Safe PURGE (BAN) from localhost/private networks
 
-backend defaultx {
+acl cache_warmer {
+    "127.0.0.1";
+    "::1";
+    # Add the real IP(s) that run cache_warmer.sh
+    # "10.0.0.10";
+}
+
+backend helio {
+    .host = "10.0.0.2";
+    .port = "8080";
+    .connect_timeout = 1s;
+    .first_byte_timeout = 30s;
+    .between_bytes_timeout = 30s;
+}
+
+backend helio_in {
+    .host = "10.0.0.2";
+    .port = "8080";
+    .connect_timeout = 1s;
+    .first_byte_timeout = 30s;
+    .between_bytes_timeout = 30s;
+}
+
+backend boro {
+    .host = "10.0.0.3";
+    .port = "8080";
+    .connect_timeout = 1s;
+    .first_byte_timeout = 30s;
+    .between_bytes_timeout = 30s;
+
+}
+
+backend boro_in {
     .host = "10.0.0.3";
     .port = "8080";
     .connect_timeout = 1s;
@@ -50,6 +82,14 @@ sub vcl_init {
         tracking_params_filter.add_string("testa");
         tracking_params_filter.add_string("testb");
 
+
+        new logged_in_vdir = directors.random();
+        logged_in_vdir.add_backend(helio_in,1);
+        logged_in_vdir.add_backend(boro_in,99);
+
+        new logged_out_vdir = directors.random();
+        logged_out_vdir.add_backend(helio,50);
+        logged_out_vdir.add_backend(boro,50);
 
 }
 
@@ -106,11 +146,25 @@ sub vcl_recv {
         return (synth(200, "Purged"));
     }
 
-     # If it's an Inertia request, don't look it up in the cache
-        if (req.http.X-Inertia) {
-            return (pass);
+    # Determine login header (used by app, backend selection, and cache key)
+    # If the warm-up header is present, trust it and bypass cookie derivation
+    if (req.http.X-Warm-Logged-Status) {
+        if (client.ip ~ cache_warmer && req.http.X-Warm-Logged-Status ~ "^(In|Out)$") {
+            set req.http.X-Logged-Status = req.http.X-Warm-Logged-Status;
+        } else {
+            unset req.http.X-Warm-Logged-Status;
+            call set_login_flag_from_cookie;
         }
+    } else {
+        call set_login_flag_from_cookie;
+    }
 
+    # Select backend weights based on the derived login status
+    if (req.http.X-Logged-Status == "In") {
+        set req.backend_hint = logged_in_vdir.backend();
+    } else {
+        set req.backend_hint = logged_out_vdir.backend();
+    }
 
     # If X-Original-Referer is missing but Referer is present, copy it
     if (!req.http.X-Original-Referer && req.http.Referer) {
@@ -169,17 +223,6 @@ sub vcl_recv {
     # Sort query string for better cache hit ratio; keeps semantics
     set req.url = std.querysort(req.url);
 
-    # Determine login header (used by app and cache key)
-    # If the warm-up header is present, trust it and bypass cookie derivation
-    if (req.http.X-Warm-Logged-Status) {
-        set req.http.X-Logged-Status = req.http.X-Warm-Logged-Status;
-    } else {
-        # Otherwise derive from cookie
-        call set_login_flag_from_cookie;
-    }
-
-
-
     # Do not cache static files: always pass through Varnish
     if (req.url ~ "\.(pdf|csv|css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
         return (pass);
@@ -197,10 +240,8 @@ sub vcl_hash {
         hash_data(req.http.X-Logged-Status);
     }
 
-    # Categorize requests into two hash buckets based on X-Inertia header
-    # If X-Inertia exists and equals "true" (case-insensitive) → bucket "Inertia"
-    # X-Requested-With must be equal to XMLHttpRequest
-    if (req.http.X-Inertia && std.tolower(req.http.X-Inertia) == "true" && req.http.X-Requested-With == "XMLHttpRequest") {
+    # Categorize requests into two hash buckets based on X-Inertia header.
+    if (req.http.X-Inertia) {
         hash_data("Inertia");
     } else {
         hash_data("Direct");
@@ -211,12 +252,93 @@ sub vcl_hash {
     if (req.http.X-Inertia-Version) { hash_data(req.http.X-Inertia-Version); }
     if (req.http.X-Inertia-Partial-Component) { hash_data(req.http.X-Inertia-Partial-Component); }
     if (req.http.X-Inertia-Partial-Data) { hash_data(req.http.X-Inertia-Partial-Data); }
-
+    if (req.http.X-Inertia-Partial-Except) {
+        hash_data(req.http.X-Inertia-Partial-Except);
+    }
 
     return (lookup);
 }
 
 sub vcl_backend_response {
+
+    # Never store responses that the backend marks private or uncacheable.
+ #   if (beresp.http.Cache-Control ~ "(?i)(private|no-store|no-cache)") {
+ #       set beresp.ttl = 0s;
+ #       set beresp.uncacheable = true;
+ #       return (deliver);
+ #   }
+
+    # Never store responses that set cookies.
+ #   if (beresp.http.Set-Cookie) {
+ #       set beresp.ttl = 0s;
+ #       set beresp.uncacheable = true;
+ #       return (deliver);
+ #   }
+
+    # Inertia/version conflict responses should never be stored.
+    if (beresp.status == 409) {
+        set beresp.ttl = 0s;
+        set beresp.uncacheable = true;
+        return (deliver);
+    }
+
+    if ( beresp.status == 302 || beresp.status == 303 || beresp.status == 307 || beresp.status == 308) {
+        set beresp.ttl = 0s;
+        set beresp.uncacheable = true;
+        return (deliver);
+    }
+
+    if (
+        beresp.status == 301 &&
+        beresp.http.X-Aiku-Cacheable-Redirect == "1" &&
+        beresp.http.Cache-Control ~ "(?i)public" &&
+        beresp.http.Location
+    ) {
+        set beresp.ttl = 6h;
+        set beresp.grace = 1m;
+        unset beresp.http.X-Aiku-Cacheable-Redirect;
+        return (deliver);
+    }
+
+    # Avoid caching unexpected statuses by default.
+    if (beresp.status != 200) {
+        set beresp.ttl = 0s;
+        set beresp.uncacheable = true;
+        return (deliver);
+    }
+
+    # Do not cache JSON unless it is an explicit Inertia request.
+    if (beresp.http.Content-Type ~ "(?i)application/json" && !bereq.http.X-Inertia) {
+        set beresp.ttl = 0s;
+        set beresp.uncacheable = true;
+        return (deliver);
+    }
+
+    # Only cache Inertia JSON when Laravel explicitly marks it safe.
+    if (bereq.http.X-Inertia) {
+        if (
+            beresp.http.X-Inertia &&
+            beresp.http.X-Aiku-Cacheable-Inertia == "1" &&
+            beresp.http.Content-Type ~ "(?i)application/json"
+        ) {
+            set beresp.ttl = 5m;
+            set beresp.grace = 1m;
+            set beresp.do_gzip = true;
+
+            if (beresp.http.Vary) {
+                set beresp.http.Vary = beresp.http.Vary + ", X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component, X-Requested-With";
+            } else {
+                set beresp.http.Vary = "X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component, X-Requested-With";
+            }
+
+            unset beresp.http.X-Aiku-Cacheable-Inertia;
+            return (deliver);
+        } else {
+            set beresp.ttl = 0s;
+            set beresp.uncacheable = true;
+            return (deliver);
+        }
+    }
 
     # Default TTL for dynamic content
     set beresp.ttl = 10d;
@@ -224,45 +346,6 @@ sub vcl_backend_response {
     set beresp.keep = 10m;
     # Store original TTL as header for later use in vcl_deliver
     set beresp.http.X-Varnish-TTL = beresp.ttl;
-
-        # If it's an Inertia request, don't cache it
-        if (beresp.http.X-Inertia) {
-            set beresp.uncacheable = true;
-            return (deliver);
-        }
-
-
-
-
-    # Inertia.js responses: cache JSON and vary on Inertia headers
-    if (bereq.http.X-Inertia || beresp.http.X-Inertia) {
-        if (beresp.http.Vary) {
-            set beresp.http.Vary = beresp.http.Vary + ", X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component, X-Requested-With";
-        } else {
-            set beresp.http.Vary = "X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component, X-Requested-With";
-        }
-        # Ensure Content-Type is JSON for Inertia payloads
-        if (beresp.http.Content-Type !~ "application/json") {
-            set beresp.http.Content-Type = "application/json; charset=utf-8";
-        }
-        # Ensure a reasonable minimum TTL for cacheable Inertia responses
-        if (beresp.ttl < 60s) {
-            set beresp.ttl = 60s;
-        }
-    }
-
-    # Also avoid caching conflict responses often used by Inertia version mismatches
-    if (beresp.status == 409) {
-        set beresp.ttl = 0s;
-        set beresp.uncacheable = true;
-    }
-
-    # Do not cache redirects (301, 302, 303, 307, 308)
-    if (beresp.status == 301 || beresp.status == 302 || beresp.status == 303 || beresp.status == 307 || beresp.status == 308) {
-       # set beresp.ttl = 2d;
-        set beresp.ttl = 0s;
-        set beresp.uncacheable = true;
-    }
 
     # Enable gzip on text-like content
     if (beresp.http.Content-Type ~ "(text|javascript|json|xml|svg|font|css)") {
@@ -273,10 +356,12 @@ sub vcl_backend_response {
 }
 
 sub vcl_deliver {
-    # Strip Set-Cookie on cache hits only
+
+ # Strip Set-Cookie on cache hits only
     if (obj.hits > 0) {
         unset resp.http.Set-Cookie;
     }
+
 
     # Add debug headers (can be removed in production)
     if (obj.hits > 0) {
@@ -300,11 +385,13 @@ sub vcl_deliver {
       }
 
 
-    # If response is a redirect (3xx), set client cache to 1 day
     if (resp.status == 301 || resp.status == 302 || resp.status == 303 || resp.status == 307 || resp.status == 308) {
-        set resp.http.Cache-Control = "public, max-age=14400";
+        if (!resp.http.Cache-Control) {
+            set resp.http.Cache-Control = "no-store";
+        }
     }
-
+    unset resp.http.X-Aiku-Cacheable-Redirect;
+    unset resp.http.X-Aiku-Cacheable-Inertia;
     set resp.http.Via = "varnish";
 }
 

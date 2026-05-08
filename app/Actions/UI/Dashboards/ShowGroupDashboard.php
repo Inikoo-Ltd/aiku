@@ -1,11 +1,5 @@
 <?php
 
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 09 Dec 2024 00:41:31 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
- */
-
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
@@ -39,17 +33,18 @@ class ShowGroupDashboard extends OrgAction
     {
         $userSettings = $request->user()->settings;
 
-        $currentTab = Arr::get($userSettings, 'group_dashboard_tab', Arr::first(GroupDashboardSalesTableTabsEnum::values()));
+        $tabValues = GroupDashboardSalesTableTabsEnum::values();
+        $defaultTab = Arr::first($tabValues);
+        $currentTab = Arr::get($userSettings, 'group_dashboard_tab', $defaultTab);
 
-        if (!in_array($currentTab, GroupDashboardSalesTableTabsEnum::values())) {
-            $currentTab = Arr::first(GroupDashboardSalesTableTabsEnum::values());
-        }
+        $currentTabEnum = GroupDashboardSalesTableTabsEnum::tryFrom($currentTab) ?? GroupDashboardSalesTableTabsEnum::from($defaultTab);
+        $currentTab = $currentTabEnum->value;
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
         $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
-        $currentTabEnum = GroupDashboardSalesTableTabsEnum::from($currentTab);
+        $tabNavigation = GroupDashboardSalesTableTabsEnum::navigation();
         $primaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
         $secondaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum], true);
 
@@ -74,7 +69,7 @@ class ShowGroupDashboard extends OrgAction
                             'id'          => 'sales_table',
                             'type'        => 'table',
                             'current_tab' => $currentTab,
-                            'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
+                            'tabs'        => $tabNavigation,
                             'tables'      => $primaryTables,
                             'tab_fetch_route' => [
                                 'name' => 'grp.dashboard.tab-data',
@@ -86,7 +81,7 @@ class ShowGroupDashboard extends OrgAction
                         [
                             'id'          => 'sales_table_2',
                             'type'        => 'table',
-                            'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
+                            'tabs'        => $tabNavigation,
                             'tables'      => $secondaryTables,
                         ]
                     ],

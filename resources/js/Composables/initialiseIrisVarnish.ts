@@ -23,8 +23,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
         const selectedUrl = !isAppRoute ? '/json/first-hit' : '/app/json/first-hit'  // HasIrisUserData
         const currentUrl = new URL(window.location.href)
         const headers = {
-            'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '',
-            'X-Original-Referer': currentUrl.origin + currentUrl.pathname,
+            'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '', //todo: review this because this headers are no set anymore use url queries instead
+            'X-Original-Referer': currentUrl.origin + currentUrl.pathname, //todo: review this because this headers are no set anymore use url queries instead
             'X-Requested-With': 'XMLHttpRequest',
         }
     
@@ -126,8 +126,8 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
         const selectedUrl = !isAppRoute ? '/json/ecom-customer-data' : '/json/ecom-customer-data'
         const currentUrl = new URL(window.location.href)
         const headers = {
-            'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '',
-            'X-Original-Referer': currentUrl.origin + currentUrl.pathname,
+            'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '', //todo: review this because this headers are no set anymore use url queries instead
+            'X-Original-Referer': currentUrl.origin + currentUrl.pathname, //todo: review this because this headers are no set anymore use url queries instead
             'X-Requested-With': 'XMLHttpRequest',
         }
     
@@ -168,8 +168,8 @@ export const initialiseLogUser = async (layout) => {
         const selectedUrl = !isAppRoute ? '/json/hit' : '/app/json/hit'
         const currentUrl = new URL(window.location.href)
         const headers = {
-            'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '',
-            'X-Original-Referer': currentUrl.origin + currentUrl.pathname,
+            'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '', //todo: review this because this headers are no set anymore use url queries instead
+            'X-Original-Referer': currentUrl.origin + currentUrl.pathname, //todo: review this because this headers are no set anymore use url queries instead
             'X-Requested-With': 'XMLHttpRequest',
         }
         

@@ -35,7 +35,8 @@ import {
 	faShapes,
 	faLayerGroup,
 	faSortShapesUpAlt,
-	faLightbulb
+	faLightbulb,
+	faRepeat
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -45,6 +46,7 @@ import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from "@headless
 import { trans } from 'laravel-vue-i18n'
 library.add(
 	faShapes,
+	faRepeat,
 	faLightbulb,
 	faInfoCircle,
 	faRoad,

@@ -81,10 +81,10 @@ class DropshippingPortfoliosResource extends JsonResource
         $marketing_weight = $this->marketing_weight;
         $dimension        = NaturalLanguage::make()->dimensions($this->marketing_dimensions);
         $price            = $this->price;
-        $image            = Arr::get($this->web_images, 'main.thumbnail');
-        $fullSizeImage    = Arr::get($this->web_images, 'main.gallery');
+        $decodedWebImages = json_decode($this->web_images, true);
+        $image = is_array($decodedWebImages) ? Arr::get($decodedWebImages, 'main.thumbnail') : null;
+        $fullSizeImage = is_array($decodedWebImages) ? Arr::get($decodedWebImages, 'main.gallery') : null;
         // $category         = $department.$this->item->family?->name;
-
 
         $shopifyUploadRoute = [];
         $wooUploadRoute     = [];

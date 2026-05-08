@@ -15,6 +15,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 import { getStyles } from "@/Composables/styles"
+import { data } from "autoprefixer"
 
 const props = defineProps<{
   fieldValue: any
@@ -54,28 +55,22 @@ const imageOrder = computed(() =>
 const textOrder = computed(() =>
   isImageLeft.value ? "lg:order-2" : "lg:order-1"
 )
-
 const images = computed(() => {
-  const data =
-    props.fieldValue?.family?.extra_description_image
-
-  if (!data) return []
-
-  if (Array.isArray(data)) {
-    return data.slice(0, 4)
-  }
-
-  return [data]
+  return props.fieldValue?.family?.extra_description_image || {}
 })
 
 const displayImages = computed(() => {
-  const filled = [...images.value]
+  const data = []
 
-  while (filled.length < 4) {
-    filled.push(null)
+  for (const key in images.value) {
+    data.push(get(images.value, key))
   }
 
-  return filled
+  while (data.length < 4) {
+    data.push(null)
+  }
+
+  return data.slice(0, 4)
 })
 
 const cleanedDescription = computed(() => {
@@ -97,9 +92,12 @@ const checkOverflow = async () => {
 watch(cleanedDescription, checkOverflow)
 
 onMounted(checkOverflow)
+
+
 </script>
 
 <template>
+<!--   <pre>{{ displayImages }}</pre> -->
   <div
     :id="
       fieldValue?.id
@@ -118,7 +116,7 @@ onMounted(checkOverflow)
       )
     }"
   >
-    <div class="w-full px-4 py-8 lg:py-14">
+    <div class="w-full px-4 py-8 lg:py-4">
       <div
         class="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center"
       >
@@ -137,7 +135,7 @@ onMounted(checkOverflow)
             >
               <template v-if="img">
                 <Image
-                  :src="img"
+                  :src="img.original"
                   :alt="fieldValue?.family?.name"
                   class="w-full h-full"
                   imgClass="w-full h-full object-cover transition duration-500 hover:scale-105"

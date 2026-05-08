@@ -343,7 +343,7 @@ class IndexWarehousePalletReturns extends OrgAction
                     ->limit(1)
                     ->select('ps.slug');
             }, 'picking_session_slug')
-            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'picking_at', 'picked_at', 'confirmed_at', 'number_stored_items'])
+            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'picking_at', 'picked_at', 'confirmed_at', 'number_stored_items', 'platform_name'])
             ->allowedFilters([$globalSearch, 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

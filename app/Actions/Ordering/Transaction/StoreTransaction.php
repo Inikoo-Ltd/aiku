@@ -40,6 +40,7 @@ class StoreTransaction extends OrgAction
      * @var \App\Models\Catalogue\HistoricAsset
      */
     private HistoricAsset $historicAsset;
+    private bool $forceHydrators = false;
 
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
@@ -132,7 +133,7 @@ class StoreTransaction extends OrgAction
         $transaction = $order->transactions()->create($modelData);
 
         $order->refresh();
-        if ($this->strict) {
+        if ($this->strict || $this->forceHydrators ) {
             OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
@@ -196,10 +197,11 @@ class StoreTransaction extends OrgAction
         return $rules;
     }
 
-    public function action(Order $order, HistoricAsset $historicAsset, array $modelData, int $hydratorsDelay = 0, bool $strict = true): Transaction
+    public function action(Order $order, HistoricAsset $historicAsset, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $forceHydrators = false): Transaction
     {
         $this->asAction       = true;
         $this->strict         = $strict;
+        $this->forceHydrators = $forceHydrators;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->order         = $order;
