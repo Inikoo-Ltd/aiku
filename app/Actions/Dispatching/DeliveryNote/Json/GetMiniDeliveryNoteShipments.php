@@ -40,7 +40,7 @@ class GetMiniDeliveryNoteShipments extends OrgAction
         
         $additionalShipmentRoutes = [];
 
-        if (!$deliveryNote->is_shipping_by_external) {
+        if ($deliveryNote->is_shipping_by_external) {
             if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
                 $additionalShipmentRoutes = [
                     'get_external_shipment_route' => [
