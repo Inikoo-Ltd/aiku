@@ -44,7 +44,10 @@ class ProcessTiktokOrderShipment extends OrgAction
 
                 $getOrder = $tiktokUser->getOrder($fulfillOrderId);
 
-                if($id = Arr::get($getOrder, 'data.orders.0.packages.0.id')) {
+                $id = Arr::get($getOrder, 'data.orders.0.packages.0.id');
+                $status = Arr::get($getOrder, 'data.orders.0.status');
+
+                if($id && $status === "AWAITING_COLLECTION") {
                     $this->packageWasShipped($tiktokUser, $order, $deliveryNote, $id);
 
                     return;
@@ -66,6 +69,7 @@ class ProcessTiktokOrderShipment extends OrgAction
                 $tiktokUser->shipPackage($tiktokPackageId);
             });
         } catch (\Throwable $th) {
+            dd($th);
             \Sentry::captureException($th);
             Log::error($th->getMessage());
         }
