@@ -248,6 +248,7 @@ const checkMobile = () => {
 };
 
 onMounted(() => {
+	fetchSidebarOnce()
     checkMobile()
     window.addEventListener("resize", checkMobile)
 })

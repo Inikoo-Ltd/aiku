@@ -132,26 +132,41 @@ trait WithUpdateWebImages
         return $images;
     }
 
-    public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory $model): array
-    {
-        $media = null;
-        if ($model->extra_desc_art1) {
-            $media = Media::find($model->extra_desc_art1);
-        }
-
-        if (!$media) {
-            return [];
-        }
-
-        $imageOriginal  = $media->getImage();
-        $imageGallery   = $media->getImage()->resize(0, 600);
-        $imageThumbnail = $media->getImage()->resize(0, 48);
-
-        return [
-            'original'  => GetPictureSources::run($imageOriginal),
-            'gallery'   => GetPictureSources::run($imageGallery),
-            'thumbnail' => GetPictureSources::run($imageThumbnail),
+    public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory $model): array {
+        $fields = [
+            'extra_desc_art1',
+            'extra_desc_art2',
+            'extra_desc_art3',
+            'extra_desc_art4',
         ];
+
+        $images = [];
+
+        foreach ($fields as $field) {
+            $mediaId = $model->{$field};
+
+            if (!$mediaId) {
+                continue;
+            }
+
+            $media = Media::find($mediaId);
+
+            if (!$media) {
+                continue;
+            }
+
+            $imageOriginal  = $media->getImage();
+            $imageGallery   = $imageOriginal->resize(0, 600);
+            $imageThumbnail = $imageOriginal->resize(0, 48);
+
+            $images[$field] = [
+                'original'  => GetPictureSources::run($imageOriginal),
+                'gallery'   => GetPictureSources::run($imageGallery),
+                'thumbnail' => GetPictureSources::run($imageThumbnail),
+            ];
+        }
+
+        return $images;
     }
 
     public function getAllWebImageData(Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection $model): array

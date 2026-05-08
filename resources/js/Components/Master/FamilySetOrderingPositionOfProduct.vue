@@ -69,6 +69,9 @@ const updateOrder = () => {
         order: index + 1,
         index_under_family: index
     }))
+
+
+    console.log("Updated order:", items.value)
     emits("update:data", items.value);
 }
 

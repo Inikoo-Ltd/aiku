@@ -11,6 +11,7 @@ import { getStyles } from "@/Composables/styles"
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
+import { trans } from "laravel-vue-i18n"
 
 library.add(
   faCube,
@@ -63,28 +64,22 @@ const imageOrder = computed(() =>
 const textOrder = computed(() =>
   isImageLeft.value ? "lg:order-2" : "lg:order-1"
 )
-
 const images = computed(() => {
-  const data =
-    props.modelValue?.family?.extra_description_image
-
-  if (!data) return []
-
-  if (Array.isArray(data)) {
-    return data.slice(0, 4)
-  }
-
-  return [data]
+  return props.modelValue?.family?.extra_description_image || {}
 })
 
 const displayImages = computed(() => {
-  const filled = [...images.value]
+  const data = []
 
-  while (filled.length < 4) {
-    filled.push(null)
+  for (const key in images.value) {
+    data.push(get(images.value, key))
   }
 
-  return filled
+  while (data.length < 4) {
+    data.push(null)
+  }
+
+  return data.slice(0, 4)
 })
 
 const cleanedDescription = computed(() => {
@@ -106,13 +101,18 @@ const checkOverflow = async () => {
 watch(cleanedDescription, checkOverflow)
 
 onMounted(checkOverflow)
+
+console.log("modelValue", props.modelValue)
 </script>
 
 <template>
-  <div :id="modelValue?.id
-    ? modelValue?.id
-    : 'family-3' + indexBlock
-    " :style="{
+ <div
+    :id="
+      modelValue?.id
+        ? modelValue?.id
+        : 'family-3' + indexBlock
+    "
+    :style="{
       ...getStyles(
         layout?.app?.webpage_layout?.container
           ?.properties,
@@ -122,11 +122,14 @@ onMounted(checkOverflow)
         modelValue?.container?.properties,
         screenType
       )
-    }">
-    <div class="w-full px-4 py-6">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+    }"
+  >
+    <div class="w-full px-4 py-8 lg:py-4">
+      <div
+        class="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center"
+      >
         <!-- IMAGE -->
-            <div
+        <div
           class="w-full flex justify-center lg:justify-end"
           :class="imageOrder"
         >
@@ -141,7 +144,7 @@ onMounted(checkOverflow)
               <template v-if="img">
                 <Image
                   :src="img"
-                  :alt="fieldValue?.family?.name"
+                  :alt="modelValue?.family?.name"
                   class="w-full h-full"
                   imgClass="w-full h-full object-cover transition duration-500 hover:scale-105"
                 />
@@ -149,37 +152,44 @@ onMounted(checkOverflow)
             </div>
           </div>
         </div>
+
         <!-- CONTENT -->
-        <div class="flex flex-col min-w-0" :class="textOrder">
+        <div
+          class="flex flex-col min-w-0 max-w-[720px]"
+          :class="textOrder"
+        >
           <!-- DESCRIPTION -->
-          <div class="relative">
-            <div ref="descriptionRef" v-html="cleanedDescription" class="description-content" :class="{
-              'description-collapsed': !expanded
-            }" />
+          <div class="relative ">
+            <div
+              ref="descriptionRef"
+              v-html="cleanedDescription"
+              class="description-content"
+              :class="{
+                'description-collapsed': !expanded
+              }"
+            />
           </div>
 
           <!-- READ MORE -->
-          <button v-if="showReadMore" type="button" class="read-more-btn" @click="expanded = !expanded">
+          <button
+            v-if="showReadMore"
+            type="button"
+            class="read-more-btn"
+            @click="expanded = !expanded"
+          >
             {{
               expanded
-                ? "Read less"
-                : "Read more"
+                ? trans("Read less")
+                : trans("Read more")
             }}
           </button>
 
           <!-- BUTTON -->
-          <div class="mt-5 text-center md:text-left">
-          <!--   <LinkIris :href="modelValue?.button?.link?.href
-              " :target="modelValue?.button?.link?.target
-                "> -->
-              <Button :label="modelValue?.button?.text
-                " :injectStyle="getStyles(
-                  modelValue?.button
-                    ?.container?.properties,
-                  screenType
-                )
-                  " />
-          <!--   </LinkIris> -->
+          <div class="mt-7 text-center md:text-right">
+            <button id="family-3-button" :label="modelValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
+             text-sm md:text-base font-medium
+             hover:underline underline-offset-4 mr-5 italic
+             transition-all duration-200" >{{ modelValue?.button?.text }}</button>
           </div>
         </div>
       </div>
@@ -188,6 +198,7 @@ onMounted(checkOverflow)
 </template>
 
 <style scoped>
+
 .description-content {
   @apply text-sm
   md:text-[15px]
@@ -200,6 +211,31 @@ onMounted(checkOverflow)
   transition-all
   duration-300;
 }
+
+
+.description-content :deep(p) {
+  @apply mb-0;
+}
+
+.description-content :deep(h2),
+.description-content :deep(h3),
+.description-content :deep(h4) {
+  @apply text-gray-900 font-semibold mt-6 mb-3;
+}
+
+.description-content :deep(ul) {
+  @apply list-disc pl-5 space-y-2;
+}
+
+.description-content :deep(ol) {
+  @apply list-decimal pl-5 space-y-2;
+}
+
+
+.description-content :deep(ul) {
+  @apply list-disc pl-5 ml-0 mt-2 space-y-2 list-outside;
+}
+
 
 .description-collapsed {
   max-height: 390px;
@@ -222,34 +258,6 @@ onMounted(checkOverflow)
     mask-image 0.35s ease;
 }
 
-.description-content :deep(p) {
-  @apply mb-5;
-}
-
-.description-content :deep(h2),
-.description-content :deep(h3),
-.description-content :deep(h4) {
-  @apply text-gray-900
-  font-semibold
-  mt-8
-  mb-4
-  text-xl
-  leading-snug;
-}
-
-.description-content :deep(ul) {
-  @apply list-disc
-  pl-5
-  space-y-2
-  mb-5;
-}
-
-.description-content :deep(ol) {
-  @apply list-decimal
-  pl-5
-  space-y-2
-  mb-5;
-}
 
 .description-content :deep(img) {
   @apply rounded-2xl
