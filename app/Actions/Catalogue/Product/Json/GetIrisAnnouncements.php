@@ -48,8 +48,8 @@ class GetIrisAnnouncements extends IrisAction
 
 
         return [
-            'top_bar'     => $announcementsTopBar,
-            'bottom_menu' => $announcementsBottomMenu,
+          //  'top_bar'     => $announcementsTopBar,
+         //   'bottom_menu' => $announcementsBottomMenu,
             'top_footer'  => $announcementsTopFooter
         ];
     }
