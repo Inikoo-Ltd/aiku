@@ -61,7 +61,7 @@ const sendMessageToParent = (type: string, value: any) => {
 </script>
 
 <template>
-  <div v-if="compSwiperOptions.length > modelValue?.recommendation_settings.min_amt_shown"
+  <div v-if="compSwiperOptions.length >= modelValue?.recommendation_settings.min_amt_shown"
     :id="modelValue?.id ? modelValue?.id : 'recomended-master' + indexBlock" class="w-full pb-6" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue.container?.properties, screenType),

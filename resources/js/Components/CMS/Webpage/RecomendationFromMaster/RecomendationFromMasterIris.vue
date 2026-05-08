@@ -55,7 +55,7 @@ console.log('Recommended Products:', props)
 </script>
 
 <template>
-  <div v-if="compSwiperOptions.length > fieldValue?.recommendation_settings.min_amt_shown"
+  <div v-if="compSwiperOptions.length >= fieldValue?.recommendation_settings.min_amt_shown"
     :id="fieldValue?.id ? fieldValue?.id : 'recomended-master' + indexBlock" class="w-full pb-6" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType),
@@ -96,9 +96,6 @@ console.log('Recommended Products:', props)
                 <ProductRender v-else :product="product" :productHasPortfolio="[]" />
               </div>
 
-              <div v-else class="flex-1 flex items-center justify-center text-gray-400">
-                No Product
-              </div>
             </div>
           </SwiperSlide>
         </Swiper>

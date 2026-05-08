@@ -31,10 +31,8 @@ class RelatedMasterProductsResource extends JsonResource
             'slug'            => $this->slug,
             'code'            => $this->code,
             'name'            => $this->name,
-            'image_thumbnail' => Arr::get($this->web_images, 'main.thumbnail'),
+            'image_thumbnail' => is_array($this->web_images) ?  $this->web_images : json_decode($this->web_images),
             'position'        => $this->position
-
-
         ];
     }
 
