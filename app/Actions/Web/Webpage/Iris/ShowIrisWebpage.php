@@ -244,11 +244,15 @@ class ShowIrisWebpage
         }
 
         if ($loggedIn) {
-            $metrics = [
-                'website' => (string)request()->website->slug,
-                'webpage' => $webpageSlug
-            ];
+            $website = request()->website;
 
+            $metrics = [
+                'org'          => $website->organisation_id,
+                'website'      => $website->slug,
+                'webpage'      => $webpageSlug,
+                'form_factors' => request()->header('sec-ch-ua-form-factors'),
+                'country'      => request()->header('CF-IPCountry') ?? 'XX'
+            ];
             \Sentry\traceMetrics()->count(
                 'visit',
                 1,
