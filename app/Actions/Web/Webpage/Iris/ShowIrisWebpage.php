@@ -201,8 +201,9 @@ class ShowIrisWebpage
 
     public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
-        $loggedIn    = Arr::pull($webpageData, 'is_logged_in');
-        $webpageSlug = Arr::pull($webpageData, 'slug');
+
+
+
         if (is_string($webpageData)) {
             $queryParameters = Arr::except(request()->query(), [
                 'favicons',
@@ -225,6 +226,9 @@ class ShowIrisWebpage
                 ]);
             // ->with('from-iris-redirect', true);
         }
+
+        $loggedIn    = Arr::pull($webpageData, 'is_logged_in');
+        $webpageSlug = Arr::pull($webpageData, 'slug');
 
         $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
 
