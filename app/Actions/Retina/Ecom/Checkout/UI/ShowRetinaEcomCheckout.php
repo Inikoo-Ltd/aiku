@@ -84,6 +84,8 @@ class ShowRetinaEcomCheckout extends RetinaAction
         $toPayByBalance = $paymentAmounts['by_balance'];
         $toPayByOther   = $paymentAmounts['by_other'];
 
+        \Sentry\traceMetrics()->count('checkout-visit', 10, ['shop' => $this->shop->slug]);
+
         return Inertia::render(
             'Ecom/RetinaEcomCheckout',
             [
