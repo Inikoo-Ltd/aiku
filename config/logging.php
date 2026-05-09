@@ -53,7 +53,7 @@ return [
     'channels' => [
         'stack' => [
             'driver'            => 'stack',
-            'channels'          => ['single'],
+            'channels'          => explode(',', (string)env('LOG_STACK', 'single')),
             'ignore_exceptions' => false,
         ],
 
@@ -114,15 +114,21 @@ return [
             'handler' => NullHandler::class,
         ],
 
-        'emergency' => [
+        'emergency'   => [
             'path' => storage_path('logs/laravel.log'),
         ],
+        'sentry_logs' => [
+            'driver' => 'sentry_logs',
+            // The minimum logging level at which this handler will be triggered
+            // Available levels: debug, info, notice, warning, error, critical, alert, emergency
+            'level'  => env('LOG_LEVEL', 'info'), // defaults to `debug` if not set
+        ],
 
-//        'deprecations' => [
-//            'driver' => 'single',
-//            'path'   => storage_path('logs/php-deprecation-warnings.log'),
-//            'trace' => env('LOG_DEPRECATIONS_TRACE', false),
-//        ],
+        //        'deprecations' => [
+        //            'driver' => 'single',
+        //            'path'   => storage_path('logs/php-deprecation-warnings.log'),
+        //            'trace' => env('LOG_DEPRECATIONS_TRACE', false),
+        //        ],
     ],
 
 ];
