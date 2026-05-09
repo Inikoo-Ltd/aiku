@@ -1,37 +1,37 @@
 <?php
-
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 12-06-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 10 May 2026 05:30:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dropshipping\Ebay;
 
-use App\Actions\RetinaAction;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
+use Exception;
 use Illuminate\Support\Facades\Log;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
+use Lorisleiva\Actions\Concerns\AsObject;
 use Sentry;
 
-class DeleteEbayProduct extends RetinaAction
+class DeleteEbayProduct
 {
-    use AsAction;
-    use WithAttributes;
+    use AsObject;
 
-    public function handle(Portfolio $portfolio)
+    public function handle(Portfolio $portfolio): void
     {
+        /** @var EbayUser $ebayUser */
+        $ebayUser = $portfolio->customerSalesChannel->user;
+        if (!$ebayUser) {
+            Log::error("Ebay user not found in DeleteEbayProduct");
+
+            return;
+        }
+
         try {
-            /** @var EbayUser $ebayUser */
-            $ebayUser = $portfolio->customerSalesChannel->user;
             $ebayUser->withdrawOffer($portfolio->platform_product_id);
-        } catch (\Exception $e) {
-            Log::info("Failed to delete product due to: " . $e->getMessage());
-            Sentry::captureMessage("Failed to delete product due to: " . $e->getMessage());
+        } catch (Exception $e) {
+            Sentry::captureException($e);
         }
     }
 }
