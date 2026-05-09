@@ -71,7 +71,8 @@ class ShowIrisWebpage
             ],
             'webpage_img'  => $webpageImg,
             'index_page'   => $webpage->index_page,
-            'follow_link'  => $webpage->follow_link
+            'follow_link'  => $webpage->follow_link,
+            'slug'         => $webpage->slug
         ];
 
         return array_merge($baseWebpageData, [
@@ -141,6 +142,7 @@ class ShowIrisWebpage
         if (Arr::get($webpageData, 'status') != 'ok') {
             abort(404, 'Not found');
         }
+        $webpageData['is_logged_in'] = $loggedIn;
 
         return $webpageData;
     }
@@ -199,6 +201,8 @@ class ShowIrisWebpage
 
     public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
+        $loggedIn    = Arr::pull($webpageData, 'is_logged_in');
+        $webpageSlug = Arr::pull($webpageData, 'slug');
         if (is_string($webpageData)) {
             $queryParameters = Arr::except(request()->query(), [
                 'favicons',
@@ -237,6 +241,19 @@ class ShowIrisWebpage
         $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
         if (isset($webpageData['webpage_id'])) {
             $response->header('X-AIKU-WEBPAGE', (string)$webpageData['webpage_id']);
+        }
+
+        if ($loggedIn) {
+            $metrics = [
+                'website' => (string)request()->website->slug,
+                'webpage' => $webpageSlug
+            ];
+
+            \Sentry\traceMetrics()->count(
+                'visit',
+                1,
+                $metrics
+            );
         }
 
         return $response;
