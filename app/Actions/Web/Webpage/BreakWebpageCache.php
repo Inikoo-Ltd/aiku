@@ -26,6 +26,7 @@ class BreakWebpageCache extends OrgAction
         Cache::forget($key);
 
         BanVarnishWebpage::run($webpage);
+        PurgeVarnishWebpageUrl::run($webpage);
 
     }
 
