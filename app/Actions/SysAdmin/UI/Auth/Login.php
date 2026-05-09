@@ -117,6 +117,7 @@ class Login
         if ($language) {
             app()->setLocale($language->code);
         }
+        \Sentry\traceMetrics()->count('gro-login', 1, ['user' => $user->slug]);
 
         if ($user->authorisedOrganisations->count() === 1) {
             /** @var Organisation $organisation */
