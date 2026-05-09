@@ -72,6 +72,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         $extraPacking    = $charges['extra_packing'];
         $insurance       = $charges['insurance'];
 
+        \Sentry\traceMetrics()->count('visit.basket.ds', 1, ['shop' => $this->shop->slug]);
+
         return Inertia::render(
             'Dropshipping/RetinaDropshippingBasket',
             [
