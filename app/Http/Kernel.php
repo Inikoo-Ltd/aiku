@@ -36,6 +36,7 @@ use App\Http\Middleware\NewRelicTransactionMiddleware;
 use App\Http\Middleware\ResetUserPasswordMiddleware;
 use App\Http\Middleware\ResetWebUserPasswordMiddleware;
 use App\Http\Middleware\RetinaAuthenticate;
+use App\Http\Middleware\SetWebsiteLocale;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\HandleInertiaGrpRequests;
 use App\Http\Middleware\IrisRelaxAuthenticate;
@@ -200,7 +201,8 @@ class Kernel extends HttpKernel
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
-            SetWebUserLocale::class,
+            //SetWebUserLocale::class,
+            SetWebsiteLocale::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,

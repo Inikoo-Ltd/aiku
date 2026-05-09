@@ -12,30 +12,22 @@ use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
 
-class BreakWebsiteCache extends OrgAction implements ShouldBeUniqueUntilProcessing
+class BreakWebsiteCache extends OrgAction implements ShouldBeUnique
 {
     public Website $website;
 
-    public function __construct(Website $website)
+    public function getJobUniqueId(Website $website): string
     {
-        $this->website = $website;
-    }
-
-    public function uniqueId()
-    {
-        return 'website-'.$this->website->id;
+        return $website->id;
     }
 
     public function handle(Website $website, ?Command $command = null): Website
     {
-        $key = config('iris.cache.website.prefix')."_$website->domain";
-        Cache::forget($key);
-
+        ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_domain:*', $command);
         ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*', $command);
         ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*', $command);
         ClearCacheByWildcard::run("irisData:website:$website->id:*", $command);
