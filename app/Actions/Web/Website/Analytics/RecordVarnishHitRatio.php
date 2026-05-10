@@ -73,6 +73,13 @@ class RecordVarnishHitRatio
                         'server' => config('app.server_name')
                     ]
                 );
+                \Sentry\traceMetrics()->gauge(
+                    'varnish.requests',
+                    $totalDelta,
+                    [
+                        'server' => config('app.server_name')
+                    ]
+                );
             }
 
 
