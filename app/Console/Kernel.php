@@ -57,7 +57,7 @@ class Kernel extends ConsoleKernel
 
         if (config('app.master')) {
             $this->logSchedule(
-                $schedule->job(RecordVarnishHitRate::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                $schedule->job(RecordVarnishHitRate::makeJob())->everyFiveMinutes()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'RecordVarnishHitRate',
                 ),
                 name: 'RecordVarnishHitRate',
