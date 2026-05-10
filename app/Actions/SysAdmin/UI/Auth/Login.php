@@ -77,6 +77,8 @@ class Login
                 geoLocation: $geoLocation
             )->delay(now()->addSeconds(5));
 
+            \Sentry\traceMetrics()->count('aiku.login.fail', 1);
+
             throw ValidationException::withMessages([
                 'username' => trans('auth.failed'),
             ]);
@@ -117,7 +119,7 @@ class Login
         if ($language) {
             app()->setLocale($language->code);
         }
-        \Sentry\traceMetrics()->count('gro-login', 1, ['user' => $user->slug]);
+        \Sentry\traceMetrics()->count('aiku.login.ok', 1, ['user' => $user->slug]);
 
         if ($user->authorisedOrganisations->count() === 1) {
             /** @var Organisation $organisation */
