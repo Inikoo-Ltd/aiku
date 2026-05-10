@@ -65,6 +65,14 @@ class RecordVarnishHitRatio
                     ],
                     Unit::ratio()
                 );
+
+                \Sentry\traceMetrics()->gauge(
+                    'varnish.hits',
+                    $deltaHits,
+                    [
+                        'server' => config('app.server_name')
+                    ]
+                );
             }
 
 
