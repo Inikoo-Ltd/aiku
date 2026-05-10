@@ -28,6 +28,7 @@ class RecordWebsiteHit
         $metrics = [
             'org'       => $website->organisation_id,
             'website'   => $website->slug,
+            'type'      => $website->type->value,
             'webpage'   => request()->header('X-Analytics-Webpage'),
             'device'    => request()->header('sec-ch-ua-form-factors'),
             'country'   => request()->header('CF-IPCountry') ?? 'XX',
