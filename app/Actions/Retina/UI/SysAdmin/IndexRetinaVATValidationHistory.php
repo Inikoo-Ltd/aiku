@@ -71,7 +71,7 @@ class IndexRetinaVATValidationHistory extends RetinaAction
         return match ($routeName) {
             'retina.sysadmin.vat-validation-history' =>
             array_merge(
-                ShowRetinaFulfilmentSysAdminDashboard::make()->getBreadcrumbs(),
+                ShowRetinaSysAdminDashboard::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',

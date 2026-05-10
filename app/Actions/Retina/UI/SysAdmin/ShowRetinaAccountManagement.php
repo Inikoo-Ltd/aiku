@@ -9,7 +9,6 @@
 namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
@@ -47,15 +46,17 @@ class ShowRetinaAccountManagement extends RetinaAction
             $isEu = $this->organisation->country->continent == 'EU';
         }
 
-        $show_interest = Tag::where('shop_id', $this->shop->id)->whereNotIn('scope', [TagScopeEnum::SYSTEM_CUSTOMER, TagScopeEnum::ADMIN_CUSTOMER])->get();
+        $showInterests = Tag::where('shop_id', $this->shop->id)
+            ->whereNotIn('scope', [TagScopeEnum::SYSTEM_CUSTOMER, TagScopeEnum::ADMIN_CUSTOMER])->count() > 0;
+
 
         return Inertia::render(
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Account management'),
+                'title'       => __('Account settings'),
                 'pageHead'    => [
-                    'title' => __('Account management'),
+                    'title' => __('Account settings'),
                 ],
                 "formData"    => [
                     "blueprint" =>
@@ -150,14 +151,14 @@ class ShowRetinaAccountManagement extends RetinaAction
                                     ]
                                 ]
                             ],
-                             ...($show_interest ? [[
-                            'title'  => __('Interest'),
-                            'label'  => __('Interest'),
+                             ...($showInterests ? [[
+                            'title'  => __('Interests'),
+                            'label'  => __('Interests'),
                             'icon'   => 'fal fa-tags',
                             'fields' => [
                                 'tags' => [
                                     'type'                   => 'retina-tags-customer',
-                                    'label'                  => __('Interest'),
+                                    'label'                  => __('Interests'),
                                     'noSaveButton'           => true,
                                     'full'                   => true,
                                     'value'                  => $customer
@@ -208,7 +209,7 @@ class ShowRetinaAccountManagement extends RetinaAction
     {
         return
             array_merge(
-                ShowRetinaDashboard::make()->getBreadcrumbs(),
+                ShowRetinaSysAdminDashboard::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',
@@ -216,7 +217,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                             'route' => [
                                 'name' => 'retina.sysadmin.settings.edit'
                             ],
-                            'label' => __('Account management'),
+                            'label' => __('Account settings'),
                         ]
                     ]
                 ]
