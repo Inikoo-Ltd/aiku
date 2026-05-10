@@ -22,7 +22,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
-use App\Actions\Web\Website\Analytics\RecordVarnishHitRate;
+use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
 use App\Actions\Web\Website\PruneWebsitePageViews;
@@ -57,10 +57,10 @@ class Kernel extends ConsoleKernel
 
         if (config('app.master')) {
             $this->logSchedule(
-                $schedule->job(RecordVarnishHitRate::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RecordVarnishHitRate',
+                $schedule->job(RecordVarnishHitRatio::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RecordVarnishHitRatio',
                 ),
-                name: 'RecordVarnishHitRate',
+                name: 'RecordVarnishHitRatio',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

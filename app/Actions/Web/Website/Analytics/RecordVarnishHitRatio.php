@@ -15,7 +15,7 @@ use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry\Unit;
 
-class RecordVarnishHitRate
+class RecordVarnishHitRatio
 {
     use AsAction;
 
@@ -31,7 +31,7 @@ class RecordVarnishHitRate
             $command?->line("Hits $hits ; Misses: $misses");
 
             $server              = config('app.server_name');
-            $key                 = 'metric:varnish-hit-rate:'.$server;
+            $key                 = 'metric:varnish-hit-ratio:'.$server;
             $previousHitRateData = Cache::get($key);
 
             if ($previousHitRateData) {
@@ -53,17 +53,17 @@ class RecordVarnishHitRate
                 $deltaMisses = $misses - $previousMisses;
                 $totalDelta  = $deltaHits + $deltaMisses;
 
-                $hitRate = $totalDelta > 0 ? ($deltaHits / $totalDelta) * 100 : 0;
+                $hitRate = $totalDelta > 0 ? ($deltaHits / $totalDelta) : 0;
 
                 $command?->line("Hit rate: $hitRate");
 
                 \Sentry\traceMetrics()->gauge(
-                    'varnish.hit_rate',
+                    'varnish.hit_ratio',
                     $hitRate,
                     [
                         'server' => config('app.server_name')
                     ],
-                    Unit::percent()
+                    Unit::ratio()
                 );
             }
 
@@ -82,7 +82,7 @@ class RecordVarnishHitRate
 
     public function getCommandSignature(): string
     {
-        return 'metrics:varnish_hit_rate';
+        return 'metrics:varnish_hit_ratio';
     }
 
     public function asCommand(Command $command): int
