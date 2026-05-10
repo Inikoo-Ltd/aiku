@@ -80,6 +80,13 @@ class RecordVarnishHitRatio
                         'server' => config('app.server_name')
                     ]
                 );
+                \Sentry\traceMetrics()->gauge(
+                    'varnish.misses',
+                    $deltaMisses,
+                    [
+                        'server' => config('app.server_name')
+                    ]
+                );
             }
 
 
