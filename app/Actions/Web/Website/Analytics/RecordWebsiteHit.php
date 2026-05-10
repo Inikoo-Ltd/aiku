@@ -35,11 +35,7 @@ class RecordWebsiteHit
             'url'       => $request->header('referer'),
             'app'       => $appName
         ];
-        \Sentry\traceMetrics()->count(
-            'website.hit',
-            1,
-            $metrics
-        );
+        ProcessWebsiteHit::dispatch($metrics, $request->userAgent());
     }
 
 }
