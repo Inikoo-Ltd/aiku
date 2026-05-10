@@ -43,7 +43,7 @@ class RecordVarnishHitRate
                     return;
                 }
 
-                if ((Carbon::now()->timestamp - $previousTimestamp) < 120) {
+                if ((Carbon::now()->timestamp - $previousTimestamp) < 30) {
                     return;
                 }
 
