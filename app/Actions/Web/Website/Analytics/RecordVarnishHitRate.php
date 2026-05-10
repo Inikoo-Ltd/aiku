@@ -13,6 +13,7 @@ use Cache;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry\Unit;
 
 class RecordVarnishHitRate
 {
@@ -61,7 +62,8 @@ class RecordVarnishHitRate
                     $hitRate,
                     [
                         'server' => config('app.server_name')
-                    ]
+                    ],
+                    Unit::percent()
                 );
             }
 
