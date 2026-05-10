@@ -230,6 +230,8 @@ return [
         // 'ExampleClass' => App\Example\ExampleClass::class,
     ])->toArray(),
 
+    'server_name' => env('SERVER_NAME'),
+
     'po_editor_api_key' => env('PO_EDITOR_READ_ONLY_API_KEY', ''),
     'aurora_image_path' => env('AURORA_IMAGE_PATH'),
 
@@ -296,7 +298,7 @@ return [
         'shipper_gls_es_token'         => env('GLS_ES_TOKEN'),
         'shipper_packeta_access_token' => env('PACKETA_ACCESS_TOKEN'),
 
-        'shipper_ctt_token'            => json_decode(env('CTT_TOKEN', '{}'), true),
+        'shipper_ctt_token' => json_decode(env('CTT_TOKEN', '{}'), true),
 
         'local_share_url' => env('SANDBOX_SHARE_URL'),
         'checkout_com'    => [
