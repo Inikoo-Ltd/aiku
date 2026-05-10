@@ -54,7 +54,7 @@ class ShowIrisWebpage
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
-
+        $website         = request()->input('website');
         $baseWebpageData = [
             'breadcrumbs'  => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -72,7 +72,8 @@ class ShowIrisWebpage
             'webpage_img'  => $webpageImg,
             'index_page'   => $webpage->index_page,
             'follow_link'  => $webpage->follow_link,
-            'slug'         => $webpage->slug
+            'webpage_slug' => $webpage->slug,
+
         ];
 
         return array_merge($baseWebpageData, [
@@ -142,7 +143,6 @@ class ShowIrisWebpage
         if (Arr::get($webpageData, 'status') != 'ok') {
             abort(404, 'Not found');
         }
-        $webpageData['is_logged_in'] = $loggedIn;
 
         return $webpageData;
     }
@@ -201,9 +201,6 @@ class ShowIrisWebpage
 
     public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
-
-
-
         if (is_string($webpageData)) {
             $queryParameters = Arr::except(request()->query(), [
                 'favicons',
@@ -227,9 +224,6 @@ class ShowIrisWebpage
             // ->with('from-iris-redirect', true);
         }
 
-        $loggedIn    = Arr::pull($webpageData, 'is_logged_in');
-        $webpageSlug = Arr::pull($webpageData, 'slug');
-
         $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
 
         $response = Inertia::render(
@@ -245,23 +239,6 @@ class ShowIrisWebpage
         $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
         if (isset($webpageData['webpage_id'])) {
             $response->header('X-AIKU-WEBPAGE', (string)$webpageData['webpage_id']);
-        }
-
-        if ($loggedIn) {
-            $website = request()->website;
-
-            $metrics = [
-                'org'          => $website->organisation_id,
-                'website'      => $website->slug,
-                'webpage'      => $webpageSlug,
-                'form_factors' => request()->header('sec-ch-ua-form-factors'),
-                'country'      => request()->header('CF-IPCountry') ?? 'XX'
-            ];
-            \Sentry\traceMetrics()->count(
-                'visit',
-                1,
-                $metrics
-            );
         }
 
         return $response;
