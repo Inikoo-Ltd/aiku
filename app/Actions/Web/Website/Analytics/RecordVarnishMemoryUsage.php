@@ -22,13 +22,14 @@ class RecordVarnishMemoryUsage
         if ($output) {
             $data = json_decode($output, true);
 
-            $gBytes    = $data['SMA.s0.g_bytes']['value'] ?? null;
+            $gBytes = $data['counters']['SMA.s0.g_bytes']['value'] ?? null;
+
             $megabytes = $gBytes === null
                 ? null
                 : round($gBytes / 1024 / 1024, 2);
 
             if ($megabytes && is_numeric($megabytes)) {
-                $command?->line("Varnish Memory Usage: $megabytes Mb ('.config('app.server_name').')");
+                $command?->line("Varnish Memory Usage: $megabytes Mb (".config('app.server_name').")");
                 \Sentry\traceMetrics()->gauge(
                     'varnish.used_memory',
                     $megabytes,

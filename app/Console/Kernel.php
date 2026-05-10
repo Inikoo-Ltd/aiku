@@ -22,6 +22,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Web\Website\Analytics\RecordVarnishHitRate;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
 use App\Actions\Web\Website\PruneWebsitePageViews;
@@ -55,9 +56,17 @@ class Kernel extends ConsoleKernel
 
 
         if (config('app.master')) {
+            $this->logSchedule(
+                $schedule->job(RecordVarnishHitRate::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RecordVarnishHitRate',
+                ),
+                name: 'RecordVarnishHitRate',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
 
             $this->logSchedule(
-                $schedule->job(RecordVarnishMemoryUsage::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                $schedule->job(RecordVarnishMemoryUsage::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'RecordVarnishMemoryUsage',
                 ),
                 name: 'RecordVarnishMemoryUsage',
@@ -649,13 +658,11 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
         }
-
-
     }
 
     protected function commands(): void
     {
-        $this->load(__DIR__ . '/Commands');
+        $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
     }
