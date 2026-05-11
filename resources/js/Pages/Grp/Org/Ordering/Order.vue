@@ -248,6 +248,7 @@ const props = defineProps<{
             order: string
         }
     },
+    returns: {}
     payments: {}
     readonly?: boolean
     is_shop_external?: boolean
@@ -292,6 +293,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: OrderProductTable,
+        returns: TableDeliveryNotes,
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
         invoices: TableInvoices,

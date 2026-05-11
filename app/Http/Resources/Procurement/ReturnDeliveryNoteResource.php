@@ -27,7 +27,7 @@ class ReturnDeliveryNoteResource extends JsonResource
             'slug'                           => $returnDeliveryNote->slug,
             'reference'                      => $returnDeliveryNote->reference,
             'date'                           => $returnDeliveryNote->date,
-            'state'                          => $returnDeliveryNote->return_state,
+            'state'                          => $returnDeliveryNote->state,
             'updated_at'                     => $returnDeliveryNote->updated_at,
         ];
     }

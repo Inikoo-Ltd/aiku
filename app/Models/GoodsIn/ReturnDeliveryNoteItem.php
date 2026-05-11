@@ -24,7 +24,7 @@ class ReturnDeliveryNoteItem extends Model
     protected $table = 'return_delivery_note_items';
 
     protected $casts = [
-        'return_state'  => ReturnDeliveryNoteItemStateEnum::class,
+        'state'         => ReturnDeliveryNoteItemStateEnum::class,
         'handled_at'    => 'datetime',
         'processed_at'  => 'datetime',
         'cancelled_at'  => 'datetime',

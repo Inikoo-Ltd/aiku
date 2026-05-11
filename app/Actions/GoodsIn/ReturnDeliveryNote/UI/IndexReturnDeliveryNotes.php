@@ -12,12 +12,12 @@ namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
-use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Http\Resources\Procurement\ReturnDeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\WebUser;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Inventory\Warehouse;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -34,7 +34,7 @@ class IndexReturnDeliveryNotes extends OrgAction
 
     private string $shopType;
 
-    public function handle(Warehouse $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): LengthAwarePaginator
+    public function handle(Warehouse|Order $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -52,6 +52,12 @@ class IndexReturnDeliveryNotes extends OrgAction
         $query->leftJoin('shops', 'return_delivery_notes.shop_id', '=', 'shops.id');
         $query->leftJoin('delivery_notes', 'return_delivery_notes.delivery_note_id', '=', 'delivery_notes.id');
 
+        if ($parent instanceof Warehouse) {
+            $query->where('return_delivery_notes.warehouse_id', $parent->id);
+        } elseif ($parent instanceof Order) {
+            $query->where('return_delivery_notes.order_id', $parent->id);
+        }
+
         $query->where('shops.is_aiku', true);
 
         $allowedFilters = [$globalSearch];
@@ -60,7 +66,7 @@ class IndexReturnDeliveryNotes extends OrgAction
             'return_delivery_notes.id',
             'return_delivery_notes.reference',
             'return_delivery_notes.created_at as date',
-            'return_delivery_notes.return_state',
+            'return_delivery_notes.state',
             'return_delivery_notes.created_at',
             'return_delivery_notes.updated_at',
             'return_delivery_notes.slug',
@@ -134,7 +140,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         ->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket, shopType: $this->shopType, isReturn: true));
     }
 
-    public function tableStructure(Warehouse $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): Closure
+    public function tableStructure(Warehouse|Order $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): Closure
     {
         $employee = null;
         if (!request()->user() instanceof WebUser) {
@@ -168,7 +174,7 @@ class IndexReturnDeliveryNotes extends OrgAction
                 );
 
             $table->column(key: 'state', label: '', type: 'icon');
-            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference_return', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable:true, searchable: true);
         };
@@ -213,7 +219,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.incoming.return-delivery-notes'=> array_merge(
+            'grp.org.warehouses.show.incoming.return-delivery-notes' => array_merge(
                 ShowProcurementDashboard::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'warehouse'])
                 ),

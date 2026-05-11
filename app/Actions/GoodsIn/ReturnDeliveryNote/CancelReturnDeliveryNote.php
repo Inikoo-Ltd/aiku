@@ -27,7 +27,7 @@ class CancelReturnDeliveryNote extends OrgAction
 
     public function handle(ReturnDeliveryNote $returnDeliveryNote): ReturnDeliveryNote
     {
-        $oldState = $returnDeliveryNote->return_state;
+        $oldState = $returnDeliveryNote->state;
 
         if (in_array($oldState, [ReturnDeliveryNoteStateEnum::RETURNED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
             throw ValidationException::withMessages([
@@ -45,18 +45,18 @@ class CancelReturnDeliveryNote extends OrgAction
 
         $modelData = [];
         data_set($modelData, 'reference', $newCancelledRef);
-        data_set($modelData, 'return_state', ReturnDeliveryNoteStateEnum::CANCELLED);
+        data_set($modelData, 'state', ReturnDeliveryNoteStateEnum::CANCELLED);
 
         $returnDeliveryNote = DB::transaction(function () use ($returnDeliveryNote, $modelData) {
             $returnDeliveryNote = UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, $modelData);
 
             foreach ($returnDeliveryNote->returnDeliveryNoteItem as $item) {
-                foreach($item->sowings as $sowing) {
+                foreach ($item->sowings as $sowing) {
                     DeleteSowing::make()->action($sowing);
                 }
-                
+
                 UpdateReturnDeliveryNoteItem::make()->action($item, [
-                    'return_state'        => ReturnDeliveryNoteItemStateEnum::CANCELLED,
+                    'state'        => ReturnDeliveryNoteItemStateEnum::CANCELLED,
                 ]);
             }
 

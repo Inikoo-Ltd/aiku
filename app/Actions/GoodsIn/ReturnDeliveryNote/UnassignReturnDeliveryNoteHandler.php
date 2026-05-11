@@ -12,7 +12,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UnassignReturnDeliveryNoteHandler extends OrgAction
 {
     use WithActionUpdate;
-    
+
     public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
         if (!$returnDeliveryNote->handler_user_id) {
@@ -22,17 +22,17 @@ class UnassignReturnDeliveryNoteHandler extends OrgAction
         }
 
         if ($returnDeliveryNote->returnDeliveryNoteItem()->where(function ($q) {
-                $q->where('total_item_not_returned', '>', 0)
-                    ->orWhere('total_item_returned', '>', 0)
-                    ->orWhere('total_item_damaged', '>', 0);
-            })->exists()){
+            $q->where('total_item_not_returned', '>', 0)
+                ->orWhere('total_item_returned', '>', 0)
+                ->orWhere('total_item_damaged', '>', 0);
+        })->exists()) {
             throw ValidationException::withMessages([
                 'handler_id' => 'Unable to clear this return handler. Processed item exists',
             ]);
         }
 
         return UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, [
-            'return_state'      => ReturnDeliveryNoteStateEnum::RECEIVED,
+            'state'             => ReturnDeliveryNoteStateEnum::RECEIVED,
             'returning_at'      => null,
             'handler_user_id'   => null,
         ]);

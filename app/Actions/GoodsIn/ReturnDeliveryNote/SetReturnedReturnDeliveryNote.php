@@ -19,16 +19,16 @@ class SetReturnedReturnDeliveryNote extends OrgAction
     public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
         $user = auth()->user();
-        $oldState = $returnDeliveryNote->return_state;
+        $oldState = $returnDeliveryNote->state;
 
         if ($oldState !== ReturnDeliveryNoteStateEnum::RETURNING) {
             throw ValidationException::withMessages([
                 'message' => __('Delivery note can not be handled.').' ['.__('Invalid state').': '.$oldState->value.']',
             ]);
         }
-        
+
         $modelData = [];
-        data_set($modelData, 'return_state', ReturnDeliveryNoteStateEnum::RETURNED);
+        data_set($modelData, 'state', ReturnDeliveryNoteStateEnum::RETURNED);
         data_set($modelData, 'handler_user_id', $user->id);
 
         $returnDeliveryNote = DB::transaction(function () use ($returnDeliveryNote, $modelData) {
@@ -36,7 +36,7 @@ class SetReturnedReturnDeliveryNote extends OrgAction
 
             foreach ($returnDeliveryNote->returnDeliveryNoteItem as $item) {
                 UpdateReturnDeliveryNoteItem::make()->action($item, [
-                    'return_state'        => ReturnDeliveryNoteItemStateEnum::PROCESSED,
+                    'state'        => ReturnDeliveryNoteItemStateEnum::PROCESSED,
                 ]);
             }
 

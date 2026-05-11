@@ -52,7 +52,7 @@ class ShowIncomingHub extends OrgAction
 
         // TODO LATER USE STAT INSTEAD
         $return = ReturnDeliveryNote::where('warehouse_id', $warehouse->id)
-            ->whereNotIn('return_state', [ReturnDeliveryNoteStateEnum::RETURNED->value, ReturnDeliveryNoteStateEnum::CANCELLED])
+            ->whereNotIn('state', [ReturnDeliveryNoteStateEnum::RETURNED->value, ReturnDeliveryNoteStateEnum::CANCELLED])
             ->count();
 
 

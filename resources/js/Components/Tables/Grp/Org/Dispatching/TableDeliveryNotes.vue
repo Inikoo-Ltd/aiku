@@ -90,14 +90,21 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 				deliveryNote.customer_slug,
 				deliveryNote.slug,
 			])
+		default:
+			return route("grp.helpers.redirect_delivery_notes", [deliveryNote.id])
+	}
+}
+
+function returnNoteRoute(returnDeliveryNote) {
+	switch(route().current()) {
 		case "grp.org.warehouses.show.incoming.return-delivery-notes":
 			return route('grp.org.warehouses.show.incoming.return-delivery-notes.show', [
 				route().params["organisation"],
 				route().params["warehouse"],
-				deliveryNote.slug,
-			])
+				returnDeliveryNote.slug,
+			]);
 		default:
-			return route("grp.helpers.redirect_delivery_notes", [deliveryNote.id])
+			return route("grp.helpers.redirect_return_notes", returnDeliveryNote.id)
 	}
 }
 
@@ -209,6 +216,14 @@ const generateRouteDeliveryNote = (id: string) => {
 					fixed-width
 					aria-hidden="true" />
 				<NotesDisplay :item="deliveryNote" reference-field="reference" />
+			</div>
+		</template>
+
+		<template #cell(reference_return)="{ item: deliveryNote }">
+			<div class="flex gap-2 flex-wrap items-center">
+				<Link :href="returnNoteRoute(deliveryNote)" class="primaryLink">
+					{{ deliveryNote["reference"] }}
+				</Link>
 			</div>
 		</template>
 

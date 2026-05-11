@@ -17,10 +17,10 @@ class UpdateReturnDeliveryNote extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
-    public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote 
+    public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
-        if (Arr::has($modelData, 'return_state')) {
-            $returnState = data_get($modelData, 'return_state');
+        if (Arr::has($modelData, 'state')) {
+            $returnState = data_get($modelData, 'state');
             $timestampField = match ($returnState) {
                 ReturnDeliveryNoteStateEnum::CANCELLED => 'cancelled_at',
                 ReturnDeliveryNoteStateEnum::RETURNING => 'returning_at',
@@ -33,9 +33,9 @@ class UpdateReturnDeliveryNote extends OrgAction
             }
 
             if ($returnState == ReturnDeliveryNoteStateEnum::RECEIVED) {
-                foreach($returnDeliveryNote->returnDeliveryNoteItem as $returnedItem) {
+                foreach ($returnDeliveryNote->returnDeliveryNoteItem as $returnedItem) {
                     UpdateReturnDeliveryNoteItem::make()->action($returnedItem, [
-                        'return_state'  => ReturnDeliveryNoteItemStateEnum::UNASSIGNED,
+                        'state'  => ReturnDeliveryNoteItemStateEnum::UNASSIGNED,
                         'handling_at'   => null,
                     ]);
                 }
@@ -53,11 +53,11 @@ class UpdateReturnDeliveryNote extends OrgAction
             'handler_user_id'   => ['sometimes', 'nullable'],
             'reference'         => ['sometimes', 'string'],
             'returning_at'      => ['sometimes', 'nullable'],
-            'return_state'      => ['sometimes', Rule::enum(ReturnDeliveryNoteStateEnum::class)],
+            'state'      => ['sometimes', Rule::enum(ReturnDeliveryNoteStateEnum::class)],
         ];
     }
 
-    public function action(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote 
+    public function action(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
         $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $modelData);
 

@@ -62,7 +62,7 @@ class IndexReturnDeliveryNoteItems extends OrgAction
         return $query->defaultSort('return_delivery_note_items.id')
             ->select([
                 'return_delivery_note_items.id',
-                'return_delivery_note_items.return_state',
+                'return_delivery_note_items.state',
                 'return_delivery_note_items.total_item_damaged',
                 'return_delivery_note_items.total_item_not_returned',
                 'return_delivery_note_items.total_item_returned',
@@ -119,18 +119,18 @@ class IndexReturnDeliveryNoteItems extends OrgAction
             //     $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             // } else {
             $table->column(key: 'expected_quantity', label: __('Expected Qty'), canBeHidden: false, sortable: false, searchable: false);
-            if (in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RETURNING])) {
+            if (in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNING])) {
                 $table->column(key: 'sowings', label: __('Sowings'), canBeHidden: false);
             }
 
-            if (in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RETURNING, ReturnDeliveryNoteStateEnum::RETURNED])) {
+            if (in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNING, ReturnDeliveryNoteStateEnum::RETURNED])) {
                 $table->column(key: 'total_item_damaged', label: __('Damaged'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'total_item_not_returned', label: __('Not Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'total_item_returned', label: __('Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
 
-            // if (!in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
+            // if (!in_array($parent->state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
             //     $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
             // }
         };

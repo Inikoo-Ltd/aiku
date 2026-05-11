@@ -63,10 +63,10 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
         }
 
         $sowings = Sowing::where('return_item_id', $this->id)->with('location')->get();
-        
+
         $maxAvailableQty = $returnDeliveryNoteItem->total_expected_qty - (
-            $returnDeliveryNoteItem->total_item_damaged + 
-            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_damaged +
+            $returnDeliveryNoteItem->total_item_not_returned +
             $returnDeliveryNoteItem->total_item_returned
         );
 
@@ -87,8 +87,8 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
 
         return [
             'id'                                    => $returnDeliveryNoteItem->id,
-            'state'                                 => $returnDeliveryNoteItem->return_state,
-            'state_icon'                            => $this->return_state->stateIcon(),
+            'state'                                 => $returnDeliveryNoteItem->state,
+            'state_icon'                            => $this->state->stateIcon(),
             'expected_quantity'                     => $returnDeliveryNoteItem->total_expected_qty,
             'expected_quantity_fractional'          =>  riseDivisor(
                 divideWithRemainder(

@@ -742,7 +742,7 @@ class ShowDeliveryNote extends OrgAction
         // Disable waiting on DS no?
         $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false) && $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
 
-        $this->return = $deliveryNote->returnedDeliveryNote()->whereNot('return_state', ReturnDeliveryNoteStateEnum::CANCELLED)->first();
+        $this->return = $deliveryNote->returnedDeliveryNote()->whereNot('state', ReturnDeliveryNoteStateEnum::CANCELLED)->first();
 
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,

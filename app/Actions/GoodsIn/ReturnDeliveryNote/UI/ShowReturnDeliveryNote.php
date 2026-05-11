@@ -13,7 +13,6 @@ use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\IndexReturnDeliveryNoteItems;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
@@ -24,7 +23,6 @@ use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
-use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Ordering\PickersResource;
@@ -75,7 +73,7 @@ class ShowReturnDeliveryNote extends OrgAction
 
         $showCancel = true;
 
-        if (in_array($returnDeliveryNote->return_state, [
+        if (in_array($returnDeliveryNote->state, [
             ReturnDeliveryNoteStateEnum::CANCELLED,
             ReturnDeliveryNoteStateEnum::RETURNED
         ])) {
@@ -117,7 +115,7 @@ class ShowReturnDeliveryNote extends OrgAction
             ->where('is_handled', false)
             ->exists();
 
-        return match ($returnDeliveryNote->return_state) {
+        return match ($returnDeliveryNote->state) {
             ReturnDeliveryNoteStateEnum::RECEIVED => [
                 [
                     'type'    => 'button',
@@ -214,9 +212,9 @@ class ShowReturnDeliveryNote extends OrgAction
         // }
 
         return [
-            'state'                        => $returnDeliveryNote->return_state,
-            'state_icon'                   => ReturnDeliveryNoteStateEnum::stateIcon()[$returnDeliveryNote->return_state->value],
-            'state_label'                  => $returnDeliveryNote->return_state->labels()[$returnDeliveryNote->return_state->value],
+            'state'                        => $returnDeliveryNote->state,
+            'state_icon'                   => ReturnDeliveryNoteStateEnum::stateIcon()[$returnDeliveryNote->state->value],
+            'state_label'                  => $returnDeliveryNote->state->labels()[$returnDeliveryNote->state->value],
             'customer'                     => array_merge(
                 CustomerResource::make($returnDeliveryNote->customer)->getArray(),
                 [
@@ -372,7 +370,7 @@ class ShowReturnDeliveryNote extends OrgAction
                     'title' => __('Return Delivery note')
                 ],
                 'afterTitle'      => [
-                    'label' => $returnDeliveryNote->return_state->labels()[$returnDeliveryNote->return_state->value],
+                    'label' => $returnDeliveryNote->state->labels()[$returnDeliveryNote->state->value],
                 ],
                 'actions'         => $actions,
                 'wrapped_actions' => $this->wrappedActions($returnDeliveryNote),
@@ -380,11 +378,11 @@ class ShowReturnDeliveryNote extends OrgAction
             // 'warning'       => $warning,
             // 'isEditable'    => $isEditable,
             'tabs'          => [
-                'current'    => $returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::RETURNING
-                    ? DeliveryNoteTabsEnum::PENDING_ITEMS->value 
-                    : 
+                'current'    => $returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING
+                    ? DeliveryNoteTabsEnum::PENDING_ITEMS->value
+                    :
                     $this->tab,
-                'navigation' => $returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::RETURNING
+                'navigation' => $returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING
                     ?
                     DeliveryNoteTabsEnum::navigation($returnDeliveryNote)
                     :
@@ -421,8 +419,8 @@ class ShowReturnDeliveryNote extends OrgAction
                 // ]
             ],
             'returned_delivery_note_state' => [
-                'value' => $returnDeliveryNote->return_state,
-                'label' => $returnDeliveryNote->return_state->labels()[$returnDeliveryNote->return_state->value],
+                'value' => $returnDeliveryNote->state,
+                'label' => $returnDeliveryNote->state->labels()[$returnDeliveryNote->state->value],
             ],
             'warehouse'           => [
                 'slug' => $returnDeliveryNote->warehouse->slug,
@@ -446,7 +444,7 @@ class ShowReturnDeliveryNote extends OrgAction
         );
 
         $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value));
-        if ($returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::RETURNING) {
+        if ($returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING) {
             $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value));
             $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value));
         }
@@ -463,7 +461,7 @@ class ShowReturnDeliveryNote extends OrgAction
                 : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
         ];
 
-        if ($returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::RETURNING) {
+        if ($returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING) {
             $initArr = array_merge($initArr, [
                 DeliveryNoteTabsEnum::PENDING_ITEMS->value => $this->tab == DeliveryNoteTabsEnum::PENDING_ITEMS->value ?
                     fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, ReturnDeliveryNoteItemStateEnum::HANDLING))

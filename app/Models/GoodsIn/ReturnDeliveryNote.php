@@ -38,7 +38,7 @@ class ReturnDeliveryNote extends Model implements Auditable
     protected $table = 'return_delivery_notes';
 
     protected $casts = [
-        'return_state'          => ReturnDeliveryNoteStateEnum::class,
+        'state'          => ReturnDeliveryNoteStateEnum::class,
         'queued_at'             => 'datetime',
         'handling_at'           => 'datetime',
         'picked_at'             => 'datetime',
@@ -53,7 +53,7 @@ class ReturnDeliveryNote extends Model implements Auditable
     protected $guarded = [];
 
     protected array $auditInclude = [
-        'return_state',
+        'state',
         'reference',
         'queued_at',
         'handling_at',

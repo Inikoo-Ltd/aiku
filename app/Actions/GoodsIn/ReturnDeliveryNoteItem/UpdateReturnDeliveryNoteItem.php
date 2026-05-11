@@ -22,8 +22,8 @@ class UpdateReturnDeliveryNoteItem extends OrgAction
 
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
-        if (Arr::has($modelData, 'return_state')) {
-            $returnState = data_get($modelData, 'return_state');
+        if (Arr::has($modelData, 'state')) {
+            $returnState = data_get($modelData, 'state');
             $timestampField = match ($returnState) {
                 ReturnDeliveryNoteItemStateEnum::CANCELLED  => 'cancelled_at',
                 ReturnDeliveryNoteItemStateEnum::HANDLING   => 'handled_at',
@@ -35,7 +35,7 @@ class UpdateReturnDeliveryNoteItem extends OrgAction
                 data_set($modelData, $timestampField, now());
             }
         }
-        
+
         $returnDeliveryNoteItem->update($modelData);
         $changes = $returnDeliveryNoteItem->getChanges();
         $returnDeliveryNoteItem->refresh();
@@ -46,7 +46,7 @@ class UpdateReturnDeliveryNoteItem extends OrgAction
     public function rules(): array
     {
         return [
-            'return_state'              => ['sometimes', Rule::enum(ReturnDeliveryNoteItemStateEnum::class)],
+            'state'              => ['sometimes', Rule::enum(ReturnDeliveryNoteItemStateEnum::class)],
             'handled_at'                => ['sometimes', 'nullable'],
             'total_item_damaged'        => ['sometimes', 'numeric', 'gte:0'],
             'total_item_not_returned'   => ['sometimes', 'numeric', 'gte:0'],
