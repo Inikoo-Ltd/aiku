@@ -391,23 +391,6 @@ class Order extends Model implements HasMedia, Auditable
         return $data;
     }
 
-    public function readyForAuditing(): bool
-    {
-        if ($this->state === OrderStateEnum::CREATING) {
-            return false;
-        }
-
-        if ($this->isAuditingDisabled()) {
-            return false;
-        }
-
-        if ($this->isCustomEvent) {
-            return true;
-        }
-
-        return $this->isEventAuditable($this->auditEvent);
-    }
-
     public function getRouteKeyName(): string
     {
         return 'slug';
