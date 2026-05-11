@@ -118,6 +118,11 @@ const props = defineProps<{
         }[]
         status: boolean
         meter: number[]
+        is_gift_opted_out: boolean
+        route_customer_update: {
+            name: string
+            parameters: Record<string, string | number>
+        }
     }
     missed_offers: Record<string, { label: string }>
 }>()
@@ -586,7 +591,7 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
 
-            <div v-if="layout.app.environment === 'local' && 'gr_gifts.is_eligible' && gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
+            <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
                 <EligibleGift
                     :routeUpdate="{
                         name: 'retina.models.order.update_gr_gift',
@@ -594,6 +599,8 @@ const onChangeInsurance = async (val: boolean) => {
                     }"
                     :giftOptions="gr_gifts?.gifts"
                     :meter="gr_gifts.meter"
+                    :isOptedOut="gr_gifts.is_gift_opted_out"
+                    :routeOptOut="gr_gifts.route_customer_update"
                 />
             </div>
             
