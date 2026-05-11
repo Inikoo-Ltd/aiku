@@ -12,6 +12,10 @@ const props = defineProps<{
     data: {
         data: any[],
         editable: boolean
+        route_get_products : {
+            name: string,
+            parameters: Record<string, any>
+        }
     }
     product_category_id?: number
 }>()
@@ -147,10 +151,7 @@ const SaveOrder = async () => {
             v-if="props.data?.editable" ref="productDialog" 
             v-model="listProducts.data.data" 
             @update:model-value="saveActive = true"
-            :routeFetch="{
-                name: 'grp.masters.master_shops.show.master_products.index',
-                parameters: { masterShop: route().params['masterShop'] }
-            }" 
+            :routeFetch="props.data?.route_get_products" 
         />
 
     </div>
