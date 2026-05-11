@@ -52,10 +52,10 @@ trait WithShowPalletReturnHelpers
     protected function computeAfterTitle(PalletReturn $palletReturn): array
     {
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
-            return ['label' => '('.__("Customer's SKUs").')'];
+            return ['label' => '('.__("Fulfilment DS").')'];
         }
 
-        return ['label' => '('.__('Whole pallets').')'];
+        return ['label' => '('.__('Fulfilment Pallet').')'];
     }
 
 
