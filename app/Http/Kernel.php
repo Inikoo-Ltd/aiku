@@ -40,13 +40,11 @@ use App\Http\Middleware\SetWebsiteLocale;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\HandleInertiaGrpRequests;
 use App\Http\Middleware\IrisRelaxAuthenticate;
-use App\Http\Middleware\LogWebUserRequestMiddleware;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SetGrpApiTreblle;
 use App\Http\Middleware\SetRetinaApiTreblle;
 use App\Http\Middleware\SetWebUserLocale;
-use App\Http\Middleware\TrackWebsiteVisitor;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -205,8 +203,6 @@ class Kernel extends HttpKernel
             SetWebsiteLocale::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            LogWebUserRequestMiddleware::class,
-            TrackWebsiteVisitor::class,
             InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
             AddFrameOptionsHeader::class
@@ -225,8 +221,6 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            LogWebUserRequestMiddleware::class,
-            TrackWebsiteVisitor::class,
             InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
             AddFrameOptionsHeader::class
