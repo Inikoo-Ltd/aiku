@@ -85,15 +85,15 @@ class ShowRetinaEmailManagement extends RetinaAction
     {
         return
             array_merge(
-                ShowRetinaDashboard::make()->getBreadcrumbs(),
+                ShowRetinaSysAdminDashboard::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.sysadmin.settings.edit'
+                                'name' => 'retina.sysadmin.email.edit'
                             ],
-                            'label'  => __('Account management'),
+                            'label' => __('Email management'),
                         ]
                     ]
                 ]
