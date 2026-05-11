@@ -64,7 +64,6 @@ class UpdateInvoiceDate extends OrgAction
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
 
 
-
             if ($invoice->invoiceCategory) {
                 InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             }
@@ -73,13 +72,13 @@ class UpdateInvoiceDate extends OrgAction
             $newDateString = Carbon::parse($invoice->date)->toDateString();
 
             if ($invoice->invoiceCategory) {
-                RedoInvoiceCategoryTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
-                RedoInvoiceCategoryTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
+                RedoInvoiceCategoryTimeSeries::dispatch($invoice->invoice_category_id, $oldDateString, $oldDateString)->delay(2);
+                RedoInvoiceCategoryTimeSeries::dispatch($invoice->invoice_category_id, $newDateString, $newDateString)->delay(2);
             }
 
             if ($invoice->sales_channel_id) {
-                RedoSalesChannelTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
-                RedoSalesChannelTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
+                RedoSalesChannelTimeSeries::dispatch($invoice->sales_channel_id, $oldDateString, $oldDateString)->delay(2);
+                RedoSalesChannelTimeSeries::dispatch($invoice->sales_channel_id, $newDateString, $newDateString)->delay(2);
             }
 
 

@@ -176,16 +176,16 @@ class UpdateInvoice extends OrgAction
 
 
                 if ($dateHasChanged) {
-                    RedoInvoiceCategoryTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+                    RedoInvoiceCategoryTimeSeries::dispatch($invoice->invoice_category_id, $oldDateString, $oldDateString)->delay(2);
                 }
-                RedoInvoiceCategoryTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
+                RedoInvoiceCategoryTimeSeries::dispatch($invoice->invoice_category_id, $newDateString, $newDateString)->delay(2);
             }
 
             if ($invoice->sales_channel_id) {
                 if ($dateHasChanged) {
-                    RedoSalesChannelTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+                    RedoSalesChannelTimeSeries::dispatch($invoice->sales_channel_id, $oldDateString, $oldDateString)->delay(2);
                 }
-                RedoSalesChannelTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
+                RedoSalesChannelTimeSeries::dispatch($invoice->sales_channel_id, $newDateString, $newDateString)->delay(2);
             }
 
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);

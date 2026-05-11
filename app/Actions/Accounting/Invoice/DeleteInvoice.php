@@ -120,11 +120,11 @@ class DeleteInvoice extends OrgAction
             $invoiceCategory->refresh();
             InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
 
-            RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            RedoInvoiceCategoryTimeSeries::dispatch($invoice->invoice_category_id, $invoiceDate->toDateString(), $invoiceDate->toDateString())->delay(2);
         }
 
         if ($invoice->sales_channel_id) {
-            RedoSalesChannelTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            RedoSalesChannelTimeSeries::dispatch($invoice->sales_channel_id, $invoiceDate->toDateString(), $invoiceDate->toDateString())->delay(2);
         }
 
         if ($invoice->shipping_zone_id) {

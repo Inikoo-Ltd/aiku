@@ -30,9 +30,13 @@ class RedoSalesChannelTimeSeries implements ShouldBeUnique
         $this->model = SalesChannel::class;
     }
 
-    public function getJobUniqueId(string $from, string $to): string
+    public function getJobUniqueId(?int $salesChannelId, string $from, string $to): string
     {
-        return "{$from}_$to";
+        if ($salesChannelId == null) {
+            $salesChannelId = 'empty';
+        }
+
+        return $salesChannelId.":{$from}_$to";
     }
 
     public function handle(?int $salesChannelId, ?string $from = null, ?string $to = null, bool $async = false): void
