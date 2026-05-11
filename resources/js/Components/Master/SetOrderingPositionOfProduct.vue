@@ -14,10 +14,10 @@ const props = withDefaults(
     defineProps<{
         data: any
         useDelete?: boolean
-        disable?: boolean
+        disabled?: boolean
     }>(),
     {
-        disable : false,
+        disabled : false,
         useDelete: false
     }
 )
@@ -238,12 +238,13 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
         </template>
 
         <!-- LIST -->
-        <draggable v-else-if="viewMode === 'list'" :disable="disable" v-model="items" item-key="id" handle=".drag-handle"
+
+        <draggable v-else-if="viewMode === 'list'" :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle"
             @end="updateOrder" animation="200" ghost-class="drag-ghost" chosen-class="drag-chosen"
             drag-class="drag-dragging" class="space-y-2">
             <template #item="{ element, index }">
                 <div class="flex items-center gap-3 p-2 border rounded bg-white hover:bg-gray-50">
-                    <div class="drag-handle cursor-move text-gray-400" v-if="!disable">☰</div>
+                    <div class="drag-handle cursor-move text-gray-400" v-if="!disabled">☰</div>
 
                     <div class="w-10 text-xs text-gray-400">
                         <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
@@ -259,7 +260,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                         <slot name="image-list" :item="element">
                             <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
                         </slot>
-                        
+
 
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-medium truncate">
@@ -272,21 +273,21 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                         </div>
                     </slot>
 
-                    <Button v-if="useDelete && !disable" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
+                    <Button v-if="useDelete && !disabled" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
                     </Button>
                 </div>
             </template>
         </draggable>
 
         <!-- CARD -->
-        <draggable v-else :disable="disable" v-model="items" item-key="id" handle=".drag-handle" @end="updateOrder" animation="200"
+        <draggable v-else :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle" @end="updateOrder" animation="200"
             ghost-class="drag-ghost" chosen-class="drag-chosen" drag-class="drag-dragging" tag="div"
             class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <template #item="{ element, index }">
                 <div class="border rounded p-2 bg-white hover:shadow-sm">
                     <div class="flex justify-between">
                         <div class=" flex items-center gap-2 text-xs text-gray-400 mb-1">
-                            <span v-if="!disable" class="drag-handle">☰</span>
+                            <span v-if="!disabled" class="drag-handle">☰</span>
 
                             <div class="w-10 flex items-center">
                                 <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
@@ -298,7 +299,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                                 </span>
                             </div>
                         </div>
-                        <Button v-if="useDelete && !disable" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
+                        <Button v-if="useDelete && !disabled" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
 
                         </Button>
                     </div>
@@ -310,7 +311,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                              <Image :src="element.image_thumbnail?.main?.original"
                             class="w-full h-24 object-cover rounded mb-2" />
                         </slot>
-                     
+
 
                         <div class="text-sm font-medium line-clamp-2">
                             {{ element.name }}
@@ -362,7 +363,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
         box-shadow: 0 0 0 2px var(--theme-color-4) !important;
     }
 
-    &:disabled {
+    &:disabledd {
         background-color: color-mix(in srgb, var(--theme-color-4) 70%, grey) !important;
     }
 }
