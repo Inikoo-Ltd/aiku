@@ -38,6 +38,10 @@ class StoreIrisBackInStockReminder extends RetinaAction
     {
         $this->initialisation($request);
 
+        if (!$this->customer) {
+            return;
+        }
+
         $this->handle($this->customer, $product, $this->validatedData);
     }
 }
