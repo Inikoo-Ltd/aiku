@@ -276,7 +276,7 @@ class ShowProspectMailshot extends OrgAction
                     ]
                 ],
                 'mailshotId' => $mailshot->id,
-                'groupId' => $this->organisation->id,
+                'groupId' => $mailshot->group_id,
 
             ]
         )->table(
