@@ -48,7 +48,6 @@ class HandleIrisInertiaRequests extends Middleware
             $websiteTheme = Arr::get($website->published_layout, 'theme');
 
             $firstLoadOnlyProps = [
-                'webpage_id'  => $website->id,
                 'currency'    => $request->input('currency_data'),
                 'environment' => app()->environment(),
                 'ziggy'       => function () use ($request) {

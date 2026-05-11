@@ -67,8 +67,7 @@ onMounted(() => {
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
     window.listWebBlocks = props.web_blocks
-
-    if (layout.iris.is_logged_in) layout.log_user()
+    layout.recordWebsiteHit()
 })
 
 

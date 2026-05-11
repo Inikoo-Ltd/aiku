@@ -144,7 +144,6 @@ class CalculateOrderDiscounts
                 'ProductCategory'
             ])->get();
         foreach ($offersData as $offerData) {
-
             if ($offerData->type == 'Amount AND Order Number') {
                 list($passAmount, $passOrderNumber, $metadata) = $this->checkAmountAndOrderNumber($order, $offerData);
                 if ($passAmount && $passOrderNumber) {
@@ -161,6 +160,20 @@ class CalculateOrderDiscounts
                         'metadata' => $metadata,
                     ];
                 }
+            } elseif ($offerData->type == 'Department Ordered') {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
+                    $enabledOffers[$offerData->allowance_signature] = [
+                        'offer_id'    => $offerData->id,
+                        'offer_label' => $offerData->name
+                    ];
+                }
+            } elseif ($offerData->type == 'Subdepartment Ordered') {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'sub_departments_ids', []))) {
+                    $enabledOffers[$offerData->allowance_signature] = [
+                        'offer_id'    => $offerData->id,
+                        'offer_label' => $offerData->name
+                    ];
+                }
             } elseif ($offerData->type == 'Category Ordered') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
                     $enabledOffers[$offerData->allowance_signature] = [
@@ -168,20 +181,55 @@ class CalculateOrderDiscounts
                         'offer_label' => $offerData->name
                     ];
                 }
-            } elseif ($offerData->type == 'Department Ordered') {
-
+            } elseif ($offerData->type == 'Department Quantity Ordered') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
-                    $enabledOffers[$offerData->allowance_signature] = [
-                        'offer_id'    => $offerData->id,
-                        'offer_label' => $offerData->name
-                    ];
-                }
+                    $triggerData = json_decode($offerData->trigger_data, true);
 
+                    if (Arr::get($order->categories_data, "department.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity')) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                        ];
+                    }
+                }
+            } elseif ($offerData->type == 'Subdepartment Quantity Ordered') {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'sub_departments_ids', []))) {
+                    $triggerData = json_decode($offerData->trigger_data, true);
+
+                    if (Arr::get($order->categories_data, "sub_department.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity')) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                        ];
+                    }
+                }
             } elseif ($offerData->type == 'Category Quantity Ordered') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
                     $triggerData = json_decode($offerData->trigger_data, true);
 
                     if (Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity')) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                        ];
+                    }
+                }
+            } elseif ($offerData->type == 'Department Amount Ordered') {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
+                    $triggerData = json_decode($offerData->trigger_data, true);
+
+                    if (Arr::get($order->categories_data, "department.$offerData->trigger_id.net_amount", 0) >= Arr::get($triggerData, 'item_amount')) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                        ];
+                    }
+                }
+            } elseif ($offerData->type == 'Subdepartment Amount Ordered') {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'sub_departments_ids', []))) {
+                    $triggerData = json_decode($offerData->trigger_data, true);
+
+                    if (Arr::get($order->categories_data, "sub_department.$offerData->trigger_id.net_amount", 0) >= Arr::get($triggerData, 'item_amount')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,

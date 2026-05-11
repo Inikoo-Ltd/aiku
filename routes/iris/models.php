@@ -26,13 +26,15 @@ use App\Actions\Retina\Dropshipping\Bundle\StoreOrUpdateRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\UpdateRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\UploadRetinaBundleProductImages;
-use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\UnsubscribeAurora;
+use App\Actions\Web\Website\Analytics\RecordWebsiteHit;
 use Illuminate\Support\Facades\Route;
 
+Route::post('record-hit', RecordWebsiteHit::class)->name('hit');
 Route::post('unsubscribe-aurora', UnsubscribeAurora::class)->name('unsubscribe_aurora');
 
 Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');
@@ -74,3 +76,4 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
         Route::delete('{bundle:id}', DeleteRetinaBundle::class)->name('delete')->withoutScopedBindings();
     });
 });
+

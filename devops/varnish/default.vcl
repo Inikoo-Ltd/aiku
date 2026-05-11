@@ -56,40 +56,38 @@ acl purge {
     "::1";
     # RFC1918 private networks
     "10.0.0.0"/8;
-    "172.16.0.0"/12;
-    "192.168.0.0"/16;
 }
 
 sub vcl_init {
-        # Create a new filter for tracking parameters
-        new tracking_params_filter = querystring.filter();
+    # Create a new filter for tracking parameters
+    new tracking_params_filter = querystring.filter();
 
-        # Add specific query string parameters to strip
+    # Add specific query string parameters to strip
 
-        # google adds
-        tracking_params_filter.add_string("gad_source");
-        tracking_params_filter.add_string("gad_campaignid");
+    # google adds
+    tracking_params_filter.add_string("gad_source");
+    tracking_params_filter.add_string("gad_campaignid");
 
-        #meta
-        tracking_params_filter.add_string("fbclid");
-        tracking_params_filter.add_glob("utm_*");
+    #meta
+    tracking_params_filter.add_string("fbclid");
+    tracking_params_filter.add_glob("utm_*");
 
-        #bing
-        tracking_params_filter.add_string("msclkid");
+    #bing
+    tracking_params_filter.add_string("msclkid");
 
-        #debug
+    #debug
 
-        tracking_params_filter.add_string("testa");
-        tracking_params_filter.add_string("testb");
+    tracking_params_filter.add_string("testa");
+    tracking_params_filter.add_string("testb");
 
 
-        new logged_in_vdir = directors.random();
-        logged_in_vdir.add_backend(helio_in,1);
-        logged_in_vdir.add_backend(boro_in,99);
+    new logged_in_vdir = directors.random();
+    logged_in_vdir.add_backend(helio_in,1);
+    logged_in_vdir.add_backend(boro_in,99);
 
-        new logged_out_vdir = directors.random();
-        logged_out_vdir.add_backend(helio,50);
-        logged_out_vdir.add_backend(boro,50);
+    new logged_out_vdir = directors.random();
+    logged_out_vdir.add_backend(helio,50);
+    logged_out_vdir.add_backend(boro,50);
 
 }
 
@@ -123,8 +121,8 @@ sub set_login_flag_from_cookie {
 
 sub vcl_recv {
 
-    # Allow BAN/PURGE from trusted IPs
-    if (req.method == "PURGE" || req.method == "BAN") {
+    # Allow BAN from trusted IPs
+    if (req.method == "BAN") {
         if (client.ip !~ purge) {
             return (synth(405, "Not allowed"));
         }
@@ -133,18 +131,33 @@ sub vcl_recv {
             return(synth(200, "Ban webpage "+req.http.x-ban-webpage));
         }
 
+        if(req.http.x-ban-host && req.http.x-ban-url){
+            ban("obj.http.x-aiku-host == "+req.http.x-ban-host+" && obj.http.x-aiku-url == "+req.http.x-ban-url);
+            return(synth(200, "Ban URL "+req.http.x-ban-host+req.http.x-ban-url));
+        }
+
         if(req.http.x-ban-website){
             ban("obj.http.x-aiku-website == "+req.http.x-ban-website);
             return(synth(200, "Ban website "+req.http.x-ban-website));
         }
 
-         if(req.http.x-ban-all){
+        if(req.http.x-ban-all){
             ban("obj.http.x-aiku-website ~ .");
             return(synth(200, "Ban all websites"));
-         }
+        }
 
-        return (synth(200, "Purged"));
+        return (synth(200, "Banned (aiku)"));
     }
+
+
+    if (req.method == "PURGE") {
+        # 3. Security: Check ACL and token
+        if (!client.ip ~ purge) {
+            return (synth(405, "Not Allowed"));
+        }
+        return (purge);
+    }
+
 
     # Determine login header (used by app, backend selection, and cache key)
     # If the warm-up header is present, trust it and bypass cookie derivation
@@ -227,8 +240,12 @@ sub vcl_recv {
     if (req.url ~ "\.(pdf|csv|css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
         return (pass);
     }
-    
+
     return (hash);
+}
+
+sub vcl_purge {
+    return (synth(200, "Purged (aiku)"));
 }
 
 sub vcl_hash {
@@ -261,19 +278,22 @@ sub vcl_hash {
 
 sub vcl_backend_response {
 
+    set beresp.http.X-Aiku-Host = bereq.http.host;
+    set beresp.http.X-Aiku-Url = bereq.url;
+
     # Never store responses that the backend marks private or uncacheable.
- #   if (beresp.http.Cache-Control ~ "(?i)(private|no-store|no-cache)") {
- #       set beresp.ttl = 0s;
- #       set beresp.uncacheable = true;
- #       return (deliver);
- #   }
+    #   if (beresp.http.Cache-Control ~ "(?i)(private|no-store|no-cache)") {
+    #       set beresp.ttl = 0s;
+    #       set beresp.uncacheable = true;
+    #       return (deliver);
+    #   }
 
     # Never store responses that set cookies.
- #   if (beresp.http.Set-Cookie) {
- #       set beresp.ttl = 0s;
- #       set beresp.uncacheable = true;
- #       return (deliver);
- #   }
+    #   if (beresp.http.Set-Cookie) {
+    #       set beresp.ttl = 0s;
+    #       set beresp.uncacheable = true;
+    #       return (deliver);
+    #   }
 
     # Inertia/version conflict responses should never be stored.
     if (beresp.status == 409) {
@@ -292,11 +312,26 @@ sub vcl_backend_response {
         beresp.status == 301 &&
         beresp.http.X-Aiku-Cacheable-Redirect == "1" &&
         beresp.http.Cache-Control ~ "(?i)public" &&
-        beresp.http.Location
+        beresp.http.Location &&
+        beresp.http.Location != "https://" + bereq.http.host + bereq.url &&
+        beresp.http.Location != "http://" + bereq.http.host + bereq.url
     ) {
         set beresp.ttl = 6h;
         set beresp.grace = 1m;
         unset beresp.http.X-Aiku-Cacheable-Redirect;
+        return (deliver);
+    }
+
+    if (beresp.status == 301) {
+        set beresp.ttl = 0s;
+        set beresp.uncacheable = true;
+        return (deliver);
+    }
+
+    # Cache public logged-out 404s briefly to reduce repeated backend misses.
+    if (beresp.status == 404 && bereq.http.X-Logged-Status == "Out") {
+        set beresp.ttl = 3h;
+        set beresp.grace = 1m;
         return (deliver);
     }
 
@@ -357,7 +392,7 @@ sub vcl_backend_response {
 
 sub vcl_deliver {
 
- # Strip Set-Cookie on cache hits only
+    # Strip Set-Cookie on cache hits only
     if (obj.hits > 0) {
         unset resp.http.Set-Cookie;
     }
@@ -376,13 +411,13 @@ sub vcl_deliver {
         set resp.http.X-Logged-Status = req.http.X-Logged-Status;
     }
 
-     if (req.http.X-Original-Referer) {
+    if (req.http.X-Original-Referer) {
         set resp.http.X-Original-Referer = req.http.X-Original-Referer;
-     }
+    }
 
-      if (req.http.X-Stripped-Query) {
+    if (req.http.X-Stripped-Query) {
         set resp.http.X-Traffic-Sources = req.http.X-Stripped-Query;
-      }
+    }
 
 
     if (resp.status == 301 || resp.status == 302 || resp.status == 303 || resp.status == 307 || resp.status == 308) {
@@ -392,6 +427,8 @@ sub vcl_deliver {
     }
     unset resp.http.X-Aiku-Cacheable-Redirect;
     unset resp.http.X-Aiku-Cacheable-Inertia;
+    unset resp.http.X-Aiku-Host;
+    unset resp.http.X-Aiku-Url;
     set resp.http.Via = "varnish";
 }
 

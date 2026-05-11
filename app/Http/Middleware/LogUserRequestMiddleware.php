@@ -39,6 +39,16 @@ class LogUserRequestMiddleware
         $user = $request->user();
 
         if (!app()->runningUnitTests() && $user) {
+            \Sentry\traceMetrics()->count(
+                'aiku.visit',
+                1,
+                [
+                    'form_factors' => request()->header('sec-ch-ua-form-factors'),
+                    'country'      => request()->header('CF-IPCountry') ?? 'XX'
+
+                ]
+            );
+
             ProcessUserRequest::dispatch(
                 $user,
                 now(),

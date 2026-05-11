@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
@@ -32,7 +33,7 @@ class DeleteShopifyVariant
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            Log::error("Failed to initialize Shopify GraphQL client");
             return false;
         }
 
@@ -64,7 +65,7 @@ class DeleteShopifyVariant
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Variant deletion failed: ".$errorMessage);
+                Log::error("Variant deletion failed: ".$errorMessage);
                 return false;
             }
 
@@ -74,14 +75,14 @@ class DeleteShopifyVariant
             if (!empty($body['data']['productVariantsBulkDelete']['userErrors'])) {
                 $errors = $body['data']['productVariantsBulkDelete']['userErrors'];
                 $errorMessage = 'User errors: '.json_encode($errors);
-                Sentry::captureMessage("Variant deletion failed: ".$errorMessage);
+                Log::error("Variant deletion failed: ".$errorMessage);
                 return false;
             }
 
             // Check if the variant was actually deleted
             $deletedIds = $body['data']['productVariantsBulkDelete']['deletedVariantIds'] ?? [];
             if (!in_array($variantID, $deletedIds)) {
-                Sentry::captureMessage("Variant not found in deleted IDs list");
+                Log::error("Variant not found in deleted IDs list");
                 return false;
             }
 
