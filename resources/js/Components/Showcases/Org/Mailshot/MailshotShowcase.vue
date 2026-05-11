@@ -26,6 +26,7 @@ import { Link, router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import EmailTemplateCarousel from "@/Components/EmailTemplateCarousel.vue"
+import PerformanceMetrics from "./PerformanceMetrics.vue"
 import { routeType } from "@/types/route";
 
 library.add(
@@ -223,6 +224,9 @@ const effectiveOtherShopTemplates = computed(() =>
                     </div>
                 </div>
             </div>
+
+            <!-- Performance Metrics -->
+            <PerformanceMetrics :mailshot-state="mailshotState" />
 
             <!-- Full preview modal -->
             <Modal :isOpen="previewOpen" @onClose="previewOpen = false">
