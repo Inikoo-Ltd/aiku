@@ -200,12 +200,26 @@ class ShowFamily extends OrgAction
                 fn () => [
                     'id' => $family->id,
                     'data' => RelatedMasterProductsResource::collection(GetProductCategoryRecomendation::run($family)),
-                    'editable' => false
+                    'editable' => false,
+                    'route_get_products' => [
+                        'name' => 'grp.org.shops.show.catalogue.products.current_products.index',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop' => $this->shop->slug,
+                        ]
+                    ]
                 ]
                 : Inertia::lazy(fn () => [
                     'id' => $family->id,
                     'data' => RelatedMasterProductsResource::collection(GetProductCategoryRecomendation::run($family)),
-                    'editable' => false
+                    'editable' => false,
+                    'route_get_products' => [
+                        'name' => 'grp.org.shops.show.catalogue.products.current_products.index',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop' => $this->shop->slug,
+                        ]
+                    ]
                 ]),
         ];
 

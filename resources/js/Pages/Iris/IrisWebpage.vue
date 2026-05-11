@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
                     :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
                     :theme="layout?.app?.theme"
                     :key="web_block_data.id"
-                    :fieldValue="web_block_data.web_block.layout.data.fieldValue"
+                    :fieldValue="web_block_data?.web_block?.layout?.data?.fieldValue || web_block_data.structure"
                     :indexBlock="index"
                 />
             </div>
