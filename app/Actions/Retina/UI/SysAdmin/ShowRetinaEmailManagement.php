@@ -60,7 +60,7 @@ class ShowRetinaEmailManagement extends RetinaAction
                                         'full' => true,
                                         'noSaveButton' => true,
                                         "updateRoute" => [
-                                            "name"       => "retina.models.customer.comms.update",
+                                            "name"       => "retina.models.customer_comms.update",
                                             'parameters' => [$customer->comms->id]
                                         ],
                                         'customer' => CustomerResource::make($customer)->getArray(),
@@ -70,7 +70,7 @@ class ShowRetinaEmailManagement extends RetinaAction
                     ],
                     "args"      => [
                         "updateRoute" => [
-                            "name"       => "retina.models.customer.comms.update",
+                            "name"       => "retina.models.customer_comms.update",
                             'parameters' => [$customer->comms->id]
                         ],
                     ],

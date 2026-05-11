@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { getStyles } from "@/Composables/styles"
 import { checkVisible } from "@/Composables/Workshop"
-import { inject } from "vue"
+import { inject, ref } from "vue"
 import Image from "@/Components/Image.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
 import { faPresentation, faCube, faText, faPaperclip } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -71,7 +72,7 @@ const props = defineProps<{
 const layout = inject('layout', layoutStructure)
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)
- 
+const loadingRedirect = ref(false)
 
 </script>
 
@@ -85,22 +86,28 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 		<div class="flex flex-col justify-between items-center py-4 px-6">
 			<div class="w-full grid grid-cols-3 items-center gap-6">
 				<!-- Logo -->
-				<div>
-					<component v-if="fieldValue?.logo?.image?.source"
-						:is="fieldValue?.logo?.image?.source ? LinkIris : 'div'"
-						:href="props.fieldValue?.logo?.link?.href ?? '#'"
-						:target="fieldValue?.logo?.link?.target || '_self'"
-						rel="noopener noreferrer"
-						class="block w-full h-full"
-						:canonical_url="props.fieldValue?.logo?.link?.canonical_url"
-						:type="props.fieldValue?.logo?.link?.type"
-					>
-						<Image :style="getStyles(fieldValue.logo.properties)"
-							:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
-							:src="fieldValue?.logo?.image?.source" :imgAttributes="fieldValue?.logo.image?.attributes">
-						</Image>
-					</component>
-				</div>
+				<div class="relative w-[200px] md:w-[200px] aspect-[4/2]">
+
+						<!-- Spinner Overlay -->
+						<div v-if="loadingRedirect"
+							class="absolute inset-0 z-10 flex items-center justify-center bg-white/60 rounded">
+							<LoadingIcon class="w-12 h-12 text-gray-500" />
+						</div>
+
+						<component v-if="fieldValue?.logo?.image?.source"
+							:is="fieldValue?.logo?.image?.source ? LinkIris : 'div'" @start="loadingRedirect = true"
+							@finish="loadingRedirect = false"
+							:canonical_url="props.fieldValue?.logo?.link?.canonical_url"
+							:href="props.fieldValue?.logo?.link?.href" :type="props.fieldValue?.logo?.link?.type"
+							:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer"
+							class="block w-fit h-auto">
+							<template #default>
+								<Image :alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
+									class="object-contain w-full h-full" :src="fieldValue?.logo?.image?.source" />
+							</template>
+						</component>
+
+					</div>
 
 				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-80 flex items-center h-full">

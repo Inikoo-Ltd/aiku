@@ -222,13 +222,13 @@ const goToBundle = () => {
                     class="button min-w-max"
                 >
                     <template #icon>
-                        <span v-tooltip="trans('Profile')">
+                        <span v-tooltip="trans('My Account')">
                             <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width aria-hidden="true" />
                         </span>
                     </template>
                     <template #label>
                         <!-- <span v-tooltip="trans('Profile')" class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" /> -->
-                        <span v-tooltip="trans('Profile')" class="button">{{ trans("Profile") }}</span>
+                        <span v-tooltip="trans('My Account')" class="button">{{ trans("My Account") }}</span>
                         <!-- <GoldReward v-if="layout.offer_data?.type === 'gr'" /> -->
                     </template>
                 </Button>

@@ -2,7 +2,7 @@
 import { getIrisComponent } from '@/Composables/getIrisComponents'
 import { Root } from '@/types/Website/Website/footer1'
 import { checkScreenType } from '@/Composables/useWindowSize'
-import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { isArray } from 'lodash-es'
 import axios from 'axios'
@@ -20,10 +20,7 @@ const layout = inject('layout', retinaLayoutStructure) as typeof retinaLayoutStr
     }
 }
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
-
-const sentinelRef = ref<HTMLElement | null>(null)
 const isFetching = ref(false)
-let observer: IntersectionObserver | null = null
 
 const footerData = computed<Root | null>(() => {
     const f = layout.iris?.footer
@@ -49,42 +46,14 @@ const fetchFooterOnce = async () => {
     }
 }
 
-const teardownObserver = () => {
-    observer?.disconnect()
-    observer = null
-}
-
 onMounted(() => {
     screenType.value = checkScreenType()
-
-    if (layout.iris?.isFooterLoaded) {
-        return
-    }
-
-    if (!sentinelRef.value || typeof IntersectionObserver === 'undefined') {
-        fetchFooterOnce()
-        return
-    }
-
-    observer = new IntersectionObserver(
-        (entries) => {
-            const intersecting = entries.some((e) => e.isIntersecting)
-            if (intersecting) {
-                fetchFooterOnce()
-                teardownObserver()
-            }
-        },
-        { rootMargin: '300px 0px' },
-    )
-
-    observer.observe(sentinelRef.value)
+    void fetchFooterOnce()
 })
-
-onBeforeUnmount(teardownObserver)
 </script>
 
 <template>
-    <div ref="sentinelRef">
+    <div>
         <component
             v-if="footerData"
             :is="getIrisComponent(footerData.code)"
