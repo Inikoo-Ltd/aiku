@@ -200,6 +200,9 @@ const effectiveOtherShopTemplates = computed(() =>
                 <TabsBoxDisplay :tabs_box="tabsBox" />
             </div>
 
+            <!-- Performance Metrics -->
+            <PerformanceMetrics :mailshot-state="mailshotState" />
+
             <!-- Preview and chart -->
             <div class="grid gap-4 mt-8" :class="isReady ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'">
                 <div class="h-auto mb-3">
@@ -224,9 +227,6 @@ const effectiveOtherShopTemplates = computed(() =>
                     </div>
                 </div>
             </div>
-
-            <!-- Performance Metrics -->
-            <PerformanceMetrics :mailshot-state="mailshotState" />
 
             <!-- Full preview modal -->
             <Modal :isOpen="previewOpen" @onClose="previewOpen = false">
