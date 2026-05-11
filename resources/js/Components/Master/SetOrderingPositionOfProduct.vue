@@ -14,8 +14,10 @@ const props = withDefaults(
     defineProps<{
         data: any
         useDelete?: boolean
+        disable?: boolean
     }>(),
     {
+        disable : false,
         useDelete: false
     }
 )
@@ -236,12 +238,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
         </template>
 
         <!-- LIST -->
-        <draggable v-else-if="viewMode === 'list'" v-model="items" item-key="id" handle=".drag-handle"
+        <draggable v-else-if="viewMode === 'list'" :disable="disable" v-model="items" item-key="id" handle=".drag-handle"
             @end="updateOrder" animation="200" ghost-class="drag-ghost" chosen-class="drag-chosen"
             drag-class="drag-dragging" class="space-y-2">
             <template #item="{ element, index }">
                 <div class="flex items-center gap-3 p-2 border rounded bg-white hover:bg-gray-50">
-                    <div class="drag-handle cursor-move text-gray-400">☰</div>
+                    <div class="drag-handle cursor-move text-gray-400" v-if="!disable">☰</div>
 
                     <div class="w-10 text-xs text-gray-400">
                         <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
@@ -270,21 +272,21 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                         </div>
                     </slot>
 
-                    <Button v-if="useDelete" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
+                    <Button v-if="useDelete && !disable" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
                     </Button>
                 </div>
             </template>
         </draggable>
 
         <!-- CARD -->
-        <draggable v-else v-model="items" item-key="id" handle=".drag-handle" @end="updateOrder" animation="200"
+        <draggable v-else :disable="disable" v-model="items" item-key="id" handle=".drag-handle" @end="updateOrder" animation="200"
             ghost-class="drag-ghost" chosen-class="drag-chosen" drag-class="drag-dragging" tag="div"
             class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <template #item="{ element, index }">
                 <div class="border rounded p-2 bg-white hover:shadow-sm">
                     <div class="flex justify-between">
-                        <div class="drag-handle flex items-center gap-2 text-xs text-gray-400 mb-1">
-                            <span>☰</span>
+                        <div class=" flex items-center gap-2 text-xs text-gray-400 mb-1">
+                            <span v-if="!disable" class="drag-handle">☰</span>
 
                             <div class="w-10 flex items-center">
                                 <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
@@ -296,7 +298,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                                 </span>
                             </div>
                         </div>
-                        <Button v-if="useDelete" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
+                        <Button v-if="useDelete && !disable" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
 
                         </Button>
                     </div>

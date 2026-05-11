@@ -26,7 +26,7 @@ import { router } from "@inertiajs/vue3"
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
-import MasterFamilySetOrderingPositionOfProduct from "@/Components/Master/FamilySetOrderingPositionOfProduct.vue"
+import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus)
@@ -61,7 +61,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
-        index_ordering: MasterFamilySetOrderingPositionOfProduct,
+        index_ordering: SetOrderingPositionOfProduct,
         sales: TableMasterProducts,
     }
 

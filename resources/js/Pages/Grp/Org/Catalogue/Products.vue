@@ -24,7 +24,7 @@ import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPencil } from '@far'
 import { faWarning } from '@fortawesome/free-solid-svg-icons'
-import FamilySetOrderingPositionOfProduct from '@/Components/Product/OrderProduct.vue'
+import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 import { notify } from '@kyvg/vue3-notification'
 
 library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faTools)
@@ -79,7 +79,7 @@ const component = computed(() => {
         index: TableProducts,
         sales: TableProducts,
         attachments: AttachmentManagement,
-        index_ordering : FamilySetOrderingPositionOfProduct
+        index_ordering : SetOrderingPositionOfProduct
     }
     return mapping[currentTab.value]
 })
