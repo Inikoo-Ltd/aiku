@@ -611,7 +611,7 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
                     <!-- Field: Gift opt-out (shown when shop has GR gifts) -->
                     <div class="w-full flex gap-y-2 py-2 border-t">
                         <div v-if="gr_data.shop_has_gr && gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="localGiftOptedOut ? ctrans('Customer has opted out of eligible gifts and will not receive any') + '.' : ''" class="flex-none">
+                            <dt v-tooltip="localGiftOptedOut ? ctrans('Customer has opted out of eligible gifts and will not receive any') + '.' : ctrans('Customers will receive a gift if they are eligible and select the item. Customer can opted-out by themself in the basket page') + '.'" class="flex-none">
                                 <FontAwesomeIcon icon="fal fa-gift" :class="localGiftOptedOut ? 'text-gray-300' : 'text-gray-400'" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-sm flex items-center gap-x-2">
