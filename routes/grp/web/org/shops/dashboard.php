@@ -8,6 +8,7 @@
 
 
 use App\Actions\Catalogue\Shop\UI\GetShopDashboardTabData;
+use App\Actions\Catalogue\Shop\UI\IndexHistoryInShop;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use Illuminate\Support\Facades\Route;
 
@@ -24,3 +25,5 @@ Route::prefix("payments")
 Route::prefix("statements")
     ->name("invoices.")
     ->group(__DIR__."/invoices.php");
+
+Route::get('/changelog', IndexHistoryInShop::class)->name('changelog');
