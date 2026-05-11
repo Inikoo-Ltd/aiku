@@ -541,6 +541,8 @@ onUnmounted(() => {
                             }"
                             :giftOptions="dataSideBasket?.gr_gifts?.gifts"
                             :meter="dataSideBasket?.gr_gifts?.meter"
+                            :isOptedOut="dataSideBasket?.gr_gifts?.is_gift_opted_out"
+                            :routeOptOut="dataSideBasket?.gr_gifts?.route_gift_opt_out"
                             class="justify-between w-full"
                         />
                     </div>

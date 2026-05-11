@@ -79,32 +79,33 @@ class ShowWarehouseStoredItemReturn extends OrgAction
         // ];
 
         if ($this->canEdit) {
-            if (in_array($palletReturn->state, [
-                PalletReturnStateEnum::IN_PROCESS,
-                PalletReturnStateEnum::SUBMITTED,
-                PalletReturnStateEnum::CONFIRMED,
-                PalletReturnStateEnum::PICKING,
-            ], true)) {
-                $actions[] = [
-                    'type'    => 'button',
-                    'style'   => 'delete',
-                    'label'   => __('Delete'),
-                    'tooltip' => __('Delete return'),
-                    'key'     => 'delete_return',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.pallet-return.delete',
-                        'parameters' => [
-                            'palletReturn' => $palletReturn->id
-                        ]
-                    ]
-                ];
-            }
+            // if (in_array($palletReturn->state, [
+            //     PalletReturnStateEnum::IN_PROCESS,
+            //     PalletReturnStateEnum::SUBMITTED,
+            //     PalletReturnStateEnum::CONFIRMED,
+            //     PalletReturnStateEnum::PICKING,
+            // ], true)) {
+            //     $actions[] = [
+            //         'type'    => 'button',
+            //         'style'   => 'delete',
+            //         'label'   => __('Delete'),
+            //         'tooltip' => __('Delete return'),
+            //         'key'     => 'delete_return',
+            //         'route'   => [
+            //             'method'     => 'patch',
+            //             'name'       => 'grp.models.pallet-return.delete',
+            //             'parameters' => [
+            //                 'palletReturn' => $palletReturn->id
+            //             ]
+            //         ]
+            //     ];
+            // }
 
             if ($palletReturn->state == PalletReturnStateEnum::CONFIRMED) {
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'save',
+                    'icon'    => 'fal fa-dolly-flatbed-alt',
                     'tooltip' => __('Start picking'),
                     'label'   => __('Start picking'),
                     'key'     => 'start picking',
@@ -208,7 +209,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 
 
         $afterTitle = [
-            'label' => '('.__("Customer's SKUs").')'
+            'label' => '('.__("Fulfilment DS").')'
         ];
 
         $warning = null;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import FamilySetOrderingPositionOfProduct from "./FamilySetOrderingPositionOfProduct.vue";
+import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ListSelector from "@/Components/Selector.vue"
@@ -97,7 +97,7 @@ const SaveOrder = async () => {
         <!-- MAIN CONTENT -->
         <div class="bg-white border rounded-lg p-4">
 
-            <FamilySetOrderingPositionOfProduct :data="listProducts.data" :editable="props.data?.editable"
+            <SetOrderingPositionOfProduct :disable="true" :data="listProducts.data" :editable="props.data?.editable"
                 @update:data="(event) => { listProducts.data.data = event, saveActive = true }"
                 :useDelete="true" @delete="(item) => {
                     listProducts.data.data = listProducts.data.data.filter((product: any) => product.id !== item.id),
@@ -138,7 +138,7 @@ const SaveOrder = async () => {
                     </div>
                 </template>
 
-            </FamilySetOrderingPositionOfProduct>
+            </SetOrderingPositionOfProduct>
 
         </div>
 

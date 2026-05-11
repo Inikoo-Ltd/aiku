@@ -32,11 +32,13 @@ import {
     faTrafficLight,
     faTruck,
     faGlobeEurope,
-    faIslandTropical
+    faIslandTropical,
+    faGift
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref, computed } from "vue"
+import axios from "axios"
 import Modal from "@/Components/Utils/Modal.vue"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
@@ -60,7 +62,7 @@ import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimelin
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { PDRNotes } from "@/types/Pallet"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift)
 
 interface Customer {
     slug: string
@@ -157,6 +159,9 @@ const props = defineProps<{
         gr_label: string
         meter: number[]
         customer_is_gr: boolean
+        shop_has_gr?: boolean
+        is_gift_opted_out?: boolean
+        route_gift_opt_out?: routeType
     }
     tab: string
     handleTabUpdate?: Function
@@ -294,6 +299,39 @@ function tagColorClass(scope?: string) {
             return "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
         default:
             return "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+    }
+}
+
+const isLoadingGiftOptOut = ref(false)
+const localGiftOptedOut = ref(props.gr_data?.is_gift_opted_out ?? false)
+
+const onToggleGiftOptOut = async (optOut: boolean) => {
+    if (!props.gr_data?.route_gift_opt_out) return
+
+    try {
+        isLoadingGiftOptOut.value = true
+
+        await axios.patch(
+            route(props.gr_data.route_gift_opt_out.name, props.gr_data.route_gift_opt_out.parameters),
+            { is_gift_opted_out: optOut }
+        )
+
+        localGiftOptedOut.value = optOut
+
+        notify({
+            title: trans("Updated"),
+            text: optOut ? trans("Customer will not receive a free gift") : trans("Customer is now eligible for a free gift"),
+            type: 'success'
+        })
+
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        isLoadingGiftOptOut.value = false
     }
 }
 </script>
@@ -564,6 +602,49 @@ function tagColorClass(scope?: string) {
                                 <span v-if="data.last_order.submitted_at" class="text-xs text-gray-400 truncate">
                                     {{ useFormatTime(data.last_order.submitted_at, { formatTime: "short-datetime" }) }}
                                 </span>
+                            </dd>
+                        </div>
+                    </div>
+
+                    
+
+                    <!-- Field: Gift opt-out (shown when shop has GR gifts) -->
+                    <div class="w-full flex gap-y-2 py-2 border-t">
+                        <div v-if="gr_data.shop_has_gr && gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="localGiftOptedOut ? ctrans('Customer has opted out of eligible gifts and will not receive any') + '.' : ctrans('Customers will receive a gift if they are eligible and select the item. Customer can opted-out by themself in the basket page') + '.'" class="flex-none">
+                                <FontAwesomeIcon icon="fal fa-gift" :class="localGiftOptedOut ? 'text-gray-300' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-sm flex items-center gap-x-2">
+                                <span :class="localGiftOptedOut ? 'text-gray-400 line-through' : 'text-green-500'">
+                                    {{ trans("Free gift") }}
+                                    <!-- <FontAwesomeIcon icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" /> -->
+                                </span>
+                                <span v-if="localGiftOptedOut" class="text-xs text-red-500 font-medium">
+                                    {{ trans("Opted out") }}
+                                </span>
+                                <button
+                                    v-if="isLoadingGiftOptOut"
+                                    class="text-xs text-gray-400 cursor-not-allowed"
+                                    disabled
+                                >
+                                    <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+                                </button>
+                                <button
+                                    v-else-if="localGiftOptedOut"
+                                    @click="onToggleGiftOptOut(false)"
+                                    class="text-xs text-blue-500 underline hover:text-blue-700"
+                                    v-tooltip="trans('Allow customer to receive free gift')"
+                                >
+                                    {{ trans("Re-enable") }}
+                                </button>
+                                <button
+                                    v-else
+                                    @click="onToggleGiftOptOut(true)"
+                                    class="text-xs text-gray-400 underline hover:text-red-500"
+                                    v-tooltip="trans('Opt out customer from receiving free gift')"
+                                >
+                                    {{ trans("Opt out") }}
+                                </button>
                             </dd>
                         </div>
                     </div>

@@ -27,8 +27,8 @@ class GetWebsiteWorkshopSubDepartmentWebBlock
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'departments'   => WebsiteDepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
-            'layout'    => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.sub_department', []),
+            'departments'     => WebsiteDepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
+            'layout'          => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.sub_department', []),
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.sub_department',
                 'parameters' => [

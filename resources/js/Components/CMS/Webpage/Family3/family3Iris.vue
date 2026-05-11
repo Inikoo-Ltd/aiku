@@ -102,7 +102,7 @@ const cleanedDescription = computed(() => {
       screenType
     )
   }">
-    <div class="w-full px-4">
+    <div class="w-full px-4" id="family-description">
       <div class="grid grid-cols-1 lg:grid-cols-2 md:gap-8 gap-0 lg:gap-12 items-start">
         <div class="flex flex-col gap-5 min-w-0" :class="imageOrder">
 
@@ -176,12 +176,17 @@ const cleanedDescription = computed(() => {
 
           <!-- BUTTON -->
           <div class="mt-3 text-center md:text-right">
-            <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target">
+           <!--  <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"> -->
+              <a href="#family-extra-description">
               <button id="family-3-button" :label="fieldValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
              text-sm md:text-base font-medium
              hover:underline underline-offset-4 mr-5 italic
-             transition-all duration-200" >{{ fieldValue?.button?.text }}</button>
-            </LinkIris>
+             transition-all duration-200">{{ fieldValue?.button?.text }}</button>
+
+            </a>
+
+      
+     <!--        </LinkIris> -->
           </div>
         </div>
 
