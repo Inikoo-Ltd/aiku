@@ -33,7 +33,7 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
 
         $masterProductCategory->relatedMasterAssets()->sync($relatedMasterAssets);
 
-        SyncShopRelatedProductsFromMasterCategory::dispatch($masterProductCategory);
+        SyncShopRelatedProductsFromMasterCategory::run($masterProductCategory);
 
 
         return $masterProductCategory;

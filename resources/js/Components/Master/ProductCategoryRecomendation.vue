@@ -10,8 +10,13 @@ import Image from "../Image.vue";
 
 const props = defineProps<{
     data: {
-        data: any[],
+        data: any,
         editable: boolean
+        route_sync_related_products?: {
+            name: string,
+            parameters: Record<string, any>
+        }
+        sync_payload_key?: string
         route_get_products : {
             name: string,
             parameters: Record<string, any>
@@ -36,6 +41,7 @@ const openAddProduct = () => {
 
 const SaveOrder = async () => {
     if (!props.data?.editable) return
+    if (!props.data?.route_sync_related_products?.name) return
 
     loadingOrder.value = true
 
@@ -44,23 +50,27 @@ const SaveOrder = async () => {
         listProducts.value.data
     )
 
+    const payloadKey = props.data?.sync_payload_key || 'master_asset_ids'
+    const payloadValues = listProducts.value.data.data.map((product: any) => product.id)
+    const payloadOrderedMap = Object.fromEntries(
+        listProducts.value.data.data.map((product: any, index: number) => [
+            product.order != null
+                ? product.order - 1
+                : index,
+            product.id
+        ])
+    )
+    const payload = payloadKey === 'product_ids'
+        ? { [payloadKey]: payloadValues }
+        : { [payloadKey]: payloadOrderedMap }
+
     try {
         await axios.patch(
-            route('grp.models.master_product_category.related_assets.sync', {
-                masterProductCategory: props.product_category_id
-            }),
-            {
-                master_asset_ids: Object.fromEntries(
-                    listProducts.value.data.data.map(
-                        (product: any, index: number) => [
-                            product.order != null
-                                ? product.order - 1
-                                : index,
-                            product.id
-                        ]
-                    )
-                )
-            }
+            route(
+                props.data.route_sync_related_products.name,
+                props.data.route_sync_related_products.parameters
+            ),
+            payload
         )
 
         notify({
@@ -101,11 +111,11 @@ const SaveOrder = async () => {
         <!-- MAIN CONTENT -->
         <div class="bg-white border rounded-lg p-4">
 
-            <SetOrderingPositionOfProduct :disable="true" :data="listProducts.data" :editable="props.data?.editable"
+            <SetOrderingPositionOfProduct :data="listProducts.data" :disabled="!props.data?.editable"
                 @update:data="(event) => { listProducts.data.data = event, saveActive = true }"
                 :useDelete="true" @delete="(item) => {
                     listProducts.data.data = listProducts.data.data.filter((product: any) => product.id !== item.id),
-                    saveActive = true 
+                    saveActive = true
                 }">
 
 
@@ -147,11 +157,11 @@ const SaveOrder = async () => {
         </div>
 
         <!-- SELECTOR -->
-        <ListSelector 
-            v-if="props.data?.editable" ref="productDialog" 
-            v-model="listProducts.data.data" 
+        <ListSelector
+            v-if="props.data?.editable" ref="productDialog"
+            v-model="listProducts.data.data"
             @update:model-value="saveActive = true"
-            :routeFetch="props.data?.route_get_products" 
+            :routeFetch="props.data?.route_get_products"
         />
 
     </div>
