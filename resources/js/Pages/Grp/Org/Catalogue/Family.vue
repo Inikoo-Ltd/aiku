@@ -78,7 +78,7 @@ const props = defineProps<{
         currency_code: string
     }
     product_category_id: number
-    recommendation : object
+    related_products : object
 }>()
 
 const layout = inject("layout", {})
@@ -101,7 +101,7 @@ const component = computed(() => {
         content: ProductCategoryContent,
         variants: TableVariants,
         offers: TableOffers,
-        recommendation: ProductCategoryRecomendation
+        related_products: ProductCategoryRecomendation
     }
     return components[currentTab.value] ?? ModelDetails
 })

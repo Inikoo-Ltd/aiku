@@ -13,6 +13,7 @@ use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\TiktokUser;
@@ -44,7 +45,10 @@ class ProcessTiktokOrderShipment extends OrgAction
 
                 $getOrder = $tiktokUser->getOrder($fulfillOrderId);
 
-                if($id = Arr::get($getOrder, 'data.orders.0.packages.0.id')) {
+                $id = Arr::get($getOrder, 'data.orders.0.packages.0.id');
+                $status = Arr::get($getOrder, 'data.orders.0.status');
+
+                if($id && $status === "AWAITING_COLLECTION") {
                     $this->packageWasShipped($tiktokUser, $order, $deliveryNote, $id);
 
                     return;
@@ -102,6 +106,7 @@ class ProcessTiktokOrderShipment extends OrgAction
             $shipper = StoreShipper::make()->action($order->organisation, [
                 'code' => $tiktokPackageShippingCode,
                 'name' => $tiktokPackageShippingName,
+                'api_shipper' => PlatformTypeEnum::TIKTOK->value,
                 'trade_as' => Str::substr($tiktokPackageShippingName, 0, 15)
             ]);
         }

@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -119,7 +120,7 @@ class GoogleLoginRetina extends IrisAction
         if ($language) {
             app()->setLocale($language->code);
         }
-
+        Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
         return response()->json([
             'logged_in' => true,
         ]);

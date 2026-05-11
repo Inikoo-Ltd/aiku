@@ -24,6 +24,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -55,18 +56,18 @@ class StoreTiktokOrder extends RetinaAction
 
         foreach ($orderedProducts as $orderedProduct) {
 
-
             $transactionData = [
                 'quantity_ordered'        => $orderedProduct['quantity_ordered'],
                 'platform_transaction_id' => $orderedProduct['platform_transaction_id'],
 
             ];
 
-
             StoreTransaction::make()->action(
                 order: $order,
                 historicAsset: $orderedProduct['historicAsset'],
-                modelData: $transactionData
+                modelData: $transactionData,
+                strict: false,
+                forceHydrators: true,
             );
         }
 
@@ -143,6 +144,16 @@ class StoreTiktokOrder extends RetinaAction
     public function digestTiktokProducts(TiktokUser $tiktokUser, array $tiktokOrderData): array
     {
         $orderedProducts = [];
+        /*$lineItems = collect(Arr::get($tiktokOrderData, 'line_items', []))
+            ->groupBy('product_id')
+            ->map(function ($items) {
+                return [
+                    'product_id' => $items->first()['product_id'],
+                    'quantity'   => count($items),
+                    'id' => $items->first()['id']
+                ];
+            })
+            ->values();*/
         foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
             $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)

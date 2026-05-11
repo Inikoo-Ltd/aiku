@@ -69,6 +69,9 @@ const updateOrder = () => {
         order: index + 1,
         index_under_family: index
     }))
+
+
+    console.log("Updated order:", items.value)
     emits("update:data", items.value);
 }
 
@@ -206,14 +209,14 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                 <div class="inline-flex rounded-lg border bg-gray-100 p-1">
                     <button @click="viewMode = 'list'"
                         class="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md transition" :class="viewMode === 'list'
-                            ? 'bg-white shadow text-gray-900'
+                            ? 'bg-white shadow text-gray-900 buttonPrimary'
                             : 'text-gray-500 hover:text-gray-700'">
                         ≡ List
                     </button>
 
                     <button @click="viewMode = 'card'"
                         class="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md transition" :class="viewMode === 'card'
-                            ? 'bg-white shadow text-gray-900'
+                            ? 'bg-white shadow text-gray-900 buttonPrimary'
                             : 'text-gray-500 hover:text-gray-700'">
                         ▦ Card
                     </button>
@@ -251,7 +254,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                     </div>
 
                     <slot name="list-content" :item="element">
-                        <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
+                        <slot name="image-list" :item="element">
+                            <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
+                        </slot>
+                        
 
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-medium truncate">
@@ -277,8 +283,18 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
             <template #item="{ element, index }">
                 <div class="border rounded p-2 bg-white hover:shadow-sm">
                     <div class="flex justify-between">
-                        <div class="drag-handle text-xs text-gray-400 mb-1">
-                            ☰ {{ index + 1 }}
+                        <div class="drag-handle flex items-center gap-2 text-xs text-gray-400 mb-1">
+                            <span>☰</span>
+
+                            <div class="w-10 flex items-center">
+                                <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
+                                    :max="items.length" class="index-input w-full border rounded px-1 text-xs"
+                                    @blur="applyNewIndex(element)" @keyup.enter="applyNewIndex(element)" />
+
+                                <span v-else class="cursor-pointer" @dblclick="startEditIndex(element, index)">
+                                    {{ index + 1 }}
+                                </span>
+                            </div>
                         </div>
                         <Button v-if="useDelete" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
 
@@ -287,8 +303,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
 
 
                     <slot name="card-content" :item="element">
-                        <Image :src="element.image_thumbnail?.main?.original"
+
+                        <slot name="image-card" :item="element">
+                             <Image :src="element.image_thumbnail?.main?.original"
                             class="w-full h-24 object-cover rounded mb-2" />
+                        </slot>
+                     
 
                         <div class="text-sm font-medium line-clamp-2">
                             {{ element.name }}
@@ -325,5 +345,23 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
 
 .sortable-ghost {
     min-height: 60px;
+}
+
+.buttonPrimary {
+    background-color: var(--theme-color-4) !important;
+    color: var(--theme-color-5) !important;
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
+
+    &:hover {
+        background-color: color-mix(in srgb, var(--theme-color-4) 85%, black) !important;
+    }
+
+    &:focus {
+        box-shadow: 0 0 0 2px var(--theme-color-4) !important;
+    }
+
+    &:disabled {
+        background-color: color-mix(in srgb, var(--theme-color-4) 70%, grey) !important;
+    }
 }
 </style>

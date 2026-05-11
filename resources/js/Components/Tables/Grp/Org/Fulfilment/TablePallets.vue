@@ -15,6 +15,7 @@ import Tag from "@/Components/Tag.vue"
 import type { Meta, Links } from "@/types/Table"
 import { Pallet } from "@/types/Pallet"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faTrashAlt, faSignOutAlt, faSpellCheck, faCheck, faTimes, faCheckDouble, faCross, faFragile, faGhost, faBoxUp,
     faStickyNote
@@ -108,6 +109,26 @@ function fulfilmentCustomerRoute(pallet: Pallet) {
     }
 }
 
+async function copyStoredItemValue(item: { name?: string; reference?: string; quantity?: number | string }) {
+    const quantity = Number(item.quantity ?? 0)
+    const copiedValue = `${item.name || item.reference || "-"} - ${quantity}`
+
+    try {
+        await navigator.clipboard.writeText(copiedValue)
+        notify({
+            title: "Copied",
+            text: `Copied item SKU value: ${copiedValue}`,
+            type: "success",
+        })
+    } catch {
+        notify({
+            title: "Copy failed",
+            text: "Unable to copy item SKU value",
+            type: "error",
+        })
+    }
+}
+
 // const palletSelected = ref<{ [key: string]: number } | null>({
 //     abc: 1
 // })  // Helper on which pallet selected to move
@@ -166,7 +187,7 @@ function fulfilmentCustomerRoute(pallet: Pallet) {
                 <Tag v-for="item of pallet.stored_items" :theme="item.id"
                     :label="`${item.reference} (${item.quantity})`" :closeButton="false" :stringToColor="true">
                     <template #label>
-                        <div class="whitespace-nowrap text-xs">
+                        <div class="whitespace-nowrap text-xs cursor-pointer" @click="copyStoredItemValue(item)">
                             {{ item["reference"] }} (<span class="font-light">{{ item["quantity"] }}</span>)
                         </div>
                     </template>
@@ -192,4 +213,3 @@ function fulfilmentCustomerRoute(pallet: Pallet) {
 </template>
 
 <style src="../../../../../../../node_modules/@vueform/multiselect/themes/default.css"></style>
-

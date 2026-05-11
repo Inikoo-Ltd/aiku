@@ -14,7 +14,6 @@ use App\Enums\Web\Website\WebsiteCloudflareStatusEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Analytics\WebUserRequest;
-use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Media;

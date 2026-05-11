@@ -392,6 +392,21 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
     }
 
+    public function extraDescArt2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art2');
+    }
+
+    public function extraDescArt3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art3');
+    }
+
+    public function extraDescArt4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art4');
+    }
+
     public function relatedProducts(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'product_category_has_related_products')

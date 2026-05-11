@@ -38,6 +38,8 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
 
+    private bool $requireShipping = true;
+
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
         return $palletReturn->load([
@@ -49,6 +51,10 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        if (!$palletReturn->platform_id) { // Pallet Return for 3RD Party will always require shipping
+            $this->requireShipping = Arr::get($palletReturn->fulfilment->shop->settings, 'dispatch.require_shipping', true);
+        }
+
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
@@ -71,6 +77,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
         //         ]
         //     ]
         // ];
+
         if ($this->canEdit) {
             if (in_array($palletReturn->state, [
                 PalletReturnStateEnum::IN_PROCESS,
@@ -162,7 +169,8 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     ]
                 ];
 
-                $requiresShipmentBeforeDispatch = !$palletReturn->is_collection && !$palletReturn->shipments()->exists();
+                $requiresShipmentBeforeDispatch = $this->requireShipping ? !$palletReturn->is_collection && !$palletReturn->shipments()->exists() : false;
+
                 $dispatchTooltip = $requiresShipmentBeforeDispatch
                     ? __('Please add shipment before dispatch')
                     : ($palletReturn->is_collection ? __('Set as collected') : __('Set as dispatched'));
@@ -293,6 +301,8 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                         'palletReturn' => $palletReturn->id
                     ]
                 ],
+
+                'requireShipping'   => $this->requireShipping,
 
                 'warning' => $warning,
 

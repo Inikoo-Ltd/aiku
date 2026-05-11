@@ -27,6 +27,7 @@ const props = defineProps<{
         images_update_route: routeType
         upload_images_route: routeType
         delete_images_route: routeType
+        update_image_alt_route?: routeType
         images_category_box: {
             label: string
             type: string
@@ -48,6 +49,9 @@ const loadingSubmit = ref<null | number | string>(null)
 const isModalEditVideo = ref(false)
 const selectedVideoToUpdate = ref<any>(null)
 const activeCategory = ref<string | null>(null)
+const isModalEditAlt = ref(false)
+const selectedImageToEditAlt = ref<any>(null)
+const altInput = ref<string>("")
 
 
 /* ---------------------------
@@ -238,6 +242,37 @@ function onDeletefilesInBox(categoryBox: any) {
     onSubmitImage(payload, categoryBox)
 }
 
+function openEditAlt(item: any) {
+    selectedImageToEditAlt.value = item
+    altInput.value = item?.alt ?? item?.name ?? ""
+    isModalEditAlt.value = true
+}
+
+function onSubmitAlt() {
+    if (!props.data.update_image_alt_route || !selectedImageToEditAlt.value?.id) return
+    
+    const routeConfig = props.data.update_image_alt_route
+    router[routeConfig.method || "patch"](
+        route(routeConfig.name, {
+            ...routeConfig.parameters,
+            media: selectedImageToEditAlt.value.id,
+        }),
+        { alt: altInput.value },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => (loadingSubmit.value = "alt"),
+            onSuccess: () => {
+                notifySuccess(trans("Alt text updated"))
+                router.reload({ only: ["images"] })
+                isModalEditAlt.value = false
+            },
+            onError: () => notifyError(trans("Failed to update alt text")),
+            onFinish: () => (loadingSubmit.value = null),
+        }
+    )
+}
+
 function onDeleteFilesInList(categoryBox: any) {
     router.delete(
         route(props.data.delete_images_route.name, {
@@ -256,7 +291,6 @@ function onDeleteFilesInList(categoryBox: any) {
         }
     )
 }
-
 </script>
 
 <template>
@@ -313,6 +347,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         :class="{ ' cursor-not-allowed': !editable }" :draggable="editable && !!categoryBox.images"
                         @dragstart="(e) =>  editable && categoryBox.images ?  onStartDrag(e, categoryBox) : null"
                         @dragend="(e)=> editable ? onEndDrag(e) : null">
+                        
                         <Image v-if="categoryBox.images" :src="categoryBox.images" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
@@ -419,6 +454,19 @@ function onDeleteFilesInList(categoryBox: any) {
                                         :size="'xxs'" />
                                 </div>
 
+                                <div class="flex items-center gap-1 mt-0.5">
+                                    <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
+                                        :title="item?.alt ? item?.alt : item?.name">
+                                        {{ trans('Alt') }}: {{ item?.alt ? item?.alt : item?.name }}
+                                    </span>                                    
+                                    <button v-if="editable && data?.update_image_alt_route" type="button"
+                                        @click="openEditAlt(item)"
+                                        class="text-gray-400 hover:text-blue-600 transition"
+                                        v-tooltip="trans('Edit alt text')">
+                                        <FontAwesomeIcon :icon="faPencil" class="text-[10px]" />
+                                    </button>
+                                </div>
+
                                 <div class="flex items-center gap-2">
                                     <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
                                         :title="item?.size">
@@ -435,8 +483,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
 
                         <!-- Delete -->
-                        <button v-if="editable" @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
-             text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
+                        <button v-if="editable" @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
                         </button>
                     </article>
@@ -467,6 +514,21 @@ function onDeleteFilesInList(categoryBox: any) {
             <Button type="cancel" :label="trans('Cancel')" @click="isModalEditVideo = false" />
             <Button :loading="loadingSubmit === 'video'" type="create" :label="trans('Save')"
                 @click="onSubmitVideoUrl()" />
+        </template>
+    </Dialog>
+
+    <Dialog v-model:visible="isModalEditAlt" modal :header="trans('Edit Alt Text')" :style="{ width: '32rem' }">
+        <div class="space-y-3">
+            <p class="text-xs text-gray-500">
+                {{ trans('Defaults to the file name if empty') }}
+            </p>
+            <InputText v-model="altInput" :placeholder="selectedImageToEditAlt?.name || ''" class="w-full" />
+        </div>
+
+        <template #footer>
+            <Button type="cancel" :label="trans('Cancel')" @click="isModalEditAlt = false" />
+            <Button :loading="loadingSubmit === 'alt'" type="create" :label="trans('Save')"
+                @click="onSubmitAlt()" />
         </template>
     </Dialog>
 

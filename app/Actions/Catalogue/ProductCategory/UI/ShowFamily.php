@@ -26,6 +26,7 @@ use App\Http\Resources\Catalogue\ProductsResourceForRecommendation;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Masters\RelatedMasterProductsResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -195,15 +196,15 @@ class ShowFamily extends OrgAction
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
 
-            FamilyTabsEnum::RECOMMENDATION->value => $this->tab == FamilyTabsEnum::RECOMMENDATION->value ?
+            FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
                 fn () => [
                     'id' => $family->id,
-                    'data' => ProductsResourceForRecommendation::collection(GetProductCategoryRecomendation::run($family)),
+                    'data' => RelatedMasterProductsResource::collection(GetProductCategoryRecomendation::run($family)),
                     'editable' => false
                 ]
                 : Inertia::lazy(fn () => [
                     'id' => $family->id,
-                    'data' => ProductsResourceForRecommendation::collection(GetProductCategoryRecomendation::run($family)),
+                    'data' => RelatedMasterProductsResource::collection(GetProductCategoryRecomendation::run($family)),
                     'editable' => false
                 ]),
         ];

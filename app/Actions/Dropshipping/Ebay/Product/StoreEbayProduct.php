@@ -153,6 +153,13 @@ class StoreEbayProduct extends RetinaAction
                 $aspects['aspects'] = $productAttributes;
             }
 
+            $ean = [];
+            if (!blank($product->barcode)) {
+                $ean = [
+                    'ean' => [$product->barcode]
+                ];
+            }
+
             $height = Arr::get($product->marketing_dimensions, 'h');
             $h = in_array($height, [null, 0]) ? 0.5 : $height;
 
@@ -197,10 +204,11 @@ class StoreEbayProduct extends RetinaAction
                 'product' => [
                     'title' => mb_substr($portfolio->customer_product_name, 0, 80),
                     'description' => $descriptions,
+                    ...$ean,
                     ...$aspects,
                     'brand' => 'Ancient Wisdom',
                     'mpn' => $product->code,
-                    ...$imageUrls
+                    ...$imageUrls,
                 ]
             ];
 

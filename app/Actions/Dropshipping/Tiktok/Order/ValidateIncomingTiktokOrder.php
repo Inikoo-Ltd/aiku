@@ -13,6 +13,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\PalletReturn;
+use App\Models\Fulfilment\StoredItem;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,10 @@ class ValidateIncomingTiktokOrder extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser, $order = []): void
     {
+        $tiktokUser->debugWebhooks()->create([
+            'data' => $order
+        ]);
+
         if ($tiktokUser->customer->is_fulfilment) {
             $this->forFulfilment($tiktokUser, $order);
         } elseif ($tiktokUser->customer->is_dropshipping) {
@@ -81,6 +86,7 @@ class ValidateIncomingTiktokOrder extends RetinaAction
         $hasOutProducts = DB::table('portfolios')
             ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
             ->whereIn('platform_product_id', $lineItems)
+            ->where('item_type', class_basename(StoredItem::class))
             ->exists();
 
         if ($hasOutProducts) {

@@ -59,9 +59,10 @@ class LogWebUserRequestMiddleware
             return false;
         }
 
-        if (session('from-iris-redirect')) {
-            return false;
-        }
+        //todo: find another way to avoid log duplicated requests from a redirect (is this even a problem?)
+//        if (session('from-iris-redirect')) {
+//            return false;
+//        }
 
         /* @var WebUser|null $webUser */
         $webUser = request()->user();

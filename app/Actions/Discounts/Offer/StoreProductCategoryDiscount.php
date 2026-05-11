@@ -51,13 +51,20 @@ class StoreProductCategoryDiscount extends OrgAction
             return null;
         }
 
-        $type                = Arr::pull($modelData, 'type');
-        $isQuantityOfferType = $type == 'quantity' ? $itemQuantity != 1 : $itemAmount != 0;
+        $type = Arr::pull($modelData, 'type');
+
+        if ($type == 'quantity' && $itemQuantity <= 0) {
+            $type = 'any';
+        }
+        if ($type == 'amount' && $itemAmount <= 0) {
+            $type = 'any';
+        }
+
 
         data_set(
             $modelData,
             'type',
-            $this->getProductCategoryOfferType($productCategory, $isQuantityOfferType)->value
+            $this->getProductCategoryOfferType($productCategory, $type)->value
         );
 
 
@@ -75,7 +82,7 @@ class StoreProductCategoryDiscount extends OrgAction
         data_set($modelData, 'trigger_type', 'ProductCategory');
         data_set($modelData, 'trigger_id', $productCategory->id);
 
-        if ($type == 'quantity') {
+        if ($type == 'quantity' || $type == 'any') {
             data_set(
                 $modelData,
                 'trigger_data',
@@ -124,18 +131,29 @@ class StoreProductCategoryDiscount extends OrgAction
         return $offer;
     }
 
-    private function getProductCategoryOfferType(ProductCategory $productCategory, bool $isQuantityOfferType): OfferTypeEnum
+    private function getProductCategoryOfferType(ProductCategory $productCategory, bool $type): OfferTypeEnum
     {
+        if ($type == 'quantity') {
+            return match ($productCategory->type) {
+                ProductCategoryTypeEnum::DEPARTMENT => OfferTypeEnum::DEPARTMENT_QUANTITY_ORDERED,
+                ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_QUANTITY_ORDERED,
+                default => OfferTypeEnum::CATEGORY_QUANTITY_ORDERED,
+            };
+        }
+
+        if ($type == 'amount') {
+            return match ($productCategory->type) {
+                ProductCategoryTypeEnum::DEPARTMENT => OfferTypeEnum::DEPARTMENT_AMOUNT_ORDERED,
+                ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_AMOUNT_ORDERED,
+                default => OfferTypeEnum::CATEGORY_AMOUNT_ORDERED,
+            };
+        }
+
+
         return match ($productCategory->type) {
-            ProductCategoryTypeEnum::DEPARTMENT => $isQuantityOfferType
-                ? OfferTypeEnum::DEPARTMENT_QUANTITY_ORDERED
-                : OfferTypeEnum::DEPARTMENT_ORDERED,
-            ProductCategoryTypeEnum::SUB_DEPARTMENT => $isQuantityOfferType
-                ? OfferTypeEnum::SUB_DEPARTMENT_QUANTITY_ORDERED
-                : OfferTypeEnum::SUB_DEPARTMENT_ORDERED,
-            default => $isQuantityOfferType
-                ? OfferTypeEnum::CATEGORY_QUANTITY_ORDERED
-                : OfferTypeEnum::CATEGORY_ORDERED,
+            ProductCategoryTypeEnum::DEPARTMENT => OfferTypeEnum::DEPARTMENT_ORDERED,
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_ORDERED,
+            default => OfferTypeEnum::CATEGORY_ORDERED,
         };
     }
 

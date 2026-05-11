@@ -13,6 +13,7 @@ import { Navigation } from 'swiper/modules'
 
 import 'swiper/css'
 import 'swiper/css/navigation'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faChevronLeft, faChevronRight)
 
@@ -61,8 +62,8 @@ const sendMessageToParent = (type: string, value: any) => {
 </script>
 
 <template>
-  <div v-if="compSwiperOptions.length > modelValue?.recommendation_settings.min_amt_shown"
-    :id="modelValue?.id ? modelValue?.id : 'recomended-master' + indexBlock" class="w-full pb-6" :style="{
+  <div v-if="compSwiperOptions.length >= modelValue?.recommendation_settings.min_amt_shown"
+    :id="modelValue?.id ? modelValue?.id : 'recommended-master' + indexBlock" class="w-full pb-6" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue.container?.properties, screenType),
       width: 'auto'

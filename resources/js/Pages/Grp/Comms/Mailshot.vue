@@ -257,6 +257,7 @@ onMounted(() => {
             const stats = e.stats ?? e.data?.stats
             if (Array.isArray(stats)) {
                 liveStats.value = stats
+                router.reload()
             }
         })
 })
