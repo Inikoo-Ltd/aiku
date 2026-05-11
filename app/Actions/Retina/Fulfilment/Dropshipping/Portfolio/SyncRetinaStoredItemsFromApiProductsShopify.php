@@ -16,7 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
-use App\Events\FetchProductFromShopifyProgressEvent;
+use App\Events\FetchProductFromPlatformProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
@@ -115,7 +115,7 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                     } catch (ValidationException $exception) {
                         $numberFails++;
                     }
-                    FetchProductFromShopifyProgressEvent::dispatch($shopifyUser, [
+                    FetchProductFromPlatformProgressEvent::dispatch($shopifyUser, [
                         'number_total' => $numberTotal,
                         'number_success' => $numberSuccess,
                         'number_fails' => $numberFails
@@ -123,7 +123,7 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                 }
             }
 
-            FetchProductFromShopifyProgressEvent::dispatch($shopifyUser, [
+            FetchProductFromPlatformProgressEvent::dispatch($shopifyUser, [
                 'number_total' => $numberTotal,
                 'number_success' => $numberTotal,
                 'number_fails' => $numberFails

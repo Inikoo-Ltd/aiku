@@ -1,11 +1,9 @@
 <?php
-
 /*
- * author Arya Permana - Kirin
- * created on 25-06-2025-12h-32m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 11 May 2026 14:25:17 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dropshipping\Tiktok\Order;
 
@@ -75,6 +73,10 @@ class ProcessTiktokOrderShipment extends OrgAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function packageWasShipped(TiktokUser $tiktokUser, Order $order, DeliveryNote $deliveryNote, $tiktokPackageId): void
     {
         $tiktokPackageDetail = $tiktokUser->getPackageDetail($tiktokPackageId);
@@ -89,6 +91,10 @@ class ProcessTiktokOrderShipment extends OrgAction
         );
     }
 
+    /**
+     * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function processShipment(Order $order,
                                     DeliveryNote $deliveryNote,
                                     $tiktokPackageDetail,
@@ -105,8 +111,7 @@ class ProcessTiktokOrderShipment extends OrgAction
         if (!$shipper) {
             $shipper = StoreShipper::make()->action($order->organisation, [
                 'code' => $tiktokPackageShippingCode,
-                'name' => $tiktokPackageShippingName,
-                'api_shipper' => PlatformTypeEnum::TIKTOK->value,
+                'name' => $tiktokPackageShippingName.' (TikTok)',
                 'trade_as' => Str::substr($tiktokPackageShippingName, 0, 15)
             ]);
         }

@@ -25,7 +25,11 @@ class ShipmentsResource extends JsonResource
     {
         /** @var Shipment $shipment */
         $shipment    = $this->resource;
-        $isPrintable = (bool) $shipment->shipper->api_shipper;
+        $isPrintable = (bool)$shipment->shipper->api_shipper;
+
+        if ($shipment->combined_label_url) {
+            $isPrintable = true;
+        }
 
         $formattedTrackingURls = [];
         foreach ($shipment->trackings as $key => $tracking) {

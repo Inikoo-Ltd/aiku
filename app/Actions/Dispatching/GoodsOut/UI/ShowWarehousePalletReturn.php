@@ -36,7 +36,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWarehousePalletReturn extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
-    
+
     private bool $requireShipping = true;
 
     public function handle(PalletReturn $palletReturn): PalletReturn
@@ -53,7 +53,7 @@ class ShowWarehousePalletReturn extends OrgAction
         if (!$palletReturn->platform_id) { // Pallet Return for 3RD Party will always require shipping
             $this->requireShipping = Arr::get($palletReturn->fulfilment->shop->settings, 'dispatch.require_shipping', true);
         }
-        
+
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
@@ -75,8 +75,7 @@ class ShowWarehousePalletReturn extends OrgAction
                     'start picking',
                     'finish-picking',
                     'Dispatching',
-                    'revert-to-picking',
-                    'delete_return'
+                    'revert-to-picking'
                 ], true)
             )
         );
@@ -90,11 +89,11 @@ class ShowWarehousePalletReturn extends OrgAction
 
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $afterTitle = [
-                'label' => '('.__("Customer's SKUs").')'
+                'label' => '('.__("Fulfilment DS").')'
                 ];
         } else {
             $afterTitle = [
-                'label' => '('.__('Whole pallets').')'
+                'label' => '('.__('Fulfilment Pallet').')'
             ];
         }
 

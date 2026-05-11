@@ -67,10 +67,6 @@ class StoreShipment extends OrgAction
                 'dpd-sk' => CallApiDpdSkShipping::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),
                 'ctt-es' => CallApiCttEsShipping::run($parent, $shipper),
-                'tiktok' => [
-                    'status'    => 'success',
-                    'modelData' => []
-                ],
                 default => [
                     'status'    => 'error',
                     'errorData' => [

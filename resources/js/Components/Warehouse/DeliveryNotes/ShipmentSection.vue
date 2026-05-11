@@ -548,22 +548,6 @@ const onClickButtonShipmentPlatform = () => {
 							<LoadingIcon />
 						</div>
 
-						<!--  <ModalConfirmationDelete v-else :routeDelete="{
-                            name: 'grp.models.shipment.delete',
-                            parameters: {
-
-                                shipment: shipment.id,
-                            }
-                        }" :title="trans('Are you sure you want to delete this shipment (:ship)?', { ship: shipment.name })"
-                            @success="DeleteShipment(shipmentIdx)"
-                            isFullLoading>
-                            <template #default="{ isOpenModal, changeModel }">
-                                <div @click="changeModel" class="cursor-pointer">
-                                    <FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600"
-                                        fixed-width aria-hidden="true" />
-                                </div>
-                            </template>
-</ModalConfirmationDelete> -->
 
 						<div
 							v-else-if="isEditable"

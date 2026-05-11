@@ -52,6 +52,7 @@ use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\RehydrateChildProductImages;
+use App\Actions\Catalogue\ProductCategory\SyncProductCategoryRelatedProducts;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -467,6 +468,7 @@ Route::patch('master-product-category/{masterProductCategory:id}/translations', 
 Route::patch('master-product-category/{masterProductCategory:id}/master-sub-department/parent', UpdateMasterSubDepartmentsMasterDepartment::class)->name('master_product_category.master_sub_department.parent.update');
 
 Route::patch('master-product-category/{masterProductCategory:id}/related-assets', SyncMasterProductCategoryRelatedMasterAssets::class)->name('master_product_category.related_assets.sync')->withoutScopedBindings();
+Route::patch('product-category/{productCategory:id}/related-products', SyncProductCategoryRelatedProducts::class)->name('product_category.related_products.sync')->withoutScopedBindings();
 
 
 
