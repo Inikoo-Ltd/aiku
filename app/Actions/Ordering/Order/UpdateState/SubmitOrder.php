@@ -159,8 +159,9 @@ class SubmitOrder extends OrgAction
             }
         }
 
+        $isGiftOptedOut = (bool) Arr::get($order->customer->settings, 'is_gift_opted_out', false);
 
-        if ($grGiftOffer && $eligible) {
+        if ($grGiftOffer && $eligible && !$isGiftOptedOut) {
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
             if (!$selectedGrGift) {
                 $grGiftsData = Arr::get($offersData, 'gr.gifts_products');

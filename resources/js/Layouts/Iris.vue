@@ -15,7 +15,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faMedal } from '@fal'
+import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faMedal } from '@fal'
 import { faMedal as fasMedal, faCandleHolder, faCircle, faBoxFull } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -43,7 +43,7 @@ interface ChatConfig {
 }
 
 const bundle = useBundle()
-library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
+library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
 

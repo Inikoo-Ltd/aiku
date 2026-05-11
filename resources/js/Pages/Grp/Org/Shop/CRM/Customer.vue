@@ -80,6 +80,9 @@ const props = defineProps<{
         gr_label: string
         meter: number[]
         customer_is_gr: boolean
+        shop_has_gr?: boolean
+        is_gift_opted_out?: boolean
+        route_gift_opt_out?: import('@/types/route').routeType
     }
 }>()
 
