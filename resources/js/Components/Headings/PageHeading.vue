@@ -101,6 +101,7 @@ const setError = (e) => {
 <template>
 	<!-- Sub Navigation -->
 	<SubNavigation v-if="data.subNavigation?.length" :dataNavigation="data.subNavigation" />
+	<SubNavigation v-if="data.subNavigation2?.length" :dataNavigation="data.subNavigation2" />
 	<slot name="afterSubNav"></slot>
 
 	<div

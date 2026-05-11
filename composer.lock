@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dd387baf3d70695f69794af882ac8bf7",
+    "content-hash": "e65a0b374b161d92108ca3e52cf6bf51",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -12542,16 +12542,16 @@
         },
         {
             "name": "sentry/sentry-laravel",
-            "version": "4.25.0",
+            "version": "4.25.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/getsentry/sentry-laravel.git",
-                "reference": "6699c9465df6bee07d82279f7a209db941913456"
+                "reference": "67efbdd74a752fcc1038676986b055a4df7d5084"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/getsentry/sentry-laravel/zipball/6699c9465df6bee07d82279f7a209db941913456",
-                "reference": "6699c9465df6bee07d82279f7a209db941913456",
+                "url": "https://api.github.com/repos/getsentry/sentry-laravel/zipball/67efbdd74a752fcc1038676986b055a4df7d5084",
+                "reference": "67efbdd74a752fcc1038676986b055a4df7d5084",
                 "shasum": ""
             },
             "require": {
@@ -12617,7 +12617,7 @@
             ],
             "support": {
                 "issues": "https://github.com/getsentry/sentry-laravel/issues",
-                "source": "https://github.com/getsentry/sentry-laravel/tree/4.25.0"
+                "source": "https://github.com/getsentry/sentry-laravel/tree/4.25.1"
             },
             "funding": [
                 {
@@ -12629,7 +12629,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2026-04-07T12:55:27+00:00"
+            "time": "2026-05-05T09:22:46+00:00"
         },
         {
             "name": "setasign/fpdi",

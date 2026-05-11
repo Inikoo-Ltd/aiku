@@ -14,16 +14,17 @@ import { faCube, faLink, faImage } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import { get, isPlainObject } from 'lodash-es'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSpinnerThird } from "@fas"
 
-
-library.add(faCube, faLink, faImage)
+library.add(faCube, faLink, faImage, faSpinnerThird)
 
 const props = defineProps<{
 	fieldValue: FieldValue
 	webpageData?: any
 	blockData?: Object,
 	screenType: 'mobile' | 'tablet' | 'desktop'
-	indexBlock : number
+	indexBlock?: number | string
 }>()
 
 const layout: any = inject("layout", {})
@@ -58,13 +59,27 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 					isImageLeft ? 'order-1' : 'order-2']"
 					:style="getStyles(fieldValue?.image?.container?.properties, screenType)"
 				>
-					<Image :src="fieldValue.image.source" :imageCover="true"
-						:alt="fieldValue.image.alt || 'Image preview'"
-						class="absolute inset-0 w-full h-full object-fill"
-						:imgAttributes="fieldValue.image.attributes" 
-						:height="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.height"
-						:width="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.width"
-						/>
+					<template #default="{ isLoading } = { isLoading: false }">
+						<Image :src="fieldValue.image.source" :imageCover="true"
+							:alt="fieldValue.image.alt || 'Image preview'"
+							class="absolute inset-0 w-full h-full object-fill"
+							:imgAttributes="fieldValue.image.attributes" 
+							:height="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.height"
+							:width="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.width"
+							/>
+						<div
+							v-if="isLoading"
+							class="absolute inset-0 z-10 flex items-center justify-center bg-black/35 pointer-events-none"
+						>
+							<FontAwesomeIcon
+								icon="fas fa-spinner-third"
+								spin
+								class="text-3xl text-white"
+								fixed-width
+								aria-hidden="true"
+							/>
+						</div>
+					</template>
 				</component>
 
 				<div class="flex flex-col justify-center m-auto p-4" :class="isImageLeft ? 'order-2' : 'order-1'"
@@ -76,10 +91,11 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 								:canonical_url="fieldValue?.button?.link?.canonical_url"
 								:target="fieldValue?.button?.link?.taget" typeof="button"
 								:type="fieldValue?.button?.link?.type">
-								<template #default>
+								<template #default="{ isLoading } = { isLoading: false }">
 									<Button
 										:injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-										:label="fieldValue?.button?.text" />
+										:label="fieldValue?.button?.text"
+										:loading="isLoading" />
 								</template>
 							</LinkIris>
 						</div>

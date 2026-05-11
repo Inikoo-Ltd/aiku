@@ -11,6 +11,7 @@ import { closeIcon } from '@/Composables/useAnnouncement'
 import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 import { inject } from "vue"
 import { trans } from "laravel-vue-i18n"
+import { router } from "@inertiajs/vue3"
 library.add(faTimes)
 
 const props = defineProps<{
@@ -440,6 +441,8 @@ const parseTime = (time) => ({
     ones: time % 10,
 })
 
+const hasRefreshedOnExpire = ref(false)
+
 const updateCountdown = () => {
     const now = new Date().getTime()
     const timeLeft = compTimeLeft.value - now
@@ -450,6 +453,11 @@ const updateCountdown = () => {
         hours.value = '00'
         minutes.value = '00'
         seconds.value = '00'
+
+        if (!hasRefreshedOnExpire.value && compTimeLeft.value > 0) {
+            hasRefreshedOnExpire.value = true
+            router.reload({ only: ['announcements'] })
+        }
         return
     }
 

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { getStyles } from "@/Composables/styles"
-import { inject } from "vue"
+import { inject, ref } from "vue"
 import Image from "@/Components/Image.vue"
 import MobileHeader from "../MobileHeader.vue";
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Components/Iris/LinkIris.vue";
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
 const props = defineProps<{
 	fieldValue: {
@@ -39,49 +40,49 @@ const props = defineProps<{
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)
 const layout = inject('layout', layoutStructure)
-
+const loadingRedirect = ref(false)
 </script>
 
 <template>
 	<div id="header_2_iris" class="relative shadow-sm" :style="{
-			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-            margin : 0, padding : 0,
-			...getStyles(fieldValue.container?.properties, screenType)
-            
-		}">
+		...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+		margin: 0, padding: 0,
+		...getStyles(fieldValue.container?.properties, screenType)
+
+	}">
 		<div class="flex flex-col justify-between items-start py-4 px-6">
 			<div class="w-full grid grid-cols-3 items-start gap-y-6 gap-x-10">
 				<!-- Logo -->
 				<div class="col-span-2 flex items-center gap-x-10 justify-between h-full"
-					:class="fieldValue?.search?.is_box_full_width ? 'flex' : 'grid grid-cols-2'"
-				>
+					:class="fieldValue?.search?.is_box_full_width ? 'flex' : 'grid grid-cols-2'">
 					<div class="relative w-[200px] md:w-[200px] aspect-[4/2]">
+
+						<!-- Spinner Overlay -->
+						<div v-if="loadingRedirect"
+							class="absolute inset-0 z-10 flex items-center justify-center bg-white/60 rounded">
+							<LoadingIcon class="w-12 h-12 text-gray-500" />
+						</div>
+
 						<component v-if="fieldValue?.logo?.image?.source"
-						:is="fieldValue?.logo?.image?.source ? LinkIris : 'div'"
-						:canonical_url="props.fieldValue?.logo?.link?.canonical_url"
-						:href="props.fieldValue?.logo?.link?.href" :type="props.fieldValue?.logo?.link?.type"
-						:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer"
-						class="block w-fit h-auto">
+							:is="fieldValue?.logo?.image?.source ? LinkIris : 'div'" @start="loadingRedirect = true"
+							@finish="loadingRedirect = false"
+							:canonical_url="props.fieldValue?.logo?.link?.canonical_url"
+							:href="props.fieldValue?.logo?.link?.href" :type="props.fieldValue?.logo?.link?.type"
+							:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer"
+							class="block w-fit h-auto">
 							<template #default>
-								<!-- <Image :style="getStyles(fieldValue.logo.properties, screenType)"
-									:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
-									class="object-contain w-full h-full" :src="fieldValue?.logo?.image?.source" /> -->
-									<Image
-									:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
+								<Image :alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
 									class="object-contain w-full h-full" :src="fieldValue?.logo?.image?.source" />
 							</template>
 						</component>
+
 					</div>
-				
+
 					<!-- Search Bar -->
 					<div class="relative justify-self-center w-full flex items-center h-full"
-						:class="fieldValue?.search?.is_box_full_width ? 'max-w-[1100px] ' : 'max-w-sm'"
-					>
-						<LuigiSearch
-							v-if="layout.iris?.luigisbox_tracker_id"
-							:fieldValueSearch="fieldValue?.search"
-							id="luigi_header_2"
-						/>
+						:class="fieldValue?.search?.is_box_full_width ? 'max-w-[1100px] ' : 'max-w-sm'">
+						<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" :fieldValueSearch="fieldValue?.search"
+							id="luigi_header_2" />
 					</div>
 				</div>
 

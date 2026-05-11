@@ -35,7 +35,7 @@ const props = withDefaults(defineProps<{
     buttonStyleHover?: any
     buttonStyle?: object | undefined
     buttonStyleLogin?: object | undefined
-    addToBasketRoute: routeType
+    addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
     isLoadingFavourite: boolean
     isLoadingRemindBackInStock: boolean

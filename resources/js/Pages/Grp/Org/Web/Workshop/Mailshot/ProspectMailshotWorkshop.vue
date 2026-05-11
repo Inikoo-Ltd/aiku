@@ -55,7 +55,8 @@ const _beefree = ref()
 const _unlayer = ref()
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
-const email = ref([])
+const visibleUnsubscribeWarningModal = ref(false)
+const email = ref('')
 const templateName = ref('')
 const temporaryData = ref()
 const active = ref(props.status)
@@ -75,11 +76,21 @@ const onSendPublish = async (data) => {
         });
 
         if (response && response.status === 200) {
-            notify({
-                title: "Success",
-                text: "Save and publish email successfully",
-                type: "success",
-            });
+            if (response.data.has_unsubscribelink === false) {
+                visibleUnsubscribeWarningModal.value = true
+
+                notify({
+                    title: "Warning",
+                    text: "Saved successfully, but no unsubscribe link was found.",
+                    type: "warning",
+                });
+            } else {
+                notify({
+                    title: "Success",
+                    text: "Saved successfully",
+                    type: "success",
+                });
+            }
         }
     } catch (error) {
         console.log(error)
@@ -110,13 +121,18 @@ const onSaveTemplate = (data: any) => {
     }
 }
 
-const sendTestToServer = async () => {
+const sendTestToServer = () => {
     isLoading.value = true;
-    try {
-        const response = await axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
-            { ...temporaryData.value, emails: email.value }
-        );
-    } catch (error) {
+    axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
+        { ...temporaryData.value, email: email.value }
+    ).then((response) => {
+        notify({
+            title: trans('Success!'),
+            text: trans('Test email sent successfully'),
+            type: 'success',
+        });
+        email.value = '';
+    }).catch((error) => {
         console.error("Error in sendTest:", error);
         visibleEmailTestModal.value = false
         temporaryData.value = null
@@ -126,10 +142,16 @@ const sendTestToServer = async () => {
             text: errorMessage,
             type: "error",
         });
-    } finally {
+    }).finally(() => {
         isLoading.value = false;
-    }
+        visibleEmailTestModal.value = false
+        temporaryData.value = null
+    });
 };
+
+const closeUnsubscribeWarningModal = () => {
+    visibleUnsubscribeWarningModal.value = false
+}
 
 
 const saveTemplate = async () => {
@@ -320,20 +342,12 @@ watch(
         :style="{ width: '25rem' }">
         <div class="pt-4">
             <div class="font-semibold w-24 mb-3">Email</div>
-            <Multiselect v-model="email" mode="tags" :close-on-select="false" :searchable="true" :create-option="true"
-                :options="[]" :showOptions="false" :caret="false">
-                <template #tag="{ option, handleTagRemove, disabled }">
-                    <slot name="tag" :option="option" :handleTagRemove="handleTagRemove" :disabled="disabled">
-                        <div class="px-0.5 py-[3px]">
-                            <Tag :label="option.label" :closeButton="true" :stringToColor="true" size="sm"
-                                @onClose="(event) => handleTagRemove(option, event)" />
-                        </div>
-                    </slot>
-                </template>
-            </Multiselect>
+            <PureInput v-model="email" placeholder="Email" />
             <div class="flex justify-end mt-3 gap-3">
-                <Button :type="'tertiary'" label="Cancel" @click="visibleEmailTestModal = false"></Button>
-                <Button @click="sendTestToServer" :icon="faPaperPlane" label="Send"></Button>
+                <Button :type="'tertiary'" label="Cancel" @click="visibleEmailTestModal = false"
+                    :disabled="isLoading"></Button>
+                <Button @click="sendTestToServer" :icon="faPaperPlane" label="Send" :loading="isLoading"
+                    :disabled="!email"></Button>
             </div>
         </div>
     </Dialog>
@@ -350,5 +364,20 @@ watch(
         </div>
     </Dialog>
 
+    <Dialog v-model:visible="visibleUnsubscribeWarningModal" modal :closable="false" :showHeader="false"
+        :style="{ width: '30rem' }">
+        <div class="pt-4">
+            <div class="text-center mb-4">
+                <div class="text-amber-500 text-4xl mb-3">⚠️</div>
+                <div class="font-semibold text-lg mb-2">Missing Unsubscribe Link</div>
+                <div class="text-gray-600">This mailshot/newsletter doesn't contain an unsubscribe link. Please consider
+                    adding one to ensure compliance with email regulations and provide recipients with a clear option to
+                    unsubscribe.</div>
+            </div>
+            <div class="flex justify-center mt-4">
+                <Button @click="closeUnsubscribeWarningModal" label="OK" type="primary"></Button>
+            </div>
+        </div>
+    </Dialog>
 
 </template>

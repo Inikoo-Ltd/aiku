@@ -5,7 +5,7 @@
 -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 
@@ -19,6 +19,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
+// import Link from '@/Components/CMS/Fields/Link.vue'
 library.add(faNarwhal)
 
 interface UploadSection {
@@ -55,14 +56,30 @@ const onNoStructureUpload = () => {
   <template>
       <Head :title="capitalize(title)" />
       <PageHeading :data="pageHead">
-		  <template #button-edit-sku="{action}">
-			  <Button
-				  @click="() => bulk_edit_upload ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-				  type="tertiary"
-				  :style="'edit'"
-				  :label="'Bulk Edit SKU'"
-			  />
-		  </template>
+		  	<template #button-edit-sku="{action}">
+				<Button
+					@click="() => bulk_edit_upload ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
+					type="tertiary"
+					:style="'edit'"
+					:label="'Bulk Edit SKU'"
+				/>
+		  	</template>
+
+			<template #button-download-pdf="{ action }">
+				{{ route(action.route?.name, action.route?.parameters) }}
+				<a
+					:href="route(action.route?.name, action.route?.parameters)"
+					:target="'_blank'"
+					method="get"
+				>
+					<Button
+						type="tertiary"
+						:style="'edit'"
+						:icon="action.icon"
+						:label="action.label"
+					/>
+				</a>
+		  	</template>
 	  </PageHeading>
 	  <UploadExcel
 		  v-if="bulk_edit_upload"

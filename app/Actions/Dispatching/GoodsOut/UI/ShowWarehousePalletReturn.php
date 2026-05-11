@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\GoodsOut\UI;
 
 use App\Actions\Fulfilment\PalletReturn\IndexPalletsInReturnPalletWholePallets;
+use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnActions;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnAddressManagement;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnBoxStats;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
@@ -35,16 +36,24 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWarehousePalletReturn extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
+    
+    private bool $requireShipping = true;
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        return $palletReturn;
+        return $palletReturn->load([
+            'pickerUser:id,contact_name',
+            'packerUser:id,contact_name',
+        ]);
     }
-
 
 
     public function asController(Organisation $organisation, Warehouse $warehouse, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        if (!$palletReturn->platform_id) { // Pallet Return for 3RD Party will always require shipping
+            $this->requireShipping = Arr::get($palletReturn->fulfilment->shop->settings, 'dispatch.require_shipping', true);
+        }
+        
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
@@ -58,7 +67,19 @@ class ShowWarehousePalletReturn extends OrgAction
         $subNavigation = [];
 
 
-        $actions = [];
+        $actions = array_values(
+            Arr::where(
+                GetPalletReturnActions::run($palletReturn, true, false),
+                fn (array $action) => in_array($action['key'] ?? null, [
+                    'confirm',
+                    'start picking',
+                    'finish-picking',
+                    'Dispatching',
+                    'revert-to-picking',
+                    'delete_return'
+                ], true)
+            )
+        );
 
 
         $navigation = PalletReturnTabsEnum::navigation($palletReturn);
@@ -74,6 +95,28 @@ class ShowWarehousePalletReturn extends OrgAction
         } else {
             $afterTitle = [
                 'label' => '('.__('Whole pallets').')'
+            ];
+        }
+
+        $warning = null;
+        if ($palletReturn->pickingSessions && $palletReturn->pickingSessions->isNotEmpty()) {
+            $pickingSessions = $palletReturn->pickingSessions->map(function ($pickingSession) {
+                return [
+                    'reference' => $pickingSession->reference,
+                    'route'     => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.fulfilment.show',
+                        'parameters' => [
+                            'organisation'   => $pickingSession->organisation->slug,
+                            'warehouse'      => $pickingSession->warehouse->slug,
+                            'pickingSession' => $pickingSession->slug,
+                        ],
+                    ],
+                ];
+            })->toArray();
+
+            $warning = [
+                'text'             => __('This pallet return is being processed in picking session(s)'),
+                'picking_sessions' => $pickingSessions,
             ];
         }
 
@@ -114,6 +157,27 @@ class ShowWarehousePalletReturn extends OrgAction
                         'palletReturn'       => $palletReturn->id
                     ]
                 ],
+                'picker_packer_routes' => [
+                    'pickers_list' => [
+                        'name'       => 'grp.json.employees.picker_users',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'packers_list' => [
+                        'name'       => 'grp.json.employees.packers',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'update' => [
+                        'name'       => 'grp.models.pallet-return.update',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'patch',
+                    ],
+                ],
 
                 'deleteServiceRoute' => [
                     'name'       => 'org.models.pallet-return.service.delete',
@@ -137,7 +201,7 @@ class ShowWarehousePalletReturn extends OrgAction
                 ],
 
 
-
+                'warning' => $warning,
 
 
                 'tabs' => [

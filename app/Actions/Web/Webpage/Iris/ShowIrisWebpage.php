@@ -54,7 +54,7 @@ class ShowIrisWebpage
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
-
+        $website         = request()->input('website');
         $baseWebpageData = [
             'breadcrumbs'  => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -70,8 +70,10 @@ class ShowIrisWebpage
                 'model_type'    => $webpage->model_type
             ],
             'webpage_img'  => $webpageImg,
-            'index_page'    => $webpage->index_page,
-            'follow_link'   => $webpage->follow_link
+            'index_page'   => $webpage->index_page,
+            'follow_link'  => $webpage->follow_link,
+            'webpage_slug' => $webpage->slug,
+
         ];
 
         return array_merge($baseWebpageData, [
@@ -215,9 +217,11 @@ class ShowIrisWebpage
 
             return redirect()->to($webpageData, 301)
                 ->withHeaders([
-                    'x-original-referer' => request()->headers->get('referer', ''),
-                ])
-                ->with('from-iris-redirect', true);
+                    'Cache-Control'             => 'public, s-maxage=300, max-age=0',
+                    'X-Aiku-Cacheable-Redirect' => '1',
+                    // 'x-original-referer' => request()->headers->get('referer', ''), todo: review this, set it as a ?query= instead
+                ]);
+            // ->with('from-iris-redirect', true);
         }
 
         $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
@@ -228,6 +232,9 @@ class ShowIrisWebpage
         )->withViewData([
             'browserTitle' => $browserTitle,
         ])->toResponse(request());
+
+        $response->headers->set('Cache-Control', 'public, s-maxage=300, max-age=0');
+        $response->headers->set('X-Aiku-Cacheable-Inertia', '1');
 
         $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
         if (isset($webpageData['webpage_id'])) {
@@ -257,7 +264,6 @@ class ShowIrisWebpage
                     ->where('website_id', $website->id)
                     ->first()?->to_webpage_id;
             }
-
         }
 
 

@@ -82,9 +82,11 @@ class CreateBatchCode extends OrgAction
                 'breadcrumbs' => $orgStock
                     ? $this->getOrgStockBreadcrumbs($orgStock, $request)
                     : $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('New Batch Code'),
+                'title'       => __('Batch Code') . ': ' . __('create new'),
                 'pageHead'    => [
-                    'title'   => __('New Batch Code'),
+                    'title'   => __('Create new'),
+                    'icon'  => 'fal fa-barcode',
+                    'model' => __('Batch code'),
                     'actions' => [
                         [
                             'type'  => 'button',

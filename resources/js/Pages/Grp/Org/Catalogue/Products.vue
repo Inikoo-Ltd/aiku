@@ -161,13 +161,15 @@ const repairTradeUnitToChildren = async () => {
 const loadingOrder = ref(false)
 const SaveOrder = () => {
     // console.log(localData.value.index_ordering);
+    const products = localData.value?.index_ordering || localData.value?.index_ordering?.data || []
+
     router.patch(route('grp.models.product_category.reorder_index', {
         productCategory: props.familyId
     }), {
-        products: localData.value.index_ordering.map((product: any, index: number) => ({
+        products: products.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
-            index_under_family: product.index_under_family,
+            index_under_family: product.index_under_family || index,
         }))
     }, {
         preserveScroll: true,

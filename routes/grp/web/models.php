@@ -110,6 +110,7 @@ use App\Actions\CRM\Prospect\Mailshots\SendProspectMailShot;
 use App\Actions\CRM\Prospect\Mailshots\StoreProspectMailshot;
 use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshot;
 use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshotRecipientFilter;
+use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -197,6 +198,7 @@ use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingStoredItemReturn;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToInProcess;
+use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToPicking;
 use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturnDeliveryAddress;
@@ -403,6 +405,7 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockin
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Web\Redirect\DeleteRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
+use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -717,6 +720,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('pallet-return-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('pallet-return-item.upload');
 
     Route::post('revert-to-in-process', RevertPalletReturnToInProcess::class)->name('revert-to-in-process');
+    Route::post('revert-to-picking', RevertPalletReturnToPicking::class)->name('revert-to-picking');
     Route::post('pallet-upload', ImportPalletsInPalletDelivery::class)->name('pallet.upload');
     Route::patch('/', UpdatePalletReturn::class)->name('update');
     Route::get('stored-item-picking-pdf', PdfPickingStoredItemReturn::class)->name('stored_item_picking.pdf');
@@ -758,6 +762,7 @@ Route::name('pallet-return-item.')->prefix('pallet-return-item/{palletReturnItem
     Route::patch('pick', PickPalletReturnItemInPalletReturnWithStoredItem::class)->name('pick');
     Route::patch('undo-picking-stored-item', UndoStoredItemPick::class)->name('undo-picking-stored-item');
     Route::patch('not-picked', NotPickedPalletFromReturn::class)->name('not-picked');
+    Route::patch('not-picked-pallet', SetNotPickedPallet::class)->name('not-picked-pallet');
     Route::patch('undo-picking', UndoPickingPalletFromReturn::class)->name('undo-picking');
     Route::patch('undo', UndoPalletReturnItem::class)->name('undo-confirmed');
 });
@@ -807,6 +812,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
     Route::post('prospect/mailshot/{mailshot:id}/send', SendProspectMailShot::class)->name('prospect.mailshot.send')->withoutScopedBindings();
+    Route::post('prospect', StoreProspect::class)->name('prospect.store');
     Route::post('website', StoreWebsite::class)->name('website.store');
 
     Route::name('sender_email.')->prefix('sender-email')->group(function () {

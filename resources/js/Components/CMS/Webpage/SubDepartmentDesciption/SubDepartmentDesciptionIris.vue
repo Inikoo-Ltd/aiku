@@ -7,6 +7,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { trans } from 'laravel-vue-i18n'
 import { getBestOffer } from '@/Composables/useOffers'
+import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 
 library.add(faCube, faLink, faInfoCircle, faStar, faCircle, faBadgePercent, faChevronCircleLeft, faChevronCircleRight)
 
@@ -74,6 +75,23 @@ const cleanedDescription = computed(() => {
   <div  :id="fieldValue?.id ? fieldValue?.id  : 'sub_department-1-iris'"  component="sub_department-1-iris" >
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="sub_department Description Section">
+
+
+      <div v-if="fieldValue?.department?.offers_data?.number_offers && layout.iris.is_logged_in"
+            class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
+        >
+                <DiscountByType 
+                    :offers_data="fieldValue?.sub_department?.offers_data"
+                    :template="bestOffer?.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr' : 'max_discount'"
+                />
+                <DiscountByType
+                   v-if="!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) && bestOffer?.type == 'Category Quantity Ordered Order Interval'"
+                   :offers_data="fieldValue?.sub_department?.offers_data"
+                   :template="'triggers_labels'"
+                />
+
+            
+        </div>
        
 
         <!-- Description Title (SEO: Heading) -->

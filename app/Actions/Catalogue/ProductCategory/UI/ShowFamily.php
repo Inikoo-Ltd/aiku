@@ -22,9 +22,11 @@ use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
+use App\Http\Resources\Catalogue\ProductsResourceForRecommendation;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Masters\RelatedMasterProductsResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -193,6 +195,18 @@ class ShowFamily extends OrgAction
             FamilyTabsEnum::OFFERS->value => $this->tab == FamilyTabsEnum::OFFERS->value ?
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
+
+            FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
+                fn () => [
+                    'id' => $family->id,
+                    'data' => RelatedMasterProductsResource::collection(GetProductCategoryRecomendation::run($family)),
+                    'editable' => false
+                ]
+                : Inertia::lazy(fn () => [
+                    'id' => $family->id,
+                    'data' => RelatedMasterProductsResource::collection(GetProductCategoryRecomendation::run($family)),
+                    'editable' => false
+                ]),
         ];
 
         $tabs[FamilyTabsEnum::VARIANTS->value] =
@@ -273,7 +287,7 @@ class ShowFamily extends OrgAction
                 'url_master'       => $urlMaster,
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => FamilyTabsEnum::navigation()
+                    'navigation' => FamilyTabsEnum::navigation(),
                 ],
                 'shop_data' => [
                     'id'       => $family->shop->id,

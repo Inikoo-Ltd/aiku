@@ -102,7 +102,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read MasterProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
- * @property-read LaravelCollection<int, Asset> $relatedMasterAssets
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $relatedMasterAssets
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
@@ -282,9 +282,26 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
     }
 
+    public function extraDescArt2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art2');
+    }
+
+    public function extraDescArt3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art3');
+    }
+
+    public function extraDescArt4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art4');
+    }
+
     public function relatedMasterAssets(): BelongsToMany
     {
         return $this->belongsToMany(MasterAsset::class, 'master_product_category_has_related_assets')
+            ->orderByPivot('position')
+            ->withPivot('id', 'position')
             ->withTimestamps();
     }
 

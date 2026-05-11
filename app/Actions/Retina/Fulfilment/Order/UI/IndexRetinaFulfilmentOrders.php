@@ -62,6 +62,7 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
         $query->select(
             'pallet_returns.id',
             'pallet_returns.slug',
+            'pallet_returns.created_at',
             'pallet_returns.reference',
             'pallet_returns.state',
             'pallet_returns.type',
@@ -132,11 +133,11 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'state_icon', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'created_at', label: __('Created at'), canBeHidden: false, type: 'date')
-                ->column(key: 'reference', label: __('reference number'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference number'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('Your reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'total_amount', label: __('total amount'), canBeHidden: false, type: 'currency');
+                ->column(key: 'total_amount', label: __('Total amount'), canBeHidden: false, type: 'currency');
         };
     }
 

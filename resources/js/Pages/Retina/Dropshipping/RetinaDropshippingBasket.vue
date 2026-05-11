@@ -39,7 +39,7 @@ import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhon
 import {Currency} from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
-import {faSpinnerThird, faCheck, faCross, faTimesCircle} from '@far'
+import {faSpinnerThird, faCheck} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DropshippingSummaryBasket from '@/Components/Retina/Dropshipping/DropshippingSummaryBasket.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'

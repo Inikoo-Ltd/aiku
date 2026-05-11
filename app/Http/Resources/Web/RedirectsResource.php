@@ -14,22 +14,23 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * @property mixed $id
  * @property mixed $url
- * @property mixed $path
  * @property mixed $type
- * @property mixed $webpage_title
- * @property mixed $webpage_url
- * @property mixed $webpage_slug
+ * @property mixed $to_webpage_title
+ * @property mixed $to_webpage_code
+ * @property mixed $to_webpage_slug
+ * @property mixed $path
  */
 class RedirectsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'            => $this->id,
-            'url'           => $this->url,
-            'type'          => $this->type,
+            'id'               => $this->id,
+            'url'              => $this->url,
+            'type'             => $this->type,
+            'path'             => '…/'.$this->path,
             'to_webpage_title' => $this->to_webpage_title,
-            'to_webpage_code'   => $this->to_webpage_code,
+            'to_webpage_code'  => $this->to_webpage_code,
             'to_webpage_slug'  => $this->to_webpage_slug,
         ];
     }

@@ -52,15 +52,25 @@ class PalletsResource extends JsonResource
             'fulfilment_slug'          => $this->fulfilment_slug,
             'notes'                    => (string)$this->notes,
             'state'                    => $this->state,
-            'type_icon'                => $this->type->typeIcon()[$this->type->value],
+            'type_icon'                => is_object($this->type) && method_exists($this->type, 'typeIcon') && isset($this->type->value)
+                ? ($this->type->typeIcon()[$this->type->value] ?? null)
+                : null,
             'type'                     => $this->type,
             'rental_id'                => $rental->id ?? null,
             'rental_name'              => $rental->name ?? null,
-            'state_label'              => $this->state->labels()[$this->state->value],
-            'state_icon'               => $this->state->stateIcon()[$this->state->value],
+            'state_label'              => is_object($this->state) && method_exists($this->state, 'labels') && isset($this->state->value)
+                ? ($this->state->labels()[$this->state->value] ?? null)
+                : null,
+            'state_icon'               => is_object($this->state) && method_exists($this->state, 'stateIcon') && isset($this->state->value)
+                ? ($this->state->stateIcon()[$this->state->value] ?? null)
+                : null,
             'status'                   => $this->status,
-            'status_label'             => $this->status->labels()[$this->status->value],
-            'status_icon'              => $this->status->statusIcon()[$this->status->value],
+            'status_label'             => is_object($this->status) && method_exists($this->status, 'labels') && isset($this->status->value)
+                ? ($this->status->labels()[$this->status->value] ?? null)
+                : null,
+            'status_icon'              => is_object($this->status) && method_exists($this->status, 'statusIcon') && isset($this->status->value)
+                ? ($this->status->statusIcon()[$this->status->value] ?? null)
+                : null,
             'location_slug'            => $this->location_slug,
             'location_code'            => $this->location_code,
             'location_id'              => $this->location_id,
@@ -68,7 +78,7 @@ class PalletsResource extends JsonResource
             'dispatched_at'            => $this->dispatched_at,
             'stock' =>  $this->quantity,
             'incident_report_message'  => $this->incident_report->message ?? '-',
-            'stored_items'             => $this->storedItems->map(fn (StoredItem $storedItem) => [
+            'stored_items'             => collect($this->storedItems ?? [])->map(fn (StoredItem $storedItem) => [
                 'id'                 => $storedItem->id,
                 'name'               => $storedItem->name,
                 'reference'          => $storedItem->reference,
@@ -78,7 +88,7 @@ class PalletsResource extends JsonResource
                 'quantity'           => (int)$storedItem->pivot->quantity,
                 'delivered_quantity' => (int)$storedItem->pivot->delivered_quantity ?? null,
             ]),
-            'stored_items_quantity'    => (int)$this->storedItems()->sum('quantity'),
+            'stored_items_quantity'    => (int)collect($this->storedItems ?? [])->sum(fn ($storedItem) => (int)($storedItem->pivot->quantity ?? 0)),
             'updateRoute'              => match (request()->routeIs('retina.*')) {
                 true => [
                     'name'       => 'retina.models.pallet.update',

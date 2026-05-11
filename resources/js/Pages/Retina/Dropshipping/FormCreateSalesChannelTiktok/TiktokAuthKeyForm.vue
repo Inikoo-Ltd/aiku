@@ -70,11 +70,11 @@ const submitForm = async () => {
 				"
 				icon="fal fa-info-circle"
 				class="hidden md:block size-5 text-black" />
-			<p v-if="errors?.message?.[0]" class="text-red-500">{{errors?.message?.[0]}}</p>
 		</div>
+			<p v-if="errors?.message?.[0]" class="text-red-500">{{errors?.message?.[0]}}</p>
 		<hr class="w-full border-t" />
 		<div class="flex md:justify-end gap-4">
-			<Button type="secondary" size="sm" @click="closeCreateTiktokModal">{{
+			<Button type="tertiary" size="sm" @click="closeCreateTiktokModal">{{
 				trans("Cancel")
 			}}</Button>
 			<Button size="sm" :loading="isLoadingStep" @click="submitForm">{{

@@ -253,7 +253,7 @@ const onCreateReplacement = (action: any) => {
 
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #button-action-replacement="{action}">
-            <Button @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
+            <Button v-tooltip="isReplacementDisabled ? ctrans('Unable to save, some quantity is invalid') : ''" @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
                 :type="action.type" :disabled="isReplacementDisabled" :loading="loadingCreateReplacement" />
         </template>
     </PageHeading>
@@ -302,7 +302,9 @@ const onCreateReplacement = (action: any) => {
 
 
     <BoxStatsDeliveryNote v-if="box_stats" :boxStats="box_stats" :routes :deliveryNote="delivery_note"
-        :updateRoute="routes.update" :shipments @replace-all="onReplaceAll" />
+        :updateRoute="routes.update" :shipments @replace-all="onReplaceAll"
+        isShowButtonReplaceAll
+    />
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 

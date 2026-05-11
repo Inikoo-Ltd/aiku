@@ -11,8 +11,8 @@ import {
     faTimes,
     faPlusCircle,
     faUserCircle,
-    faSpinner
 } from "@fas";
+import { faSpinnerThird } from "@fad";
 import { faHeart } from "@far";
 import { faBars, faChevronLeft, faChevronRight as falChevronRight, faAlbumCollection } from "@fal";
 import { ref, inject, nextTick, onMounted, computed, watch } from "vue";
@@ -38,7 +38,7 @@ library.add(
     faPlusCircle,
     faBars,
     faUserCircle,
-    faSpinner
+    faSpinnerThird
 );
 
 const props = withDefaults(
@@ -75,6 +75,11 @@ const onClickSubnav = (link: any) => {
     /* setTimeout(() => (window.location.href = link.link.href), 600); */
 };
 
+const onStartNavigation = (navigation: any) => {
+    if (!navigation?.link?.href) return;
+    loadingItem.value = navigation.id || navigation.label;
+}
+
 // Scroll logic
 const _scrollContainer = ref<HTMLElement | null>(null);
 const isAbleScrollToRight = ref(false);
@@ -98,11 +103,11 @@ onMounted(() => {
     });
 });
 
-const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
+const isOpenMenuMobile = inject("isOpenMenuMobile", ref(true));
 
 // Unified icon resolver
 const getNavigationIcon = (navigation: any) => {
-    if (loadingItem.value === (navigation.id || navigation.label)) return "fas fa-spinner";
+    if (loadingItem.value === (navigation.id || navigation.label)) return "fad fa-spinner-third";
     if (navigation.type === "multiple") return "fas fa-chevron-down";
     return navigation.icon || null;
 };
@@ -277,6 +282,7 @@ const imageCol = computed(() => {
                 <template v-for="(navigation, idxNavigation) in compCustomTopNavigation" :key="idxNavigation">
                     <component :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)" :type="navigation?.link?.type"
+                        @start="() => onStartNavigation(navigation)" @finish="() => loadingItem = null"
                         :id="navigation?.link?.id"
                         :style="compIndexStyling1?.includes(idxNavigation + 1) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType) : getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href" :canonical_url="navigation?.link?.canonical_url"
@@ -297,6 +303,7 @@ const imageCol = computed(() => {
                 <template v-for="(navigation, idxNavigation) in selectedMenu" :key="idxNavigation">
                     <component :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)" :type="navigation?.link?.type"
+                        @start="() => onStartNavigation(navigation)" @finish="() => loadingItem = null"
                         :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType) : getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href" :id="navigation?.link?.id"
                         :canonical_url="navigation?.link?.canonical_url"
@@ -318,6 +325,7 @@ const imageCol = computed(() => {
                 <template v-for="(navigation, idxNavigation) in compCustomBottomNavigation" :key="idxNavigation">
                     <component :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)" :type="navigation?.link?.type"
+                        @start="() => onStartNavigation(navigation)" @finish="() => loadingItem = null"
                         :id="navigation?.link?.id"
                         xstyle="getStyles(fieldValue?.custom_navigation_styling?.custom_bottom?.properties, screenType)"
                         :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0) + (selectedMenu?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType) : getStyles(fieldValue?.navigation_container?.properties, screenType)"

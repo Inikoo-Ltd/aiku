@@ -19,7 +19,6 @@ import { notify } from "@kyvg/vue3-notification"
 import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
-import { isArray } from "lodash-es"
 
 import { confetti } from '@tsparticles/confetti'
 
@@ -196,7 +195,7 @@ watch(
   () => usePage().url,
   (newUrl, oldUrl) => {
     if (layout.iris?.is_logged_in) {
-      layout?.log_user()
+      layout?.recordWebsiteHit()
     }
   },
   { immediate: true }
@@ -253,27 +252,7 @@ const getBgColorDependsOnStatus = (status: string) => {
     }
 }
 
-const isSidebarFetching = ref(false)
-const fetchSidebarOnce = async () => {
-    if (isSidebarFetching.value) return
-
-    isSidebarFetching.value = true
-
-    try {
-        const baseUrl = window.location.origin
-        const { data } = await axios.get(`${baseUrl}/json/sidebar`)
-
-        layout.iris.sidebar = data.sidebar
-        layout.isSidebarLoaded = true
-    } catch (e) {
-        console.error("[IrisSidebar] fetch failed", e)
-    } finally {
-        isSidebarFetching.value = false
-    }
-}
-
 onMounted(() => {
-    fetchSidebarOnce()
     // if (layout.iris?.is_have_gtm) {
     setColorStyleRoot(layout?.app?.theme)
     hideSuperchatWidget()
@@ -327,11 +306,7 @@ const safeTheme = computed(() => {
 
             <slot />
 
-            <IrisFooter
-                v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
-                :data="layout.iris.footer"
-                :colorThemed="irisTheme"
-            />
+            <IrisFooter :colorThemed="irisTheme" />
         </template>
         <!-- <main v-else
             class="bg-gray-50 min-h-screen pt-16 pb-10 mx-auto flex justify-center transition-all px-8 lg:px-0"

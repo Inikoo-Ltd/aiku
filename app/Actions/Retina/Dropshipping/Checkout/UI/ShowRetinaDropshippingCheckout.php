@@ -67,7 +67,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $toPayByBalance = $paymentAmounts['by_balance'];
         $toPayByOther = $paymentAmounts['by_other'];
 
-
+        \Sentry\traceMetrics()->count('visit.checkout.ds', 1, ['shop' => $this->shop->slug]);
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingCheckout',

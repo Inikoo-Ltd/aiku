@@ -14,7 +14,7 @@ use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\WithVarnishBan;
 
-class BreakWebpageVarnishCache extends OrgAction
+class BanVarnishWebpage extends OrgAction
 {
     use WithVarnishBan;
 
@@ -42,7 +42,7 @@ class BreakWebpageVarnishCache extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'varnish:webpage {slug}';
+        return 'varnish:ban:webpage {slug}';
     }
 
     public function asCommand(Command $command): int

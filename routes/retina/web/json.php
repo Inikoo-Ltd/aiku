@@ -20,7 +20,6 @@ use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallet
 use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Iris\Json\GetRetinaFirstHitData;
-use App\Actions\Iris\RetinaCollectTrafficSources;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
 use App\Actions\Retina\Dropshipping\Portfolio\UploadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
@@ -57,7 +56,6 @@ Route::get('customer-sales-channel/{customerSalesChannel:id}/allegro-products', 
 
 Route::get('first-hit', GetRetinaFirstHitData::class)->name('first_hit');
 Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
-Route::get('hit', RetinaCollectTrafficSources::class)->name('hit');
 
 Route::get('customer/{customer:id}/tags', [IndexTags::class, 'inRetina'])->name('customer.tags.index');
 Route::get('basket-transaction-product-data/{transaction:id}', GetRetinaBasketTransactionProductData::class)->name('basket_transaction_product_data');

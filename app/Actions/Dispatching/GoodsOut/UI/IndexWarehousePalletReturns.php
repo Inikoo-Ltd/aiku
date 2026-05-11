@@ -13,6 +13,7 @@ use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\UI\Fulfilment\PalletReturnsTabsEnum;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\InertiaTable\InertiaTable;
@@ -48,6 +49,24 @@ class IndexWarehousePalletReturns extends OrgAction
         return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
     }
 
+    public function inWarehousePallet(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'all';
+        $this->type = PalletReturnTypeEnum::PALLET->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
+    public function inWarehouseStoredItem(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'all';
+        $this->type = PalletReturnTypeEnum::STORED_ITEM->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inWarehouseHandling(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
@@ -67,10 +86,46 @@ class IndexWarehousePalletReturns extends OrgAction
         return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
     }
 
+    public function inWarehouseConfirmedPallet(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'confirmed';
+        $this->type = PalletReturnTypeEnum::PALLET->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
+    public function inWarehouseConfirmedStoredItem(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'confirmed';
+        $this->type = PalletReturnTypeEnum::STORED_ITEM->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inWarehousePicking(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->restriction = 'picking';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
+    public function inWarehousePickingPallet(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'picking';
+        $this->type = PalletReturnTypeEnum::PALLET->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
+    public function inWarehousePickingStoredItem(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'picking';
+        $this->type = PalletReturnTypeEnum::STORED_ITEM->value;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
 
         return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
@@ -85,6 +140,24 @@ class IndexWarehousePalletReturns extends OrgAction
         return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
     }
 
+    public function inWarehousePickedPallet(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'picked';
+        $this->type = PalletReturnTypeEnum::PALLET->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
+    public function inWarehousePickedStoredItem(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'picked';
+        $this->type = PalletReturnTypeEnum::STORED_ITEM->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inWarehouseDispatched(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
@@ -94,10 +167,46 @@ class IndexWarehousePalletReturns extends OrgAction
         return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
     }
 
+    public function inWarehouseDispatchedPallet(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'dispatched';
+        $this->type = PalletReturnTypeEnum::PALLET->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
+    public function inWarehouseDispatchedStoredItem(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'dispatched';
+        $this->type = PalletReturnTypeEnum::STORED_ITEM->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inWarehouseCancelled(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->restriction = 'cancelled';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
+    public function inWarehouseCancelledPallet(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'cancelled';
+        $this->type = PalletReturnTypeEnum::PALLET->value;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
+
+        return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
+    }
+
+    public function inWarehouseCancelledStoredItem(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->restriction = 'cancelled';
+        $this->type = PalletReturnTypeEnum::STORED_ITEM->value;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnsTabsEnum::values());
 
         return $this->handle($warehouse, PalletReturnsTabsEnum::RETURNS->value);
@@ -141,6 +250,8 @@ class IndexWarehousePalletReturns extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $this->type ??= $this->resolveTypeFilterFromRequest($prefix) ?? PalletReturnTypeEnum::PALLET->value;
+
         $queryBuilder = QueryBuilder::for(PalletReturn::class);
         $queryBuilder->leftJoin('pallet_return_stats', 'pallet_return_stats.pallet_return_id', '=', 'pallet_returns.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'pallet_returns.currency_id');
@@ -149,7 +260,7 @@ class IndexWarehousePalletReturns extends OrgAction
         $queryBuilder->where('pallet_returns.warehouse_id', $warehouse->id);
 
         if ($this->type) {
-            $queryBuilder->where('type', $this->type);
+            $queryBuilder->where('pallet_returns.type', $this->type);
         }
 
         if ($this->restriction == 'all' || $this->restriction == 'new') {
@@ -223,10 +334,36 @@ class IndexWarehousePalletReturns extends OrgAction
                 'platforms.type as platform_type',
                 'currencies.code as currency_code',
             ])
-            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state'])
+            ->selectSub(function ($subQuery) {
+                $subQuery
+                    ->from('picking_session_has_pallet_returns as pshr')
+                    ->join('picking_sessions as ps', 'ps.id', '=', 'pshr.picking_session_id')
+                    ->whereColumn('pshr.pallet_return_id', 'pallet_returns.id')
+                    ->orderByDesc('ps.id')
+                    ->limit(1)
+                    ->select('ps.slug');
+            }, 'picking_session_slug')
+            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'picking_at', 'picked_at', 'confirmed_at', 'number_stored_items', 'platform_name'])
             ->allowedFilters([$globalSearch, 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    private function resolveTypeFilterFromRequest(?string $prefix): ?string
+    {
+        $rawType = null;
+
+        if ($prefix) {
+            $rawType = request()->input($prefix . '_filter.type');
+        }
+
+        $rawType ??= request()->input('filter.type');
+
+        if (!is_string($rawType) || $rawType === '') {
+            return null;
+        }
+
+        return PalletReturnTypeEnum::tryFrom($rawType)?->value;
     }
 
     public function tableStructure(Warehouse $warehouse, ?array $modelOperations = null, $prefix = null, string $restriction = 'all'): Closure
@@ -259,16 +396,16 @@ class IndexWarehousePalletReturns extends OrgAction
                     ]
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->column(key: 'platform_name', label: __('platform'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'platform_name', label: __('Platform'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customer_reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'customer_reference', label: __('Customer reference'), canBeHidden: false, sortable: true, searchable: true);
 
             // if ($this->restriction == 'picking') {
             //     $table->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true);
             // } else {
             // }
-            $table->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-            ->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'number_pallets', label: __('Pallets'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+            ->column(key: 'number_stored_items', label: __('Stored items'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             if ($this->restriction) {
                 switch ($this->restriction) {
@@ -315,11 +452,21 @@ class IndexWarehousePalletReturns extends OrgAction
         $icon          = ['fal', 'fa-arrow-from-left'];
         $model         = __('Goods Out');
         $iconRight     = ['fal', 'fa-sign-out-alt'];
-        $subNavigation = $this->getPalletReturnSubNavigation($warehouse, $request);
+        $allSubNavigation = $this->getPalletReturnSubNavigation($warehouse, $request);
+        $subNavigationType = array_slice($allSubNavigation, 0, 2);
+        $subNavigationState = array_slice($allSubNavigation, 2);
 
 
         $actions = [];
 
+        $todo = $this->restriction === 'confirmed';
+
+        $pickingSessionRoute = [
+            'name'       => 'grp.models.warehouse.fulfilment_picking_session.store',
+            'parameters' => [
+                'warehouse' => $warehouse->id
+            ]
+        ];
 
 
 
@@ -337,10 +484,13 @@ class IndexWarehousePalletReturns extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
-                    'subNavigation' => $subNavigation,
+                    'subNavigation' => $subNavigationType,
+                    'subNavigation2' => $subNavigationState,
                     'actions'       => $actions
                 ],
                 'data'        => PalletReturnsResource::collection($returns),
+                'todo'        => $todo,
+                'picking_session_route' => $pickingSessionRoute,
 
                 'tabs' => [
                     'current'    => $this->tab,

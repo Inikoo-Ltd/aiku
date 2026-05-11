@@ -357,7 +357,6 @@ class StoreLeave extends OrgAction
 
         $bucketAllowance = match ($bucket) {
             'annual' => (float) $balance->annual_days,
-            'medical' => (float) $balance->medical_days,
             default => null,
         };
 

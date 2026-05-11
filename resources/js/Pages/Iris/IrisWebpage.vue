@@ -67,8 +67,7 @@ onMounted(() => {
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
     window.listWebBlocks = props.web_blocks
-
-    if (layout.iris.is_logged_in) layout.log_user()
+    layout.recordWebsiteHit()
 })
 
 
@@ -91,8 +90,6 @@ onBeforeUnmount(() => {
         <meta property="og:url" :content="webpage_data.canonical_url || currentUrl" />
         <meta property="og:image" :content="webpage_img?.png || webpage_img?.url || ''" />
         <meta property="og:image:alt" :content="webpage_data.title || ''" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" :content="usePage().props?.iris?.website?.name || webpage_data.title" />
         <meta name="twitter:card" content="summary_large_image" />

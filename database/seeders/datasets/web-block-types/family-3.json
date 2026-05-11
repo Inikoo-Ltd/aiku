@@ -14,8 +14,8 @@
 			"button": {
 				"link": {
 					"id": null,
-					"url": "#family-extra-description",
-					"href": "#family-extra-description",
+					"url": "#family-2-extra-description-button",
+					"href": "#family-2-extra-description-button",
 					"type": "external",
 					"target": "_self"
 				},

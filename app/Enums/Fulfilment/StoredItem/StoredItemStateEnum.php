@@ -38,6 +38,18 @@ enum StoredItemStateEnum: string
         ];
     }
 
+    public function labelGenerated(): string
+    {
+        return match($this) {
+            self::SUBMITTED     => __('Submitted'),
+            self::IN_PROCESS    => __('In Process'),
+            self::ACTIVE        => __('Active'),
+            self::DISCONTINUING => __('Discontinuing'),
+            self::DISCONTINUED  => __('Discontinued'),
+            default             => ''
+        };
+    }
+
     public function stateIcon(): array
     {
         return [

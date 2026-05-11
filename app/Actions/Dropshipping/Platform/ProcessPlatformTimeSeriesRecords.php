@@ -25,7 +25,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $platformId, int $shopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -59,7 +59,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoices')
+        $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.platform_id', $timeSeries->platform_id)
             ->where('invoices.shop_id', $shop->id)
             ->where('invoices.in_process', false)
@@ -135,7 +135,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
 
     protected function getPlatformPeriodMetrics(PlatformTimeSeries $timeSeries, Shop $shop, Carbon $periodFrom, Carbon $periodTo): array
     {
-        $channels = DB::table('customer_sales_channels')
+        $channels = DB::connection('aiku_no_sticky')->table('customer_sales_channels')
             ->where('platform_id', $timeSeries->platform_id)
             ->where('shop_id', $shop->id)
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
@@ -144,7 +144,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
             ->whereNull('deleted_at')
             ->count();
 
-        $customers = DB::table('customer_sales_channels')
+        $customers = DB::connection('aiku_no_sticky')->table('customer_sales_channels')
             ->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
             ->where('customer_sales_channels.platform_id', $timeSeries->platform_id)
             ->where('customer_sales_channels.shop_id', $shop->id)
@@ -154,7 +154,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
             ->distinct('customer_sales_channels.customer_id')
             ->count('customer_sales_channels.customer_id');
 
-        $portfolios = DB::table('portfolios')
+        $portfolios = DB::connection('aiku_no_sticky')->table('portfolios')
             ->where('portfolios.item_type', 'Product')
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->where('portfolios.platform_id', $timeSeries->platform_id)
@@ -166,7 +166,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
             ->distinct('portfolios.item_id')
             ->count('portfolios.item_id');
 
-        $customerClients = DB::table('customer_clients')
+        $customerClients = DB::connection('aiku_no_sticky')->table('customer_clients')
             ->where('platform_id', $timeSeries->platform_id)
             ->where('shop_id', $shop->id)
             ->where('created_at', '>=', $periodFrom)

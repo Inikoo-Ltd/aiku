@@ -9,9 +9,9 @@
 namespace App\Actions\Web\Announcement\UI;
 
 use App\Actions\OrgAction;
-use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Announcement;
 use App\Models\Web\Website;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;

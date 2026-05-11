@@ -198,6 +198,11 @@ trait WithSendBulkEmails
             'retina-login-link' => Arr::get($additionalData, 'retina_login_link'),
             'web-user-contact-name' => Arr::get($additionalData, 'web_user_contact_name'),
 
+            'prospect-name' => Arr::get($additionalData, 'prospect_name'),
+            'prospect-email' => Arr::get($additionalData, 'prospect_email'),
+            'prospect-phone' => Arr::get($additionalData, 'prospect_phone'),
+            'prospect-company-name' => Arr::get($additionalData, 'prospect_company_name'),
+
             default => $originalPlaceholder,
         };
     }

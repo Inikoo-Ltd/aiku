@@ -25,6 +25,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaFulfilmentPortfolios extends RetinaAction
 {
@@ -37,6 +38,18 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereStartWith('portfolios.reference', $value)
+                    ->orWhereWith('portfolios.item_code', $value)
+                    ->orWhereWith('portfolios.item_name', $value);
+            });
+        });
+
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
 
@@ -48,7 +61,10 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
             $query->where('item_type', class_basename(Product::class));
         }
 
-        return $query->withPaginator($prefix, tableName: request()->route()->getName())
+        return $query
+            ->defaultSort('-portfolios.id')
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 

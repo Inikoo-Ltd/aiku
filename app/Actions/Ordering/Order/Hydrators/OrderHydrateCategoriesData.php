@@ -20,6 +20,9 @@ class OrderHydrateCategoriesData
     public function handle(Order $order): void
     {
         $familyIds = [];
+        $departmentIds = [];
+        $subDepartmentIds = [];
+
         $categoriesData = [
             'family'         => [],
             'sub_department' => [],
@@ -59,16 +62,20 @@ class OrderHydrateCategoriesData
                     'quantity'   => (float) ($categoriesData['sub_department'][$transaction->sub_department_id]['quantity'] ?? 0) + $transaction->total_quantity,
                     'net_amount' => (float) ($categoriesData['sub_department'][$transaction->sub_department_id]['net_amount'] ?? 0) + $transaction->total_net_amount,
                 ];
+                $subDepartmentIds[] = $transaction->sub_department_id;
             }
             if ($transaction->department_id) {
                 $categoriesData['department'][$transaction->department_id] = [
                     'quantity'   => (float) ($categoriesData['department'][$transaction->department_id]['quantity'] ?? 0) + $transaction->total_quantity,
                     'net_amount' => (float) ($categoriesData['department'][$transaction->department_id]['net_amount'] ?? 0) + $transaction->total_net_amount,
                 ];
+                $departmentIds[] = $transaction->department_id;
             }
         }
 
         $categoriesData['family_ids'] = $familyIds;
+        $categoriesData['departments_ids'] = $departmentIds;
+        $categoriesData['sub_departments_ids'] = $subDepartmentIds;
 
 
         $order->update([

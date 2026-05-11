@@ -44,17 +44,18 @@ class ShowShop extends OrgAction
     {
         $userSettings = $request->user()->settings;
 
-        $validTabs  = array_keys(ShopDashboardSalesTableTabsEnum::navigation($shop));
+        $tabsNavigation = ShopDashboardSalesTableTabsEnum::navigation($shop);
+        $validTabs  = array_keys($tabsNavigation);
         $currentTab = Arr::get($userSettings, 'shop_dashboard_tab', Arr::first($validTabs));
 
-        if (!in_array($currentTab, $validTabs)) {
+        if (! in_array($currentTab, $validTabs, true)) {
             $currentTab = Arr::first($validTabs);
         }
 
-        $saved_interval   = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-        $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
+        $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1], false);
+        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate);
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
         $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
@@ -66,8 +67,8 @@ class ShowShop extends OrgAction
                     'id'        => 'shop_dashboard_tab',
                     'intervals' => [
                         'options'        => $this->dashboardIntervalOption(),
-                        'value'          => $saved_interval,
-                        'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
+                        'value'          => $savedInterval,
+                        'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings)
                     ],
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
@@ -96,7 +97,7 @@ class ShowShop extends OrgAction
                 'id'              => 'sales_table',
                 'type'            => 'table',
                 'current_tab'     => $currentTab,
-                'tabs'            => ShopDashboardSalesTableTabsEnum::navigation($shop),
+                'tabs'            => $tabsNavigation,
                 'tables'          => $primaryTables,
                 'charts'          => [],
                 'tab_fetch_route' => [
@@ -120,9 +121,9 @@ class ShowShop extends OrgAction
         return $this->handle($shop);
     }
 
-    public function getBreadcrumbs(array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(array $routeParameters, ?string $suffix = null): array
     {
-        $shop = Shop::where('slug', $routeParameters['shop'])->first();
+        $shop = Shop::query()->select('code')->where('slug', $routeParameters['shop'])->firstOrFail();
 
         return array_merge(
             ShowOrganisationDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
