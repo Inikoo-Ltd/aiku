@@ -25,7 +25,7 @@ class IndexHistory
 
     public string $model;
 
-    public function handle($model, $prefix = null, mixed $eventScopeFilter = null, mixed $excludeEventScopeFilter = null): LengthAwarePaginator|array|bool
+    public function handle($model, $prefix = null, mixed $eventScopeFilter = null, mixed $excludeEventScopeFilter = null, mixed $userScopeFilter = null): LengthAwarePaginator|array|bool
     {
         $this->model = class_basename($model);
 
@@ -48,8 +48,7 @@ class IndexHistory
         $queryBuilder->where('event', '!=', AuditEventEnum::CUSTOMER_NOTE->value);
 
         if ($eventScopeFilter !== null) {
-            $queryBuilder
-                ->when(
+            $queryBuilder->when(
                     is_array($eventScopeFilter),
                     fn ($query) => $query->whereIn('event', $eventScopeFilter),
                     fn ($query) => $query->where('event', $eventScopeFilter)
@@ -62,6 +61,15 @@ class IndexHistory
                     is_array($excludeEventScopeFilter),
                     fn ($query) => $query->whereNotIn('event', $excludeEventScopeFilter),
                     fn ($query) => $query->where('event', '!=', $excludeEventScopeFilter)
+                );
+        }
+        
+        if ($userScopeFilter) {
+            $queryBuilder
+                ->when(
+                    is_array($userScopeFilter),
+                    fn ($query) => $query->whereIn('user_type', $userScopeFilter),
+                    fn ($query) => $query->where('user_type', $userScopeFilter)
                 );
         }
 
