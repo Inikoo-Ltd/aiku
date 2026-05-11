@@ -156,13 +156,25 @@ class ShowMasterFamily extends GrpAction
                     ? fn () => [
                     'id'       => $masterFamily->id,
                     'data'     => RelatedMasterProductsResource::collection(GetMasterProductCategoryRelatedAssets::run($masterFamily)),
-                    'editable' => true
+                    'editable' => true,
+                     'route_get_products' => [
+                        'name' => 'grp.masters.master_shops.show.master_products.index',
+                        'parameters' => [
+                            'masterShop' => $masterFamily->masterShop->slug,
+                        ]
+                    ]
                 ]
                     : Inertia::lazy(
                         fn () => [
                         'id'       => $masterFamily->id,
                         'data'     => RelatedMasterProductsResource::collection(GetMasterProductCategoryRelatedAssets::run($masterFamily)),
-                        'editable' => true
+                        'editable' => true,
+                         'route_get_products' => [
+                        'name' => 'grp.masters.master_shops.show.master_products.index',
+                        'parameters' => [
+                            'masterShop' =>  $masterFamily->masterShop->slug,
+                        ]
+                    ]
                     ]
                     ),
 
