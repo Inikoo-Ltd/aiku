@@ -105,13 +105,13 @@ const SaveOrder = async () => {
                 {{ trans('Product Recommendations Ordering') }}
             </div>
 
-            <Button v-if="!props.data?.editable" label="Save" :disabled="!saveActive" @click="SaveOrder"   :loading="loadingOrder" type="save" />
+            <Button v-if="props.data?.editable" label="Save" :disabled="!saveActive" @click="SaveOrder"   :loading="loadingOrder" type="save" />
         </div>
 
         <!-- MAIN CONTENT -->
         <div class="bg-white border rounded-lg p-4">
 
-            <SetOrderingPositionOfProduct :data="listProducts.data" :disabled="props.data?.editable"
+            <SetOrderingPositionOfProduct :data="listProducts.data" :disabled="!props.data?.editable"
                 @update:data="(event) => { listProducts.data.data = event, saveActive = true }"
                 :useDelete="true" @delete="(item) => {
                     listProducts.data.data = listProducts.data.data.filter((product: any) => product.id !== item.id),
@@ -128,7 +128,7 @@ const SaveOrder = async () => {
                 </template>
 
                 <!-- TOP ACTION -->
-                <template v-if="!props.data?.editable" #before-button-list>
+                <template v-if="props.data?.editable" #before-button-list>
                     <div class="flex justify-end mx-3">
                         <Button label="+ Add Product" type="tertiary" size="xs" @click="openAddProduct" />
                     </div>
