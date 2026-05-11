@@ -22,6 +22,7 @@ use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
+use App\Actions\Discounts\OfferCampaign\StoreShopOffers;
 use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
 use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
@@ -84,6 +85,11 @@ Route::name("campaigns.")->prefix('campaigns')
             '{offerCampaign}/customer',
             StoreCustomerOffers::class
         )->name('store_customer');
+
+        Route::post(
+            '{offerCampaign}/shop',
+            StoreShopOffers::class
+        )->name('store_shop');
 
         Route::post(
             '{offerCampaign}/product',
