@@ -27,10 +27,25 @@ class ReviewsResource extends JsonResource
     public function toArray($request): array
     {
         $contactName = $this->contact_name ?? $this->customer?->contact_name ?? $this->customer_name ?? $this->customer?->name;
+        $merchantReply = null;
+        if ($this->relationLoaded('replies')) {
+            $merchantReply = $this->replies->first(function ($reply) {
+                $replierType = $reply->replier_type?->value ?? $reply->replier_type;
+                return $replierType === 'merchant';
+            });
+        }
         $imageThumbnails = $this->relationLoaded('media')
             ? $this->media
                 ->sortBy('order_column')
                 ->map(fn ($media) => GetPictureSources::run($media->getImage()->resize(48, 48)))
+                ->filter()
+                ->values()
+                ->all()
+            : [];
+        $imageGallery = $this->relationLoaded('media')
+            ? $this->media
+                ->sortBy('order_column')
+                ->map(fn ($media) => GetPictureSources::run($media->getImage()))
                 ->filter()
                 ->values()
                 ->all()
@@ -53,6 +68,18 @@ class ReviewsResource extends JsonResource
             'like_count'           => (int) $this->like_count,
             'image_thumbnail'      => $imageThumbnails[0] ?? null,
             'image_thumbnails'     => $imageThumbnails,
+            'image_gallery'        => $imageGallery,
+            'has_reply'            => (bool) $merchantReply,
+            'reply_status'         => $merchantReply ? 'Yes' : 'No',
+            'existing_reply'       => $merchantReply ? [
+                'id' => $merchantReply->id,
+                'body' => $merchantReply->body,
+                'is_public' => (bool) $merchantReply->is_public,
+                'status' => $merchantReply->status?->value ?? $merchantReply->status,
+                'replier_type' => $merchantReply->replier_type?->value ?? $merchantReply->replier_type,
+                'created_at' => $merchantReply->created_at,
+                'updated_at' => $merchantReply->updated_at,
+            ] : null,
             'update_route'         => [
                 'name'       => 'grp.models.review.update',
                 'parameters' => [

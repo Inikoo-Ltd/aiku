@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import Tag from "@/Components/Tag.vue"
+import type { Image as ImageProxy } from "@/types/Image"
 import { Textarea } from "primevue"
+import ImagePrime from "primevue/image"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
@@ -15,8 +18,17 @@ const props = defineProps<{
         contact_name?: string | null
         customer_name?: string | null
         rating?: number | null
+        status?: "pending" | "approved" | "rejected" | null
         message?: string | null
         created_at?: string | null
+        image_gallery?: Array<ImageProxy | string> | null
+        image_thumbnails?: Array<ImageProxy | string> | null
+        existing_reply?: {
+            id: number
+            body?: string | null
+            is_public?: boolean
+            status?: "pending" | "approved" | "rejected" | null
+        } | null
     }
     hideDefaultButton?: boolean
 }>()
@@ -25,6 +37,7 @@ const isOpenModal = ref(false)
 const body = ref("")
 const isSubmitting = ref(false)
 const errors = ref<Record<string, string[]>>({})
+const activeReplyVisibility = ref<"public" | "private">("public")
 
 const modalTitle = computed(() => trans("Reply Review"))
 const customerName = computed(() => props.review.contact_name ?? props.review.customer_name ?? trans("Customer"))
@@ -38,10 +51,58 @@ const ratingValue = computed(() => {
 })
 const ratingStars = computed(() => "★".repeat(ratingValue.value))
 const ratingEmptyStars = computed(() => "☆".repeat(Math.max(0, 5 - ratingValue.value)))
+const reviewStatusValue = computed(() => props.review.status ?? "pending")
+const reviewStatusLabel = computed(() => {
+    if (reviewStatusValue.value === "approved") {
+        return trans("Approved")
+    }
+
+    if (reviewStatusValue.value === "rejected") {
+        return trans("Rejected")
+    }
+
+    return trans("Pending")
+})
+const reviewStatusTheme = computed(() => {
+    if (reviewStatusValue.value === "approved") {
+        return 3
+    }
+
+    if (reviewStatusValue.value === "rejected") {
+        return 7
+    }
+
+    return 8
+})
 const reviewMessage = computed(() => {
     const value = props.review.message?.trim()
     return value && value.length > 0 ? value : "-"
 })
+const reviewImages = computed<ImageProxy[]>(() => {
+    const images = props.review.image_gallery ?? props.review.image_thumbnails
+    if (!Array.isArray(images)) {
+        return []
+    }
+
+    return images
+        .map((image): ImageProxy | null => {
+            if (typeof image === "string" && image.length > 0) {
+                return { original: image }
+            }
+
+            if (image && typeof image === "object" && typeof image.original === "string") {
+                return image
+            }
+
+            return null
+        })
+        .filter((image): image is ImageProxy => image !== null)
+})
+const reviewImageUrls = computed<string[]>(() =>
+    reviewImages.value
+        .map((image) => image.webp ?? image.original)
+        .filter((url): url is string => typeof url === "string" && url.length > 0)
+)
 const reviewedAt = computed(() => {
     if (!props.review.created_at) {
         return "-"
@@ -55,10 +116,14 @@ const reviewedAt = computed(() => {
     return date.toLocaleString()
 })
 const canSubmit = computed(() => body.value.trim().length > 0 && !isSubmitting.value)
+const isPublicReply = computed(() => activeReplyVisibility.value === "public")
+const submitLabel = computed(() => (isPublicReply.value ? trans("Post public reply") : trans("Post private reply")))
+const existingReplyId = computed(() => props.review.existing_reply?.id ?? null)
 
 const openModal = (): void => {
     errors.value = {}
-    body.value = ""
+    body.value = props.review.existing_reply?.body?.trim() ?? ""
+    activeReplyVisibility.value = props.review.existing_reply?.is_public === false ? "private" : "public"
     isOpenModal.value = true
 }
 
@@ -83,17 +148,25 @@ const submitReply = async (): Promise<void> => {
     errors.value = {}
 
     try {
-        await axios.post(route("grp.models.review.reply.store"), {
-            reviewable_type: props.review.reviewable_type,
-            reviewable_id: props.review.id,
-            body: body.value,
-            is_public: true,
-            status: "approved",
-        })
+        if (existingReplyId.value) {
+            await axios.patch(route("grp.models.review.reply.update", { reviewReply: existingReplyId.value }), {
+                body: body.value,
+                is_public: isPublicReply.value,
+                status: props.review.existing_reply?.status ?? "approved",
+            })
+        } else {
+            await axios.post(route("grp.models.review.reply.store"), {
+                reviewable_type: props.review.reviewable_type,
+                reviewable_id: props.review.id,
+                body: body.value,
+                is_public: isPublicReply.value,
+                status: "approved",
+            })
+        }
 
         notify({
             title: trans("Success"),
-            text: trans("Reply created successfully"),
+            text: existingReplyId.value ? trans("Reply updated successfully") : trans("Reply created successfully"),
             type: "success",
         })
 
@@ -101,9 +174,10 @@ const submitReply = async (): Promise<void> => {
         router.reload()
     } catch (error: any) {
         errors.value = error?.response?.data?.errors ?? {}
+        const serverMessage = error?.response?.data?.message
         notify({
             title: trans("Something went wrong"),
-            text: trans("Failed to create reply"),
+            text: serverMessage || trans("Failed to create reply"),
             type: "error",
         })
     } finally {
@@ -151,17 +225,48 @@ const autoGenerateReply = (): void => {
                             <span>{{ ratingStars }}</span>
                             <span class="text-gray-300">{{ ratingEmptyStars }}</span>
                         </div>
+                        <Tag :theme="reviewStatusTheme" :label="reviewStatusLabel" />
                     </div>
                     <div class="mt-3 text-lg font-semibold leading-7 text-gray-900">
                         {{ reviewMessage }}
+                    </div>
+                    <div v-if="reviewImageUrls.length" class="mt-3 grid grid-cols-3 gap-2">
+                        <ImagePrime
+                            v-for="(imageUrl, index) in reviewImageUrls"
+                            :key="`${review.id}-reply-image-${index}`"
+                            :src="imageUrl"
+                            preview
+                            imageClass="h-20 w-full rounded border border-gray-200 object-cover cursor-pointer"
+                            class="w-full"
+                        />
                     </div>
                     <div class="mt-2 text-right text-xs text-gray-500">
                         {{ ` ${reviewedAt}` }}
                     </div>
                 </div>
 
+                <div class="border-b border-gray-200">
+                    <div class="flex items-center gap-6">
+                        <button
+                            type="button"
+                            class="border-b-2 px-1 pb-2 text-sm font-semibold transition"
+                            :class="activeReplyVisibility === 'public' ? 'border-cyan-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-800'"
+                            @click="activeReplyVisibility = 'public'"
+                        >
+                            {{ trans("Public reply") }}
+                        </button>
+                        <button
+                            type="button"
+                            class="border-b-2 px-1 pb-2 text-sm font-semibold transition"
+                            :class="activeReplyVisibility === 'private' ? 'border-cyan-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-800'"
+                            @click="activeReplyVisibility = 'private'"
+                        >
+                            {{ trans("Private reply") }}
+                        </button>
+                    </div>
+                </div>
+
                 <div class="space-y-2">
-                    <label class="font-medium">{{ trans("Reply") }}</label>
                     <Textarea
                         v-model="body"
                         rows="6"
@@ -181,10 +286,10 @@ const autoGenerateReply = (): void => {
                     />
                     <Button type="cancel" @click="closeModal" />
                     <Button
-                        :label="trans('Post reply')"
                         :isLoading="isSubmitting"
                         :disabled="!canSubmit"
                         icon="fal fa-paper-plane"
+                        :label="submitLabel"
                         @click="submitReply"
                     />
                 </div>

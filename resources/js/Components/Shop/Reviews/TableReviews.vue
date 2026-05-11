@@ -4,10 +4,20 @@ import type { Table as TableTS } from "@/types/Table"
 import ReviewStatsPanel from "@/Components/Shop/Reviews/ReviewStatsPanel.vue"
 import Image from "@/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Tag from "@/Components/Tag.vue"
 import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
 import ModalReviewReply from "@/Components/Reviews/ModalReviewReply.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
+import { faPencil, faReply, faEye } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+
+library.add(
+    faPencil,
+    faReply,
+    faEye
+)
 
 type ReviewTablePayload = TableTS & {
     stats?: {
@@ -90,6 +100,9 @@ const renderStars = (rating: number): string => {
                 <template #cell(rating)="{ item }">
                     <span class="text-amber-500">{{ renderStars(item.rating) }}</span>
                 </template>
+                <template #cell(reply_status)="{ item }">
+                    <Tag :theme="item.has_reply ? 3 : 99" :label="item.has_reply ? trans('Yes') : trans('No')" />
+                </template>
                 <template #cell(action)="{ item }">
                     <div class="flex items-center justify-end gap-1">
                         <ModalCreateCategoryReviews
@@ -101,7 +114,7 @@ const renderStars = (rating: number): string => {
                             :rating_labels="rating_labels"
                         >
                             <template #trigger="{ openModal }">
-                                <Button type="tertiary" icon="far fa-eye" size="xs" @click="openModal" />
+                                <Button type="tertiary" :icon="faEye" size="xs" @click="openModal" />
                             </template>
                         </ModalCreateCategoryReviews>
 
@@ -114,7 +127,7 @@ const renderStars = (rating: number): string => {
                             :rating_labels="rating_labels"
                         >
                             <template #trigger="{ openModal }">
-                                <Button :style="'edit'" size="xs" @click="openModal" />
+                                <Button type="tertiary" :icon="faPencil" size="xs" @click="openModal" />
                             </template>
                         </ModalCreateCategoryReviews>
 
@@ -126,12 +139,16 @@ const renderStars = (rating: number): string => {
                                 contact_name: item.contact_name,
                                 customer_name: item.customer_name,
                                 rating: item.rating,
+                                status: item.status,
                                 message: item.message,
-                                created_at: item.created_at
+                                created_at: item.created_at,
+                                image_gallery: item.image_gallery,
+                                image_thumbnails: item.image_thumbnails,
+                                existing_reply: item.existing_reply
                             }"
                         >
                             <template #trigger="{ openModal }">
-                                <Button type="tertiary" icon="fal fa-reply" size="xs" @click="openModal" />
+                                <Button type="tertiary" :icon="faReply" size="xs" @click="openModal" />
                             </template>
                         </ModalReviewReply>
 

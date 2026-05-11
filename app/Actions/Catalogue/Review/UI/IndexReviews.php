@@ -84,7 +84,7 @@ class IndexReviews extends OrgAction
         }
 
         return QueryBuilder::for(ProductCategoryReview::class)
-            ->with(['media'])
+            ->with(['media', 'replies'])
             ->leftJoin('customers', 'customers.id', '=', 'product_category_reviews.customer_id')
             ->where('product_category_reviews.product_category_id', $parent->id)
             ->defaultSort('-product_category_reviews.created_at')
@@ -136,6 +136,7 @@ class IndexReviews extends OrgAction
             $table->column(key: 'contact_name', label: __('Name'), sortable: false, searchable: true);
             $table->column(key: 'rating', label: __('Rating'), sortable: true, searchable: false, align: 'right');
             $table->column(key: 'message', label: __('Message'), sortable: false, searchable: true);
+            $table->column(key: 'reply_status', label: __('Reply Status'), sortable: false, searchable: false, align: 'center');
             $table->column(key: 'like_count', label: __('Like'), sortable: true, searchable: false, align: 'right');
             $table->column(key: 'action', label: __('Actions'), sortable: false, searchable: false, align: 'right');
         };

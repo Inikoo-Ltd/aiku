@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft, faPencil, faEye } from "@fal"
+import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft} from "@fal"
 import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -45,8 +45,6 @@ library.add(
     faFolderDownload,
     faQuoteLeft,
     faThumbtack,
-    faPencil,
-    faEye
 )
 
 

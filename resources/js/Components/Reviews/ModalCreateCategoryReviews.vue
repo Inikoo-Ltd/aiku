@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import Tag from "@/Components/Tag.vue"
 import { computed, nextTick, onBeforeUnmount, ref } from "vue"
+import type { Image as ImageProxy } from "@/types/Image"
 import { router } from "@inertiajs/vue3"
 import { Textarea } from "primevue"
+import ImagePrime from "primevue/image"
 import Select from "primevue/select"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -29,6 +32,16 @@ const props = defineProps<{
         rating_d?: number | null
         rating_e?: number | null
         message?: string | null
+        created_at?: string | null
+        image_thumbnail?: ImageProxy | string | null
+        image_thumbnails?: Array<ImageProxy | string> | null
+        image_gallery?: Array<ImageProxy | string> | null
+        existing_reply?: {
+            id: number
+            body?: string | null
+            is_public?: boolean
+            status?: "pending" | "approved" | "rejected" | null
+        } | null
     }
     customers?: {
         data: Array<{
@@ -136,12 +149,84 @@ const averageRating = computed(() => {
 
     return Math.round(values.reduce((total, value) => total + value, 0) / values.length)
 })
+const mainRatingStars = computed(() => "★".repeat(Math.max(0, Math.min(5, averageRating.value))))
+const mainRatingEmptyStars = computed(() => "☆".repeat(Math.max(0, 5 - averageRating.value)))
 
 const reviewStatusOptions = computed(() => [
     { value: "pending", label: trans("Pending") },
     { value: "approved", label: trans("Approved") },
     { value: "rejected", label: trans("Rejected") },
 ])
+const reviewCustomerName = computed(() => props.review?.contact_name ?? props.review?.customer_name ?? "-")
+const detailStatusValue = computed(() => (props.review?.status ?? selectedStatus.value ?? "pending"))
+const detailStatusLabel = computed(() => {
+    if (detailStatusValue.value === "approved") {
+        return trans("Approved")
+    }
+
+    if (detailStatusValue.value === "rejected") {
+        return trans("Rejected")
+    }
+
+    return trans("Pending")
+})
+const detailStatusTheme = computed(() => {
+    if (detailStatusValue.value === "approved") {
+        return 3
+    }
+
+    if (detailStatusValue.value === "rejected") {
+        return 7
+    }
+
+    return 8
+})
+const detailDateTime = computed(() => {
+    const value = props.review?.created_at
+    if (!value) {
+        return "-"
+    }
+
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) {
+        return "-"
+    }
+
+    return date.toLocaleString()
+})
+const existingReply = computed(() => props.review?.existing_reply ?? null)
+const existingReplyVisibility = computed(() => {
+    if (!existingReply.value) {
+        return null
+    }
+
+    return existingReply.value.is_public ? trans("Public reply") : trans("Private reply")
+})
+const reviewThumbnails = computed<ImageProxy[]>(() => {
+    const images = props.review?.image_gallery ?? props.review?.image_thumbnails
+    if (!Array.isArray(images)) {
+        return []
+    }
+
+    return images
+        .map((thumbnail): ImageProxy | null => {
+            if (typeof thumbnail === "string" && thumbnail.length > 0) {
+                return { original: thumbnail }
+            }
+
+            if (thumbnail && typeof thumbnail === "object" && typeof thumbnail.original === "string") {
+                return thumbnail
+            }
+
+            return null
+        })
+        .filter((thumbnail): thumbnail is ImageProxy => thumbnail !== null)
+})
+const reviewImageUrls = computed<string[]>(() =>
+    reviewThumbnails.value
+        .map((image) => image.webp ?? image.original)
+        .filter((url): url is string => typeof url === "string" && url.length > 0)
+)
 const normalizeCustomerId = (value: unknown): number | null => {
     if (typeof value === "number") {
         return Number.isFinite(value) && value > 0 ? value : null
@@ -460,79 +545,152 @@ onBeforeUnmount(() => {
         </slot>
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
-            <div class="space-y-4 p-1">
-                <h2 class="text-center text-2xl font-bold">{{ modalTitle }}</h2>
+            <div class="max-h-[78vh] space-y-3 overflow-y-auto p-1 pr-2">
+                <h2 class="text-center text-xl font-bold">{{ modalTitle }}</h2>
 
-                <div class="space-y-2">
-                    <label class="font-medium">{{ trans("Ratings") }}</label>
-                    <div v-if="activeRatingLabels.length" class="space-y-3">
-                        <div v-for="item in activeRatingLabels" :key="item.dimension" class="space-y-1">
-                            <div class="text-sm text-gray-600">{{ item.label }}</div>
-                            <div class="flex items-center gap-2">
-                                <button
-                                    v-for="star in 5"
-                                    :key="`${item.dimension}-${star}`"
-                                    type="button"
-                                    class="text-2xl leading-none transition-colors"
-                                    :class="star <= (ratingByDimension[item.dimension] ?? 0) ? 'text-yellow-500' : 'text-gray-300'"
-                                    :disabled="isDetailMode"
-                                    @click="!isDetailMode && (ratingByDimension[item.dimension] = star)"
+                <template v-if="isDetailMode">
+                    <div class="space-y-3">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">{{ trans("Ratings") }}</label>
+                            <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ trans("Main rating") }}</div>
+                                <div class="mt-1 flex items-center gap-2">
+                                    <div class="text-2xl leading-none text-amber-500">
+                                        <span>{{ mainRatingStars }}</span>
+                                        <span class="text-amber-200">{{ mainRatingEmptyStars }}</span>
+                                    </div>
+                                    <div class="text-lg font-semibold text-amber-700">{{ averageRating }}/5</div>
+                                </div>
+                            </div>
+                            <div v-if="activeRatingLabels.length" class="grid grid-cols-1 gap-2 md:grid-cols-2">
+                                <div
+                                    v-for="item in activeRatingLabels"
+                                    :key="`detail-${item.dimension}`"
+                                    class="space-y-1 rounded border border-gray-200 px-2 py-1.5"
                                 >
-                                    ★
-                                </button>
+                                    <div class="text-xs text-gray-600">{{ item.label }}</div>
+                                    <div class="text-lg leading-none text-yellow-500">
+                                        <span>{{ "★".repeat(Math.max(0, Math.min(5, Number(ratingByDimension[item.dimension] ?? 0)))) }}</span>
+                                        <span class="text-gray-300">{{ "☆".repeat(Math.max(0, 5 - Math.max(0, Math.min(5, Number(ratingByDimension[item.dimension] ?? 0))))) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-lg border border-gray-200 bg-white p-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="text-lg font-semibold text-gray-900">{{ reviewCustomerName }}</div>
+                                <Tag :theme="detailStatusTheme" :label="detailStatusLabel" />
+                            </div>
+                            <div class="mt-2 text-base text-gray-900">{{ message || "-" }}</div>
+                            <div v-if="reviewImageUrls.length" class="mt-3 grid grid-cols-3 gap-2">
+                                <ImagePrime
+                                    v-for="(imageUrl, index) in reviewImageUrls"
+                                    :key="`${review?.id ?? 'review'}-detail-image-${index}`"
+                                    :src="imageUrl"
+                                    preview
+                                    imageClass="h-16 w-full rounded border border-gray-200 object-cover cursor-pointer"
+                                    class="w-full"
+                                />
+                            </div>
+                            <div class="mt-3 text-right text-xs text-gray-500">{{ detailDateTime }}</div>
+                        </div>
+
+                        <div class="rounded-lg border border-gray-200 bg-white p-3">
+                            <div
+                                v-if="existingReply"
+                                class="space-y-1"
+                            >
+                                <div class="text-xs font-medium text-gray-600">{{ existingReplyVisibility }}</div>
+                                <div class="max-h-24 overflow-y-auto text-sm text-gray-800">{{ existingReply.body || "-" }}</div>
+                            </div>
+                            <div v-else class="text-sm text-gray-500">
+                                {{ trans("No reply yet") }}
                             </div>
                         </div>
                     </div>
-                    <div v-else class="text-sm text-amber-600">
-                        {{ trans("Rating labels are not configured for this shop.") }}
+                </template>
+
+                <template v-else>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">{{ trans("Ratings") }}</label>
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ trans("Main rating") }}</div>
+                            <div class="mt-1 flex items-center gap-2">
+                                <div class="text-2xl leading-none text-amber-500">
+                                    <span>{{ mainRatingStars }}</span>
+                                    <span class="text-amber-200">{{ mainRatingEmptyStars }}</span>
+                                </div>
+                                <div class="text-lg font-semibold text-amber-700">{{ averageRating }}/5</div>
+                            </div>
+                        </div>
+                        <div v-if="activeRatingLabels.length" class="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <div
+                                v-for="item in activeRatingLabels"
+                                :key="item.dimension"
+                                class="space-y-1 rounded border border-gray-200 px-2 py-1.5"
+                            >
+                                <div class="text-xs text-gray-600">{{ item.label }}</div>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        v-for="star in 5"
+                                        :key="`${item.dimension}-${star}`"
+                                        type="button"
+                                        class="text-xl leading-none transition-colors"
+                                        :class="star <= (ratingByDimension[item.dimension] ?? 0) ? 'text-yellow-500' : 'text-gray-300'"
+                                        @click="ratingByDimension[item.dimension] = star"
+                                    >
+                                        ★
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="text-sm text-amber-600">
+                            {{ trans("Rating labels are not configured for this shop.") }}
+                        </div>
+                        <div v-if="errors.rating_main?.[0]" class="text-sm text-red-500">{{ errors.rating_main[0] }}</div>
+                        <div v-if="errors.rating?.[0]" class="text-sm text-red-500">{{ errors.rating[0] }}</div>
                     </div>
-                    <div class="text-sm font-medium text-gray-700">
-                        {{ `${trans("Main rating")}: ${averageRating}/5` }}
+
+                    <div :class="isUpdateMode ? 'grid grid-cols-1 gap-3 md:grid-cols-2' : 'space-y-3'">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">{{ trans("Customer") }}</label>
+                            <Select
+                                v-model="selectedCustomerId"
+                                :options="customerOptions"
+                                optionLabel="label"
+                                optionValue="customer_id"
+                                filter
+                                class="w-full"
+                                :loading="isLoadingCustomers"
+                                :placeholder="trans('Select customer')"
+                                @show="onCustomerSelectShow"
+                                @hide="onCustomerSelectHide"
+                                @filter="onCustomerFilter"
+                            />
+                            <div v-if="errors.customer_id?.[0]" class="text-sm text-red-500">{{ errors.customer_id[0] }}</div>
+                        </div>
+
+                        <div v-if="isUpdateMode" class="space-y-2">
+                            <label class="text-sm font-medium">{{ trans("Status") }}</label>
+                            <Select
+                                v-model="selectedStatus"
+                                :options="reviewStatusOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                                :placeholder="trans('Select status')"
+                            />
+                            <div v-if="errors.status?.[0]" class="text-sm text-red-500">{{ errors.status[0] }}</div>
+                        </div>
                     </div>
-                    <div v-if="errors.rating_main?.[0]" class="text-sm text-red-500">{{ errors.rating_main[0] }}</div>
-                    <div v-if="errors.rating?.[0]" class="text-sm text-red-500">{{ errors.rating[0] }}</div>
-                </div>
 
-                <div class="space-y-2">
-                    <label class="font-medium">{{ trans("Customer") }}</label>
-                    <Select
-                        v-model="selectedCustomerId"
-                        :options="customerOptions"
-                        optionLabel="label"
-                        optionValue="customer_id"
-                        filter
-                        class="w-full"
-                        :disabled="isDetailMode"
-                        :loading="isLoadingCustomers"
-                        :placeholder="trans('Select customer')"
-                        @show="onCustomerSelectShow"
-                        @hide="onCustomerSelectHide"
-                        @filter="onCustomerFilter"
-                    />
-                    <div v-if="errors.customer_id?.[0]" class="text-sm text-red-500">{{ errors.customer_id[0] }}</div>
-                </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">{{ trans("Message") }}</label>
+                        <Textarea v-model="message" rows="4" class="w-full" />
+                        <div v-if="errors.message?.[0]" class="text-sm text-red-500">{{ errors.message[0] }}</div>
+                    </div>
 
-                <div v-if="isUpdateMode || isDetailMode" class="space-y-2">
-                    <label class="font-medium">{{ trans("Status") }}</label>
-                    <Select
-                        v-model="selectedStatus"
-                        :options="reviewStatusOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        class="w-full"
-                        :disabled="isDetailMode"
-                        :placeholder="trans('Select status')"
-                    />
-                    <div v-if="errors.status?.[0]" class="text-sm text-red-500">{{ errors.status[0] }}</div>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="font-medium">{{ trans("Message") }}</label>
-                    <Textarea v-model="message" rows="5" class="w-full" :disabled="isDetailMode" />
-                    <div v-if="errors.message?.[0]" class="text-sm text-red-500">{{ errors.message[0] }}</div>
-                </div>
-
-                <div v-if="!isDetailMode" class="space-y-2">
                     <label class="font-medium">{{ trans("Images") }}</label>
                     <input
                         type="file"
@@ -544,7 +702,7 @@ onBeforeUnmount(() => {
                     <div v-if="imageFiles.length" class="text-xs text-gray-500">{{ imageFiles.length }} {{ trans("file selected") }}</div>
                     <div v-if="errors.images?.[0]" class="text-sm text-red-500">{{ errors.images[0] }}</div>
                     <div v-if="errors['images.0']?.[0]" class="text-sm text-red-500">{{ errors['images.0'][0] }}</div>
-                </div>
+                </template>
 
                 <div class="flex justify-end gap-3">
                     <Button type="cancel" @click="closeModal" />

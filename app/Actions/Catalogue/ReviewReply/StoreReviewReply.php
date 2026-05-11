@@ -9,6 +9,7 @@ use App\Models\Reviews\ProductReview;
 use App\Models\Reviews\ReviewReply;
 use App\Models\Reviews\ShopReview;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,11 +25,13 @@ class StoreReviewReply
         ?User $user = null
     ): ReviewReply {
         return $reviewable->replies()->create([
+            'reviewable_type' => $reviewable->getTable(),
+            'reviewable_id' => $reviewable->id,
             'organisation_id' => $reviewable->organisation_id,
             'user_id' => $user?->id,
             'replier_type' => data_get($modelData, 'replier_type', ReviewReplyReplierTypeEnum::Merchant->value),
             'body' => data_get($modelData, 'body'),
-            'is_public' => data_get($modelData, 'is_public', true),
+            'is_public' => $this->resolveIsPublic($modelData),
             'status' => data_get($modelData, 'status', ReviewStatusEnum::Approved->value),
         ]);
     }
@@ -39,8 +42,57 @@ class StoreReviewReply
             $request->validated('reviewable_type'),
             (int) $request->validated('reviewable_id')
         );
+        $validated = $request->validated();
+        $replierType = (string) data_get($validated, 'replier_type', ReviewReplyReplierTypeEnum::Merchant->value);
 
-        $reviewReply = $this->handle($reviewable, $request->validated(), $request->user());
+        $existingReply = ReviewReply::query()
+            ->where('reviewable_type', $reviewable->getTable())
+            ->where('reviewable_id', $reviewable->id)
+            ->where('replier_type', $replierType)
+            ->first();
+
+        if ($existingReply) {
+            $existingReply->update([
+                'body' => data_get($validated, 'body', $existingReply->body),
+                'is_public' => $this->resolveIsPublic($validated),
+                'status' => data_get($validated, 'status', $existingReply->status?->value ?? ReviewStatusEnum::Approved->value),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Reply updated successfully',
+                'data' => $existingReply->refresh()->load(['organisation', 'user']),
+            ], 200);
+        }
+
+        try {
+            $reviewReply = $this->handle($reviewable, $validated, $request->user());
+        } catch (UniqueConstraintViolationException) {
+            $latestReply = ReviewReply::query()
+                ->where('reviewable_type', $reviewable->getTable())
+                ->where('reviewable_id', $reviewable->id)
+                ->where('replier_type', $replierType)
+                ->first();
+
+            if ($latestReply) {
+                $latestReply->update([
+                    'body' => data_get($validated, 'body', $latestReply->body),
+                    'is_public' => $this->resolveIsPublic($validated),
+                    'status' => data_get($validated, 'status', $latestReply->status?->value ?? ReviewStatusEnum::Approved->value),
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Reply updated successfully',
+                    'data' => $latestReply->refresh()->load(['organisation', 'user']),
+                ], 200);
+            }
+
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Failed to store reply',
+            ], 422);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -73,5 +125,23 @@ class StoreReviewReply
             'shop_reviews' => ShopReview::query()->findOrFail($reviewableId),
             'product_category_reviews' => ProductCategoryReview::query()->findOrFail($reviewableId),
         };
+    }
+
+    private function resolveIsPublic(array $modelData): bool
+    {
+        $value = data_get($modelData, 'is_public');
+
+        if (\is_bool($value)) {
+            return $value;
+        }
+
+        if (\is_string($value) || \is_numeric($value)) {
+            $normalized = \filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($normalized !== null) {
+                return $normalized;
+            }
+        }
+
+        return true;
     }
 }
