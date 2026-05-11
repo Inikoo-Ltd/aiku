@@ -13,6 +13,7 @@ use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\TiktokUser;
@@ -69,7 +70,6 @@ class ProcessTiktokOrderShipment extends OrgAction
                 $tiktokUser->shipPackage($tiktokPackageId);
             });
         } catch (\Throwable $th) {
-            dd($th);
             \Sentry::captureException($th);
             Log::error($th->getMessage());
         }
@@ -106,6 +106,7 @@ class ProcessTiktokOrderShipment extends OrgAction
             $shipper = StoreShipper::make()->action($order->organisation, [
                 'code' => $tiktokPackageShippingCode,
                 'name' => $tiktokPackageShippingName,
+                'api_shipper' => PlatformTypeEnum::TIKTOK->value,
                 'trade_as' => Str::substr($tiktokPackageShippingName, 0, 15)
             ]);
         }
