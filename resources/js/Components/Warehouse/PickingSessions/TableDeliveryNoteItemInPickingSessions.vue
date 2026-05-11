@@ -567,8 +567,7 @@ const showReturnStoredItemsRoute = (item: any) => {
                     :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
             </div>
 
-
-            <Button v-if="pickingSession.state === 'picking_finished' && itemValue.delivery_note_state === 'handling'"
+            <Button v-if="pickingSession.state === 'picking_finished' && (itemValue.delivery_note_state === 'handling' || itemValue.delivery_note_state === 'packing')"
                 type="save" label="Set as packed" size="sm" @click="onOpenModalDetail(itemValue)" />
 
 
