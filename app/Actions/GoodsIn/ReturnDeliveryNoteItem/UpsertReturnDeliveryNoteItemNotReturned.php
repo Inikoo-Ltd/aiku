@@ -28,7 +28,6 @@ class UpsertReturnDeliveryNoteItemNotReturned extends OrgAction
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
         $user = auth()->user();
-        $totalItemNotReturned = data_get($modelData, 'quantity');
 
         data_set($modelData, 'sower_user_id', $user->id);
         data_set($modelData, 'type', SowingTypeEnum::NOT_SOW);
@@ -68,10 +67,10 @@ class UpsertReturnDeliveryNoteItemNotReturned extends OrgAction
         ];
     }
 
-    public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): ReturnDeliveryNoteItem
+    public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): void
     {
         $this->initialisationFromShop($returnDeliveryNoteItem->shop, $request);
 
-        return $this->handle($returnDeliveryNoteItem, $this->validatedData);
+        $this->handle($returnDeliveryNoteItem, $this->validatedData);
     }
 }

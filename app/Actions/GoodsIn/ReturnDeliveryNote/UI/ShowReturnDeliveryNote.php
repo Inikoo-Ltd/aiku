@@ -264,24 +264,6 @@ class ShowReturnDeliveryNote extends OrgAction
             'picker'                       => $returnDeliveryNote->handlerUser,
             'picked_bays'                  => $pickedBays,
             'trolleys'                     => $trolleys,
-            'parcels'                      => $deliveryNote->parcels, // TODO IS IT NEEDED?
-            'shipments'                    => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null, // TODO IS IT NEEDED?
-            'shipments_routes'             => [
-                ...$additionalShipmentRoutes,
-                'fetch_route' => [
-                    'name'       => 'grp.json.shippers.index',
-                    'parameters' => [
-                        'organisation' => $deliveryNote->organisation->slug,
-                    ]
-                ],
-
-                'delete_route' => [
-                    'name'       => 'grp.models.delivery_note.shipment.detach',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ],
-            ], // TODO IS IT NEEDED?
             'shop_type'                    => $returnDeliveryNote->shop->type,
             'shipping_fields'              => [
                 'company_name' => $deliveryNote->company_name,
@@ -359,28 +341,6 @@ class ShowReturnDeliveryNote extends OrgAction
 
         $warning = null;
 
-        // TODO Dunno, need to ask Raul Later
-        // if ($deliveryNote->pickingSessions && $deliveryNote->pickingSessions->isNotEmpty()) {
-        //     $pickingSessions = $deliveryNote->pickingSessions->map(function ($pickingSession) {
-        //         return [
-        //             'reference' => $pickingSession->reference,
-        //             'route'     => [
-        //                 'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.show',
-        //                 'parameters' => [
-        //                     'organisation'   => $pickingSession->organisation->slug,
-        //                     'warehouse'      => $pickingSession->warehouse->slug,
-        //                     'pickingSession' => $pickingSession->slug,
-        //                 ],
-        //             ],
-        //         ];
-        //     })->toArray();
-
-        //     $warning = [
-        //         'text'             => __('This DeliveryNote is being picked in Picking Sessions'),
-        //         'picking_sessions' => $pickingSessions,
-        //     ];
-        // }
-
         $model = __('Return');
 
         $allowAction = ($returnDeliveryNote->packer_user_id && $returnDeliveryNote->packer_user_id != request()->user()->id);
@@ -392,8 +352,6 @@ class ShowReturnDeliveryNote extends OrgAction
         $showChangePickerPacker = $returnDeliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
         $returnDeliveryNote->returnDeliveryNoteItem;
-        // $returnDeliveryNote->returnDeliveryNoteItem()->whereNull('processed_at');
-        // $returnDeliveryNote->returnDeliveryNoteItem()->whereNotNull('processed_at');
 
         $props = [
             'title'         => __('Return').' '.$returnDeliveryNote->reference,
@@ -446,20 +404,7 @@ class ShowReturnDeliveryNote extends OrgAction
             'notes'               => $this->getDeliveryNoteNotes($returnDeliveryNote),
             'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [
-                // // TODO ALL ROUTE, for now acts as a placeholder
-                // 'update'                => [
-                //     'name'       => 'grp.models.delivery_note.update',
-                //     'parameters' => [
-                //         'deliveryNote' => $returnDeliveryNote->deliveryNote->id
-                //     ]
-                // ],
-                // 'set_queue'             => [
-                //     'method'     => 'patch',
-                //     'name'       => 'grp.models.delivery_note.state.in_queue',
-                //     'parameters' => [
-                //         'deliveryNote' => $returnDeliveryNote->deliveryNote->id
-                //     ]
-                // ],
+                // TODO ALL ROUTE, for now acts as a placeholder
                 'pickers_list'          => [
                     'name'       => 'grp.json.employees.picker_users',
                     'parameters' => [
@@ -524,8 +469,8 @@ class ShowReturnDeliveryNote extends OrgAction
                     fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, ReturnDeliveryNoteItemStateEnum::HANDLING))
                     : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, ReturnDeliveryNoteItemStateEnum::HANDLING))),
                 DeliveryNoteTabsEnum::DONE_ITEMS->value => $this->tab == DeliveryNoteTabsEnum::DONE_ITEMS->value ?
-                    fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, ReturnDeliveryNoteItemStateEnum::RETURNED))
-                    : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, ReturnDeliveryNoteItemStateEnum::RETURNED))),
+                    fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, ReturnDeliveryNoteItemStateEnum::PROCESSED))
+                    : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, ReturnDeliveryNoteItemStateEnum::PROCESSED))),
             ]);
         }
 

@@ -28,7 +28,6 @@ class UpsertReturnDeliveryNoteItemReturned extends OrgAction
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
         $user = auth()->user();
-        $totalItemReturned = data_get($modelData, 'quantity');
 
         data_set($modelData, 'sower_user_id', $user->id);
 
@@ -68,10 +67,10 @@ class UpsertReturnDeliveryNoteItemReturned extends OrgAction
         ];
     }
 
-    public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): ReturnDeliveryNoteItem
+    public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): void
     {
         $this->initialisationFromWarehouse($returnDeliveryNoteItem->returnDeliveryNote->warehouse, $request);
 
-        return $this->handle($returnDeliveryNoteItem, $this->validatedData);
+        $this->handle($returnDeliveryNoteItem, $this->validatedData);
     }
 }
