@@ -89,11 +89,11 @@ class ShowWarehousePalletReturn extends OrgAction
 
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $afterTitle = [
-                'label' => '('.__("Customer's SKUs").')'
+                'label' => '('.__("Fulfilment DS").')'
                 ];
         } else {
             $afterTitle = [
-                'label' => '('.__('Whole pallets').')'
+                'label' => '('.__('Fulfilment Pallet').')'
             ];
         }
 

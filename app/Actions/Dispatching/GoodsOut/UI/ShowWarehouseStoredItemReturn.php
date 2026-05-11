@@ -209,7 +209,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 
 
         $afterTitle = [
-            'label' => '('.__("Customer's SKUs").')'
+            'label' => '('.__("Fulfilment DS").')'
         ];
 
         $warning = null;
