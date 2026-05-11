@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 11 May 2026 14:25:17 Malaysia Time, Kuala Lumpur, Malaysia
@@ -11,7 +12,6 @@ use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\TiktokUser;
@@ -46,7 +46,7 @@ class ProcessTiktokOrderShipment extends OrgAction
                 $id = Arr::get($getOrder, 'data.orders.0.packages.0.id');
                 $status = Arr::get($getOrder, 'data.orders.0.status');
 
-                if($id && $status === "AWAITING_COLLECTION") {
+                if ($id && $status === "AWAITING_COLLECTION") {
                     $this->packageWasShipped($tiktokUser, $order, $deliveryNote, $id);
 
                     return;
@@ -59,7 +59,8 @@ class ProcessTiktokOrderShipment extends OrgAction
                 $tiktokShippingLabel = $tiktokUser->getOrderLabel($tiktokPackageId);
                 $tiktokShippingLabelUrl = Arr::get($tiktokShippingLabel, 'data.doc_url');
 
-                $this->processShipment($order,
+                $this->processShipment(
+                    $order,
                     $deliveryNote,
                     $tiktokPackageDetail,
                     $tiktokShippingLabelUrl
@@ -84,7 +85,8 @@ class ProcessTiktokOrderShipment extends OrgAction
         $tiktokShippingLabel = $tiktokUser->getOrderLabel($tiktokPackageId);
         $tiktokShippingLabelUrl = Arr::get($tiktokShippingLabel, 'data.doc_url');
 
-        $this->processShipment($order,
+        $this->processShipment(
+            $order,
             $deliveryNote,
             $tiktokPackageDetail,
             $tiktokShippingLabelUrl
@@ -95,12 +97,12 @@ class ProcessTiktokOrderShipment extends OrgAction
      * @throws \Throwable
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function processShipment(Order $order,
-                                    DeliveryNote $deliveryNote,
-                                    $tiktokPackageDetail,
-                                    $tiktokShippingLabelUrl
-    ): void
-    {
+    public function processShipment(
+        Order $order,
+        DeliveryNote $deliveryNote,
+        $tiktokPackageDetail,
+        $tiktokShippingLabelUrl
+    ): void {
         $tiktokPackageShippingId = Arr::get($tiktokPackageDetail, 'data.shipping_provider_id');
         $tiktokPackageShippingName = Arr::get($tiktokPackageDetail, 'data.shipping_provider_name');
         $tiktokPackageShippingCode = Str::slug(substr($tiktokPackageShippingName, 0, 8));

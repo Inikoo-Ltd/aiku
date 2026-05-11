@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\UI\SysAdmin;
 
-use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Http\Resources\CRM\CustomerResource;
 use Inertia\Inertia;
@@ -35,9 +34,6 @@ class ShowRetinaEmailManagement extends RetinaAction
     {
 
         $customer = $request->user()->customer;
-        $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
-
-
 
         return Inertia::render(
             'EditModel',

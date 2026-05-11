@@ -12,7 +12,6 @@ use Lorisleiva\Actions\Concerns\AsObject;
 
 class CalculationsProfitMargin
 {
-
     use AsObject;
 
     public function handle(?float $revenue, float $cost): float

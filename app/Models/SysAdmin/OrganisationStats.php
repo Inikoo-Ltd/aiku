@@ -80,6 +80,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_items_state_inspected
  * @property int $number_return_items_state_restocked
  * @property int $number_return_items_state_cancelled
+ * @property bool $has_marketplace
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationStats newQuery()
