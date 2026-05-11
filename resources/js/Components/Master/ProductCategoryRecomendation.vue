@@ -6,6 +6,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import ListSelector from "@/Components/Selector.vue"
 import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
+import Image from "../Image.vue";
 
 const props = defineProps<{
     data: {
@@ -103,6 +104,15 @@ const SaveOrder = async () => {
                     saveActive = true 
                 }">
 
+
+                <template #image-list="{item}">
+                    <Image :src="item.image_thumbnail?.main?.thumbnail" class="w-10 h-10 object-cover rounded" />
+                </template>
+
+                <template #image-card="{item}">
+                    <Image :src="item.image_thumbnail?.main?.thumbnail" class="w-full h-24 object-cover rounded mb-2" />
+                </template>
+
                 <!-- TOP ACTION -->
                 <template v-if="props.data?.editable" #before-button-list>
                     <div class="flex justify-end mx-3">
@@ -133,10 +143,15 @@ const SaveOrder = async () => {
         </div>
 
         <!-- SELECTOR -->
-        <ListSelector v-if="props.data?.editable" ref="productDialog" v-model="listProducts.data.data" :routeFetch="{
-            name: 'grp.masters.master_shops.show.master_products.index',
-            parameters: { masterShop: route().params['masterShop'] }
-        }" />
+        <ListSelector 
+            v-if="props.data?.editable" ref="productDialog" 
+            v-model="listProducts.data.data" 
+            @update:model-value="saveActive = true"
+            :routeFetch="{
+                name: 'grp.masters.master_shops.show.master_products.index',
+                parameters: { masterShop: route().params['masterShop'] }
+            }" 
+        />
 
     </div>
 </template>

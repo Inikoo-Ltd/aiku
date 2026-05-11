@@ -13,6 +13,7 @@ import { Navigation } from 'swiper/modules'
 
 import 'swiper/css'
 import 'swiper/css/navigation'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faChevronLeft, faChevronRight)
 
@@ -55,8 +56,8 @@ console.log('Recommended Products:', props)
 </script>
 
 <template>
-  <div v-if="compSwiperOptions.length > fieldValue?.recommendation_settings.min_amt_shown"
-    :id="fieldValue?.id ? fieldValue?.id : 'recomended-master' + indexBlock" class="w-full pb-6" :style="{
+  <div v-if="compSwiperOptions.length >= fieldValue?.recommendation_settings.min_amt_shown"
+    :id="fieldValue?.id ? fieldValue?.id : 'recommended-master' + indexBlock" class="w-full pb-6" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType),
     }" :dropdown-type="props.fieldValue?.settings?.products_data?.type">
@@ -96,9 +97,6 @@ console.log('Recommended Products:', props)
                 <ProductRender v-else :product="product" :productHasPortfolio="[]" />
               </div>
 
-              <div v-else class="flex-1 flex items-center justify-center text-gray-400">
-                No Product
-              </div>
             </div>
           </SwiperSlide>
         </Swiper>

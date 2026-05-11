@@ -54,7 +54,7 @@ class ShowIrisWebpage
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
-
+        $website         = request()->input('website');
         $baseWebpageData = [
             'breadcrumbs'  => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -71,7 +71,9 @@ class ShowIrisWebpage
             ],
             'webpage_img'  => $webpageImg,
             'index_page'   => $webpage->index_page,
-            'follow_link'  => $webpage->follow_link
+            'follow_link'  => $webpage->follow_link,
+            'webpage_slug' => $webpage->slug,
+
         ];
 
         return array_merge($baseWebpageData, [

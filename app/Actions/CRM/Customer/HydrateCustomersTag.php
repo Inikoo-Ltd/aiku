@@ -16,7 +16,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Support\Facades\Log;
-use Sentry;
 
 class HydrateCustomersTag
 {
@@ -54,7 +53,6 @@ class HydrateCustomersTag
                         CustomerHydrateRfm::run($modelData->id);
                     } catch (Exception $e) {
                         Log::info("Failed to Hydrate Customers Tag: " . $e->getMessage());
-                        Sentry::captureMessage("Failed to Hydrate Customers Tag to: " . $e->getMessage());
                     }
                 }
             }
@@ -89,8 +87,7 @@ class HydrateCustomersTag
                                 $customer->tags()->detach($rfmTagIds);
                             }
                         } catch (Exception $e) {
-                            Log::info("Failed to cleanup RFM tags for customer: " . $e->getMessage());
-                            Sentry::captureMessage("Failed to cleanup RFM tags for customer: " . $e->getMessage());
+                            Log::error("Failed to cleanup RFM tags for customer: " . $e->getMessage());
                         }
                     }
                 }

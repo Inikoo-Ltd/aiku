@@ -16,7 +16,7 @@ use App\Models\Dropshipping\Portfolio;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Sentry;
+use Illuminate\Support\Facades\Log;
 
 class SaveShopifyProductData extends RetinaAction
 {
@@ -32,7 +32,7 @@ class SaveShopifyProductData extends RetinaAction
         $shopifyUser = $customerSalesChannel->user;
 
         if (!$shopifyUser) {
-            Sentry::captureMessage("No Shopify user found for this customer sales channel");
+            Log::error("No Shopify user found for this customer sales channel");
             return null;
         }
 
@@ -40,16 +40,14 @@ class SaveShopifyProductData extends RetinaAction
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
-
+            Log::error("Failed to initialize Shopify GraphQL client");
             return null;
         }
 
         $productID = $portfolio->platform_product_id;
 
         if (!$productID) {
-            Sentry::captureMessage("No Shopify product ID found in portfolio");
-
+            Log::error("No Shopify product ID found in portfolio B");
             return null;
         }
 
@@ -284,7 +282,7 @@ class SaveShopifyProductData extends RetinaAction
             ['Updated At', $result['updated_at']]
         ]);
 
-        // Display variants information
+        // Display variant information
         if (!empty($result['variants'])) {
             $command->info("\nVariants Information:");
             $variantData = [];

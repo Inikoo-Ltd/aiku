@@ -36,6 +36,8 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWarehousePalletReturn extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
+    
+    private bool $requireShipping = true;
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
@@ -46,9 +48,12 @@ class ShowWarehousePalletReturn extends OrgAction
     }
 
 
-
     public function asController(Organisation $organisation, Warehouse $warehouse, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        if (!$palletReturn->platform_id) { // Pallet Return for 3RD Party will always require shipping
+            $this->requireShipping = Arr::get($palletReturn->fulfilment->shop->settings, 'dispatch.require_shipping', true);
+        }
+        
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);

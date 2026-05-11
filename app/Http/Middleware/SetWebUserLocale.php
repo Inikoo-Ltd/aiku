@@ -14,6 +14,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 
+//Todo: Remove or refactor this so is compatible with varnish
 class SetWebUserLocale
 {
     public function handle(Request $request, Closure $next)

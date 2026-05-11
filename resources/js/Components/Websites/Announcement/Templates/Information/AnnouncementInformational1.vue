@@ -281,6 +281,10 @@ let intervalId: number | null = null
 let navigationTimeoutId: number | null = null
 
 const isMobile = computed(() => {
+    if (typeof window === 'undefined') {
+        return false
+    }
+
     return window.innerWidth < 768
 })
 

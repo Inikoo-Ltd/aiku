@@ -195,7 +195,7 @@ watch(
   () => usePage().url,
   (newUrl, oldUrl) => {
     if (layout.iris?.is_logged_in) {
-      layout?.log_user()
+      layout?.recordWebsiteHit()
     }
   },
   { immediate: true }

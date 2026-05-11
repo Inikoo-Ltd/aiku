@@ -63,9 +63,15 @@ const bundleToggleStyle = computed(() => {
     }
 })
 
-const propsAnnouncementsTopbar = ref([])
-const propsAnnouncementsBottomMenu =  ref([])
-const propsAnnouncementsTopFooter =  ref([])
+const announcementsByPosition = (position: string) =>
+    computed(() => {
+        const list = (usePage().props?.announcements ?? []) as any[]
+        return list.filter(a => a?.settings?.position === position)
+    })
+
+const propsAnnouncementsTopbar = announcementsByPosition('top-bar')
+const propsAnnouncementsBottomMenu = announcementsByPosition('bottom-menu')
+const propsAnnouncementsTopFooter = announcementsByPosition('top-footer')
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
@@ -110,17 +116,6 @@ const checkScreenType = () => {
     else screenType.value = 'desktop'
 }
 
-
-const getAnnouncements = async () => {
-    try {
-    const response = await axios.get(route("iris.json.announcements.index"))
-    propsAnnouncementsTopbar.value = response.data.top_bar
-    propsAnnouncementsBottomMenu.value = response.data.bottom_menu
-    propsAnnouncementsTopFooter.value = response.data.top_footer
-  } catch (error: any) {
-    console.error(error)
-  }
-}
 
 provide('screenType', screenType)
 
@@ -177,9 +172,8 @@ const fetchHasInBasket = async () => {
     }
 };
 
-onBeforeMount(()=>{
-initialiseIrisVarnish(useIrisLayoutStore)
-getAnnouncements()
+onBeforeMount(() => {
+    initialiseIrisVarnish(useIrisLayoutStore)
 })
 
 // Watch: open Side Basket if cart have any changes

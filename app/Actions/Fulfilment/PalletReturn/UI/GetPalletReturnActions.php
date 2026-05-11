@@ -14,6 +14,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\PalletReturn;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPalletReturnActions
@@ -22,10 +23,12 @@ class GetPalletReturnActions
 
     private bool $isSupervisor = false;
     private string $deleteIcon = 'fal fa-trash-alt';
+    private bool $requireShipping = true;
 
     public function handle(PalletReturn $palletReturn, $canEdit = false, $isSupervisor = false): array
     {
         $this->isSupervisor = $isSupervisor;
+        $this->requireShipping = Arr::get($palletReturn->fulfilment->shop->settings, 'dispatch.require_shipping', true);
 
         if ($palletReturn->deleted_at) {
             return $this->addPdf($palletReturn, []);
@@ -343,7 +346,7 @@ class GetPalletReturnActions
                 ]
             ];
 
-        $requiresShipmentBeforeDispatch = !$palletReturn->is_collection && !$palletReturn->shipments()->exists();
+        $requiresShipmentBeforeDispatch = $this->requireShipping ? !$palletReturn->is_collection && !$palletReturn->shipments()->exists() : false;
         $dispatchTooltip = $requiresShipmentBeforeDispatch
             ? __('Please add shipment before dispatch')
             : ($palletReturn->is_collection ? __('Set as collected') : __('Set as dispatched'));

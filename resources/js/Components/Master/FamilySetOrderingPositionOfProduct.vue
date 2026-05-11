@@ -254,7 +254,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                     </div>
 
                     <slot name="list-content" :item="element">
-                        <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
+                        <slot name="image-list" :item="element">
+                            <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
+                        </slot>
+                        
 
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-medium truncate">
@@ -300,8 +303,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
 
 
                     <slot name="card-content" :item="element">
-                        <Image :src="element.image_thumbnail?.main?.original"
+
+                        <slot name="image-card" :item="element">
+                             <Image :src="element.image_thumbnail?.main?.original"
                             class="w-full h-24 object-cover rounded mb-2" />
+                        </slot>
+                     
 
                         <div class="text-sm font-medium line-clamp-2">
                             {{ element.name }}
