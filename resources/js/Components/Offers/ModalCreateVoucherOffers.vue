@@ -325,10 +325,10 @@ const isFormInvalid = computed(() => {
                             <FontAwesomeIcon icon="fas fa-asterisk"
                                 class="font-light text-xs text-red-400 align-middle" />
 
-                            {{ trans('Voucher name') }}:
+                            {{ trans('Voucher code') }}:
                         </label>
 
-                        <PureInput v-model="offerVoucher" :placeholder="trans('Enter Voucher name')" />
+                        <PureInput v-model="offerVoucher" :placeholder="trans('Enter Voucher code')" />
 
                     </div>
                     <!-- offer name -->
