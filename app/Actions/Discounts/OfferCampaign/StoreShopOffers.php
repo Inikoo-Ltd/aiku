@@ -2,8 +2,8 @@
 
 namespace App\Actions\Discounts\OfferCampaign;
 
-use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Http\Request;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreShopOffers
 {
