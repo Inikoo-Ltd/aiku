@@ -15,6 +15,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ReturnDeliveryNoteItem extends Model
 {
@@ -46,5 +47,10 @@ class ReturnDeliveryNoteItem extends Model
     public function orgStock(): BelongsTo
     {
         return $this->belongsTo(OrgStock::class);
+    }
+
+    public function sowings(): HasMany
+    {
+        return $this->hasMany(Sowing::class, 'return_item_id');
     }
 }

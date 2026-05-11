@@ -9,8 +9,13 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
+use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -22,12 +27,38 @@ class UpsertReturnDeliveryNoteItemNotReturned extends OrgAction
 
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
-        dd($modelData);
-        // $returnDeliveryNoteItem->update([
-        //     'total_item_not_returned' => $modelData['quantity'],
-        // ]);
+        $user = auth()->user();
+        $totalItemNotReturned = data_get($modelData, 'quantity');
 
-        // return $returnDeliveryNoteItem;
+        data_set($modelData, 'sower_user_id', $user->id);
+        data_set($modelData, 'type', SowingTypeEnum::NOT_SOW);
+
+        StoreSowing::make()->action($returnDeliveryNoteItem, $user, $modelData);
+        CalculateReturnDeliveryNoteItemTotalSowed::make()->action($returnDeliveryNoteItem);
+        
+        return $returnDeliveryNoteItem;
+    }
+
+    public function afterValidator(Validator $validator, ActionRequest $request)
+    {
+        $returnDeliveryNoteItem = $request->returnDeliveryNoteItem;
+
+        $maxQty = $returnDeliveryNoteItem->total_expected_qty - (
+            $returnDeliveryNoteItem->total_item_damaged + 
+            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_returned
+        );
+
+        if ($request->input('quantity') > $maxQty) {
+            throw ValidationException::withMessages(
+                [
+                    'message' => [
+                        'quantity' => 'Invalid quantity were given (Exceed maximum possible amount)',
+                    ]
+                ]
+            );
+        }
+
     }
 
     public function rules(): array

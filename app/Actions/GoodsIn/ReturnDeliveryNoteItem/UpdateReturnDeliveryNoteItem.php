@@ -22,7 +22,6 @@ class UpdateReturnDeliveryNoteItem extends OrgAction
 
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
-        
         if (Arr::has($modelData, 'return_state')) {
             $returnState = data_get($modelData, 'return_state');
             $timestampField = match ($returnState) {
@@ -36,8 +35,10 @@ class UpdateReturnDeliveryNoteItem extends OrgAction
                 data_set($modelData, $timestampField, now());
             }
         }
-
+        
         $returnDeliveryNoteItem->update($modelData);
+        $changes = $returnDeliveryNoteItem->getChanges();
+        $returnDeliveryNoteItem->refresh();
 
         return $returnDeliveryNoteItem;
     }
@@ -45,8 +46,11 @@ class UpdateReturnDeliveryNoteItem extends OrgAction
     public function rules(): array
     {
         return [
-            'return_state'  => ['sometimes', Rule::enum(ReturnDeliveryNoteItemStateEnum::class)],
-            'handled_at'    => ['sometimes', 'nullable'],
+            'return_state'              => ['sometimes', Rule::enum(ReturnDeliveryNoteItemStateEnum::class)],
+            'handled_at'                => ['sometimes', 'nullable'],
+            'total_item_damaged'        => ['sometimes', 'numeric', 'gte:0'],
+            'total_item_not_returned'   => ['sometimes', 'numeric', 'gte:0'],
+            'total_item_returned'       => ['sometimes', 'numeric', 'gte:0'],
         ];
     }
 

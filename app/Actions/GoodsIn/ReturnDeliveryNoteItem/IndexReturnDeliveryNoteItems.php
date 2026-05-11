@@ -38,8 +38,10 @@ class IndexReturnDeliveryNoteItems extends OrgAction
         $query = QueryBuilder::for(ReturnDeliveryNoteItem::class);
 
         $query->where('return_delivery_note_items.return_delivery_note_id', $parent->id);
-        $query->leftJoin('org_stocks', 'return_delivery_note_items.org_stock_id', '=', 'org_stocks.id');
         $query->leftJoin('delivery_note_items', 'return_delivery_note_items.delivery_note_items_id', 'delivery_note_items.id');
+        $query->leftJoin('org_stocks', 'return_delivery_note_items.org_stock_id', '=', 'org_stocks.id');
+        $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
+        $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
 
         if ($stateFilter) {
             switch ($stateFilter) {
@@ -61,15 +63,17 @@ class IndexReturnDeliveryNoteItems extends OrgAction
             ->select([
                 'return_delivery_note_items.id',
                 'return_delivery_note_items.return_state',
-                'delivery_note_items.quantity_dispatched as expected_quantity',
                 'return_delivery_note_items.total_item_damaged',
                 'return_delivery_note_items.total_item_not_returned',
                 'return_delivery_note_items.total_item_returned',
+                'return_delivery_note_items.total_expected_qty',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.packed_in as packed_in',
+                'warehouse_areas.code as warehouse_area_code',
+                'warehouse_areas.picking_position as warehouse_area_picking_position',
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'expected_quantity', 'total_item_returned', 'total_item_damaged', 'total_item_lost',  'total_item_not_returned'])
             ->allowedFilters([$globalSearch])
@@ -115,16 +119,20 @@ class IndexReturnDeliveryNoteItems extends OrgAction
             //     $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             // } else {
             $table->column(key: 'expected_quantity', label: __('Expected Qty'), canBeHidden: false, sortable: false, searchable: false);
-            if (!in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
+            if (in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RETURNING])) {
+                $table->column(key: 'sowings', label: __('Sowings'), canBeHidden: false);
+            }
+
+            if (in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RETURNING, ReturnDeliveryNoteStateEnum::RETURNED])) {
                 $table->column(key: 'total_item_damaged', label: __('Damaged'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'total_item_not_returned', label: __('Not Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'total_item_returned', label: __('Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
 
-            if (!in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
-                $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
-            }
+            // if (!in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
+            //     $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
+            // }
         };
     }
 

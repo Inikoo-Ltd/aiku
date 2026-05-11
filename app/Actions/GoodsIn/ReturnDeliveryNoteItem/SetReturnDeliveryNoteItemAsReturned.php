@@ -9,9 +9,11 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
+use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -21,24 +23,36 @@ class SetReturnDeliveryNoteItemAsReturned extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem): ReturnDeliveryNoteItem
+    public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
-        dd('yyyyyyy');
-        // $expectedQuantity = $returnDeliveryNoteItem->deliveryNoteItems->quantity_dispatched;
+        $user = auth()->user();
+        
+        $totalItemReturned = $returnDeliveryNoteItem->total_expected_qty - (
+            $returnDeliveryNoteItem->total_item_damaged + 
+            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_returned
+        );
 
-        // $returnDeliveryNoteItem->update([
-        //     'return_state'        => ReturnDeliveryNoteItemStateEnum::PROCESSED,
-        //     'total_item_returned' => $expectedQuantity,
-        //     'processed_at'        => now(),
-        // ]);
+        data_set($modelData, 'quantity', $totalItemReturned);
+        data_set($modelData, 'sower_user_id', $user->id);
 
-        // return $returnDeliveryNoteItem;
+        StoreSowing::make()->action($returnDeliveryNoteItem, $user, $modelData);
+        CalculateReturnDeliveryNoteItemTotalSowed::make()->action($returnDeliveryNoteItem);
+
+        return $returnDeliveryNoteItem;
     }
 
-    public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): ReturnDeliveryNoteItem
+    public function rules(): array
     {
-        $this->initialisationFromShop($returnDeliveryNoteItem->shop, $request);
+        return [
+            'location_org_stock_id' => ['required', Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->warehouse->id)]
+        ];
+    }
 
-        return $this->handle($returnDeliveryNoteItem);
+    public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): void
+    {
+        $this->initialisationFromWarehouse($returnDeliveryNoteItem->returnDeliveryNote->warehouse, $request);
+
+        $this->handle($returnDeliveryNoteItem, $this->validatedData);
     }
 }

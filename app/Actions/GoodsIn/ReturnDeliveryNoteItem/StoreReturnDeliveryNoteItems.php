@@ -30,6 +30,7 @@ class StoreReturnDeliveryNoteItems extends OrgAction
         data_set($modelData, 'stock_id', $deliveryNoteItem->stock_id, false);
         data_set($modelData, 'org_stock_family_id', $deliveryNoteItem->org_stock_family_id, false);
         data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id, false);
+        data_set($modelData, 'total_expected_qty', $deliveryNoteItem->quantity_dispatched, 0);
         
         return $returnDeliveryNote->returnDeliveryNoteItem()->create($modelData);
     }

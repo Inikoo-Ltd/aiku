@@ -9,8 +9,10 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
+use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
+use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,21 +25,30 @@ class SetReturnDeliveryNoteItemAsNotReturned extends OrgAction
 
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem): ReturnDeliveryNoteItem
     {
-        dd('ttttttt');
-        // $expectedQuantity = $returnDeliveryNoteItem->deliveryNoteItems->quantity_dispatched;
+        $modelData = [];
+        $user = auth()->user();
 
-        // $returnDeliveryNoteItem->update([
-        //     'return_state'           => ReturnDeliveryNoteItemStateEnum::NOT_RETURNED,
-        //     'total_item_not_returned' => $expectedQuantity,
-        // ]);
+        $totalItemNotReturned = $returnDeliveryNoteItem->total_expected_qty - (
+            $returnDeliveryNoteItem->total_item_damaged + 
+            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_returned
+        );
+        
+        data_set($modelData, 'quantity', $totalItemNotReturned);
+        data_set($modelData, 'sower_user_id', $user->id);
 
-        // return $returnDeliveryNoteItem;
+        data_set($modelData, 'type', SowingTypeEnum::NOT_SOW);
+
+        StoreSowing::make()->action($returnDeliveryNoteItem, $user, $modelData);
+        CalculateReturnDeliveryNoteItemTotalSowed::make()->action($returnDeliveryNoteItem);
+
+        return $returnDeliveryNoteItem;
     }
 
-    public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): ReturnDeliveryNoteItem
+    public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): void
     {
-        $this->initialisationFromShop($returnDeliveryNoteItem->shop, $request);
+        $this->initialisationFromWarehouse($returnDeliveryNoteItem->returnDeliveryNote->warehouse, $request);
 
-        return $this->handle($returnDeliveryNoteItem);
+        $this->handle($returnDeliveryNoteItem);
     }
 }

@@ -1,17 +1,8 @@
 <?php
 
-/*
- * author Louis Perez
- * created on 05-05-2026-13h-35m
- * github: https://github.com/louis-perez
- * copyright 2026
-*/
-
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
-use App\Actions\GoodsIn\Sowing\DeleteSowing;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
@@ -21,48 +12,33 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
-class CancelReturnDeliveryNote extends OrgAction
+class SetReturnedReturnDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(ReturnDeliveryNote $returnDeliveryNote): ReturnDeliveryNote
+    public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
+        $user = auth()->user();
         $oldState = $returnDeliveryNote->return_state;
 
-        if (in_array($oldState, [ReturnDeliveryNoteStateEnum::RETURNED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
+        if ($oldState !== ReturnDeliveryNoteStateEnum::RETURNING) {
             throw ValidationException::withMessages([
-                'message' => __('Delivery note can not be cancelled.').' ['.__('Invalid state').': '.$oldState->value.']',
+                'message' => __('Delivery note can not be handled.').' ['.__('Invalid state').': '.$oldState->value.']',
             ]);
         }
-
-        $cancelledRef = $returnDeliveryNote->reference.'-CANCELLED';
-
-        $cancelledCount = DB::table('delivery_notes')
-            ->where('reference', 'like', $cancelledRef.'%')
-            ->count();
-
-        $newCancelledRef = $cancelledRef.($cancelledCount > 0 ? '-'.($cancelledCount + 1) : '');
-
+        
         $modelData = [];
-        data_set($modelData, 'reference', $newCancelledRef);
-        data_set($modelData, 'return_state', ReturnDeliveryNoteStateEnum::CANCELLED);
+        data_set($modelData, 'return_state', ReturnDeliveryNoteStateEnum::RETURNED);
+        data_set($modelData, 'handler_user_id', $user->id);
 
         $returnDeliveryNote = DB::transaction(function () use ($returnDeliveryNote, $modelData) {
             $returnDeliveryNote = UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, $modelData);
 
             foreach ($returnDeliveryNote->returnDeliveryNoteItem as $item) {
-                foreach($item->sowings as $sowing) {
-                    DeleteSowing::make()->action($sowing);
-                }
-                
                 UpdateReturnDeliveryNoteItem::make()->action($item, [
-                    'return_state'        => ReturnDeliveryNoteItemStateEnum::CANCELLED,
+                    'return_state'        => ReturnDeliveryNoteItemStateEnum::PROCESSED,
                 ]);
             }
-
-            UpdateDeliveryNote::make()->action($returnDeliveryNote->deliveryNote, [
-                'is_returned'   => false
-            ]);
 
             return $returnDeliveryNote;
         });

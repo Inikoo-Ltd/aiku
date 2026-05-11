@@ -11,6 +11,7 @@ namespace App\Http\Resources\Procurement;
 
 use App\Http\Resources\HasSelfCall;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
+use App\Models\GoodsIn\Sowing;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,7 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
 
         $returnLocation = DB::table('location_org_stocks')
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
+            ->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id')
             ->where('org_stock_id', $this->org_stock_id)
             ->select([
                 'location_org_stocks.id',
@@ -48,19 +50,57 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
             ->orderBy('picking_priority')
             ->get();
 
+        $warehouseArea = '';
+        if ($this->warehouse_area_picking_position) {
+            $warehouseArea = __('Sort:').': '.$this->warehouse_area_picking_position.' ';
+        }
+
+        if ($this->warehouse_area_code) {
+            $warehouseArea .= __('Area').': '.$this->warehouse_area_code;
+        }
+        if ($warehouseArea == '') {
+            $warehouseArea = __('No Area');
+        }
+
+        $sowings = Sowing::where('return_item_id', $this->id)->with('location')->get();
+        
+        $maxAvailableQty = $returnDeliveryNoteItem->total_expected_qty - (
+            $returnDeliveryNoteItem->total_item_damaged + 
+            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_returned
+        );
+
+        $maxAvailableQtyFractional = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $maxAvailableQty
+                )
+            ),
+            $returnDeliveryNoteItem->packed_in
+        );
+
+        $maxAvailableQtyFractionalDS = $maxAvailableQtyFractional;
+
+        if (floor($maxAvailableQty) == $maxAvailableQtyFractional &&  $returnDeliveryNoteItem->packed_in > 1) {
+            $maxAvailableQtyFractionalDS = [0, [$maxAvailableQtyFractional * $this->packed_in, $this->packed_in]];
+        }
+
         return [
             'id'                                    => $returnDeliveryNoteItem->id,
             'state'                                 => $returnDeliveryNoteItem->return_state,
             'state_icon'                            => $this->return_state->stateIcon(),
-            'expected_quantity'                     => $returnDeliveryNoteItem->expected_quantity,
+            'expected_quantity'                     => $returnDeliveryNoteItem->total_expected_qty,
             'expected_quantity_fractional'          =>  riseDivisor(
                 divideWithRemainder(
                     findSmallestFactors(
-                        $returnDeliveryNoteItem->expected_quantity
+                        $returnDeliveryNoteItem->total_expected_qty
                     )
                 ),
                 $returnDeliveryNoteItem->packed_in
             ),
+            'quantity_to_sow'                       => $maxAvailableQty,
+            'quantity_to_sow_fractional'            => $maxAvailableQtyFractional,
+            'quantity_to_sow_fractional_ds'         => $maxAvailableQtyFractionalDS,
 
 
             'total_item_not_returned'               => $returnDeliveryNoteItem->total_item_not_returned,
@@ -132,6 +172,10 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
             'org_stock_slug'                        => $returnDeliveryNoteItem->org_stock_slug,
             'packed_in'                             => $returnDeliveryNoteItem->packed_in,
             'locations'                             => $returnLocation,
+            'warehouse_area'                        => $warehouseArea,
+
+            'sowings'                               => SowingResource::collection($sowings),
+            'has_available_qty'                     => (bool) $maxAvailableQty > 0,
         ];
     }
 }

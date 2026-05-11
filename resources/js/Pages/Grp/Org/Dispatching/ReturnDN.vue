@@ -22,6 +22,7 @@ import { ToggleSwitch } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { faBoxCheck } from '@fas'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -92,7 +93,8 @@ watch(pickingView, (val) => {
 
 library.add(
 	faUserSlash,
-	faExchangeAlt
+	faExchangeAlt,
+	faBoxCheck
 )
 
 </script>

@@ -18,6 +18,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Sowing Model - Used for return/sowing operations
@@ -104,5 +105,15 @@ class Sowing extends Model
     public function orgStockMovement(): BelongsTo
     {
         return $this->belongsTo(OrgStockMovement::class, 'org_stock_movement_id');
+    }
+
+    public function returnItem(): BelongsTo
+    {
+        return $this->belongsTo(ReturnDeliveryNoteItem::class, 'return_item_id');
+    }
+
+    public function return(): BelongsTo
+    {
+        return $this->belongsTo(ReturnDeliveryNote::class, 'return_item_id');
     }
 }

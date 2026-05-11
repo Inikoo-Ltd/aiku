@@ -113,12 +113,8 @@ class ShowReturnDeliveryNote extends OrgAction
             return [];
         }
 
-        $hasProcessedItems = ReturnDeliveryNoteItem::where('return_delivery_note_id', $returnDeliveryNote->id)
-            ->where(function ($q) {
-                $q->where('total_item_not_returned', '>', 0)
-                    ->orWhere('total_item_returned', '>', 0)
-                    ->orWhere('total_item_damaged', '>', 0);
-            })
+        $hasUnHandledItems = ReturnDeliveryNoteItem::where('return_delivery_note_id', $returnDeliveryNote->id)
+            ->where('is_handled', false)
             ->exists();
 
         return match ($returnDeliveryNote->return_state) {
@@ -138,7 +134,7 @@ class ShowReturnDeliveryNote extends OrgAction
                     ],
                 ],
             ],
-            ReturnDeliveryNoteStateEnum::RETURNING => !$hasProcessedItems ? [
+            ReturnDeliveryNoteStateEnum::RETURNING => $hasUnHandledItems ? [
                 [
                     'type'   => 'buttonGroup',
                     'key'    => 'picker',
@@ -169,7 +165,22 @@ class ShowReturnDeliveryNote extends OrgAction
 
                     ],
                 ],
-            ] : [],
+            ] : [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fas fa-box-check',
+                    'label'   => __('Set as Returned'),
+                    'key'     => 'finish-return',
+                    'route'   => [
+                        'method'        => 'patch',
+                        'name'          => 'grp.models.return_delivery_note.state.returned',
+                        'parameters'    =>  [
+                            'returnDeliveryNote'    => $returnDeliveryNote->id
+                        ]
+                    ],
+                ],
+            ],
             default => []
         };
     }

@@ -8,6 +8,7 @@
 */
 
 use App\Actions\GoodsIn\ReturnDeliveryNote\CancelReturnDeliveryNote;
+use App\Actions\GoodsIn\ReturnDeliveryNote\SetReturnedReturnDeliveryNote;
 use App\Actions\GoodsIn\ReturnDeliveryNote\SetReturningReturnDeliveryNote;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UnassignReturnDeliveryNoteHandler;
 use Illuminate\Support\Facades\Route;
@@ -18,5 +19,6 @@ Route::name('return_delivery_note.')->prefix('return-delivery-note/{returnDelive
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('cancel', CancelReturnDeliveryNote::class)->name('cancel');
         Route::patch('handling', SetReturningReturnDeliveryNote::class)->name('returning');
+        Route::patch('returned', SetReturnedReturnDeliveryNote::class)->name('returned');
     });
 });
