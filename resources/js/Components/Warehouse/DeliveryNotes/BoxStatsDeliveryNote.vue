@@ -349,6 +349,14 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
     }
 }
 
+const showLockButton = () => {
+    let handlerId = props.boxStats?.picker?.id;
+    if (['packed', 'packing'].includes(props.deliveryNote?.state)) {
+        handlerId = props.boxStats?.packer?.id
+    }
+    return handlerId != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(props.deliveryNote?.state)
+}
+
 console.log(layout)
 </script>
 
@@ -526,10 +534,9 @@ console.log(layout)
                             </dl>
                         </div>
 
-
                         <FontAwesomeIcon
-                            v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
-                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                            v-if="showLockButton()"
+                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker/packer can process this delivery note')"
                             class="cursor-pointer focus:outline-none"
                             :icon="allowActions ? faLockOpen : faLock"
                             @click="assignSelfTemporarily()"
