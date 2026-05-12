@@ -105,7 +105,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         ];
         $afterTitle = null;
         $iconRight  = null;
-        $actions    = null;
+        $actions    = [];
 
         if ($this->parent instanceof Warehouse) {
             $icon      = ['fal', 'fa-arrow-from-left'];
@@ -113,11 +113,18 @@ class IndexReturnDeliveryNotes extends OrgAction
                 'icon' => 'fal fa-exchange',
             ];
             $model     = __('Goods Out');
+
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'create',
+                'key'     => 'create-return',
+                'label'   => __('Create Return'),
+                'icon'    => 'fal fa-plus',
+            ];
         }
 
-
         return Inertia::render(
-            'Org/Dispatching/DeliveryNotes',
+            'Org/Procurement/Returns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),

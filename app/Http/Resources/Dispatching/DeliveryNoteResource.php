@@ -19,7 +19,7 @@ class DeliveryNoteResource extends JsonResource
     public function toArray($request): array
     {
         /** @var DeliveryNote $deliverNote */
-        $deliverNote = $this;
+        $deliverNote = $this->resource;
 
         return [
             'id'                             => $deliverNote->id,
