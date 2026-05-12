@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,7 +26,7 @@ class FulfillOrderToTiktok extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Order $order): void
+    public function handle(Order|PalletReturn $order): void
     {
         if ($order->is_shipping_by_external) {
             return;
@@ -40,16 +41,20 @@ class FulfillOrderToTiktok extends OrgAction
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $order->customerSalesChannel->user;
 
-        /** @var DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes->first();
+        if($order instanceof PalletReturn) {
+            $shipment = $order->shipments()->first();
+        } else {
+            /** @var DeliveryNote $deliveryNote */
+            $deliveryNote = $order->deliveryNotes->first();
 
-        /** @var Shipment $shipment */
-        $shipment = $deliveryNote->shipments()->first();
+            /** @var Shipment $shipment */
+            $shipment = $deliveryNote->shipments()->first();
+        }
 
         $this->fulfillBySeller($tiktokUser, $fulfillOrderId, $order, $shipment);
     }
 
-    public function fulfillBySeller(TiktokUser $tiktokUser, string $fulfillOrderId, Order $order, Shipment $shipment): void
+    public function fulfillBySeller(TiktokUser $tiktokUser, string $fulfillOrderId, Order|PalletReturn $order, Shipment $shipment): void
     {
         $shippingProviders = $tiktokUser->getShippingProviders(Arr::get($order->data, 'tiktok_order.delivery_option_id'));
 

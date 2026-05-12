@@ -56,7 +56,7 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                 'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
                 'date'                      => now(),
                 'delivery_address'          => $tiktokOrderClass->digestTiktokAddress($tiktokOrders),
-                'data'                      => ['tiktok_data' => $tiktokOrders],
+                'data'                      => ['tiktok_order' => $tiktokOrders],
                 'platform_order_id'         => Arr::get($tiktokOrders, 'id'),
                 'is_collection'             => false
             ]);
