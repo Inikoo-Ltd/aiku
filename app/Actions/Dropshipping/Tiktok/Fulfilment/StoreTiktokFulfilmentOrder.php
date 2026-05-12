@@ -56,16 +56,22 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                 'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
                 'date'                      => now(),
                 'delivery_address'          => $tiktokOrderClass->digestTiktokAddress($tiktokOrders),
-                'data'                      => ['tiktok_data' => $tiktokOrders],
+                'data'                      => ['tiktok_order' => $tiktokOrders],
                 'platform_order_id'         => Arr::get($tiktokOrders, 'id'),
-                'is_collection'             => false
+                'is_collection'             => false,
+                'is_shipping_by_external'   => Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK'
             ]);
 
             $storedItemModels = [];
+            $orderedProducts = $orderedProducts->groupBy('product_id')->map(fn($group) => [
+                'product_id' => $group->first()['product_id'],
+                'quantity' => count($group)
+            ]);
+
             foreach ($orderedProducts as $tiktokProduct) {
                 /** @var Portfolio $portfolio */
                 $portfolio = $tiktokUser->customerSalesChannel->portfolios()
-                    ->where('platform_product_id', $tiktokProduct['product_id'])->first();
+                    ->where('platform_product_id', Arr::get($tiktokProduct, 'product_id'))->first();
 
                 if ($portfolio) {
                     /** @var StoredItem $product */
@@ -76,7 +82,7 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                     }
 
                     $storedItemModels[$storedItem->id] = [
-                        'quantity' => $tiktokProduct['quantity']
+                        'quantity' => Arr::get($tiktokProduct, 'quantity', 0)
                     ];
                 }
             }

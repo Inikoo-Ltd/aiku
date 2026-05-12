@@ -45,13 +45,17 @@ createServer(
 			render: renderToString,
 			title: (title) => `${title}`,
 			resolve: (name) => {
-				const pages = import.meta.glob("./Pages/Iris/**/*.vue", { eager: true })
+				const pages = {
+					...import.meta.glob("./Pages/Iris/**/*.vue", { eager: true }),
+					...import.meta.glob("./Iris/Pages/**/*.vue", { eager: true }),
+				}
 
-				const path = `./Pages/Iris/${name}.vue`
-				const page = pages[path]
+				const page =
+					pages[`./Pages/Iris/${name}.vue`] ||
+					pages[`./Iris/Pages/${name}.vue`]
 
 				if (!page) {
-					throw new Error(`Page not found: ${name} (${path})`)
+					throw new Error(`Page not found: ${name}`)
 				}
 
 				return page.default ?? page
