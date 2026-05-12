@@ -75,6 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
+ * @property \Illuminate\Support\Carbon|null $last_published_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_id
@@ -154,7 +155,8 @@ class Webpage extends Model implements Auditable, HasMedia
         'live_at'          => 'datetime',
         'closed_at'        => 'datetime',
         'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime'
+        'last_fetched_at'  => 'datetime',
+        'last_published_at' => 'datetime'
     ];
 
     protected $attributes = [
