@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Comms\Email\SendTestEmail;
+use App\Actions\Comms\Mailshot\GetMailshotTimeSeries;
 use App\Stubs\UIDummies\EditDummy;
 use App\Stubs\UIDummies\ShowDummy;
 use App\Stubs\UIDummies\CreateDummy;
@@ -39,6 +40,7 @@ Route::name("newsletters.")->prefix('newsletters')
         Route::get('{mailshot}', ShowMailshot::class)->name('show');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
         Route::get('{mailshot}/workshop', ShowMailshotWorkshop::class)->name('workshop');
+        Route::get('{mailshot}/time-series', GetMailshotTimeSeries::class)->name('time-series');
     });
 Route::name("mailshots.")->prefix('mailshots')
     ->group(function () {
@@ -48,6 +50,7 @@ Route::name("mailshots.")->prefix('mailshots')
         Route::get('{mailshot}/workshop', ShowMailshotWorkshop::class)->name('workshop');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
         Route::get('{mailshot}/recipients', ShowMailshotRecipients::class)->name('recipients');
+        Route::get('{mailshot}/time-series', GetMailshotTimeSeries::class)->name('time-series');
         Route::post('{mailshot}/send-test', SendTestEmail::class)->name('send-test');
         // Route::put('{mailshot}/recipients', UpdateMailshotRecipients::class)->name('recipients.update');
     });

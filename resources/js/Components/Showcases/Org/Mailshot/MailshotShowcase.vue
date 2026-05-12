@@ -49,7 +49,22 @@ const props = defineProps<{
                 timeline: any,
             }
         },
-        compiled_layout: any
+        compiled_layout: any,
+        time_series_data?: Array<{
+            id: number;
+            period: string;
+            filter_date: string;
+            error: number;
+            sent: number;
+            delivered: number;
+            hard_bounce: number;
+            soft_bounce: number;
+            opened: number;
+            clicked: number;
+            spam: number;
+            unsubscribed: number;
+            delay: number;
+        }>;
     }
     liveStats?: any[]
     ownShopTemplates?: Array<{
@@ -201,7 +216,7 @@ const effectiveOtherShopTemplates = computed(() =>
             </div>
 
             <!-- Performance Metrics -->
-            <PerformanceMetrics :mailshot-state="mailshotState" />
+            <PerformanceMetrics :mailshot-state="mailshotState" :time-series-data="data.time_series_data" />
 
             <!-- Preview and chart -->
             <div class="grid gap-4 mt-8" :class="isReady ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'">

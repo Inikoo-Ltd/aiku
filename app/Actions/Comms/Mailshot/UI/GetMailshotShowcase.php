@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Http\Resources\Mail\MailshotResource;
 use App\Models\Comms\Mailshot;
+use App\Actions\Comms\Mailshot\GetMailshotTimeSeries;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetMailshotShowcase
@@ -21,6 +22,7 @@ class GetMailshotShowcase
         return [
             'mailshot' => new MailshotResource($mailshot),
             'compiled_layout' => $mailshot->email?->liveSnapshot?->compiled_layout,
+            'time_series_data' => GetMailshotTimeSeries::run($mailshot)->jsonSerialize(),
         ];
     }
 }

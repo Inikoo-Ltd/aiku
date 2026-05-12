@@ -5,6 +5,21 @@ import { trans } from 'laravel-vue-i18n';
 
 const props = defineProps<{
     mailshotState: string;
+    timeSeriesData?: Array<{
+        id: number;
+        period: string;
+        filter_date: string;
+        error: number;
+        sent: number;
+        delivered: number;
+        hard_bounce: number;
+        soft_bounce: number;
+        opened: number;
+        clicked: number;
+        spam: number;
+        unsubscribed: number;
+        delay: number;
+    }>;
 }>();
 
 const selectedPeriod = ref('day');
@@ -29,6 +44,32 @@ const metrics = [
     { key: 'unsubscribed', label: 'Unsubscribed' }
 ];
 
+const processTimeSeriesData = (period: string, metric: string) => {
+    if (!props.timeSeriesData || !Array.isArray(props.timeSeriesData) || props.timeSeriesData.length === 0) {
+        // Fallback to dummy data if no real data available
+        return generateDummyData(period, metric);
+    }
+
+    const labels = props.timeSeriesData.map(item => item.period);
+    const data = props.timeSeriesData.map(item => {
+        switch (metric) {
+            case 'error': return item.error;
+            case 'sent': return item.sent;
+            case 'delivered': return item.delivered;
+            case 'hard_bounce': return item.hard_bounce;
+            case 'soft_bounce': return item.soft_bounce;
+            case 'opened': return item.opened;
+            case 'clicked': return item.clicked;
+            case 'spam': return item.spam;
+            case 'unsubscribed': return item.unsubscribed;
+            case 'delay': return item.delay;
+            default: return 0;
+        }
+    });
+
+    return { labels, data };
+};
+
 const generateDummyData = (period: string, metric: string) => {
     const dataPoints = period === 'day' ? 24 : period === 'week' ? 7 : 30;
     const labels = period === 'day'
@@ -50,14 +91,14 @@ const generateDummyData = (period: string, metric: string) => {
         unsubscribed: [2, 3, 2, 4, 3, 2, 3, 2, 3, 2, 2, 1, 2, 2, 3, 2, 3, 2, 3, 2, 2, 1, 2, 1]
     };
 
-    const values = baseValues[metric] || baseValues.sent;
+    const values = baseValues[metric as keyof typeof baseValues] || baseValues.sent;
     const data = values.slice(0, dataPoints);
 
     return { labels, data };
 };
 
 const chartData = computed(() => {
-    const { labels, data } = generateDummyData(selectedPeriod.value, selectedMetric.value);
+    const { labels, data } = processTimeSeriesData(selectedPeriod.value, selectedMetric.value);
 
     return {
         labels,
