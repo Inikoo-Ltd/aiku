@@ -220,4 +220,9 @@ class Mailshot extends Model implements Auditable
     {
         return $this->belongsTo(Mailshot::class, 'parent_mailshot_id');
     }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(MailshotTimeSeries::class);
+    }
 }

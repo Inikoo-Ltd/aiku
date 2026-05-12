@@ -23,7 +23,7 @@ class ProcessMailshotTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'comms_slave';
+    public string $jobQueue = 'ses-analytics';
 
     public function getJobUniqueId(int $mailshotId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -60,11 +60,12 @@ class ProcessMailshotTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::connection('aiku_no_sticky')->table('dispatched_emails')
-            ->where('mailshot_id', $timeSeries->mailshot_id)
-            ->where('created_at', '>=', $from)
-            ->where('created_at', '<=', $to)
-            ->whereNull('deleted_at');
+        // $query = DB::connection('aiku_no_sticky')->table('dispatched_emails')
+        $query = DB::connection()->table('dispatched_emails')
+            ->join('mailshot_has_dispatched_emails', 'dispatched_emails.id', '=', 'mailshot_has_dispatched_emails.dispatched_email_id')
+            ->where('mailshot_has_dispatched_emails.mailshot_id', $timeSeries->mailshot_id)
+            ->where('dispatched_emails.created_at', '>=', $from)
+            ->where('dispatched_emails.created_at', '<=', $to);
 
         $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
 
@@ -96,7 +97,6 @@ class ProcessMailshotTimeSeriesRecords implements ShouldBeUnique
                     'number_dispatched_emails_state_spam'                      => $result->state_spam ?? 0,
                     'number_dispatched_emails_state_unsubscribed'               => $result->state_unsubscribed ?? 0,
                     'number_provoked_unsubscribe'                               => $metrics['provoked_unsubscribes'] ?? 0,
-                    ...$metrics,
                 ]
             );
 
@@ -142,7 +142,6 @@ class ProcessMailshotTimeSeriesRecords implements ShouldBeUnique
                     'number_dispatched_emails_state_spam'                      => 0,
                     'number_dispatched_emails_state_unsubscribed'               => 0,
                     'number_provoked_unsubscribe'                               => $metrics['provoked_unsubscribes'] ?? 0,
-                    ...$metrics,
                 ]
             );
         }
@@ -155,11 +154,13 @@ class ProcessMailshotTimeSeriesRecords implements ShouldBeUnique
         ];
 
         // Get provoked unsubscribes from dispatched emails
-        $unsubscribesResult = DB::connection('aiku_no_sticky')->table('dispatched_emails')
-            ->where('mailshot_id', $mailshotId)
-            ->where('created_at', '>=', $periodFrom)
-            ->where('created_at', '<=', $periodTo)
-            ->where('provoked_unsubscribe', true)
+        // $unsubscribesResult = DB::connection('aiku_no_sticky')->table('dispatched_emails')
+        $unsubscribesResult = DB::connection()->table('dispatched_emails')
+            ->join('mailshot_has_dispatched_emails', 'dispatched_emails.id', '=', 'mailshot_has_dispatched_emails.dispatched_email_id')
+            ->where('mailshot_has_dispatched_emails.mailshot_id', $mailshotId)
+            ->where('dispatched_emails.created_at', '>=', $periodFrom)
+            ->where('dispatched_emails.created_at', '<=', $periodTo)
+            ->where('dispatched_emails.provoked_unsubscribe', true)
             ->count();
 
         $trackingStats['provoked_unsubscribes'] = $unsubscribesResult;
@@ -167,23 +168,55 @@ class ProcessMailshotTimeSeriesRecords implements ShouldBeUnique
         return $trackingStats;
     }
 
+    // protected function applyFrequencyGrouping($query, TimeSeriesFrequencyEnum $frequency)
+    // {
+    //     return $query->selectRaw('
+    //             COUNT(*) as total_dispatched,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_ready,
+    //                             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_error,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_rejected_by_provider,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_sent,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_delivered,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_hard_bounce,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_soft_bounce,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_opened,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_clicked,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_spam,
+    //             SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_unsubscribed,
+    //             ' . $this->getFrequencyDateSelect($frequency) . '
+    //         ', [
+    //         DispatchedEmailStateEnum::READY->value,
+    //         DispatchedEmailStateEnum::ERROR->value,
+    //         DispatchedEmailStateEnum::REJECTED_BY_PROVIDER->value,
+    //         DispatchedEmailStateEnum::SENT->value,
+    //         DispatchedEmailStateEnum::DELIVERED->value,
+    //         DispatchedEmailStateEnum::HARD_BOUNCE->value,
+    //         DispatchedEmailStateEnum::SOFT_BOUNCE->value,
+    //         DispatchedEmailStateEnum::OPENED->value,
+    //         DispatchedEmailStateEnum::CLICKED->value,
+    //         DispatchedEmailStateEnum::SPAM->value,
+    //         DispatchedEmailStateEnum::UNSUBSCRIBED->value,
+    //     ])
+    //         ->groupBy($this->getFrequencyGroupBy($frequency));
+    // }
+
     protected function applyFrequencyGrouping($query, TimeSeriesFrequencyEnum $frequency)
     {
         return $query->selectRaw('
-                COUNT(*) as total_dispatched,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_ready,
-                                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_error,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_rejected_by_provider,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_sent,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_delivered,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_hard_bounce,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_soft_bounce,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_opened,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_clicked,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_spam,
-                SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_unsubscribed,
-                ' . $this->getFrequencyDateSelect($frequency) . '
-            ', [
+            COUNT(*) as total_dispatched,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_ready,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_error,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_rejected_by_provider,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_sent,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_delivered,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_hard_bounce,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_soft_bounce,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_opened,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_clicked,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_spam,
+            SUM(CASE WHEN state = ? THEN 1 ELSE 0 END) as state_unsubscribed,
+            ' . $this->getFrequencyDateSelect($frequency) . '
+        ', [
             DispatchedEmailStateEnum::READY->value,
             DispatchedEmailStateEnum::ERROR->value,
             DispatchedEmailStateEnum::REJECTED_BY_PROVIDER->value,
@@ -196,28 +229,28 @@ class ProcessMailshotTimeSeriesRecords implements ShouldBeUnique
             DispatchedEmailStateEnum::SPAM->value,
             DispatchedEmailStateEnum::UNSUBSCRIBED->value,
         ])
-            ->groupBy($this->getFrequencyGroupBy($frequency));
+            ->groupByRaw($this->getFrequencyGroupBy($frequency));
     }
 
     protected function getFrequencyDateSelect(TimeSeriesFrequencyEnum $frequency): string
     {
         return match ($frequency) {
-            TimeSeriesFrequencyEnum::YEARLY    => "DATE_TRUNC('year', created_at) as period_date",
-            TimeSeriesFrequencyEnum::QUARTERLY => "DATE_TRUNC('quarter', created_at) as period_date",
-            TimeSeriesFrequencyEnum::MONTHLY   => "DATE_TRUNC('month', created_at) as period_date",
-            TimeSeriesFrequencyEnum::WEEKLY    => "DATE_TRUNC('week', created_at) as period_date",
-            TimeSeriesFrequencyEnum::DAILY     => "DATE(created_at) as period_date",
+            TimeSeriesFrequencyEnum::YEARLY    => "EXTRACT(YEAR FROM dispatched_emails.created_at) as year",
+            TimeSeriesFrequencyEnum::QUARTERLY => "EXTRACT(YEAR FROM dispatched_emails.created_at) as year, EXTRACT(QUARTER FROM dispatched_emails.created_at) as quarter",
+            TimeSeriesFrequencyEnum::MONTHLY   => "EXTRACT(YEAR FROM dispatched_emails.created_at) as year, EXTRACT(MONTH FROM dispatched_emails.created_at) as month",
+            TimeSeriesFrequencyEnum::WEEKLY    => "EXTRACT(YEAR FROM dispatched_emails.created_at) as year, EXTRACT(WEEK FROM dispatched_emails.created_at) as week",
+            TimeSeriesFrequencyEnum::DAILY     => "CAST(dispatched_emails.created_at AS DATE) as date",
         };
     }
 
     protected function getFrequencyGroupBy(TimeSeriesFrequencyEnum $frequency): string
     {
         return match ($frequency) {
-            TimeSeriesFrequencyEnum::YEARLY    => "DATE_TRUNC('year', created_at)",
-            TimeSeriesFrequencyEnum::QUARTERLY => "DATE_TRUNC('quarter', created_at)",
-            TimeSeriesFrequencyEnum::MONTHLY   => "DATE_TRUNC('month', created_at)",
-            TimeSeriesFrequencyEnum::WEEKLY    => "DATE_TRUNC('week', created_at)",
-            TimeSeriesFrequencyEnum::DAILY     => "DATE(created_at)",
+            TimeSeriesFrequencyEnum::YEARLY    => "EXTRACT(YEAR FROM dispatched_emails.created_at)",
+            TimeSeriesFrequencyEnum::QUARTERLY => "EXTRACT(YEAR FROM dispatched_emails.created_at), EXTRACT(QUARTER FROM dispatched_emails.created_at)",
+            TimeSeriesFrequencyEnum::MONTHLY   => "EXTRACT(YEAR FROM dispatched_emails.created_at), EXTRACT(MONTH FROM dispatched_emails.created_at)",
+            TimeSeriesFrequencyEnum::WEEKLY    => "EXTRACT(YEAR FROM dispatched_emails.created_at), EXTRACT(WEEK FROM dispatched_emails.created_at)",
+            TimeSeriesFrequencyEnum::DAILY     => "CAST(dispatched_emails.created_at AS DATE)",
         };
     }
 }
