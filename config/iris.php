@@ -7,6 +7,10 @@
  */
 
 return [
+    'analytics'=>[
+        'web_visits' => env('ANALYTICS_WEB_VISITS', true),
+        'web_users' => env('ANALYTICS_WEB_USERS', true),
+    ],
     'cache' => [
         'varnish'               => env('IRIS_VARNISH_ENABLED', false),
         'iris_website_data_ttl' => env('IRIS_WEBSITE_DATA_TTL', 21600), // 6 hours in seconds

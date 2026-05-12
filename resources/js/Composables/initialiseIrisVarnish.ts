@@ -164,14 +164,19 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
 
 
 export const recordWebsiteHit = () => {
-  const isRetina = window.location.pathname.startsWith("/app")
 
+  const isRetina = window.location.pathname.startsWith("/app")
   const headers = {
     "X-Requested-With": "XMLHttpRequest",
     "X-Analytics-Webpage": usePage().props.webpage_slug,
-    "X-Analytics-App": isRetina ? "retina" : "iris"
+    "X-Analytics-App": isRetina ? "retina" : "iris",
+    "X-Original-Referer": document.referrer,
   }
   // Fire-and-forget request used only to record hit analytics.
-  void axios.post("/models/record-hit", {}, { headers }).catch(() => {
+  void axios.post("/models/record-hit", {
+      original_route: route().current(),
+      original_params:route().params,
+      webpage_id:usePage().props.webpage_id
+  }, { headers }).catch(() => {
   })
 }
