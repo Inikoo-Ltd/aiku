@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -31,12 +32,17 @@ class ProcessTiktokOrderShipment extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Order $order): void
+    public function handle(Order|PalletReturn $order): void
     {
         try {
             DB::transaction(function () use ($order) {
                 $fulfillOrderId = $order->platform_order_id;
-                $deliveryNote = $order->deliveryNotes->firstOrFail();
+
+                if($order instanceof PalletReturn) {
+                    $deliveryNote = $order;
+                } else {
+                    $deliveryNote = $order->deliveryNotes->firstOrFail();
+                }
 
                 /** @var TiktokUser $tiktokUser */
                 $tiktokUser = $order->customerSalesChannel->user;
@@ -78,7 +84,7 @@ class ProcessTiktokOrderShipment extends OrgAction
      * @throws \Throwable
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function packageWasShipped(TiktokUser $tiktokUser, Order $order, DeliveryNote $deliveryNote, $tiktokPackageId): void
+    public function packageWasShipped(TiktokUser $tiktokUser, Order $order, DeliveryNote|PalletReturn $deliveryNote, $tiktokPackageId): void
     {
         $tiktokPackageDetail = $tiktokUser->getPackageDetail($tiktokPackageId);
 
@@ -99,7 +105,7 @@ class ProcessTiktokOrderShipment extends OrgAction
      */
     public function processShipment(
         Order $order,
-        DeliveryNote $deliveryNote,
+        DeliveryNote|PalletReturn $deliveryNote,
         $tiktokPackageDetail,
         $tiktokShippingLabelUrl
     ): void {
@@ -130,6 +136,13 @@ class ProcessTiktokOrderShipment extends OrgAction
         $this->initialisation($deliveryNote->organisation, $request);
 
         $this->handle($deliveryNote->orders->firstOrFail());
+    }
+
+    public function inFulfilment(PalletReturn $palletReturn, ActionRequest $request): void
+    {
+        $this->initialisation($palletReturn->organisation, $request);
+
+        $this->handle($palletReturn);
     }
 
     public $commandSignature = 'tiktok:order_shipment {order}';

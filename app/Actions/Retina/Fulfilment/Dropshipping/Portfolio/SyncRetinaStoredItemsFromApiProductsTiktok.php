@@ -75,9 +75,8 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
 
                     $storedItem = StoredItem::where('fulfilment_customer_id', $tiktokUser->customer->fulfilmentCustomer->id)
                         ->where('reference', $reference)->first();
-                    $storedItemTiktok = $storedItem?->tiktokPortfolio;
 
-                    if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemTiktok) {
+                    if ($shopType === ShopTypeEnum::FULFILMENT) {
                         if (!$storedItem) {
                             $storedItem = StoreStoredItem::make()->action($tiktokUser->customer->fulfilmentCustomer, [
                                 'reference' => $reference,
