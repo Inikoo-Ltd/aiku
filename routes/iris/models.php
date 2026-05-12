@@ -79,4 +79,3 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
         Route::delete('{bundle:id}', DeleteRetinaBundle::class)->name('delete')->withoutScopedBindings();
     });
 });
-

@@ -97,11 +97,11 @@ import Step1Iris from "@/Components/CMS/Webpage/Step1/Step1Iris.vue"
 import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
 import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionIris.vue"
 import DepartmentDescriptionIris from "@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionIris.vue"
-import SubDepartmentDesciptionIris from "@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionIris.vue"
+import SubDepartmentDescriptionIris from "../Components/CMS/Webpage/SubDepartmentDescription/SubDepartmentDescriptionIris.vue"
 import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
 import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/FamiliesOverviewIris1.vue'
-import RecomendationFromMasterIris from '@/Components/CMS/Webpage/RecomendationFromMaster/RecomendationFromMasterIris.vue';
+import RecommendationFromMasterIris from '../Components/CMS/Webpage/RecommendationFromMaster/RecommendationFromMasterIris.vue';
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({
@@ -132,10 +132,10 @@ const components = (shop_type?: string): Record<string, Component> => {
 		//footer
 		"footer-1": Footer1Iris,
 
-		 //description catalouge
+		 //description catalogue
 		'collection-description-1' : CollectionDescriptionIris,
 		'department-description-1' : DepartmentDescriptionIris,
-		'sub-department-description-1' : SubDepartmentDesciptionIris,
+		'sub-department-description-1' : SubDepartmentDescriptionIris,
 
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,
@@ -212,7 +212,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"step-2": Step2Iris,
 		'video-1': Video1Iris,
 		'slider-1' : Slider1Iris,
-		'recommendation-from-master' : RecomendationFromMasterIris
+		'recommendation-from-master' : RecommendationFromMasterIris
 	}
 }
 

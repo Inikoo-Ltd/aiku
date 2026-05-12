@@ -37,7 +37,7 @@ class GetProductForEbay
             $rawProducts = $ebayUser->getProducts(offset: $offset);
             $products    = Arr::get($rawProducts, 'inventoryItems', []);
         }
-        $hasErrors = collect($products)->contains(fn($product) => isset($product['errors']));
+        $hasErrors = collect($products)->contains(fn ($product) => isset($product['errors']));
 
         return $hasErrors ? [] : array_map([$this, 'transformToStandardFormat'], $products);
     }

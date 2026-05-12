@@ -68,7 +68,7 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                 $title = Arr::get($product, 'title');
                 $reference = Arr::get($product, 'skus.0.seller_sku');
 
-                if(! $reference) {
+                if (! $reference) {
                     $reference = Str::slug($title);
                 }
 

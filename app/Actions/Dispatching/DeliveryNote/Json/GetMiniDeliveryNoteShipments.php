@@ -37,7 +37,7 @@ class GetMiniDeliveryNoteShipments extends OrgAction
     public function jsonResponse(DeliveryNote $deliveryNote): array
     {
         $order     = $deliveryNote->orders->first();
-        
+
         $additionalShipmentRoutes = [];
 
         if ($deliveryNote->is_shipping_by_external) {

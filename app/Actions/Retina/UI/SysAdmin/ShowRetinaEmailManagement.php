@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\UI\SysAdmin;
 
-use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Http\Resources\CRM\CustomerResource;
 use Inertia\Inertia;
@@ -35,9 +34,6 @@ class ShowRetinaEmailManagement extends RetinaAction
     {
 
         $customer = $request->user()->customer;
-        $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
-
-
 
         return Inertia::render(
             'EditModel',
@@ -85,15 +81,15 @@ class ShowRetinaEmailManagement extends RetinaAction
     {
         return
             array_merge(
-                ShowRetinaDashboard::make()->getBreadcrumbs(),
+                ShowRetinaSysAdminDashboard::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.sysadmin.settings.edit'
+                                'name' => 'retina.sysadmin.email.edit'
                             ],
-                            'label'  => __('Account management'),
+                            'label' => __('Email management'),
                         ]
                     ]
                 ]

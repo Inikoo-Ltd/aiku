@@ -141,6 +141,7 @@ class StoreOrganisation extends GrpAction
                 $organisation->catalogueStats()->create();
                 $organisation->discountsStats()->create();
                 $organisation->mailshotsIntervals()->create();
+                $organisation->orderingStats()->create();
 
                 $paymentServiceProvider = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::ACCOUNT)->first();
 
@@ -160,7 +161,7 @@ class StoreOrganisation extends GrpAction
             }
 
             if ($organisation->type == OrganisationTypeEnum::SHOP) {
-                $organisation->orderingStats()->create();
+
                 $organisation->orderHandlingStats()->create();
                 $organisation->fulfilmentStats()->create();
                 $organisation->manufactureStats()->create();

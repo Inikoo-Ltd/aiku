@@ -128,12 +128,8 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $top_image_id
  * @property int|null $bottom_image_id
  * @property int|null $size_comparison_image_id
- * @property int|null $lifestyle_image_id
  * @property string|null $video_url
- * @property numeric|null $unit_price price per unit
  * @property string|null $cpnp_number
- * @property string|null $scpn_number
- * @property string|null $ufi_number
  * @property string|null $country_of_origin
  * @property string|null $tariff_code
  * @property string|null $duty_rate
@@ -142,6 +138,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $price_updated_at
  * @property Carbon|null $available_quantity_updated_at
  * @property string|null $images_updated_at
+ * @property numeric|null $unit_price price per unit
  * @property array<array-key, mixed>|null $name_i8n
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
@@ -151,6 +148,7 @@ use Spatie\Translatable\HasTranslations;
  * @property Carbon|null $mark_for_discontinued_at
  * @property Carbon|null $discontinued_at
  * @property numeric|null $cost_price_ratio
+ * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property int|null $art1_image_id
  * @property int|null $art2_image_id
@@ -166,6 +164,8 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $estimated_back_in_stock_at
  * @property int|null $estimated_to_be_delivered_quantity
  * @property int|null $origin_country_id
+ * @property string|null $ufi_number
+ * @property string|null $scpn_number
  * @property array<array-key, mixed>|null $offers_data
  * @property Carbon|null $not_for_sale_since
  * @property bool $not_for_sale_from_master

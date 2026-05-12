@@ -9,21 +9,20 @@
 namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\Invoice\DeleteInvoice;
+use App\Actions\Accounting\Invoice\Traits\WithDeleteInvoiceUI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Accounting\InvoicesTabsEnum;
 use App\Models\Accounting\Invoice;
-use Exception;
-use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRefund extends OrgAction
 {
     use WithActionUpdate;
+    use WithDeleteInvoiceUI;
 
     public function handle(Invoice $refund, array $modelData): Invoice
     {
@@ -63,52 +62,5 @@ class DeleteRefund extends OrgAction
         );
     }
 
-    public function asController(Invoice $refund, ActionRequest $request): Invoice
-    {
-        $this->set('deleted_by', $request->user()->id);
-        $this->initialisationFromShop($refund->shop, $request);
-
-        return $this->handle($refund, $this->validatedData);
-    }
-
-    public function action(Invoice $refund, array $modelData): Invoice
-    {
-        $this->asAction = true;
-        $this->initialisationFromShop($refund->shop, $modelData);
-
-        return $this->handle($refund, $this->validatedData);
-    }
-
     public string $commandSignature = 'invoice:refund {slug} {--deleted_note= : Reason for deletion} {--deleted_by= : User who deleted the refund}';
-
-
-    public function asCommand(Command $command): int
-    {
-        $this->asAction = true;
-
-        try {
-            /** @var Invoice $refund */
-            $refund = Invoice::where('slug', $command->argument('slug'))->firstOrFail();
-        } catch (Exception $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-
-
-        $modelData = [];
-
-        if ($command->option('deleted_note')) {
-            $modelData['deleted_note'] = $command->option('deleted_note');
-        }
-        if ($command->option('deleted_by')) {
-            $modelData['deleted_by'] = $command->option('deleted_by');
-        }
-
-        $this->action($refund, $modelData);
-
-        return 0;
-    }
-
-
 }
