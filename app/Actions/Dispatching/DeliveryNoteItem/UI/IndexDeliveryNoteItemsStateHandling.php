@@ -117,10 +117,6 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             if (!$allowAction && $tempHandler = session('temp_handling_delivery_note')) {
                 $allowAction = $deliveryNote->id == data_get($tempHandler, 'value') && now()->lt(data_get($tempHandler, 'expires_at'));
             }
-            
-            // if (app()->isLocal()) {
-            //     $allowAction = true;
-            // }
 
             if (!$deliveryNote || !$allowAction) {
                 $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

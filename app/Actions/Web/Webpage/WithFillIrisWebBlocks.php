@@ -61,9 +61,10 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
-        /* } elseif ($webBlockType == 'images' && app()->environment('local')) {  // need separate file first foe workshop & iris
-            $parsedWebBlocks[$key] = SanitiseImagesWebBlock::run($webBlock);
-        } */} else {
+            /* } elseif ($webBlockType == 'images' && app()->environment('local')) {  // need separate file first foe workshop & iris
+                $parsedWebBlocks[$key] = SanitiseImagesWebBlock::run($webBlock);
+            } */
+        } else {
             $parsedWebBlocks[$key] = $webBlock;
         }
 

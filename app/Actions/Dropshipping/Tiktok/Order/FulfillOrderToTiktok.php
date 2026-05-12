@@ -41,7 +41,7 @@ class FulfillOrderToTiktok extends OrgAction
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $order->customerSalesChannel->user;
 
-        if($order instanceof PalletReturn) {
+        if ($order instanceof PalletReturn) {
             $shipment = $order->shipments()->first();
         } else {
             /** @var DeliveryNote $deliveryNote */

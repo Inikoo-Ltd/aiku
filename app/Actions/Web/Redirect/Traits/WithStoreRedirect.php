@@ -18,7 +18,7 @@ trait WithStoreRedirect
                 $website = $request->website;
             } elseif ($request->webpage) {
                 $website = $request->webpage->website;
-            } else if ($this->shop) {
+            } elseif ($this->shop) {
                 $website = $this->shop->website;
             }
 
