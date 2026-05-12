@@ -88,14 +88,30 @@ const MyPreset = definePreset(Aura, {
 
 createInertiaApp(
   {
+    resolve: async (name) => {
+        const pages = import.meta.glob([
+            './Pages/Iris/**/*.{vue,js}',
+            './Iris/Pages/**/*.{vue,js}',
+        ])
 
-    resolve: async name => {
-      const pages = import.meta.glob("./Pages/Iris/**/*.vue");
-      if (!pages) console.error(
-        `File './Pages/Iris/${name}.vue' is not exist`);
-      let page = await pages[`./Pages/Iris/${name}.vue`]();
-      page.default.layout = page.default?.layout || IrisLayout;
-      return page;
+        const path =
+            pages[`./Pages/Iris/${name}.vue`] ||
+            pages[`./Pages/Iris/${name}.js`] ||
+            pages[`./Pages/Iris/${name}.ts`] ||
+            pages[`./Iris/Pages/${name}.vue`] ||
+            pages[`./Iris/Pages/${name}.ts`] ||
+            pages[`./Iris/Pages/${name}.js`]
+
+        if (!path) {
+            throw new Error(`Page not found: ${name}`)
+        }
+
+        const page = await path()
+
+        page.default.layout =
+            page.default.layout || IrisLayout
+
+        return page
     },
     setup({ el, App, props, plugin }) {
       const app = createApp({ render: () => h(App, props) });

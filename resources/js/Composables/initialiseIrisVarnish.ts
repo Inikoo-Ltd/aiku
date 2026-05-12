@@ -168,10 +168,15 @@ export const recordWebsiteHit = () => {
 
   const headers = {
     "X-Requested-With": "XMLHttpRequest",
-    "X-Analytics-Webpage": usePage().props.webpage_slug,
-    "X-Analytics-App": isRetina ? "retina" : "iris"
   }
+
   // Fire-and-forget request used only to record hit analytics.
-  void axios.post("/models/record-hit", {}, { headers }).catch(() => {
-  })
+  void axios.post("/models/record-hit", {
+      original_route: route().current(),
+      original_params: route().params,
+      webpage_id: usePage().props.webpage_id,
+      original_referer: document.referrer,
+      analytics_webpage: usePage().props.webpage_slug,
+      analytics_app: isRetina ? "retina" : "iris",
+  }, { headers }).catch(() => {})
 }
