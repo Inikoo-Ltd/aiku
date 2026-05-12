@@ -874,6 +874,9 @@ class ShowDeliveryNote extends OrgAction
             'warehouse'           => [
                 'slug' => $deliveryNote->warehouse->slug,
             ],
+            'organisation'          => [
+                'slug' => $deliveryNote->organisation->slug,
+            ],
 
             'is_faire_order' => ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE),
 

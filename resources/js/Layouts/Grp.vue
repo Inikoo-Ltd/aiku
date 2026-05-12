@@ -81,7 +81,7 @@ import {
 	faUserAlien,
 	faTombstone as faTombstoneLight,
 	faCopyright, faSyncAlt, faArrowFromLeft,
-	faBarcode, faFragile
+	faTrashUndoAlt, faClipboardCheck, faBarcode, faFragile
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast, faGhost } from "@far"
 import { faViruses } from "@fad"
@@ -186,7 +186,7 @@ library.add(
 	faUserAlien,
 	faTombstoneLight,
 	faCopyright, faSyncAlt, faArrowFromLeft,
-	faBarcode, faFragile
+	faTrashUndoAlt, faClipboardCheck, faBarcode, faFragile
 )
 
 provide("layout", useLayoutStore())

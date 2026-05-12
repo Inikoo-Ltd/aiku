@@ -23,6 +23,7 @@ use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
+use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Ordering\PickersResource;
@@ -140,10 +141,10 @@ class ShowReturnDeliveryNote extends OrgAction
                         [
                             'type'    => 'button',
                             'style'   => 'delete',
-                            'tooltip' => __('Remove picker'),
-                            'label'   => __('Remove Picker'),
+                            'tooltip' => __('Remove handler from this Delivery Note'),
+                            'label'   => __('Remove Handler'),
                             'icon'    => 'fal fa-user-slash',
-                            'key'     => 'remove-picker',
+                            'key'     => 'remove-handler',
                             'route'   => [
                                 'method'     => 'patch',
                                 'name'       => 'grp.models.return_delivery_note.unassign',
@@ -154,11 +155,7 @@ class ShowReturnDeliveryNote extends OrgAction
                         ],
                         [
                             'type'    => 'button',
-                            'style'   => 'save',
-                            'tooltip' => __('Change picker'),
-                            'icon'    => 'fal fa-exchange-alt',
-                            'label'   => __('Change Picker'),
-                            'key'     => 'change-picker',
+                            'key'     => 'change-handler',
                         ]
 
                     ],
@@ -388,7 +385,6 @@ class ShowReturnDeliveryNote extends OrgAction
                     :
                     DeliveryNoteTabsEnum::navigationExcept($returnDeliveryNote, [DeliveryNoteTabsEnum::DONE_ITEMS, DeliveryNoteTabsEnum::PENDING_ITEMS])
             ],
-            'delivery_note' => ReturnDeliveryNoteResource::make($returnDeliveryNote)->toArray(request()),
             'address'             => [
                 'delivery' => AddressResource::make($returnDeliveryNote->deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
@@ -403,12 +399,6 @@ class ShowReturnDeliveryNote extends OrgAction
             'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [
                 // TODO ALL ROUTE, for now acts as a placeholder
-                'pickers_list'          => [
-                    'name'       => 'grp.json.employees.picker_users',
-                    'parameters' => [
-                        'organisation' => $returnDeliveryNote->deliveryNote->organisation->slug
-                    ]
-                ],
                 // 'assignSelfTemporarily' => [
                 //     'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note.temp-picker',
                 //     'parameters' => [
@@ -425,8 +415,14 @@ class ShowReturnDeliveryNote extends OrgAction
             'warehouse'           => [
                 'slug' => $returnDeliveryNote->warehouse->slug,
             ],
+            'organisation'          => [
+                'slug' => $returnDeliveryNote->organisation->slug,
+            ],
 
-            'is_faire_order'                => ($returnDeliveryNote->shop->engine == ShopEngineEnum::FAIRE),
+            'delivery_note'     => DeliveryNoteResource::make($returnDeliveryNote->deliveryNote)->toArray(request()),
+            'dn_return'         => ReturnDeliveryNoteResource::make($returnDeliveryNote)->toArray(request()),
+
+            // 'is_faire_order'                => ($returnDeliveryNote->shop->engine == ShopEngineEnum::FAIRE),
             'showChangePickerPacker'        => $showChangePickerPacker,
             'shop'                               => [
                 'type' => $returnDeliveryNote->shop?->type?->value,
