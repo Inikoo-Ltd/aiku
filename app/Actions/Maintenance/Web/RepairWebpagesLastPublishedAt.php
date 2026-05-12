@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 12 May 2026 14:37:36 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Maintenance\Web;
 
@@ -38,6 +43,7 @@ class RepairWebpagesLastPublishedAt
         }
 
         $progressBar = $command->getOutput()->createProgressBar($total);
+        $progressBar->setFormat('debug');
         $progressBar->start();
 
         $query->chunkById(1000, function ($webpages) use ($progressBar) {

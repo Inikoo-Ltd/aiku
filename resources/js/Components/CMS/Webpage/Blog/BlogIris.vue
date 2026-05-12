@@ -122,12 +122,10 @@ const screenType = inject("screenType", "desktop")
       <div class="mt-10">
         <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Latest Posts</div>
         <div class="space-y-3">
-          <a v-for="post in fieldValue.latest_blogs" :key="post.id" :href="post.url"
+          <a v-for="post in fieldValue.latest_blogs" :href="post.url"
             class="flex items-center gap-3 group hover:bg-gray-50 p-2 rounded-md transition">
-           <!--  <img :src="post.image" :alt="post.title"
-              class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" /> -->
-               <Image :src="post?.published_layout?.web_blocks[0]?.web_block?.layout?.data?.fieldValue?.image?.source"
-                        :alt="post?.published_layout?.web_blocks[0]?.web_block?.layout?.data?.fieldValue?.image?.alt"
+               <Image :src="post.image_src"
+                        :alt="post.image_alt"
                         class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" :imageCover="true"/>
             <div class="text-sm font-medium text-gray-700 group-hover:text-gray-900">
               {{ post.title }}
