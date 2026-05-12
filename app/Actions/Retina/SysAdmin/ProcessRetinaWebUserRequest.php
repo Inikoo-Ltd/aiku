@@ -25,7 +25,7 @@ class ProcessRetinaWebUserRequest
     /**
      * @throws \Throwable
      */
-    public function handle(?WebUser $webUser, Carbon $datetime, array $routeData, string $ip, string $userAgent, array $geoLocation): WebUserRequest|null
+    public function handle(?WebUser $webUser, Carbon $datetime, ?int $webpageId, array $routeData, string $ip, string $userAgent, array $geoLocation): WebUserRequest|null
     {
         if (!$webUser) {
             return null;
@@ -33,19 +33,6 @@ class ProcessRetinaWebUserRequest
 
         if ($routeData['name'] == 'retina.search.index') {
             return null;
-        }
-        $webpageID = null;
-        if (str_starts_with($routeData['name'], 'iris.iris_webpage')) {
-            $website = $webUser->website;
-            $path    = end($routeData['arguments']);
-            if (config('iris.cache.webpage_path.ttl') == 0) {
-                $webpageID = ShowIrisWebpage::make()->getWebpageID($website, $path);
-            } else {
-                $key       = config('iris.cache.webpage_path.prefix').'_'.$website->id.'_'.$path;
-                $webpageID = cache()->remember($key, config('iris.cache.webpage_path.ttl'), function () use ($website, $path) {
-                    return ShowIrisWebpage::make()->getWebpageID($website, $path);
-                });
-            }
         }
 
 
@@ -60,7 +47,7 @@ class ProcessRetinaWebUserRequest
             'browser'      => $browserData['browser'],
             'ip_address'   => $ip,
             'location'     => json_encode($geoLocation),
-            'webpage_id'   => $webpageID,
+            'webpage_id'   => $webpageId,
         ];
 
 
