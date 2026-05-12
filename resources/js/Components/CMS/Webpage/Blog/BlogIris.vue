@@ -16,7 +16,7 @@ import {
   faInstagram
 } from "@fortawesome/free-brands-svg-icons"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 //import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
 

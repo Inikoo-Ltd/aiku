@@ -9,7 +9,7 @@ import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Image from '../Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import { Image as ImageTS } from '@/types/Image'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'

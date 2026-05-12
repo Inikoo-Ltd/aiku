@@ -2,7 +2,7 @@
 import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue";
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { ref } from 'vue'
 import { cloneDeep } from "lodash-es";
 import { getStyles } from "@/Composables/styles";

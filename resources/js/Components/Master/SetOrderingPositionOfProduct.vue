@@ -3,7 +3,7 @@ import { ref, nextTick, onMounted, onBeforeUnmount, computed, watch } from "vue"
 import { Head } from "@inertiajs/vue3"
 import draggable from "vuedraggable"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "../Image.vue";
+import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import { faCheck, faTimes } from "@fas";

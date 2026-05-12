@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { Root, Daum } from '@/types/webBlockTypes'
 import { useLayoutStore } from '@/Stores/layout'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

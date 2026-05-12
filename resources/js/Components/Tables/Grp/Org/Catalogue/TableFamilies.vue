@@ -20,7 +20,7 @@ import { faTriangle, faEquals, faMinus } from "@fas"
 import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 library.add(faCheck)
 

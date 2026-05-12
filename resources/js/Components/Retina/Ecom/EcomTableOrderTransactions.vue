@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'

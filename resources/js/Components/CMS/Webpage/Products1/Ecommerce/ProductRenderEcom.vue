@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue";
 import { inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'

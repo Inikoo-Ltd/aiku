@@ -6,7 +6,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import ListSelector from "@/Components/Selector.vue"
 import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
-import Image from "../Image.vue";
+import Image from "@common/Components/Image.vue";
 
 const props = defineProps<{
     data: {

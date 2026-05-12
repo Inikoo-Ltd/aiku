@@ -11,7 +11,7 @@ import MenuPopoverList from "@/Layouts/Grp/MenuPopoverList.vue"
 import TopBarSelectButton from "@/Layouts/Grp/TopBarSelectButton.vue"
 import { Menu, MenuButton, MenuItems, Disclosure, MenuItem } from "@headlessui/vue"
 import { trans } from "laravel-vue-i18n"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { faChevronDown } from "@far"
 import {
     faTerminal,

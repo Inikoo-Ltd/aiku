@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, ref, watch, toRefs, nextTick, onMounted } from "vue"
 import { get, isPlainObject, debounce } from "lodash-es"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 import { getStyles } from "@/Composables/styles"

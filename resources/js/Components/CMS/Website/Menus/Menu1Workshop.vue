@@ -23,7 +23,7 @@ import { trans } from "laravel-vue-i18n";
 import LinkIris from "@/Components/Iris/LinkIris.vue";
 import { menuCategoriesToMenuStructure } from "@/Composables/Iris/useMenu"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 
 library.add(
     faChevronLeft,

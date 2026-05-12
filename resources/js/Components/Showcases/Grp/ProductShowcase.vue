@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import ImagePrime from "primevue/image"
 import { ref, computed, inject } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo} from "@fal"

@@ -2,7 +2,7 @@
 import { trans } from 'laravel-vue-i18n'
 import { ref, onMounted, onUnmounted, inject, computed } from 'vue'
 import SearchBar from "@/Components/SearchBar.vue"
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue";
 import Popover from '@/Components/Popover.vue'
 import NotificationList from '@/Components/NotificationList/NotificationList.vue'
 import Profile from "@/Pages/Grp/Profile.vue"

@@ -11,7 +11,7 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
-import Image from '../Image.vue'
+import Image from '../../Common/Components/Image.vue'
 
 const props = defineProps<{
     shop_data: {

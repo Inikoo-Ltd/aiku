@@ -7,7 +7,7 @@ import { trans } from "laravel-vue-i18n"
 
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { getAnnouncementComponent } from '@/Composables/useAnnouncement'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { AnnouncementData } from '@/types/Announcement'

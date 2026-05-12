@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Carousel from 'primevue/carousel'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { getStyles } from "@/Composables/styles"
 import LinkIris from '@/Components/Iris/LinkIris.vue';
