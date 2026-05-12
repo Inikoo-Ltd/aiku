@@ -100,7 +100,7 @@ class IndexReturnDeliveryNoteItems extends OrgAction
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            // $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             // $allowAction = ($parent->packer_user_id && $parent->packer_user_id == request()->user()->id);
 

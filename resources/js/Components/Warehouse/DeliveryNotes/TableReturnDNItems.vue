@@ -220,6 +220,9 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
             <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
                 {{ deliveryNoteItem.org_stock_code }}
             </Link>
+            <div class="text-xs opacity-80 italic text-justify">
+                {{ deliveryNoteItem.org_stock_name }}
+            </div>
         </template>
 
         <!-- Column: Name -->

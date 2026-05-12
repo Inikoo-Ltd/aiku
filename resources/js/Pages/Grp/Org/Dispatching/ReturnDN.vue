@@ -231,10 +231,6 @@ library.add(
 		:warehouse
 	/>
 
-	<pre>{{ dn_return }}</pre>
-	----
-	<pre>{{ delivery_note }}</pre>
-
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component
 		:is="component"
