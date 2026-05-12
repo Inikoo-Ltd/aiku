@@ -2,7 +2,7 @@
 import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue";
 
-const props = defineProps<{
+defineProps<{
     blogs: any
 }>()
 
