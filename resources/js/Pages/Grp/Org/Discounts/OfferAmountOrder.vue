@@ -11,7 +11,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { routeType } from '@/types/route'
 import UnderConstruction from '@/Pages/Iris/Disclosure/UnderConstruction.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 
 const props = defineProps<{
     title: string

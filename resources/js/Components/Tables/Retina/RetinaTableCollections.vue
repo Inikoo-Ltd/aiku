@@ -13,7 +13,7 @@ import { faPlay } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import Tag from "@/Components/Tag.vue";
 
 

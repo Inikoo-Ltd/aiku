@@ -6,7 +6,7 @@ import { get, isPlainObject } from "lodash-es"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { getStyles } from "@/Composables/styles"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import { getBestOffer } from "@/Composables/useOffers"

@@ -19,7 +19,7 @@ import axios from 'axios'
 import { router } from '@inertiajs/vue3'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'

@@ -12,7 +12,7 @@ import { faSeedling } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Tag from "@/Components/Tag.vue";
 import { Department } from "@/types/department";
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 

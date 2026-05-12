@@ -14,7 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents";
 import ListItem from "@tiptap/extension-list-item";
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 
 library.add(faFileDownload)
 

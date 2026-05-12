@@ -36,7 +36,7 @@ const startDate = ref(null)
 const endDate = ref(null)
 
 const submitShopOffer = () => {
-    // Section: Submit
+    // Section: Submit1
     router.post(
         route('grp.org.shops.show.discounts.campaigns.store_shop', {
             organisation: props.shop_data.organisation,
@@ -203,7 +203,7 @@ resetForm();
                 
                 <!-- Section: Discount -->
                 <div class="space-y-2">
-                    <div class="font-medium mb-2 flex items-center gap-x-1">
+                    <div class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
                         {{ trans('Discount') }}:
                     </div>
@@ -235,7 +235,7 @@ resetForm();
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Start Date -->
                         <div class="space-y-2">
-                            <label class="font-medium mb-2 block">
+                            <label class="font-medium block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
                                     class="font-light text-xs text-red-400 align-middle" />
                                 {{ trans('Start Date') }}
@@ -249,7 +249,7 @@ resetForm();
 
                         <!-- End Date (Only for Interval) -->
                         <div v-if="dateType === 'interval'" class="space-y-2">
-                            <label class="font-medium mb-2 block">
+                            <label class="font-medium block">
                                 {{ trans('End Date') }}
                                 <InformationIcon
                                     :information="trans('If end date is empty, will treat as permanent')" />:

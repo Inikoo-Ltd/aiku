@@ -9,7 +9,7 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { get } from 'lodash-es'
 
 import SlideCorner from "@/Components/Banners/Slider/SlideCorner.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import CentralStage from "@/Components/Banners/Slider/CentralStage.vue"
 import SlideControls from '@/Components/Banners/Slider/Corners/SlideControls.vue'
 

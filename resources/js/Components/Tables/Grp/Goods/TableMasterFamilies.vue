@@ -16,7 +16,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import Dialog from 'primevue/dialog';
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import axios from "axios";
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

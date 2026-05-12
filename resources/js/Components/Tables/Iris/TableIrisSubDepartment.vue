@@ -9,7 +9,7 @@ import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3";
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 

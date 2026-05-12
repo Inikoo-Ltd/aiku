@@ -16,7 +16,7 @@ import { faCloud, faCompressWide, faExpandArrowsAlt, faSearch, faSpinner } from 
 import { faMinus, faPlus, faSave, faUndo } from "@fas"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import Image from "../Image.vue"
+import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "../NumberWithButtonSave.vue"
 import LoadingIcon from "./LoadingIcon.vue"
 

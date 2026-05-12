@@ -12,7 +12,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
 import { faExclamationTriangle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 library.add(faExclamationTriangle)
 
 

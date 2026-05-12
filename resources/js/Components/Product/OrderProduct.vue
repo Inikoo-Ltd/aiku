@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckCircle, faCircle, faQuestionCircle } from "@fal";
 import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Icon from "@/Components/Icon.vue"
 import { inject } from "vue";

@@ -7,7 +7,7 @@ import {
     faBox
 } from '@fal'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { trans } from 'laravel-vue-i18n'
 
 library.add(

@@ -2,7 +2,7 @@
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay } from 'swiper/modules'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { ulid } from 'ulid'
 import { inject, ref, watch, computed, nextTick } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'

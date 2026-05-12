@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import { useFormatTime } from "@/Composables/useFormatTime";
 
 const props = defineProps<{

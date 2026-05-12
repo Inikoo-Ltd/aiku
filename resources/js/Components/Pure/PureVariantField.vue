@@ -9,7 +9,7 @@ import { faPlus } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import type { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 
 type Variant = {
