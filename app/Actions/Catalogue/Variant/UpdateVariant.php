@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Variant;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
+use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -41,6 +42,8 @@ class UpdateVariant extends OrgAction
             $leader = $variant->leaderProduct;
             $productsInVariant = $variant->fetchProductFromData();
             $productIds = $productsInVariant->pluck('id');
+
+            $website = $variant->shop->website;
 
             // Detach other product not in variant
             Product::where('variant_id', $variant->id)
@@ -84,6 +87,11 @@ class UpdateVariant extends OrgAction
                              'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
                              'redirect_webpage_id'   => $variant->leaderProduct->webpage?->id
                          ]
+                    ]);
+                } else {
+                    StoreRedirectFromWebsite::make()->action($website, [
+                        'from_url'     => $product->slug,
+                        'to_url'       => $leader->webpage->id,
                     ]);
                 }
             }

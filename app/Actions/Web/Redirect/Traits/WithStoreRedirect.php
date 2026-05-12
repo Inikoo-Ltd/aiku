@@ -11,13 +11,15 @@ trait WithStoreRedirect
 
     public function prepareForValidation(ActionRequest $request)
     {
-        $initialFromUrl = $request->input('from_url');
+        $initialFromUrl = $request->input('from_url') ?? $this->from_url;
 
         if ($initialFromUrl) {
             if ($request->website) {
                 $website = $request->website;
             } elseif ($request->webpage) {
                 $website = $request->webpage->website;
+            } else if ($this->shop) {
+                $website = $this->shop->website;
             }
 
             $fromUrl = preg_replace('/\s+/', '', ($initialFromUrl)); // Sanitize whitespace

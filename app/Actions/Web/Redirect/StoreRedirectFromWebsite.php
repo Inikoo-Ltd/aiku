@@ -49,7 +49,7 @@ class StoreRedirectFromWebsite extends OrgAction
     public function rules(): array
     {
         return [
-            'from_path'                => [
+            'from_path'     => [
                 'required',
                 'string',
                 'max:2048',
@@ -58,14 +58,14 @@ class StoreRedirectFromWebsite extends OrgAction
                 Rule::unique(Redirect::class, 'from_path')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
             ],
-            'from_url'                => [
+            'from_url'      => [
                 'required',
                 'string',
                 'max:2048',
                 Rule::unique(Redirect::class, 'from_url')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)),
             ],
-            'to_url' => [
+            'to_url'        => [
                 'required',
                 Rule::exists(Webpage::class, 'id')
                     ->where(

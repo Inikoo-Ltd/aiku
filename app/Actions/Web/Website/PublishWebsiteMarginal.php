@@ -133,32 +133,30 @@ class PublishWebsiteMarginal extends OrgAction
         if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products', 'families_overview'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
             UpdateWebBlockToWebsiteAndChild::dispatch($website, WebBlockType::find(data_get($layout, "id")), $marginal, data_get($layout, 'data.fieldValue'))->onQueue('low-priority');
-        } elseif ($marginal == 'family_description') {
+        } elseif (in_array($marginal, ['family_description'])) {
             UpdateDescriptionBlockToWebsiteAndChild::dispatch($website, $layout, $marginal)->onQueue('low-priority');
         }
 
         if ($marginal == 'footer') {
-            Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
             Cache::forget("irisData:website:$website->id:footer");
         } elseif ($marginal == 'sidebar') {
-            Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
             Cache::forget("irisData:website:$website->id:sideBar");
         } else {
             BreakWebsiteCache::run($website);
         }
 
 
-        if ($customAudit) {
+        if ($customAudit && $oldLayout) {
             $titleAudit             = ucfirst(str_replace('_', ' ', $marginal));
             $website->auditEvent    = "{$marginal}_published";
             $website->isCustomEvent = true;
 
             if (Arr::has($snapshot->layout, 'data')) {
                 $layoutFormatted    = Arr::except(data_get($snapshot->layout, 'data.fieldValue'), ['product']);
-                $oldLayoutFormatted = Arr::only(data_get($oldLayout, 'data.fieldValue'), array_keys($layoutFormatted));
+                $oldLayoutFormatted = Arr::only(data_get($oldLayout, 'data.fieldValue', []), array_keys($layoutFormatted));
             } else {
                 $layoutFormatted    = Arr::except(data_get($snapshot->layout, '*.fieldValue'), ['product']);
-                $oldLayoutFormatted = Arr::only(data_get($oldLayout, '*.fieldValue'), array_keys($layoutFormatted));
+                $oldLayoutFormatted = Arr::only(data_get($oldLayout, '*.fieldValue', []), array_keys($layoutFormatted));
             }
 
             $website->auditCustomOld = [
