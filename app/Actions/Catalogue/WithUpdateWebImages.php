@@ -132,7 +132,8 @@ trait WithUpdateWebImages
         return $images;
     }
 
-    public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory $model): array {
+    public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory $model): array
+    {
         $fields = [
             'extra_desc_art1',
             'extra_desc_art2',

@@ -22,6 +22,7 @@ use App\Actions\Web\WebBlock\GetWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\GetWebBlockSubDepartments;
 use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
 trait WithFillIrisWebBlocks
@@ -60,6 +61,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'images') {
+            $parsedWebBlocks[$key] = SanitiseImagesWebBlock::run($webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

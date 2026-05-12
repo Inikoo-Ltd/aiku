@@ -81,6 +81,9 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $desc_art4
  * @property int|null $desc_art5
  * @property int|null $extra_desc_art1
+ * @property int|null $extra_desc_art2
+ * @property int|null $extra_desc_art3
+ * @property int|null $extra_desc_art4
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Media|null $descArt1Image
@@ -89,6 +92,9 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $descArt4Image
  * @property-read Media|null $descArt5Image
  * @property-read Media|null $extraDescArt1Image
+ * @property-read Media|null $extraDescArt2Image
+ * @property-read Media|null $extraDescArt3Image
+ * @property-read Media|null $extraDescArt4Image
  * @property-read array $translatable_columns_from
  * @property-read Group|null $group
  * @property-read Media|null $image

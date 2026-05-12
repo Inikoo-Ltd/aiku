@@ -35,7 +35,7 @@ class IndexRetinaVATValidationHistory extends RetinaAction
 
     public function handle($prefix = null): LengthAwarePaginator
     {
-        return IndexHistory::run($this->customer, eventScopeFilter: 'tax_number_validation');
+        return IndexHistory::run($this->customer, userScopeFilter: 'WebUser');
     }
 
     public function jsonResponse(LengthAwarePaginator $userHistory): AnonymousResourceCollection
@@ -45,7 +45,7 @@ class IndexRetinaVATValidationHistory extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $userHistory, ActionRequest $request): Response
     {
-        $title = __('VAT Validation History');
+        $title = __('Account History');
 
         return Inertia::render(
             'SysAdmin/RetinaVATValidationHistory',

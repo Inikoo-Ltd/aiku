@@ -445,7 +445,11 @@ class IndexWarehousePalletReturns extends OrgAction
         unset($navigation[PalletReturnsTabsEnum::UPLOADS->value]);
 
 
-        $title      = __('Returns');
+        $title = match ($this->type) {
+            PalletReturnTypeEnum::PALLET->value => __('Fulfillement Pallet Returns'),
+            PalletReturnTypeEnum::STORED_ITEM->value => __('Fulfillement DS Returns'),
+            default => __('Returns'),
+        };
         $afterTitle = null;
 
 

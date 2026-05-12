@@ -20,7 +20,7 @@ class UpdateTradeUnitImageAlt extends GrpAction
         $tradeUnit->images()->updateExistingPivot($media->id, [
             'caption' => $modelData['alt'] ?? null,
         ]);
-    
+
 
         return $tradeUnit;
     }

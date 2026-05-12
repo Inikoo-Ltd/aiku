@@ -14,9 +14,8 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
-class FetchProductFromShopifyProgressEvent implements ShouldBroadcastNow
+class FetchProductFromPlatformProgressEvent implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;
@@ -35,18 +34,17 @@ class FetchProductFromShopifyProgressEvent implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("shopify.{$this->shopifyUser->id}.fetch-product")
+            new PrivateChannel("platform.{$this->shopifyUser->id}.fetch-product")
         ];
     }
 
     public function broadcastWith(): array
     {
-        Log::info('info:' . json_encode($this->modelData));
         return $this->modelData;
     }
 
     public function broadcastAs(): string
     {
-        return 'shopify-fetch-progress';
+        return 'platform-fetch-progress';
     }
 }

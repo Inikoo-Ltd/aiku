@@ -149,7 +149,7 @@ class StoreProductToTiktok extends RetinaAction
 
             $tiktokProduct = $tiktokUser->uploadProductToTiktok($productData);
 
-            if(Arr::get($tiktokProduct, 'error')) {
+            if (Arr::get($tiktokProduct, 'error')) {
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [
                         'message' => Arr::get($tiktokProduct, 'data')
