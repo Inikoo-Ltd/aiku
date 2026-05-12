@@ -5,7 +5,7 @@
   -->
 
 <script>
-import Layout from "@/Layouts/Error.vue";
+import Layout from "resources/js/Layouts/Error.vue";
 export default { layout: Layout, }
 </script>
 

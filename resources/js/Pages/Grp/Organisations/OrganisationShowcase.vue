@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import UnderConstruction from '@/Pages/Iris/Disclosure/UnderConstruction.vue'
+import UnderConstruction from '../../../Iris/Pages/Disclosure/UnderConstruction.vue'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 

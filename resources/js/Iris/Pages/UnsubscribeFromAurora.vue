@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
 import axios from "axios"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import Button from "resources/js/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 
 // Props dari Laravel

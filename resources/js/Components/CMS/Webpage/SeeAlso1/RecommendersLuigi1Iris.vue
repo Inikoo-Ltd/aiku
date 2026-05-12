@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// import Image from '@/Components/Image.vue'
+// import Image from '@/Components/IrisImage.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Link } from '@inertiajs/vue3'

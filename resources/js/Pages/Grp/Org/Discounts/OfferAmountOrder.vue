@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject } from 'vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { routeType } from '@/types/route'
-import UnderConstruction from '@/Pages/Iris/Disclosure/UnderConstruction.vue'
+import UnderConstruction from '../../../../Iris/Pages/Disclosure/UnderConstruction.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Image from '@/Components/Image.vue'
 

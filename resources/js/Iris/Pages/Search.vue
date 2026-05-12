@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { inject, onBeforeMount, ref } from "vue"
 
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { aikuLocaleStructure } from "resources/js/Composables/useLocaleStructure"
+import { retinaLayoutStructure } from "resources/js/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 
 

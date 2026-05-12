@@ -3,15 +3,15 @@ import { computed, inject, ref, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import type { Component } from 'vue'
 
-import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue'
-import TableIrisSubDepartment from '@/Components/Tables/Iris/TableIrisSubDepartment.vue'
-import TableIrisFamilies from '@/Components/Tables/Iris/TableIrisFamilies.vue'
-import TableIrisProducts from '@/Components/Tables/Iris/TableIrisProducts.vue'
+import TableIrisDepartment from 'resources/js/Components/Tables/Iris/TableIrisDepartment.vue'
+import TableIrisSubDepartment from 'resources/js/Components/Tables/Iris/TableIrisSubDepartment.vue'
+import TableIrisFamilies from 'resources/js/Components/Tables/Iris/TableIrisFamilies.vue'
+import TableIrisProducts from 'resources/js/Components/Tables/Iris/TableIrisProducts.vue'
 
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { faArrowLeft, faArrowRight, faWindowClose } from '@far'
-import TableIrisCollection from '@/Components/Tables/Iris/TableIrisCollection.vue'
-import { useColorTheme } from "@/Composables/useStockList"
+import Button from 'resources/js/Components/Elements/Buttons/Button.vue'
+import { faArrowLeft, faArrowRight, faWindowClose } from 'private/fa/pro-regular-svg-icons'
+import TableIrisCollection from 'resources/js/Components/Tables/Iris/TableIrisCollection.vue'
+import { useColorTheme } from "resources/js/Composables/useStockList"
 
 const props = defineProps<{
     tabs: {

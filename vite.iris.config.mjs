@@ -50,6 +50,7 @@ export default defineConfig(
     },
     resolve: {
       alias: {
+        "@iris": path.resolve(__dirname, "./resources/js/","dscsdcsd/"),
         "@fad"  : fileURLToPath(
           new URL("./private/fa/pro-duotone-svg-icons",
                   import.meta.url)),

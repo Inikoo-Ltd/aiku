@@ -5,11 +5,11 @@
   -->
 
 <script setup lang="ts">
-import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { layoutStructure } from 'resources/js/Composables/useLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
-import { ufo404 } from '@/Assets/Iconscout/404_ufo'
-import { rocket_falling } from '@/Assets/Iconscout/rocket_falling'
+import { ufo404 } from 'resources/js/Assets/Iconscout/404_ufo'
+import { rocket_falling } from 'resources/js/Assets/Iconscout/rocket_falling'
 
 defineProps<{
     status: number

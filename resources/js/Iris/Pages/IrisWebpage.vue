@@ -6,13 +6,13 @@
 
 <script setup lang="ts">
 import { inject, ref, onMounted, onBeforeUnmount, computed } from "vue"
-import { faCheck, faPlus, faMinus } from "@fal"
+import { faCheck, faPlus, faMinus } from "private/fa/pro-light-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
-import LayoutIris from "@/Layouts/Iris.vue"
-import { getIrisComponent } from "@/Composables/getIrisComponents"
+import LayoutIris from "resources/js/Layouts/Iris.vue"
+import { getIrisComponent } from "resources/js/Composables/getIrisComponents"
 import { usePage } from "@inertiajs/vue3"
-import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
+import ReviewByStore from "resources/js/Components/CMS/Reviews/ReviewByStore.vue"
 
 const props = defineProps<{
     webpage_data: any

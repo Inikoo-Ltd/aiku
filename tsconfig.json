@@ -13,6 +13,7 @@
         "skipLibCheck": true,
         "paths": {
             "@/*": ["./resources/js/*"],
+            "@iris/*": ["./resources/js/Iris/*"],
             "@fad": ["./private/fa/pro-duotone-svg-icons"],
             "@fal": ["./private/fa/pro-light-svg-icons"],
             "@far": ["./private/fa/pro-regular-svg-icons"],

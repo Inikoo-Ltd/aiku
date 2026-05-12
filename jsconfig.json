@@ -2,7 +2,8 @@
     "compilerOptions": {
         "baseUrl": ".",
         "paths": {
-            "@/*": ["resources/js/*"]
+            "@/*": ["resources/js/*"],
+            "@iris/*": ["resources/js/Iris/*"]
         }
     },
     "exclude": ["node_modules", "public", "app", "config", "vendor", "maya", "han", "private"]

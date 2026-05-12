@@ -3,17 +3,15 @@ import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from 'laravel-vue-i18n'
-
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject } from 'vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { routeType } from '@/types/route'
-import UnderConstruction from '@/Pages/Iris/Disclosure/UnderConstruction.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Image from '@/Components/Image.vue'
 
-const props = defineProps<{
+defineProps<{
     title: string
     pageHead: PageHeadingTypes
     url_master?: routeType
@@ -25,19 +23,7 @@ const props = defineProps<{
 }>()
 
 
-const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
-
-const getCategoryLink = (productCategory: {}) => {
-    if (productCategory) {
-        return route('grp.org.shops.show.catalogue.families.show', {
-            organisation: route().params.organisation,
-            shop: route().params.shop,
-            family: productCategory.slug,
-        })
-    }
-    return '#'
-}
 
 const routeProduct = (gift: { id: string }) => {
     switch (route().current()) {
@@ -69,9 +55,6 @@ const routeProduct = (gift: { id: string }) => {
         </template>
     </PageHeading>
 
-    <!-- <div v-if="layout.app.environment === 'production'">
-        <UnderConstruction />
-    </div> -->
 
     <div class="px-8 py-6">
         <div class="flex justify-between gap-8">

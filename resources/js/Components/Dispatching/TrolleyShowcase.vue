@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useFormatTime } from '@/Composables/useFormatTime'
-import UnderConstruction from '@/Pages/Iris/Disclosure/UnderConstruction.vue'
+import UnderConstruction from '../../Iris/Pages/Disclosure/UnderConstruction.vue'
 import { Link } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 
