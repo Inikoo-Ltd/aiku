@@ -108,11 +108,11 @@ class IndexReturnDeliveryNotes extends OrgAction
         $actions    = [];
 
         if ($this->parent instanceof Warehouse) {
-            $icon      = ['fal', 'fa-arrow-from-left'];
+            $icon      = ['fal', 'fa-arrow-to-bottom'];
             $iconRight = [
                 'icon' => 'fal fa-exchange',
             ];
-            $model     = __('Goods Out');
+            $model     = __('Goods In');
 
             $actions[] = [
                 'type'    => 'button',
