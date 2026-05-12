@@ -58,7 +58,8 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                 'delivery_address'          => $tiktokOrderClass->digestTiktokAddress($tiktokOrders),
                 'data'                      => ['tiktok_order' => $tiktokOrders],
                 'platform_order_id'         => Arr::get($tiktokOrders, 'id'),
-                'is_collection'             => false
+                'is_collection'             => false,
+                'is_shipping_by_external'   => Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK'
             ]);
 
             $storedItemModels = [];
