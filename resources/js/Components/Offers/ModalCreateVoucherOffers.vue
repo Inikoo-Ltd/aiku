@@ -373,7 +373,6 @@ const isFormInvalid = computed(() => {
                 </template>
                 <template v-if="step === 2">
                     <!-- target -->
-
                     <div class="min-h-[90px] space-y-2">
                         <div class="space-y-3 mb-2">
                             <h3 class="text-sm text-gray-500">
@@ -424,19 +423,19 @@ const isFormInvalid = computed(() => {
                         <div v-if="activeCategoryRoute" class="space-y-2">
 
                             <label class="font-medium">
-                                {{ trans('Select Category') }}
+                                {{ trans('Select Item') }}
                             </label>
                             <!-- mode="multiple" -->
                             <PureMultiselectInfiniteScroll :key="categoryTypeKey" v-model="categoryFilters"
                                 :fetchRoute="activeCategoryRoute" valueProp="id" labelProp="name"
-                                :placeholder="trans('Select items')" />
+                                 />
 
                         </div>
 
                         <div v-if="target === 'collection' && collectionRoute" class="space-y-2">
 
                             <label class="font-medium">
-                                {{ trans('Select Collection') }}
+                                {{ trans('Select Item') }}
                             </label>
                             <PureMultiselectInfiniteScroll v-model="collectionFilters"
                                 :fetchRoute="collectionRoute" valueProp="id" labelProp="name" />
@@ -446,7 +445,7 @@ const isFormInvalid = computed(() => {
                         <div v-if="target === 'product'" class="space-y-2">
 
                             <label class="font-medium">
-                                {{ trans('Select Product') }}
+                                {{ trans('Select Item') }}
                             </label>
 
                             <PureMultiselectInfiniteScroll v-model="productFilters" :fetchRoute="productFetchRoute"
