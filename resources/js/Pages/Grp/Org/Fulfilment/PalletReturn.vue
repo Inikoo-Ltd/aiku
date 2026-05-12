@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, useForm, Link } from "@inertiajs/vue3"
+import { Head, router, useForm, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -141,6 +141,7 @@ const props = defineProps<{
 	}[]
 	stored_items_count?: number
 	shipments: {
+		button_label?: string
 		fetch_route: routeType
 		submit_route: routeType
 		delete_route: routeType
@@ -296,6 +297,49 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
 const isModalUploadFileOpen = ref(false)
 
 // Section: Shipment
+const isTiktokShipment = computed(() => {
+	return props.shipments?.submit_route?.name === "grp.models.pallet-return.shipment_from_tiktok.store"
+})
+const shipmentButtonLabel = computed(() => {
+	return props.shipments?.button_label ?? (isTiktokShipment.value ? trans("Get shipment from Tiktok") : trans("Shipment"))
+})
+const shipmentButtonTooltip = computed(() => {
+	return props.box_stats.parcels?.length ? "" : trans("Please add at least one parcel")
+})
+const onGetShipmentFromTiktok = () => {
+	isLoadingButton.value = "getShipmentFromTiktok"
+	router.post(
+		route(props.shipments.submit_route.name, props.shipments.submit_route.parameters),
+		{},
+		{
+			preserveScroll: true,
+			onError: () => {
+				notify({
+					title: trans("Something went wrong."),
+					text: trans("Failed to get Shipment from Tiktok. Please try again."),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingButton.value = false
+			},
+		}
+	)
+}
+const onClickShipmentButton = () => {
+	if (!props.box_stats.parcels?.length) {
+		set(listError.value, "box_stats_parcel", true)
+		return
+	}
+
+	if (isTiktokShipment.value) {
+		onGetShipmentFromTiktok()
+		return
+	}
+
+	isModalShipment.value = true
+	onOpenModalTrackingNumber()
+}
 const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
 const isModalShipment = ref(false)
 const optionShippingList = ref([])
@@ -365,9 +409,10 @@ provide("listError", listError.value)
 		<template v-if="timeline.state === 'picked' && (box_stats?.shipments?.length < 1)" #otherBefore>
 			<Button
 				v-if="!data.data?.is_collection && !isFulfilmentOperationsPalletReturnPage"
-				@click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
-				v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
-				:label="trans('Shipment')"
+				@click="onClickShipmentButton"
+				v-tooltip="shipmentButtonTooltip"
+				:label="shipmentButtonLabel"
+				:loading="isLoadingButton == 'getShipmentFromTiktok'"
 				icon="fal fa-shipping-fast"
 				type="tertiary"
 			/>

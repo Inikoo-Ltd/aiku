@@ -20,6 +20,7 @@ use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisa
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Fulfilment\PalletReturnTabsEnum;
 use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
 use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
@@ -236,6 +237,12 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 
         $actions = $this->getActions($palletReturn);
 
+        $isShippingByExternal = $palletReturn->platform?->type === PlatformTypeEnum::TIKTOK;
+        $shipmentButtonLabel = $isShippingByExternal ? __('Get shipment from Tiktok') : __('Shipment');
+        $shipmentSubmitRouteName = $isShippingByExternal
+            ? 'grp.models.pallet-return.shipment_from_tiktok.store'
+            : 'grp.models.pallet-return.shipment_from_warehouse.store';
+
         return Inertia::render(
             'Org/Fulfilment/PalletReturn',
             [
@@ -362,8 +369,9 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                 ],
                 'stored_items_count'    => $palletReturn->storedItems()->count(),
                 'shipments' => [
+                    'button_label' => $shipmentButtonLabel,
                     'submit_route' => [
-                        'name'       => 'grp.models.pallet-return.shipment_from_warehouse.store',
+                        'name'       => $shipmentSubmitRouteName,
                         'parameters' => [
                             'palletReturn' => $palletReturn->id
                         ]
