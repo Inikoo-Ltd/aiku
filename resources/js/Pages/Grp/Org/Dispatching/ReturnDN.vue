@@ -271,6 +271,7 @@ library.add(
 						object
 						clearOnBlur
 						:loading="isLoading['picker' + selectedPicker?.id]"
+						:disabled="isLoadingToQueue"
 					>
 						<template #singlelabel="{ value }">
 							<div class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
@@ -288,7 +289,7 @@ library.add(
 					<div v-if="quick_pickers && quick_pickers.length > 0" class="border-y border-dashed border-gray-300 py-3 mt-3 flex flex-wrap gap-2">
 						<div
 							v-for="picker in quick_pickers"
-							@click="selectedPicker = picker"
+							@click="(selectedPicker = picker, onUpdateHandler())"
 							class="flex-grow text-center px-3 py-1.5 select-none text-sm rounded-md border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
 							:class="
 								selectedPicker?.id === picker.id ? 'bg-blue-500 text-white' : 'bg-blue-50 hover:bg-blue-200 text-blue-800'

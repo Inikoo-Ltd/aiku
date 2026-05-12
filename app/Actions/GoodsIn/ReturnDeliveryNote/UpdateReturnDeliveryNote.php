@@ -11,6 +11,7 @@ use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateReturnDeliveryNote extends OrgAction
 {
@@ -60,6 +61,13 @@ class UpdateReturnDeliveryNote extends OrgAction
     public function action(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
         $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $modelData);
+
+        return $this->handle($returnDeliveryNote, $this->validatedData);
+    }
+
+    public function asController(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): ReturnDeliveryNote
+    {
+        $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $request);
 
         return $this->handle($returnDeliveryNote, $this->validatedData);
     }
