@@ -138,8 +138,10 @@ class PublishWebsiteMarginal extends OrgAction
         }
 
         if ($marginal == 'footer') {
+            Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
             Cache::forget("irisData:website:$website->id:footer");
         } elseif ($marginal == 'sidebar') {
+            Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
             Cache::forget("irisData:website:$website->id:sideBar");
         } else {
             BreakWebsiteCache::run($website);
