@@ -135,6 +135,7 @@ class GetUserOrganisationLayout
                 'code'                 => $shop->code,
                 'label'                => $shop->name,
                 'state'                => $shop->state,
+                'org_slug'             => $organisation->slug,
                 'type'                 => $shop->type,
                 'website_domain'       => $shop->website?->domain ?? null,
                 'route'                => [
