@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -17,6 +18,7 @@ use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
+use App\Models\Accounting\Invoice;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Helpers\NaturalLanguage;
@@ -31,7 +33,13 @@ trait IsOrder
     {
         $taxCategory = $order->taxCategory;
 
-        $payAmount   = $order->total_amount - $order->payment_amount;
+        $totalToPay = $order->total_amount;
+        /** @var Invoice $refund */
+        foreach (Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->get() as $refund) {
+            $totalToPay += $refund->total_amount;
+        };
+
+        $payAmount   = $totalToPay - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
 
         $estWeight = ($order->estimated_weight ?? 0) / 1000;
@@ -126,13 +134,13 @@ trait IsOrder
         if ($deliveryNotes) {
             foreach ($deliveryNotes->sortBy('created_at') as $deliveryNote) {
                 $deliveryNotesData[] = [
-                    'id'        => $deliveryNote->id,
-                    'slug'      => $deliveryNote->slug,
-                    'reference' => $deliveryNote->reference,
-                    'type'      => $deliveryNote->type,
-                    'parcels'   => $deliveryNote->parcels,
-                    'state'     => $deliveryNote->state,
-                    'state_icon' => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'id'                           => $deliveryNote->id,
+                    'slug'                         => $deliveryNote->slug,
+                    'reference'                    => $deliveryNote->reference,
+                    'type'                         => $deliveryNote->type,
+                    'parcels'                      => $deliveryNote->parcels,
+                    'state'                        => $deliveryNote->state,
+                    'state_icon'                   => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
                     'shipping_fields'              => [
                         'company_name' => $deliveryNote->company_name,
                         'contact_name' => $deliveryNote->contact_name,
@@ -152,8 +160,8 @@ trait IsOrder
                             'shipper_id'   => null
                         ]
                     ],
-                    'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
-                    'shipments_routes'    => [
+                    'shipments'                    => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
+                    'shipments_routes'             => [
                         'submit_route' => [
                             'name'       => 'grp.models.delivery_note.shipment.store',
                             'parameters' => [
@@ -257,7 +265,7 @@ trait IsOrder
                     'price_total' => -$order->amount_off,
                     'slot_name'   => 'discounts',
                 ],
-                ];
+            ];
         }
 
         $orderSummary[] =
@@ -289,7 +297,6 @@ trait IsOrder
                 ],
             ];
         }
-
 
         $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
             ->whereNotIn('state', [
@@ -331,7 +338,7 @@ trait IsOrder
             'shipping_notes'   => $order->shipping_notes,
             'products'         => [
                 'payment'          => [
-                    'routes'       => [
+                    'routes'              => [
                         'fetch_payment_accounts' => [
                             'name'       => 'grp.json.shop.payment-accounts',
                             'parameters' => [
@@ -346,13 +353,14 @@ trait IsOrder
                         ]
 
                     ],
-                    'total_amount' => (float)$order->total_amount,
-                    'paid_amount'  => (float)$order->payment_amount,
-                    'pay_amount'   => $roundedDiff,
-                    'pay_status'   => $order->pay_status,
+                    'total_amount'        => (float)$totalToPay,
+                    'paid_amount'         => (float)$order->payment_amount,
+                    'pay_amount'          => $roundedDiff,
+                    'pay_status'          => $order->pay_status,
+                    'pay_detailed_status' => $order->pay_detailed_status,
                 ],
                 'excesses_payment' => [
-                    'amount'               => round($order->payment_amount - $order->total_amount, 2),
+                    'amount'               => round($order->payment_amount - $totalToPay, 2),
                     'route_to_add_balance' => [
                         'name'       => 'grp.models.order.return_excess_payment',
                         'parameters' => [
@@ -366,7 +374,7 @@ trait IsOrder
 
             'order_summary' => $orderSummary,
             'currency'      => CurrencyResource::make($order->currency),
-            'external_shop'           => $order->shop->type == ShopTypeEnum::EXTERNAL ? [
+            'external_shop' => $order->shop->type == ShopTypeEnum::EXTERNAL ? [
                 'engine_value'            => $order->shop->engine->value,
                 'engine_label'            => ShopEngineEnum::from($order->shop->engine->value)->label(),
                 'external_shipping_label' => $order->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')

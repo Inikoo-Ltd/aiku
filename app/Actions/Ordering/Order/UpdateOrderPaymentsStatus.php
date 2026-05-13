@@ -10,11 +10,13 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
 use Carbon\Carbon;
@@ -44,6 +46,10 @@ class UpdateOrderPaymentsStatus extends OrgAction
         }
         $runningPaymentsAmount = round($runningPaymentsAmount, 2);
         $totalAmount           = $order->total_amount;
+        /** @var Invoice $refund */
+        foreach (Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process',false)->get() as $refund) {
+            $totalAmount+=$refund->total_amount;
+        };
 
 
         if ($totalAmount != 0) {
@@ -71,7 +77,6 @@ class UpdateOrderPaymentsStatus extends OrgAction
             $payStatus         = OrderPayStatusEnum::UNKNOWN;
             $payDetailedStatus = OrderPayDetailedStatusEnum::UNKNOWN;
         }
-
 
         $order->update(
             [
