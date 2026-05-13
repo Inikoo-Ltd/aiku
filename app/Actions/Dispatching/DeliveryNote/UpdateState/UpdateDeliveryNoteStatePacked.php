@@ -41,6 +41,11 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+
+        if($deliveryNote->state == DeliveryNoteStateEnum::PACKED){
+            return $deliveryNote;
+        }
+
         $oldState = $deliveryNote->state;
 
         data_set($modelData, 'packed_at', now());
@@ -84,6 +89,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
             $order = $deliveryNote->orders->first();
 
+            //Note: be careful if one day we delete these shipments in UnpackDeliveryNote
             if ($deliveryNote->is_shipping_by_external && $deliveryNote->shipments->isEmpty()) {
                 if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
                     StoreShipmentFromFaire::run($deliveryNote);
