@@ -10,7 +10,6 @@ import Pagination from '@/Components/Table/Pagination.vue'
 import { routeType } from '@/types/route'
 import { debounce } from 'lodash-es'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheckCircle } from "@fas"
 
 const props = defineProps<{
   modelValue?: any[]
@@ -31,7 +30,7 @@ const isLoading = ref(false)
 // temp selected
 const selected = ref<any[]>([])
 
-// open dialog
+// open dialogue
 const open = () => {
   selected.value = [...(props.modelValue || [])]
   showDialog.value = true
