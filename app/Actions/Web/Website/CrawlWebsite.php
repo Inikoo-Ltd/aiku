@@ -18,7 +18,7 @@ class CrawlWebsite
 {
     use AsAction;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'cache-warming';
 
     public function handle(?int $websiteId, int $depth = 10, int $concurrency = 10): void
     {
@@ -43,7 +43,7 @@ class CrawlWebsite
             ->shouldCrawl(function (string $url) use ($website) {
                 $domain = preg_replace('/^www\./i', '', parse_url($url, PHP_URL_HOST));
 
-                return $domain === $website->domain && !str_contains($url, '/app') && !str_contains($url, '/search');
+                return $domain === $website->domain && !str_contains($url, '/app/') && !str_contains($url, '/search');
             })
             ->onCrawled(function (string $url, CrawlResponse $response, CrawlProgress $progress) {
                 echo "[$progress->urlsProcessed/$progress->urlsFound] $url\n";
@@ -66,6 +66,12 @@ class CrawlWebsite
             $this->handle($website->id, $command->option('depth'), $command->option('concurrency'));
 
             return 0;
+        }
+
+        /** @var Website $website */
+        foreach(Website::where('migrated',true)->get() as $website){
+            $command->info("Crawling website: $website->slug");
+            CrawlWebsite::dispatch($website->id, 10, 1);
         }
 
         return 0;
