@@ -65,44 +65,48 @@ watch(() => layout.value?.organisationsState, () => {
 
 // Section: Dropdown Shops/Fulfilments/Warehouses
 const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
-    const paramsLength = Object.keys(layout.currentParams || {}).length
+    const visitNormally = () => {
+        router.visit(route(showare.route?.name, showare.route?.parameters))
+    }
 
-    if (layout.currentParams.organisation && paramsLength === 1) {
+    const paramsLength = Object.keys(layout.currentParams || route().routeParams).length
+
+    if (layout.currentParams.organisation && paramsLength === 1) { // ✅
         router.visit(route(layout.currentRoute, { organisation: showare.org_slug }))
     } else if (paramsLength === 2) {
-        if (layout.currentParams.organisation && layout.currentParams.shop) {
+        if (layout.currentParams.organisation && layout.currentParams.shop) { // ✅
             router.visit(route(layout.currentRoute, { organisation: showare.org_slug, shop: showare.slug }))
-        } else if (layout.currentParams.organisation && layout.currentParams.warehouse) {
+        } else if (layout.currentParams.organisation && layout.currentParams.warehouse) { // ✅
             router.visit(route(layout.currentRoute, { organisation: showare.org_slug, warehouse: showare.slug }))
-        } else if (layout.currentParams.organisation && layout.currentParams.fulfilment) {
+        } else if (layout.currentParams.organisation && layout.currentParams.fulfilment) { // ✅
             router.visit(route(layout.currentRoute, { organisation: showare.org_slug, fulfilment: showare.slug }))
-        } else {
-            router.visit(route(showare.route?.name, showare.route?.parameters))
+        } else { // ✅
+            visitNormally()
         }
     } else if (paramsLength > 2) {
         if (layout.currentParams.organisation && layout.currentParams.shop) {
             try {
                 router.visit(route(layout.currentRoute, { organisation: showare.org_slug, shop: showare.slug }))
             } catch {
-                router.visit(route(showare.route?.name, showare.route?.parameters))
+                visitNormally()
             }
         } else if (layout.currentParams.organisation && layout.currentParams.warehouse) {
             try {
                 router.visit(route(layout.currentRoute, { organisation: showare.org_slug, warehouse: showare.slug }))
             } catch {
-                router.visit(route(showare.route?.name, showare.route?.parameters))
+                visitNormally()
             }
         } else if (layout.currentParams.organisation && layout.currentParams.fulfilment) {
             try {
                 router.visit(route(layout.currentRoute, { organisation: showare.org_slug, fulfilment: showare.slug }))
             } catch {
-                router.visit(route(showare.route?.name, showare.route?.parameters))
+                visitNormally()
             }
         } else {
-            router.visit(route(showare.route?.name, showare.route?.parameters))
+            visitNormally()
         }
     } else {
-        router.visit(route(showare.route?.name, showare.route?.parameters))
+        visitNormally()
     }
 
     // Tambahkan jika di dalam params {organisation} dan {shop}, tapi kemudian mengklik Organisation saja, maka {shop}nya gunakan yang dari localstorage
