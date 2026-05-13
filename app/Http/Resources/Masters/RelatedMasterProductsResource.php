@@ -11,7 +11,6 @@ namespace App\Http\Resources\Masters;
 
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property string $code
@@ -31,7 +30,7 @@ class RelatedMasterProductsResource extends JsonResource
             'slug'            => $this->slug,
             'code'            => $this->code,
             'name'            => $this->name,
-            'image_thumbnail' => is_array($this->web_images) ?  $this->web_images : json_decode($this->web_images),
+            'image_thumbnail' => is_array($this->web_images) ? $this->web_images : json_decode($this->web_images),
             'position'        => $this->position
         ];
     }

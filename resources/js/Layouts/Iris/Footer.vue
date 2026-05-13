@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { getIrisComponent } from '@/Composables/getIrisComponents'
+import { getIrisComponent } from '@/Iris/Composables/getIrisComponents'
 import { Root } from '@/types/Website/Website/footer1'
 import { checkScreenType } from '@/Composables/useWindowSize'
 import { computed, inject, onMounted, ref } from 'vue'

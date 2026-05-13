@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, inject, ref, watch, onMounted, nextTick  } from "vue"
 import { get, isPlainObject, debounce } from "lodash-es"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import { getStyles } from "@/Composables/styles"

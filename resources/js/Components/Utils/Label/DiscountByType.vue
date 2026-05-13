@@ -17,7 +17,7 @@ const props = defineProps<{
             percentage_off: string
         }
     }
-    use_duration: boolean
+    use_duration?: boolean
 }>()
 
 const componentsMap = {

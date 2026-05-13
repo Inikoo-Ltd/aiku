@@ -76,6 +76,7 @@ class UpdateRetinaCustomer extends RetinaAction
             'tags'                          => ['sometimes', 'array'],
             'eori'                          => ['sometimes', 'nullable', 'string', 'max:20'],
             'ukims'                         => ['sometimes', 'nullable', 'string', 'max:255'],
+            'is_gift_opted_out'             => ['sometimes', 'boolean'],
         ];
     }
 

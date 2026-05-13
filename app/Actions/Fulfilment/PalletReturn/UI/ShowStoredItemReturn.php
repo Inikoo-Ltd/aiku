@@ -102,7 +102,7 @@ class ShowStoredItemReturn extends OrgAction
         }
 
         $afterTitle = [
-            'label' => '('.__("Customer's SKUs").')'
+            'label' => '('.__("Fulfilment DS").')'
         ];
 
 
@@ -354,14 +354,31 @@ class ShowStoredItemReturn extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show' => array_merge(
+            'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show' => array_merge(
                 ShowFulfilment::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment'])),
                 $headCrumb(
                     $palletReturn,
                     [
                         'index' => [
                             'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'palletReturn'])
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show' => array_merge(
+                ShowFulfilment::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment'])),
+                $headCrumb(
+                    $palletReturn,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
                         ],
                         'model' => [
                             'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show',

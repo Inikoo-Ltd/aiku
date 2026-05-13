@@ -63,6 +63,7 @@ class ShowDeliveryNote extends OrgAction
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
+    private bool $allowAction = true;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
@@ -159,7 +160,7 @@ class ShowDeliveryNote extends OrgAction
             ->exists();
 
         $actions = [];
-        if (!$hasUnHandledItems) {
+        if (!$hasUnHandledItems && $this->allowAction) {
             if ($deliveryNote->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 $actions[] = [
                     'type'    => 'button',
@@ -349,7 +350,7 @@ class ShowDeliveryNote extends OrgAction
                 ],
             ],
             DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
-            DeliveryNoteStateEnum::PACKING => [
+            DeliveryNoteStateEnum::PACKING =>  $this->allowAction ? [
                 [
                     'type'    => 'button',
                     'style'   => 'save',
@@ -364,7 +365,7 @@ class ShowDeliveryNote extends OrgAction
                         ]
                     ]
                 ]
-            ],
+            ] : [],
             DeliveryNoteStateEnum::PICKED => [
                 [
                     'type'  => 'button',
@@ -701,6 +702,21 @@ class ShowDeliveryNote extends OrgAction
             $isEditable = true;
         }
 
+        $handler = $deliveryNote->picker_user_id;
+
+        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
+            $handler = $deliveryNote->packer_user_id;
+        }
+
+        $allowAction = ($handler && $handler == request()->user()->id);
+
+        if (!$allowAction) {
+            $tempHandler = session('temp_handling_delivery_note') ?? [];
+            $allowAction = $deliveryNote->id == data_get($tempHandler, 'value') && now()->lt(data_get($tempHandler, 'expires_at'));
+        }
+
+        $this->allowAction = $allowAction;
+
         $actions = $this->getActions($deliveryNote, $request);
 
         $warning = null;
@@ -729,12 +745,6 @@ class ShowDeliveryNote extends OrgAction
         $model = __('Delivery Note');
         if ($deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT) {
             $model = __('Replacement Delivery Note');
-        }
-
-        $allowAction = ($deliveryNote->packer_user_id && $deliveryNote->packer_user_id != request()->user()->id);
-
-        if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
-            $allowAction = $deliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
         }
 
         $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;

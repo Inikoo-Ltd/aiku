@@ -2,7 +2,7 @@
 import { getStyles } from "@/Composables/styles"
 import { checkVisible } from "@/Composables/Workshop"
 import { inject, ref } from "vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
 import { faPresentation, faCube, faText, faPaperclip } from "@fal"

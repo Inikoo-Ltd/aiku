@@ -33,7 +33,7 @@ class HandleIrisInertiaRequests extends Middleware
             ?->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION])
             ->select('id', 'code', 'state')
             ->get()
-            ->mapWithKeys(fn($item) => [
+            ->mapWithKeys(fn ($item) => [
                 $item->code->value => [
                     'id'    => $item->id,
                     'state' => $item->state,
@@ -83,8 +83,8 @@ class HandleIrisInertiaRequests extends Middleware
             $firstLoadOnlyProps,
             [
                 'flash'         => [
-                    'notification' => fn() => $request->session()->get('notification'),
-                    'modal'        => fn() => $request->session()->get('modal')
+                    'notification' => fn () => $request->session()->get('notification'),
+                    'modal'        => fn () => $request->session()->get('modal')
                 ],
                 'ziggy'         => [
                     'location' => $request->url(),

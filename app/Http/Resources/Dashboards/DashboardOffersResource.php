@@ -90,9 +90,9 @@ class DashboardOffersResource extends JsonResource
                 'invoices'              => $routeTargets['invoices'],
                 'invoices_minified'     => $routeTargets['invoices'],
                 'invoices_delta'        => $routeTargets['invoices'],
-                'sales_grp_currency_external',
-                'sales_grp_currency_external_minified',
-                'sales_grp_currency_external_delta'
+                // 'sales_grp_currency_external',
+                // 'sales_grp_currency_external_minified',
+                // 'sales_grp_currency_external_delta'
             ])
         );
 

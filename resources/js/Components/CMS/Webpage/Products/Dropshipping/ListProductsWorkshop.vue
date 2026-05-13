@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
-import { getProductsRenderDropshippingComponent } from "@/Composables/getIrisComponents";
+import { getProductsRenderDropshippingComponent } from "@/Iris/Composables/getIrisComponents";
 
 library.add(faFileDownload)
 

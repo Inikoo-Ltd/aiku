@@ -11,7 +11,7 @@ import { faStarHalfAlt } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
-import { getProductsRenderDropshippingComponent } from "@/Composables/getIrisComponents"
+import { getProductsRenderDropshippingComponent } from "@/Iris/Composables/getIrisComponents"
 import axios from "axios"
 
 library.add(faStarHalfAlt, faQuestionCircle)

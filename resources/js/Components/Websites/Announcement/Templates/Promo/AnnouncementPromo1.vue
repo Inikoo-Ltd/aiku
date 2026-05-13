@@ -1,18 +1,14 @@
 <script setup lang='ts'>
-import Moveable from "vue3-moveable"
-// import { propertiesToHTMLStyle, onDrag, styleToString } from '@/Composables/usePropertyWorkshop'
 import { getStyles } from "@/Composables/styles"
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { computed, ref } from "vue"
-import { closeIcon } from '@/Composables/useAnnouncement'
+import { ref } from "vue"
 import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 
 import { inject } from "vue";
 library.add(faTimes)
 
-const props = defineProps<{
+defineProps<{
     announcementData?: {
         fields: {
             text_1: {
@@ -43,7 +39,6 @@ const emits = defineEmits<{
 }>()
 
 const _text_1 = ref(null)
-const _buttonClose = ref(null)
 
 const fieldSideEditor = [
     {

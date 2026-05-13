@@ -220,6 +220,13 @@ class UpdateCustomer extends OrgAction
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
         UpdateCustomerComms::run($customer->comms, $emailSubscriptionsData);
 
+        // Section: Opt-out from eligible gift
+        if (Arr::has($modelData, 'is_gift_opted_out')) {
+            $settings = $customer->settings ?? [];
+            data_set($settings, 'is_gift_opted_out', Arr::pull($modelData, 'is_gift_opted_out'));
+            $customer->update(['settings' => $settings]);
+        }
+
         $oldRegisteredAt = $customer->registered_at;
 
         $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
@@ -343,6 +350,7 @@ class UpdateCustomer extends OrgAction
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
             'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
             'ukims'                                                 => ['sometimes', 'nullable', 'string', 'max:255'],
+            'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
         ];
 
         if ($this?->asAction) {

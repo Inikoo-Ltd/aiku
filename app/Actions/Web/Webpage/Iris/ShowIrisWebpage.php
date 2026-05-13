@@ -219,13 +219,10 @@ class ShowIrisWebpage
                 ->withHeaders([
                     'Cache-Control'             => 'public, s-maxage=300, max-age=0',
                     'X-Aiku-Cacheable-Redirect' => '1',
-                    // 'x-original-referer' => request()->headers->get('referer', ''), todo: review this, set it as a ?query= instead
                 ]);
-            // ->with('from-iris-redirect', true);
         }
 
         $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
-
         $response = Inertia::render(
             'IrisWebpage',
             $webpageData

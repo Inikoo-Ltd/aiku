@@ -82,7 +82,7 @@ class GetRetinaFulfilmentNavigation
                 ]
             ];
 
-            if ($webUser->customer->fulfilmentCustomer->items_storage && app()->isLocal()) {
+            if ($webUser->customer->fulfilmentCustomer->items_storage) {
 
 
                 $customerSalesChannelsNavigation = [];

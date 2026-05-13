@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
 

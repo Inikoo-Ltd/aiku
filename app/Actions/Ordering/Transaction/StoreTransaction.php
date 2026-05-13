@@ -133,7 +133,7 @@ class StoreTransaction extends OrgAction
         $transaction = $order->transactions()->create($modelData);
 
         $order->refresh();
-        if ($this->strict || $this->forceHydrators ) {
+        if ($this->strict || $this->forceHydrators) {
             OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);

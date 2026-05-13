@@ -7,7 +7,7 @@ import draggable from "vuedraggable"
 import { ulid } from "ulid"
 
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import CropImage from "@/Components/CropImage/CropImage.vue"
 import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue"

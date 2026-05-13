@@ -1,14 +1,13 @@
-import { Family2ExtraDescriptionWorkshop } from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue';
 import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
+//Department
+import DepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/DepartmentDescriptionIris.vue"
 
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
-
 import ListProductsIris from "@/Components/CMS/Webpage/Products/Dropshipping/ListProductsIris.vue"
 import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 import ListProductsEcomIris from "@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/Dropshipping/ProductIris1.vue'
 import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue'
@@ -26,10 +25,8 @@ import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/R
 import RecommendationCRB1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCRB1Iris.vue'
 import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
 
-
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
 import Products2Render from "@/Components/CMS/Webpage/Products2/Products2Render.vue"
-
 
 import Header2Iris from "@/Components/CMS/Website/Headers/Header2/Header2Iris.vue"
 import Header1Iris from "@/Components/CMS/Website/Headers/Header1/Header1Iris.vue"
@@ -44,12 +41,8 @@ import Topbar3Iris from "@/Components/CMS/Website/TopBars/Template/Topbar3/Topba
 
 
 import Menu1Workshop from "@/Components/CMS/Website/Menus/Menu1Workshop.vue"
-
-
 import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
-
 import SeeAlso1Iris from "@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue"
-
 import family1Iris from "@/Components/CMS/Webpage/Family-1/family1Iris.vue"
 import family2Iris from "@/Components/CMS/Webpage/Family2/family2Iris.vue"
 import family3Iris from "@/Components/CMS/Webpage/Family3/family3Iris.vue"
@@ -96,12 +89,11 @@ import Step2Iris from "@/Components/CMS/Webpage/Step2/Step2Iris.vue"
 import Step1Iris from "@/Components/CMS/Webpage/Step1/Step1Iris.vue"
 import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
 import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionIris.vue"
-import DepartmentDescriptionIris from "@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionIris.vue"
-import SubDepartmentDesciptionIris from "@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionIris.vue"
+import SubDepartmentDescriptionIris from "@/Components/CMS/Webpage/SubDepartmentDescription/SubDepartmentDescriptionIris.vue"
 import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
 import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/FamiliesOverviewIris1.vue'
-import RecomendationFromMasterIris from '@/Components/CMS/Webpage/RecomendationFromMaster/RecomendationFromMasterIris.vue';
+import RecommendationFromMasterIris from '@/Components/CMS/Webpage/RecommendationFromMaster/RecommendationFromMasterIris.vue';
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({
@@ -132,10 +124,10 @@ const components = (shop_type?: string): Record<string, Component> => {
 		//footer
 		"footer-1": Footer1Iris,
 
-		 //description catalouge
+		 //description catalogue
 		'collection-description-1' : CollectionDescriptionIris,
 		'department-description-1' : DepartmentDescriptionIris,
-		'sub-department-description-1' : SubDepartmentDesciptionIris,
+		'sub-department-description-1' : SubDepartmentDescriptionIris,
 
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,
@@ -212,7 +204,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"step-2": Step2Iris,
 		'video-1': Video1Iris,
 		'slider-1' : Slider1Iris,
-		'recommendation-from-master' : RecomendationFromMasterIris
+		'recommendation-from-master' : RecommendationFromMasterIris
 	}
 }
 

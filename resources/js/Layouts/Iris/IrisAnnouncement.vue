@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getIrisAnnouncementComponent } from "@/Composables/getIrisComponents"
+import { getIrisAnnouncementComponent } from "@/Iris/Composables/getIrisComponents"
 import { inject, provide, computed, ref, onMounted, onBeforeUnmount } from "vue"
 
 const props = defineProps<{

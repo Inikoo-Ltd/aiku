@@ -11,6 +11,7 @@ use App\Actions\Retina\UI\SysAdmin\EditRetinaWebUser;
 use App\Actions\Retina\UI\SysAdmin\IndexRetinaVATValidationHistory;
 use App\Actions\Retina\UI\SysAdmin\IndexRetinaWebUsers;
 use App\Actions\Retina\UI\SysAdmin\ShowRetinaAccountManagement;
+use App\Actions\Retina\UI\SysAdmin\ShowRetinaEmailManagement;
 use App\Actions\Retina\UI\SysAdmin\ShowRetinaSysAdminDashboard;
 use App\Actions\Retina\UI\SysAdmin\ShowRetinaFulfilmentSysAdminDashboard;
 use App\Actions\Retina\UI\SysAdmin\ShowRetinaWebUser;
@@ -21,6 +22,7 @@ Route::get('', ShowRetinaSysAdminDashboard::class)->name('dashboard');
 
 Route::get('/vat-validation-history', IndexRetinaVATValidationHistory::class)->name('vat-validation-history');
 Route::get('/settings', ShowRetinaAccountManagement::class)->name('settings.edit');
+Route::get('/email', ShowRetinaEmailManagement::class)->name('email.edit');
 Route::get('/users', IndexRetinaWebUsers::class)->name('web-users.index');
 Route::get('/users/create', CreateRetinaWebUser::class)->name('web-users.create');
 Route::get('/users/{webUser}', ShowRetinaWebUser::class)->name('web-users.show');

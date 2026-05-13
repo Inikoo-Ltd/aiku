@@ -2,7 +2,7 @@
 import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 
 import Blueprint from "@/Components/CMS/Webpage/BentoGrid/Blueprint"

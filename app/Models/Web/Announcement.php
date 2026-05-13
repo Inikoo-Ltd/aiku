@@ -55,7 +55,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Snapshot> $snapshots
  * @property-read Snapshot|null $unpublishedSnapshot
- * @property-read Website|null $website
+ * @property-read \App\Models\Web\Website|null $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement query()

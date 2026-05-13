@@ -30,9 +30,13 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
         $this->model = InvoiceCategory::class;
     }
 
-    public function getJobUniqueId(string $from, string $to): string
+    public function getJobUniqueId(?int $invoiceCategoryId, string $from, string $to): string
     {
-        return "{$from}_$to";
+        if ($invoiceCategoryId == null) {
+            $invoiceCategoryId = 'empty';
+        }
+
+        return $invoiceCategoryId.":{$from}_$to";
     }
 
     public function handle(?int $invoiceCategoryId, ?string $from = null, ?string $to = null, bool $async = false): void

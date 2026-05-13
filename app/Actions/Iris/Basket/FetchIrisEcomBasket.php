@@ -265,6 +265,13 @@ class FetchIrisEcomBasket extends IrisAction
 
         $orderArr['gr_gifts'] = $grGifts;
 
+        if ($grGifts['status']) {
+            $orderArr['gr_gifts']['route_gift_opt_out'] = [
+                'name'       => 'iris.models.customer.update',
+                'parameters' => [],
+            ];
+        }
+
         return $orderArr;
     }
 }

@@ -80,10 +80,10 @@ import {
 	faTimesCircle as faTimesCircleLight,
 	faUserAlien,
 	faTombstone as faTombstoneLight,
-	faCopyright, faSyncAlt, faArrowFromLeft,
-	faTrashUndoAlt, faClipboardCheck, faBarcode, faFragile
+	faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
+	faBarcode
 } from "@fal"
-import { faSearch, faBell, faArrowRight, faShippingFast, faGhost } from "@far"
+import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
 import {
 	faAsterisk as fasAsterisk,
@@ -185,8 +185,8 @@ library.add(
 	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
 	faUserAlien,
 	faTombstoneLight,
-	faCopyright, faSyncAlt, faArrowFromLeft,
-	faTrashUndoAlt, faClipboardCheck, faBarcode, faFragile
+	faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
+	faBarcode
 )
 
 provide("layout", useLayoutStore())

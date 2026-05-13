@@ -93,6 +93,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $layout_style
  * @property bool $index_page
  * @property bool $follow_link
+ * @property \Illuminate\Support\Carbon|null $last_published_at
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
@@ -154,7 +155,8 @@ class Webpage extends Model implements Auditable, HasMedia
         'live_at'          => 'datetime',
         'closed_at'        => 'datetime',
         'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime'
+        'last_fetched_at'  => 'datetime',
+        'last_published_at' => 'datetime'
     ];
 
     protected $attributes = [

@@ -19,7 +19,7 @@ import InputText from "primevue/inputtext";
 import PickList from 'primevue/picklist';
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import { faTrash } from "@fas";
 
 const props = defineProps<{

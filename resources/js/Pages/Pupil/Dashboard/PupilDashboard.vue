@@ -22,7 +22,7 @@ import { faSearch, faThLarge, faListUl, faStar as falStar } from '@fal'
 import { faStar } from '@fas'
 import Select from 'primevue/select'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { notify } from '@kyvg/vue3-notification'
 import Modal from '@/Components/Utils/Modal.vue'
 library.add(faSearch, faThLarge, faListUl, faStar, falStar)

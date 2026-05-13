@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
@@ -105,16 +106,16 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
+            $handler = $deliveryNote->picker_user_id;
 
-            $allowAction = ($deliveryNote->picker_user_id && $deliveryNote->picker_user_id == request()->user()->id);
-
-
-            if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
-                $allowAction = $deliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
+            if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
+                $handler = $deliveryNote->packer_user_id;
             }
 
-            if (app()->isLocal()) {
-                $allowAction = true;
+            $allowAction = ($handler && $handler == request()->user()->id);
+
+            if (!$allowAction && $tempHandler = session('temp_handling_delivery_note')) {
+                $allowAction = $deliveryNote->id == data_get($tempHandler, 'value') && now()->lt(data_get($tempHandler, 'expires_at'));
             }
 
             if (!$deliveryNote || !$allowAction) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { inject } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"

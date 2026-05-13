@@ -9,9 +9,9 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\GetBlockSubDepartment;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartment;
 use App\Actions\Web\WebBlock\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\GetWebBlockCollection;
-use App\Actions\Web\WebBlock\GetWebBlockDepartment;
 use App\Actions\Web\WebBlock\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\GetWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\GetWebBlockFamilyDescription;
@@ -22,6 +22,7 @@ use App\Actions\Web\WebBlock\GetWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\GetWebBlockSubDepartments;
 use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
 trait WithFillIrisWebBlocks
@@ -31,7 +32,7 @@ trait WithFillIrisWebBlocks
         $webBlockType = Arr::get($webBlock, 'type');
 
         if ($webBlockType == 'department-description-1') {
-            $parsedWebBlocks[$key] = GetWebBlockDepartment::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'sub-department-description-1') {
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
@@ -60,6 +61,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'images' && app()->environment('local')) {
+            $parsedWebBlocks[$key] = SanitiseImagesWebBlock::run($webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

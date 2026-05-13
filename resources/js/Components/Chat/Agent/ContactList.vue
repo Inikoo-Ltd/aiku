@@ -10,7 +10,7 @@ import ChatSidePanel from "@/Components/Chat/ChatSidePanel.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faUser, faCog } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import SettingChat from "../SettingChat.vue"
 import Dialog from 'primevue/dialog';
 import { playNotificationSoundFile, buildStorageUrl, fetchUnreadCount } from "@/Composables/useNotificationSound"

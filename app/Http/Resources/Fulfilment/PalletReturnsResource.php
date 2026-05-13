@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Fulfilment;
 
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Fulfilment\PalletReturnItem;
@@ -41,6 +42,8 @@ class PalletReturnsResource extends JsonResource
 {
     public function toArray($request): array
     {
+
+        $isShippingByExternal = $this->platform_type === PlatformTypeEnum::TIKTOK->value;
 
         $numberPallets     = $this->number_pallets;
         $numberStoredItems = $this->number_stored_items;
@@ -77,6 +80,14 @@ class PalletReturnsResource extends JsonResource
             'reference'                => $this->reference,
             'picking_session_slug'     => $this->picking_session_slug ?? null,
             'platform_name'            => $this->platform_name,
+            'is_shipping_by_external'  => $isShippingByExternal,
+            'get_external_shipment_route' => $isShippingByExternal ? [
+                'label'      => __('Get shipment from Tiktok'),
+                'name'       => 'grp.models.pallet-return.shipment_from_tiktok.store',
+                'parameters' => [
+                    'palletReturn' => $this->id,
+                ],
+            ] : null,
             'state'                    => $this->state,
             'state_label'              => $this->state->labels()[$this->state->value],
             'state_icon'               => $this->state->stateIcon()[$this->state->value],
@@ -84,6 +95,7 @@ class PalletReturnsResource extends JsonResource
             'type_label'               => $this->type->labels()[$this->type->value],
             'type_icon'                => $this->type->stateIcon()[$this->type->value],
             'customer_slug'            => $this->cust_slug,
+            'cust_name'                => $this->cust_name,
             'customer_name'            => $this->cust_name,
             'customer_reference'       => $this->customer_reference,
             'number_pallets'           => $numberPallets,
@@ -91,6 +103,8 @@ class PalletReturnsResource extends JsonResource
             'number_services'          => $this->number_services,
             'number_physical_goods'    => $this->number_physical_goods,
             'to_pick'                  => (int) ($this->to_pick ?? 0),
+            'picker_name'              => $this->picker_name,
+            'packer_name'              => $this->packer_name,
             'picked'                   => (int) ($this->picked ?? 0),
             'date'                     => $this->date,
             'total_amount'             => $this->total_amount,

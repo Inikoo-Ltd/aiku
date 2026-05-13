@@ -19,7 +19,7 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons"
 import { faCheck, faMinus, faTimes } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 defineProps<{
     data: {}

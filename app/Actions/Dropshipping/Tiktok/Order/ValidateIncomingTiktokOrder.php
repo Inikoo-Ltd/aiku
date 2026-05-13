@@ -66,7 +66,7 @@ class ValidateIncomingTiktokOrder extends RetinaAction
 
     public function forFulfilment(TiktokUser $tiktokUser, $order = []): void
     {
-        $existingReturn = PalletReturn::where('customer_id', $tiktokUser->customer_id)
+        $existingReturn = PalletReturn::where('fulfilment_customer_id', $tiktokUser->customer->fulfilmentCustomer->id)
             ->where('platform_order_id', Arr::get($order, 'id'))
             ->exists();
 

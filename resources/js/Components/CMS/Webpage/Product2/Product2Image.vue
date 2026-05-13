@@ -10,7 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronCircleLeft, faChevronCircleRight } from '@fal'
 import { faVideo } from '@fas'
 
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import Dialog from 'primevue/dialog'
 
 const props = defineProps<{

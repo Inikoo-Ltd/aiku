@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import Table from '@/Components/Table/Table.vue'
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBroadcastTower, faSeedling, faGhost, faRecycle, faPoo, faSignal } from '@fal'

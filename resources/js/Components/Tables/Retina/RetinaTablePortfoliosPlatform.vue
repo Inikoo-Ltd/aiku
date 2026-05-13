@@ -14,7 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { debounce, get, set } from "lodash-es"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import {
@@ -726,7 +726,7 @@ const percentageIncrease = ref(0);
             </div>
 
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
-				<div v-if="customerSalesChannel.include_vat">
+				<div v-if="customerSalesChannel?.include_vat">
 					{{ trans("Price (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, calculateVat(product.price)) }}
 				</div>
@@ -734,7 +734,7 @@ const percentageIncrease = ref(0);
 					{{ trans("Price:") }}
 					{{ locale.currencyFormat(product.currency_code, product.price) }}
 				</div>
-				<div v-if="customerSalesChannel.include_vat">
+				<div v-if="customerSalesChannel?.include_vat">
 					{{ trans("RRP (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>

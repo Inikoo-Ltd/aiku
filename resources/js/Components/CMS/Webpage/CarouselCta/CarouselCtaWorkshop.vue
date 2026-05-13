@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject, computed } from 'vue'
 import Carousel from 'primevue/carousel'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import Blueprint from './Blueprint'
 import CardBlueprint from './CardBlueprint'
 import Button from '@/Components/Elements/Buttons/Button.vue'

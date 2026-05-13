@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
 import { inject, computed } from 'vue'
@@ -25,6 +25,7 @@ const props = defineProps<{
 	blockData?: Object,
 	screenType: 'mobile' | 'tablet' | 'desktop'
 	indexBlock?: number | string
+	code?: string
 }>()
 
 const layout: any = inject("layout", {})

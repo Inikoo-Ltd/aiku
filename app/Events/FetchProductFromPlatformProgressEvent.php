@@ -9,44 +9,43 @@
 namespace App\Events;
 
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
-class FetchProductFromShopifyProgressEvent implements ShouldBroadcastNow
+class FetchProductFromPlatformProgressEvent implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;
     use SerializesModels;
 
 
-    public ShopifyUser $shopifyUser;
+    public ShopifyUser|TiktokUser $platformUser;
     public array $modelData;
 
-    public function __construct(ShopifyUser $shopifyUser, array $modelData)
+    public function __construct(ShopifyUser|TiktokUser $platformUser, array $modelData)
     {
-        $this->shopifyUser     = $shopifyUser;
+        $this->platformUser     = $platformUser;
         $this->modelData     = $modelData;
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("shopify.{$this->shopifyUser->id}.fetch-product")
+            new PrivateChannel("platform.{$this->platformUser->id}.fetch-product")
         ];
     }
 
     public function broadcastWith(): array
     {
-        Log::info('info:' . json_encode($this->modelData));
         return $this->modelData;
     }
 
     public function broadcastAs(): string
     {
-        return 'shopify-fetch-progress';
+        return 'platform-fetch-progress';
     }
 }

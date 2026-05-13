@@ -6,7 +6,7 @@ import "swiper/css/navigation"
 import "swiper/css/pagination"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { inject, ref, watch, computed, nextTick, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import Button from "@/Components/Elements/Buttons/Button.vue"

@@ -10,13 +10,17 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
+use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
+use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
@@ -75,6 +79,16 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
                 DB::table('delivery_note_has_trolleys')
                     ->where('delivery_note_id', $deliveryNote->id)->where('trolley_id', $trolley->id)->delete();
                 $trolley->update(['current_delivery_note_id' => null]);
+            }
+
+            $order = $deliveryNote->orders->first();
+
+            if ($deliveryNote->is_shipping_by_external) {
+                if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
+                    StoreShipmentFromFaire::run($deliveryNote);
+                } elseif ($order->platform->type == PlatformTypeEnum::TIKTOK) {
+                    ProcessTiktokOrderShipment::run($order);
+                }
             }
 
             return $deliveryNote;

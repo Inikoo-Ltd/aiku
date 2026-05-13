@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onBeforeMount, ref } from "vue"
+import { inject, onBeforeMount } from "vue"
 
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
@@ -138,7 +138,7 @@ const LBInitSearchResult = async () => {
                         },
                         "result": trans("Result"),
                     },
-                     "search": {
+                    "search": {
                         "title": trans("Results for :query (:hitsCount)"),
                         "titleShort": trans("Search"),
                         "filter": trans("Filters"),
@@ -189,7 +189,7 @@ onBeforeMount(() => {
     script.src = "https://cdn.luigisbox.tech/search.js";
     script.async = true;
     script.onload = () => {
-        console.log('Luigi Search script loaded');
+        console.log('Search script loaded');
         LBInitSearchResult();
     };
     script.onerror = () => {
@@ -198,39 +198,24 @@ onBeforeMount(() => {
     document.head.appendChild(script);
 })
 
-// const inputValue = ref('')
-console.log("layout", layout)
+
 </script>
 <template>
     <div class="xmd:py-16 w-full mx-auto px-8">
-        <!-- <input v-model="inputValue" class="block w-full max-w-lg mx-auto" id="inputXxxLuigi" style="border: 1px solid #d1d5db; border-radius: 7px;height: 45px;padding-left: 10px;" placeholder="Search"/> -->
-        
-        <div class="md:mt-4" :style="{
+
+        <div class="md:mt-4 min-h-44" :style="{
             fontFamily: layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily
         }">
-            <div id="luigi_result_search" class="h-40">
+            <div id="luigi_result_search" class="h-40 mb-4">
                 <div class="flex gap-x-4 h-full">
-                    <div class="w-96 skeleton">
+                    <div class="w-96 skeleton rounded-md">
                     </div>
-                    <div class="w-full skeleton">
+                    <div class="w-full skeleton rounded-md">
                     </div>
                 </div>
             </div>
         </div>
     </div>
-     <!-- <div class="flex items-center justify-center min-h-[60vh] text-center px-4">
-    <div class="max-w-xl">
-      <div class="text-6xl mb-6" :style="{ color: layout?.app?.theme[4] }">
-        <FontAwesomeIcon :icon="faTools" />
-        </div>
-     <h1 class="text-3xl font-bold text-gray-800 mb-4">
-        Work in Progress
-      </h1>
-      <p class="text-lg text-gray-600">
-        This feature will be ready by tomorrow. Thank you for your patience 🙏
-      </p>
-    </div>
-  </div> -->
 </template>
 
 <style lang="scss">

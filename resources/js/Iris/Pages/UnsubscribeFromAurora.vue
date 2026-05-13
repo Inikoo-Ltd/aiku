@@ -1,17 +1,10 @@
-<!--
- * Author: eka yudinata (https://github.com/ekayudinata)
- * Created: Thursday, 15 Jan 2026 13:50:11 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2026, eka yudinata
-  -->
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
 import axios from "axios"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import Button from "@iris/Components/IrisButton.vue"
 import { trans } from "laravel-vue-i18n"
-import { notify } from '@kyvg/vue3-notification'
 
-// Props dari Laravel
+
 const props = defineProps<{
     title: string
     message: {
@@ -34,21 +27,16 @@ const errorMessage = ref<string | null>(null)
 const recipientEmail = ref<string | null>(null)
 const recipientName = ref<string | null>(null)
 
-// Ambil UUID dari URL path
-const uuid = ref<string | null>(null)
-// Ambil tag dari URL query params
-const tag = ref<string | null>(null)
+const a = ref<string | null>(null)
+const s = ref<string | null>(null)
 
 onMounted(() => {
-    const pathParts = window.location.pathname.split('/')
-    uuid.value = pathParts[pathParts.length - 1] || null
-
-    // Capture tag from query parameters
     const urlParams = new URLSearchParams(window.location.search)
-    tag.value = urlParams.get('tag')
+    a.value = urlParams.get("a")
+    s.value = urlParams.get("s")
 })
 
-const isInvalidParams = computed(() => !uuid.value)
+const isInvalidParams = computed(() => !a.value || !s.value)
 
 // Dynamic page title
 const pageTitle = computed(() => {
@@ -65,45 +53,20 @@ async function unsubscribe() {
     errorMessage.value = null
 
     try {
-        const requestData: any = {
-            encryptedDispatchedEmailID: uuid.value,
-        }
-
-        // Add tag to request if it exists
-        if (tag.value) {
-            requestData.tag = tag.value
-        }
-
-        await axios.post(route("iris.unsubscribe.update", requestData), {}).then((response) => {
-            const data = response.data
-
-            // Check response status
-            if (data.api_response_status == 200) {
-                isSuccess.value = true
-                recipientEmail.value = data?.api_response_data?.recipient_email ?? null
-                recipientName.value = data?.api_response_data?.recipient_name ?? null
-
-                notify({
-                    type: 'success',
-                    title: 'Success',
-                    text: 'Unsubscribed successfully',
-                })
-            } else {
-                errorMessage.value = data.message || props.message.error
-                notify({
-                    type: 'error',
-                    title: 'Error',
-                    text: data.message || 'Failed to unsubscribe',
-                })
-            }
-        }).catch((exception) => {
-            errorMessage.value = exception.response?.data?.message || 'Failed to unsubscribe'
-            notify({
-                type: 'error',
-                title: 'Error',
-                text: exception.response?.data?.message || 'Failed to unsubscribe',
-            })
+        const { data } = await axios.post(route("iris.models.unsubscribe_aurora"), {
+            a: a.value,
+            s: s.value
         })
+
+        if (data.api_response_status == 200) {
+            isSuccess.value = true
+            recipientEmail.value = data?.api_response_data?.recipient_email ?? null
+            recipientName.value = data?.api_response_data?.recipient_name ?? null
+        } else {
+            errorMessage.value = data.message || props.message.error
+        }
+    } catch (err: any) {
+        errorMessage.value = err.response?.data?.message || "failed to unsubscribe"
     } finally {
         isProcessing.value = false
     }
@@ -118,7 +81,10 @@ function goHome() {
     <div class="page-wrapper">
         <div class="card">
             <!-- Dynamic Title -->
-            <h1 class="page-title" :class="[isSuccess ? 'text-green-600' : 'text-gray-900']">
+            <h1
+                class="page-title"
+                :class="[isSuccess ? 'text-green-600' : 'text-gray-900'  ]"
+            >
                 {{ pageTitle }}
             </h1>
 
@@ -139,14 +105,14 @@ function goHome() {
                 <!-- Recipient info -->
                 <table class="info-table">
                     <tbody>
-                        <tr>
-                            <td class="label">{{ trans("Recipient Email") }}</td>
-                            <td class="value">{{ recipientEmail }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">{{ trans("Name") }}</td>
-                            <td class="value">{{ recipientName }}</td>
-                        </tr>
+                    <tr>
+                        <td class="label">{{ trans("Recipient Email") }}</td>
+                        <td class="value">{{ recipientEmail }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">{{ trans("Name") }}</td>
+                        <td class="value">{{ recipientName }}</td>
+                    </tr>
                     </tbody>
                 </table>
             </div>
@@ -155,8 +121,14 @@ function goHome() {
             <div v-else class="state-wrapper">
                 <h2 class="confirm-title">{{ message.confirmationTitle }}</h2>
 
-                <Button :type="'negative'" :disabled="isProcessing" @click="unsubscribe" :loading="isProcessing" full
-                    :label="message.button" />
+                <Button
+                    :type="'negative'"
+                    :disabled="isProcessing"
+                    @click="unsubscribe"
+                    :loading="isProcessing"
+                    full
+                    :label="message.button"
+                />
 
                 <p v-if="errorMessage" class="state-box error small">
                     {{ errorMessage }}
@@ -176,7 +148,7 @@ function goHome() {
 }
 
 .page-title {
-    @apply mb-4 text-3xl font-extrabold tracking-tight transition-colors;
+    @apply mb-4 text-3xl font-extrabold  tracking-tight transition-colors;
 }
 
 .state-wrapper {

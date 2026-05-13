@@ -12,7 +12,7 @@ import { faBriefcase } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { useLiveUsers } from '@/Stores/active-users'
 import { useTruncate } from '../../Composables/useTruncate'
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import { Link } from '@inertiajs/vue3'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 library.add(faBriefcase)

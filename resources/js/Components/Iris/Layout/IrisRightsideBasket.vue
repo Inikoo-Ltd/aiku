@@ -19,7 +19,7 @@ import axios from 'axios'
 import { router } from '@inertiajs/vue3'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
@@ -48,7 +48,7 @@ interface Product {
 }
 
 const props = defineProps<{
-    isOpen: boolean
+    isOpen: boolean|undefined
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -85,7 +85,6 @@ const fetchDataSideBasket = async (isWithoutSkeleton?: boolean) => {
             
         }
         
-        console.log('fetchDataSideBasket:', response.data)
 
         // if (isWithoutSkeleton) {
             // } else {
@@ -541,6 +540,8 @@ onUnmounted(() => {
                             }"
                             :giftOptions="dataSideBasket?.gr_gifts?.gifts"
                             :meter="dataSideBasket?.gr_gifts?.meter"
+                            :isOptedOut="dataSideBasket?.gr_gifts?.is_gift_opted_out"
+                            :routeOptOut="dataSideBasket?.gr_gifts?.route_gift_opt_out"
                             class="justify-between w-full"
                         />
                     </div>

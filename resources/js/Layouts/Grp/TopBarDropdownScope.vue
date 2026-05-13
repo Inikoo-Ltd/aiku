@@ -6,7 +6,7 @@ import { trans } from 'laravel-vue-i18n'
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { MenuItem } from '@headlessui/vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue";
 import { Image as ImageTS } from '@/types/Image'
 import axios from 'axios'
 import { set } from 'lodash-es'

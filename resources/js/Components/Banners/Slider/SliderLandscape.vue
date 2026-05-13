@@ -9,7 +9,7 @@ import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { get } from 'lodash-es'
 
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { BannerWorkshop, CornersData } from '@/types/BannerWorkshop'
 import { useRemoveHttps } from '@/Composables/useRemoveHttps'
 

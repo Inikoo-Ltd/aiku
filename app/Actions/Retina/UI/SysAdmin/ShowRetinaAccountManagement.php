@@ -27,14 +27,12 @@ class ShowRetinaAccountManagement extends RetinaAction
         return $request->user()->is_root;
     }
 
-
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
 
         return $this->handle($request);
     }
-
 
     public function handle(ActionRequest $request): Response
     {
@@ -48,7 +46,6 @@ class ShowRetinaAccountManagement extends RetinaAction
 
         $showInterests = Tag::where('shop_id', $this->shop->id)
             ->whereNotIn('scope', [TagScopeEnum::SYSTEM_CUSTOMER, TagScopeEnum::ADMIN_CUSTOMER])->count() > 0;
-
 
         return Inertia::render(
             'EditModel',

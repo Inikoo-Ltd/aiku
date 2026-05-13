@@ -1,3 +1,9 @@
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Tue, 12 May 2026 09:30:55 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2026, Raul A Perusquia Flores
+  -->
+
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Image as ImageProxy } from '@/types/Image'

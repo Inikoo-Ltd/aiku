@@ -10,7 +10,7 @@ import {
 
 import { get, isPlainObject } from "lodash-es"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 
@@ -116,7 +116,7 @@ onMounted(checkOverflow)
       )
     }"
   >
-    <div class="w-full px-4 py-8 lg:py-4">
+    <div class="w-full px-4 py-8 lg:py-4" id="family-extra-description">
       <div
         class="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center"
       >
@@ -135,7 +135,7 @@ onMounted(checkOverflow)
             >
               <template v-if="img">
                 <Image
-                  :src="img.original"
+                  :src="img"
                   :alt="fieldValue?.family?.name"
                   class="w-full h-full"
                   imgClass="w-full h-full object-cover transition duration-500 hover:scale-105"
@@ -178,19 +178,21 @@ onMounted(checkOverflow)
 
           <!-- BUTTON -->
           <div class="mt-7 text-center md:text-right">
-            <LinkIris
+            <!-- <LinkIris
               :href="
                 fieldValue?.button?.link?.href
               "
               :target="
                 fieldValue?.button?.link?.target
               "
-            >
+            > -->
+            <a href="#family-description">
             <button id="family-3-button" :label="fieldValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
              text-sm md:text-base font-medium
              hover:underline underline-offset-4 mr-5 italic
              transition-all duration-200" >{{ fieldValue?.button?.text }}</button>
-            </LinkIris>
+             </a>
+            <!-- </LinkIris> -->
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getStyles } from "@/Composables/styles"
 import { inject, ref } from "vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import MobileHeader from "../MobileHeader.vue";
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Components/Iris/LinkIris.vue";

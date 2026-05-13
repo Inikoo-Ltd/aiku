@@ -11,7 +11,7 @@ import { ulid } from "ulid"
 import { usePage } from '@inertiajs/vue3'
 
 import { Image as ImageTS } from "@/types/Image"
-import { getProductRenderB2bComponent } from "@/Composables/getIrisComponents"
+import { getProductRenderB2bComponent } from "@/Iris/Composables/getIrisComponents"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import { ProductViewCollector } from "@/Composables/Unique/LuigiDataCollector"
 
