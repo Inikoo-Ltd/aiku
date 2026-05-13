@@ -71,7 +71,7 @@ class CrawlWebsite
         /** @var Website $website */
         foreach (Website::where('migrated', true)->get() as $website) {
             $command->info("Crawling website: $website->slug");
-            CrawlWebsite::dispatch($website->id, 10, 1);
+            CrawlWebsite::dispatch($website->id, 10, 2);
         }
 
         return 0;
