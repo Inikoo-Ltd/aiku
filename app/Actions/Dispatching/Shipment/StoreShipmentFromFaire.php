@@ -24,9 +24,8 @@ class StoreShipmentFromFaire extends OrgAction
 
         $faireOrder = GetSpecificFaireOrder::run($order);
 
-
         if (count($faireOrder['shipments']) == 0) {
-            throw ValidationException::withMessages(['message' => __('No shipment found for this order')]);
+            throw ValidationException::withMessages(['message' => __('Shipment has not been set up in faire')]);
         }
 
         $shipment = null;
