@@ -8,11 +8,8 @@
 
 
 import { Language } from '@/types/Locale'
-// **************************************************************
-// Note is another file in resources/js/Composables/useLocaleStructure.ts YOU NEED TO MODIFY BOTH
-// **************************************************************
-// Fallback if Pinia Store didn't provided
-export const aikuLocaleStructure = {
+
+export const irisLocaleStructure = {
     locale_iso: 'en-GB',
     language: {
         id: 68,
@@ -46,7 +43,7 @@ export const aikuLocaleStructure = {
 		}
 
         try {
-            return new Intl.NumberFormat(aikuLocaleStructure.language.code, {
+            return new Intl.NumberFormat(irisLocaleStructure.language.code, {
                 style: "currency",
                 currency: currencyCode,
             }).format(getAmount || 0)

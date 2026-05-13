@@ -65,38 +65,39 @@ watch(() => layout.value?.organisationsState, () => {
 
 // Section: Dropdown Shops/Fulfilments/Warehouses
 const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
+    console.log('menu popover list')
     const visitNormally = () => {
         router.visit(route(showare.route?.name, showare.route?.parameters))
     }
 
-    const paramsLength = Object.keys(layout.currentParams || route().routeParams).length
+    const paramsLength = Object.keys(layout.currentParams || route().routeParams || {}).length
 
-    if (layout.currentParams.organisation && paramsLength === 1) { // ✅
-        router.visit(route(layout.currentRoute, { organisation: showare.org_slug }))
+    if (layout.currentParams?.organisation && paramsLength === 1) { // ✅
+        visitNormally()
     } else if (paramsLength === 2) {
-        if (layout.currentParams.organisation && layout.currentParams.shop) { // ✅
+        if (layout.currentParams?.organisation && layout.currentParams?.shop) { // ✅
             router.visit(route(layout.currentRoute, { organisation: showare.org_slug, shop: showare.slug }))
-        } else if (layout.currentParams.organisation && layout.currentParams.warehouse) { // ✅
+        } else if (layout.currentParams?.organisation && layout.currentParams?.warehouse) { // ✅
             router.visit(route(layout.currentRoute, { organisation: showare.org_slug, warehouse: showare.slug }))
-        } else if (layout.currentParams.organisation && layout.currentParams.fulfilment) { // ✅
+        } else if (layout.currentParams?.organisation && layout.currentParams?.fulfilment) { // ✅
             router.visit(route(layout.currentRoute, { organisation: showare.org_slug, fulfilment: showare.slug }))
         } else { // ✅
             visitNormally()
         }
     } else if (paramsLength > 2) {
-        if (layout.currentParams.organisation && layout.currentParams.shop) {
+        if (layout.currentParams?.organisation && layout.currentParams?.shop) {
             try {
                 router.visit(route(layout.currentRoute, { organisation: showare.org_slug, shop: showare.slug }))
             } catch {
                 visitNormally()
             }
-        } else if (layout.currentParams.organisation && layout.currentParams.warehouse) {
+        } else if (layout.currentParams?.organisation && layout.currentParams?.warehouse) {
             try {
                 router.visit(route(layout.currentRoute, { organisation: showare.org_slug, warehouse: showare.slug }))
             } catch {
                 visitNormally()
             }
-        } else if (layout.currentParams.organisation && layout.currentParams.fulfilment) {
+        } else if (layout.currentParams?.organisation && layout.currentParams?.fulfilment) {
             try {
                 router.visit(route(layout.currentRoute, { organisation: showare.org_slug, fulfilment: showare.slug }))
             } catch {
@@ -109,10 +110,6 @@ const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
         visitNormally()
     }
 
-    // Tambahkan jika di dalam params {organisation} dan {shop}, tapi kemudian mengklik Organisation saja, maka {shop}nya gunakan yang dari localstorage
-    // Tambahkan jika misalnya Agents tidak punya navigation dari Organisation (mungkin perlu menggunakan axios.get() untuk mengecek route tujuan exist atau tidak), maka ketika klik Organisation, tetap gunakan route yang sama tapi hanya ganti parameternya saja
-
-    // Tambahkan untuk clickable di popover samping
 }
 
 </script>

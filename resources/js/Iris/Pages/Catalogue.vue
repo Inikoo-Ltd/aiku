@@ -3,15 +3,14 @@ import { computed, inject, ref, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import type { Component } from 'vue'
 
-import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue'
-import TableIrisSubDepartment from '@/Components/Tables/Iris/TableIrisSubDepartment.vue'
-import TableIrisFamilies from '@/Components/Tables/Iris/TableIrisFamilies.vue'
-import TableIrisProducts from '@/Components/Tables/Iris/TableIrisProducts.vue'
+import TableIrisDepartment from '../Components/Tables/TableIrisDepartment.vue'
+import TableIrisSubDepartment from '../Components/Tables/TableIrisSubDepartment.vue'
+import TableIrisFamilies from '../Components/Tables/TableIrisFamilies.vue'
+import TableIrisProducts from '../Components/Tables/TableIrisProducts.vue'
+import TableIrisCollection from '../Components/Tables/TableIrisCollection.vue'
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faArrowLeft, faArrowRight, faWindowClose } from '@far'
-import TableIrisCollection from '@/Components/Tables/Iris/TableIrisCollection.vue'
-import { useColorTheme } from "@/Composables/useStockList"
 
 const props = defineProps<{
     tabs: {
@@ -23,9 +22,6 @@ const props = defineProps<{
     }
     data: any
 }>()
-
-const layout: any = inject('layout', {})
-
 
 const componentMap: Record<string, Component> = {
     department: TableIrisDepartment,
@@ -163,12 +159,7 @@ const onSelectParent = (parentType: string, parentId: any) => {
     navigate(state)
 }
 
-const fallbackTheme = useColorTheme[3]
 
-const safeTheme = computed(() => {
-    const t = layout?.app?.theme
-    return (t && t.length >= 8) ? t : fallbackTheme
-})
 </script>
 
 <template>

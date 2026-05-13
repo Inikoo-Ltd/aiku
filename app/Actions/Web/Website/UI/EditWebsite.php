@@ -187,7 +187,7 @@ class EditWebsite extends OrgAction
                 ]
             ];
             $blueprints[] = [
-                'label'  => __('Recommenders Web Block'),
+                'label'  => __('Related Products Web Block'),
                 'icon'   => 'fad fa-th',
                 'fields' => [
                     'title_recommender'  => [
