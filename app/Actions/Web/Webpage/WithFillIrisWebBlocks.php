@@ -8,7 +8,7 @@
 
 namespace App\Actions\Web\Webpage;
 
-use App\Actions\Web\WebBlock\GetBlockSubDepartment;
+use App\Actions\Web\WebBlock\Iris\GetIrisBlockSubDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartment;
 use App\Actions\Web\WebBlock\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\GetWebBlockCollection;
@@ -34,7 +34,7 @@ trait WithFillIrisWebBlocks
         if ($webBlockType == 'department-description-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'sub-department-description-1') {
-            $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
             $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
         } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {

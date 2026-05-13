@@ -2,8 +2,8 @@
 import { faCube, faLink } from "@fal";
 import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop, faInfoCircle, faDotCircle } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { ref, provide, inject, toRaw, watch, onMounted } from "vue";
-import SideMenuSubDepartmentWorkshop from "./SideMenuSubDepartmentWorkshop.vue";
+import { ref, provide, toRaw, watch, onMounted } from "vue";
+import SideMenuWebsiteWorkshop from "@/Components/SideMenuWebsiteWorkshop.vue";
 import { getComponent } from "@/Composables/getWorkshopComponents";
 import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification";
@@ -20,16 +20,17 @@ import { set } from "lodash";
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop);
 
 const props = defineProps<{
+  tab : string
   data: {
     web_block_types: any;
-    departments: any[];
+    parent_product_category: any[];
     layout: any;
-    autosaveRoute: routeType;
-    update_sub_department_route: routeType;
+    auto_save_route: routeType;
+    update_route: routeType;
+    route_get_list:routeType;
   };
 }>();
 
-console.log("🚀", props)
 
 interface LayoutTheme {
   color: string[]
@@ -49,12 +50,11 @@ const visibleDrawer = ref(false);
 const currentView = ref("desktop");
 const iframeClass = ref("w-full h-full");
 const loading = ref(false);
+
 const dataPicked = ref({
   department: null,
-  sub_departments: []
+  sub_departments: null,
 });
-
-
 
 provide("currentView", currentView);
 
@@ -73,14 +73,11 @@ const createSnapshot = () => {
 const autosave = () => {
   const payload = createSnapshot();
   router.patch(
-    route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
+    route(props.data.auto_save_route.name, props.data.auto_save_route.parameters),
     { layout: payload },
     {
       onStart: () => { isLoadingSave.value = true },
       onFinish: () => { isLoadingSave.value = false },
-     /*  onSuccess: () => {
-        emit('update:layout', payload);
-      }, */
       onError: (errors) => {
         notify({
           title: "Autosave Failed",
@@ -119,19 +116,22 @@ const onPickTemplate = (template: any) => {
 };
 
 
-async function selectDepartment(department: any) {
+async function selectProductCategory(department: any) {
   loading.value = true;
 
   const resetDepartmentState = () => {
     set(dataPicked.value, 'department', null);
-    set(dataPicked.value, 'sub_departments', []);
+    set(dataPicked.value, 'sub_departments',[]);
   };
 
   try {
     const { data } = await axios.get(
       route(
-        department.sub_departments_route.name,
-        department.sub_departments_route.parameters
+        props.data.route_get_list?.name,
+        { 
+          ...props.data.route_get_list?.parameters, 
+          department: department.slug, 
+        }
       )
     );
 
@@ -142,18 +142,14 @@ async function selectDepartment(department: any) {
 
     visibleDrawer.value = false;
 
-    console.log('Selected Department:', {
-      department,
-      response: data,
-    });
   } catch (error) {
-    console.error('Error fetching sub-departments:', error);
+    console.error('Error fetching sub-parent_product_category:', error);
 
     resetDepartmentState();
 
     notify({
       title: 'Error',
-      text: 'Failed to fetch sub-departments. Please try again.',
+      text: 'Failed to fetch sub-parent_product_category. Please try again.',
       type: 'error',
     });
   } finally {
@@ -181,9 +177,9 @@ onMounted(() => {
   if (rootRef.value && props.layout_theme?.color) {
     setColorStyleRootByEl(rootRef.value, props.layout_theme.color)
   }
-  if(props?.data?.departments?.data.length){
-    const initialDept = props.data.departments.data[0];
-    selectDepartment(initialDept);
+  if(props?.data?.parent_product_category?.data.length){
+    const initialDept = props.data.parent_product_category.data[0];
+    selectProductCategory(initialDept);
   }
 })
 
@@ -196,8 +192,13 @@ onMounted(() => {
     <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
 
       <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-        <SideMenuSubDepartmentWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
-          :dataList="props.data.departments" @auto-save="debouncedAutosave" @set-up-template="onPickTemplate" />
+        <SideMenuWebsiteWorkshop 
+          :data="layoutState" 
+          :webBlockTypes="props.data.web_block_types"
+          :dataList="props.data.parent_product_category" 
+          @auto-save="debouncedAutosave" 
+          @set-up-template="onPickTemplate" 
+        />
       </div>
 
       <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
@@ -207,19 +208,23 @@ onMounted(() => {
           </div>
           <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
             <span v-if="layoutState?.data?.fieldValue?.department?.name">
-              Preview: <strong>{{ layoutState?.data?.fieldValue?.department?.name }}</strong>
+              {{trans('Preview')}}: <strong>{{ layoutState?.data?.fieldValue?.department?.name }}</strong>
             </span>
-            <span v-else>Pick The department</span>
+            <span v-else>{{trans('Pick Catalouge')}}</span>
           </div>
         </div>
         <div v-if="props.data.layout?.code" ref="rootRef" :class="['border-2 border-t-0', iframeClass]">
-          <component class="flex-1 overflow-auto active-block"
-            :is="getComponent(props.data.layout.code, { shop_type: layout?.shopState?.type })" :screenType="currentView"
+          <component 
+            class="flex-1 overflow-auto active-block"
+            :is="getComponent(props.data.layout.code, { shop_type: layout?.shopState?.type })" 
+            :screenType="currentView"
+            :routeEditSubDepartment="props.data.update_route"
             :modelValue="{
               ...layoutState?.data?.fieldValue,
               department: dataPicked.department,
-              sub_departments: dataPicked.sub_departments
-            }" :routeEditSubDepartment="props.data.update_sub_department_route" />
+              sub_departments: dataPicked.sub_departments,
+            }" 
+          />
         </div>
         <div v-else
           class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]"
@@ -231,7 +236,7 @@ onMounted(() => {
               {{ trans('Please pick a department to preview its data here.') }}
             </p>
           </div>
-          <Button :label="'Pick a department as a data preview'" @click="visibleDrawer = true" />
+          <Button :label="trans('Pick a catalouge as a data preview')" @click="visibleDrawer = true" />
         </div>
       </div>
 
@@ -248,7 +253,7 @@ onMounted(() => {
 
     <div class="mx-auto">
       <ul class="space-y-3">
-        <li v-for="(dept, index) in props.data.departments.data" :key="dept.slug" @click="() => selectDepartment(dept)"
+        <li v-for="(dept, index) in props.data.parent_product_category.data" :key="dept.slug" @click="() => selectProductCategory(dept)"
           class="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow" :class="[
             'rounded-lg shadow-sm transition-shadow',
             dept.slug === dataPicked.department?.slug
@@ -274,4 +279,5 @@ onMounted(() => {
 
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>
