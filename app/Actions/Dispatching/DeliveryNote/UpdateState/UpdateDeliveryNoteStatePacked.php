@@ -10,7 +10,6 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
-use App\Actions\Dispatching\DeliveryNoteItem\CheckAndCompleteDeliveryNotePacking;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
@@ -41,8 +40,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-
-        if($deliveryNote->state == DeliveryNoteStateEnum::PACKED){
+        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKED) {
             return $deliveryNote;
         }
 
@@ -54,7 +52,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
-            foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
+            foreach ($deliveryNote->deliveryNoteItems->filter(fn($item) => $item->packings->isEmpty()) as $item) {
                 StorePacking::make()->action($item, $this->user, []);
             }
 
@@ -72,6 +70,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), $deliveryNote);
             }
+
 
             $deliveryNote = $this->update($deliveryNote, $modelData);
 
@@ -98,12 +97,14 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
                 }
             }
 
+
             return $deliveryNote;
         });
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKED);
         DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
+
         return $deliveryNote;
     }
 
