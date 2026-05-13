@@ -20,7 +20,7 @@ class CrawlWebsite
 
     public string $jobQueue = 'low-priority';
 
-    public function handle(?int $websiteId, int $depth = 10): void
+    public function handle(?int $websiteId, int $depth = 10, int $concurrency = 10): void
     {
         if (!app()->environment('production')) {
             return;
@@ -38,6 +38,7 @@ class CrawlWebsite
 
         Crawler::create($website->storefront->canonical_url)
             ->internalOnly()
+            ->concurrency($concurrency)
             ->depth($depth)
             ->shouldCrawl(function (string $url) {
                 return !str_contains($url, '/app') && !str_contains($url, '/search');
@@ -50,14 +51,17 @@ class CrawlWebsite
 
     public function getCommandSignature(): string
     {
-        return 'website:crawl {website?}';
+        return 'website:crawl {website?} {--d|depth=10} {--c|concurrency=10}';
     }
+
 
     public function asCommand(Command $command): int
     {
         if ($command->argument('website')) {
             $website = Website::where('slug', $command->argument('website'))->firstOrFail();
-            $this->handle($website->id);
+            $command->info("Crawling website: {$website->slug} (ID: {$website->id})");
+            $command->info("Depth: {$command->option('depth')}, Concurrency: {$command->option('concurrency')}");
+            $this->handle($website->id, $command->option('depth'), $command->option('concurrency'));
 
             return 0;
         }
