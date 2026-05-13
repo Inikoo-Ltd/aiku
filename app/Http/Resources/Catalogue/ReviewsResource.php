@@ -6,6 +6,7 @@ use App\Actions\Helpers\Images\GetPictureSources;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Reviews\ReviewRatingLabel;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -14,7 +15,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReviewsResource extends JsonResource
 {
-    public static function collectionWithTabMeta(LengthAwarePaginator $reviews, ProductCategory|Product $reviewable): AnonymousResourceCollection
+    public static function collectionWithTabMeta(LengthAwarePaginator $reviews, ProductCategory|Product|Shop $reviewable): AnonymousResourceCollection
     {
         $ratingLabels = self::getRatingLabels($reviewable);
 
@@ -101,7 +102,7 @@ class ReviewsResource extends JsonResource
         ];
     }
 
-    private static function getStats(ProductCategory|Product $reviewable, array $ratingLabels = []): array
+    private static function getStats(ProductCategory|Product|Shop $reviewable, array $ratingLabels = []): array
     {
         $reviewStat = $reviewable->reviewStats()->first();
 
@@ -142,16 +143,16 @@ class ReviewsResource extends JsonResource
         ];
     }
 
-    private static function getReviewCustomers(ProductCategory|Product $reviewable): array
+    private static function getReviewCustomers(ProductCategory|Product|Shop $reviewable): array
     {
         return self::paginateReviewCustomers($reviewable, 1, 20);
     }
 
-    private static function getRatingLabels(ProductCategory|Product $reviewable): array
+    private static function getRatingLabels(ProductCategory|Product|Shop $reviewable): array
     {
         return ReviewRatingLabel::query()
             ->whereRaw('LOWER(model_type) = ?', ['shop'])
-            ->where('model_id', $reviewable->shop_id)
+            ->where('model_id', self::shopId($reviewable))
             ->whereRaw('LOWER(review_context) = ?', [self::reviewContext($reviewable)->value])
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -167,11 +168,11 @@ class ReviewsResource extends JsonResource
             ->all();
     }
 
-    public static function paginateReviewCustomers(ProductCategory|Product $reviewable, int $page = 1, int $perPage = 20, ?string $search = null): array
+    public static function paginateReviewCustomers(ProductCategory|Product|Shop $reviewable, int $page = 1, int $perPage = 20, ?string $search = null): array
     {
         $baseQuery = Customer::query()
             ->join('web_users', 'web_users.customer_id', '=', 'customers.id')
-            ->where('web_users.shop_id', $reviewable->shop_id)
+            ->where('web_users.shop_id', self::shopId($reviewable))
             ->selectRaw("
                 customers.id as customer_id,
                 COALESCE(NULLIF(MAX(customers.contact_name), ''), MAX(customers.name), MIN(web_users.username)) as label,
@@ -230,18 +231,51 @@ class ReviewsResource extends JsonResource
         ];
     }
 
-    private static function reviewContext(ProductCategory|Product $reviewable): ReviewContextEnum
+    private static function reviewContext(ProductCategory|Product|Shop $reviewable): ReviewContextEnum
     {
-        return $reviewable instanceof Product ? ReviewContextEnum::ProductReviews : ReviewContextEnum::ProductCategoryReviews;
+        if ($reviewable instanceof Product) {
+            return ReviewContextEnum::ProductReviews;
+        }
+
+        if ($reviewable instanceof Shop) {
+            return ReviewContextEnum::ShopReviews;
+        }
+
+        return ReviewContextEnum::ProductCategoryReviews;
     }
 
-    private static function reviewCustomersRouteName(ProductCategory|Product $reviewable): string
+    private static function reviewCustomersRouteName(ProductCategory|Product|Shop $reviewable): string
     {
-        return $reviewable instanceof Product ? 'grp.models.review.customers.product' : 'grp.models.review.customers';
+        if ($reviewable instanceof Product) {
+            return 'grp.models.review.customers.product';
+        }
+
+        if ($reviewable instanceof Shop) {
+            return 'grp.models.review.customers.shop';
+        }
+
+        return 'grp.models.review.customers';
     }
 
-    private static function reviewCustomersRouteParamKey(ProductCategory|Product $reviewable): string
+    private static function reviewCustomersRouteParamKey(ProductCategory|Product|Shop $reviewable): string
     {
-        return $reviewable instanceof Product ? 'product' : 'productCategory';
+        if ($reviewable instanceof Product) {
+            return 'product';
+        }
+
+        if ($reviewable instanceof Shop) {
+            return 'shop';
+        }
+
+        return 'productCategory';
+    }
+
+    private static function shopId(ProductCategory|Product|Shop $reviewable): int
+    {
+        if ($reviewable instanceof Shop) {
+            return $reviewable->id;
+        }
+
+        return $reviewable->shop_id;
     }
 }

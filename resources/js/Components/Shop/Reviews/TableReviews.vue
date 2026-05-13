@@ -52,7 +52,7 @@ const props = defineProps<{
     tab?: string
     product_category_id?: number
     reviewable_id?: number
-    reviewable_type?: "ProductCategory" | "Product"
+    reviewable_type?: "ProductCategory" | "Product" | "Shop"
     customers?: {
         data: Array<{
             customer_id: number

@@ -15,7 +15,7 @@ import axios from "axios"
 const props = defineProps<{
     product_category_id: number
     reviewable_id?: number
-    reviewable_type?: "ProductCategory" | "Product"
+    reviewable_type?: "ProductCategory" | "Product" | "Shop"
     mode?: "create" | "update" | "detail"
     hideDefaultButton?: boolean
     buttonLabel?: string
@@ -324,9 +324,13 @@ const fetchCustomers = async (reset: boolean): Promise<void> => {
             route(
                 props.reviewable_type === "Product"
                     ? "grp.models.review.customers.product"
+                    : props.reviewable_type === "Shop"
+                    ? "grp.models.review.customers.shop"
                     : "grp.models.review.customers",
                 props.reviewable_type === "Product"
                     ? { product: reviewableId.value }
+                    : props.reviewable_type === "Shop"
+                    ? { shop: reviewableId.value }
                     : { productCategory: reviewableId.value }
             ),
             {

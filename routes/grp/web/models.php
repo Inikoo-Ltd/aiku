@@ -565,6 +565,7 @@ Route::patch('review/reply/{reviewReply:id}/update', UpdateReviewReply::class)->
 Route::delete('review/reply/{reviewReply:id}/delete', DeleteReviewReply::class)->name('review.reply.delete');
 Route::get('review/customers/{productCategory:id}', GetReviewCustomers::class)->name('review.customers');
 Route::get('review/customers/product/{product:id}', [GetReviewCustomers::class, 'asControllerProduct'])->name('review.customers.product');
+Route::get('review/customers/shop/{shop:id}', [GetReviewCustomers::class, 'asControllerShop'])->name('review.customers.shop');
 Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
 Route::delete('review/{review:id}/delete', DeleteReview::class)->name('review.delete');
 

@@ -62,6 +62,16 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    [
+                        "label"   => __("Reviews"),
+                        "tooltip" => __("Reviews"),
+                        "icon"    => ["fal", "fa-star"],
+                        'root'    => 'grp.org.shops.show.dashboard.reviews',
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.dashboard.reviews.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
                 ],
             ]
         ];

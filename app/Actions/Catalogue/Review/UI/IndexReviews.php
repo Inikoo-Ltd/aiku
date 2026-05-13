@@ -7,8 +7,10 @@ use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
 use App\Models\Reviews\ProductReview;
 use App\Models\Reviews\ProductCategoryReview;
+use App\Models\Reviews\ShopReview;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Services\QueryBuilder;
 use Closure;
@@ -17,12 +19,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexReviews extends OrgAction
 {
-    public function getStats(ProductCategory|Product $parent): array
+    public function getStats(ProductCategory|Product|Shop $parent): array
     {
         $reviewStat = $parent->reviewStats()->first();
         $ratingLabels = ReviewRatingLabel::query()
             ->whereRaw('LOWER(model_type) = ?', ['shop'])
-            ->where('model_id', $parent->shop_id)
+            ->where('model_id', $this->shopId($parent))
             ->whereRaw('LOWER(review_context) = ?', [$this->reviewContext($parent)->value])
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -77,7 +79,7 @@ class IndexReviews extends OrgAction
         ];
     }
 
-    public function handle(ProductCategory|Product $parent, ?string $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory|Product|Shop $parent, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -129,7 +131,12 @@ class IndexReviews extends OrgAction
         return $this->handle($parent, $prefix);
     }
 
-    public function tableStructure(ProductCategory|Product $parent, ?string $prefix = null): Closure
+    public function inShop(Shop $parent, ?string $prefix = null): LengthAwarePaginator
+    {
+        return $this->handle($parent, $prefix);
+    }
+
+    public function tableStructure(ProductCategory|Product|Shop $parent, ?string $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
@@ -157,18 +164,51 @@ class IndexReviews extends OrgAction
         };
     }
 
-    private function reviewModel(ProductCategory|Product $parent): string
+    private function reviewModel(ProductCategory|Product|Shop $parent): string
     {
-        return $parent instanceof Product ? ProductReview::class : ProductCategoryReview::class;
+        if ($parent instanceof Product) {
+            return ProductReview::class;
+        }
+
+        if ($parent instanceof Shop) {
+            return ShopReview::class;
+        }
+
+        return ProductCategoryReview::class;
     }
 
-    private function foreignKey(ProductCategory|Product $parent): string
+    private function foreignKey(ProductCategory|Product|Shop $parent): string
     {
-        return $parent instanceof Product ? 'product_id' : 'product_category_id';
+        if ($parent instanceof Product) {
+            return 'product_id';
+        }
+
+        if ($parent instanceof Shop) {
+            return 'shop_id';
+        }
+
+        return 'product_category_id';
     }
 
-    private function reviewContext(ProductCategory|Product $parent): ReviewContextEnum
+    private function reviewContext(ProductCategory|Product|Shop $parent): ReviewContextEnum
     {
-        return $parent instanceof Product ? ReviewContextEnum::ProductReviews : ReviewContextEnum::ProductCategoryReviews;
+        if ($parent instanceof Product) {
+            return ReviewContextEnum::ProductReviews;
+        }
+
+        if ($parent instanceof Shop) {
+            return ReviewContextEnum::ShopReviews;
+        }
+
+        return ReviewContextEnum::ProductCategoryReviews;
+    }
+
+    private function shopId(ProductCategory|Product|Shop $parent): int
+    {
+        if ($parent instanceof Shop) {
+            return $parent->id;
+        }
+
+        return $parent->shop_id;
     }
 }
