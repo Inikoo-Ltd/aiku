@@ -129,7 +129,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						{{ trans('Stock Value') }}
 					</dt>
 					<dd class="mt-1 text-xl sm:text-3xl font-semibold tabular-nums text-gray-800">
-						{{ locale.currencyFormat(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_stock_value)) }}
+						{{ locale.CurrencyShort(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_stock_value)) }}
 					</dd>
 				</div>
 				<div class="px-5 py-4">
@@ -138,7 +138,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						{{ trans('Stored SKUs') }}
 					</dt>
 					<dd class="mt-1 text-xl sm:text-2xl font-semibold tabular-nums text-gray-800">
-						{{ locale.number(stockHistoryGroup.number_org_stocks) }}
+						{{ locale.numberShort(stockHistoryGroup.number_org_stocks) }}
 					</dd>
 				</div>
 				<div class="px-5 py-4">
@@ -147,7 +147,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						{{ trans('Locations') }}
 					</dt>
 					<dd class="mt-1 text-xl sm:text-2xl font-semibold tabular-nums text-gray-800">
-						{{ locale.number(stockHistoryGroup.number_locations) }}
+						{{ locale.numberShort(stockHistoryGroup.number_locations) }}
 					</dd>
 				</div>
 				<div class="px-5 py-4">
@@ -157,7 +157,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 					</dt>
 					<dd class="mt-1 flex items-baseline gap-x-2">
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
-							{{ locale.number(stockHistoryGroup.number_out_of_stock_org_stocks) }}
+							{{ locale.numberShort(stockHistoryGroup.number_out_of_stock_org_stocks) }}
 						</span>
 						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKUs')">
 							{{ stockHistoryGroup.percentage_out_of_stock }}%
@@ -171,7 +171,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 					</dt>
 					<dd class="mt-1 flex items-baseline gap-x-2">
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
-							{{ locale.currencyFormat(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_value_dormant_stock_1y)) }}
+							{{ locale.CurrencyShort(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_value_dormant_stock_1y)) }}
 						</span>
 						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total stock value')">
 							{{ stockHistoryGroup.percentage_dormant_1y }}%
@@ -185,7 +185,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 					</dt>
 					<dd class="mt-1 flex items-baseline gap-x-2">
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
-							{{ locale.number(stockHistoryGroup.number_org_stocks_not_sold_1y) }}
+							{{ locale.numberShort(stockHistoryGroup.number_org_stocks_not_sold_1y) }}
 						</span>
 						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKUs')">
 							{{ stockHistoryGroup.percentage_not_sold_1y }}%
@@ -232,41 +232,41 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
-									{{ locale.currencyFormat(org.currency_code, org.org_stock_value) }}
+									{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_value)) }}
 								</Link>
-								<span v-else class="text-gray-700">{{ locale.currencyFormat(org.currency_code, org.org_stock_value) }}</span>
+								<span v-else class="text-gray-700">{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_value)) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
-									{{ locale.number(org.number_org_stocks) }}
+									{{ locale.numberShort(org.number_org_stocks) }}
 								</Link>
-								<span v-else class="text-gray-700">{{ locale.number(org.number_org_stocks) }}</span>
+								<span v-else class="text-gray-700">{{ locale.numberShort(org.number_org_stocks) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.locations.name, org.routes.locations.parameters)" class="text-gray-700 hover:text-blue-600 hover:underline">
-									{{ locale.number(org.number_locations) }}
+									{{ locale.numberShort(org.number_locations) }}
 								</Link>
-								<span v-else class="text-gray-700">{{ locale.number(org.number_locations) }}</span>
+								<span v-else class="text-gray-700">{{ locale.numberShort(org.number_locations) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'out_of_stock' })" class="text-red-500 hover:text-red-700 hover:underline">
-									{{ locale.number(org.number_out_of_stock_org_stocks) }}
+									{{ locale.numberShort(org.number_out_of_stock_org_stocks) }}
 								</Link>
-								<span v-else class="text-red-500">{{ locale.number(org.number_out_of_stock_org_stocks) }}</span>
+								<span v-else class="text-red-500">{{ locale.numberShort(org.number_out_of_stock_org_stocks) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_out_of_stock }}%</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'dormant_stock_1y' })" class="text-red-500 hover:text-red-700 hover:underline">
-									{{ locale.currencyFormat(org.currency_code, org.value_dormant_stock_1y) }}
+									{{ locale.CurrencyShort(org.currency_code, Number(org.value_dormant_stock_1y)) }}
 								</Link>
-								<span v-else class="text-red-500">{{ locale.currencyFormat(org.currency_code, org.value_dormant_stock_1y) }}</span>
+								<span v-else class="text-red-500">{{ locale.CurrencyShort(org.currency_code, Number(org.value_dormant_stock_1y)) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_dormant_1y }}%</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'not_sold_1y' })" class="text-red-500 hover:text-red-700 hover:underline">
-									{{ locale.number(org.number_org_stocks_not_sold_1y) }}
+									{{ locale.numberShort(org.number_org_stocks_not_sold_1y) }}
 								</Link>
-								<span v-else class="text-red-500">{{ locale.number(org.number_org_stocks_not_sold_1y) }}</span>
+								<span v-else class="text-red-500">{{ locale.numberShort(org.number_org_stocks_not_sold_1y) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_not_sold_1y }}%</span>
 							</td>
 						</tr>
