@@ -46,8 +46,7 @@ const metrics = [
 
 const processTimeSeriesData = (period: string, metric: string) => {
     if (!props.timeSeriesData || !Array.isArray(props.timeSeriesData) || props.timeSeriesData.length === 0) {
-        // Fallback to dummy data if no real data available
-        return generateDummyData(period, metric);
+        return { labels: [], data: [] };
     }
 
     const labels = props.timeSeriesData.map(item => item.period);
@@ -70,32 +69,7 @@ const processTimeSeriesData = (period: string, metric: string) => {
     return { labels, data };
 };
 
-const generateDummyData = (period: string, metric: string) => {
-    const dataPoints = period === 'day' ? 24 : period === 'week' ? 7 : 30;
-    const labels = period === 'day'
-        ? Array.from({ length: dataPoints }, (_, i) => `${i}:00`)
-        : period === 'week'
-            ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-            : Array.from({ length: dataPoints }, (_, i) => `Day ${i + 1}`);
 
-    const baseValues = {
-        error: [2, 3, 1, 4, 2, 5, 3, 2, 4, 3, 2, 1, 3, 2, 4, 5, 3, 2, 4, 3, 2, 1, 3, 2],
-        sent: [120, 150, 180, 200, 170, 190, 210, 230, 180, 160, 140, 130, 150, 170, 190, 210, 200, 180, 160, 140, 130, 120, 110, 100],
-        delay: [5, 8, 3, 12, 7, 9, 4, 6, 8, 5, 7, 3, 6, 8, 4, 7, 9, 5, 6, 4, 3, 2, 4, 3],
-        delivered: [115, 142, 177, 192, 163, 181, 202, 222, 172, 152, 133, 127, 144, 162, 182, 203, 194, 171, 152, 134, 127, 116, 106, 97],
-        hard_bounce: [1, 2, 1, 3, 2, 1, 2, 1, 2, 1, 1, 0, 1, 1, 2, 1, 2, 1, 2, 1, 1, 0, 1, 1],
-        soft_bounce: [2, 3, 2, 4, 3, 2, 3, 2, 3, 2, 2, 1, 2, 2, 3, 2, 3, 2, 3, 2, 2, 1, 2, 1],
-        opened: [80, 95, 110, 125, 105, 120, 135, 145, 115, 100, 90, 85, 95, 105, 120, 135, 125, 115, 100, 90, 85, 75, 70, 65],
-        clicked: [30, 35, 42, 48, 40, 45, 52, 56, 45, 40, 35, 32, 38, 42, 48, 54, 50, 45, 40, 35, 32, 28, 26, 24],
-        spam: [1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 0, 1, 1, 2, 1, 1, 2, 1, 1, 1, 0, 1, 1],
-        unsubscribed: [2, 3, 2, 4, 3, 2, 3, 2, 3, 2, 2, 1, 2, 2, 3, 2, 3, 2, 3, 2, 2, 1, 2, 1]
-    };
-
-    const values = baseValues[metric as keyof typeof baseValues] || baseValues.sent;
-    const data = values.slice(0, dataPoints);
-
-    return { labels, data };
-};
 
 const chartData = computed(() => {
     const { labels, data } = processTimeSeriesData(selectedPeriod.value, selectedMetric.value);
@@ -171,8 +145,7 @@ const chartOptions = computed(() => ({
 }));
 
 const shouldShow = computed(() => {
-    // return props.mailshotState === 'ready' || props.mailshotState === 'in_process';
-    return true;
+    return props.timeSeriesData && props.timeSeriesData.length > 0;
 });
 </script>
 
