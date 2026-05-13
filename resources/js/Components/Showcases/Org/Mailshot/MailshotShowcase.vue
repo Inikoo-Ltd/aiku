@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Timeline from '@/Components/Utils/Timeline.vue'
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
 import { Pie } from "vue-chartjs";
 import {
     Chart as ChartJS,
@@ -88,6 +88,12 @@ const props = defineProps<{
 
 const previewOpen = ref(false)
 const iframeClass = ref('w-full h-full')
+
+// Height synchronization refs
+const pieChartContainer = ref<HTMLElement | null>(null)
+const emailLayoutContainer = ref<HTMLElement | null>(null)
+const detectedHeight = ref<string>('auto')
+let resizeObserver: ResizeObserver | null = null
 
 const stats = computed(
     () => props.liveStats && props.liveStats.length
@@ -198,6 +204,38 @@ const effectiveOtherShopTemplates = computed(() =>
     props.otherShopTemplates
 )
 
+// Height detection function
+const updateDetectedHeight = () => {
+    if (pieChartContainer.value && !isReady.value) {
+        const height = pieChartContainer.value.offsetHeight
+        detectedHeight.value = `${height}px`
+    } else {
+        detectedHeight.value = 'auto'
+    }
+}
+
+// Setup ResizeObserver to monitor height changes
+onMounted(() => {
+    nextTick(() => {
+        if (pieChartContainer.value) {
+            resizeObserver = new ResizeObserver(() => {
+                updateDetectedHeight()
+            })
+            resizeObserver.observe(pieChartContainer.value)
+            // Initial height detection
+            updateDetectedHeight()
+        }
+    })
+})
+
+// Cleanup ResizeObserver on component unmount
+onUnmounted(() => {
+    if (resizeObserver) {
+        resizeObserver.disconnect()
+        resizeObserver = null
+    }
+})
+
 </script>
 
 <template>
@@ -215,13 +253,12 @@ const effectiveOtherShopTemplates = computed(() =>
                 <TabsBoxDisplay :tabs_box="tabsBox" />
             </div>
 
-            <!-- Performance Metrics -->
-            <PerformanceMetrics :mailshot-state="mailshotState" :time-series-data="data.time_series_data" />
-
             <!-- Preview and chart -->
             <div class="grid gap-4 mt-8" :class="isReady ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'">
                 <div class="h-auto mb-3">
-                    <div class="bg-white p-4 rounded-lg shadow relative overflow-auto">
+                    <div ref="emailLayoutContainer"
+                        class="bg-white p-4 rounded-lg shadow relative overflow-auto transition-all duration-300 ease-in-out"
+                        :style="{ height: detectedHeight }">
                         <button @click="previewOpen = true"
                             class="absolute top-4 right-3 bg-gray-300 text-white px-2 py-1 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
                             <FontAwesomeIcon :icon="faExpand" />
@@ -232,7 +269,7 @@ const effectiveOtherShopTemplates = computed(() =>
                 </div>
 
                 <div class="h-auto mb-3">
-                    <div v-if="!isReady"
+                    <div v-if="!isReady" ref="pieChartContainer"
                         class="bg-white p-4 rounded-lg shadow relative min-h-[28rem] flex justify-center items-center">
                         <Pie :data="dataSet" :options="pieOptions" />
                         <div v-if="totalValue == 0"
@@ -242,6 +279,10 @@ const effectiveOtherShopTemplates = computed(() =>
                     </div>
                 </div>
             </div>
+
+            <!-- Performance Metrics -->
+            <PerformanceMetrics :mailshot-state="mailshotState" :time-series-data="data.time_series_data" />
+
 
             <!-- Full preview modal -->
             <Modal :isOpen="previewOpen" @onClose="previewOpen = false">
