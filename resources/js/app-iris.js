@@ -123,7 +123,7 @@ createInertiaApp(
                       release                 : import.meta.env.VITE_RELEASE,
                       tracesSampleRate        : 1.0,
                       replaysSessionSampleRate: 0.001,
-                      replaysOnErrorSampleRate: 0.2,
+                      replaysOnErrorSampleRate: 0.01,
                       profilesSampleRate      : 1.0,
                       integrations            : [
                         Sentry.browserTracingIntegration(),
