@@ -47,9 +47,9 @@ class UpdateOrderPaymentsStatus extends OrgAction
         $runningPaymentsAmount = round($runningPaymentsAmount, 2);
         $totalAmount           = $order->total_amount;
         /** @var Invoice $refund */
-        foreach (Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process',false)->get() as $refund) {
-            $totalAmount+=$refund->total_amount;
-        };
+        foreach (Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->get() as $refund) {
+            $totalAmount += $refund->total_amount;
+        }
 
 
         if ($totalAmount != 0) {

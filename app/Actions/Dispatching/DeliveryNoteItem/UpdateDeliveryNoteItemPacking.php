@@ -14,12 +14,10 @@ use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Audits\DispatchSimpleAudit;
-
 
 class UpdateDeliveryNoteItemPacking extends OrgAction
 {
@@ -36,7 +34,6 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
     {
 
         $deliveryNote       = $deliveryNoteItem->deliveryNote;
-        $oldState                 = $deliveryNote->state;
 
         $oldPackedQuantity  = (int) ($deliveryNoteItem->getOriginal('quantity_packed') ?? 0);
 
@@ -59,7 +56,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
 
 
         $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
-        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn($item) => empty((float)$item->quantity_not_picked) && $item->packings->count() == 0);
+        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => empty((float)$item->quantity_not_picked) && $item->packings->count() == 0);
 
 
         if ($hasUnfinishedPackings->count() == 0) {

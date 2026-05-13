@@ -12,7 +12,7 @@ use App\Http\Resources\Web\WebBlockProductCategoryDescriptionResource;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Illuminate\Support\Arr;
- 
+
 class GetIrisWebBlockDepartment
 {
     use AsObject;
@@ -20,8 +20,8 @@ class GetIrisWebBlockDepartment
     public function handle(Webpage $webpage, array $webBlock): array
     {
         $resource = WebBlockProductCategoryDescriptionResource::make($webpage->model)->toArray(request());
-        data_set($webBlock,'web_block.layout.data.fieldValue.department',$resource);
-        
+        data_set($webBlock, 'web_block.layout.data.fieldValue.department', $resource);
+
         return [
             'type' => $webBlock['type'],
             'structure' => Arr::get(

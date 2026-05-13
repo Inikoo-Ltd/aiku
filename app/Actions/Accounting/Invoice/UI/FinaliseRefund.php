@@ -54,8 +54,8 @@ class FinaliseRefund extends OrgAction
         );
 
         RunInvoiceHydrators::run($refund, $this->hydratorsDelay);
-        $order=$refund->order;
-        if($order) {
+        $order = $refund->order;
+        if ($order) {
             UpdateOrderPaymentsStatus::run($order);
         }
 
