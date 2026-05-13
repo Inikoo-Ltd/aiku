@@ -10,10 +10,12 @@ namespace App\Actions\Retina\Ecom\Orders;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\Order\UI\IndexReviewProductsInOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\UI\Ordering\RetinaOrderTabsEnum;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -22,10 +24,12 @@ use App\Http\Resources\Dispatching\RetinaShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
+use App\Http\Resources\Ordering\RetinaOrderReviewProductsResource;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use App\Models\Reviews\ReviewRatingLabel;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -69,6 +73,12 @@ class ShowRetinaEcomOrder extends RetinaAction
         $action = [];
 
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
+
+        $ratingLabels = [
+            ReviewContextEnum::ShopReviews->value => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ShopReviews),
+            ReviewContextEnum::ProductReviews->value => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ProductReviews),
+            ReviewContextEnum::ProductCategoryReviews->value => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ProductCategoryReviews),
+        ];
 
 
 
@@ -130,8 +140,18 @@ class ShowRetinaEcomOrder extends RetinaAction
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
                 RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value
-                    ? ['review' => 'haloo']
-                    : Inertia::lazy(fn() => ['review' => 'haloo']),
+                    ? fn () => RetinaOrderReviewProductsResource::collection(IndexReviewProductsInOrder::run(parent: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))
+                        ->additional([
+                            'order_id' => $order->id,
+                            'shop_id' => $order->shop_id,
+                            'rating_labels' => $ratingLabels,
+                        ])
+                    : Inertia::lazy(fn () => RetinaOrderReviewProductsResource::collection(IndexReviewProductsInOrder::run(parent: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))
+                        ->additional([
+                            'order_id' => $order->id,
+                            'shop_id' => $order->shop_id,
+                            'rating_labels' => $ratingLabels,
+                        ])),
             ]
         )
             ->table(
@@ -140,7 +160,28 @@ class ShowRetinaEcomOrder extends RetinaAction
                     tableRows: $nonProductItems,
                     prefix: RetinaOrderTabsEnum::TRANSACTIONS->value
                 )
-            );
+            )
+            ->table(IndexReviewProductsInOrder::make()->tableStructure(prefix: RetinaOrderTabsEnum::REVIEWS->value));
+    }
+
+    private function ratingLabelsForShop(int $shopId, ReviewContextEnum $context): array
+    {
+        return ReviewRatingLabel::query()
+            ->whereRaw('LOWER(model_type) = ?', ['shop'])
+            ->where('model_id', $shopId)
+            ->whereRaw('LOWER(review_context) = ?', [$context->value])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('dimension')
+            ->get(['dimension', 'label', 'is_required', 'weight'])
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
+                'dimension' => $reviewRatingLabel->dimension?->value ?? (string) $reviewRatingLabel->dimension,
+                'label' => (string) $reviewRatingLabel->label,
+                'is_required' => (bool) $reviewRatingLabel->is_required,
+                'weight' => (float) $reviewRatingLabel->weight,
+            ])
+            ->values()
+            ->all();
     }
 
     public function jsonResponse(Order $order): OrderResource
