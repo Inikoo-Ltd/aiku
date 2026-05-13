@@ -36,6 +36,8 @@ use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
 use App\Actions\Iris\UpdateIrisLocale;
+use App\Actions\Catalogue\Review\StoreReview;
+use App\Actions\Catalogue\Review\UpdateReview;
 use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
@@ -195,6 +197,9 @@ Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->gro
 
 Route::post('favourite/{product:id}', StoreRetinaFavourite::class)->name('favourites.store');
 Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('favourites.delete');
+
+Route::post('review/store', StoreReview::class)->name('review.store');
+Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
 
 Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
 Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();

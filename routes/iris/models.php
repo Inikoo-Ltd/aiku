@@ -17,6 +17,8 @@ use App\Actions\Iris\CRM\StoreIrisFavourites;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
+use App\Actions\Catalogue\Review\StoreReview;
+use App\Actions\Catalogue\Review\UpdateReview;
 use App\Actions\Retina\Dropshipping\Bundle\CalculateRetinaBundleItemPriceDetails;
 use App\Actions\Retina\Dropshipping\Bundle\DeleteRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleDescription;
@@ -49,6 +51,11 @@ Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::
 
 Route::post('remind-back-in-stock/{product:id}', StoreIrisBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
 Route::delete('remind-back-in-stock/{product:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
+
+Route::middleware(['retina-auth:retina'])->group(function () {
+    Route::post('review/store', StoreReview::class)->name('review.store');
+    Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
+});
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('update-gr-gift', UpdateRetinaOrderGrGift::class)->name('update_gr_gift');

@@ -44,9 +44,8 @@ class GetReviews
             $query->where('customer_id', (int) $customerId);
         }
 
-        if ($status = data_get($filters, 'status')) {
-            $query->where('status', $status);
-        }
+        $status = data_get($filters, 'status');
+        $query->where('status', $status ?: ReviewStatusEnum::Approved->value);
 
         $this->stats = $this->buildStats(clone $query, $filters);
 
@@ -77,7 +76,7 @@ class GetReviews
     {
         return [
             'review_id'       => ['sometimes', 'integer', 'min:1'],
-            'reviewable_type' => ['sometimes', Rule::in(['Product', 'ProductCategory', 'Shop'])],
+            'reviewable_type' => ['sometimes', Rule::in(['Product', 'ProductCategory', 'Shop', 'product_reviews', 'product_category_reviews', 'shop_reviews'])],
             'reviewable_id'   => ['sometimes', 'integer', 'min:1'],
             'customer_id'     => ['sometimes', 'integer', 'exists:customers,id'],
             'status'          => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
@@ -90,8 +89,8 @@ class GetReviews
     private function resolveReviewQuery(string $reviewableType): Builder
     {
         return match ($reviewableType) {
-            'Product' => ProductReview::query(),
-            'Shop' => ShopReview::query(),
+            'Product', 'product_reviews' => ProductReview::query(),
+            'Shop', 'shop_reviews' => ShopReview::query(),
             default => ProductCategoryReview::query(),
         };
     }
@@ -99,8 +98,8 @@ class GetReviews
     private function resolveReviewableColumn(string $reviewableType): string
     {
         return match ($reviewableType) {
-            'Product' => 'product_id',
-            'Shop' => 'shop_id',
+            'Product', 'product_reviews' => 'product_id',
+            'Shop', 'shop_reviews' => 'shop_id',
             default => 'product_category_id',
         };
     }
@@ -111,8 +110,8 @@ class GetReviews
         $reviewableId = (int) data_get($filters, 'reviewable_id', 0);
         if ($reviewableType && $reviewableId > 0) {
             $reviewable = match ($reviewableType) {
-                'Product' => Product::query()->with('reviewStats')->find($reviewableId),
-                'Shop' => Shop::query()->with('reviewStats')->find($reviewableId),
+                'Product', 'product_reviews' => Product::query()->with('reviewStats')->find($reviewableId),
+                'Shop', 'shop_reviews' => Shop::query()->with('reviewStats')->find($reviewableId),
                 default => ProductCategory::query()->with('reviewStats')->find($reviewableId),
             };
 

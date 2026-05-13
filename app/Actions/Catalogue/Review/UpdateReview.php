@@ -64,11 +64,22 @@ class UpdateReview
 
     public function asController(ActionRequest $request): JsonResponse
     {
-        $review = $this->resolveReview(
-            (string) $request->validated('reviewable_type'),
-            (int) $request->route('review')
-        );
-        $updatedReview = $this->handle($review, $request->validated());
+        $review = $this->resolveReview((string) $request->validated('reviewable_type'), (int) $request->route('review'));
+
+        $modelData = $request->validated();
+        if ($this->isCustomerRequest($request)) {
+            abort_unless(auth('retina')->check(), 401);
+
+            $customerId = auth('retina')->user()?->customer_id;
+            abort_unless(is_numeric($customerId), 403);
+
+            abort_unless((int) $review->customer_id === (int) $customerId, 403);
+
+            $modelData['customer_id'] = (int) $customerId;
+            $modelData['status'] = ReviewStatusEnum::Pending->value;
+        }
+
+        $updatedReview = $this->handle($review, $modelData);
 
         return response()->json([
             'status' => 'success',
@@ -145,5 +156,10 @@ class UpdateReview
             'ProductCategory', 'product_category_reviews' => ProductCategoryReview::query()->findOrFail($reviewId),
             'Shop', 'shop_reviews' => ShopReview::query()->findOrFail($reviewId),
         };
+    }
+
+    private function isCustomerRequest(ActionRequest $request): bool
+    {
+        return $request->routeIs('iris.models.review.*', 'retina.models.review.*');
     }
 }

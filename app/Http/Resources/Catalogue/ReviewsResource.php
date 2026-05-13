@@ -29,6 +29,7 @@ class ReviewsResource extends JsonResource
     public function toArray($request): array
     {
         $contactName = $this->contact_name ?? $this->customer?->contact_name ?? $this->customer_name ?? $this->customer?->name;
+        $canManage = $request->routeIs('grp.*');
         $merchantReply = null;
         if ($this->relationLoaded('replies')) {
             $merchantReply = $this->replies->first(function ($reply) {
@@ -82,22 +83,22 @@ class ReviewsResource extends JsonResource
                 'created_at' => $merchantReply->created_at,
                 'updated_at' => $merchantReply->updated_at,
             ] : null,
-            'update_route'         => [
+            'update_route'         => $canManage ? [
                 'name'       => 'grp.models.review.update',
                 'parameters' => [
                     'review' => $this->id,
                     'reviewable_type' => $this->getTable(),
                 ],
                 'method'     => 'patch',
-            ],
-            'delete_route'         => [
+            ] : null,
+            'delete_route'         => $canManage ? [
                 'name'       => 'grp.models.review.delete',
                 'parameters' => [
                     'review' => $this->id,
                     'reviewable_type' => $this->getTable(),
                 ],
                 'method'     => 'delete',
-            ],
+            ] : null,
             'created_at'           => $this->created_at,
         ];
     }

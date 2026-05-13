@@ -84,12 +84,23 @@ class StoreReview
 
     public function asController(ActionRequest $request): JsonResponse
     {
+        $modelData = $request->validated();
+        if ($this->isCustomerRequest($request)) {
+            abort_unless(auth('retina')->check(), 401);
+
+            $customerId = auth('retina')->user()?->customer_id;
+            abort_unless(is_numeric($customerId), 403);
+
+            $modelData['customer_id'] = (int) $customerId;
+            $modelData['status'] = ReviewStatusEnum::Approved->value;
+        }
+
         $reviewable = $this->resolveReviewable(
-            $request->validated('reviewable_type'),
-            (int) $request->validated('reviewable_id')
+            (string) data_get($modelData, 'reviewable_type'),
+            (int) data_get($modelData, 'reviewable_id')
         );
 
-        $review = $this->handle($reviewable, $request->validated());
+        $review = $this->handle($reviewable, $modelData);
 
         return response()->json([
             'status' => 'success',
@@ -100,7 +111,7 @@ class StoreReview
     public function rules(): array
     {
         return [
-            'reviewable_type' => ['required', Rule::in(['Product', 'ProductCategory', 'Shop'])],
+            'reviewable_type' => ['required', Rule::in(['Product', 'ProductCategory', 'Shop', 'product_reviews', 'product_category_reviews', 'shop_reviews'])],
             'reviewable_id' => ['required', 'integer', 'min:1'],
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'status' => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
@@ -163,10 +174,15 @@ class StoreReview
     private function resolveReviewable(string $reviewableType, int $reviewableId): Product|ProductCategory|Shop
     {
         return match ($reviewableType) {
-            'Product' => Product::query()->findOrFail($reviewableId),
-            'ProductCategory' => ProductCategory::query()->findOrFail($reviewableId),
-            'Shop' => Shop::query()->findOrFail($reviewableId),
+            'Product', 'product_reviews' => Product::query()->findOrFail($reviewableId),
+            'ProductCategory', 'product_category_reviews' => ProductCategory::query()->findOrFail($reviewableId),
+            'Shop', 'shop_reviews' => Shop::query()->findOrFail($reviewableId),
         };
+    }
+
+    private function isCustomerRequest(ActionRequest $request): bool
+    {
+        return $request->routeIs('iris.models.review.*', 'retina.models.review.*');
     }
 
     private function resolveRatingMain(array $modelData): float

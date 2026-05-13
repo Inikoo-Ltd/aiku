@@ -19,11 +19,16 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterChooseMethod;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
+use App\Actions\Catalogue\Review\GetReviews;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFromGoogle;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFromStandalone;
 use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
 use App\Actions\Retina\UI\Auth\ShowForgotPasswordForm;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('json')->name('json.')->group(function () {
+    Route::get('reviews', GetReviews::class)->name('reviews.index');
+});
 
 Route::middleware('guest:retina')->group(function () {
 
