@@ -129,7 +129,9 @@ class ShowRetinaEcomOrder extends RetinaAction
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
-
+                RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value
+                    ? ['review' => 'haloo']
+                    : Inertia::lazy(fn() => ['review' => 'haloo']),
             ]
         )
             ->table(
