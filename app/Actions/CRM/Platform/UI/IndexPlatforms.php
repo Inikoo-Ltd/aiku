@@ -108,7 +108,8 @@ class IndexPlatforms extends OrgAction
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
         $pageHead = [
-            'title'         => __('Platforms'),
+            'title'         => $this->parent->name,
+            'model'         => __('Platform'),
             'icon'          => [
                 'title' => __('Platforms'),
                 'icon'  => ['fal', 'fa-route'],
@@ -117,7 +118,8 @@ class IndexPlatforms extends OrgAction
 
         if ($this->parent instanceof Shop) {
             $pageHead = [
-                'title'         => __('Platforms'),
+                'title'         => $this->parent->name,
+                'model'         => __('Platform'),
                 'icon'          => [
                     'title' => __('Platforms'),
                     'icon'  => ['fal', 'fa-route'],

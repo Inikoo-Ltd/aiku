@@ -45,7 +45,7 @@ class GetOfferCampaignsTimeSeriesStats
                     'customers' => 'customers_invoiced',
                     'orders'    => 'orders',
                     'invoices'  => 'invoices',
-                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    // 'sales_grp_currency_external' => 'sales_grp_currency_external',
                 ],
                 'offer_campaign_time_series_records',
                 'offer_campaign_time_series_id',
