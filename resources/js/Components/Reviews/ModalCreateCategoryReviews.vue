@@ -69,6 +69,7 @@ const props = defineProps<{
 
 const isOpenModal = ref(false)
 const ratingByDimension = ref<Record<string, number>>({})
+const mainRating = ref(5)
 const message = ref("")
 const isLoadingSubmit = ref(false)
 const errors = ref<Record<string, string[]>>({})
@@ -142,6 +143,11 @@ const activeRatingLabels = computed(() => {
 })
 
 const averageRating = computed(() => {
+    if (!activeRatingLabels.value.length) {
+        const value = Number(mainRating.value ?? 5)
+        return Number.isFinite(value) && value >= 1 && value <= 5 ? Math.round(value) : 5
+    }
+
     const values = activeRatingLabels.value
         .map((item) => Number(ratingByDimension.value[item.dimension] ?? 0))
         .filter((value) => Number.isFinite(value) && value >= 1 && value <= 5)
@@ -438,6 +444,7 @@ const resetForm = (): void => {
         nextRatings[item.dimension] = Number(sourceValue ?? props.review?.rating ?? 5)
     }
     ratingByDimension.value = nextRatings
+    mainRating.value = Number(props.review?.rating ?? 5)
     message.value = props.review?.message ?? ""
     selectedCustomerId.value = normalizeCustomerId(props.review?.customer_id)
     const initialStatus = props.review?.status
@@ -478,7 +485,6 @@ const submitReview = (): void => {
     const formData = new FormData()
     formData.append("reviewable_type", props.reviewable_type ?? "ProductCategory")
     formData.append("reviewable_id", String(reviewableId.value))
-    formData.append("rating_main", String(averageRating.value))
     formData.append("rating", String(averageRating.value))
     formData.append("message", message.value)
 
@@ -659,10 +665,26 @@ onBeforeUnmount(() => {
                                 </div>
                             </div>
                         </div>
-                        <div v-else class="text-sm text-amber-600">
-                            {{ trans("Rating labels are not configured for this shop.") }}
+                        <div v-else class="space-y-2">
+                            <div class="text-sm text-amber-600">
+                                {{ trans("Rating labels are not configured for this shop.") }}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="text-sm font-medium text-amber-700">{{ trans("Your rating") }}</div>
+                                <div class="flex items-center gap-1">
+                                    <button
+                                        v-for="star in 5"
+                                        :key="`main-rating-${star}`"
+                                        type="button"
+                                        class="text-2xl leading-none transition-colors"
+                                        :class="star <= averageRating ? 'text-yellow-500' : 'text-gray-300'"
+                                        @click="mainRating = star"
+                                    >
+                                        ★
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div v-if="errors.rating_main?.[0]" class="text-sm text-red-500">{{ errors.rating_main[0] }}</div>
                         <div v-if="errors.rating?.[0]" class="text-sm text-red-500">{{ errors.rating[0] }}</div>
                     </div>
 

@@ -66,7 +66,7 @@ class ReviewsResource extends JsonResource
             'contact_name'         => $contactName,
             'customer_name'        => $contactName,
             'status'               => $this->status?->value ?? $this->status,
-            'rating'               => (int) ($this->rating ?? $this->rating_main ?? 0),
+            'rating'               => (int) round((float) ($this->rating_main ?? $this->rating ?? 0)),
             'rating_a'             => $this->rating_a !== null ? (int) $this->rating_a : null,
             'rating_b'             => $this->rating_b !== null ? (int) $this->rating_b : null,
             'rating_c'             => $this->rating_c !== null ? (int) $this->rating_c : null,

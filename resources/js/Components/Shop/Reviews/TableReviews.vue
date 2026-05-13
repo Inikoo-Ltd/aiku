@@ -75,7 +75,8 @@ const reviewableId = computed(() => props.reviewable_id ?? props.product_categor
 const reviewableType = computed(() => props.reviewable_type ?? "ProductCategory")
 
 const renderStars = (rating: number): string => {
-    const value = Number.isFinite(rating) ? Math.max(0, Math.min(5, rating)) : 0
+    const numericRating = Number(rating)
+    const value = Number.isFinite(numericRating) ? Math.max(0, Math.min(5, Math.round(numericRating))) : 0
     return "★".repeat(value)
 }
 </script>

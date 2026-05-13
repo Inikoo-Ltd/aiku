@@ -92,7 +92,7 @@ class StoreReview
             abort_unless(is_numeric($customerId), 403);
 
             $modelData['customer_id'] = (int) $customerId;
-            $modelData['status'] = ReviewStatusEnum::Approved->value;
+            $modelData['status'] = ReviewStatusEnum::Pending->value;
         }
 
         $reviewable = $this->resolveReviewable(
@@ -115,8 +115,7 @@ class StoreReview
             'reviewable_id' => ['required', 'integer', 'min:1'],
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'status' => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
-            'rating' => ['sometimes', 'integer', 'min:1', 'max:5', 'required_without:rating_main'],
-            'rating_main' => ['sometimes', 'numeric', 'min:1', 'max:5', 'required_without:rating'],
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'rating_a' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_b' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_c' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
@@ -197,11 +196,6 @@ class StoreReview
 
         if ($detailedRatings->isNotEmpty()) {
             return round((float) $detailedRatings->avg(), 2);
-        }
-
-        $ratingMain = data_get($modelData, 'rating_main');
-        if (is_numeric($ratingMain)) {
-            return round((float) $ratingMain, 2);
         }
 
         $rating = data_get($modelData, 'rating');

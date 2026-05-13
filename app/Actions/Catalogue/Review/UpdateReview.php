@@ -29,10 +29,11 @@ class UpdateReview
             $images = Arr::pull($modelData, 'images', null);
             $videos = Arr::pull($modelData, 'videos', null);
 
+            $ratingMain = $this->resolveRatingMain($review, $modelData);
             $review->update([
                 'customer_id'          => data_get($modelData, 'customer_id', $review->customer_id),
                 'status'               => data_get($modelData, 'status', $review->status?->value),
-                'rating_main'          => data_get($modelData, 'rating_main', data_get($modelData, 'rating', $review->rating_main)),
+                'rating_main'          => $ratingMain,
                 'rating_a'             => data_get($modelData, 'rating_a', $review->rating_a),
                 'rating_b'             => data_get($modelData, 'rating_b', $review->rating_b),
                 'rating_c'             => data_get($modelData, 'rating_c', $review->rating_c),
@@ -94,7 +95,6 @@ class UpdateReview
             'customer_id'           => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
             'status'                => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
             'rating'                => ['sometimes', 'integer', 'min:1', 'max:5'],
-            'rating_main'           => ['sometimes', 'numeric', 'min:1', 'max:5'],
             'rating_a'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_b'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_c'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
@@ -161,5 +161,34 @@ class UpdateReview
     private function isCustomerRequest(ActionRequest $request): bool
     {
         return $request->routeIs('iris.models.review.*', 'retina.models.review.*');
+    }
+
+    private function resolveRatingMain(ProductReview|ProductCategoryReview|ShopReview $review, array $modelData): float
+    {
+        $dimensionKeys = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
+        $dimensionsWereProvided = collect($dimensionKeys)->contains(fn (string $key): bool => array_key_exists($key, $modelData));
+
+        $rating = data_get($modelData, 'rating');
+        $ratingWasProvided = array_key_exists('rating', $modelData) && is_numeric($rating);
+
+        if (!$dimensionsWereProvided && !$ratingWasProvided) {
+            return (float) ($review->rating_main ?? 0);
+        }
+
+        $detailedRatings = collect($dimensionKeys)
+            ->map(fn (string $key) => data_get($modelData, $key))
+            ->filter(fn ($value): bool => is_numeric($value))
+            ->map(fn ($value): float => (float) $value)
+            ->values();
+
+        if ($detailedRatings->isNotEmpty()) {
+            return round((float) $detailedRatings->avg(), 2);
+        }
+
+        if ($ratingWasProvided) {
+            return round((float) $rating, 2);
+        }
+
+        return (float) ($review->rating_main ?? 0);
     }
 }
