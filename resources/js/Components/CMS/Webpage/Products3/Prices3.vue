@@ -272,7 +272,7 @@ const _popoverProfit = ref(null)
                 <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
 
 
-                <div v-if="bestOffer" class="font-bold text-right min-w-0" :class="bestOffer?.type === 'Category Ordered' || bestOffer?.type === 'Category Amount Ordered'
+                <div v-if="bestOffer" class="font-bold text-right min-w-0 text-xs" :class="bestOffer?.type === 'Category Ordered' ||  bestOffer?.type === 'Category Amount Ordered' || bestOffer?.type === 'Category Amount Ordered'
                         ? 'text-red-700'
                         : bestOffer?.type === 'First Order'
                             ? 'text-[#2a919e]'
@@ -296,9 +296,10 @@ const _popoverProfit = ref(null)
                     <template v-else>
 
                         <div class="flex justify-end items-center gap-1 min-w-0">
-                            <span class="truncate min-w-0 font-normal  text-[8px] sm:text-[9px] md:text-[10px]">
+                            <span class="truncate min-w-0 font-normal  text-xs sm:text-[9px] md:text-xs">
                                 {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
                             </span>
+                            
                           <!--   <span class="truncate min-w-0 font-normal text-[8px] sm:text-[9px] md:text-[10px]" :title="product.unit">
                                 ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/{{ product.unit }})
                             </span> -->
