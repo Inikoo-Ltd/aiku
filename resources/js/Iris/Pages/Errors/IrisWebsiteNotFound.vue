@@ -12,10 +12,10 @@ export default { layout: Layout, }
 <script setup>
 
 const props = defineProps({
-                              status     : Number,
-                              title      : String,
-                              description: String,
-                          });
+    status: Number,
+    title: String,
+    description: String,
+});
 
 </script>
 

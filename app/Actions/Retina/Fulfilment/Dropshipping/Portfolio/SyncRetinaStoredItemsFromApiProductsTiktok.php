@@ -23,6 +23,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -64,42 +65,46 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
 
             $numberTotal = $productCount;
             foreach ($tiktokProducts as $product) {
+                try {
+                    $title = Arr::get($product, 'title');
+                    $reference = Arr::get($product, 'skus.0.seller_sku');
 
-                $title = Arr::get($product, 'title');
-                $reference = Arr::get($product, 'skus.0.seller_sku');
+                    if (!$reference) {
+                        $reference = Str::slug($title);
+                    }
 
-                if (! $reference) {
-                    $reference = Str::slug($title);
-                }
+                    $storedItem = StoredItem::where('fulfilment_customer_id', $tiktokUser->customer->fulfilmentCustomer->id)
+                        ->where('reference', $reference)->first();
 
-                $storedItem = StoredItem::where('fulfilment_customer_id', $tiktokUser->customer->fulfilmentCustomer->id)
-                    ->where('reference', $reference)->first();
-                $storedItemTiktok = $storedItem?->tiktokPortfolio;
+                    if ($shopType === ShopTypeEnum::FULFILMENT) {
+                        if (!$storedItem) {
+                            $storedItem = StoreStoredItem::make()->action($tiktokUser->customer->fulfilmentCustomer, [
+                                'reference' => $reference,
+                                'name' => $title
+                            ]);
+                        }
 
-                if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemTiktok) {
-                    if (!$storedItem) {
-                        $storedItem = StoreStoredItem::make()->action($tiktokUser->customer->fulfilmentCustomer, [
-                            'reference' => $reference,
-                            'name' => $title
+                        $portfolio = $storedItem->portfolio;
+                        if (!$portfolio) {
+                            StorePortfolio::make()->action(
+                                $tiktokUser->customerSalesChannel,
+                                $storedItem,
+                                [
+                                    'platform_product_id' => Arr::get($product, 'id'),
+                                    'platform_product_variant_id' => Arr::get($product, 'id')
+                                ]
+                            );
+                        }
+
+                        UpdateStoredItem::run($storedItem, [
+                            'state' => StoredItemStateEnum::ACTIVE,
+                            'total_quantity' => Arr::get($product, 'skus.0.inventory.0.quantity', 0)
                         ]);
-                    }
 
-                    $portfolio = $storedItem->portfolio;
-                    if (!$portfolio) {
-                        StorePortfolio::make()->action(
-                            $tiktokUser->customerSalesChannel,
-                            $storedItem,
-                            [
-                                'platform_product_id' => Arr::get($product, 'id'),
-                                'platform_product_variant_id' => Arr::get($product, 'id')
-                            ]
-                        );
                     }
-
-                    UpdateStoredItem::run($storedItem, [
-                        'state' => StoredItemStateEnum::ACTIVE,
-                        'total_quantity' => Arr::get($product, 'skus.0.inventory.0.quantity', 0)
-                    ]);
+                    $numberSuccess++;
+                } catch (ValidationException $exception) {
+                    $numberFails++;
                 }
 
                 FetchProductFromPlatformProgressEvent::dispatch($tiktokUser, [

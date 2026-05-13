@@ -103,6 +103,7 @@ use App\Models\SysAdmin\User;
  * @property int|null $picker_user_id
  * @property int|null $packer_user_id
  * @property int $number_items_waiting_crm
+ * @property bool $is_shipping_by_external
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses

@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
+use App\Actions\Dropshipping\Tiktok\Order\FulfillOrderToTiktok;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
@@ -90,6 +91,7 @@ class DispatchPalletReturn extends OrgAction
         if ($palletReturn->customerSalesChannel) {
             match ($palletReturn->customerSalesChannel?->platform?->type) {
                 PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($palletReturn),
+                PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($palletReturn),
                 default => null,
             };
         }

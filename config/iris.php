@@ -7,7 +7,7 @@
  */
 
 return [
-    'analytics'=>[
+    'analytics' => [
         'web_visits' => env('ANALYTICS_WEB_VISITS', true),
         'web_users' => env('ANALYTICS_WEB_USERS', true),
     ],

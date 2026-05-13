@@ -75,14 +75,38 @@ function palletReturnRoute(palletReturn: PalletDelivery) {
                     palletReturn.slug
                 ]);
         default:
-            return route(
-                'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
-                [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['fulfilmentCustomer'],
-                    palletReturn.slug
-                ]);
+            if (route().params['fulfilmentCustomer']) {
+                return route(
+                    'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
+                    [
+                        route().params['organisation'],
+                        route().params['fulfilment'],
+                        route().params['fulfilmentCustomer'],
+                        palletReturn.slug
+                    ]);
+            }
+
+            if (route().params['fulfilment']) {
+                return route(
+                    'grp.org.fulfilments.show.operations.pallet-returns.show',
+                    [
+                        route().params['organisation'],
+                        route().params['fulfilment'],
+                        palletReturn.slug
+                    ]);
+            }
+
+            if (route().params['warehouse']) {
+                return route(
+                    'grp.org.warehouses.show.dispatching.pallet-returns.show',
+                    [
+                        route().params['organisation'],
+                        route().params['warehouse'],
+                        palletReturn.slug
+                    ]);
+            }
+
+            return ''
     }
 }
 
@@ -177,6 +201,37 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
                     palletReturn.slug
                 ]);
         default:
+            if (route().params['fulfilmentCustomer']) {
+                return route(
+                    'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show',
+                    [
+                        (route().params as RouteParams).organisation,
+                        (route().params as RouteParams).fulfilment,
+                        (route().params as RouteParams).fulfilmentCustomer,
+                        palletReturn.slug
+                    ]);
+            }
+
+            if (route().params['fulfilment']) {
+                return route(
+                    'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show',
+                    [
+                        (route().params as RouteParams).organisation,
+                        (route().params as RouteParams).fulfilment,
+                        palletReturn.slug
+                    ]);
+            }
+
+            if (route().params['warehouse']) {
+                return route(
+                    'grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show',
+                    [
+                        (route().params as RouteParams).organisation,
+                        (route().params as RouteParams).warehouse,
+                        palletReturn.slug
+                    ]);
+            }
+
             return ''
     }
 }
@@ -215,11 +270,11 @@ const locale = inject('locale', aikuLocaleStructure)
         <!-- Column: Reference -->
         <template #cell(reference)="{ item: palletReturn }">
             <div class="flex flex-col items-start gap-1">
-                <Link v-if="palletReturn.type === 'pallet'" :href="palletReturnRoute(palletReturn)" class="primaryLink">
+                <Link v-if="palletReturn.type === 'pallet' && palletReturnRoute(palletReturn)" :href="palletReturnRoute(palletReturn)" class="primaryLink">
                     {{ palletReturn['reference'] }}
                 </Link>
 
-                <Link v-else-if="palletReturn.type === 'stored_item'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
+                <Link v-else-if="palletReturn.type === 'stored_item' && storedItemReturnRoute(palletReturn)" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
                     {{ palletReturn['reference'] }}
                 </Link>
 
@@ -292,14 +347,25 @@ const locale = inject('locale', aikuLocaleStructure)
                 -
             </div>
         </template>
-        
-        <template #cell(cust_name)="{ item: palletReturn }">
-            <Link
-                :href="fulfilmentCustomerRoute(palletReturn)"
-                class="secondaryLink"
-            >
-                {{ palletReturn.customer_name }}
-            </Link>
+
+        <template #cell(customer_name)="{ item: palletReturn }">
+            <div>
+                {{ palletReturn.cust_name }}
+            </div>
+        </template>
+
+        <template #cell(picker_name)="{ item: palletReturn }">
+            <span v-if="palletReturn.picker_name" class="inline-flex items-center px-2 py-0.5 bg-[#e0e7ff] text-gray-700">
+                {{ palletReturn.picker_name }}
+            </span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(packer_name)="{ item: palletReturn }">
+            <span v-if="palletReturn.packer_name" class="inline-flex items-center px-2 py-0.5   bg-[#e0e7ff] text-gray-700">
+                {{ palletReturn.packer_name }}
+            </span>
+            <span v-else class="text-gray-400">-</span>
         </template>
 
         <template #cell(confirmed_at)="{ item: palletReturn }">

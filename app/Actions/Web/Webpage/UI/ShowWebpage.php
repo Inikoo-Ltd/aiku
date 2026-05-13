@@ -58,6 +58,7 @@ class ShowWebpage extends OrgAction
         }
 
         $this->initialisationFromShop($shop, $request)->withTab(WebpageTabsEnum::values());
+
         return $webpage;
     }
 

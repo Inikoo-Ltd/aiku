@@ -9,7 +9,6 @@
 namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\Analytics\WebUserRequest\StoreWebUserRequest;
-use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Analytics\WebUserRequest;
 use App\Models\CRM\WebUser;
@@ -35,7 +34,6 @@ class ProcessRetinaWebUserRequest
             return null;
         }
 
-
         $browserData = GetBrowserInfo::run($userAgent);
 
         $modelData = [
@@ -50,7 +48,6 @@ class ProcessRetinaWebUserRequest
             'webpage_id'   => $webpageId,
         ];
 
-
         $webUserRequest = StoreWebUserRequest::run(
             webUser: $webUser,
             modelData: $modelData,
@@ -62,7 +59,6 @@ class ProcessRetinaWebUserRequest
             'last_location'  => json_encode($geoLocation),
             'last_active_at' => $datetime
         ]);
-
 
         return $webUserRequest;
     }

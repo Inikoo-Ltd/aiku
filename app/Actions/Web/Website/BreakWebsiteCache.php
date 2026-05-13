@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website;
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
+use Cache;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Http\RedirectResponse;
@@ -31,6 +32,8 @@ class BreakWebsiteCache extends OrgAction implements ShouldBeUnique
         ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*', $command);
         ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*', $command);
         ClearCacheByWildcard::run("irisData:website:$website->id:*", $command);
+
+        Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
 
         BreakWebsiteVarnishCache::run($website);
 

@@ -138,25 +138,27 @@ class PublishWebsiteMarginal extends OrgAction
         }
 
         if ($marginal == 'footer') {
+            Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
             Cache::forget("irisData:website:$website->id:footer");
         } elseif ($marginal == 'sidebar') {
+            Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
             Cache::forget("irisData:website:$website->id:sideBar");
         } else {
             BreakWebsiteCache::run($website);
         }
 
 
-        if ($customAudit) {
+        if ($customAudit && $oldLayout) {
             $titleAudit             = ucfirst(str_replace('_', ' ', $marginal));
             $website->auditEvent    = "{$marginal}_published";
             $website->isCustomEvent = true;
 
             if (Arr::has($snapshot->layout, 'data')) {
                 $layoutFormatted    = Arr::except(data_get($snapshot->layout, 'data.fieldValue'), ['product']);
-                $oldLayoutFormatted = Arr::only(data_get($oldLayout, 'data.fieldValue'), array_keys($layoutFormatted));
+                $oldLayoutFormatted = Arr::only(data_get($oldLayout, 'data.fieldValue', []), array_keys($layoutFormatted));
             } else {
                 $layoutFormatted    = Arr::except(data_get($snapshot->layout, '*.fieldValue'), ['product']);
-                $oldLayoutFormatted = Arr::only(data_get($oldLayout, '*.fieldValue'), array_keys($layoutFormatted));
+                $oldLayoutFormatted = Arr::only(data_get($oldLayout, '*.fieldValue', []), array_keys($layoutFormatted));
             }
 
             $website->auditCustomOld = [
@@ -164,7 +166,7 @@ class PublishWebsiteMarginal extends OrgAction
             ];
 
             $website->auditCustomNew = [
-                '_published_layout' => "{$titleAudit} Web Block",
+                '_published_layout' => "$titleAudit Web Block",
                 ...array_filter(Arr::dot($layoutFormatted), mode: ARRAY_FILTER_USE_BOTH)
             ];
 

@@ -23,7 +23,7 @@ class RecordWebsiteHit
     {
         $website = request()->website;
 
-        $appName = request()->header('X-Analytics-App');
+        $appName = $request->input('analytics_app');
 
         if (!$appName) {
             return;
@@ -33,7 +33,7 @@ class RecordWebsiteHit
             'org'       => $website->organisation_id,
             'website'   => $website->slug,
             'type'      => $website->type->value,
-            'webpage'   => request()->header('X-Analytics-Webpage'),
+            'webpage'   => $request->input('analytics_webpage'),
             'device'    => request()->header('sec-ch-ua-form-factors'),
             'country'   => request()->header('CF-IPCountry') ?? 'XX',
             'logged_in' => $request->user() !== null,
@@ -59,7 +59,7 @@ class RecordWebsiteHit
                 $request->userAgent(),
                 request()->ip(),
                 request()->header('referer'),
-                request()->header('X-Original-Referer'),
+                $request->input('original_referer'),
                 $geoLocation
             )->delay(now()->addSeconds(5));
         }
@@ -91,7 +91,6 @@ class RecordWebsiteHit
             return false;
         }
 
-
         return true;
     }
 
@@ -110,7 +109,6 @@ class RecordWebsiteHit
         if (!($webUser instanceof WebUser)) {
             return false;
         }
-
 
         if (app()->runningUnitTests()) {
             return false;

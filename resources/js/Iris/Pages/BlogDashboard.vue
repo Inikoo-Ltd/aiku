@@ -1,50 +1,51 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue";
-import { useFormatTime } from "@/Composables/useFormatTime";
 
-const props = defineProps<{
+defineProps<{
     blogs: any
 }>()
 
 </script>
 
 <template>
-    <section class="bg-gray-50 py-16">
+    <section class="bg-gray-50 pt-6 pb-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-14">
+            <div class="text-center mb-7">
                 <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 tracking-tight">
                     {{ trans('Our Blog') }}
                 </h1>
             </div>
 
-            <!-- Kalau tidak ada blog -->
             <div v-if="!blogs || blogs.length === 0" class="text-center py-12">
                 <p class="text-gray-500 text-lg">{{ trans('No blog posts available yet.') }}</p>
             </div>
 
-            <!-- Kalau ada blog -->
             <div v-else class="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                
                 <article v-for="post in blogs" :key="post.id"
                     class="rounded-2xl bg-white h-fit shadow-md transition duration-300 overflow-hidden border border-gray-200">
-                    <Image
-                        :src="post?.published_layout?.web_blocks[0]?.web_block?.layout?.data?.fieldValue?.image?.source"
-                        :alt="post?.published_layout?.web_blocks[0]?.web_block?.layout?.data?.fieldValue?.image?.alt"
-                        class="w-full h-56"
-                        :imageCover="true"
-                    />
+                    <a :href="post.url ? post.url : '#' " class="block">
+                        <Image
+                            :src="post.image_src"
+                            :alt="post.image_alt"
+                            class="w-full h-56 cursor-pointer"
+                            :imageCover="true"
+                        />
+                    </a>
+                    
                     <div class="p-6 flex flex-col h-full justify-between">
                         <div class="text-sm text-gray-500 mb-2">
-                            <time :datetime="post.published_at">{{ useFormatTime(post.published_at) }}</time>
+                            <time :datetime="post.published_at">{{ post.published_at }}</time>
                         </div>
                         <span class="text-sm font-semibold text-gray-800 mb-3 line-clamp-2">
-                            <a :href="post.href" class="block">
+                            <a :href="post.url ? post.url : '#' " class="block">
                                 {{ post.title }}
                             </a>
                         </span>
 
                         <div class="mt-auto">
-                            <a :href="post.href" class="inline-flex items-center text-sm font-medium text-blue-600">
+                            <a :href="post.url ? post.url : '#' " class="inline-flex items-center text-sm font-medium text-blue-600">
                                 {{ trans("Read more") }} →
                             </a>
                         </div>
