@@ -14,7 +14,6 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Web\Banner\BannerTabsEnum;
 use App\Http\Resources\Helpers\BannerSnapshotResource;
-use App\Http\Resources\Helpers\SnapshotResource;
 use App\Http\Resources\Web\BannerResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;

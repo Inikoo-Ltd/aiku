@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Fulfilment;
 
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Fulfilment\PalletReturnItem;
@@ -41,6 +42,8 @@ class PalletReturnsResource extends JsonResource
 {
     public function toArray($request): array
     {
+
+        $isShippingByExternal = $this->platform_type === PlatformTypeEnum::TIKTOK->value;
 
         $numberPallets     = $this->number_pallets;
         $numberStoredItems = $this->number_stored_items;
@@ -77,6 +80,14 @@ class PalletReturnsResource extends JsonResource
             'reference'                => $this->reference,
             'picking_session_slug'     => $this->picking_session_slug ?? null,
             'platform_name'            => $this->platform_name,
+            'is_shipping_by_external'  => $isShippingByExternal,
+            'get_external_shipment_route' => $isShippingByExternal ? [
+                'label'      => __('Get shipment from Tiktok'),
+                'name'       => 'grp.models.pallet-return.shipment_from_tiktok.store',
+                'parameters' => [
+                    'palletReturn' => $this->id,
+                ],
+            ] : null,
             'state'                    => $this->state,
             'state_label'              => $this->state->labels()[$this->state->value],
             'state_icon'               => $this->state->stateIcon()[$this->state->value],

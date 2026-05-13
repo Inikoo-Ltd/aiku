@@ -407,6 +407,7 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Web\Redirect\DeleteRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
+use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -731,6 +732,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('/shipment-from-fulfilment', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_fulfilment.store');
     Route::post('/shipment-from-warehouse', CreateShipmentInPalletReturnInWarehouse::class)->name('shipment_from_warehouse.store');
+    Route::post('/shipment-from-tiktok', [ProcessTiktokOrderShipment::class, 'inFulfilment'])->name('shipment_from_tiktok.store');
 
     Route::delete('/detach-shipment/{shipment}', DetachShipmentFromPalletReturn::class)->name('shipment.detach');
 });

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
 import axios from "axios"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import Button from "@iris/Components/IrisButton.vue"
 import { trans } from "laravel-vue-i18n"
 import { notify } from '@kyvg/vue3-notification'
 
@@ -34,9 +34,7 @@ const errorMessage = ref<string | null>(null)
 const recipientEmail = ref<string | null>(null)
 const recipientName = ref<string | null>(null)
 
-// Ambil UUID dari URL path
 const uuid = ref<string | null>(null)
-// Ambil tag dari URL query params
 const tag = ref<string | null>(null)
 
 onMounted(() => {

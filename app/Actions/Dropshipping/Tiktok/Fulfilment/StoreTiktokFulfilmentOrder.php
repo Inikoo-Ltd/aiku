@@ -63,7 +63,7 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
             ]);
 
             $storedItemModels = [];
-            $orderedProducts = $orderedProducts->groupBy('product_id')->map(fn($group) => [
+            $orderedProducts = $orderedProducts->groupBy('product_id')->map(fn ($group) => [
                 'product_id' => $group->first()['product_id'],
                 'quantity' => count($group)
             ]);

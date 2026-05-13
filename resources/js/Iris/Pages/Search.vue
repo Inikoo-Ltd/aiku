@@ -1,187 +1,19 @@
 <script setup lang="ts">
-import { inject, onBeforeMount, ref } from "vue"
-
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { inject, onBeforeMount } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
-import { trans } from "laravel-vue-i18n"
-
 
 const layout = inject('layout', retinaLayoutStructure)
-const locale = inject('locale', aikuLocaleStructure)
 
 const props = defineProps<{
     data?: {}
 }>()
 
-// Init: Search result
 const LBInitSearchResult = async () => {
 
     if (!layout.iris?.luigisbox_tracker_id) {
         console.error("Luigi tracker id didn't provided")
         return
     }
-
-    const usedLocale = locale.language?.code ?? "en";
-    
-    const xxx = await Luigis.Search(
-        {
-            TrackerId: layout.iris?.luigisbox_tracker_id,
-            Locale: usedLocale,
-            PriceFilter: {
-                decimals: 2,
-                prefixed: true,
-                symbol: locale.currencySymbol(layout.iris?.currency?.code),
-            },
-            TopItems: ['category:4', 'department:4', 'sub_department:4', 'collection:4', 'brand:4', 'tag:4'],
-            Theme: "boo",
-            Size: 15,
-            Facets: [
-                'category',
-                'color',
-                'news',
-                'department',
-                'sub_department',
-                'brand',
-                'collection',
-                'tag',
-                'price_amount',
-            ],
-            QuicksearchTypes: [
-                'category:12',
-                'color',
-                'news',
-                'department',
-                'sub_department',
-                'brand',
-                'collection',
-                'tag',
-            ],
-            DefaultFilters: {
-                availability: 1,
-                // stock_qty: '1|',  // Filter out of stock products
-                
-            },
-            Translations: {
-                [usedLocale]: {
-                    "activeFilter": {
-                        "remove": trans("Cancel"),
-                    },
-                    "activeFilters": {
-                        "title": trans("Used filters"),
-                        "cancelAllFilters": trans("Cancel all filters"),
-                    },
-                    "additionalResults": {
-                        "title": trans("You may also like"),
-                    },
-                    "facet": {
-                        "name": {
-                            "category": trans("Categories"),
-                            "department": trans("Departments"),
-                            "sub_department": trans("Sub Departments"),
-                            "brand": trans("Brands"),
-                            "collection": trans("Collections"),
-                            "tag": trans("Tags"),
-                            "price_amount": trans("Price"),
-                            "color": trans("Colors"),
-                            "news": trans("News"),
-                        },
-                        "multichoice": {
-                            "showMore": trans("More (:count)"),
-                            "showLess": trans("Hide others"),
-                        },
-                    },
-                    "facetDate": {
-                        "smallerThan": trans("Before"),
-                        "exactDay": trans("Exact day"),
-                        "biggerThan": trans("After"),
-                        "range": trans("From-To"),
-                        "get": trans("get"),
-                    },
-                    "facetNumericRange": {
-                        "from": trans("From"),
-                        "to": trans("to"),
-                        "histogramBucketTitle": trans(":count Products"),
-                    },
-                    "facets": {
-                        "closeFilter": trans("Close"),
-                    },
-                    "loading": {
-                        "isLoading": trans("Loading ..."),
-                    },
-                    "noResults": {
-                        "noResults": trans("We couldn't find any suitable results"),
-                    },
-                    "pagination": {
-                        "nextPage": trans("Load more"),
-                    },
-                    "quickSearch": {
-                        "title": {
-                            "category": trans("Categories"),
-                            "department": trans("Departments"),
-                            "sub_department": trans("Sub Departments"),
-                            "brand": trans("Brands"),
-                            "collection": trans("Collections"),
-                            "tag": trans("Tags"),
-                            "price_amount": trans("Price"),
-                            "color": trans("Colors"),
-                            "news": trans("News"),
-                        },
-                        "topItemTitle": {
-                            "category": trans("Top categories"),
-                            "brand": trans("Top brands"),
-                        }
-                    },
-                    "resultDefault": {
-                        "actionButton": trans("Detail"),
-                        "availability": {
-                            "0": trans("Unavailable"),
-                        },
-                        "result": trans("Result"),
-                    },
-                     "search": {
-                        "title": trans("Results for :query (:hitsCount)"),
-                        "titleShort": trans("Search"),
-                        "filter": trans("Filters"),
-                        "queryUnderstanding": {
-                            "title": trans("We detected the following filters"),
-                            "cancel": trans("Repeat without automatic filter detection"),
-                        }
-                    },
-                    "sort": {
-                        "default": trans("Default"),
-                        "price_amount:asc": trans("Price: Low to High"),
-                        "price_amount:desc": trans("Price: High to Low"),
-                        "headlineTitle": trans("Sort by") + ": ",
-                    },
-                    "site": {
-                        "titleResults": trans("Results for :query (:hitsCount)"),
-                        "queryCorrection": trans("We detected the following filters"),
-                    },
-                    "topItems": {
-                        "category": trans("Categories"),
-                        "department": trans("Departments"),
-                        "sub_department": trans("Sub Departments"),
-                        "brand": trans("Brands"),
-                        "collection": trans("Collections"),
-                        "tag": trans("Tags"),
-                        "price_amount": trans("Price"),
-                        "title": trans("You might be interested"),
-                        "results": {
-                            "title": trans("Top products"),
-                        }
-                    },
-                }
-            },
-            UrlParamName: {
-                QUERY: "q",
-            },
-            RemoveFields: layout.iris.is_logged_in ? null : ['price', 'formatted_price', 'price_amount'],
-        },
-        "#inputXxxLuigi",
-        "#luigi_result_search"
-    )
-
-    // console.log("Init Search", xxx)
 }
 
 onBeforeMount(() => {
@@ -189,7 +21,6 @@ onBeforeMount(() => {
     script.src = "https://cdn.luigisbox.tech/search.js";
     script.async = true;
     script.onload = () => {
-        console.log('Luigi Search script loaded');
         LBInitSearchResult();
     };
     script.onerror = () => {
@@ -198,13 +29,11 @@ onBeforeMount(() => {
     document.head.appendChild(script);
 })
 
-// const inputValue = ref('')
-console.log("layout", layout)
+
 </script>
 <template>
     <div class="xmd:py-16 w-full mx-auto px-8">
-        <!-- <input v-model="inputValue" class="block w-full max-w-lg mx-auto" id="inputXxxLuigi" style="border: 1px solid #d1d5db; border-radius: 7px;height: 45px;padding-left: 10px;" placeholder="Search"/> -->
-        
+
         <div class="md:mt-4" :style="{
             fontFamily: layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily
         }">
@@ -218,19 +47,6 @@ console.log("layout", layout)
             </div>
         </div>
     </div>
-     <!-- <div class="flex items-center justify-center min-h-[60vh] text-center px-4">
-    <div class="max-w-xl">
-      <div class="text-6xl mb-6" :style="{ color: layout?.app?.theme[4] }">
-        <FontAwesomeIcon :icon="faTools" />
-        </div>
-     <h1 class="text-3xl font-bold text-gray-800 mb-4">
-        Work in Progress
-      </h1>
-      <p class="text-lg text-gray-600">
-        This feature will be ready by tomorrow. Thank you for your patience 🙏
-      </p>
-    </div>
-  </div> -->
 </template>
 
 <style lang="scss">
