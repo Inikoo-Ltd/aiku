@@ -18,32 +18,47 @@ class CrawlWebsite
 {
     use AsAction;
 
-    public function handle(Website $website): void
+    public string $jobQueue = 'low-priority';
+
+    public function handle(?int $websiteId, int $depth = 10): void
     {
+        if (!app()->environment('production')) {
+            return;
+        }
+
+        if (!$websiteId) {
+            return;
+        }
+
+        $website = Website::find($websiteId);
+
+        if (!$website) {
+            return;
+        }
 
         Crawler::create($website->storefront->canonical_url)
             ->internalOnly()
-            ->depth(2)
+            ->depth($depth)
             ->shouldCrawl(function (string $url) {
                 return !str_contains($url, '/app') && !str_contains($url, '/search');
             })
             ->onCrawled(function (string $url, CrawlResponse $response, CrawlProgress $progress) {
                 echo "[$progress->urlsProcessed/$progress->urlsFound] $url\n";
             })
-
             ->start();
     }
 
-    public function getCommandSignature():string
+    public function getCommandSignature(): string
     {
         return 'website:crawl {website?}';
     }
 
-    public function asCommand(Command $command):int
+    public function asCommand(Command $command): int
     {
-        if($command->argument('website')){
-            $website=Website::where('slug',$command->argument('website'))->firstOrFail();
-            $this->handle($website);
+        if ($command->argument('website')) {
+            $website = Website::where('slug', $command->argument('website'))->firstOrFail();
+            $this->handle($website->id);
+
             return 0;
         }
 
