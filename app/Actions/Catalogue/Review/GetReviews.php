@@ -22,6 +22,7 @@ class GetReviews
     use AsAction;
 
     private array $stats = [];
+    private array $ratingLabels = [];
 
     public function handle(array $filters): LengthAwarePaginator
     {
@@ -48,6 +49,7 @@ class GetReviews
         $query->where('status', $status ?: ReviewStatusEnum::Approved->value);
 
         $this->stats = $this->buildStats(clone $query, $filters);
+        $this->ratingLabels = $this->buildRatingLabels($filters);
 
         $sort = data_get($filters, 'sort', '-created_at');
         match ($sort) {
@@ -69,6 +71,7 @@ class GetReviews
     {
         return ReviewsResource::collection($reviews)->additional([
             'stats' => $this->stats,
+            'rating_labels' => $this->ratingLabels,
         ]);
     }
 
@@ -154,5 +157,28 @@ class GetReviews
             'number_reviews_rating_4' => (int) ((clone $query)->where('rating_main', 4)->count()),
             'number_reviews_rating_5' => (int) ((clone $query)->where('rating_main', 5)->count()),
         ];
+    }
+
+    private function buildRatingLabels(array $filters): array
+    {
+        $reviewableType = (string) data_get($filters, 'reviewable_type', '');
+        $reviewableId = (int) data_get($filters, 'reviewable_id', 0);
+
+        if ($reviewableType === '' || $reviewableId < 1) {
+            return [];
+        }
+
+        $reviewable = match ($reviewableType) {
+            'Product', 'product_reviews' => Product::query()->find($reviewableId),
+            'Shop', 'shop_reviews' => Shop::query()->find($reviewableId),
+            'ProductCategory', 'product_category_reviews' => ProductCategory::query()->find($reviewableId),
+            default => null,
+        };
+
+        if (!$reviewable) {
+            return [];
+        }
+
+        return ReviewsResource::ratingLabelsFor($reviewable);
     }
 }

@@ -26,6 +26,11 @@ class ReviewsResource extends JsonResource
         ]);
     }
 
+    public static function ratingLabelsFor(ProductCategory|Product|Shop $reviewable): array
+    {
+        return self::getRatingLabels($reviewable);
+    }
+
     public function toArray($request): array
     {
         $contactName = $this->contact_name ?? $this->customer?->contact_name ?? $this->customer_name ?? $this->customer?->name;
