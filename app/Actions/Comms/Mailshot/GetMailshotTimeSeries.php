@@ -33,10 +33,6 @@ class GetMailshotTimeSeries
 
         $timeSeries = MailshotTimeSeries::where('mailshot_id', $mailshot->id)
             ->where('frequency', $frequencyEnum)
-            ->with(['records' => function ($query) use ($frequencyEnum) {
-                $query->where('frequency', $frequencyEnum->value)
-                    ->orderBy('from', 'asc');
-            }])
             ->first();
 
         if (!$timeSeries) {
