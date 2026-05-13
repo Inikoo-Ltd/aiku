@@ -13,7 +13,7 @@ use App\Actions\SysAdmin\CleanUserCaches;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
-use App\Actions\UI\Grp\RecacheUserUiProps;
+use App\Actions\UI\Grp\BreakUserUiLayoutProps;
 use App\Http\Resources\SysAdmin\User\UserResource;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -43,7 +43,7 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
                 'grp-first-load-props:'.$user->id.':*'
             ]
         );
-        RecacheUserUiProps::dispatch($user);
+        BreakUserUiLayoutProps::dispatch($user);
 
         return $user;
     }

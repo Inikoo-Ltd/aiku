@@ -4,7 +4,7 @@ namespace App\Actions\Dispatching\DeliveryNote\Json;
 
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Http\Resources\Dispatching\DeliveryNoteReturnOptionResource;
+use App\Http\Resources\Dispatching\DeliveryNote\DeliveryNotesForSelectResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Services\QueryBuilder;
@@ -20,38 +20,26 @@ class GetDeliveryNoteValidForReturn extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('delivery_notes.reference', $value)
-                    ->orWhereWith('delivery_notes.tracking_number', $value);
+                    ->orWhereWith('delivery_notes.tracking_number', $value)
+                    ->orWhereWith('delivery_notes.contact_name', $value)
+                    ->orWhereWith('delivery_notes.company_name', $value);
             });
         });
 
         $query = QueryBuilder::for(DeliveryNote::class);
 
-        $query->leftjoin('customers', 'delivery_notes.customer_id', '=', 'customers.id');
-        $query->leftjoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
-        $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
+        $query->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED);
+        $query->where('delivery_notes.organisation_id', $warehouse->organisation_id);
+        $query->where('delivery_notes.is_returned', false);
 
-        $query->where(function ($q) use ($warehouse) {
-            $q->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED)
-                ->where('delivery_notes.warehouse_id', $warehouse->id)
-                ->where('delivery_notes.is_returned', false);
-        });
-
-        $query->where('shops.is_aiku', true);
 
         $selectColumns = [
             'delivery_notes.id',
             'delivery_notes.reference',
             'delivery_notes.date',
             'delivery_notes.slug',
-            'delivery_notes.type',
-            'customers.slug as customer_slug',
-            'customers.name as customer_name',
-            'shops.name as shop_name',
-            'shops.slug as shop_slug',
-            'organisations.name as organisation_name',
-            'organisations.slug as organisation_slug',
-            'delivery_notes.is_returned',
-            'delivery_notes.tracking_number'
+            'delivery_notes.contact_name',
+            'delivery_notes.company_name',
         ];
 
         return $query
@@ -64,7 +52,7 @@ class GetDeliveryNoteValidForReturn extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $deliveryNotes): AnonymousResourceCollection
     {
-        return DeliveryNoteReturnOptionResource::collection($deliveryNotes);
+        return DeliveryNotesForSelectResource::collection($deliveryNotes);
     }
 
     public function asController(Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator

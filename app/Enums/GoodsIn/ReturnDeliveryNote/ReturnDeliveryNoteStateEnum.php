@@ -19,33 +19,35 @@ enum ReturnDeliveryNoteStateEnum: string
     case RECEIVED = 'received';
     case RETURNING = 'returning';
     case RETURNED = 'returned';
+    case DONE = 'done';
     case CANCELLED = 'cancelled';
 
 
     public static function labels(): array
     {
         return [
-            'received'           => __('Received'),
-            'returning'         => __('Returning to Locations'),
-            'returned'         => __('Returned'),
-            'cancelled'        => __('Cancelled')
+            'received'  => __('Received'),
+            'returning' => __('Returning to Locations'),
+            'returned'  => __('Returned'),
+            'cancelled' => __('Cancelled'),
+            'done'      => __('Done')
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'received'           => [
+            'received'  => [
                 'tooltip' => __('Received'),
                 'icon'    => 'fal fa-chair',
-                'class'   => 'text-gray-500', 
+                'class'   => 'text-gray-500',
                 'color'   => 'gray',
                 'app'     => [
                     'name' => 'chair',
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'returning'         => [
+            'returning' => [
                 'tooltip' => __('Returning to Locations'),
                 'icon'    => 'fal fa-hand-paper',
                 'class'   => 'text-gray-500',
@@ -55,8 +57,18 @@ enum ReturnDeliveryNoteStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'returned' => [
+            'returned'  => [
                 'tooltip' => __('Returned'),
+                'icon'    => 'fal fa-check',
+                'class'   => 'text-green-500',
+                'color'   => 'green',
+                'app'     => [
+                    'name' => 'check-double',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'done'  => [
+                'tooltip' => __('Done'),
                 'icon'    => 'fal fa-check-double',
                 'class'   => 'text-green-500',
                 'color'   => 'green',
@@ -65,7 +77,7 @@ enum ReturnDeliveryNoteStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'cancelled'  => [
+            'cancelled' => [
                 'tooltip' => __('Cancelled'),
                 'icon'    => 'fal fa-times',
                 'class'   => 'text-red-500',

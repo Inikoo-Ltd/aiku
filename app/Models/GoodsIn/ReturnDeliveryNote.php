@@ -38,12 +38,12 @@ class ReturnDeliveryNote extends Model implements Auditable
     protected $table = 'return_delivery_notes';
 
     protected $casts = [
-        'state'          => ReturnDeliveryNoteStateEnum::class,
-        'queued_at'             => 'datetime',
-        'handling_at'           => 'datetime',
-        'picked_at'             => 'datetime',
-        'received_at'           => 'datetime',
-        'cancelled_at'          => 'datetime',
+        'state'        => ReturnDeliveryNoteStateEnum::class,
+        'queued_at'    => 'datetime',
+        'handling_at'  => 'datetime',
+        'picked_at'    => 'datetime',
+        'received_at'  => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     protected $attributes = [
