@@ -39,10 +39,6 @@ enum CustomerDropshippingTabsEnum: string
                 'title' => __('Timeline'),
                 'icon'  => 'fal fa-code-branch',
             ],
-            CustomerDropshippingTabsEnum::INSIGHT => [
-                'title' => __('Insight'),
-                'icon'  => 'fal fa-lightbulb-on',
-            ],
 
             CustomerDropshippingTabsEnum::HISTORY => [
                 'title' => __('History'),
