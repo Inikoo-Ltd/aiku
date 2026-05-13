@@ -40,8 +40,10 @@ class CrawlWebsite
             ->internalOnly()
             ->concurrency($concurrency)
             ->depth($depth)
-            ->shouldCrawl(function (string $url) {
-                return !str_contains($url, '/app') && !str_contains($url, '/search');
+            ->shouldCrawl(function (string $url) use ($website) {
+                $domain = preg_replace('/^www\./i', '', parse_url($url, PHP_URL_HOST));
+
+                return $domain === $website->domain && !str_contains($url, '/app') && !str_contains($url, '/search');
             })
             ->onCrawled(function (string $url, CrawlResponse $response, CrawlProgress $progress) {
                 echo "[$progress->urlsProcessed/$progress->urlsFound] $url\n";
@@ -59,7 +61,7 @@ class CrawlWebsite
     {
         if ($command->argument('website')) {
             $website = Website::where('slug', $command->argument('website'))->firstOrFail();
-            $command->info("Crawling website: {$website->slug} (ID: {$website->id})");
+            $command->info("Crawling website: $website->slug (ID: $website->id)");
             $command->info("Depth: {$command->option('depth')}, Concurrency: {$command->option('concurrency')}");
             $this->handle($website->id, $command->option('depth'), $command->option('concurrency'));
 
