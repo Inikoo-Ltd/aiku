@@ -258,6 +258,7 @@ class ShowReturnDeliveryNote extends OrgAction
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
             'picker'                       => $returnDeliveryNote->handlerUser,
             'picked_bays'                  => $pickedBays,
+            'parcels'                      => $deliveryNote->parcels,
             'trolleys'                     => $trolleys,
             'shop_type'                    => $returnDeliveryNote->shop->type,
             'shipping_fields'              => [

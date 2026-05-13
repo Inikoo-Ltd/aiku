@@ -516,16 +516,16 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                     </div>
 
                     <!-- Section: Trolleys -->
-                    <ManageTrolleysInDeliveryNote
+                    <!-- <ManageTrolleysInDeliveryNote
                         v-if="!(['unassigned', 'queued', 'dispatched', 'packed'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
                         :deliveryNote
                         :trolleys="boxStats.trolleys"
                         :warehouse
                         :isEditable
-                    />
+                    /> -->
                     
                     <!-- Section: Picked Bays -->
-                    <div class="!mt-1.5 flex gap-x-2 items-center">
+                    <!-- <div class="!mt-1.5 flex gap-x-2 items-center">
                         <dl class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
                                 {{ trans("Picked bays") }}:
@@ -553,7 +553,7 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                         />
                     </div>
                     
-                    <div class="!mt-2 border-t border-gray-300 w-full" />
+                    <div class="!mt-2 border-t border-gray-300 w-full" /> -->
 
 
                     <!-- Total Items -->
@@ -563,7 +563,7 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
-                            {{ locale.number(boxStats.products?.number_items || 0) }} items
+                            {{ locale.number(boxStats.products?.number_items || 0) }} {{ ctrans("items") }} <span v-tooltip="ctrans('Data is recorded when the item is dispatched')" class="opacity-60 italic">({{ ctrans("sent") }})</span>
                         </dd>
                     </dl>
 
@@ -574,7 +574,7 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                                 fixed-width aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
-                            {{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
+                            {{ locale.number(boxStats?.products.estimated_weight) || '-' }} {{ ctrans("kilograms") }} <span v-tooltip="ctrans('Data is recorded when the item is dispatched')" class="opacity-60 italic">({{ ctrans("sent") }})</span>
                         </dd>
                     </dl>
 
@@ -589,13 +589,12 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                     </dl>
 
                     <!-- Section: Parcels -->
-                    <div v-if="['packing', 'packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
-                        class="flex gap-x-1 pb-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
-                        <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
+                    <div class="flex gap-x-1 pb-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+                        <FontAwesomeIcon v-tooltip="ctrans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
                             fixed-width aria-hidden='true' />
                         <div class=" group w-full pl-px">
                             <div class="leading-4 xtext-base flex justify-between w-full py-1">
-                                <div class="text-gray-500">{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
+                                <div class="text-gray-500">{{ ctrans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }}) <span v-tooltip="ctrans('Data is recorded when the item is dispatched')" class="opacity-60 italic">({{ ctrans("sent") }})</span></div>
                             </div>
 
                             <ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">
