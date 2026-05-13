@@ -31,7 +31,7 @@ const props = defineProps<{
     shopType: string
 }>()
 
-const layoutStore = inject("layout", layoutStructure)
+const layout = inject("layout", layoutStructure)
 const loading = ref(false)
 
 const isOpenModalCreateReturn = ref(false)
@@ -98,8 +98,10 @@ const onCreateReturn = () => {
         <template #other>
         </template>
         <template #button-create-return="{ action }">
-            <Button :type="action.type" :style="action.style" :label="action.label" :icon="action.icon"
-                @click="() => onOpenModal()" />
+            <Button v-if="layout.app.environment === 'local'" :type="action.type" :style="action.style" :label="action.label" :icon="action.icon"
+            @click="() => onOpenModal()" />
+            <div v-else>
+            </div>
         </template>
     </PageHeading>
     <TableDeliveryNotes :data="data" />

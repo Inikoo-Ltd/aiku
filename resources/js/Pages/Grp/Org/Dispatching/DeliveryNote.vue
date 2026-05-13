@@ -424,7 +424,7 @@ const processReturn = () => {
 			<ButtonWithLink
 				xclick="processReturn()"
 				type="red"
-				v-tooltip="ctrans('Maybe the Delivery Note is not received by customer')"
+				v-tooltip="ctrans('Process the return if the product is sent back to the warehouse due to failed delivery or other reasons')"
 				icon="fal fa-exchange"
 				:routeTarget="{
 					name: 'grp.models.delivery_note.return.process',
@@ -450,7 +450,7 @@ const processReturn = () => {
 				}"
 			>
 				<template #label>
-					<span class="whitespace-nowrap">{{ ctrans('Set return') }}</span>
+					<span class="whitespace-nowrap">{{ ctrans('Set return') }} || Local</span>
 				</template>
 			</ButtonWithLink>
 		</template>

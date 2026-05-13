@@ -244,7 +244,7 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && !$deliveryNote->is_returned) {
+        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && !$deliveryNote->is_returned && app()->environment('local')) {
             $actions[] = [
                 'type'    => 'button',
                 'key'     => 'return',
