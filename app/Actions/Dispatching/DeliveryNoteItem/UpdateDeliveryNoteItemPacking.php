@@ -17,6 +17,8 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Audits\DispatchSimpleAudit;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 
 class UpdateDeliveryNoteItemPacking extends OrgAction
 {
@@ -29,6 +31,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
         $deliveryNote       = $deliveryNoteItem->deliveryNote;
+        $oldState           = $deliveryNote->state;
         $oldPackedQuantity  = (int) ($deliveryNoteItem->getOriginal('quantity_packed') ?? 0);
 
         StorePacking::make()->action($deliveryNoteItem, $this->user, []);
@@ -47,6 +50,15 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
             newValue        : $newAuditString,
             eventName       : 'item_packed'
         );
+
+        $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
+
+        // Ignore deliveryNoteItem with quantity_not_picked
+        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => empty((float)$item->quantity_not_picked) && $item->packings->count() == 0);
+
+        if ($oldState != DeliveryNoteStateEnum::PACKED && $hasUnfinishedPackings->count() == 0) {
+            UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, request()->user());
+        }
 
         $deliveryNote = CheckAndCompleteDeliveryNotePacking::run($deliveryNote);
 
