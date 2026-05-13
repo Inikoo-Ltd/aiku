@@ -9,7 +9,7 @@
 
 import { Language } from '@/types/Locale'
 // **************************************************************
-// Note is another file in resources/js/Iris/Composables/useIrisLocaleStructure.ts YOU NEED TO MODIFY BOTH
+// Note is another file in resources/js/Composables/useLocaleStructure.ts YOU NEED TO MODIFY BOTH
 // **************************************************************
 // Fallback if Pinia Store didn't provided
 export const aikuLocaleStructure = {
