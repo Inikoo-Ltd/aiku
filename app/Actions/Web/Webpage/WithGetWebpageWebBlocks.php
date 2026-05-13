@@ -12,7 +12,7 @@ use App\Models\Web\Webpage;
 
 trait WithGetWebpageWebBlocks
 {
-    use WithFillIrisWebBlocks;
+    use WithFillWorkshopWebBlocks;
 
     public function getWebBlocks(Webpage $webpage, array $webBlocks): array
     {
