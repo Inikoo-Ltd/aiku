@@ -7,14 +7,14 @@ import { faChevronRight, faTrashAlt } from "@fal"
 import { faCheckCircle } from "@fas"
 import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import LinkIris from '../LinkIris.vue'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import {ToggleSwitch } from 'primevue'
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { ProductResource } from '@/types/Iris/Products'
-import InputQuantitySideBasket from '../Products/InputQuantitySideBasket.vue'
+import InputQuantitySideBasket from '@/Components/Iris/Products/InputQuantitySideBasket.vue'
 import axios from 'axios'
 import { router } from '@inertiajs/vue3'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -25,7 +25,7 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
-import MissedOfferFOB from '../Offers/MissedOffers/MissedOfferFOB.vue'
+import MissedOfferFOB from '@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle)
 
 interface DataSideBasket {

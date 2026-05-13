@@ -3,14 +3,14 @@ import { computed, inject, ref, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import type { Component } from 'vue'
 
-import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue'
-import TableIrisSubDepartment from '@/Components/Tables/Iris/TableIrisSubDepartment.vue'
-import TableIrisFamilies from '@/Components/Tables/Iris/TableIrisFamilies.vue'
-import TableIrisProducts from '@/Components/Tables/Iris/TableIrisProducts.vue'
+import TableIrisDepartment from '../Components/Tables/TableIrisDepartment.vue'
+import TableIrisSubDepartment from '../Components/Tables/TableIrisSubDepartment.vue'
+import TableIrisFamilies from '../Components/Tables/TableIrisFamilies.vue'
+import TableIrisProducts from '../Components/Tables/TableIrisProducts.vue'
+import TableIrisCollection from '../Components/Tables/TableIrisCollection.vue'
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faArrowLeft, faArrowRight, faWindowClose } from '@far'
-import TableIrisCollection from '@/Components/Tables/Iris/TableIrisCollection.vue'
 
 const props = defineProps<{
     tabs: {
