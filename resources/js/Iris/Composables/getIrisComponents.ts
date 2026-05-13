@@ -5,6 +5,9 @@ import { defineAsyncComponent } from "vue"
 import DepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/DepartmentDescriptionIris.vue"
 
 
+// Sub-department
+import SubDepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/SubDepartmentDescriptionIris.vue"
+
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import ListProductsIris from "@/Components/CMS/Webpage/Products/Dropshipping/ListProductsIris.vue"
 import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue"
@@ -89,7 +92,6 @@ import Step2Iris from "@/Components/CMS/Webpage/Step2/Step2Iris.vue"
 import Step1Iris from "@/Components/CMS/Webpage/Step1/Step1Iris.vue"
 import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
 import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionIris.vue"
-import SubDepartmentDescriptionIris from "@/Components/CMS/Webpage/SubDepartmentDescription/SubDepartmentDescriptionIris.vue"
 import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
 import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/FamiliesOverviewIris1.vue'
