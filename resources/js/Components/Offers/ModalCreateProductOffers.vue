@@ -2,7 +2,7 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -24,7 +24,7 @@ const isOpenModal = ref(false)
 const offerLabel = ref('')
 const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(null)
-const offerAmount = ref<number | null>(null)
+const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
 const offerCategoryId = ref(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
@@ -32,6 +32,19 @@ const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 
 const isLoadingSubmit = ref(false)
+
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
@@ -48,8 +61,8 @@ const submitCategoryOffer = () => {
             offer_amount: offerAmount.value,
             discount_percentage: discountPercentage.value,
             date_type: dateType.value,
-            start_date: startDate.value,
-            end_date: endDate.value
+            start_date: formatDate(startDate.value),
+            end_date: formatDate(endDate.value)
         },
         {
             preserveScroll: true,
@@ -79,15 +92,11 @@ const submitCategoryOffer = () => {
     )
 }
 
-function onOfferQtyInput(e: { value: string | number | undefined }) {
-    offerQtyItems.value = e.value == null ? null : Number(e.value)
-}
-
 const resetForm = () => {
     offerLabel.value = ''
     typeOffer.value = 'quantity'
     offerQtyItems.value = null
-    offerAmount.value = null
+    offerAmount.value = 0
     discountPercentage.value = null
     offerCategoryId.value = null
     dateType.value = 'permanent'
@@ -117,13 +126,29 @@ const isFormInvalid = computed(() => {
 
     return false
 })
+
+watch(typeOffer, (val) => {
+    if (val === 'quantity') {
+        offerAmount.value = null
+    } else if (val === 'amount') {
+        offerQtyItems.value = null
+    }
+})
+
+watch(dateType, (val) => {
+    if (val === 'permanent') {
+        endDate.value = null
+    }
+})
+
+resetForm();
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Product Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Product Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Product Offer') }}</h2>
 
@@ -173,7 +198,7 @@ const isFormInvalid = computed(() => {
                                 </label>
                             </div>
 
-                            <InputNumber :modelValue="offerQtyItems" @input="onOfferQtyInput"
+                            <InputNumber v-model="offerQtyItems"
                                 inputId="offer_quantity_item" :placeholder="trans('Enter number')"
                                 :disabled="typeOffer !== 'quantity'" :min="0"
                                 :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? trans('items') : trans('item'))" />
@@ -237,7 +262,7 @@ const isFormInvalid = computed(() => {
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full" :minDate="today"
                                 :placeholder="trans('Select start date')" />
                         </div>
 
@@ -259,7 +284,7 @@ const isFormInvalid = computed(() => {
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
                     <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
+                        :loading="isLoadingSubmit" :disabled="isFormInvalid">
                     </Button>
                 </div>
             </div>

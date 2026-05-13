@@ -8,7 +8,7 @@
 
 namespace App\Actions\Web\Webpage;
 
-use App\Actions\Web\WebBlock\GetBlockSubDepartment;
+use App\Actions\Web\WebBlock\Workshop\GetBlockSubDepartment;
 use App\Actions\Web\WebBlock\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\GetWebBlockCollection;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartment;
