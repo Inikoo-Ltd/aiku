@@ -4,6 +4,7 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use App\Models\Reviews\ReviewRatingLabel;
@@ -13,13 +14,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReviewsResource extends JsonResource
 {
-    public static function collectionWithTabMeta(LengthAwarePaginator $reviews, ProductCategory $family): AnonymousResourceCollection
+    public static function collectionWithTabMeta(LengthAwarePaginator $reviews, ProductCategory|Product $reviewable): AnonymousResourceCollection
     {
-        $ratingLabels = self::getRatingLabels($family);
+        $ratingLabels = self::getRatingLabels($reviewable);
 
         return self::collection($reviews)->additional([
-            'stats'     => self::getStats($family, $ratingLabels),
-            'customers' => self::getReviewCustomers($family),
+            'stats'     => self::getStats($reviewable, $ratingLabels),
+            'customers' => self::getReviewCustomers($reviewable),
             'rating_labels' => $ratingLabels,
         ]);
     }
@@ -100,9 +101,9 @@ class ReviewsResource extends JsonResource
         ];
     }
 
-    private static function getStats(ProductCategory $family, array $ratingLabels = []): array
+    private static function getStats(ProductCategory|Product $reviewable, array $ratingLabels = []): array
     {
-        $reviewStat = $family->reviewStats()->first();
+        $reviewStat = $reviewable->reviewStats()->first();
 
         $averageByDimension = [
             'a' => round((float) ($reviewStat?->average_rating_a ?? 0), 2),
@@ -141,17 +142,17 @@ class ReviewsResource extends JsonResource
         ];
     }
 
-    private static function getReviewCustomers(ProductCategory $family): array
+    private static function getReviewCustomers(ProductCategory|Product $reviewable): array
     {
-        return self::paginateReviewCustomers($family, 1, 20);
+        return self::paginateReviewCustomers($reviewable, 1, 20);
     }
 
-    private static function getRatingLabels(ProductCategory $family): array
+    private static function getRatingLabels(ProductCategory|Product $reviewable): array
     {
         return ReviewRatingLabel::query()
             ->whereRaw('LOWER(model_type) = ?', ['shop'])
-            ->where('model_id', $family->shop_id)
-            ->whereRaw('LOWER(review_context) = ?', [ReviewContextEnum::ProductCategoryReviews->value])
+            ->where('model_id', $reviewable->shop_id)
+            ->whereRaw('LOWER(review_context) = ?', [self::reviewContext($reviewable)->value])
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->orderBy('dimension')
@@ -166,11 +167,11 @@ class ReviewsResource extends JsonResource
             ->all();
     }
 
-    public static function paginateReviewCustomers(ProductCategory $family, int $page = 1, int $perPage = 20, ?string $search = null): array
+    public static function paginateReviewCustomers(ProductCategory|Product $reviewable, int $page = 1, int $perPage = 20, ?string $search = null): array
     {
         $baseQuery = Customer::query()
             ->join('web_users', 'web_users.customer_id', '=', 'customers.id')
-            ->where('web_users.shop_id', $family->shop_id)
+            ->where('web_users.shop_id', $reviewable->shop_id)
             ->selectRaw("
                 customers.id as customer_id,
                 COALESCE(NULLIF(MAX(customers.contact_name), ''), MAX(customers.name), MIN(web_users.username)) as label,
@@ -218,8 +219,8 @@ class ReviewsResource extends JsonResource
             ],
             'links' => [
                 'next' => $hasMore
-                    ? route('grp.models.review.customers', [
-                        'productCategory' => $family->id,
+                    ? route(self::reviewCustomersRouteName($reviewable), [
+                        self::reviewCustomersRouteParamKey($reviewable) => $reviewable->id,
                         'page' => (int) $page + 1,
                         'per_page' => (int) $perPage,
                         'filter' => ['global' => $search],
@@ -227,5 +228,20 @@ class ReviewsResource extends JsonResource
                     : null,
             ],
         ];
+    }
+
+    private static function reviewContext(ProductCategory|Product $reviewable): ReviewContextEnum
+    {
+        return $reviewable instanceof Product ? ReviewContextEnum::ProductReviews : ReviewContextEnum::ProductCategoryReviews;
+    }
+
+    private static function reviewCustomersRouteName(ProductCategory|Product $reviewable): string
+    {
+        return $reviewable instanceof Product ? 'grp.models.review.customers.product' : 'grp.models.review.customers';
+    }
+
+    private static function reviewCustomersRouteParamKey(ProductCategory|Product $reviewable): string
+    {
+        return $reviewable instanceof Product ? 'product' : 'productCategory';
     }
 }

@@ -11,6 +11,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { trans } from "laravel-vue-i18n"
 import { faPencil, faReply, faEye } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { computed } from "vue"
 
 
 library.add(
@@ -50,6 +51,8 @@ const props = defineProps<{
     data: ReviewTablePayload
     tab?: string
     product_category_id?: number
+    reviewable_id?: number
+    reviewable_type?: "ProductCategory" | "Product"
     customers?: {
         data: Array<{
             customer_id: number
@@ -67,6 +70,9 @@ const props = defineProps<{
     }
     rating_labels?: RatingLabel[]
 }>()
+
+const reviewableId = computed(() => props.reviewable_id ?? props.product_category_id ?? 0)
+const reviewableType = computed(() => props.reviewable_type ?? "ProductCategory")
 
 const renderStars = (rating: number): string => {
     const value = Number.isFinite(rating) ? Math.max(0, Math.min(5, rating)) : 0
@@ -108,7 +114,8 @@ const renderStars = (rating: number): string => {
                         <ModalCreateCategoryReviews
                             :hideDefaultButton="true"
                             mode="detail"
-                            :product_category_id="product_category_id ?? 0"
+                            :product_category_id="reviewableId"
+                            :reviewable_type="reviewableType"
                             :review="item"
                             :customers="customers"
                             :rating_labels="rating_labels"
@@ -121,7 +128,8 @@ const renderStars = (rating: number): string => {
                         <ModalCreateCategoryReviews
                             :hideDefaultButton="true"
                             mode="update"
-                            :product_category_id="product_category_id ?? 0"
+                            :product_category_id="reviewableId"
+                            :reviewable_type="reviewableType"
                             :review="item"
                             :customers="customers"
                             :rating_labels="rating_labels"

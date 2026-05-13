@@ -3,8 +3,11 @@
 namespace App\Actions\Catalogue\Review\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Reviews\ProductReview;
 use App\Models\Reviews\ProductCategoryReview;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Services\QueryBuilder;
@@ -14,13 +17,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexReviews extends OrgAction
 {
-    public function getStats(ProductCategory $parent): array
+    public function getStats(ProductCategory|Product $parent): array
     {
         $reviewStat = $parent->reviewStats()->first();
         $ratingLabels = ReviewRatingLabel::query()
             ->whereRaw('LOWER(model_type) = ?', ['shop'])
             ->where('model_id', $parent->shop_id)
-            ->whereRaw('LOWER(review_context) = ?', ['product_category_reviews'])
+            ->whereRaw('LOWER(review_context) = ?', [$this->reviewContext($parent)->value])
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->orderBy('dimension')
@@ -54,11 +57,14 @@ class IndexReviews extends OrgAction
             ->values()
             ->all();
 
+        $reviewModel = $this->reviewModel($parent);
+        $foreignKey = $this->foreignKey($parent);
+
         return [
             'total' => (int) ($reviewStat?->number_reviews ?? 0),
             'average_rating' => (float) ($reviewStat?->average_rating_main ?? 0),
             'verified' => 0,
-            'like_count' => (int) ProductCategoryReview::query()->where('product_category_id', $parent->id)->sum('like_count'),
+            'like_count' => (int) $reviewModel::query()->where($foreignKey, $parent->id)->sum('like_count'),
             'status_approved' => (int) ($reviewStat?->number_reviews_approved ?? 0),
             'status_pending' => (int) ($reviewStat?->number_reviews_pending ?? 0),
             'status_rejected' => (int) ($reviewStat?->number_reviews_rejected ?? 0),
@@ -71,7 +77,7 @@ class IndexReviews extends OrgAction
         ];
     }
 
-    public function handle(ProductCategory $parent, ?string $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory|Product $parent, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -83,24 +89,28 @@ class IndexReviews extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(ProductCategoryReview::class)
+        $reviewModel = $this->reviewModel($parent);
+        $table = (new $reviewModel())->getTable();
+        $foreignKey = $this->foreignKey($parent);
+
+        return QueryBuilder::for($reviewModel)
             ->with(['media', 'replies'])
-            ->leftJoin('customers', 'customers.id', '=', 'product_category_reviews.customer_id')
-            ->where('product_category_reviews.product_category_id', $parent->id)
-            ->defaultSort('-product_category_reviews.created_at')
+            ->leftJoin('customers', 'customers.id', '=', $table . '.customer_id')
+            ->where($table . '.' . $foreignKey, $parent->id)
+            ->defaultSort('-' . $table . '.created_at')
             ->select([
-                'product_category_reviews.id',
-                'product_category_reviews.customer_id',
-                'product_category_reviews.status',
-                'product_category_reviews.rating_main as rating',
-                'product_category_reviews.rating_a',
-                'product_category_reviews.rating_b',
-                'product_category_reviews.rating_c',
-                'product_category_reviews.rating_d',
-                'product_category_reviews.rating_e',
-                'product_category_reviews.message',
-                'product_category_reviews.like_count',
-                'product_category_reviews.created_at',
+                $table . '.id',
+                $table . '.customer_id',
+                $table . '.status',
+                $table . '.rating_main as rating',
+                $table . '.rating_a',
+                $table . '.rating_b',
+                $table . '.rating_c',
+                $table . '.rating_d',
+                $table . '.rating_e',
+                $table . '.message',
+                $table . '.like_count',
+                $table . '.created_at',
                 'customers.contact_name as contact_name',
             ])
             ->allowedSorts(['id', 'created_at', 'rating', 'like_count'])
@@ -114,7 +124,12 @@ class IndexReviews extends OrgAction
         return $this->handle($parent, $prefix);
     }
 
-    public function tableStructure(ProductCategory $parent, ?string $prefix = null): Closure
+    public function inProduct(Product $parent, ?string $prefix = null): LengthAwarePaginator
+    {
+        return $this->handle($parent, $prefix);
+    }
+
+    public function tableStructure(ProductCategory|Product $parent, ?string $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
@@ -140,5 +155,20 @@ class IndexReviews extends OrgAction
             $table->column(key: 'like_count', label: __('Like'), sortable: true, searchable: false, align: 'right');
             $table->column(key: 'action', label: __('Actions'), sortable: false, searchable: false, align: 'right');
         };
+    }
+
+    private function reviewModel(ProductCategory|Product $parent): string
+    {
+        return $parent instanceof Product ? ProductReview::class : ProductCategoryReview::class;
+    }
+
+    private function foreignKey(ProductCategory|Product $parent): string
+    {
+        return $parent instanceof Product ? 'product_id' : 'product_category_id';
+    }
+
+    private function reviewContext(ProductCategory|Product $parent): ReviewContextEnum
+    {
+        return $parent instanceof Product ? ReviewContextEnum::ProductReviews : ReviewContextEnum::ProductCategoryReviews;
     }
 }

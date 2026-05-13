@@ -14,6 +14,7 @@ import axios from "axios"
 
 const props = defineProps<{
     product_category_id: number
+    reviewable_id?: number
     reviewable_type?: "ProductCategory" | "Product"
     mode?: "create" | "update" | "detail"
     hideDefaultButton?: boolean
@@ -96,6 +97,8 @@ type RawCustomerOption = {
     username?: string
     email?: string | null
 }
+
+const reviewableId = computed(() => props.reviewable_id ?? props.product_category_id)
 
 const mode = computed(() => props.mode ?? "create")
 const isDetailMode = computed(() => mode.value === "detail")
@@ -318,7 +321,14 @@ const fetchCustomers = async (reset: boolean): Promise<void> => {
 
     try {
         const response = await axios.get(
-            route("grp.models.review.customers", { productCategory: props.product_category_id }),
+            route(
+                props.reviewable_type === "Product"
+                    ? "grp.models.review.customers.product"
+                    : "grp.models.review.customers",
+                props.reviewable_type === "Product"
+                    ? { product: reviewableId.value }
+                    : { productCategory: reviewableId.value }
+            ),
             {
                 params: {
                     page: customerPage.value,
@@ -463,7 +473,7 @@ const submitReview = (): void => {
 
     const formData = new FormData()
     formData.append("reviewable_type", props.reviewable_type ?? "ProductCategory")
-    formData.append("reviewable_id", String(props.product_category_id))
+    formData.append("reviewable_id", String(reviewableId.value))
     formData.append("rating_main", String(averageRating.value))
     formData.append("rating", String(averageRating.value))
     formData.append("message", message.value)

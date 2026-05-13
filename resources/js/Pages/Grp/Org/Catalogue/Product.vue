@@ -45,6 +45,8 @@ import { faHatCowboy } from "@far"
 import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
+import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
+import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
 
 library.add(
     faFolder,
@@ -85,6 +87,8 @@ const props = defineProps<{
     mailshots?: {}
     showcase?: {}
     content?: {}
+    offers?: {}
+    reviews?: {}
     service: {}
     rental: {}
     trade_units?: {}
@@ -163,8 +167,27 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         content: ProductContent,
         offers: TableOffers,
+        reviews: TableReviews,
     }
     return components[currentTab.value]
+})
+
+const reviewCustomers = computed(() => {
+    const reviewsData = props.reviews as Record<string, any> | undefined
+    return reviewsData?.customers ?? {
+        data: [],
+        meta: {
+            current_page: 1,
+            per_page: 20,
+            next_page: null,
+            has_more: false,
+        },
+    }
+})
+
+const reviewRatingLabels = computed(() => {
+    const reviewsData = props.reviews as Record<string, any> | undefined
+    return Array.isArray(reviewsData?.rating_labels) ? reviewsData.rating_labels : []
 })
 
 // Warning flag
@@ -273,6 +296,14 @@ const goToEdit = () => {
                 :shop_data="props.shop_data"
                 :product_id="props.product_id"
                  />
+            <ModalCreateCategoryReviews
+                v-if="currentTab === 'reviews'"
+                :product_category_id="props.product_id"
+                reviewable_type="Product"
+                :customers="reviewCustomers"
+                :rating_labels="reviewRatingLabels"
+                v-tooltip="'Create New Review'"
+            />
         </template>
     </PageHeading>
 
@@ -300,7 +331,19 @@ const goToEdit = () => {
     </div>
 
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
+    <component
+        v-if="currentTab === 'reviews'"
+        :is="component"
+        :data="props[currentTab]"
+        :tab="currentTab"
+        :handleTabUpdate
+        :salesData="salesData"
+        :reviewable_id="props.product_id"
+        reviewable_type="Product"
+        :customers="reviewCustomers"
+        :rating_labels="reviewRatingLabels"
+    />
+    <component v-else :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
 </template>
 
 

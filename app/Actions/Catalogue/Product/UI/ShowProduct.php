@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\GetProductImages;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
+use App\Actions\Catalogue\Review\UI\IndexReviews;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Comms\BackInStockReminder\UI\ProductHasBackInStockReminders;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
@@ -29,6 +30,7 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Goods\AssetTimeSeriesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
@@ -40,6 +42,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -337,6 +340,10 @@ class ShowProduct extends OrgAction
             ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run($product))
                 : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
+
+            ProductTabsEnum::REVIEWS->value => $this->tab == ProductTabsEnum::REVIEWS->value
+                ? fn () => $this->getReviewsTabData($product)
+                : Inertia::lazy(fn () => $this->getReviewsTabData($product)),
         ];
 
         if (!$isExternalShop) {
@@ -436,7 +443,8 @@ class ShowProduct extends OrgAction
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
-            ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value));
+            ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value))
+            ->table(IndexReviews::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::REVIEWS->value));
 
         if (!$isExternalShop) {
             $productPage = $productPage
@@ -451,6 +459,14 @@ class ShowProduct extends OrgAction
     public function jsonResponse(Product $product): ProductsResource
     {
         return new ProductsResource($product);
+    }
+
+    private function getReviewsTabData(Product $product): AnonymousResourceCollection
+    {
+        return ReviewsResource::collectionWithTabMeta(
+            IndexReviews::make()->inProduct(parent: $product, prefix: ProductTabsEnum::REVIEWS->value),
+            $product
+        );
     }
 
     public function getBreadcrumbs(Organisation|Shop|Fulfilment|ProductCategory $parent, Product $product, string $routeName, array $routeParameters, $suffix = null): array
