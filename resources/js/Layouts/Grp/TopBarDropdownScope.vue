@@ -9,10 +9,9 @@ import { MenuItem } from '@headlessui/vue'
 import Image from "@common/Components/Image.vue";
 import { Image as ImageTS } from '@/types/Image'
 import axios from 'axios'
-import { set } from 'lodash-es'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faChevronRight } from '@fal'
-library.add(faChevronRight)
+import { faChevronRight, faWarehouseAlt } from '@fal'
+library.add(faChevronRight, faWarehouseAlt)
 
 const props = defineProps<{
     menuItems: {
@@ -48,52 +47,79 @@ const sortedMenuItems = computed(() => {
     })
 })
 
+// Method: on click Organisation/Agents/Digital Agency
 const onClickOrg = async (slug?: string) => {
     if (!slug) return
 
-    // console.log('11 onClickOrg', layout.agents.data)
-    // console.log('22 onClickOrg', layout.agents.data.find(organisation => organisation.slug == slug)?.authorised_shops.length)
-    // return 
+    const currentRoute = layout.currentRoute || route().current() || ''
+    const currentRouteParams = layout.currentParams || { ...route().params }
 
-    // If current route is in Shop or Fulfilment, redirect to index
-    if (route().current()?.includes('grp.org.shops') || route().current()?.includes('grp.org.fulfilments') || route().current()?.includes('grp.org.warehouses')) {
-        // If org have shop or fulfilment, redirect to Shops index
-        if (layout.organisations.data.find(organisation => organisation.slug == slug)?.authorised_shops.length || layout.organisations.data.find(organisation => organisation.slug == slug)?.authorised_fulfilments.length) {
-            // console.log('333')
-            router.visit(route('grp.org.dashboard.show', { organisation: slug }))
-            // set(layout, ['organisationsState', slug, 'currentShop'], '')
-            // set(layout, ['organisationsState', slug, 'currentFulfilment'], '')
-            return
-        } else if (layout.agents.data.find(agent => agent.slug == slug)?.authorised_shops.length || layout.agents.data.find(agent => agent.slug == slug)?.authorised_fulfilments.length) {
-            // console.log('444')
-            router.visit(route('grp.org.dashboard.show', { organisation: slug }))
-            // set(layout, ['organisationsState', slug, 'currentShop'], '')
-            // set(layout, ['organisationsState', slug, 'currentFulfilment'], '')
-            return
+    // If user currently in Shop page
+    if (currentRouteParams.shop) {
+        const rememberedShop = layout.organisationsState?.[slug]?.currentShop
+        const targetEntity = layout.organisations.data.find((org: any) => org.slug === slug) ||
+                            layout.agents.data.find((agent: any) => agent.slug === slug)
+        const shopIsValid = (targetEntity as any)?.authorised_shops?.find(
+            (s: any) => s.slug === rememberedShop && s.state !== 'closed'
+        )
+
+        if (rememberedShop && shopIsValid) {
+            router.visit(route(currentRoute, { ...currentRouteParams, organisation: slug, shop: rememberedShop }))
         } else {
-            // console.log('5555')
             router.visit(route('grp.org.dashboard.show', { organisation: slug }))
-            set(layout, ['organisationsState', slug, 'currentShop'], '')
-            set(layout, ['organisationsState', slug, 'currentFulfilment'], '')
-            return
         }
+        return
     }
 
+    // If user currently in Fulfilment page
+    if (currentRouteParams.fulfilment) {
+        const rememberedFulfilment = layout.organisationsState?.[slug]?.currentFulfilment
+        const targetEntity = layout.organisations.data.find((org: any) => org.slug === slug) ||
+                            layout.agents.data.find((agent: any) => agent.slug === slug)
+        const fulfilmentIsValid = (targetEntity as any)?.authorised_fulfilments?.find(
+            (f: any) => f.slug === rememberedFulfilment
+        )
+
+        if (rememberedFulfilment && fulfilmentIsValid) {
+            router.visit(route(currentRoute, { ...currentRouteParams, organisation: slug, fulfilment: rememberedFulfilment }))
+        } else {
+            router.visit(route('grp.org.dashboard.show', { organisation: slug }))
+        }
+        return
+    }
+
+    // If user currently in Warehouse page
+    if (currentRouteParams.warehouse) {
+        const rememberedWarehouse = layout.organisationsState?.[slug]?.currentWarehouse
+        const targetEntity = layout.organisations.data.find((org: any) => org.slug === slug) ||
+                            layout.agents.data.find((agent: any) => agent.slug === slug)
+        const warehouseIsValid = (targetEntity as any)?.authorised_warehouses?.find(
+            (w: any) => w.slug === rememberedWarehouse
+        )
+
+        if (rememberedWarehouse && warehouseIsValid) {
+            router.visit(route(currentRoute, { ...currentRouteParams, organisation: slug, warehouse: rememberedWarehouse }))
+        } else {
+            router.visit(route('grp.org.dashboard.show', { organisation: slug }))
+        }
+        return
+    }
+
+
     try {
-        if (!route().current()?.includes('grp.org.')) {
+        console.log('topbar dropdown scope 12')
+        if (!currentRoute.includes('grp.org.') && !currentRoute.includes('grp.agent.')) {
             throw new Error('Redirect to dashboard')
         }
-
-        // const response = await axios.patch(
-        //     route('grp.models.profile.can_visit'), {
-        //         route_name: route().current(),
-        //         route_parameters: route().params
-        // })
 
         const response = await axios.get(route('grp.profile.can_visit'))
 
         if (!!response.data) {
-            router.visit(route(route().current(), { ...route().params, organisation: slug }))
+            try {
+                router.visit(route(currentRoute, { ...currentRouteParams, organisation: slug }))
+            } catch {
+                router.visit(route('grp.org.dashboard.show', { organisation: slug }))
+            }
         } else {
             throw new Error('Redirect to dashboard')
         }
@@ -101,7 +127,6 @@ const onClickOrg = async (slug?: string) => {
         console.error(error)
         router.visit(route('grp.org.dashboard.show', { organisation: slug }))
     }
-
 }
 
 
@@ -121,7 +146,8 @@ const hasShopsOrFulfilments = (item: { slug?: string }): boolean => {
     const agent = layout.agents.data.find((agent: any) => agent.slug === item.slug)
     const shops = org?.authorised_shops || agent?.authorised_shops || []
     const fulfilments = org?.authorised_fulfilments || agent?.authorised_fulfilments || []
-    return shops.length > 0 || fulfilments.length > 0
+    const warehouses = org?.authorised_warehouses || agent?.authorised_warehouses || []
+    return shops.length > 0 || fulfilments.length > 0 || warehouses.length > 0
 }
 const getShopsForOrg = (slug: string): any[] => {
     const org = layout.organisations.data.find((org: any) => org.slug === slug)
@@ -133,6 +159,11 @@ const getFulfilmentsForOrg = (slug: string): any[] => {
     const org = layout.organisations.data.find((org: any) => org.slug === slug)
     const agent = layout.agents.data.find((agent: any) => agent.slug === slug)
     return org?.authorised_fulfilments || agent?.authorised_fulfilments || []
+}
+const getWarehousesForOrg = (slug: string): any[] => {
+    const org = layout.organisations.data.find((org: any) => org.slug === slug)
+    const agent = layout.agents.data.find((agent: any) => agent.slug === slug)
+    return org?.authorised_warehouses || agent?.authorised_warehouses || []
 }
 const showFlyout = (item: { slug?: string }, event: MouseEvent) => {
     if (!hasShopsOrFulfilments(item)) return
@@ -155,11 +186,53 @@ const hideFlyout = () => {
 const keepFlyout = () => {
     if (hideTimeout) clearTimeout(hideTimeout)
 }
-const navigateToShopware = (shopware: { route: { name: string; parameters: any } }) => {
-    isFlyoutVisible.value = false
-    hoveredOrgSlug.value = null
-    props.closeMenu?.()
-    router.visit(route(shopware.route.name, shopware.route.parameters))
+
+// Method: on click side popover (shops/fulfilments/warehouses)
+const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: string) => {
+    console.log('topbar dropdown scope', sub)
+    const visitNormally = () => {
+        router.visit(route(sub.route?.name, sub.route?.parameters))
+    }
+
+    const paramsLength = Object.keys(layout.currentParams || route().routeParams || {}).length
+
+    if (layout.currentParams?.organisation && paramsLength === 1) { // ✅
+        visitNormally()
+    } else if (paramsLength === 2) {
+        if (layout.currentParams?.organisation && layout.currentParams?.shop && typeSub === 'shop') { // ✅
+            router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, shop: sub.slug }))
+        } else if (layout.currentParams?.organisation && layout.currentParams?.warehouse && typeSub === 'warehouse') { // ✅
+            router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, warehouse: sub.slug }))
+        } else if (layout.currentParams?.organisation && layout.currentParams?.fulfilment && typeSub === 'fulfilment') { // ✅
+            router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, fulfilment: sub.slug }))
+        } else { // ✅
+            visitNormally()
+        }
+    } else if (paramsLength > 2) {
+        if (layout.currentParams?.organisation && layout.currentParams?.shop && typeSub === 'shop') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, shop: sub.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && layout.currentParams?.warehouse && typeSub === 'warehouse') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, warehouse: sub.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && layout.currentParams?.fulfilment && typeSub === 'fulfilment') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, fulfilment: sub.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else {
+            visitNormally()
+        }
+    } else {
+        visitNormally()
+    }
 }
 </script>
 
@@ -241,6 +314,7 @@ const navigateToShopware = (shopware: { route: { name: string; parameters: any }
                 @mouseenter="keepFlyout"
                 @mouseleave="hideFlyout"
             >
+                <!-- Section: Shops list -->
                 <template v-if="getShopsForOrg(hoveredOrgSlug).length">
                     <div class="flex items-center gap-x-1.5 px-1 mb-1">
                         <FontAwesomeIcon icon="fal fa-store-alt" class="text-gray-400 text-xxs" aria-hidden="true" />
@@ -250,7 +324,7 @@ const navigateToShopware = (shopware: { route: { name: string; parameters: any }
                     <div
                         v-for="shop in getShopsForOrg(hoveredOrgSlug)"
                         :key="shop.id"
-                        @click="navigateToShopware(shop)"
+                        @click="navigateToSubOrg(shop, 'shop')"
                         :class="[
                             'flex gap-x-2 w-full justify-between items-center rounded pl-2 pr-2 py-1.5 text-sm cursor-pointer transition-colors',
                             shop.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentShop && layout.organisationsState?.[hoveredOrgSlug]?.currentType === 'shop'
@@ -269,6 +343,7 @@ const navigateToShopware = (shopware: { route: { name: string; parameters: any }
                     </div>
                 </template>
 
+                <!-- Section: Fulfilment list -->
                 <template v-if="getFulfilmentsForOrg(hoveredOrgSlug).length">
                     <div class="flex items-center gap-x-1.5 px-1 mb-1" :class="getShopsForOrg(hoveredOrgSlug).length ? 'mt-2' : ''">
                         <FontAwesomeIcon icon="fal fa-hand-holding-box" class="text-gray-400 text-xxs" aria-hidden="true" />
@@ -278,7 +353,7 @@ const navigateToShopware = (shopware: { route: { name: string; parameters: any }
                     <div
                         v-for="fulfilment in getFulfilmentsForOrg(hoveredOrgSlug)"
                         :key="fulfilment.id"
-                        @click="navigateToShopware(fulfilment)"
+                        @click="navigateToSubOrg(fulfilment, 'fulfilment')"
                         :class="[
                             'flex gap-x-2 w-full justify-between items-center rounded pl-2 pr-2 py-1.5 text-sm cursor-pointer transition-colors',
                             fulfilment.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentFulfilment && layout.organisationsState?.[hoveredOrgSlug]?.currentType === 'fulfilment'
@@ -291,6 +366,32 @@ const navigateToShopware = (shopware: { route: { name: string; parameters: any }
                         } : {}"
                     >
                         <div class="font-semibold">{{ fulfilment.label }}</div>
+                    </div>
+                </template>
+
+                <!-- Section: Warehouse list -->
+                <template v-if="getWarehousesForOrg(hoveredOrgSlug).length">
+                    <div class="flex items-center gap-x-1.5 px-1 mb-1" :class="getShopsForOrg(hoveredOrgSlug).length || getFulfilmentsForOrg(hoveredOrgSlug).length ? 'mt-2' : ''">
+                        <FontAwesomeIcon icon="fal fa-warehouse-alt" class="text-gray-400 text-xxs" aria-hidden="true" />
+                        <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ trans('Warehouses') }}</span>
+                        <hr class="w-full rounded-full border-slate-300">
+                    </div>
+                    <div
+                        v-for="warehouse in getWarehousesForOrg(hoveredOrgSlug)"
+                        :key="warehouse.id"
+                        @click="navigateToSubOrg(warehouse, 'warehouse')"
+                        :class="[
+                            'flex gap-x-2 w-full justify-between items-center rounded pl-2 pr-2 py-1.5 text-sm cursor-pointer transition-colors',
+                            warehouse.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentWarehouse
+                                ? ''
+                                : 'text-slate-600 hover:bg-slate-200/75',
+                        ]"
+                        :style="warehouse.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentWarehouse ? {
+                            backgroundColor: 'color-mix(in srgb, var(--theme-color-0) 20%, transparent)',
+                            color: 'color-mix(in srgb, var(--theme-color-0) 80%, black)',
+                        } : {}"
+                    >
+                        <div class="font-semibold">{{ warehouse.label }}</div>
                     </div>
                 </template>
             </div>
