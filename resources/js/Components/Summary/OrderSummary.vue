@@ -12,7 +12,7 @@ const props = defineProps<{
     currency_code?: string
     order_summary: FieldOrderSummary[][] | {
         [key: string]: FieldOrderSummary[]
-    }
+    } | undefined
     size?: 'sm'
 }>()
 
