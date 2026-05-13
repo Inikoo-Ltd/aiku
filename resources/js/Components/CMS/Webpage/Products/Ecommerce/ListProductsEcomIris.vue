@@ -50,7 +50,7 @@ const props = defineProps<{
     webpageData?: any
     blockData?: {}
     screenType: "mobile" | "tablet" | "desktop"
-    code:string
+    code : string
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)

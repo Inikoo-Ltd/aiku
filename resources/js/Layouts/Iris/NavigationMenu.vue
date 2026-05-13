@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { getIrisComponent } from '@/Composables/getIrisComponents'
+import { getIrisComponent } from '@/Iris/Composables/getIrisComponents'
 
 import { faBox, faDollarSign, faHome as fasHome, faUserPlus, faSignIn } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'

@@ -8,6 +8,8 @@ const props = defineProps<{
 	theme?: any
 	blockData?: Object
 	indexBlock:number
+	screenType?: 'mobile' | 'tablet' | 'desktop'
+	code?: string
 }>()
 </script>
 

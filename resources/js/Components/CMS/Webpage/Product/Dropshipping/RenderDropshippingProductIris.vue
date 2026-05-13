@@ -7,7 +7,7 @@ import { ref, inject, onMounted, computed, watch } from "vue"
 import axios from "axios"
 
 import { Image as ImageTS } from "@/types/Image"
-import { getProductRenderDropshippingComponent } from "@/Composables/getIrisComponents"
+import { getProductRenderDropshippingComponent } from "@/Iris/Composables/getIrisComponents"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import { set } from "lodash-es"
 

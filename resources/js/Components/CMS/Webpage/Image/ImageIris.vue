@@ -49,7 +49,8 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
-  indexBlock:index
+  indexBlock?: number
+  code?: string
 }>()
 
 

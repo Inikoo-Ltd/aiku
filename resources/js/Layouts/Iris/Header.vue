@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getIrisComponent } from "@/Composables/getIrisComponents";
+import { getIrisComponent } from "@/Iris/Composables/getIrisComponents";
 import { routeType } from "@/types/route";
 import { inject, provide, computed, ref } from "vue";
 import { notify } from "@kyvg/vue3-notification";

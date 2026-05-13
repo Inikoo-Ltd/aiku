@@ -48,7 +48,7 @@ interface Product {
 }
 
 const props = defineProps<{
-    isOpen: boolean
+    isOpen: boolean|undefined
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -85,7 +85,6 @@ const fetchDataSideBasket = async (isWithoutSkeleton?: boolean) => {
             
         }
         
-        console.log('fetchDataSideBasket:', response.data)
 
         // if (isWithoutSkeleton) {
             // } else {
