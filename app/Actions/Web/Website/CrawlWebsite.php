@@ -37,7 +37,7 @@ class CrawlWebsite
     public function handle(int $crawlId): void
     {
         if (!app()->environment('production')) {
-            return;
+          //  return;
         }
 
         $crawl = Crawl::find($crawlId);
@@ -81,7 +81,7 @@ class CrawlWebsite
     {
         $totalCrawlInstances = (int)Crawl::where('running', true)->sum('concurrency');
 
-        $available = 12 - $totalCrawlInstances;
+        $available = 20 - $totalCrawlInstances;
         if ($available < 1) {
             $available = 1;
         }
