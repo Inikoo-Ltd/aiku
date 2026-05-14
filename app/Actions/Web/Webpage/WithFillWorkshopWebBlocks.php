@@ -26,7 +26,7 @@ use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks
 {
-    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isLoggedIn, bool $isIris = true)
+    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isIris = true)
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
@@ -36,14 +36,14 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
             $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
-        } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
+        } elseif (str_starts_with($webBlockType, 'families-') && str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetWebBlockFamiliesOverview::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'products-')) {
-            $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock, $isLoggedIn);
+            $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock);
         } elseif ($webBlockType == 'family-1') {
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['family-2', 'family-2-extra-description', 'family-3', 'family-3-extra-description'])) {
