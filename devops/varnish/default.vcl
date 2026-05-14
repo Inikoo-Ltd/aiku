@@ -82,12 +82,12 @@ sub vcl_init {
 
 
     new logged_in_vdir = directors.random();
-    logged_in_vdir.add_backend(helio_in,1);
-    logged_in_vdir.add_backend(boro_in,99);
+    logged_in_vdir.add_backend(helio_in,10);
+    logged_in_vdir.add_backend(boro_in,80);
 
     new logged_out_vdir = directors.random();
-    logged_out_vdir.add_backend(helio,60);
-    logged_out_vdir.add_backend(boro,40);
+    logged_out_vdir.add_backend(helio,35);
+    logged_out_vdir.add_backend(boro,65);
 
 }
 
