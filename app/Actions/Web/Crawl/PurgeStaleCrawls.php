@@ -19,7 +19,7 @@ class PurgeStaleCrawls
 
     public function handle(?Command $command = null): void
     {
-        foreach (Crawl::where('running', true)->where('updated_at', '<', now()->subMinutes(10)) as $crawl) {
+        foreach (Crawl::where('running', true)->where('updated_at', '<', now()->subMinutes(10))->get() as $crawl) {
             $command?->info("Stopping crawl: ID $crawl->id) ");
             $crawl->update(
                 [
@@ -40,6 +40,7 @@ class PurgeStaleCrawls
     public function asCommand(Command $command): int
     {
         $this->handle($command);
+
         return 0;
     }
 
