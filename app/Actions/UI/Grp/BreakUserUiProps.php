@@ -18,7 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 use Throwable;
 
-class RecacheUserUiProps implements ShouldBeUnique
+class BreakUserUiProps implements ShouldBeUnique
 {
     use AsAction;
 
@@ -64,7 +64,7 @@ class RecacheUserUiProps implements ShouldBeUnique
     public function redoAllUsers(): void
     {
         foreach (User::where('status', true)->cursor() as $user) {
-            RecacheUserUiProps::dispatch($user);
+            BreakUserUiProps::dispatch($user);
         }
     }
 

@@ -612,9 +612,9 @@ class Kernel extends ConsoleKernel
 
             $this->logSchedule(
                 $schedule->command('ui:recache-user-props')->weeklyOn(1, '06:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'RecacheUserUiProps',
+                    monitorSlug: 'BreakUserUiProps',
                 ),
-                name: 'RecacheUserUiProps',
+                name: 'BreakUserUiProps',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
