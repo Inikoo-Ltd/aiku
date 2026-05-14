@@ -40,12 +40,14 @@ class RecordVarnishHitRatio
                 $previousMisses      = Arr::get($previousHitRateData, 'misses');
                 $previousTimestamp   = Arr::get($previousHitRateData, 'timestamp');
 
-                if ($previousHits > $hits) {
+                if ((Carbon::now()->timestamp - $previousTimestamp) < 30) {
                     return;
                 }
 
-                if ((Carbon::now()->timestamp - $previousTimestamp) < 30) {
-                    return;
+                if ($previousHits > $hits) {
+                    Cache::forget($key);
+                    $previousHits   = 0;
+                    $previousMisses = 0;
                 }
 
 
