@@ -81,7 +81,7 @@ return [
             'driver'       => 'redis',
             'connection'   => 'horizon',
             'queue'        => 'default-long',
-            'retry_after'  => 7250,
+            'retry_after'  => 10850,
             'block_for'    => null,
             'after_commit' => true,
         ],
