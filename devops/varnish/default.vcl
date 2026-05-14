@@ -86,8 +86,8 @@ sub vcl_init {
     logged_in_vdir.add_backend(boro_in,99);
 
     new logged_out_vdir = directors.random();
-    logged_out_vdir.add_backend(helio,50);
-    logged_out_vdir.add_backend(boro,50);
+    logged_out_vdir.add_backend(helio,60);
+    logged_out_vdir.add_backend(boro,40);
 
 }
 
@@ -252,9 +252,11 @@ sub vcl_hash {
     hash_data(req.http.host);
     hash_data(req.url);
 
-    # Separate cache buckets by login status
-    if (req.http.X-Logged-Status) {
+    # Separate cache buckets by login status if header X-Is-Diff="Y" else both In and Out versions are same
+    if (req.http.X-Is-Diff=="Y") {
         hash_data(req.http.X-Logged-Status);
+    } else {
+         hash_data("Both");
     }
 
     # Categorize requests into two hash buckets based on X-Inertia header.
@@ -329,8 +331,8 @@ sub vcl_backend_response {
     }
 
     # Cache public logged-out 404s briefly to reduce repeated backend misses.
-    if (beresp.status == 404 && bereq.http.X-Logged-Status == "Out") {
-        set beresp.ttl = 3h;
+    if (beresp.status == 404) {
+        set beresp.ttl = 6h;
         set beresp.grace = 1m;
         return (deliver);
     }
@@ -407,7 +409,9 @@ sub vcl_deliver {
     set resp.http.X-Cache-Hits = obj.hits;
 
     # Echo login derivation for observability and for the app if needed
-    if (req.http.X-Logged-Status) {
+    if (req.http.X-Is-Diff=="N") {
+      set resp.http.X-Logged-Status = "B";
+    } elseif(req.http.X-Logged-Status) {
         set resp.http.X-Logged-Status = req.http.X-Logged-Status;
     }
 

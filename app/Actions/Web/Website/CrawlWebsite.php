@@ -81,11 +81,11 @@ class CrawlWebsite
     {
         $totalCrawlInstances = (int)Crawl::where('running', true)->sum('concurrency');
 
-        $available = 40 - $totalCrawlInstances;
+        $available = 30 - $totalCrawlInstances;
 
         if ($available < 1) {
             $available = 1;
-        } elseif ($available <= 6) {
+        } elseif ($available <= 4) {
             $available = 2;
         }
 
@@ -205,7 +205,7 @@ class CrawlWebsite
             $crawl = $website->crawls()->create(
                 [
                     'depth'       => $command->option('depth'),
-                    'concurrency' => 4,
+                    'concurrency' => 3,
                     'trigger'     => CrawlTriggerEnum::COMMAND,
                     'type'        => $crawlType
                 ]
