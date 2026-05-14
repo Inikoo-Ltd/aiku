@@ -37,7 +37,7 @@ class CrawlWebsite
     public function handle(int $crawlId): void
     {
         if (!app()->environment('production')) {
-          //  return;
+            return;
         }
 
         $crawl = Crawl::find($crawlId);

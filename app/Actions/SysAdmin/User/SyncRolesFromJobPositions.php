@@ -31,7 +31,6 @@ class SyncRolesFromJobPositions
         if ($user->status) {
             foreach ($user->employees as $employee) {
                 foreach ($employee->jobPositions as $jobPosition) {
-                    print '**'.$jobPosition->name."\n";
                     $roles = $this->getRoles($roles, $jobPosition);
                 }
             }
@@ -42,11 +41,6 @@ class SyncRolesFromJobPositions
         }
 
         $user->syncRoles($roles);
-
-        foreach ($user->roles as $role) {
-            print ">> $role->name\n";
-        }
-
 
         foreach (
             $user->roles()->where(function ($query) {
