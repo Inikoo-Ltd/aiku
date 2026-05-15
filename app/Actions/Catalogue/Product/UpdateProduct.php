@@ -276,9 +276,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                    $changed,
-                    $fieldsUsedInLuigi
-                )
+                $changed,
+                $fieldsUsedInLuigi
+            )
                 || $isInStock != $oldIsInStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60);
@@ -292,9 +292,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                    $changed,
-                    $fieldsUsedInWebpages
-                )
+                $changed,
+                $fieldsUsedInWebpages
+            )
                 || $isInStock != $oldIsInStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);

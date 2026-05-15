@@ -39,7 +39,7 @@ class PublishWebsiteMarginal extends OrgAction
         $layout         = Arr::get($modelData, 'layout', []);
         $customAudit    = false;
 
-        $oldLayout=null;
+        $oldLayout = null;
         if ($marginal == 'header') {
             $oldLayout = $website->liveHeaderSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedHeaderSnapshot?->layout, $marginal);
             $layout    = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedHeaderSnapshot?->layout, $marginal);

@@ -280,4 +280,3 @@ class IndexMasterFamiliesVolGrReward extends OrgAction
         );
     }
 }
-
