@@ -18,7 +18,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 use Throwable;
 
+<<<<<<<< HEAD:app/Actions/UI/Grp/BreakUserUiLayoutProps.php
 class BreakUserUiLayoutProps implements ShouldBeUnique
+========
+class BreakUserUiProps implements ShouldBeUnique
+>>>>>>>> bf9cc68cabd99bcb16bebbef330510b20052a11f:app/Actions/UI/Grp/BreakUserUiProps.php
 {
     use AsAction;
 
@@ -64,7 +68,11 @@ class BreakUserUiLayoutProps implements ShouldBeUnique
     public function redoAllUsers(): void
     {
         foreach (User::where('status', true)->cursor() as $user) {
+<<<<<<<< HEAD:app/Actions/UI/Grp/BreakUserUiLayoutProps.php
             BreakUserUiLayoutProps::dispatch($user);
+========
+            BreakUserUiProps::dispatch($user);
+>>>>>>>> bf9cc68cabd99bcb16bebbef330510b20052a11f:app/Actions/UI/Grp/BreakUserUiProps.php
         }
     }
 

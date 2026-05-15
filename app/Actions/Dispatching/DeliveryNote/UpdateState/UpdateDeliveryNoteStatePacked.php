@@ -52,7 +52,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
-            foreach ($deliveryNote->deliveryNoteItems->filter(fn($item) => $item->packings->isEmpty()) as $item) {
+            foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
                 StorePacking::make()->action($item, $this->user, []);
             }
 

@@ -22,6 +22,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
@@ -484,6 +485,16 @@ class Kernel extends ConsoleKernel
         }
 
         if (config('app.slave')) {
+
+            $this->logSchedule(
+                $schedule->job(PurgeStaleCrawls::makeJob())->everyTenMinutes()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'PurgeStaleCrawls',
+                ),
+                name: 'PurgeStaleCrawls',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
             $this->logSchedule(
                 $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'SaveDataFeeds',
@@ -612,9 +623,9 @@ class Kernel extends ConsoleKernel
 
             $this->logSchedule(
                 $schedule->command('ui:recache-user-props')->weeklyOn(1, '06:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'BreakUserUiLayoutProps',
+                    monitorSlug: 'BreakUserUiProps',
                 ),
-                name: 'BreakUserUiLayoutProps',
+                name: 'BreakUserUiProps',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

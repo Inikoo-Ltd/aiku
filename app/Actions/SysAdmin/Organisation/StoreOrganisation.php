@@ -21,7 +21,7 @@ use App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationPermissions;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedOrgPostRooms;
 use App\Actions\SysAdmin\User\UserAddRoles;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Actions\UI\Grp\BreakUserUiLayoutProps;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -194,7 +194,7 @@ class StoreOrganisation extends GrpAction
 
             SeedAikuScopedSections::make()->seedOrganisationAikuScopedSection($organisation);
             GroupHydrateOrganisations::dispatch($group);
-            BreakUserUiLayoutProps::make()->redoAllUsers();
+            BreakUserUiProps::make()->redoAllUsers();
             return $organisation;
         });
     }

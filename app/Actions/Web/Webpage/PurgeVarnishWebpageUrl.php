@@ -25,9 +25,6 @@ class PurgeVarnishWebpageUrl extends OrgAction
 
         $host = strtolower($canonicalUrl['host']);
         $path = $canonicalUrl['path'] ?? '/';
-        if (isset($canonicalUrl['query'])) {
-            $path .= '?'.$canonicalUrl['query'];
-        }
         $webpagePath = Str::start($webpage->url, '/');
 
         foreach (config('iris.cache.varnish_hosts') as $varnishHost) {

@@ -116,6 +116,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $landing_page_id
  * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Collection<int, \App\Models\Web\Crawl> $crawls
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Media|null $favicon
@@ -488,6 +489,11 @@ class Website extends Model implements Auditable, HasMedia
     public function announcements(): HasMany
     {
         return $this->hasMany(Announcement::class);
+    }
+
+    public function crawls(): HasMany
+    {
+        return $this->hasMany(Crawl::class);
     }
 
     public function llmsTxt(): HasMany

@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\HumanResources\JobPosition;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
 use Exception;
@@ -40,6 +41,24 @@ class SyncRolesFromJobPositions
         }
 
         $user->syncRoles($roles);
+
+        foreach (
+            $user->roles()->where(function ($query) {
+                $query->where('name', 'like', 'accounting-supervisor-%')
+                    ->orWhere('name', 'like', 'accounting-clerk-%');
+            })->get() as $accountingRole
+        ) {
+            $organisation = Organisation::find($accountingRole->scope_id);
+            foreach ($organisation->warehouses as $warehouse) {
+                UserAddRoles::run(
+                    $user,
+                    [
+                        Role::where('name', RolesEnum::getRoleName(RolesEnum::WAREHOUSE_VIEWER->value, $warehouse))->first()
+                    ],
+                    setUserAuthorisedModels: false
+                );
+            }
+        }
 
         if ($user->roles()->where('name', RolesEnum::GROUP_ADMIN->value)->exists()) {
             foreach ($user->group->organisations as $organisation) {

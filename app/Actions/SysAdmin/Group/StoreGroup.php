@@ -21,7 +21,7 @@ use App\Actions\SysAdmin\Group\Seeders\SeedPostRooms;
 use App\Actions\SysAdmin\Group\Seeders\SeedSalesChannels;
 use App\Actions\SysAdmin\Group\Seeders\SeedStockImages;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
-use App\Actions\UI\Grp\BreakUserUiLayoutProps;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
@@ -98,7 +98,7 @@ class StoreGroup
 
 
         GroupHydrateJobPositions::run($group);
-        BreakUserUiLayoutProps::make()->redoAllUsers();
+        BreakUserUiProps::make()->redoAllUsers();
 
         return $group;
     }

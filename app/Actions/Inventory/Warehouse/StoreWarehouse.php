@@ -16,7 +16,7 @@ use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\User\UserAddRoles;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementEditAuthorisation;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Actions\UI\Grp\BreakUserUiLayoutProps;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
@@ -82,7 +82,7 @@ class StoreWarehouse extends OrgAction
         GroupHydrateWarehouses::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateWarehouses::dispatch($organisation)->delay($this->hydratorsDelay);
         SeedJobPositions::dispatch($organisation);
-        BreakUserUiLayoutProps::make()->redoAllUsers();
+        BreakUserUiProps::make()->redoAllUsers();
 
         return $warehouse;
     }

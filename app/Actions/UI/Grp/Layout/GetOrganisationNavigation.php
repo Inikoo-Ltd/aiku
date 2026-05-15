@@ -188,17 +188,6 @@ class GetOrganisationNavigation
 
         $navigation = $this->getReportsNavs($user, $organisation, $navigation);
 
-        // $navigation['tags'] = [
-        //     'label'   => __('Tags'),
-        //     'tooltip' => __('Tags'),
-        //     'icon'    => ['fal', 'fa-tags'],
-        //     'root'    => 'grp.org.tags.',
-        //     'route'   => [
-        //         'name'       => 'grp.org.tags.show',
-        //         'parameters' => [$organisation->slug],
-        //     ],
-        //     'topMenu' => [],
-        // ];
 
         $navigation['chat'] = [
             'label'   => __('Chat'),

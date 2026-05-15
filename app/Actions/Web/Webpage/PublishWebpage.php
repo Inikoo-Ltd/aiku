@@ -100,7 +100,7 @@ class PublishWebpage extends OrgAction
         if ($webpage->model_type === Product::class && $webpage->model) {
             ProductHydrateHasLiveWebpage::run($webpage->model);
         }
-
+        UpdateWebpageIsDifferentWhenLoggedIn::run($webpage);
         BreakWebpageCache::run($webpage);
         ReindexWebpageLuigiData::dispatch($webpage->id)->delay(30);
 

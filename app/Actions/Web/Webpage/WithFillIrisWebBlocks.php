@@ -27,7 +27,7 @@ use Illuminate\Support\Arr;
 
 trait WithFillIrisWebBlocks
 {
-    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isLoggedIn, bool $isIris = true)
+    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isIris = true)
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
@@ -44,7 +44,7 @@ trait WithFillIrisWebBlocks
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'products-')) {
-            $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock, $isLoggedIn);
+            $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock);
         } elseif ($webBlockType == 'family-1') {
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['family-2', 'family-2-extra-description', 'family-3', 'family-3-extra-description'])) {
