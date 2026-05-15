@@ -80,7 +80,8 @@ class CrawlWebsite
     {
         $totalCrawlInstances = (int)Crawl::where('running', true)->sum('concurrency');
 
-        $available = 18 - $totalCrawlInstances;
+        $available     = 18 - $totalCrawlInstances;
+        $realAvailable = $available;
 
         if ($available < 1) {
             $available = 1;
@@ -89,6 +90,17 @@ class CrawlWebsite
         }
 
         $concurrency = min($available, $crawl->concurrency);
+        if ($realAvailable > 15) {
+            $concurrency = max(7, $crawl->concurrency);
+        } elseif ($realAvailable > 10) {
+            $concurrency = max(4, $crawl->concurrency);
+        } elseif ($realAvailable > 7) {
+            $concurrency = max(3, $crawl->concurrency);
+        } elseif ($realAvailable > 5) {
+            $concurrency = max(2, $crawl->concurrency);
+        }
+
+
         $crawl->update(
             [
                 'concurrency' => $concurrency

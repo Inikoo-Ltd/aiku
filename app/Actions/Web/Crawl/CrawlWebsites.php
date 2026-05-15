@@ -37,9 +37,9 @@ class CrawlWebsites
                     'depth' => $depth,
 
                     'concurrency' => match ($index) {
-                        0 => 4,
+                        0 => 5,
                         1 => 3,
-                        2 => 2,
+                        2, 3 => 2,
                         default => 1
                     },
                     'trigger'     => $trigger,
