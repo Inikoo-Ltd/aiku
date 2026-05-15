@@ -326,7 +326,7 @@ watch(
                 <div class="text-sm text-gray-600 mr-2 flex items-center gap-2">
                     Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
                     <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
-                        class="text-red-500 text-lg" v-tooltip="emailSizeWarningTooltip" fixed-width />
+                        class="text-yellow-500 text-lg" v-tooltip="emailSizeWarningTooltip" fixed-width />
                 </div>
             </div>
 

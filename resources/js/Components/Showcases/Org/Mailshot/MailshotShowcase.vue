@@ -201,14 +201,14 @@ const effectiveOtherShopTemplates = computed(() =>
                 </div>
 
                 <div v-if="data.compiled_layout_size > 102"
-                    class="flex items-start gap-3 p-4 bg-red-50 border-l-4 border-red-500 rounded-md shadow-sm">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500 text-2xl mt-0.5 flex-shrink-0"
+                    class="flex items-start gap-3 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-md shadow-sm">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-2xl mt-0.5 flex-shrink-0"
                         fixed-width />
                     <div class="flex-1">
-                        <h4 class="text-red-700 font-semibold text-base mb-1">
+                        <h4 class="text-yellow-700 font-semibold text-base mb-1">
                             Email size exceeds Gmail's recommended limit
                         </h4>
-                        <p class="text-red-600 text-sm leading-relaxed">
+                        <p class="text-yellow-600 text-sm leading-relaxed">
                             Your email content is <span class="font-semibold">{{ data.compiled_layout_size }} KB</span>,
                             which exceeds the recommended <span class="font-semibold">102 KB</span> limit.
                             Gmail may clip your message and hide part of the content behind a
