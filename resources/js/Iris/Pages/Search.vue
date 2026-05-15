@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { inject, onBeforeMount } from "vue"
 
-import { aikuLocaleStructure } from "@iris/Composables/useIrisLocaleStructure"
+import { irisLocaleStructure } from "@iris/Composables/useIrisLocaleStructure"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 
 
 const layout = inject('layout', retinaLayoutStructure)
-const locale = inject('locale', aikuLocaleStructure)
+const locale = inject('locale', irisLocaleStructure)
 
 const props = defineProps<{
     data?: {}

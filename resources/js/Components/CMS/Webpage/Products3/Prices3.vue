@@ -263,6 +263,7 @@ const _popoverProfit = ref(null)
                 </div>
 
                 <DiscountByType v-if="bestOffer?.type == 'Category Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false"/>
+                <DiscountByType v-if="bestOffer?.type == 'Category Quantity Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false"/>
                 <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'" :offers_data="product?.product_offers_data" template="first-order" />
                 <DiscountByType v-if="bestOffer?.type == 'Category Amount Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
                 <DiscountByType v-if="bestOffer?.type == 'Department Quantity Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
