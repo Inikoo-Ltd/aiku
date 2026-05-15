@@ -115,11 +115,10 @@ const initWidget = async () => {
 
 
 const getDataReview= async ()=>{
-    console.log('msaijdfshjkdgh')
     // this funciton run only for get data from review.io and fill our databases
 	try {
 		const response: any = await axios.get(
-			route('iris.json.reviews.third_party.product_review',{ products : props.product.code }),
+			route('iris.json.reviews.third_party.product_review',{ product : props.product.code }),
 		)
 	} catch (error: any) {
 		console.log(error)
