@@ -15,7 +15,7 @@ enum CrawlTriggerEnum: string
     use EnumHelperTrait;
 
     case DEPLOYMENT = 'deployment';
-    case MANUAL_BREAK_CACHE = 'manual_break_cache';
+    case USER = 'user';
     case WEBSITE_UPDATE = 'website_update';
     case COMMAND = 'command';
 

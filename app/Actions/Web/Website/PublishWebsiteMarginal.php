@@ -16,6 +16,7 @@ use App\Actions\Web\UpdateWebBlockToWebsiteAndChild;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\UpdateDescriptionBlockToWebsiteAndChild;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
+use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use App\Models\Helpers\Snapshot;
@@ -37,6 +38,8 @@ class PublishWebsiteMarginal extends OrgAction
         $this->marginal = $marginal;
         $layout         = Arr::get($modelData, 'layout', []);
         $customAudit    = false;
+
+        $oldLayout=null;
         if ($marginal == 'header') {
             $oldLayout = $website->liveHeaderSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedHeaderSnapshot?->layout, $marginal);
             $layout    = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedHeaderSnapshot?->layout, $marginal);
@@ -133,7 +136,7 @@ class PublishWebsiteMarginal extends OrgAction
         if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products', 'families_overview'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
             UpdateWebBlockToWebsiteAndChild::dispatch($website, WebBlockType::find(data_get($layout, "id")), $marginal, data_get($layout, 'data.fieldValue'))->onQueue('low-priority');
-        } elseif (in_array($marginal, ['family_description'])) {
+        } elseif ($marginal == 'family_description') {
             UpdateDescriptionBlockToWebsiteAndChild::dispatch($website, $layout, $marginal)->onQueue('low-priority');
         }
 
@@ -144,7 +147,7 @@ class PublishWebsiteMarginal extends OrgAction
             Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
             Cache::forget("irisData:website:$website->id:sideBar");
         } else {
-            BreakWebsiteCache::run($website);
+            BreakWebsiteCache::run($website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
 
 
