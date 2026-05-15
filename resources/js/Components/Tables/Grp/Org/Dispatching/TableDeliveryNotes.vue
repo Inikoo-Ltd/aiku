@@ -358,6 +358,20 @@ const generateRouteDeliveryNote = (id: string) => {
 				{{ deliveryNote.weight_bracket }}
 			</span>
 		</template>
+
+		<template #cell(batch_code_sku)="{ item: deliveryNote }">
+			<Link
+				v-if="deliveryNote.org_stock_route"
+				:href="route(deliveryNote.org_stock_route.name, deliveryNote.org_stock_route.parameters)"
+				class="primaryLink">
+				{{ deliveryNote.batch_code_sku }}
+			</Link>
+			<span v-else class="text-sm text-gray-700">{{ deliveryNote.batch_code_sku || '—' }}</span>
+		</template>
+
+		<template #cell(batch_code_expiry_date)="{ item: deliveryNote }">
+			<span class="text-sm text-gray-700">{{ useFormatTime(deliveryNote.batch_code_expiry_date) || '—' }}</span>
+		</template>
 	</Table>
 
 	<Modal
