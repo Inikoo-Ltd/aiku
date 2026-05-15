@@ -3,7 +3,7 @@ import Table from "@/Components/Table/Table.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, ref } from "vue"
 
-import Image from "@/Components/Image.vue"
+import Image from "@/Common/Components/Image.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
 import Rating from "primevue/rating"
