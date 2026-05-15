@@ -45,6 +45,11 @@ use Illuminate\Support\Arr;
  * @property mixed $data
  * @property mixed $country_name
  * @property mixed $country_code
+ * @property mixed $skus
+ * @property mixed $batch_code
+ * @property mixed $batch_code_sku
+ * @property mixed $org_stock_slug
+ * @property mixed $batch_code_expiry_date
  *
  */
 class DeliveryNotesResource extends JsonResource
@@ -78,6 +83,18 @@ class DeliveryNotesResource extends JsonResource
             'slug'                        => $this->slug,
             'reference'                   => $this->reference,
             'batch_code'                  => $this->batch_code,
+            'batch_code_sku'              => $this->batch_code_sku,
+            'org_stock_slug'              => $this->org_stock_slug,
+            'org_stock_route'             => $this->org_stock_slug ? [
+                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
+                'parameters' => [
+                    $request->route('organisation')?->slug,
+                    $request->route('warehouse')?->slug,
+                    $this->org_stock_slug,
+                ],
+            ] : null,
+            'skus'                        => $this->skus,
+            'batch_code_expiry_date'      => $this->batch_code_expiry_date,
             'date'                        => $this->date,
             'state'                       => $this->state,
             'state_icon'                  => $this->state->stateIcon()[$this->state->value],
