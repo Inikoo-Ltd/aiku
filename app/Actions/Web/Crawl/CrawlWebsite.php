@@ -163,7 +163,7 @@ class CrawlWebsite
 
     public function getCommandSignature(): string
     {
-        return 'crawl {website?} {--d|depth=10} {--c|concurrency=10} {--t|type=html}';
+        return 'crawl {website?} {--d|depth=10} {--c|concurrency=10} {--t|type=html} {--deployment}';
     }
 
 
@@ -178,6 +178,7 @@ class CrawlWebsite
 
         $crawlType = $type === 'javascript' ? CrawlTypeEnum::JAVASCRIPT : CrawlTypeEnum::HTML;
 
+        $trigger = $command->option('deployment') ? CrawlTriggerEnum::DEPLOYMENT : CrawlTriggerEnum::COMMAND;
         if ($command->argument('website')) {
             $website = Website::where('slug', $command->argument('website'))->firstOrFail();
             $command->info("Crawling website: $website->slug (ID: $website->id)");
@@ -187,7 +188,7 @@ class CrawlWebsite
                 [
                     'depth'       => $command->option('depth'),
                     'concurrency' => $command->option('concurrency'),
-                    'trigger'     => CrawlTriggerEnum::COMMAND,
+                    'trigger'     => $trigger,
                     'type'        => $crawlType
                 ]
             );
@@ -196,8 +197,8 @@ class CrawlWebsite
 
             return 0;
         }
-
-        CrawlWebsites::run(CrawlTypeEnum::HTML, CrawlTriggerEnum::COMMAND, $command);
+      
+        CrawlWebsites::run(CrawlTypeEnum::HTML,$trigger, $command);
 
         return 0;
     }

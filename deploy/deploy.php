@@ -208,6 +208,9 @@ task(
         if ($shouldFlush) {
             writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
             run('cd {{release_path}} && pwd && ./restart_varnish.sh');
+            if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+                artisan('crawl --deployment', ['skipIfNoEnv', 'showOutput'])();
+            }
         } else {
             writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
         }
