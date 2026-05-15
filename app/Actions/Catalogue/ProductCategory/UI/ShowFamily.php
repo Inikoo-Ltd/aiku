@@ -206,7 +206,7 @@ class ShowFamily extends OrgAction
                             $isRelatedProductFollowMaster
                         )
                     ),
-                    'editable' => $isRelatedProductFollowMaster,
+                    'editable' => !$isRelatedProductFollowMaster,
                     'route_sync_related_products' => [
                         'name' => 'grp.models.product_category.related_products.sync',
                         'parameters' => [
@@ -230,7 +230,7 @@ class ShowFamily extends OrgAction
                             $isRelatedProductFollowMaster
                         )
                     ),
-                    'editable' => $isRelatedProductFollowMaster,
+                    'editable' => !$isRelatedProductFollowMaster,
                     'route_sync_related_products' => [
                         'name' => 'grp.models.product_category.related_products.sync',
                         'parameters' => [
