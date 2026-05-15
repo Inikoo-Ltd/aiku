@@ -317,7 +317,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($return->storedItems as $storedItem)
+            @foreach($return->storedItems->keyBy('id') as $storedItem)
                 @php
                     $palletData = $stored_items_pallet_data[$storedItem->id];
                     $parentLoopLast = $loop->last;
@@ -344,10 +344,10 @@
                             </div>
                         </td>
                         <td style="text-align:right; vertical-align: middle;">
-                            {{ preg_match('/^\s*\d+(?:\.0+)?\s*$/', (string) data_get($pallet, 'pivot.quantity_ordered')) ? (int) data_get($pallet, 'pivot.quantity_ordered') : data_get($pallet, 'pivot.quantity_ordered') }}
+                            {{ preg_match('/^\s*\d+(?:\.0+)?\s*$/', (string) data_get($pallet, 'quantity_ordered')) ? (int) data_get($pallet, 'quantity_ordered') : data_get($pallet, 'quantity_ordered') }}
                         </td>
                         <td style="text-align:right; vertical-align: middle;">
-                            {{ preg_match('/^\s*\d+(?:\.0+)?\s*$/', (string) data_get($pallet, 'pivot.quantity_picked')) ? (int) data_get($pallet, 'pivot.quantity_picked') : data_get($pallet, 'pivot.quantity_picked') }}
+                            {{ preg_match('/^\s*\d+(?:\.0+)?\s*$/', (string) data_get($pallet, 'quantity_picked')) ? (int) data_get($pallet, 'quantity_picked') : data_get($pallet, 'quantity_picked') }}
                         </td>
                         <td style="text-align:right; vertical-align: middle;">
                             {{ data_get($pallet, 'location.code') }}
