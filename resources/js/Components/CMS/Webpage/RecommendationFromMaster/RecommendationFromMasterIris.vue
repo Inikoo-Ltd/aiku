@@ -68,7 +68,7 @@ console.log('Recommended Products:', props)
         <div v-if="fieldValue?.recommendation_settings.title" v-html="fieldValue?.recommendation_settings.title">
         </div>
         <div v-else>
-          {{ trans("Recommendations") }}
+          {{ ctrans("Recommendations") }}
         </div>
       </div>
     </div>
