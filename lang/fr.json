@@ -3815,7 +3815,7 @@
     "Order Status": "État de la commande",
     "Order already in warehouse": "Commande déjà en entrepôt",
     "Order any product from :category department to get :percentage off": "",
-    "Order any product from :category range to get :percentage off": "Commandez n'importe quel produit de la catégorie pour obtenir une réduction de :pourcentage de réduction",
+    "Order any product from :category range to get :percentage off": "Commandez n'importe quel produit de la :category pour obtenir une réduction de :percentage de réduction",
     "Order any product from :category sub-department to get :percentage off": "",
     "Order any product in this department": "",
     "Order any product in this range": "Commandez n'importe quel produit de cette gamme",
