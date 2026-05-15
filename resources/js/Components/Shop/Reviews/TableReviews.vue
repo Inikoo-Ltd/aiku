@@ -2,7 +2,7 @@
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import ReviewStatsPanel from "@/Components/Shop/Reviews/ReviewStatsPanel.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@/Common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
