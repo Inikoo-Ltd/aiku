@@ -26,6 +26,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
@@ -43,6 +44,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -60,6 +62,7 @@ class ShowDeliveryNote extends OrgAction
     use GetPlatformLogo;
 
     private Order|Shop|Warehouse|Customer $parent;
+    private ReturnDeliveryNote|null $return = null;
     private bool $allowAction = true;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
@@ -241,6 +244,13 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
+        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && !$deliveryNote->is_returned && app()->environment('local')) {
+            $actions[] = [
+                'type'    => 'button',
+                'key'     => 'return',
+            ];
+        }
+
         return $actions;
     }
 
@@ -308,7 +318,6 @@ class ShowDeliveryNote extends OrgAction
                     ],
 
                 ],
-
                 $deliveryNote->pickerUser->id == $request->user()->id
                     ? [
                     'type'    => 'button',
@@ -450,7 +459,7 @@ class ShowDeliveryNote extends OrgAction
                 [
                     'type'    => 'button',
                     'style'   => 'cancel',
-                    'tooltip' => __('Undispatch'),
+                    'tooltip' => __('Set Delivery Note as undispatched (back to finalised)'),
                     'label'   => __('Undispatch'),
                     'key'     => 'undispatch',
                     'route'   => [
@@ -619,8 +628,8 @@ class ShowDeliveryNote extends OrgAction
                     'deliveryNote' => $deliveryNote->id,
                     'shipper_id'   => null
                 ]
-
             ],
+            'return_dn' => $this->return?->only(['id', 'reference', 'slug'])
         ];
     }
 
@@ -743,6 +752,8 @@ class ShowDeliveryNote extends OrgAction
         // Disable waiting on DS no?
         $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false) && $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
 
+        $this->return = $deliveryNote->returnedDeliveryNote()->whereNot('state', ReturnDeliveryNoteStateEnum::CANCELLED)->first();
+
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -768,6 +779,17 @@ class ShowDeliveryNote extends OrgAction
                 'wrapped_actions' => $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
+            'hasReturn'     => $this->return ? [
+                'reference' => $this->return->reference,
+                'route'     => [
+                    'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.show',
+                    'parameters' => [
+                        'organisation'   => $this->return->organisation->slug,
+                        'warehouse'      => $this->return->warehouse->slug,
+                        'returnDeliveryNote' => $this->return->slug,
+                    ],
+                ]
+            ] : null,
             'is_editable'    => $isEditable,
             'tabs'          => [
                 'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
@@ -861,6 +883,9 @@ class ShowDeliveryNote extends OrgAction
             ],
             'warehouse'           => [
                 'slug' => $deliveryNote->warehouse->slug,
+            ],
+            'organisation'          => [
+                'slug' => $deliveryNote->organisation->slug,
             ],
 
             'is_faire_order' => ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE),

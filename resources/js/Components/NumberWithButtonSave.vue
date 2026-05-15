@@ -100,6 +100,7 @@ const onSaveViaForm = async () => {
 			formDefaultValue.value.quantity = form.quantity
 			// console.log('ee axios', form.processing)
 		} catch (error) {
+			console.log("ERR1", errors);
 			emits("onError", error?.response?.data)
 			notify({
 				title: trans("Something went wrong"),
@@ -122,7 +123,7 @@ const onSaveViaForm = async () => {
 					emits("onError", errors)
 					notify({
 						title: trans("Something went wrong"),
-						text: "",
+						text: errors?.message || 'Failed to process this action',
 						type: "error",
 					})
 				},
