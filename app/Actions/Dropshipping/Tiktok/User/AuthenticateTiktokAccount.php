@@ -108,7 +108,7 @@ class AuthenticateTiktokAccount extends OrgAction
     public function redirectToTikTok(Customer $customer): string
     {
         $clientId = config('services.tiktok.client_id');
-        $redirectUri = app()->isProduction() ? route('retina.dropshipping.tiktok.callback') : route('webhooks.tiktok.callback');
+        $redirectUri = route('webhooks.tiktok.callback');
         $state = base64_encode($customer->id);
 
         return config('services.tiktok.auth_url')."/oauth/authorize?app_key={$clientId}&state={$state}&redirect_uri={$redirectUri}";
