@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, watch, nextTick } from "vue"
+import axios from "axios"
 
 interface ProductResource {
     id: number
@@ -111,7 +112,22 @@ const initWidget = async () => {
 })
 }
 
+
+
+const getDataReview= async ()=>{
+    console.log('msaijdfshjkdgh')
+    // this funciton run only for get data from review.io and fill our databases
+	try {
+		const response: any = await axios.get(
+			route('iris.json.reviews.third_party.product_review',{ products : props.product.code }),
+		)
+	} catch (error: any) {
+		console.log(error)
+	}
+}
+
 onMounted(async () => {
+    getDataReview()
     await loadAssets()
     await initWidget()
 })
