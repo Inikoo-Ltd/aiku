@@ -54,7 +54,7 @@ class CrawlWebsites
             if ($crawl->type == CrawlTypeEnum::JAVASCRIPT) {
                 $jobQueue = 'cache-warming-js';
             }
-            CrawlWebsites::dispatch($crawl->id)->onQueue($jobQueue);
+            CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
         }
     }
 

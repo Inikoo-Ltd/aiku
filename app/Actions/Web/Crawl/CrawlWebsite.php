@@ -197,8 +197,8 @@ class CrawlWebsite
 
             return 0;
         }
-      
-        CrawlWebsites::run(CrawlTypeEnum::HTML,$trigger, $command);
+
+        CrawlWebsites::run(CrawlTypeEnum::HTML, $trigger, $command);
 
         return 0;
     }
