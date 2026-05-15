@@ -86,9 +86,9 @@ class ShowIrisWebpage
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
-        $xLoggedStatus = $request->header('X-Logged-Status');
-        if ($xLoggedStatus !== null) {
-            $loggedIn = $xLoggedStatus === 'In';
+        $loggedStatusFromHeader = $request->header('X-Logged-Status');
+        if ($loggedStatusFromHeader !== null) {
+            $loggedIn = $loggedStatusFromHeader === 'In';
         } else {
             $loggedIn = auth()->check();
         }

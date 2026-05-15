@@ -192,7 +192,7 @@ class Kernel extends HttpKernel
         'iris'        => [
             DetectIrisWebsite::class,
             CheckWebsiteState::class,
-            AddVaryHeader::class,
+            //AddVaryHeader::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -211,7 +211,7 @@ class Kernel extends HttpKernel
             DisableSSR::class,
             DetectWebsite::class,
             CheckWebsiteState::class,
-            AddVaryHeader::class,
+            //AddVaryHeader::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
