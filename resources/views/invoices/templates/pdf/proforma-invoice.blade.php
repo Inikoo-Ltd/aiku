@@ -238,62 +238,76 @@
     </tr>
     </thead>
     <tbody>
-
-    @foreach($transactions as $transaction)
-        <tr class="@if($loop->last) last @endif">
-            <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
-
-            @if($pro_mode)
-                <td style="text-align:left" colspan="2">{{ $transaction->historicAsset?->name }}</td>
-            @else
-                <td style="text-align:left" colspan="2">
-                    @if($transaction->historicAsset?->units > 1)
-                        {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
-                    @endif
-                    {{ $transaction->historicAsset?->name . ' (' . $order->currency->symbol . $transaction->net_amount . ')' }}
-                    <br>
-                    @if($rrp)
-                        RRP: {{ $transaction->model->rrp }} <br>
-                    @endif
-                    @if($parts)
-                        {{ __('Parts') }}: {{ $transaction->historicAsset?->name }} <br>
-                    @endif
-                    @if($commodity_codes)
-                        {{ __('Tariff Code') }}: {{ $transaction->model->tariff_code }} <br>
-                    @endif
-                    @if($barcode)
-                        {{ __('Barcode') }}: {{ $transaction->model->barcode }} <br>
-                    @endif
-                    @if($weight)
-                        {{ __('Weight') }}: {{ $transaction->model->marketing_weight }}g <br>
-                    @endif
-                    @if($country_of_origin)
-                        {{ __('Country of Origin') }}: {{ $transaction->model->country_of_origin }} <br>
-                    @endif
-                    @if($cpnp)
-                        CPNP: {{ $transaction->model->cpnp_number }} <br>
-                    @endif
+    @if($group_by_tariff_code)
+        @php($transactionGroups = $transactions->groupBy(fn ($t) => $t->model->tariff_code ?? __('No Tariff Code')))
+    @else
+        @php($transactionGroups = collect([$transactions]))
+    @endif
+    
+    @foreach($transactionGroups as $groupKey => $transactions)
+        @if($group_by_tariff_code)
+            <tr>
+                <td colspan="6" style="background-color:#EEEEEE;font-weight:bold;border:0.1mm solid #000000;">
+                    {{ __('Tariff Code') }}: {{ $groupKey }}
                 </td>
-            @endif
+            </tr>
+        @endif
 
-            @if($pro_mode)
-                <td style="text-align:right">
-                    @if($transaction->quantity==0 || $transaction->quantity==null)
-                        {{ $order->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
-                    @elseif($transaction->historicAsset)
-                        {{ $order->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
-                    @endif
-                </td>
-                <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
-            @else
-                <td></td>
-                <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
-            @endif
+        @foreach($transactions as $transaction)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
 
-            <td style="text-align:right">{{ $order->currency->symbol . $transaction->net_amount }}</td>
-        </tr>
+                @if($pro_mode)
+                    <td style="text-align:left" colspan="2">{{ $transaction->historicAsset?->name }}</td>
+                @else
+                    <td style="text-align:left" colspan="2">
+                        @if($transaction->historicAsset?->units > 1)
+                            {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
+                        @endif
+                        {{ $transaction->historicAsset?->name . ' (' . $order->currency->symbol . $transaction->net_amount . ')' }}
+                        <br>
+                        @if($rrp)
+                            RRP: {{ $transaction->model->rrp }} <br>
+                        @endif
+                        @if($parts)
+                            {{ __('Parts') }}: {{ $transaction->historicAsset?->name }} <br>
+                        @endif
+                        @if($commodity_codes)
+                            {{ __('Tariff Code') }}: {{ $transaction->model->tariff_code }} <br>
+                        @endif
+                        @if($barcode)
+                            {{ __('Barcode') }}: {{ $transaction->model->barcode }} <br>
+                        @endif
+                        @if($weight)
+                            {{ __('Weight') }}: {{ $transaction->model->marketing_weight }}g <br>
+                        @endif
+                        @if($country_of_origin)
+                            {{ __('Country of Origin') }}: {{ $transaction->model->country_of_origin }} <br>
+                        @endif
+                        @if($cpnp)
+                            CPNP: {{ $transaction->model->cpnp_number }} <br>
+                        @endif
+                    </td>
+                @endif
+
+                @if($pro_mode)
+                    <td style="text-align:right">
+                        @if($transaction->quantity==0 || $transaction->quantity==null)
+                            {{ $order->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                        @elseif($transaction->historicAsset)
+                            {{ $order->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
+                        @endif
+                    </td>
+                    <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
+                @else
+                    <td></td>
+                    <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
+                @endif
+
+                <td style="text-align:right">{{ $order->currency->symbol . $transaction->net_amount }}</td>
+            </tr>
+        @endforeach
     @endforeach
-
     </tbody>
     <tbody class="totals">
     <tr>
