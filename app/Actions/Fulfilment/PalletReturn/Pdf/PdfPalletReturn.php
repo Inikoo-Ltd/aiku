@@ -63,17 +63,31 @@ class PdfPalletReturn
             $pallets = $pallets
                 ->get()
                 ->keyBy('id');
-            $storedItems = PalletReturnItem::select([
+
+            $storedItems = PalletReturnItem::query()
+                ->select([
                     'pallet_id',
-                    'stored_item_id'
+                    'stored_item_id',
+                    'quantity_ordered',
+                    'quantity_picked',
+                    'quantity_dispatched',
                 ])
+                ->with('storedItem')
                 ->where('pallet_return_id', $palletReturn->id)
                 ->get()
                 ->groupBy('stored_item_id')
-                ->map(
-                    fn ($items) => $items->pluck('pallet_id')->mapWithKeys(fn ($id) => [$id => $pallets->get($id)])
-                )
-                ->toArray();
+                ->map(function ($items) use ($pallets) {
+                    return $items->mapWithKeys(function ($item) use ($pallets) {
+                        return [
+                            $item->pallet_id => [
+                                'quantity_ordered'    => $item->quantity_ordered,
+                                'quantity_picked'     => $item->quantity_picked,
+                                'quantity_dispatched' => $item->quantity_dispatched,
+                                ...$pallets[$item->pallet_id]->toArray(),
+                            ],
+                        ];
+                    });
+                });
 
             data_set($data, 'stored_items_pallet_data', $storedItems);
         }
