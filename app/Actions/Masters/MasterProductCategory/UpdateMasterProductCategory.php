@@ -108,7 +108,7 @@ class UpdateMasterProductCategory extends OrgAction
                 data_set($modelData, 'gr_vol_discount_percentage', $volGR['percentage_off']);
                 data_set($modelData, 'gr_vol_discount_quantity', $volGR['item_quantity']);
 
-                UpsertGoldRewardFromMaster::dispatch($masterProductCategory);
+                UpsertGoldRewardFromMasterProductCategory::dispatch($masterProductCategory);
             } else {
                 data_set($modelData, 'has_gr_vol_discount', false);
                 // TODO: Delete GR Reward from Master Product Category to Children

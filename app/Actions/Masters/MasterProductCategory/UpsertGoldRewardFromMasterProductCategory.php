@@ -17,7 +17,7 @@ use App\Models\Discounts\Offer;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpsertGoldRewardFromMaster extends GrpAction
+class UpsertGoldRewardFromMasterProductCategory extends GrpAction
 {
     use AsAction;
 
