@@ -207,8 +207,10 @@ class ShowIrisWebpage
                 'website',
                 'domain',
                 'currency_data',
-                'shop_type'
+                'shop_type',
+                'locale'
             ]);
+
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
