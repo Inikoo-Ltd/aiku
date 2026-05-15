@@ -3,7 +3,8 @@ import Table from "@/Components/Table/Table.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, ref } from "vue"
 
-import Image from "@/Components/Image.vue"
+import Image from "@/Common/Components/Image.vue"
+import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
 import Rating from "primevue/rating"
@@ -50,11 +51,11 @@ defineProps<{
 }>()
 
 const locale = inject("locale", retinaLayoutStructure)
-
 const isOpenDialog = ref(false)
 const selectedItem = ref<any>(null)
 
 const openDialog = (item: any) => {
+    console.log(item)
     selectedItem.value = item
     isOpenDialog.value = true
 }
@@ -112,41 +113,7 @@ const openDialog = (item: any) => {
         header="Product Review"
         :style="{ width: '500px' }"
     >
-        <div v-if="selectedItem" class="space-y-4">
-            <div class="flex items-center gap-3">
-                <div class="w-14 aspect-square overflow-hidden rounded-lg">
-                    <Image
-                        :src="selectedItem.image?.thumbnail"
-                        class="w-full h-full object-cover"
-                    />
-                </div>
-
-                <div>
-                    <div class="font-semibold">
-                        {{ selectedItem.asset_name }}
-                    </div>
-
-                    <div class="text-sm text-gray-500">
-                        {{ selectedItem.asset_code }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <Rating
-                    v-model="selectedItem.product_review_rating"
-                    :disabled="true"
-                />
-
-                <span class="text-sm text-gray-500">
-                    ({{ selectedItem.product_review_rating }})
-                </span>
-            </div>
-
-            <div class="text-sm text-gray-600">
-                {{ selectedItem.review ?? 'No review available' }}
-            </div>
-        </div>
+        <pre>{{ selectedItem.reviews }}</pre>
 
         <template #footer>
             <Button
