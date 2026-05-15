@@ -31,18 +31,6 @@ class IndexHistoryInShop extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return tap(
-            $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]),
-            function ($hasPermission) {
-                if (! $hasPermission) {
-                    abort(403);
-                }
-            }
-        );
-    }
-
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator|array|bool
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -93,8 +81,7 @@ class IndexHistoryInShop extends OrgAction
                 ->column(key: 'expand', label: '', type: 'icon')
                 ->column(key: 'datetime', label: __('Date'), canBeHidden: false)
                 ->column(key: 'user_name', label: __('User'), canBeHidden: false)
-                ->column(key: 'old_values', label: __('Old Value'), canBeHidden: false)
-                ->column(key: 'new_values', label: __('New Value'), canBeHidden: false)
+                ->column(key: 'values', label: __('Values'), canBeHidden: false)
                 ->column(key: 'event', label: __('Action'), canBeHidden: false)
                 ->defaultSort('ip_address');
         };
@@ -139,7 +126,7 @@ class IndexHistoryInShop extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.settings.changelog' =>
+            'grp.org.shops.show.dashboard.changelog' =>
             array_merge(
                 EditShop::make()->getBreadcrumbs('grp.org.shops.show.settings.edit', $routeParameters),
                 $headCrumb(

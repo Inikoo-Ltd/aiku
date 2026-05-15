@@ -33,6 +33,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Ordering\SalesChannel;
+use App\Actions\Audits\DispatchSimpleAudit;
 
 class UpdateShop extends OrgAction
 {
@@ -61,8 +62,28 @@ class UpdateShop extends OrgAction
         $oldMasterShop = $shop->masterShop;
 
         if (Arr::exists($modelData, 'address')) {
+
+            $oldAddressValue = $shop->address->only([
+                    'locality',
+                    'country_id',
+                    'postal_code',
+                    'address_line_1',
+                    'address_line_2',
+                    'dependent_locality',
+                    'administrative_area'
+                ]);
+
             $addressData = Arr::get($modelData, 'address');
+
             Arr::forget($modelData, 'address');
+
+            DispatchSimpleAudit::run(
+                auditableModel: $shop,
+                logKey: 'address',
+                oldValue: $oldAddressValue,
+                newValue: $addressData ?? 'None'
+            );
+
             $shop = $this->updateModelAddress($shop, $addressData);
         }
 
@@ -132,6 +153,19 @@ class UpdateShop extends OrgAction
             }
         }
 
+        // if (Arr::exists($modelData, 'registration_number')) {
+        //     $oldRegristrationNumber = data_get($shop->data, 'registration_number');
+        //     $newRegistrationNumber = Arr::get($modelData, 'registration_number');
+
+        //     if ($oldRegristrationNumber !== $newRegistrationNumber) {
+        //         DispatchSimpleAudit::run(
+        //             auditableModel: $shop,
+        //             logKey: 'registration_number',
+        //             oldValue: $oldRegristrationNumber ?? 'None',
+        //             newValue: $newRegistrationNumber ?? 'None'
+        //         );
+        //     }
+        // }
 
         foreach ($modelData as $key => $value) {
             data_set(
@@ -266,9 +300,31 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
         }
 
+        $old     = [$shop->data, $shop->settings];
+
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
         $shop->refresh();
+
+        $new     = [$shop->data, $shop->settings];
+
+        $traceableChanges = [
+            'registration_number'               => 'data.registration_number', 
+            'vat_number'                        => 'data.vat_number',
+            'catalog.collection_follow_master'  => 'settings.catalog.collection_follow_master',
+            ];
+
+        foreach ($traceableChanges as $key => $path) {
+            $oldValue = Arr::get($old, $path) ?? 'None';
+            $newValue = Arr::get($new, $path) ?? 'None';
+
+            DispatchSimpleAudit::run(
+                auditableModel: $shop,
+                logKey: $key,
+                oldValue: $oldValue,
+                newValue: $newValue
+            );
+        }
 
         if (Arr::hasAny($changes, ['state', 'type'])) {
             GroupHydrateShops::dispatch($shop->group)->delay($this->hydratorsDelay);

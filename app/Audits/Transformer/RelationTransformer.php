@@ -6,11 +6,11 @@ use Illuminate\Support\Arr;
 
 class RelationTransformer
 {
-    public static function execute($auditable, array $data, string $relationName, string $relationModel, array $attributes): array
+    public static function execute($auditable, array $auditData, string $relationName, string $relationModel, array $attributes): array
     {
         $foreignKey = $relationName . '_id';
 
-        if (Arr::has($data, 'new_values.' . $foreignKey)) {
+        if (Arr::has($auditData, 'new_values.' . $foreignKey)) {
             $oldRelated = $relationModel::find($auditable->getOriginal($foreignKey));
             $newRelated = $relationModel::find($auditable->getAttribute($foreignKey));
 
@@ -26,13 +26,13 @@ class RelationTransformer
                 return implode(', ', array_filter($values));
             };
 
-            $data['old_values'][$relationName] = $extractValue($oldRelated);
-            $data['new_values'][$relationName] = $extractValue($newRelated);
+            $auditData['old_values'][$relationName] = $extractValue($oldRelated);
+            $auditData['new_values'][$relationName] = $extractValue($newRelated);
 
-            unset($data['new_values'][$foreignKey]);
-            unset($data['old_values'][$foreignKey]);
+            unset($auditData['new_values'][$foreignKey]);
+            unset($auditData['old_values'][$foreignKey]);
         }
-        return $data;
+        return $auditData;
 
     }
 }
