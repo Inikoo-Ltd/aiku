@@ -19,7 +19,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
     faUser, faEnvelope, faSeedling, faShare, faInboxOut, faCheck,
     faEnvelopeOpen, faHandPointer, faUserSlash, faPaperPlane, faEyeSlash,
-    faSkull, faDungeon
+    faSkull, faDungeon, faExclamationTriangle
 } from '@fal';
 import { trans } from 'laravel-vue-i18n';
 import { Link, router } from "@inertiajs/vue3"
@@ -31,7 +31,7 @@ import { routeType } from "@/types/route";
 library.add(
     faUser, faEnvelope, faSeedling, faShare, faInboxOut, faCheck,
     faEnvelopeOpen, faHandPointer, faUserSlash, faPaperPlane, faEyeSlash,
-    faSkull, faDungeon
+    faSkull, faDungeon, faExclamationTriangle
 );
 ChartJS.register(Title, Tooltip, Legend, ArcElement);
 
@@ -48,7 +48,8 @@ const props = defineProps<{
                 timeline: any,
             }
         },
-        compiled_layout: any
+        compiled_layout: any,
+        compiled_layout_size: number
     }
     liveStats?: any[]
     ownShopTemplates?: Array<{
@@ -191,6 +192,30 @@ const effectiveOtherShopTemplates = computed(() =>
                 <div class="mt-4 sm:mt-0 pb-2">
                     <Timeline :options="data.mailshot.data.timeline" :state="data.mailshot.data.state"
                         :slidesPerView="6" />
+                </div>
+            </div>
+            <div v-if="isReady" class="mb-4">
+                <div class="text-sm text-gray-600 mb-2">
+                    Estimated email size: approximately <span class="font-semibold">{{ data.compiled_layout_size }}
+                        KB</span>
+                </div>
+
+                <div v-if="data.compiled_layout_size > 102"
+                    class="flex items-start gap-3 p-4 bg-red-50 border-l-4 border-red-500 rounded-md shadow-sm">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500 text-2xl mt-0.5 flex-shrink-0"
+                        fixed-width />
+                    <div class="flex-1">
+                        <h4 class="text-red-700 font-semibold text-base mb-1">
+                            Email size exceeds Gmail's recommended limit
+                        </h4>
+                        <p class="text-red-600 text-sm leading-relaxed">
+                            Your email content is <span class="font-semibold">{{ data.compiled_layout_size }} KB</span>,
+                            which exceeds the recommended <span class="font-semibold">102 KB</span> limit.
+                            Gmail may clip your message and hide part of the content behind a
+                            "[Message clipped] View entire message" link, which can hurt engagement
+                            and tracking accuracy.
+                        </p>
+                    </div>
                 </div>
             </div>
 
