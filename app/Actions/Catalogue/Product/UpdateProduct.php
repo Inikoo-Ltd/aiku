@@ -79,7 +79,7 @@ class UpdateProduct extends OrgAction
             $webpageData['breadcrumb_label'] = Arr::pull($modelData, 'webpage_breadcrumb_label');
         }
 
-        $oldIsOutOfStock = $product->available_quantity > 0;
+        $oldIsInStock = $product->available_quantity > 0;
 
         $oldHistoricProduct = $product->current_historic_asset_id;
 
@@ -262,7 +262,7 @@ class UpdateProduct extends OrgAction
             CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
         }
 
-        $isOutOfStock = $product->available_quantity > 0;
+        $isInStock = $product->available_quantity > 0;
 
 
         $fieldsUsedInLuigi = [
@@ -276,10 +276,10 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInLuigi
-            )
-                || $isOutOfStock != $oldIsOutOfStock)
+                    $changed,
+                    $fieldsUsedInLuigi
+                )
+                || $isInStock != $oldIsInStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60);
         }
@@ -292,10 +292,10 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInWebpages
-            )
-                || $isOutOfStock != $oldIsOutOfStock)
+                    $changed,
+                    $fieldsUsedInWebpages
+                )
+                || $isInStock != $oldIsInStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
         }
