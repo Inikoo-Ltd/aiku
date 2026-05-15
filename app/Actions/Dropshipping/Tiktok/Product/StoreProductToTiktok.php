@@ -108,7 +108,7 @@ class StoreProductToTiktok extends RetinaAction
 
             $description = $portfolio->customer_description;
 
-            if(! $description) {
+            if (! $description) {
                 $description = $portfolio->item_name;
             }
 

@@ -4,8 +4,9 @@ namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
-use App\Actions\Web\Website\BreakWebsiteCache;
+use App\Actions\Web\Webpage\PurgeVarnishPath;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -14,6 +15,7 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect as FacadesRedirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -41,7 +43,17 @@ class StoreRedirectFromWebsite extends OrgAction
         if ($redirectedWebpage) {
             WebpageHydrateRedirects::run($redirectedWebpage);
         }
-        BreakWebsiteCache::dispatch($website)->delay(now()->addMinute(1));
+
+        $key = config('iris.cache.webpage_path.prefix').'_'.$website->id.'_'.$redirect->from_path;
+        Cache::forget($key);
+
+        PurgeVarnishPath::run($website, $redirect->from_path);
+        if ($redirect->from_webpage_id) {
+            $fromWebpage = Webpage::find($redirect->from_webpage_id);
+            if ($fromWebpage) {
+                BreakWebpageCache::run($fromWebpage);
+            }
+        }
 
         return $redirect;
     }
@@ -49,7 +61,7 @@ class StoreRedirectFromWebsite extends OrgAction
     public function rules(): array
     {
         return [
-            'from_path'     => [
+            'from_path' => [
                 'required',
                 'string',
                 'max:2048',
@@ -58,20 +70,20 @@ class StoreRedirectFromWebsite extends OrgAction
                 Rule::unique(Redirect::class, 'from_path')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
             ],
-            'from_url'      => [
+            'from_url'  => [
                 'required',
                 'string',
                 'max:2048',
                 Rule::unique(Redirect::class, 'from_url')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)),
             ],
-            'to_url'        => [
+            'to_url'    => [
                 'required',
                 Rule::exists(Webpage::class, 'id')
                     ->where(
                         fn ($query) => $query
-                        ->where('website_id', $this->shop->website->id)
-                        ->where('state', WebpageStateEnum::LIVE)
+                            ->where('website_id', $this->shop->website->id)
+                            ->where('state', WebpageStateEnum::LIVE)
                     ),
             ],
         ];
@@ -84,8 +96,8 @@ class StoreRedirectFromWebsite extends OrgAction
                 'grp.org.fulfilments.show.web.redirect.index',
                 [
                     'organisation' => $redirect->organisation->slug,
-                    'fulfilment' => $redirect->shop->fulfilment->slug,
-                    'website' => $redirect->website->slug,
+                    'fulfilment'   => $redirect->shop->fulfilment->slug,
+                    'website'      => $redirect->website->slug,
                 ]
             );
         }
@@ -94,15 +106,15 @@ class StoreRedirectFromWebsite extends OrgAction
             'grp.org.shops.show.web.redirect.index',
             [
                 'organisation' => $redirect->organisation->slug,
-                'shop' => $redirect->shop->slug,
-                'website' => $redirect->website->slug,
+                'shop'         => $redirect->shop->slug,
+                'website'      => $redirect->website->slug,
             ]
         );
     }
 
     public function action(Website $website, array $modelData): Redirect
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisationFromShop($website->shop, $modelData);
 
         return $this->handle($website, $this->validatedData);

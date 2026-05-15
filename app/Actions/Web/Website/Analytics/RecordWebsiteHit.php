@@ -91,6 +91,11 @@ class RecordWebsiteHit
             return false;
         }
 
+        $country = $request->header('CF-IPCountry');
+        if (!$country || $country === 'XX' || $country === 'T1') {
+            return false;
+        }
+
         return true;
     }
 

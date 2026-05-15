@@ -11,7 +11,7 @@ import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
 import { inject, computed } from 'vue'
 import { faCube, faLink, faImage } from "@fal"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import Button from "@iris/Components/IrisButton.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import { get, isPlainObject } from 'lodash-es'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

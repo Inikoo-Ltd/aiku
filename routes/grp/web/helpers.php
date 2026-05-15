@@ -27,6 +27,7 @@ use App\Actions\Helpers\Redirects\RedirectPickingSessionLink;
 use App\Actions\Helpers\Redirects\RedirectPortfolioItemLink;
 use App\Actions\Helpers\Redirects\RedirectProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectProductLink;
+use App\Actions\Helpers\Redirects\RedirectReturnDeliveryNotesLink;
 use App\Actions\Helpers\Redirects\RedirectShopInShopFromDashboard;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
@@ -38,6 +39,9 @@ Route::get('redirect-refunds-in-shop/{invoice:id}', RedirectInvoicesInShopLink::
 Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustomerLink::class)->name('redirect_invoices_in_customer');
 
 Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
+Route::get('redirect-return-note/{returnDeliveryNote:id}', RedirectReturnDeliveryNotesLink::class)->name('redirect_return_notes');
+
+
 Route::get('redirect-org-stock/{orgStock:id}', RedirectOrgStockLink::class)->name('redirect_org_stock');
 Route::get('redirect-org-stock/{orgStock:id}/to-products-index', [RedirectOrgStockLink::class, 'toProductsIndex'])->name('redirect_org_stock.to_products_index');
 

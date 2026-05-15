@@ -139,8 +139,15 @@ function portfolioRoute(product: Product) {
 		return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
 	}
 
+	const customerSalesChannelId = route().params["customerSalesChannel"] || props.customerSalesChannel?.slug
+	
+	if (!customerSalesChannelId) {
+		console.warn("customerSalesChannel ID is missing")
+		return "#"
+	}
+	
 	return route("retina.dropshipping.customer_sales_channels.portfolios.show", [
-		route().params["customerSalesChannel"],
+		customerSalesChannelId,
 		product.id,
 	])
 }

@@ -59,10 +59,10 @@ class UpdateWebpageIsDifferentWhenLoggedIn
         $progressBar->setFormat('debug');
         $progressBar->start();
 
-        Webpage::chunk(1000, function ($webpages) use ($progressBar,$command) {
+        Webpage::chunk(1000, function ($webpages) use ($progressBar, $command) {
             foreach ($webpages as $webpage) {
                 $this->handle($webpage);
-                if($webpage->is_different_when_logged_in){
+                if ($webpage->is_different_when_logged_in) {
                     $command->info(" webpage: $webpage->slug  is different when logged in");
                 }
                 $progressBar->advance();

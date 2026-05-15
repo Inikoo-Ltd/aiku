@@ -114,6 +114,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $live_family_description_snapshot_id
  * @property string|null $published_family_description_checksum
  * @property int|null $landing_page_id
+ * @property \Illuminate\Support\Carbon|null $last_visited_at
  * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Web\Crawl> $crawls
@@ -194,6 +195,7 @@ class Website extends Model implements Auditable, HasMedia
         'closed_at'         => 'datetime',
         'fetched_at'        => 'datetime',
         'last_fetched_at'   => 'datetime',
+        'last_visited_at'   => 'datetime',
 
     ];
 

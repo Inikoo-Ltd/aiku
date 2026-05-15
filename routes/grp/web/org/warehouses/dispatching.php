@@ -49,7 +49,6 @@ Route::get('/waiting_crm_items/shop/{shopType}', [IndexWaitingCrmDeliveryNoteIte
 Route::get('/waiting_crm_items_still_picking', IndexWaitingCrmDeliveryNoteItemsStillInPicking::class)->name('waiting_crm_items_still_picking');
 Route::get('/waiting_crm_items_still_picking/shop/{shopType}', [IndexWaitingCrmDeliveryNoteItemsStillInPicking::class, 'inShopTypes'])->name('waiting_crm_items_still_picking.shop');
 
-
 Route::get('/delivery-notes', IndexDeliveryNotes::class)->name('delivery-notes');
 Route::get('/delivery-notes/shop/{shopType}', [IndexDeliveryNotes::class, 'inShopTypes'])->name('delivery-notes.shop');
 
