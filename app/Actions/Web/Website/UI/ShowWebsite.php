@@ -161,6 +161,20 @@ class ShowWebsite extends OrgAction
                 'value' => $website->webStats->number_webpages_sub_type_blog,
             ],
         ];
+        $website_stats      = [
+            [
+                'label' => __('Visitors (24h)'),
+                'icon'  => 'fal fa-user',
+                "color" => "#0ea5e9",
+                'value' => $website->webStats->number_visitors_last_24_hours,
+            ],
+            [
+                'label' => __('Hits (24h)'),
+                'icon'  => 'fal fa-chart-line',
+                "color" => "#8b5cf6",
+                'value' => $website->webStats->number_hits_last_24_hours,
+            ],
+        ];
 
         $routeShowWebpage   = 'grp.org.shops.show.web.webpages.show';
         $routeParam         = [
@@ -256,6 +270,7 @@ class ShowWebsite extends OrgAction
                     [
                         'stats'              => $stats,
                         'content_blog_stats' => $content_blog_stats,
+                        'website_stats'      => $website_stats,
                         'website_type'       => $website->shop->type
                     ],
                     [

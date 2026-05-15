@@ -35,13 +35,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexWebsites extends OrgAction
 {
     use WithWebAuthorisation;
-    private Group|Organisation|Fulfilment|Shop $parent;
 
+    private Group|Organisation|Fulfilment|Shop $parent;
 
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
-        $this->scope  = $organisation;
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
@@ -51,8 +50,16 @@ class IndexWebsites extends OrgAction
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $this->scope = $this->parent;
         $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($this->parent);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($this->parent);
     }
@@ -117,11 +124,25 @@ class IndexWebsites extends OrgAction
 
         return $queryBuilder
             ->defaultSort('websites.code')
-            ->select(['websites.id', 'websites.code', 'websites.slug', 'websites.name', 'websites.slug', 'websites.domain', 'websites.status', 'websites.state','websites.shop_id',
-                      'shops.type as shop_type', 'shops.slug as shop_slug','shops.name as shop_name','organisations.name as organisation_name','organisations.slug as organisation_slug'])
+            ->select([
+                'websites.id',
+                'websites.code',
+                'websites.slug',
+                'websites.name',
+                'websites.slug',
+                'websites.domain',
+                'websites.status',
+                'websites.state',
+                'websites.shop_id',
+                'shops.type as shop_type',
+                'shops.slug as shop_slug',
+                'shops.name as shop_name',
+                'organisations.name as organisation_name',
+                'organisations.slug as organisation_slug'
+            ])
             ->leftJoin('shops', 'websites.shop_id', 'shops.id')
             ->leftJoin('organisations', 'websites.organisation_id', 'organisations.id')
-            ->allowedSorts([ 'code', 'name','domain','state'])
+            ->allowedSorts(['code', 'name', 'domain', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -148,7 +169,7 @@ class IndexWebsites extends OrgAction
 
             $countWebsites = match (class_basename($parent)) {
                 'Group', 'Organisation' => $parent->webStats->number_websites,
-                'Shop'  => $parent->website()->count(),
+                'Shop' => $parent->website()->count(),
                 default => $parent->shop->website()->count(),
             };
 

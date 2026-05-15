@@ -81,7 +81,7 @@ trait WithSendBulkEmails
         }
 
         // Inject source parameter to links if encrypted_id exists
-        $html = $this->injectSourceParameterLinks($html, $dispatchedEmail);
+        // $html = $this->injectSourceParameterLinks($html, $dispatchedEmail);
 
         return SendSesEmail::run(
             subject: $subject,
@@ -281,6 +281,10 @@ trait WithSendBulkEmails
             ->first();
     }
 
+    // TODO: Re-enable this function when we need to inject source parameter to links
+    // Purpose: to track which email campaign a user clicked on
+    // Current issue: this function will be increase the email size significantly because we use encrypted_id in the link
+    // Solution: find a way to minimize the email size or use a different approach
     private function injectSourceParameterLinks(string $html, DispatchedEmail $dispatchedEmail): string
     {
         // Check if encrypted_id exists in dispatchedEmail->data
