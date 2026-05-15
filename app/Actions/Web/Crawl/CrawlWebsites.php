@@ -20,7 +20,7 @@ class CrawlWebsites
     use AsAction;
 
 
-    public function handle(CrawlTypeEnum $type, CrawlTriggerEnum $trigger, ?Command $command = null): void
+    public function handle(CrawlTypeEnum $type, CrawlTriggerEnum $trigger, int $depth, ?Command $command = null): void
     {
         $index = 0;
         /** @var Website $website */
@@ -31,11 +31,10 @@ class CrawlWebsites
                 ->orderByDesc('web_stats_max_number_visitors_last_24_hours')
                 ->get() as $website
         ) {
-
             /** @var Crawl $crawl */
             $crawl = $website->crawls()->create(
                 [
-                    'depth' => 10,
+                    'depth' => $depth,
 
                     'concurrency' => match ($index) {
                         0 => 4,
@@ -51,7 +50,7 @@ class CrawlWebsites
 
             $index++;
             $jobQueue = 'cache-warming';
-            if ($crawl->type == CrawlTypeEnum::JAVASCRIPT) {
+            if ($crawl->type == CrawlTypeEnum::INERTIA) {
                 $jobQueue = 'cache-warming-js';
             }
             CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);

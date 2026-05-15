@@ -58,7 +58,7 @@ class CrawlWebsite
         $this->crawl = $crawl;
 
         $crawler = Crawler::create($this->crawl->website->storefront->canonical_url);
-        if ($crawl->type == CrawlTypeEnum::JAVASCRIPT) {
+        if ($crawl->type == CrawlTypeEnum::INERTIA) {
             $crawler->executeJavaScript();
         }
 
@@ -170,13 +170,14 @@ class CrawlWebsite
     public function asCommand(Command $command): int
     {
         $type = $command->option('type');
-        if (!in_array($type, ['html', 'javascript'])) {
+        if (!in_array($type, ['html', 'inertia', 'i'])) {
             $command->error("Invalid type option. Accepted values are: html, javascript");
 
             return 1;
         }
 
-        $crawlType = $type === 'javascript' ? CrawlTypeEnum::JAVASCRIPT : CrawlTypeEnum::HTML;
+
+        $crawlType = $type === 'inertia' || $type === 'i' ? CrawlTypeEnum::INERTIA : CrawlTypeEnum::HTML;
 
         $trigger = $command->option('deployment') ? CrawlTriggerEnum::DEPLOYMENT : CrawlTriggerEnum::COMMAND;
         if ($command->argument('website')) {
@@ -198,7 +199,7 @@ class CrawlWebsite
             return 0;
         }
 
-        CrawlWebsites::run(CrawlTypeEnum::HTML, $trigger, $command);
+        CrawlWebsites::run(CrawlTypeEnum::HTML, $trigger, $command->option('depth'), $command);
 
         return 0;
     }

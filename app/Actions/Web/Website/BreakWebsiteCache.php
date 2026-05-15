@@ -66,7 +66,7 @@ class BreakWebsiteCache extends OrgAction
             );
 
             $jobQueue = 'cache-warming';
-            if ($crawl->type == CrawlTypeEnum::JAVASCRIPT) {
+            if ($crawl->type == CrawlTypeEnum::INERTIA) {
                 $jobQueue = 'cache-warming-js';
             }
             CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
