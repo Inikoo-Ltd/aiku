@@ -46,7 +46,7 @@ class IndexDeliveryNotes extends OrgAction
         $title      = __('Delivery notes');
         $model      = '';
         $icon       = [
-            'icon'  => ['fal', 'fa-truck'],
+            'icon'  => ['fal', 'fa-exchange'],
             'title' => $title
         ];
         $afterTitle = null;
@@ -56,7 +56,7 @@ class IndexDeliveryNotes extends OrgAction
         if ($this->parent instanceof Warehouse) {
             $icon      = ['fal', 'fa-arrow-from-left'];
             $iconRight = [
-                'icon' => 'fal fa-truck',
+                'icon' => 'fal fa-exchange',
             ];
             $model     = __('Goods Out');
         }

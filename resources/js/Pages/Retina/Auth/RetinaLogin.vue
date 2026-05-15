@@ -63,7 +63,7 @@ const submit = async () => {
     } catch (error: any) {
         form.reset('password')
         isLoading.value = false
-        listLoginError.value = error.response.data
+        listLoginError.value = error.response?.data
 
     }
 

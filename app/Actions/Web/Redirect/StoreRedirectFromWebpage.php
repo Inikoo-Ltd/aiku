@@ -3,16 +3,17 @@
 /*
  * author Louis Perez
  * created on 28-04-2026-11h-01m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Web\Webpage\PurgeVarnishPath;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
-use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -20,6 +21,7 @@ use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect as FacadesRedirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,6 +31,7 @@ class StoreRedirectFromWebpage extends OrgAction
     use WithStoreRedirect;
 
     private Webpage $webpage;
+    private mixed $disableReload;
 
     public function handle(Webpage $webpage, array $modelData): Redirect
     {
@@ -46,7 +49,17 @@ class StoreRedirectFromWebpage extends OrgAction
         $redirect = Redirect::create($modelData);
 
         HydrateRedirect::run($webpage);
-        BreakWebsiteCache::dispatch($website)->delay(now()->addMinute(1));
+
+        $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.$redirect->from_path;
+        Cache::forget($key);
+
+        PurgeVarnishPath::run($website, $redirect->from_path);
+        if ($redirect->from_webpage_id) {
+            $fromWebpage = Webpage::find($redirect->from_webpage_id);
+            if ($fromWebpage) {
+                BreakWebpageCache::run($fromWebpage);
+            }
+        }
 
         return $redirect;
     }
@@ -54,11 +67,11 @@ class StoreRedirectFromWebpage extends OrgAction
     public function rules(): array
     {
         return [
-            'type'                     => [
+            'type'          => [
                 'required',
                 Rule::enum(RedirectTypeEnum::class)
             ],
-            'from_path'                => [
+            'from_path'     => [
                 'required',
                 'string',
                 'max:2048',
@@ -67,14 +80,14 @@ class StoreRedirectFromWebpage extends OrgAction
                 Rule::unique(Redirect::class, 'from_path')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
             ],
-            'from_url'                => [
+            'from_url'      => [
                 'required',
                 'string',
                 'max:2048',
                 Rule::unique(Redirect::class, 'from_url')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)),
             ],
-            'disableReload'            => [
+            'disableReload' => [
                 'sometimes',
                 'boolean'
             ]
@@ -85,8 +98,8 @@ class StoreRedirectFromWebpage extends OrgAction
     {
         if ($this->disableReload) {
             return redirect()->back()->with('notification', [
-                'status' => 'success',
-                'title' => __('Success!'),
+                'status'      => 'success',
+                'title'       => __('Success!'),
                 'description' => __('Created new redirect route for this webpage'),
             ]);
         }
@@ -95,11 +108,11 @@ class StoreRedirectFromWebpage extends OrgAction
             return FacadesRedirect::route(
                 'grp.org.fulfilments.show.web.webpages.show',
                 [
-                    'organisation'  => $redirect->organisation->slug,
-                    'fulfilment'    => $redirect->shop->fulfilment->slug,
-                    'website'       => $redirect->website->slug,
-                    'webpage'       => $this->webpage->slug,
-                    'tab'           => WebpageTabsEnum::REDIRECTS->value,
+                    'organisation' => $redirect->organisation->slug,
+                    'fulfilment'   => $redirect->shop->fulfilment->slug,
+                    'website'      => $redirect->website->slug,
+                    'webpage'      => $this->webpage->slug,
+                    'tab'          => WebpageTabsEnum::REDIRECTS->value,
                 ]
             );
         }
@@ -107,11 +120,11 @@ class StoreRedirectFromWebpage extends OrgAction
         return FacadesRedirect::route(
             'grp.org.shops.show.web.webpages.show',
             [
-                'organisation'  => $this->webpage->organisation->slug,
-                'shop'          => $this->webpage->shop->slug,
-                'website'       => $this->webpage->website->slug,
-                'webpage'       => $this->webpage->slug,
-                'tab'           => WebpageTabsEnum::REDIRECTS->value,
+                'organisation' => $this->webpage->organisation->slug,
+                'shop'         => $this->webpage->shop->slug,
+                'website'      => $this->webpage->website->slug,
+                'webpage'      => $this->webpage->slug,
+                'tab'          => WebpageTabsEnum::REDIRECTS->value,
             ]
         );
     }

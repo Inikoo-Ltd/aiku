@@ -120,11 +120,11 @@ const SaveOrder = async () => {
 
 
                 <template #image-list="{item}">
-                    <Image :src="item.image_thumbnail?.main?.thumbnail" class="w-10 h-10 object-cover rounded" />
+                    <Image :src="item.image_thumbnail?.main?.thumbnail || item?.image_thumbnail " class="w-10 h-10 object-cover rounded" />
                 </template>
 
                 <template #image-card="{item}">
-                    <Image :src="item.image_thumbnail?.main?.thumbnail" class="w-full h-24 object-cover rounded mb-2" />
+                    <Image :src="item.image_thumbnail?.main?.thumbnail || item?.image_thumbnail" class="w-full h-24 object-cover rounded mb-2" />
                 </template>
 
                 <!-- TOP ACTION -->

@@ -6,6 +6,7 @@
  *
 */
 
+
 import { irisLocaleStructure } from '@iris/Composables/useIrisLocaleStructure'
 
 export const aikuLocaleStructure = irisLocaleStructure

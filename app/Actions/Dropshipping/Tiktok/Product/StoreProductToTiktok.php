@@ -106,9 +106,15 @@ class StoreProductToTiktok extends RetinaAction
             $h = max(Arr::get($product->marketing_dimensions, 'h', 1), 20);
             $l = max(Arr::get($product->marketing_dimensions, 'l', 1), 80);
 
+            $description = $portfolio->customer_description;
+
+            if (! $description) {
+                $description = $portfolio->item_name;
+            }
+
             $productData = [
                 'title' => $portfolio->customer_product_name,
-                'description' => $portfolio->customer_description,
+                'description' => $description,
                 'price' => (string) $portfolio->customer_price,
                 'category_id' => $leafCategoryId,
                 'main_images' => $productImages,

@@ -35,9 +35,14 @@ use App\Actions\Dispatching\Trolley\ChangeTrolleyDeliveryNote;
 use App\Actions\Dispatching\Trolley\DetachTrolleyFromDeliveryNote;
 use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
+    Route::name('return.')->prefix('return')->group(function () {
+        Route::patch('process', ProcessReturnDeliveryNote::class)->name('process');
+    });
+
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
     Route::patch('update-address', UpdateDeliveryNoteDeliveryAddress::class)->name('update_address');
     Route::patch('update-shipping-fields-retry-store-shipping/{shipper:id}', SaveDeliveryNoteShippingFieldsAndRetryStoreShipping::class)
