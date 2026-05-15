@@ -261,16 +261,13 @@ class EditMasterFamily extends OrgAction
                             'label'  => __('Vol / GR'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
-                                'offers_data' => [
+                                'vol_gr_offer' => [
                                     'label'  => 'Vol / GR',
                                     'information' => __('Any changes will affect the offer in all shops.'),
                                     'type'   => 'vol_discount',
-                                    'value'  =>  $masterProductCategory->offers_data,
                                     'initial_value' => [
-                                        'volume_discount'   => [
-                                            'item_quantity' => null,
-                                            'percentage_off' => null,
-                                        ],
+                                        'item_quantity' => $masterProductCategory->gr_vol_discount_quantity,
+                                        'percentage_off' => $masterProductCategory->gr_vol_discount_percentage,
                                     ],
                                 ],
                             ],

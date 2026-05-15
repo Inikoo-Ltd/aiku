@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { routeType } from '@/types/route';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faInfoCircle } from "@fas";
+import { faInfoCircle, faSave } from "@fas";
 import Message from "primevue/message";
 import { Link, router } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAlbumCollection } from "@fal";
+import { faAlbumCollection, faEdit } from "@fal";
+import { faPlus } from "@far";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { trans } from 'laravel-vue-i18n';
+import Dialog from 'primevue/dialog';
 import { faExternalLink } from '@far';
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
+import { ref } from 'vue';
+import Button from '@/Components/Elements/Buttons/Button.vue';
 
 library.add(faAlbumCollection);
 
@@ -31,6 +35,11 @@ const props = withDefaults(defineProps<{
         routes: {
             detach_family: routeType
         }
+    },
+    master_vol_gr_reward?: {
+        show_gr_vol: boolean
+        gr_vol_discount_quantity: number
+        gr_vol_discount_percentage: number
     }
     salesData?: object
     actions?: any
@@ -96,6 +105,9 @@ function offerRoute(offer: {}) {
             return ""
     }
 }
+
+const isOpenModalMasterGROffer = ref(false);
+
 </script>
 
 <template>
@@ -141,6 +153,54 @@ function offerRoute(offer: {}) {
             </div>
 
             <div class="col-span-1 md:col-span-2 lg:col-span-4 offer">
+                <template v-if="master_vol_gr_reward?.show_gr_vol">
+                    <div class="mb-1 font-bold">
+                        {{ trans("Active Gold Reward offer") }}: 
+                    </div>
+                    <div 
+                        v-if="props.master_vol_gr_reward?.gr_vol_discount_percentage" 
+                        @click="() => {isOpenModalMasterGROffer = true}" 
+                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold flex cursor-pointer" 
+                    >
+                        <div class="grid w-72">
+                            <div class="flex">
+                                {{ trans('Trigger Quantity') }} 
+                                <span class="ml-auto w-24">
+                                    : {{ props.master_vol_gr_reward?.gr_vol_discount_quantity }} Qty
+                                </span>
+                            </div>
+                            <div class="flex">
+                                {{ trans('Discount Percentage') }}
+                                <span class="ml-auto w-24">
+                                    : {{ props.master_vol_gr_reward?.gr_vol_discount_quantity }} %
+                                </span>
+                            </div>
+                        </div>
+                        <FontAwesomeIcon :icon="faEdit" class="ml-auto my-auto text-amber-500"/>
+                    </div>
+                    <div 
+                        v-else
+                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold text-white bg-gradient-to-br from-amber-300 to-amber-500 cursor-pointer" 
+                        @click="() => {isOpenModalMasterGROffer = true}"
+                    >
+                        <FontAwesomeIcon :icon="faPlus" />
+                        {{ trans('Add Master GR Offer') }}
+                    </div>
+                    <Dialog v-model:visible="isOpenModalMasterGROffer" modal header="Gold Reward Offer" :style="{ width: '50rem' }" closable :draggable="false" dismissableMask closeOnEscape>
+                        <div class="">
+                            {{ props.master_vol_gr_reward }} <br>
+                            Use input InputVolDiscount, utilize this data above
+                        </div>
+                        <div class="flex">
+                            <Button 
+                                :icon="faSave"
+                                :type="'save'"
+                                :class="'ml-auto'"
+                            />
+                        </div>
+                    </Dialog>
+                </template>
+
                 <template v-if="data.gr_offer_data">
                     <div class="mb-1">
                         {{ trans("Active Gold Reward offer") }}:
