@@ -12,6 +12,7 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
@@ -19,6 +20,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Web\CrawlsResource;
 use App\Http\Resources\Web\ExternalLinksResource;
 use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Catalogue\Shop;
@@ -280,6 +282,10 @@ class ShowWebsite extends OrgAction
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 
 
+                WebsiteTabsEnum::CRAWLS->value => $this->tab == WebsiteTabsEnum::CRAWLS->value ?
+                    fn () => CrawlsResource::collection(IndexCrawls::run($website))
+                    : Inertia::lazy(fn () => CrawlsResource::collection(IndexCrawls::run($website))),
+
                 WebsiteTabsEnum::CHANGELOG->value => $this->tab == WebsiteTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))),
@@ -291,7 +297,8 @@ class ShowWebsite extends OrgAction
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))
-        ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value));
+        ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value))
+        ->table(IndexCrawls::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::CRAWLS->value));
     }
 
 

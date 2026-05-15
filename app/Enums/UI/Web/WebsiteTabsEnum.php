@@ -18,6 +18,7 @@ enum WebsiteTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case EXTERNAL_LINKS = 'external_links';
+    case CRAWLS = 'crawls';
     case CHANGELOG = 'changelog';
 
     public function blueprint(): array
@@ -31,8 +32,12 @@ enum WebsiteTabsEnum: string
                 'title' => __('External links'),
                 'icon'  => 'fal fa-external-link',
             ],
-
-
+            WebsiteTabsEnum::CRAWLS => [
+                'title' => __('Crawls'),
+                'icon'  => 'fal fa-spider',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
             WebsiteTabsEnum::CHANGELOG => [
                 'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',

@@ -69,6 +69,21 @@ class MasterShopResource extends JsonResource
             ];
         }
 
+        if ($masterShop->gold_reward_eligible) {
+            $additionalStats[] = [
+                'label' => __('Master Families Has GR/VOL Reward'),
+                'route' => [
+                    'name'       => 'grp.masters.master_shops.show.master_families.vol_gr_reward.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug,
+                    ]
+                ],
+                'icon'  => 'fal fa-medal',
+                'color' => '#f59e0b',
+                'value' => (int) ($masterShop->stats->number_master_families_with_vol_gr_discount ?? 0),
+            ];
+        }
+
         return [
             'slug'     => $this->slug,
             'code'     => $this->code,
