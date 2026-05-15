@@ -56,7 +56,8 @@ console.log('Recommended Products:', props)
 </script>
 
 <template>
-  <div v-if="compSwiperOptions.length >= fieldValue?.recommendation_settings.min_amt_shown"
+<div
+    v-if="compSwiperOptions.length >= (fieldValue?.recommendation_settings?.min_amt_shown || 5)"
     :id="fieldValue?.id ? fieldValue?.id : 'recommended-master' + indexBlock" class="w-full pb-6" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType),
@@ -93,7 +94,6 @@ console.log('Recommended Products:', props)
             <div class="h-full flex flex-col">
               <div v-if="product" class="flex-1 flex flex-col product-card">
                 <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'" :product="product" />
-
                 <ProductRender v-else :product="product" :productHasPortfolio="[]" />
               </div>
 
