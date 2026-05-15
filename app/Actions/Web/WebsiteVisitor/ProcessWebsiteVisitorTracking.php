@@ -8,7 +8,7 @@
 namespace App\Actions\Web\WebsiteVisitor;
 
 use App\Actions\CRM\Customer\SyncCustomerWebActivities;
-use App\Actions\Web\Website\Hydrators\WebsiteHydrateLastVisitedAt;
+use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberVisitorsLast24Hours;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Actions\Web\WebsitePageView\StoreWebsitePageView;
 use App\Models\CRM\WebUser;
@@ -74,7 +74,7 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
 
         StoreWebsitePageView::dispatch($visitor, $website, $currentUrl)->delay(5);
 
-        WebsiteHydrateLastVisitedAt::dispatch($website->id)->delay(900);
+        WebsiteHydrateNumberVisitorsLast24Hours::dispatch($website->id)->delay(900);
 
         if ($visitor->web_user_id) {
             $customer = $visitor->webUser?->customer;
