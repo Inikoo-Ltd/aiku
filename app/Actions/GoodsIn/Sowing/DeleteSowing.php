@@ -8,8 +8,11 @@
 
 namespace App\Actions\GoodsIn\Sowing;
 
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\CalculateReturnDeliveryNoteItemTotalSowed;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement;
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\Sowing;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -17,13 +20,18 @@ class DeleteSowing extends OrgAction
 {
     public function handle(Sowing $sowing): bool
     {
-        $orgStockMovement = $sowing->orgStockMovement;
-
         $sowing->delete();
+        $sowing->refresh();
 
-        if ($orgStockMovement) {
-            DeleteOrgStockMovement::run($orgStockMovement);
+        if ($sowing->orgStockMovement) {
+            DeleteOrgStockMovement::run($sowing->orgStockMovement);
         }
+        
+        if ($sowing->returnItem) {
+            CalculateReturnDeliveryNoteItemTotalSowed::make()->action($sowing->returnItem);
+
+        }
+
 
         return true;
     }

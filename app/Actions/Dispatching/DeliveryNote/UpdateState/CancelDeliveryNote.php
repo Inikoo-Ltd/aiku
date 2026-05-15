@@ -52,7 +52,6 @@ class CancelDeliveryNote extends OrgAction
             ]);
         }
 
-
         $cancelledRef = $deliveryNote->reference.'-CANCELLED';
 
         $cancelledCount = DB::table('delivery_notes')

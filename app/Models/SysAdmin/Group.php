@@ -64,6 +64,7 @@ use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Query;
@@ -1000,6 +1001,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function externalSubscriberEmailRecipients(): HasMany
     {
         return $this->hasMany(ExternalSubscriberEmailRecipient::class);
+    }
+
+    public function returnDeliveryNotes(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
     }
 
 }

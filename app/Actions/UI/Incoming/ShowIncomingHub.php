@@ -11,7 +11,9 @@ namespace App\Actions\UI\Incoming;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\GoodsIn\Return\ReturnStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Models\GoodsIn\OrderReturn;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -87,16 +89,28 @@ class ShowIncomingHub extends OrgAction
                             'tooltip' => __('Fulfilment Deliveries')
                         ]
                     ],
+                    // [
+                    //     'name'  => __('Returns'),
+                    //     'value' => $returnsWaitingToReceive,
+                    //     'route' => [
+                    //         'name'       => 'grp.org.warehouses.show.incoming.returns.index',
+                    //         'parameters' => $request->route()->originalParameters()
+                    //     ],
+                    //     'icon'  => [
+                    //         'icon'    => 'fal fa-undo-alt',
+                    //         'tooltip' => __('Customer Returns')
+                    //     ]
+                    // ],
                     [
                         'name'  => __('Returns'),
-                        'value' => $returnsWaitingToReceive,
+                        'value' => ($warehouse->stats->number_return_delivery_notes_state_received + $warehouse->stats->number_return_delivery_notes_state_returning),
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.returns.index',
+                            'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
                             'parameters' => $request->route()->originalParameters()
                         ],
                         'icon'  => [
-                            'icon'    => 'fal fa-undo-alt',
-                            'tooltip' => __('Customer Returns')
+                            'icon'    => 'fal fa-exchange',
+                            'tooltip' => __('Return Delivery Notes')
                         ]
                     ],
                 ],

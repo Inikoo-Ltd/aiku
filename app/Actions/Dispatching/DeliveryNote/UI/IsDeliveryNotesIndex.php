@@ -32,7 +32,7 @@ trait IsDeliveryNotesIndex
     private Group|Warehouse|Shop|Order|Customer|CustomerClient $parent;
     private string $bucket;
 
-    public function handle(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all'): LengthAwarePaginator
+    public function handle(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -178,7 +178,6 @@ trait IsDeliveryNotesIndex
             'delivery_notes.updated_at',
             'delivery_notes.slug',
             'delivery_notes.type',
-            'delivery_notes.state',
             'delivery_notes.number_items',
             'delivery_notes.weight',
             'delivery_notes.effective_weight',
@@ -196,6 +195,12 @@ trait IsDeliveryNotesIndex
             'delivery_notes.shipping_data',
             'orders.in_warehouse_at',
         ];
+
+        if ($isReturn) {
+            $selectColumns[] = 'delivery_notes.is_returned';
+            $query
+                ->where('delivery_notes.is_returned', true);
+        }
 
         if ($bucket == 'dispatched') {
             $selectColumns[] = 'countries.name as country_name';
@@ -236,7 +241,7 @@ trait IsDeliveryNotesIndex
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all'): Closure
+    public function tableStructure(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): Closure
     {
         $employee = null;
         if (!request()->user() instanceof WebUser) {
@@ -247,7 +252,7 @@ trait IsDeliveryNotesIndex
             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
         }
 
-        return function (InertiaTable $table) use ($parent, $prefix, $bucket, $pickerEmployee, $shopType) {
+        return function (InertiaTable $table) use ($isReturn, $parent, $prefix, $bucket, $pickerEmployee, $shopType) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -404,7 +409,7 @@ trait IsDeliveryNotesIndex
                 $table->column(key: 'sort_packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {
+            if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])  && !$isReturn) {
                 $table->column(key: 'delivery', label: __('Shipping'));
             }
 
