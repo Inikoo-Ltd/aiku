@@ -29,7 +29,7 @@ interface App {
 
 const getLocalStorage = () => {
 	let storageIris = {}
-	if (typeof window !== "undefined") {
+	if (typeof window !== "undefined" && window.localStorage) {
 		storageIris = JSON.parse(localStorage.getItem("iris") || "{}") // Get layout from localStorage
 		return storageIris
 	}
