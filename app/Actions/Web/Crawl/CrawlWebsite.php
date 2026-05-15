@@ -6,9 +6,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Web\Website;
+namespace App\Actions\Web\Crawl;
 
-use App\Actions\Web\Crawl\StopCrawl;
 use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
@@ -81,11 +80,11 @@ class CrawlWebsite
     {
         $totalCrawlInstances = (int)Crawl::where('running', true)->sum('concurrency');
 
-        $available = 20 - $totalCrawlInstances;
+        $available = 18 - $totalCrawlInstances;
 
         if ($available < 1) {
             $available = 1;
-        } elseif ($available <= 4) {
+        } elseif ($available <= 6) {
             $available = 2;
         }
 
@@ -198,26 +197,7 @@ class CrawlWebsite
             return 0;
         }
 
-        /** @var Website $website */
-        foreach (Website::where('migrated', true)->get() as $website) {
-            $command->info("Crawling website: $website->slug");
-            /** @var Crawl $crawl */
-            $crawl = $website->crawls()->create(
-                [
-                    'depth'       => $command->option('depth'),
-                    'concurrency' => 2,
-                    'trigger'     => CrawlTriggerEnum::COMMAND,
-                    'type'        => $crawlType
-                ]
-            );
-
-            $jobQueue = 'cache-warming';
-            if ($crawl->type == CrawlTypeEnum::JAVASCRIPT) {
-                $jobQueue = 'cache-warming-js';
-            }
-
-            CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
-        }
+        CrawlWebsites::run(CrawlTypeEnum::HTML, CrawlTriggerEnum::COMMAND, $command);
 
         return 0;
     }
