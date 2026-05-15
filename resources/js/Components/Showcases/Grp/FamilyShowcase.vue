@@ -3,7 +3,7 @@ import { routeType } from '@/types/route';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faInfoCircle, faSave } from "@fas";
 import Message from "primevue/message";
-import { Link, router } from "@inertiajs/vue3";
+import { Link, router, useForm } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAlbumCollection, faEdit } from "@fal";
 import { faPlus } from "@far";
@@ -17,6 +17,7 @@ import { faExternalLink } from '@far';
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 import { ref } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
+import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue';
 
 library.add(faAlbumCollection);
 
@@ -108,6 +109,32 @@ function offerRoute(offer: {}) {
 
 const isOpenModalMasterGROffer = ref(false);
 
+const grOfferForm = useForm({
+    vol_gr_offer: {
+        item_quantity: 0,
+        percentage_off: 0,
+    }
+})
+
+const openModalMasterGROffer = () => {
+    grOfferForm.vol_gr_offer = {
+        item_quantity: props.master_vol_gr_reward?.gr_vol_discount_quantity ?? 0,
+        percentage_off: props.master_vol_gr_reward?.gr_vol_discount_percentage ?? 0,
+    }
+    isOpenModalMasterGROffer.value = true
+}
+
+const saveGROffer = () => {
+    grOfferForm.patch(
+        route('grp.models.master_product_category.update', props.data.family?.data?.id),
+        {
+            onSuccess: () => {
+                isOpenModalMasterGROffer.value = false
+            }
+        }
+    )
+}
+
 </script>
 
 <template>
@@ -159,7 +186,7 @@ const isOpenModalMasterGROffer = ref(false);
                     </div>
                     <div 
                         v-if="props.master_vol_gr_reward?.gr_vol_discount_percentage" 
-                        @click="() => {isOpenModalMasterGROffer = true}" 
+                        @click="openModalMasterGROffer" 
                         class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold flex cursor-pointer" 
                     >
                         <div class="grid w-72">
@@ -172,7 +199,7 @@ const isOpenModalMasterGROffer = ref(false);
                             <div class="flex">
                                 {{ trans('Discount Percentage') }}
                                 <span class="ml-auto w-24">
-                                    : {{ props.master_vol_gr_reward?.gr_vol_discount_quantity }} %
+                                    : {{ props.master_vol_gr_reward?.gr_vol_discount_percentage }} %
                                 </span>
                             </div>
                         </div>
@@ -181,21 +208,24 @@ const isOpenModalMasterGROffer = ref(false);
                     <div 
                         v-else
                         class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold text-white bg-gradient-to-br from-amber-300 to-amber-500 cursor-pointer" 
-                        @click="() => {isOpenModalMasterGROffer = true}"
+                        @click="openModalMasterGROffer"
                     >
                         <FontAwesomeIcon :icon="faPlus" />
                         {{ trans('Add Master GR Offer') }}
                     </div>
                     <Dialog v-model:visible="isOpenModalMasterGROffer" modal header="Gold Reward Offer" :style="{ width: '50rem' }" closable :draggable="false" dismissableMask closeOnEscape>
-                        <div class="">
-                            {{ props.master_vol_gr_reward }} <br>
-                            Use input InputVolDiscount, utilize this data above
-                        </div>
+                        <InputVolDiscount
+                            :form="grOfferForm"
+                            fieldName="vol_gr_offer"
+                            :fieldData="{ initial_value: { item_quantity: 0, percentage_off: 0 } }"
+                        />
                         <div class="flex">
                             <Button 
                                 :icon="faSave"
                                 :type="'save'"
                                 :class="'ml-auto'"
+                                :loading="grOfferForm.processing"
+                                @click="saveGROffer"
                             />
                         </div>
                     </Dialog>
