@@ -87,8 +87,35 @@ const formatValue = (value: any, key?: string) => {
     }
   }
 
+  if (typeof value === 'object' && value !== null) {
+      return Object.entries(value).filter(([_, v]) => v !== null && v !== '')
+      .map(([k, v]) => `${formatKey(k)}: ${v}`)
+      .join(', ');
+  }
+
   return value;
 };
+
+const formatObjectChanges = (oldValues: any, newValues: any) => {
+    const keys = new Set([
+        ...Object.keys(newValues || {}),
+        ...Object.keys(oldValues || {}),
+    ]);
+
+    const normalizeValue = (value : any) => {
+        return value === null || value === undefined || value === '' ? null : value;
+    }
+
+    return Array.from(keys).filter(key => {
+        const oldValue = normalizeValue(oldValues?.[key]);
+        const newValue = normalizeValue(newValues?.[key]);
+        return oldValue !== newValue;
+    }).map(key => ({
+        key,
+        oldValue: normalizeValue(oldValues?.[key] ?? "None"),
+        newValue: normalizeValue(newValues?.[key] ?? "None")
+    }));
+}
 
 const expandedRows = ref<String[]>([]);
 
@@ -126,7 +153,7 @@ const clickExpand = (id: string) => {
                 <div 
                     v-if="user.event !== 'migration'" 
                     class="space-y-2 overflow-y-auto grid flex-auto transition-all ease-in-out duration-700" 
-                    :class="user.id && expandedRows.includes(user.id) ? 'max-h-[999px]' : 'max-h-[100px]'"
+                    :class="user.id && expandedRows.includes(user.id) ? 'max-h-[900px]' : 'max-h-[100px]'"
                     style="scrollbar-width:none"
                 >
                     <div
@@ -135,9 +162,26 @@ const clickExpand = (id: string) => {
                     class="flex items-center space-x-2 text-sm"
                     >
                         <span class="font-bold text-gray-700">{{ formatKey(key) }}:</span>
-                        <span class="text-gray-600">{{ formatValue(user.old_values[key], key) }}</span>
-                            <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
-                        <span class="text-gray-800">{{ formatValue(user.new_values[key], key) }}</span>
+                            <div v-if="typeof user.old_values[key] === 'object'" class="space-y-1">
+                                <div v-for="change in formatObjectChanges(user.old_values[key], user.new_values[key])" :key="change.key" class="flex items-center gap-2">
+                                    <span class="font-medium">
+                                        {{ formatKey(change.key) }}:
+                                    </span>
+
+                                    <span class="text-gray-600">{{ change.oldValue }}</span>
+
+                                    <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
+
+                                    <span class="text-gray-700">{{ change.newValue }}</span>
+                                </div>
+                            </div>
+                            <div v-else class="flex items-center gap-2">
+                                <span class="text-gray-600">{{ formatValue(user.old_values[key], key) }}</span>
+                                <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
+                                <span class="text-gray-700">{{ formatValue(user.new_values[key], key) }}</span>
+                            </div>
+                               
+                            <!-- <span class="text-gray-800"></span> -->
                     </div>
                 </div>
                 <div 

@@ -100,6 +100,8 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Ordering\SalesChannel;
 use App\Models\HumanResources\WorkSchedule;
+use Illuminate\Support\Arr;
+use App\Audits\Transformer\RelationTransformer;
 
 /**
  * App\Models\Catalogue\Shop
@@ -332,8 +334,30 @@ class Shop extends Model implements HasMedia, Auditable
         'timezone_id',
         'company_name',
         'contact_name',
+        'data',
         'identity_document_number'
     ];
+
+    public function transformAudit(array $data): array
+    {
+        $data = RelationTransformer::execute(
+            auditable: $this,
+            auditData: $data,
+            relationName: 'country',
+            relationModel: Country::class,
+            attributes: ['name']
+        );
+
+        $data = RelationTransformer::execute(
+            auditable: $this,
+            auditData: $data,
+            relationName: 'currency',
+            relationModel: Currency::class,
+            attributes: ['code']
+        );
+
+        return $data;
+    }
 
     protected static function booted()
     {

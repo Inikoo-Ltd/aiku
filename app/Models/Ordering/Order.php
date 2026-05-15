@@ -372,7 +372,7 @@ class Order extends Model implements HasMedia, Auditable
     {
         $data = RelationTransformer::execute(
             auditable: $this,
-            data: $data,
+            auditData: $data,
             relationName: 'collection_address',
             relationModel: Address::class,
             attributes: ['address_line_1', 'address_line_2']
@@ -380,7 +380,7 @@ class Order extends Model implements HasMedia, Auditable
 
         $data = RelationTransformer::execute(
             auditable: $this,
-            data: $data,
+            auditData: $data,
             relationName: 'shipping_zone',
             relationModel: ShippingZone::class,
             attributes: ['name']
