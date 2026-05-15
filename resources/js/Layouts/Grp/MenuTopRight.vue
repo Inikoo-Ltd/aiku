@@ -50,7 +50,7 @@ const isUserMac = navigator.platform.includes('Mac')
 
 <template>
     <!-- Avatar Group -->
-    <div class="flex justify-between gap-x-2">
+    <div class="flex justify-between gap-x-2 flex-shrink-0">
         <div class="flex items-center gap-x-0 sm:gap-x-4 sm:divide-x divide-gray-200">
             <!-- Button: Search -->
             <button @click="showSearchDialog = !showSearchDialog" id="search"
