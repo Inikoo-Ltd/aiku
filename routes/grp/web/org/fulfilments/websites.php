@@ -28,6 +28,7 @@ use App\Actions\Web\Webpage\UI\ShowMenuWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
+use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
@@ -104,6 +105,10 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
     Route::get('/{banner}/workshop', [ShowBannerWorkshop::class, 'inFulfilment'])->name('workshop');
     Route::get('/{banner}', [ShowBanner::class, 'inFulfilment'])->name('show');
     Route::get('/{banner}/edit', [EditBanner::class, 'inFulfilment'])->name('edit');
+});
+
+Route::prefix('{website}/crawls')->name('crawls.')->group(function () {
+    Route::get('', [IndexCrawls::class, 'inFulfilment'])->name('index');
 });
 
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {

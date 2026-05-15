@@ -14,7 +14,8 @@ import {
     faSkull,
     faRocket,
     faExternalLink,
-    faFolderDownload
+    faFolderDownload,
+    faSpider
 } from "@fal"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -24,6 +25,7 @@ import ModelDetails from "@/Components/ModelDetails.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableWebpages from "@/Components/Tables/Grp/Org/Web/TableWebpages.vue"
 import TableExternalLinks from "@/Components/Tables/Grp/Org/Web/TableExternalLinks.vue"
+import TableCrawls from "@/Components/Tables/Grp/Org/Web/TableCrawls.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import WebsiteShowcase from "@/Components/Showcases/Org/WebsiteShowcase.vue"
@@ -54,7 +56,8 @@ library.add(
     faSkull,
     faRocket,
     faExternalLink,
-    faFolderDownload
+    faFolderDownload,
+    faSpider
 )
 
 
@@ -71,6 +74,7 @@ const props = defineProps<{
     web_users?: object
     redirects?: {}
     external_links?: {},
+    crawls?: {},
     analytics: object
     route_storefront: routeType
     route_landing_page?: routeType
@@ -100,7 +104,8 @@ const component = computed(() => {
         showcase: WebsiteShowcase,
         web_users: TableWebUsers,
         redirects: TableRedirects,
-        external_links: TableExternalLinks
+        external_links: TableExternalLinks,
+        crawls: TableCrawls
     }
     return components[currentTab.value]
 
