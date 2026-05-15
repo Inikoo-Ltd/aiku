@@ -61,7 +61,7 @@ class PurgeVarnishWebpageUrl extends OrgAction
      */
     public function asCommand(Command $command): int
     {
-        $webpage = Webpage::where('slug', $command->argument('slug'))->first();
+        $webpage = Webpage::where('slug', $command->argument('slug'))->firstOrFail();
         $this->handle($webpage, $command);
 
         return 0;
