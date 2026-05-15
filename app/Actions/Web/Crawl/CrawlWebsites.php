@@ -20,7 +20,7 @@ class CrawlWebsites
     use AsAction;
 
 
-    public function handle(CrawlTypeEnum $type, CrawlTriggerEnum $trigger, int $depth, ?Command $command = null): void
+    public function handle(CrawlTypeEnum $type, CrawlTriggerEnum $trigger, int $depth, bool $isSeeder, ?Command $command = null): void
     {
         $index = 0;
         /** @var Website $website */
@@ -43,7 +43,8 @@ class CrawlWebsites
                         default => 1
                     },
                     'trigger'     => $trigger,
-                    'type'        => $type
+                    'type'        => $type,
+                    'is_seeder'   => $isSeeder
                 ]
             );
             $command?->info("Crawling website: $website->slug ; C: ".$crawl->concurrency);

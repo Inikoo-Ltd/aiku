@@ -28,6 +28,7 @@ class CrawlsResource extends JsonResource
             'trigger'        => $this->trigger,
             'type'           => $this->type,
             'running'        => $this->running,
+            'is_seeder'      => $this->is_seeder,
             'finish_reason'  => $this->finish_reason,
             'start_at'       => $this->start_at,
             'end_at'         => $this->end_at,

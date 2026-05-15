@@ -80,7 +80,7 @@ class CrawlWebsite
     {
         $totalCrawlInstances = (int)Crawl::where('running', true)->sum('concurrency');
 
-        $available     = 18 - $totalCrawlInstances;
+        $available     = 20 - $totalCrawlInstances;
         $realAvailable = $available;
 
         if ($available < 1) {
@@ -116,6 +116,7 @@ class CrawlWebsite
             Crawl::where('state', '!=', CrawlStateEnum::FINISH)
                 ->where('id', '!=', $crawl->id)
                 ->where('type', $crawl->type)
+                ->where('is_seeder', false)
                 ->where('website_id', $crawl->website_id)->get() as $crawlToStop
         ) {
             StopCrawl::run($crawlToStop);
@@ -175,7 +176,7 @@ class CrawlWebsite
 
     public function getCommandSignature(): string
     {
-        return 'crawl {website?} {--d|depth=10} {--c|concurrency=10} {--t|type=html} {--deployment}';
+        return 'crawl {website?} {--d|depth=10} {--c|concurrency=10} {--t|type=html} {--deployment} {--s|seeder}';
     }
 
 
@@ -192,6 +193,7 @@ class CrawlWebsite
         $crawlType = $type === 'inertia' || $type === 'i' ? CrawlTypeEnum::INERTIA : CrawlTypeEnum::HTML;
 
         $trigger = $command->option('deployment') ? CrawlTriggerEnum::DEPLOYMENT : CrawlTriggerEnum::COMMAND;
+
         if ($command->argument('website')) {
             $website = Website::where('slug', $command->argument('website'))->firstOrFail();
             $command->info("Crawling website: $website->slug (ID: $website->id)");
@@ -202,7 +204,8 @@ class CrawlWebsite
                     'depth'       => $command->option('depth'),
                     'concurrency' => $command->option('concurrency'),
                     'trigger'     => $trigger,
-                    'type'        => $crawlType
+                    'type'        => $crawlType,
+                    'is_seeder'   => $command->option('seeder')
                 ]
             );
 
@@ -211,7 +214,7 @@ class CrawlWebsite
             return 0;
         }
 
-        CrawlWebsites::run(CrawlTypeEnum::HTML, $trigger, $command->option('depth'), $command);
+        CrawlWebsites::run(CrawlTypeEnum::HTML, $trigger, $command->option('depth'), $command->option('seeder'), $command);
 
         return 0;
     }
