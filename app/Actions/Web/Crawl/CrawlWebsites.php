@@ -32,7 +32,6 @@ class CrawlWebsites
                 ->get() as $website
         ) {
 
-            $command?->info("Crawling website: $website->slug");
             /** @var Crawl $crawl */
             $crawl = $website->crawls()->create(
                 [
@@ -48,6 +47,8 @@ class CrawlWebsites
                     'type'        => $type
                 ]
             );
+            $command?->info("Crawling website: $website->slug ; C: ".$crawl->concurrency);
+
             $index++;
             $jobQueue = 'cache-warming';
             if ($crawl->type == CrawlTypeEnum::JAVASCRIPT) {
