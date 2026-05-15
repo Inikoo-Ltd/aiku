@@ -19,7 +19,7 @@ class RedirectReturnDeliveryNotesLink extends OrgAction
 {
     public function handle(ReturnDeliveryNote $returnDeliveryNote): ?RedirectResponse
     {
-        $url = route('grp.org.warehouses.show.incoming.return-delivery-notes.show', [
+        $url = route('grp.org.warehouses.show.incoming.return_delivery_notes.show', [
             $returnDeliveryNote->organisation->slug,
             $returnDeliveryNote->warehouse->slug,
             $returnDeliveryNote->slug

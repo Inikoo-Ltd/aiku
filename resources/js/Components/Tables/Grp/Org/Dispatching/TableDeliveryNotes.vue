@@ -97,8 +97,8 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 
 function returnNoteRoute(returnDeliveryNote) {
 	switch(route().current()) {
-		case "grp.org.warehouses.show.incoming.return-delivery-notes":
-			return route('grp.org.warehouses.show.incoming.return-delivery-notes.show', [
+		case "grp.org.warehouses.show.incoming.return_delivery_notes":
+			return route('grp.org.warehouses.show.incoming.return_delivery_notes.show', [
 				route().params["organisation"],
 				route().params["warehouse"],
 				returnDeliveryNote.slug,

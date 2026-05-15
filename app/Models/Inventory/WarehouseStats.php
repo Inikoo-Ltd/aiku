@@ -215,6 +215,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_picking_sessions_state_picking_finished
  * @property int $number_picking_sessions_state_packing_finished
  * @property int $number_pallets_state_not_picked
+ * @property int $number_return_delivery_notes
+ * @property int $number_return_delivery_notes_state_received
+ * @property int $number_return_delivery_notes_state_returning
+ * @property int $number_return_delivery_notes_state_returned
+ * @property int $number_return_delivery_notes_state_done
+ * @property int $number_return_delivery_notes_state_cancelled
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

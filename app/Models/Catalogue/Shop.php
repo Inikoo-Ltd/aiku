@@ -52,6 +52,7 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Country;
@@ -797,6 +798,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function workSchedules(): MorphMany
     {
         return $this->morphMany(WorkSchedule::class, 'schedulable');
+    }
+
+    public function returnDeliveryNotes(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
     }
 
     public function getEffectiveWorkSchedule(): array

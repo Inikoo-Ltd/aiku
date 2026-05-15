@@ -50,12 +50,6 @@ class ShowIncomingHub extends OrgAction
             ->where('state', ReturnStateEnum::WAITING_TO_RECEIVE)
             ->count();
 
-        // TODO LATER USE STAT INSTEAD
-        $return = ReturnDeliveryNote::where('warehouse_id', $warehouse->id)
-            ->whereNotIn('state', [ReturnDeliveryNoteStateEnum::RETURNED->value, ReturnDeliveryNoteStateEnum::CANCELLED])
-            ->count();
-
-
         return Inertia::render(
             'Org/Incoming/IncomingHub',
             [
@@ -109,9 +103,9 @@ class ShowIncomingHub extends OrgAction
                     // ],
                     [
                         'name'  => __('Returns'),
-                        'value' => $return,
+                        'value' => ($warehouse->stats->number_return_delivery_notes_state_received + $warehouse->stats->number_return_delivery_notes_state_returning),
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes',
+                            'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
                             'parameters' => $request->route()->originalParameters()
                         ],
                         'icon'  => [

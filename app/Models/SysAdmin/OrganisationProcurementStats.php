@@ -99,6 +99,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stock_delivery_items_state_placed
  * @property int $number_stock_delivery_items_state_cancelled
  * @property int $number_stock_delivery_items_state_not_received
+ * @property int $number_return_delivery_notes
+ * @property int $number_return_delivery_notes_state_received
+ * @property int $number_return_delivery_notes_state_returning
+ * @property int $number_return_delivery_notes_state_returned
+ * @property int $number_return_delivery_notes_state_done
+ * @property int $number_return_delivery_notes_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Organisation $organisation

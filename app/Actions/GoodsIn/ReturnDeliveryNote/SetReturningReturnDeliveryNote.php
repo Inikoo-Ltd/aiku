@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
+use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -15,10 +16,11 @@ use Lorisleiva\Actions\ActionRequest;
 class SetReturningReturnDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
+    use WithHydrateReturnDeliveryNotes;
 
     public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
-        $user = auth()->user();
+        $user = request()->user();
         $oldState = $returnDeliveryNote->state;
 
         if ($oldState !== ReturnDeliveryNoteStateEnum::RECEIVED) {
@@ -42,7 +44,8 @@ class SetReturningReturnDeliveryNote extends OrgAction
 
             return $returnDeliveryNote;
         });
-        // TODO hydrator here
+        
+        $this->hydrateReturnDeliveryNotes($returnDeliveryNote);
 
         return $returnDeliveryNote;
     }

@@ -10,6 +10,7 @@
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
+use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\GoodsIn\Sowing\DeleteSowing;
 use App\Actions\OrgAction;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 class CancelReturnDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
+    use WithHydrateReturnDeliveryNotes;
 
     public function handle(ReturnDeliveryNote $returnDeliveryNote): ReturnDeliveryNote
     {
@@ -66,7 +68,8 @@ class CancelReturnDeliveryNote extends OrgAction
 
             return $returnDeliveryNote;
         });
-        // TODO hydrator here
+        
+        $this->hydrateReturnDeliveryNotes($returnDeliveryNote);
 
         return $returnDeliveryNote;
     }

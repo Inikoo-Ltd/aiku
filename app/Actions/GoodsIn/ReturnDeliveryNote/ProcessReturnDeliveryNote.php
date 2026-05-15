@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
+use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\StoreReturnDeliveryNoteItems;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -24,10 +25,11 @@ use Illuminate\Support\Facades\Redirect;
 class ProcessReturnDeliveryNote extends OrgAction
 {
     private DeliveryNote $deliveryNote; 
+    use WithHydrateReturnDeliveryNotes;
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): ReturnDeliveryNote
     {
-        return DB::transaction(function () use($deliveryNote) {
+        $returnDeliveryNote = DB::transaction(function () use($deliveryNote) {
             $returnDeliveryNote = StoreReturnDeliveryNote::make()->action($deliveryNote, []);
             $returnDeliveryNote->refresh();
 
@@ -45,11 +47,15 @@ class ProcessReturnDeliveryNote extends OrgAction
 
             return $returnDeliveryNote;
         });
+
+        $this->hydrateReturnDeliveryNotes($returnDeliveryNote);
+
+        return $returnDeliveryNote;
     }
 
     public function htmlResponse(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): RedirectResponse
     {
-        return Redirect::route('grp.org.warehouses.show.incoming.return-delivery-notes.show', [
+        return Redirect::route('grp.org.warehouses.show.incoming.return_delivery_notes.show', [
                 'organisation' => $this->organisation,
                 'warehouse' => $returnDeliveryNote->warehouse->slug,
                 'returnDeliveryNote' => $returnDeliveryNote

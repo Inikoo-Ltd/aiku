@@ -29,6 +29,16 @@ Route::get('fulfilment-deliveries/{palletDelivery}', ShowWarehousePalletDelivery
 Route::get('returns', IndexReturns::class)->name('returns.index');
 Route::get('returns/{return}', ShowReturn::class)->name('returns.show');
 
-// TODO CHANGE ROUTE LATER
-Route::get('returns-dn', IndexReturnDeliveryNotes::class)->name('return-delivery-notes');
-Route::get('returns-dn/{returnDeliveryNote}', [ShowReturnDeliveryNote::class, 'inWarehouse'])->name('return-delivery-notes.show');
+Route::name('return_delivery_notes.')->prefix('returns-dn')->group(function () {
+    Route::get('/', IndexReturnDeliveryNotes::class)->name('index');
+    
+    Route::name('state.')->prefix('/state')->group(function () {
+        Route::get('/received', [IndexReturnDeliveryNotes::class, 'received'])->name('received');
+        Route::get('/returning', [IndexReturnDeliveryNotes::class, 'returning'])->name('returning');
+        Route::get('/returned', [IndexReturnDeliveryNotes::class, 'returned'])->name('returned');
+        Route::get('/processed', [IndexReturnDeliveryNotes::class, 'processed'])->name('processed');
+    });
+
+
+    Route::get('/returns-dn/{returnDeliveryNote}', [ShowReturnDeliveryNote::class, 'inWarehouse'])->name('show');
+});

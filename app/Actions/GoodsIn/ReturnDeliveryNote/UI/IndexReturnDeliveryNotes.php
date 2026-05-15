@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 
+use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithReturnDeliveryNotesSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
@@ -31,10 +32,11 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexReturnDeliveryNotes extends OrgAction
 {
     use WithDispatchingAuthorisation;
+    use WithReturnDeliveryNotesSubNavigation;
 
-    private string $shopType;
+    private string $bucket = 'all';
 
-    public function handle(Warehouse $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): LengthAwarePaginator
+    public function handle(Warehouse $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -82,6 +84,10 @@ class IndexReturnDeliveryNotes extends OrgAction
             'return_delivery_notes.shipping_notes',
         ];
 
+        if ($bucket != 'all') {
+            $query->where('return_delivery_notes.state', $bucket);
+        }
+
         return $query
             ->select($selectColumns)
             ->allowedFilters($allowedFilters)
@@ -93,9 +99,10 @@ class IndexReturnDeliveryNotes extends OrgAction
     public function htmlResponse(LengthAwarePaginator $returnDeliveryNote, ActionRequest $request): Response
     {
         $subNavigation = null;
-        // if ($this->parent instanceof Warehouse) {
-        //     $subNavigation = $this->getDeliveryNotesSubNavigation($this->shopType);
-        // }
+        
+        if ($this->parent instanceof Warehouse) {
+            $subNavigation = $this->getReturnDeliveryNotesSubNavigation($this->parent);
+        }
 
         $title      = __('Returns');
         $model      = '';
@@ -141,25 +148,19 @@ class IndexReturnDeliveryNotes extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'          => ReturnDeliveryNotesResource::collection($returnDeliveryNote),
-                'shopType'      => $this->shopType,
             ]
         )
-        ->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket, shopType: $this->shopType, isReturn: true));
+        ->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
     }
 
-    public function tableStructure(Warehouse|Order $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): Closure
+    public function tableStructure(Warehouse|Order $parent, $prefix = null, $bucket = 'all'): Closure
     {
         $employee = null;
         if (!request()->user() instanceof WebUser) {
             $employee = request()->user()->employees()->first() ?? null;
         }
 
-        $pickerEmployee = null;
-        if ($employee) {
-            $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
-        }
-
-        return function (InertiaTable $table) use ($isReturn, $parent, $prefix, $bucket, $pickerEmployee, $shopType) {
+        return function (InertiaTable $table) use ($parent, $prefix, $bucket) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -191,27 +192,55 @@ class IndexReturnDeliveryNotes extends OrgAction
     {
         $this->parent = $warehouse;
         $this->bucket = 'all';
-        $this->shopType = 'all';
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle(parent: $warehouse, bucket: $this->bucket, isReturn: true);
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+    
+    public function received(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'received';
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    // public function inWarehouseShopTypes(Organisation $organisation, Warehouse $warehouse, string $shopType, ActionRequest $request): LengthAwarePaginator
-    // {
-    //     $this->parent = $warehouse;
-    //     $this->bucket = 'inWarehouse';
-    //     $this->shopType = $shopType;
-    //     $this->initialisationFromWarehouse($warehouse, $request);
+    public function returning(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'returning';
+        $this->initialisationFromWarehouse($warehouse, $request);
 
-    //     return $this->handle(parent: $warehouse, bucket: $this->bucket, shopType: $shopType, isReturn: true);
-    // }
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+
+    public function returned(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'returned';
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+
+    public function processed(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'processed';
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
 
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = [], ?string $suffix = null) {
+            if (!$suffix && $this->bucket !== 'all') {
+                $suffix = "({$this->bucket})";
+            }
+
             return [
                 [
                     'type'   => 'simple',
@@ -220,19 +249,23 @@ class IndexReturnDeliveryNotes extends OrgAction
                         'label' => __('Returns'),
                         'icon'  => 'fal fa-bars'
                     ],
-                    'suffix' => $suffix
+                    'suffix' =>  $suffix
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.incoming.return-delivery-notes' => array_merge(
+            'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
+            'grp.org.warehouses.show.incoming.return_delivery_notes.state.returning',
+            'grp.org.warehouses.show.incoming.return_delivery_notes.state.returned',
+            'grp.org.warehouses.show.incoming.return_delivery_notes.state.processed',
+            'grp.org.warehouses.show.incoming.return_delivery_notes.index' => array_merge(
                 ShowProcurementDashboard::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'warehouse'])
                 ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes',
+                        'name'       => $routeName,
                         'parameters' => $routeParameters
                     ]
                 )

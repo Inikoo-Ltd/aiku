@@ -27,10 +27,13 @@ class GetDeliveryNoteValidForReturn extends OrgAction
         });
 
         $query = QueryBuilder::for(DeliveryNote::class);
+        $query->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
 
         $query->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED);
         $query->where('delivery_notes.organisation_id', $warehouse->organisation_id);
         $query->where('delivery_notes.is_returned', false);
+        
+        $query->where('shops.is_aiku', true);
 
 
         $selectColumns = [

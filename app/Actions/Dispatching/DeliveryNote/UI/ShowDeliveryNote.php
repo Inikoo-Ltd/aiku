@@ -782,7 +782,7 @@ class ShowDeliveryNote extends OrgAction
             'hasReturn'     => $this->return ? [
                 'reference' => $this->return->reference,
                 'route'     => [
-                    'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes.show',
+                    'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.show',
                     'parameters' => [
                         'organisation'   => $this->return->organisation->slug,
                         'warehouse'      => $this->return->warehouse->slug,

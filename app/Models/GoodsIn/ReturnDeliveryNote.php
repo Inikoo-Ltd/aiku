@@ -20,7 +20,6 @@ use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -104,15 +103,4 @@ class ReturnDeliveryNote extends Model implements Auditable
     {
         return $this->belongsTo(User::class, 'handler_user_id');
     }
-
-    // TODO
-    // public function trolleys(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(Trolley::class, 'delivery_note_has_trolleys');
-    // }
-
-    // public function pickedBays(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(PickedBay::class, 'picked_bay_has_delivery_notes');
-    // }
 }

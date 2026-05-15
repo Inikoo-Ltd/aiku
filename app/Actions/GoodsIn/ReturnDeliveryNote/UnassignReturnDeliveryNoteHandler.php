@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
+use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
@@ -12,6 +13,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UnassignReturnDeliveryNoteHandler extends OrgAction
 {
     use WithActionUpdate;
+    use WithHydrateReturnDeliveryNotes;
 
     public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
@@ -31,11 +33,15 @@ class UnassignReturnDeliveryNoteHandler extends OrgAction
             ]);
         }
 
-        return UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, [
+        $returnDeliveryNote = UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, [
             'state'             => ReturnDeliveryNoteStateEnum::RECEIVED,
             'returning_at'      => null,
             'handler_user_id'   => null,
         ]);
+
+        $this->hydrateReturnDeliveryNotes($returnDeliveryNote);
+
+        return $returnDeliveryNote;
     }
 
     public function rules(): array

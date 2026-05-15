@@ -541,7 +541,7 @@ class ShowReturnDeliveryNote extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.incoming.return-delivery-notes.show'
+            'grp.org.warehouses.show.incoming.return_delivery_notes.show'
             => array_merge(
                 ShowProcurementDashboard::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'warehouse'])
@@ -550,11 +550,11 @@ class ShowReturnDeliveryNote extends OrgAction
                     $returnDeliveryNote,
                     [
                         'index' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes',
+                            'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes.show',
+                            'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse', 'returnDeliveryNote'])
                         ]
                     ],
