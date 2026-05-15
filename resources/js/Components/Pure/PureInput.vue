@@ -115,7 +115,7 @@ const checkNumber = (event: KeyboardEvent) => {
     >
         <div class="relative w-full flex items-center">
             <slot name="prefix">
-                <div v-if="prefix" class="pl-3 whitespace-nowrap text-gray-400">
+                <div v-if="prefix" class="pl-3 -mr-2 whitespace-nowrap text-gray-400">
                     <FontAwesomeIcon v-if="prefix?.icon" :icon='prefix?.icon' class='' fixed-width aria-hidden='true' />
                     {{ prefix?.label}}
                 </div>

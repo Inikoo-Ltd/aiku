@@ -20,6 +20,7 @@ const props = defineProps<{
     options?: any
     refForms?: any
     fieldData?: any
+    country_code?: string // in ISO246 format, e.g. 'DE', 'FR'
 }>()
 
 
@@ -200,8 +201,9 @@ const validateVAT = (vatInput: any) => {
 
     }
 
-    const validation = checkVAT(vatNumber, countries);
-    console.log(validation)
+    const vatNumberWithCountryCode = props.country_code ? props.country_code + vatNumber : vatNumber
+
+    const validation = checkVAT(vatNumberWithCountryCode, countries);
     vatValidationResult.value = validation.isValid ? trans("Valid tax number") : trans("Invalid tax number");
 
 
@@ -265,7 +267,13 @@ watch(
 <template>
     <div class="relative">
         <div class="relative">
-            <PureInput :model-value="getActualValue(value)" @update:model-value="updateVat" />
+            <PureInput
+                :model-value="getActualValue(value)"
+                @update:model-value="updateVat"
+                :prefix="{
+                    label: props.country_code
+                }"
+            />
             <span class="italic text-xs" v-if="fieldData?.europeanUnion">
                 <span style="color: red">*</span> {{ trans("This will affect your VAT Rate") }}
                 <FontAwesomeIcon v-on:click="isModalOpen = true" v-tooltip="ctrans('Click to view detailed explanation')" icon='fal fa-info-circle' class="opacity-60 hover:opacity-100 cursor-pointer" fixed-width aria-hidden='true' />
