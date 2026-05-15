@@ -4,7 +4,7 @@ import { router, usePage } from '@inertiajs/vue3'
 import type { Component } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, faDotCircle as FarDotCircle } from '@far'
+import { faFolderTree, faFolder, faCube, faAlbumCollection, faDotCircle as FarDotCircle } from '@far'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 import TableIrisDepartment from '../Components/Tables/TableIrisDepartment.vue'
@@ -16,12 +16,12 @@ import TableIrisCollection from '../Components/Tables/TableIrisCollection.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faArrowLeft, faArrowRight, faWindowClose } from '@far'
 
-library.add(faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, FarDotCircle)
+library.add(faFolderTree, faFolder, faCube, faAlbumCollection, FarDotCircle)
 
 const iconMap: Record<string, any> = {
     department: faFolderTree,
-    sub_department: faFolder,
-    family: faBooks,
+    sub_department: FarDotCircle,
+    family: faFolder,
     product: faCube,
     collection: faAlbumCollection,
 }
