@@ -6,8 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -17,14 +16,14 @@ return new class extends Migration
             $table = $this->groupOrgRelationship($table);
             $table->unsignedSmallInteger('shop_id')->index();
             $table->foreign('shop_id')->references('id')->on('shops');
-            
+
             $table->unsignedBigInteger('return_delivery_note_id')->index();
             $table->foreign('return_delivery_note_id')->references('id')->on('return_delivery_notes');
-            
+
             $table->unsignedBigInteger('delivery_note_items_id')->index();
             $table->foreign('delivery_note_items_id')->references('id')->on('delivery_note_items');
 
-            
+
             $table->unsignedInteger('stock_family_id')->index()->nullable();
             $table->foreign('stock_family_id')->references('id')->on('stock_families');
 
@@ -42,7 +41,7 @@ return new class extends Migration
             $table->decimal('total_item_damaged', 16, 6)->default(0);
             $table->decimal('total_item_lost', 16, 6)->default(0);
             $table->decimal('total_item_returned', 16, 6)->default(0);
-            
+
             $table->datetimeTz('handled_at')->nullable();
             $table->datetimeTz('processed_at')->nullable();
             $table->datetimeTz('cancelled_at')->nullable();

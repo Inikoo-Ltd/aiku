@@ -11,7 +11,6 @@ namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
-use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,14 +28,14 @@ class SetReturnDeliveryNoteItemAsDamaged extends OrgAction
         $user = auth()->user();
 
         $totalItemDamaged = $returnDeliveryNoteItem->total_expected_qty - (
-            $returnDeliveryNoteItem->total_item_damaged + 
-            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_damaged +
+            $returnDeliveryNoteItem->total_item_not_returned +
             $returnDeliveryNoteItem->total_item_returned
         );
-        
+
         data_set($modelData, 'quantity', $totalItemDamaged);
         data_set($modelData, 'sower_user_id', $user->id);
-        
+
         data_set($modelData, 'type', SowingTypeEnum::DAMAGED);
 
         StoreSowing::make()->action($returnDeliveryNoteItem, $user, $modelData);

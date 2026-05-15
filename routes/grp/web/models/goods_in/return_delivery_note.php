@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::name('return_delivery_note.')->prefix('return-delivery-note/{returnDeliveryNote:id}')->group(function () {
     Route::patch('unassign', UnassignReturnDeliveryNoteHandler::class)->name('unassign');
     Route::patch('update', UpdateReturnDeliveryNote::class)->name('update');
-    
+
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('cancel', CancelReturnDeliveryNote::class)->name('cancel');
         Route::patch('handling', SetReturningReturnDeliveryNote::class)->name('returning');

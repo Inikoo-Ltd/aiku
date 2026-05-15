@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 15-05-2026-10h-35m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -20,15 +20,13 @@ trait WithReturnDeliveryNotesSubNavigation
         /** @var Organisation $this->organisation */
         $organisation = $this->organisation;
 
-        $isAll = $parent instanceof Warehouse;
-
         return [
             [
                 'label'  => __('Received (To do)'),
                 'route'  => [
                     'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
                     'parameters' => [
-                        $this->organisation->slug, 
+                        $this->organisation->slug,
                         $this->warehouse->slug
                     ]
                 ],
@@ -39,7 +37,7 @@ trait WithReturnDeliveryNotesSubNavigation
                 'route'  => [
                     'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.returning',
                     'parameters' => [
-                        $this->organisation->slug, 
+                        $this->organisation->slug,
                         $this->warehouse->slug
                     ]
                 ],
@@ -50,7 +48,7 @@ trait WithReturnDeliveryNotesSubNavigation
                 'route'  => [
                     'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.returned',
                     'parameters' => [
-                        $this->organisation->slug, 
+                        $this->organisation->slug,
                         $this->warehouse->slug
                     ]
                 ],

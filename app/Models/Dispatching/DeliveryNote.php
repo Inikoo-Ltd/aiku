@@ -178,6 +178,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, PickingSession> $pickingSessions
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Platform|null $platform
+ * @property-read Collection<int, ReturnDeliveryNote> $returnedDeliveryNote
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop|null $shop
  * @property-read Collection<int, Sowing> $sowings

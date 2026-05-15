@@ -234,6 +234,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Query> $queries
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
+ * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read Shop|null $seederShop

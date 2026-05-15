@@ -64,11 +64,11 @@ class StoreSowing extends OrgAction
         data_set($modelData, 'sowed_at', now(), false);
 
         $sowType = data_get($modelData, 'type', SowingTypeEnum::SOW);
-        
+
         /** @var Sowing $sowing */
         $sowing = $parent->sowings()->create($modelData);
         $sowing->refresh();
-        
+
         if ($sowType === SowingTypeEnum::SOW && $locationOrgStock) {
             $orgStockMovement = StoreOrgStockMovement::run(
                 $locationOrgStock?->orgStock,
@@ -78,7 +78,7 @@ class StoreSowing extends OrgAction
                     'type'     => $orgStockMovement
                 ]
             );
-    
+
             $sowing->update([
                 'org_stock_movement_id' => $orgStockMovement->id,
             ]);

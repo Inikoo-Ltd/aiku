@@ -77,7 +77,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $last_visited_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_id
@@ -115,6 +114,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $live_family_description_snapshot_id
  * @property string|null $published_family_description_checksum
  * @property int|null $landing_page_id
+ * @property \Illuminate\Support\Carbon|null $last_visited_at
  * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Web\Crawl> $crawls

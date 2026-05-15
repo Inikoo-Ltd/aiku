@@ -31,7 +31,7 @@ class StoreReturnDeliveryNoteItems extends OrgAction
         data_set($modelData, 'org_stock_family_id', $deliveryNoteItem->org_stock_family_id, false);
         data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id, false);
         data_set($modelData, 'total_expected_qty', $deliveryNoteItem->quantity_dispatched, 0);
-        
+
         return $returnDeliveryNote->returnDeliveryNoteItem()->create($modelData);
     }
 
@@ -39,7 +39,7 @@ class StoreReturnDeliveryNoteItems extends OrgAction
     {
         return [
             'delivery_note_items_id'    => [
-                'required', 
+                'required',
                 Rule::exists('delivery_note_items', 'id')
             ],
         ];

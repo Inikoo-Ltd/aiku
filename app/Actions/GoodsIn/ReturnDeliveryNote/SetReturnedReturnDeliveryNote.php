@@ -44,7 +44,7 @@ class SetReturnedReturnDeliveryNote extends OrgAction
 
             return $returnDeliveryNote;
         });
-        
+
         $this->hydrateReturnDeliveryNotes($returnDeliveryNote);
 
         return $returnDeliveryNote;

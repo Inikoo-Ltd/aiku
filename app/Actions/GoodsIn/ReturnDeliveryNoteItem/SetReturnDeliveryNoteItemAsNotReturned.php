@@ -11,7 +11,6 @@ namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
-use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,11 +28,11 @@ class SetReturnDeliveryNoteItemAsNotReturned extends OrgAction
         $user = auth()->user();
 
         $totalItemNotReturned = $returnDeliveryNoteItem->total_expected_qty - (
-            $returnDeliveryNoteItem->total_item_damaged + 
-            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_damaged +
+            $returnDeliveryNoteItem->total_item_not_returned +
             $returnDeliveryNoteItem->total_item_returned
         );
-        
+
         data_set($modelData, 'quantity', $totalItemNotReturned);
         data_set($modelData, 'sower_user_id', $user->id);
 

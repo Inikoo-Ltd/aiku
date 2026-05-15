@@ -21,15 +21,14 @@ use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 
-
 class ProcessReturnDeliveryNote extends OrgAction
 {
-    private DeliveryNote $deliveryNote; 
     use WithHydrateReturnDeliveryNotes;
+    private DeliveryNote $deliveryNote;
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): ReturnDeliveryNote
     {
-        $returnDeliveryNote = DB::transaction(function () use($deliveryNote) {
+        $returnDeliveryNote = DB::transaction(function () use ($deliveryNote) {
             $returnDeliveryNote = StoreReturnDeliveryNote::make()->action($deliveryNote, []);
             $returnDeliveryNote->refresh();
 
@@ -42,7 +41,7 @@ class ProcessReturnDeliveryNote extends OrgAction
             $deliveryNote->update([
                 'is_returned' => true
             ]);
-            
+
             $returnDeliveryNote->refresh();
 
             return $returnDeliveryNote;

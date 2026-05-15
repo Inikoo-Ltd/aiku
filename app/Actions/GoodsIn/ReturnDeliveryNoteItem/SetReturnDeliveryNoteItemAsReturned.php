@@ -11,7 +11,6 @@ namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
-use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,10 +25,10 @@ class SetReturnDeliveryNoteItemAsReturned extends OrgAction
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
         $user = auth()->user();
-        
+
         $totalItemReturned = $returnDeliveryNoteItem->total_expected_qty - (
-            $returnDeliveryNoteItem->total_item_damaged + 
-            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_damaged +
+            $returnDeliveryNoteItem->total_item_not_returned +
             $returnDeliveryNoteItem->total_item_returned
         );
 

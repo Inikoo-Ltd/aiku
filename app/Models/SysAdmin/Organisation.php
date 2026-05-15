@@ -238,6 +238,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, RecurringBill> $recurringBills
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
+ * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences

@@ -68,7 +68,7 @@ class CancelReturnDeliveryNote extends OrgAction
 
             return $returnDeliveryNote;
         });
-        
+
         $this->hydrateReturnDeliveryNotes($returnDeliveryNote);
 
         return $returnDeliveryNote;

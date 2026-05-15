@@ -12,7 +12,6 @@ namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
@@ -42,8 +41,8 @@ class UpsertReturnDeliveryNoteItemReturned extends OrgAction
         $returnDeliveryNoteItem = $request->returnDeliveryNoteItem;
 
         $maxQty = $returnDeliveryNoteItem->total_expected_qty - (
-            $returnDeliveryNoteItem->total_item_damaged + 
-            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_damaged +
+            $returnDeliveryNoteItem->total_item_not_returned +
             $returnDeliveryNoteItem->total_item_returned
         );
 

@@ -4,9 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-
+return new class () extends Migration {
     public function up(): void
     {
         Schema::table('return_delivery_notes', function (Blueprint $table) {
@@ -36,7 +34,7 @@ return new class extends Migration
             $table->dropColumn([
                 'handler_id',
                 'handler_user_id',
-            ]);  
+            ]);
 
             $table->unsignedSmallInteger('picker_id')->nullable()->index()->comment('Main picker');
             $table->foreign('picker_id')->references('id')->on('employees');

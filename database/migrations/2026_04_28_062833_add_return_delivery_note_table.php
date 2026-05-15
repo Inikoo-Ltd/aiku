@@ -1,13 +1,10 @@
 <?php
 
-use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -17,17 +14,17 @@ return new class extends Migration
             $table = $this->groupOrgRelationship($table);
             $table->unsignedSmallInteger('warehouse_id')->index();
             $table->foreign('warehouse_id')->references('id')->on('warehouses');
-            
+
             $table->unsignedSmallInteger('shop_id')->index();
             $table->foreign('shop_id')->references('id')->on('shops');
             $table->unsignedInteger('customer_id')->index();
             $table->foreign('customer_id')->references('id')->on('customers');
-            
+
             $table->unsignedBigInteger('delivery_note_id')->index();
             $table->foreign('delivery_note_id')->references('id')->on('delivery_notes');
             $table->unsignedBigInteger('order_id')->index();
             $table->foreign('order_id')->references('id')->on('orders');
-            
+
             $table->string('slug')->unique()->collation('und_ns');
             $table->string('reference')->index();
 
@@ -53,7 +50,7 @@ return new class extends Migration
             $table->text('public_notes')->nullable();
             $table->text('internal_notes')->nullable();
             $table->text('shipping_notes')->nullable();
-            
+
             $table->timestampsTz();
             $table->softDeletesTz();
         });

@@ -99,7 +99,7 @@ class IndexReturnDeliveryNotes extends OrgAction
     public function htmlResponse(LengthAwarePaginator $returnDeliveryNote, ActionRequest $request): Response
     {
         $subNavigation = null;
-        
+
         if ($this->parent instanceof Warehouse) {
             $subNavigation = $this->getReturnDeliveryNotesSubNavigation($this->parent);
         }
@@ -196,7 +196,7 @@ class IndexReturnDeliveryNotes extends OrgAction
 
         return $this->handle(parent: $warehouse, bucket: $this->bucket);
     }
-    
+
     public function received(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;

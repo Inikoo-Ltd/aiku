@@ -18,7 +18,6 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Sowing Model - Used for return/sowing operations
@@ -53,6 +52,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read OrgStock|null $orgStock
  * @property-read OrgStockMovement|null $orgStockMovement
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \App\Models\GoodsIn\ReturnDeliveryNote|null $return
+ * @property-read \App\Models\GoodsIn\ReturnDeliveryNoteItem|null $returnItem
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read User|null $sower
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sowing newModelQuery()

@@ -31,7 +31,7 @@ Route::get('returns/{return}', ShowReturn::class)->name('returns.show');
 
 Route::name('return_delivery_notes.')->prefix('returns-dn')->group(function () {
     Route::get('/', IndexReturnDeliveryNotes::class)->name('index');
-    
+
     Route::name('state.')->prefix('/state')->group(function () {
         Route::get('/received', [IndexReturnDeliveryNotes::class, 'received'])->name('received');
         Route::get('/returning', [IndexReturnDeliveryNotes::class, 'returning'])->name('returning');

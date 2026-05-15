@@ -13,7 +13,6 @@ use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,7 +33,7 @@ class UpsertReturnDeliveryNoteItemNotReturned extends OrgAction
 
         StoreSowing::make()->action($returnDeliveryNoteItem, $user, $modelData);
         CalculateReturnDeliveryNoteItemTotalSowed::make()->action($returnDeliveryNoteItem);
-        
+
         return $returnDeliveryNoteItem;
     }
 
@@ -43,8 +42,8 @@ class UpsertReturnDeliveryNoteItemNotReturned extends OrgAction
         $returnDeliveryNoteItem = $request->returnDeliveryNoteItem;
 
         $maxQty = $returnDeliveryNoteItem->total_expected_qty - (
-            $returnDeliveryNoteItem->total_item_damaged + 
-            $returnDeliveryNoteItem->total_item_not_returned + 
+            $returnDeliveryNoteItem->total_item_damaged +
+            $returnDeliveryNoteItem->total_item_not_returned +
             $returnDeliveryNoteItem->total_item_returned
         );
 
