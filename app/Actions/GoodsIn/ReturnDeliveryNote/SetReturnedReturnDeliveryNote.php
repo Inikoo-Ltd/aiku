@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * author Louis Perez
+ * created on 15-05-2026-11h-13m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
+
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
 use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
