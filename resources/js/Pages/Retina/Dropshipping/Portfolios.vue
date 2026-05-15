@@ -581,8 +581,8 @@ const initSocketListener = () => {
 }
 
 const initSocketFetchListener = () => {
-	fetchChannel = window.Echo.private(`shopify.${props.platform_user_id}.fetch-product`).listen(
-		".shopify-fetch-progress",
+	fetchChannel = window.Echo.private(`platform.${props.platform_user_id}.fetch-product`).listen(
+		".platform-fetch-progress",
 		(eventData: any) => {
 			cloneProgressData.value = {
 				data: eventData,

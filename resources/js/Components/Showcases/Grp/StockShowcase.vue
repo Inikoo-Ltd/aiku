@@ -15,7 +15,7 @@ import { faExclamationTriangle } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{

@@ -2,8 +2,8 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, reactive, computed, inject, watch } from 'vue'
-import { DatePicker, InputNumber, Checkbox, RadioButton } from 'primevue'
+import { ref, computed, watch } from 'vue'
+import { DatePicker, InputNumber, RadioButton } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
@@ -12,10 +12,12 @@ import PureInput from '../Pure/PureInput.vue'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import Toggle from '../Pure/Toggle.vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
-import Multiselect from "@vueform/multiselect"
 
 const props = defineProps<{
     shop_data: {
+        id: number
+        organisation: string
+        offercampaign: string
         slug: string
         currency_code: string
         default_dates: {
@@ -27,12 +29,17 @@ const props = defineProps<{
 
 const isOpenModal = ref(false)
 const openModal = () => {
+    resetForm()
     startDate.value = new Date(props.shop_data.default_dates.start)
     endDate.value = new Date(props.shop_data.default_dates.end)
     isOpenModal.value = true
 }
+
+const closeModal = () => {
+    isOpenModal.value = false
+    resetForm()
+}
 const isLoadingSubmit = ref(false)
-const layout = inject('layout', {})
 const discountPercentage = ref<number | null>(null)
 const offerVoucher = ref('')
 const offerLabel = ref('')
@@ -53,28 +60,16 @@ const reuseCustomer = ref(false)
 // tools step
 const step = ref(1)
 
-// target
-const target = reactive({
-    shop: false,
-    category: false,
-    collection: false,
-    product: false
-})
+// target (single selection)
+type TargetType = 'shop' | 'department' | 'subdepartment' | 'family' | 'collection' | 'product'
+const target = ref<TargetType | null>(null)
 
-const currentParams = layout?.currentParams ?? {}
-const organisation = currentParams.organisation
-const shopCode = currentParams.shop
+const categoryFilters = ref<number | null>(null)
+const collectionFilters = ref<number | null>(null)
+const productFilters = ref<number | null>(null)
 
-const selectedFilters = ref<number[]>([])
-const selectedShops = ref([])
-const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
-const categoryFilters = ref<number[]>([])
-const collectionFilters = ref<number[]>([])
-const productFilters = ref<number[]>([])
-const shopId = layout?.shopState?.id
+const shopId = props.shop_data.id
 const shopSlug = props.shop_data.slug
-
-console.log(layout);
 
 const categoryRoutes = {
     department: {
@@ -92,66 +87,69 @@ const categoryRoutes = {
 }
 
 const activeCategoryRoute = computed(() => {
-    if (!categoryType.value) return null
-    return categoryRoutes[categoryType.value]
+    if (!target.value || !['department', 'subdepartment', 'family'].includes(target.value)) return null
+    return categoryRoutes[target.value as 'department' | 'subdepartment' | 'family']
 })
 
 const categoryTypeKey = computed(() => {
-    return categoryType.value ?? 'empty'
+    return target.value ?? 'empty'
 })
 
-const collectionRoute = computed(() => {
-
-    const routeConfig = {
-        name: 'grp.json.shop.catalogue.collections',
-        parameters: {
-            shop: shopCode,
-            scope: shopCode
-        }
+const collectionRoute = computed(() => ({
+    name: 'grp.json.shop.catalogue.collections',
+    parameters: {
+        shop: shopSlug,
+        scope: shopSlug
     }
-
-    return routeConfig
-})
+}))
 
 const productFetchRoute = {
     name: 'grp.json.shop.products',
     parameters: {
-        shop: (route().params as any).shop
+        shop: shopSlug
     }
 }
 
-const submitCategoryOffer = () => {
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
+const submitVoucherOffer = () => {
     // Section: Submit
     const targets: any[] = []
 
-    if (target.product && productFilters.value.length) {
+    if (target.value === 'product' && productFilters.value) {
         targets.push({
             type: 'product',
-            ids: productFilters.value,
+            id: productFilters.value,
         })
-
-    } else {
-        if (target.category && categoryFilters.value.length) {
-            targets.push({
+    } else if (
+        (target.value === 'department' || target.value === 'subdepartment' || target.value === 'family')
+        && categoryFilters.value
+    ) {
+        targets.push({
             type: 'category',
-            category_type: categoryType.value,
-            ids: categoryFilters.value,
-            })
-        }
-
-        if (target.collection && collectionFilters.value.length) {
-            targets.push({
+            category_type: target.value,
+            id: categoryFilters.value,
+        })
+    } else if (target.value === 'collection' && collectionFilters.value) {
+        targets.push({
             type: 'collection',
-            ids: collectionFilters.value,
-            })
-        }
-
-        if (target.shop && selectedShops.value.length) {
-            targets.push({
+            id: collectionFilters.value,
+        })
+    } else if (target.value === 'shop' && shopId) {
+        targets.push({
             type: 'shop',
-            ids: selectedShops.value,
-            })
-        }
+            id: shopId,
+        })
     }
     
     const payload = {
@@ -159,17 +157,17 @@ const submitCategoryOffer = () => {
         name: offerLabel.value,
         type: 'amount',
         offer_amount: offerAmount.value,
-        start_date: startDate.value,
-        end_date: endDate.value,
+        start_at: formatDate(startDate.value),
+        end_at: formatDate(endDate.value),
         reuse_customer: reuseCustomer.value,
         discount_percentage: discountPercentage.value,
         targets: targets,
-    }
+    }    
     router.post(
         route('grp.org.shops.show.discounts.campaigns.store_voucher', {
-            organisation: 'sk',
-            shop: 'se',
-            offerCampaign: 'co-se',
+            organisation: props.shop_data.organisation,
+            shop: props.shop_data.slug,
+            offerCampaign: props.shop_data.offercampaign,
         }),
         payload,
         {
@@ -208,38 +206,11 @@ const prevStep = () => {
     step.value = 1
 }
 
-watch(() => target.product, (val) => {
-    if (val) {
-        target.category = false
-        target.collection = false
-        categoryType.value = null
-        categoryFilters.value = []
-        collectionFilters.value = []
-    }
+watch(target, (val, old) => {
+    categoryFilters.value = null
+    collectionFilters.value = null
+    productFilters.value = null
 })
-
-watch(categoryType, () => {
-    categoryFilters.value = []
-})
-
-watch(categoryFilters, () => {
-    collectionFilters.value = []
-})
-
-watch(() => target.category, (val) => {
-
-    if (!val) {
-        categoryType.value = null
-        selectedFilters.value = []
-    }
-
-})
-
-const authorisedShops =
-    layout.organisations.data
-        .find((o: any) => o.slug === organisation)
-        ?.authorised_shops ?? []
-
 
 const resetForm = () => {
     offerLabel.value = ''
@@ -248,40 +219,44 @@ const resetForm = () => {
     endDate.value = null
     discountPercentage.value = null
     reuseCustomer.value = false
-    offerAmount.value = null
+    offerAmount.value = 0
+    target.value = null
+    categoryFilters.value = null
+    collectionFilters.value = null
+    productFilters.value = null
+    step.value = 1
 }
 
-const isFormInvalid = computed(() => {
-    if (!offerVoucher.value) return true
-    if (!offerLabel.value) return true
+const isStep1Invalid = computed(() => {
+    if (!offerVoucher.value?.trim()) return true
+    if (!offerLabel.value?.trim()) return true
     if (!startDate.value) return true
+    if (offerAmount.value === null || offerAmount.value === undefined || offerAmount.value < 0) return true
+    return false
+})
 
-    if (!target.shop && !target.category && !target.collection && !target.product) {
+const isFormInvalid = computed(() => {
+    const fail = (r: string) => {
+        // console.log('[isFormInvalid] disabled because:', r, snapshot)
         return true
     }
 
-    // product override others
-    if (target.product) {
-        if (!productFilters.value.length) return true
-        return false
-    }
+    if (isStep1Invalid.value) return fail('step1 invalid')
 
-    // shop validation
-    if (target.shop && !selectedShops.value.length) {
-        return true
-    }
+    if (discountPercentage.value === null || discountPercentage.value === undefined) return fail('discountPercentage empty')
+    if (discountPercentage.value <= 0 || discountPercentage.value > 100) return fail('discountPercentage out of range')
 
-    // category validation
-    if (target.category) {
-        if (!categoryType.value) return true
-        if (!categoryFilters.value.length) return true
-    }
+    if (!target.value) return fail('no target selected')
 
-    // collection validation
-    if (target.collection && !collectionFilters.value.length) {
-        return true
+    if (target.value === 'product' && !productFilters.value) return fail('product target but no product picked')
+    if (target.value === 'collection' && !collectionFilters.value) return fail('collection target but no collection picked')
+    if (
+        (target.value === 'department' || target.value === 'subdepartment' || target.value === 'family')
+        && !categoryFilters.value
+    ) {
+        return fail(`${target.value} target but no category picked`)
     }
-
+    if (target.value === 'shop' && !shopId) return fail('shop target but no shopId')
     return false
 })
 </script>
@@ -290,7 +265,7 @@ const isFormInvalid = computed(() => {
     <div>
         <Button :label="trans('Create Voucher')" @click="openModal" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-3xl" @close="closeModal">
             <div class="p-1 space-y-6">
                 <h2 class="text-2xl font-bold mb-4 text-center">
                     {{ trans('Create Voucher') }}
@@ -314,7 +289,7 @@ const isFormInvalid = computed(() => {
                             :class="step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'">
                             2
                         </div>
-                        <span class="text-sm font-medium">{{ trans('Target') }}</span>
+                        <span class="text-sm font-medium">{{ trans('Target Allowance') }}</span>
                     </div>
 
                 </div>
@@ -325,10 +300,10 @@ const isFormInvalid = computed(() => {
                             <FontAwesomeIcon icon="fas fa-asterisk"
                                 class="font-light text-xs text-red-400 align-middle" />
 
-                            {{ trans('Voucher name') }}:
+                            {{ trans('Voucher code') }}:
                         </label>
 
-                        <PureInput v-model="offerVoucher" :placeholder="trans('Enter Voucher name')" />
+                        <PureInput v-model="offerVoucher" :maxLength="60" :placeholder="trans('Enter Voucher code')" />
 
                     </div>
                     <!-- offer name -->
@@ -367,7 +342,7 @@ const isFormInvalid = computed(() => {
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showButtonBar showIcon
+                            <DatePicker v-model="startDate" :minDate="today" showButtonBar showIcon
                                 :placeholder="trans('Select start date')" />
 
                         </div>
@@ -398,7 +373,6 @@ const isFormInvalid = computed(() => {
                 </template>
                 <template v-if="step === 2">
                     <!-- target -->
-
                     <div class="min-h-[90px] space-y-2">
                         <div class="space-y-3 mb-2">
                             <h3 class="text-sm text-gray-500">
@@ -412,23 +386,33 @@ const isFormInvalid = computed(() => {
 
                             <div class="flex flex-wrap gap-4">
 
-                                <!-- <div class="flex items-center gap-2">
-                                    <Checkbox v-model="target.shop" binary />
-                                    <label>{{ trans('Shop') }}</label>
-                                </div> -->
-
                                 <div class="flex items-center gap-2">
-                                    <Checkbox v-model="target.category" :disabled="target.product" binary />
-                                    <label>{{ trans('Category') }}</label>
+                                    <RadioButton v-model="target" value="shop" />
+                                    <label>{{ trans('Shop') }}</label>
                                 </div>
 
                                 <div class="flex items-center gap-2">
-                                    <Checkbox v-model="target.collection" :disabled="target.product" binary />
+                                    <RadioButton v-model="target" value="department" />
+                                    <label>{{ trans('Department') }}</label>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <RadioButton v-model="target" value="subdepartment" />
+                                    <label>{{ trans('Sub Department') }}</label>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <RadioButton v-model="target" value="family" />
+                                    <label>{{ trans('Family') }}</label>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <RadioButton v-model="target" value="collection" />
                                     <label>{{ trans('Collection') }}</label>
                                 </div>
 
                                 <div class="flex items-center gap-2">
-                                    <Checkbox v-model="target.product" binary />
+                                    <RadioButton v-model="target" value="product" />
                                     <label>{{ trans('Product') }}</label>
                                 </div>
 
@@ -436,84 +420,36 @@ const isFormInvalid = computed(() => {
 
                         </div>
 
-                        <div v-if="target.category" class="space-y-2">
+                        <div v-if="activeCategoryRoute" class="space-y-2">
 
                             <label class="font-medium">
-                                {{ trans('Category Type') }}
+                                {{ trans('Select Item') }}
                             </label>
-
-                            <div class="flex gap-4">
-
-                                <div class="flex items-center gap-2">
-                                    <RadioButton v-model="categoryType" value="department" />
-                                    <label>{{ trans('Department') }}</label>
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <RadioButton v-model="categoryType" value="subdepartment" />
-                                    <label>{{ trans('Sub Department') }}</label>
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <RadioButton v-model="categoryType" value="family" />
-                                    <label>{{ trans('Family') }}</label>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <div v-if="activeCategoryRoute">
-
-                            <label class="font-medium">
-                                {{ trans('Select Category') }}
-                            </label>
-
+                            <!-- mode="multiple" -->
                             <PureMultiselectInfiniteScroll :key="categoryTypeKey" v-model="categoryFilters"
-                                mode="multiple" :fetchRoute="activeCategoryRoute" valueProp="id" labelProp="name"
-                                :placeholder="trans('Select items')" />
+                                :fetchRoute="activeCategoryRoute" valueProp="id" labelProp="name"
+                                 />
 
                         </div>
 
-                        <div v-if="target.shop">
+                        <div v-if="target === 'collection' && collectionRoute" class="space-y-2">
 
                             <label class="font-medium">
-                                {{ trans('Select Shop') }}
+                                {{ trans('Select Item') }}
                             </label>
-                            <Multiselect v-model="selectedShops" :options="authorisedShops" valueProp="slug"
-                                label="label" mode="multiple" :closeOnSelect="false" :searchable="true"
-                                placeholder="Select shops">
-
-                                <template #option="{ option }">
-                                    <div class="flex justify-between w-full">
-                                        <span>{{ option.label }}</span>
-                                        <span class="text-gray-400 text-sm">{{ option.code }}</span>
-                                    </div>
-                                </template>
-
-                            </Multiselect>
+                            <PureMultiselectInfiniteScroll v-model="collectionFilters"
+                                :fetchRoute="collectionRoute" valueProp="id" labelProp="name" />
 
                         </div>
 
-                        <div v-if="target.collection && collectionRoute">
+                        <div v-if="target === 'product'" class="space-y-2">
 
                             <label class="font-medium">
-                                {{ trans('Select Collection') }}
-                            </label>
-
-                            <PureMultiselectInfiniteScroll :key="categoryFilters" v-model="collectionFilters"
-                                mode="multiple" :fetchRoute="collectionRoute" valueProp="id" labelProp="name" />
-
-                        </div>
-
-                        <div v-if="target.product">
-
-                            <label class="font-medium">
-                                {{ trans('Select Product') }}
+                                {{ trans('Select Item') }}
                             </label>
 
                             <PureMultiselectInfiniteScroll v-model="productFilters" :fetchRoute="productFetchRoute"
-                                valueProp="id" labelProp="name" mode="multiple" />
+                               valueProp="id" labelProp="name" />
 
                         </div>
 
@@ -536,11 +472,11 @@ const isFormInvalid = computed(() => {
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button v-if="step === 2" @click="prevStep" :label="trans('Back')" type="cancel" />
-                    <Button v-if="step === 1" @click="isOpenModal = false" type="cancel" />
+                    <Button v-if="step === 1" @click="closeModal" type="cancel" />
                     <Button v-if="step === 1" full icon="fas fa-arrow-right" :label="trans('Next')" @click="nextStep"
-                        :isLoading="isLoadingSubmit" :disabled="!offerLabel" />
-                    <Button v-if="step === 2" full icon="fad fa-save" :label="trans('Save')"
-                        @click="submitCategoryOffer" :isLoading="isLoadingSubmit" :disabled="isFormInvalid" />
+                        :isLoading="isLoadingSubmit" :disabled="isStep1Invalid" />
+                    <Button v-if="step === 2" full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+                        @click="submitVoucherOffer" :loading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit" />
                 </div>
 
             </div>

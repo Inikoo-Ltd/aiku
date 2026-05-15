@@ -22,6 +22,7 @@ use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
+use App\Actions\Discounts\OfferCampaign\StoreShopOffers;
 use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
 use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
@@ -30,7 +31,6 @@ use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOffer;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOfferTotal;
 use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOfferTotal;
 use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOfferTotal;
-use App\Actions\Discounts\Offer\UI\FinishOffer;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
@@ -87,6 +87,11 @@ Route::name("campaigns.")->prefix('campaigns')
         )->name('store_customer');
 
         Route::post(
+            '{offerCampaign}/shop',
+            StoreShopOffers::class
+        )->name('store_shop');
+
+        Route::post(
             '{offerCampaign}/product',
             StoreProductOffers::class
         )->name('store_product');
@@ -98,7 +103,6 @@ Route::name("offers.")->prefix('offers')
         Route::get('create', CreateOffer::class)->name('create');
         Route::get('{offer}', ShowOffer::class)->name('show');
         Route::get('{offer}/edit', EditOffer::class)->name('edit');
-        Route::get('{offer}/finish', FinishOffer::class)->name('finish');
         Route::post('store', StoreOffer::class)->name('store');
         Route::patch('{offer}/update', [UpdateOffer::class, 'inShop'])->name('update');
     });

@@ -11,8 +11,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent;
-use Sentry;
 
 class ShopifyAppInstalledListener
 {
@@ -36,7 +36,7 @@ class ShopifyAppInstalledListener
         $shopifyUser = ShopifyUser::find($event->shopId->toNative());
 
         if (!$shopifyUser) {
-            Sentry::captureMessage('Shopify user not found in ShopifyAppInstalledListener');
+            Log::error('Shopify user not found in ShopifyAppInstalledListener');
             return;
         }
 

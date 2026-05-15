@@ -30,6 +30,7 @@ import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
+import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 
 library.add(
     faFolder,
@@ -80,6 +81,7 @@ const props = defineProps<{
         currency_code: string
     }
     product_category_id: number
+    related_products : object
 }>()
 
 const layout = inject("layout", {})
@@ -102,7 +104,8 @@ const component = computed(() => {
         content: ProductCategoryContent,
         variants: TableVariants,
         offers: TableOffers,
-        reviews: TableReviews
+        reviews: TableReviews,
+        related_products: ProductCategoryRecomendation
     }
     return components[currentTab.value as keyof typeof components] ?? ModelDetails
 })
@@ -221,7 +224,6 @@ const showDialog = ref(false)
         :rating_labels="reviewRatingLabels"
     />
     <component v-else :is="component" :data="currentTabData" :tab="currentTab" :salesData="salesData" />
-
 
     <FormCreateMasterProduct
         :showDialog="showDialog"

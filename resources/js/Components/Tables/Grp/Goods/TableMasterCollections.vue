@@ -18,7 +18,7 @@ import { trans } from "laravel-vue-i18n"
 import { ref, inject } from 'vue'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { remove as loRemove } from 'lodash-es'
 

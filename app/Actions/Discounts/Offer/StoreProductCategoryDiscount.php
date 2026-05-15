@@ -12,6 +12,8 @@ use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreOffer;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
@@ -50,17 +52,20 @@ class StoreProductCategoryDiscount extends OrgAction
         }
 
         $type = Arr::pull($modelData, 'type');
-        if ($type == 'quantity') {
-            if ($itemQuantity == 1) {
-                data_set($modelData, 'type', 'Category Ordered');
-            } else {
-                data_set($modelData, 'type', 'Category Quantity Ordered');
-            }
-        } elseif ($itemAmount == 0) {
-            data_set($modelData, 'type', 'Category Ordered');
-        } else {
-            data_set($modelData, 'type', 'Category Amount Ordered');
+
+        if ($type == 'quantity' && $itemQuantity <= 0) {
+            $type = 'any';
         }
+        if ($type == 'amount' && $itemAmount <= 0) {
+            $type = 'any';
+        }
+
+
+        data_set(
+            $modelData,
+            'type',
+            $this->getProductCategoryOfferType($productCategory, $type)->value
+        );
 
 
         $code = Str::lower($offerCampaign->code.'-'.$productCategory->code);
@@ -77,7 +82,7 @@ class StoreProductCategoryDiscount extends OrgAction
         data_set($modelData, 'trigger_type', 'ProductCategory');
         data_set($modelData, 'trigger_id', $productCategory->id);
 
-        if ($type == 'quantity') {
+        if ($type == 'quantity' || $type == 'any') {
             data_set(
                 $modelData,
                 'trigger_data',
@@ -95,13 +100,19 @@ class StoreProductCategoryDiscount extends OrgAction
             );
         }
 
+        $targetType = match ($productCategory->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
+            default => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY->value
+        };
+
         data_set(
             $modelData,
             'allowances',
             [
                 [
                     'class'       => OfferAllowanceClass::DISCOUNT->value,
-                    'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY->value,
+                    'target_type' => $targetType,
                     'target_id'   => $productCategory->id,
                     'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
                     'data'        => [
@@ -118,6 +129,32 @@ class StoreProductCategoryDiscount extends OrgAction
         ActivateOffer::run($offer, 30);
 
         return $offer;
+    }
+
+    private function getProductCategoryOfferType(ProductCategory $productCategory, bool $type): OfferTypeEnum
+    {
+        if ($type == 'quantity') {
+            return match ($productCategory->type) {
+                ProductCategoryTypeEnum::DEPARTMENT => OfferTypeEnum::DEPARTMENT_QUANTITY_ORDERED,
+                ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_QUANTITY_ORDERED,
+                default => OfferTypeEnum::CATEGORY_QUANTITY_ORDERED,
+            };
+        }
+
+        if ($type == 'amount') {
+            return match ($productCategory->type) {
+                ProductCategoryTypeEnum::DEPARTMENT => OfferTypeEnum::DEPARTMENT_AMOUNT_ORDERED,
+                ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_AMOUNT_ORDERED,
+                default => OfferTypeEnum::CATEGORY_AMOUNT_ORDERED,
+            };
+        }
+
+
+        return match ($productCategory->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => OfferTypeEnum::DEPARTMENT_ORDERED,
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_ORDERED,
+            default => OfferTypeEnum::CATEGORY_ORDERED,
+        };
     }
 
     public function rules(): array

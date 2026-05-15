@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Skeleton from 'primevue/skeleton'
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import { Link } from '@inertiajs/vue3'
 
 const model = defineModel<boolean>('open')

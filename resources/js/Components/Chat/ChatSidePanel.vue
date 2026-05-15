@@ -22,7 +22,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
 import AlertMessage from "@/Components/Utils/AlertMessage.vue"
-import Image from "../Image.vue"
+import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime";
 
 interface AlertType {

@@ -248,6 +248,7 @@ const props = defineProps<{
             order: string
         }
     },
+    returns: {}
     payments: {}
     readonly?: boolean
     is_shop_external?: boolean
@@ -292,6 +293,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: OrderProductTable,
+        returns: TableDeliveryNotes,
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
         invoices: TableInvoices,
@@ -1679,7 +1681,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     </p>
 
                                     <ButtonWithLink
-                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name && layout.app?.environment === 'local'"
+                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
                                         :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
                                         :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
                                         size="xs" type="primary" full />

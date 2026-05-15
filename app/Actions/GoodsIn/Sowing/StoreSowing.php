@@ -10,12 +10,15 @@ namespace App\Actions\GoodsIn\Sowing;
 
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\GoodsIn\Sowing;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,55 +29,77 @@ class StoreSowing extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    protected DeliveryNoteItem|StockDeliveryItem $parent;
+    protected DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem  $parent;
     protected User $user;
 
-    public function handle(DeliveryNoteItem|StockDeliveryItem $parent, LocationOrgStock $locationOrgStock, array $modelData): Sowing
+    public function handle(DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem $parent, array $modelData): Sowing
     {
+        $locationOrgStock = null;
+        $locationOrgStockId = Arr::pull($modelData, 'location_org_stock_id', null);
+        if ($locationOrgStockId) {
+            $locationOrgStock = LocationOrgStock::find($locationOrgStockId);
+        }
+
         if ($parent instanceof DeliveryNoteItem) {
             data_set($modelData, 'shop_id', $parent->shop_id);
             data_set($modelData, 'delivery_note_id', $parent->delivery_note_id);
+            $orgStockMovement = OrgStockMovementTypeEnum::RETURN_PICKED;
+        } elseif ($parent instanceof ReturnDeliveryNoteItem) {
+            data_set($modelData, 'shop_id', $parent->shop_id);
+            data_set($modelData, 'return_id', $parent->return_delivery_note_id);
+            data_set($modelData, 'return_item_id', $parent->id);
             $orgStockMovement = OrgStockMovementTypeEnum::RETURN_PICKED;
         } else {
             data_set($modelData, 'stock_delivery_id', $parent->stock_delivery_id);
             $orgStockMovement = OrgStockMovementTypeEnum::PURCHASE;
         }
 
-        data_forget($modelData, 'location_org_stock_id');
+        // data_forget($modelData, 'location_org_stock_id');
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
-        data_set($modelData, 'org_stock_id', $locationOrgStock->org_stock_id);
-        data_set($modelData, 'location_id', $locationOrgStock->location_id);
+        data_set($modelData, 'org_stock_id', $parent->org_stock_id);
+
+        data_set($modelData, 'location_id', $locationOrgStock?->location_id);
 
         data_set($modelData, 'sowed_at', now(), false);
+
+        $sowType = data_get($modelData, 'type', SowingTypeEnum::SOW);
 
         /** @var Sowing $sowing */
         $sowing = $parent->sowings()->create($modelData);
         $sowing->refresh();
 
+        if ($sowType === SowingTypeEnum::SOW && $locationOrgStock) {
+            $orgStockMovement = StoreOrgStockMovement::run(
+                $locationOrgStock?->orgStock,
+                $locationOrgStock?->location,
+                [
+                    'quantity' => $sowing->quantity,
+                    'type'     => $orgStockMovement
+                ]
+            );
 
-        $orgStockMovement = StoreOrgStockMovement::run(
-            $locationOrgStock->orgStock,
-            $locationOrgStock->location,
-            [
-                'quantity' => $sowing->quantity,
-                'type'     => $orgStockMovement
-            ]
-        );
+            $sowing->update([
+                'org_stock_movement_id' => $orgStockMovement->id,
+            ]);
+        }
 
-        $sowing->update([
-            'org_stock_movement_id' => $orgStockMovement->id,
-        ]);
 
         return $sowing;
     }
 
     public function rules(): array
     {
+        if ($this->parent instanceof DeliveryNoteItem) {
+            $warehouseId = $this->parent->deliveryNote->warehouse_id;
+        } else {
+            $warehouseId = $this->parent->returnDeliveryNote->warehouse_id;
+        }
+
         return [
             'location_org_stock_id' => [
-                'required',
-                Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->parent->deliveryNote->warehouse_id)
+                'sometimes',
+                Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $warehouseId)
             ],
             'quantity'              => ['required', 'numeric', 'gt:0'],
             'sower_user_id'         => [
@@ -82,6 +107,7 @@ class StoreSowing extends OrgAction
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
             ],
             'original_picking_id'   => ['sometimes', 'nullable', 'exists:pickings,id'],
+            'type'                  => ['sometimes', Rule::enum(SowingTypeEnum::class)],
         ];
     }
 
@@ -97,19 +123,17 @@ class StoreSowing extends OrgAction
         $this->user = $request->user();
         $this->parent = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
-        $locationOrgStock = LocationOrgStock::find($this->validatedData['location_org_stock_id']);
 
-        $this->handle($deliveryNoteItem, $locationOrgStock, $this->validatedData);
+        $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Sowing
+    public function action(ReturnDeliveryNoteItem|DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Sowing
     {
         $this->asAction = true;
         $this->user     = $user;
         $this->parent   = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
-        $locationOrgStock = LocationOrgStock::find($this->validatedData['location_org_stock_id']);
 
-        return $this->handle($deliveryNoteItem, $locationOrgStock, $this->validatedData);
+        return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 }

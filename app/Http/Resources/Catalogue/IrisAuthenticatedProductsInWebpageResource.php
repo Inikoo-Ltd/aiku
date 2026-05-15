@@ -44,6 +44,9 @@ use Illuminate\Support\Arr;
  * @property mixed $canonical_url
  * @property mixed $offers_data
  * @property mixed $product_offers_data
+ * @property mixed $net_amount
+ * @property mixed $is_on_demand
+ * @property mixed $variant_id
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
@@ -79,7 +82,6 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             }
         }
 
-
         $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
@@ -88,45 +90,45 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
         $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
         $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
 
-        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($this->rrp, $bestPercentageOffOfferFactor * $this->price, $this->units);
+        [$marginDiscounted, , $profitDiscounted, $profitPerUnitDiscounted, , $pricePerUnitDiscounted] = $this->getPriceMetrics($this->rrp, $bestPercentageOffOfferFactor * $this->price, $this->units);
 
 
-        $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
+        $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered)) : null;
 
         return [
-            'id'                   => $this->id,
-            'code'                 => $this->code,
-            'luigi_identity'       => $oldLuigiIdentity,
-            'name'                 => $this->name,
-            'stock'                => $this->available_quantity,
-            'price'                => $this->price,
-            'rrp'                  => $this->rrp,
-            'rrp_per_unit'         => $rrpPerUnit,
-            'margin'               => $margin,
-            'profit'               => $profit,
-            'state'                => $this->state,
-            'status'               => $this->status,
-            'created_at'           => $this->created_at,
-            'updated_at'           => $this->updated_at,
-            'units'                => $units,
-            'unit'                 => $this->unit,
-            'url'                  => $this->canonical_url,
-            'top_seller'           => $this->top_seller,
-            'web_images'           => $this->web_images,
-            'transaction_id'       => $this->transaction_id ?? null,
-            'quantity_ordered'     => (int)$this->quantity_ordered ?? 0,
-            'quantity_ordered_new' => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend
-            'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
-            'is_back_in_stock'     => $back_in_stock,
-            'back_in_stock_id'     => $back_in_stock_id,
-            'profit_per_unit'      => $profitPerUnit,
-            'price_per_unit'       => $pricePerUnit,
-            'available_quantity'   => $this->available_quantity,
-            'is_coming_soon'       => $this->status === ProductStatusEnum::COMING_SOON,
-            'is_on_demand'         => $this->is_on_demand,
-            'variant'              => $this->variant_id,
-            'product_offers_data'  => $productOffersData,
-            'offers_data'          => $this->offers_data, // this come3 from transaction.offers_data
+            'id'                         => $this->id,
+            'code'                       => $this->code,
+            'luigi_identity'             => $oldLuigiIdentity,
+            'name'                       => $this->name,
+            'stock'                      => $this->available_quantity,
+            'price'                      => $this->price,
+            'rrp'                        => $this->rrp,
+            'rrp_per_unit'               => $rrpPerUnit,
+            'margin'                     => $margin,
+            'profit'                     => $profit,
+            'state'                      => $this->state,
+            'status'                     => $this->status,
+            'created_at'                 => $this->created_at,
+            'updated_at'                 => $this->updated_at,
+            'units'                      => $units,
+            'unit'                       => $this->unit,
+            'url'                        => $this->canonical_url,
+            'top_seller'                 => $this->top_seller,
+            'web_images'                 => $this->web_images,
+            'transaction_id'             => $this->transaction_id ?? null,
+            'quantity_ordered'           => (int)$this->quantity_ordered ?? 0,
+            'quantity_ordered_new'       => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend
+            'is_favourite'               => $favourite && !$favourite->unfavourited_at ?? false,
+            'is_back_in_stock'           => $back_in_stock,
+            'back_in_stock_id'           => $back_in_stock_id,
+            'profit_per_unit'            => $profitPerUnit,
+            'price_per_unit'             => $pricePerUnit,
+            'available_quantity'         => $this->available_quantity,
+            'is_coming_soon'             => $this->status === ProductStatusEnum::COMING_SOON,
+            'is_on_demand'               => $this->is_on_demand,
+            'variant'                    => $this->variant_id,
+            'product_offers_data'        => $productOffersData,
+            'offers_data'                => $this->offers_data, // this comes from transaction.offers_data
 
 
             // Gold Reward price

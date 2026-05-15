@@ -17,12 +17,12 @@ defineProps<{
 <template>
     <div class="relative flex flex-col justify-start" >
 
-        
+
         <!-- Section: Percentage (%) -->
         <div v-if="percentage" class="absolute top-0.5 right-0.5 tabular-nums text-xxs rounded-br-sm px-1">
             {{ percentage }}%
         </div>
-        
+
         <!-- Section: Progress bar -->
         <div v-if="percentage" class="absolute -top-0.5 left-0 h-0.5 bg-green-500 w-full text-xxs rounded-br-sm px-1 transition-all"
             :style="{width: percentage + '%'}"

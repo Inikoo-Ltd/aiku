@@ -59,6 +59,7 @@ use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\RehydrateChildProductImages;
+use App\Actions\Catalogue\ProductCategory\SyncProductCategoryRelatedProducts;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -117,6 +118,7 @@ use App\Actions\CRM\Prospect\Mailshots\SendProspectMailShot;
 use App\Actions\CRM\Prospect\Mailshots\StoreProspectMailshot;
 use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshot;
 use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshotRecipientFilter;
+use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -204,6 +206,7 @@ use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingStoredItemReturn;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToInProcess;
+use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToPicking;
 use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturnDeliveryAddress;
@@ -221,6 +224,7 @@ use App\Actions\Fulfilment\RecurringBillTransaction\StoreRecurringBillTransactio
 use App\Actions\Fulfilment\RecurringBillTransaction\UpdateRecurringBillTransaction;
 use App\Actions\Fulfilment\RentalAgreement\UpdateRentalAgreement;
 use App\Actions\Fulfilment\Space\StoreSpace;
+use App\Actions\Fulfilment\Space\StopSpaceRental;
 use App\Actions\Fulfilment\Space\UpdateSpace;
 use App\Actions\Fulfilment\StoredItem\AttachStoredItemToReturn;
 use App\Actions\Fulfilment\StoredItem\DeleteStoredItem;
@@ -410,6 +414,8 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockin
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Web\Redirect\DeleteRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
+use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
+use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -471,6 +477,7 @@ Route::patch('master-product-category/{masterProductCategory:id}/translations', 
 Route::patch('master-product-category/{masterProductCategory:id}/master-sub-department/parent', UpdateMasterSubDepartmentsMasterDepartment::class)->name('master_product_category.master_sub_department.parent.update');
 
 Route::patch('master-product-category/{masterProductCategory:id}/related-assets', SyncMasterProductCategoryRelatedMasterAssets::class)->name('master_product_category.related_assets.sync')->withoutScopedBindings();
+Route::patch('product-category/{productCategory:id}/related-products', SyncProductCategoryRelatedProducts::class)->name('product_category.related_products.sync')->withoutScopedBindings();
 
 
 
@@ -734,6 +741,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('pallet-return-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('pallet-return-item.upload');
 
     Route::post('revert-to-in-process', RevertPalletReturnToInProcess::class)->name('revert-to-in-process');
+    Route::post('revert-to-picking', RevertPalletReturnToPicking::class)->name('revert-to-picking');
     Route::post('pallet-upload', ImportPalletsInPalletDelivery::class)->name('pallet.upload');
     Route::patch('/', UpdatePalletReturn::class)->name('update');
     Route::get('stored-item-picking-pdf', PdfPickingStoredItemReturn::class)->name('stored_item_picking.pdf');
@@ -742,6 +750,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('/shipment-from-fulfilment', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_fulfilment.store');
     Route::post('/shipment-from-warehouse', CreateShipmentInPalletReturnInWarehouse::class)->name('shipment_from_warehouse.store');
+    Route::post('/shipment-from-tiktok', [ProcessTiktokOrderShipment::class, 'inFulfilment'])->name('shipment_from_tiktok.store');
 
     Route::delete('/detach-shipment/{shipment}', DetachShipmentFromPalletReturn::class)->name('shipment.detach');
 });
@@ -775,6 +784,7 @@ Route::name('pallet-return-item.')->prefix('pallet-return-item/{palletReturnItem
     Route::patch('pick', PickPalletReturnItemInPalletReturnWithStoredItem::class)->name('pick');
     Route::patch('undo-picking-stored-item', UndoStoredItemPick::class)->name('undo-picking-stored-item');
     Route::patch('not-picked', NotPickedPalletFromReturn::class)->name('not-picked');
+    Route::patch('not-picked-pallet', SetNotPickedPallet::class)->name('not-picked-pallet');
     Route::patch('undo-picking', UndoPickingPalletFromReturn::class)->name('undo-picking');
     Route::patch('undo', UndoPalletReturnItem::class)->name('undo-confirmed');
 });
@@ -824,6 +834,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
     Route::post('prospect/mailshot/{mailshot:id}/send', SendProspectMailShot::class)->name('prospect.mailshot.send')->withoutScopedBindings();
+    Route::post('prospect', StoreProspect::class)->name('prospect.store');
     Route::post('website', StoreWebsite::class)->name('website.store');
 
     Route::name('sender_email.')->prefix('sender-email')->group(function () {
@@ -922,6 +933,7 @@ Route::post('customer/{customer:id}/note', StoreCustomerNote::class)->name('cust
 Route::prefix('fulfilment-customer-space/{fulfilmentCustomer:id}')->as('fulfilment_customer_space.')->group(function () {
     Route::post('', StoreSpace::class)->name('store');
     Route::patch('spaces/{space:id}', UpdateSpace::class)->name('update')->withoutScopedBindings();
+    Route::post('spaces/{space:id}/stop-rental', StopSpaceRental::class)->name('stop_rental')->withoutScopedBindings();
 });
 
 Route::post('group/{group:id}/organisation', StoreOrganisation::class)->name('organisation.store');
@@ -964,7 +976,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('images/footer', [UploadImagesToWebsite::class, 'footer'])->name('footer.images.store');
     Route::post('images/favicon', [UploadImagesToWebsite::class, 'favicon'])->name('favicon.images.store');
     Route::post('images/sidebar', [UploadImagesToWebsite::class, 'sidebar'])->name('sidebar.images.store');
-    Route::post('images/sidebar', [UploadImagesToWebsite::class, 'menu'])->name('menu.images.store');
+    Route::post('images/menu', [UploadImagesToWebsite::class, 'menu'])->name('menu.images.store');
 
     Route::post('/banner', StoreBanner::class)->name('banner.store');
 
@@ -1241,6 +1253,7 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
+
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
 Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');
 Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
@@ -1257,6 +1270,8 @@ Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.upda
 
 require __DIR__.'/models/inventory/warehouse.php';
 require __DIR__.'/models/goods_in/return.php';
+require __DIR__.'/models/goods_in/return_delivery_note.php';
+require __DIR__.'/models/goods_in/return_delivery_note_item.php';
 require __DIR__.'/models/inventory/location_org_stock.php';
 require __DIR__.'/models/inventory/warehouse_area.php';
 require __DIR__.'/models/inventory/location.php';

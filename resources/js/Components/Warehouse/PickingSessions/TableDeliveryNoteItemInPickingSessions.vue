@@ -161,6 +161,21 @@ const GetQuantityToPickFractional = (item) => {
     }else return item.quantity_to_pick_fractional
 }
 
+const showReturnStoredItemsRoute = (item: any) => {
+    if (!item?.slug) {
+        return "#"
+    }
+
+    const routeName = item?.type === 'pallet'
+        ? "grp.org.warehouses.show.dispatching.pallet-returns.show"
+        : "grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show"
+
+    return route(routeName, [
+        (route().params as RouteParams).organisation,
+        (route().params as RouteParams).warehouse,
+        item.slug
+    ])
+}
 
 </script>
 
@@ -205,6 +220,12 @@ const GetQuantityToPickFractional = (item) => {
                     public: 'delivery_note_public_notes'
                 }" />
             </div>
+        </template>
+
+        <template #cell(reference)="{ item }">
+            <Link :href="showReturnStoredItemsRoute(item)" class="primaryLink">
+                {{ item?.reference }}
+            </Link>
         </template>
 
 
@@ -546,8 +567,7 @@ const GetQuantityToPickFractional = (item) => {
                     :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
             </div>
 
-
-            <Button v-if="pickingSession.state === 'picking_finished' && itemValue.delivery_note_state === 'handling'"
+            <Button v-if="pickingSession.state === 'picking_finished' && (itemValue.delivery_note_state === 'handling' || itemValue.delivery_note_state === 'packing')"
                 type="save" label="Set as packed" size="sm" @click="onOpenModalDetail(itemValue)" />
 
 

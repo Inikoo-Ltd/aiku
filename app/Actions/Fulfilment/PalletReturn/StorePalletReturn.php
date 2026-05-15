@@ -155,7 +155,8 @@ class StorePalletReturn extends OrgAction
             'data'                      => ['sometimes', 'array'],
             'is_collection'             => ['sometimes', 'boolean'],
             'platform_order_id'         => ['sometimes', 'string'],
-            'shopify_user_id'           => ['sometimes', 'integer']
+            'shopify_user_id'           => ['sometimes', 'integer'],
+            'is_shipping_by_external'   => ['sometimes', 'boolean']
         ];
     }
 

@@ -213,7 +213,7 @@ const goToBundle = () => {
 
 
             <!-- Section: Profile -->
-            <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center" v-slot="{isLoading}">
+            <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
                     v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
                     :loading="isLoading"
@@ -222,20 +222,20 @@ const goToBundle = () => {
                     class="button min-w-max"
                 >
                     <template #icon>
-                        <span v-tooltip="trans('Profile')">
+                        <span v-tooltip="trans('My Account')">
                             <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width aria-hidden="true" />
                         </span>
                     </template>
                     <template #label>
                         <!-- <span v-tooltip="trans('Profile')" class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" /> -->
-                        <span v-tooltip="trans('Profile')" class="button">{{ trans("Profile") }}</span>
+                        <span v-tooltip="trans('My Account')" class="button">{{ trans("My Account") }}</span>
                         <!-- <GoldReward v-if="layout.offer_data?.type === 'gr'" /> -->
                     </template>
                 </Button>
             </LinkIris>
 
             <!-- Section: Back in stock -->
-            <LinkIris href="/app/back-in-stocks" :type="'internal'" v-slot="{isLoading}">
+            <LinkIris href="/app/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
                     v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                     v-tooltip="trans('Reminder back in stock')"
@@ -267,7 +267,7 @@ const goToBundle = () => {
             </Button>
 
             <!-- Section: Favourite -->
-            <LinkIris href="/app/favourites" :type="'internal'" v-slot="{isLoading}">
+            <LinkIris href="/app/favourites" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
                     v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping')"
                     v-tooltip="trans('Favourites')"
@@ -292,7 +292,7 @@ const goToBundle = () => {
 
 
             <!-- Section: Basket (cart) -->
-            <LinkIris href="/app/basket" :type="'internal'" v-slot="{isLoading}">
+            <LinkIris href="/app/basket" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
                     v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')"
                     v-tooltip="trans('Cart count and amount')"  
@@ -315,7 +315,7 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Register -->
-            <LinkIris href="/app/register" :type="'internal'" v-slot="{ isLoading }">
+            <LinkIris href="/app/register" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
                     v-if="(checkVisible(model?.register?.visible || null, isLoggedIn))"
                     :loading="isLoading"
@@ -335,7 +335,7 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Login -->
-            <LinkIris :href="urlLoginWithRedirect()" :type="'internal'" v-slot="{ isLoading }">
+            <LinkIris :href="urlLoginWithRedirect()" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
                     v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
                     :loading="isLoading"

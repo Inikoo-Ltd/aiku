@@ -14,7 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { debounce, get, set } from "lodash-es"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import {
@@ -139,8 +139,15 @@ function portfolioRoute(product: Product) {
 		return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
 	}
 
+	const customerSalesChannelId = route().params["customerSalesChannel"] || props.customerSalesChannel?.slug
+	
+	if (!customerSalesChannelId) {
+		console.warn("customerSalesChannel ID is missing")
+		return "#"
+	}
+	
 	return route("retina.dropshipping.customer_sales_channels.portfolios.show", [
-		route().params["customerSalesChannel"],
+		customerSalesChannelId,
 		product.id,
 	])
 }
@@ -726,7 +733,7 @@ const percentageIncrease = ref(0);
             </div>
 
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
-				<div v-if="customerSalesChannel.include_vat">
+				<div v-if="customerSalesChannel?.include_vat">
 					{{ trans("Price (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, calculateVat(product.price)) }}
 				</div>
@@ -734,7 +741,7 @@ const percentageIncrease = ref(0);
 					{{ trans("Price:") }}
 					{{ locale.currencyFormat(product.currency_code, product.price) }}
 				</div>
-				<div v-if="customerSalesChannel.include_vat">
+				<div v-if="customerSalesChannel?.include_vat">
 					{{ trans("RRP (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>

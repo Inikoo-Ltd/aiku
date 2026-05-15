@@ -10,6 +10,7 @@ use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\StoreEbayUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
+use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
@@ -45,7 +46,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
 
-
+    Route::post('pallet-return/{palletReturn}/shipment-from-tiktok', [ProcessTiktokOrderShipment::class, 'inFulfilment'])->name('shipment.store_tiktok');
 
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');

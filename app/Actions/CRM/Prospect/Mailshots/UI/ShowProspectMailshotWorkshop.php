@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
-use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Models\Catalogue\Shop;
@@ -21,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\UI\Mail\EmailTemplateTabsEnum;
 use App\Actions\Comms\EmailTemplate\UI\IndexEmailTemplates;
+use App\Actions\Comms\Mailshot\GetProspectMailshotMergeTags;
 use App\Http\Resources\Comms\MailshotTemplatesResource;
 use App\Http\Resources\Mail\EmailTemplateResource;
 use App\Actions\Comms\Mailshot\UI\IndexPreviousMailshotTemplates;
@@ -162,7 +162,16 @@ class ShowProspectMailshotWorkshop extends OrgAction
                     ],
                     'method' => 'post'
                 ],
-                'mergeTags' => GetMailshotMergeTags::run(),
+                'sendTestRoute' => [
+                    'name' => 'grp.org.shops.show.marketing.mailshots.send-test',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug,
+                        'mailshot' => $mailshot->slug
+                    ],
+                    'method' => 'post'
+                ],
+                'mergeTags' => GetProspectMailshotMergeTags::run(),
                 'status' => $email->outbox->state,
                 'organisationSlug' => $this->organisation->slug,
                 'tabs' => [

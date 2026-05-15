@@ -447,30 +447,26 @@ provide("goNext", goNext)
                     <img
                         src="/assets/channel_logo/tiktok.svg"
                         class="h-9 sm:h-12"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
                         alt="Tiktok"
                         v-tooltip="'Tiktok'"
                     />
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Tiktok</div>
-                        <div v-if="layout?.app?.environment === 'local'"
-                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.tiktok }} {{ trans("Channels") }}
+                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.tiktok }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
-                        <Button v-if="layout?.app?.environment !== 'production'"
-								@click="() => (isModalTiktok = true)"
+                        <Button @click="() => (isModalTiktok = true)"
 								:label="trans('Connect')"
                             type="primary"
                             full
                         />
-                        <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
 
-			<!-- Section: Woocommerce -->
+			<!--Section: Woocommerce-->
 			<div
 				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
 				<div
@@ -756,6 +752,15 @@ provide("goNext", goNext)
 		@onClose="isModalTiktok = false"
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
+			<div>
+				<div class="text-center font-semibold text-xl">
+					{{ trans('Connect to Tiktok channel') }}
+				</div>
+			</div>
+			<div class="flex items-start gap-3 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">
+				<FontAwesomeIcon icon="fal fa-info-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+				<span>{{ trans("TikTok integration is currently in beta testing and may not be fully functional. Please proceed with caution.") }}</span>
+			</div>
 			<ProgressBar />
 			<component :is="stepTiktokComponents[currentStep]" :props="props" />
 		</div>

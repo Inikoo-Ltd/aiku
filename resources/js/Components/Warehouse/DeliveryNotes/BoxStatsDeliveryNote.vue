@@ -5,7 +5,7 @@ import { trans } from "laravel-vue-i18n"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt, faTruck } from "@fal"
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link, router } from "@inertiajs/vue3"
@@ -121,6 +121,16 @@ const props = withDefaults(defineProps<{
             name: string
             slug: string
         }[]
+        parentDeliveryNote?: {
+            reference: string
+            slug: string
+            id: number
+        }
+        return_dn?: {
+            reference: string
+            slug: string
+            id: number
+        }
     }
     routes: {
         pickers_list: routeType
@@ -141,6 +151,7 @@ const props = withDefaults(defineProps<{
     quick_pickers : any
     showChangePickerPacker: boolean
     isEditable: boolean
+    isShowButtonReplaceAll?: boolean
 }>(), {
     isEditable: true
 })
@@ -348,6 +359,14 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
     }
 }
 
+const showLockButton = () => {
+    let handlerId = props.boxStats?.picker?.id;
+    if (['packed', 'packing'].includes(props.deliveryNote?.state)) {
+        handlerId = props.boxStats?.packer?.id
+    }
+    return handlerId != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(props.deliveryNote?.state)
+}
+
 console.log(layout)
 </script>
 
@@ -496,6 +515,10 @@ console.log(layout)
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Delivery Note") }}
+                    <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.helpers.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
+                        <FontAwesomeIcon :icon="faTruck"/>
+                        {{ boxStats.parentDeliveryNote?.reference }}
+                    </Link>
                 </div>
 
                 <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_create_replacement">
@@ -525,10 +548,9 @@ console.log(layout)
                             </dl>
                         </div>
 
-
                         <FontAwesomeIcon
-                            v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
-                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                            v-if="showLockButton()"
+                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker/packer can process this delivery note')"
                             class="cursor-pointer focus:outline-none"
                             :icon="allowActions ? faLockOpen : faLock"
                             @click="assignSelfTemporarily()"
@@ -702,8 +724,8 @@ console.log(layout)
                 </div>
 
                 <!-- Replace All Button for Replacement -->
-                <div v-if="boxStats?.is_replacement" class="mt-3 pl-2">
-                    <Button type="secondary" label="Replace All" @click="onReplaceAll" />
+                <div v-if="boxStats?.is_replacement && isShowButtonReplaceAll" class="mt-3 pl-2">
+                    <Button v-tooltip="ctrans('Set qty resend to same as qty dispatched')" type="secondary" label="Replace All" @click="onReplaceAll" />
                 </div>
             </div>
         </BoxStatPallet>

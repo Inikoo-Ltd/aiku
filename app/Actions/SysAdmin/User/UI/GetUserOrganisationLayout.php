@@ -15,6 +15,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetUserOrganisationLayout
@@ -23,6 +24,8 @@ class GetUserOrganisationLayout
 
     public function handle(User $user, Organisation $organisation): array
     {
+        $primaryWarehouse = DB::table('warehouses')->select('slug')->whereNull('deleted_at')->where('organisation_id', $organisation->id)->first();
+
         return [
             'id'                     => $organisation->id,
             'slug'                   => $organisation->slug,
@@ -37,6 +40,7 @@ class GetUserOrganisationLayout
                     $organisation->slug
                 ]
             ],
+            'primary_warehouse_slug' => $primaryWarehouse?->slug,
             'authorised_shops'       => $this->getShops($user, $organisation),
             'authorised_fulfilments' => $this->getFulfilments($user, $organisation),
             'authorised_warehouses'  => $this->getAuthorisedWarehouses($user, $organisation),
@@ -131,6 +135,7 @@ class GetUserOrganisationLayout
                 'code'                 => $shop->code,
                 'label'                => $shop->name,
                 'state'                => $shop->state,
+                'org_slug'             => $organisation->slug,
                 'type'                 => $shop->type,
                 'website_domain'       => $shop->website?->domain ?? null,
                 'route'                => [

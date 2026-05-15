@@ -80,11 +80,11 @@ export default {
 			key: ["button"],
 			editGlobalStyle: "button",
 			replaceForm: [
-				{
+				/* {
 					key: ["link"],
 					label: "Link",
 					type: "link",
-				},
+				}, */
 				{
 					key: ["text"],
 					label: "Text",

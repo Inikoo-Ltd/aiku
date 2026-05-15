@@ -80,6 +80,9 @@ trait WithSendBulkEmails
             $html = $this->injectPreviewText($html, $previewText);
         }
 
+        // Inject source parameter to links if encrypted_id exists
+        $html = $this->injectSourceParameterLinks($html, $dispatchedEmail);
+
         return SendSesEmail::run(
             subject: $subject,
             emailHtmlBody: $html,
@@ -102,6 +105,7 @@ trait WithSendBulkEmails
                 return Arr::get($additionalData, 'customer_name');
             }
 
+            // TODO: Remove this logic to avoid sending email slow
             if ($webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id)) {
                 $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)?->customer?->name ?? '';
             } elseif ($userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id)) {
@@ -198,6 +202,11 @@ trait WithSendBulkEmails
             'retina-login-link' => Arr::get($additionalData, 'retina_login_link'),
             'web-user-contact-name' => Arr::get($additionalData, 'web_user_contact_name'),
 
+            'prospect-name' => Arr::get($additionalData, 'prospect_name'),
+            'prospect-email' => Arr::get($additionalData, 'prospect_email'),
+            'prospect-phone' => Arr::get($additionalData, 'prospect_phone'),
+            'prospect-company-name' => Arr::get($additionalData, 'prospect_company_name'),
+
             default => $originalPlaceholder,
         };
     }
@@ -270,6 +279,64 @@ trait WithSendBulkEmails
         return DB::table('chat_email_recipient_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
+    }
+
+    private function injectSourceParameterLinks(string $html, DispatchedEmail $dispatchedEmail): string
+    {
+        // Check if encrypted_id exists in dispatchedEmail->data
+        if (!isset($dispatchedEmail->data['encrypted_id'])) {
+            return $html;
+        }
+
+        $encryptedId = $dispatchedEmail->data['encrypted_id'];
+
+        // Remove MSO conditional comments temporarily to avoid processing them
+        $msoComments = [];
+        $html = preg_replace_callback('/<!--\[if mso\]>.*?<!\[endif\]-->/su', function ($matches) use (&$msoComments) {
+            $placeholder = '___MSO_COMMENT_' . count($msoComments) . '___';
+            $msoComments[$placeholder] = $matches[0];
+            return $placeholder;
+        }, $html);
+
+        // Process all <a href="..."> tags
+        $html = preg_replace_callback('/<a\s+([^>]*?)href\s*=\s*["\']([^"\']+)["\']([^>]*?)>/i', function ($matches) use ($encryptedId) {
+            $beforeHref = $matches[1]; // attributes before href
+            $url = $matches[2];        // the URL
+            $afterHref = $matches[3];   // attributes after href
+
+            // Skip if URL is empty or just a hash
+            if (empty($url) || $url === '#') {
+                return $matches[0];
+            }
+
+            // Skip if URL already has source parameter
+            if (strpos($url, 'source=') !== false) {
+                return $matches[0];
+            }
+
+            // Skip URLs containing '/unsubscribe/'
+            if (strpos($url, '/unsubscribe/') !== false) {
+                return $matches[0];
+            }
+
+            // Skip mailto:, tel:, and other non-http protocols
+            if (preg_match('/^(mailto|tel|sms|ftp|javascript|data):/i', $url)) {
+                return $matches[0];
+            }
+
+            // Add source parameter
+            $separator = (strpos($url, '?') !== false) ? '&' : '?';
+            $newUrl = $url . $separator . 'source=' . urlencode($encryptedId);
+
+            return '<a ' . $beforeHref . 'href="' . $newUrl . '"' . $afterHref . '>';
+        }, $html);
+
+        // Restore MSO conditional comments
+        if ($msoComments) {
+            $html = str_replace(array_keys($msoComments), array_values($msoComments), $html);
+        }
+
+        return $html;
     }
 
     private function injectPreviewText(string $htmlBody, string $previewText): string

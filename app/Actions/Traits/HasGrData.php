@@ -39,6 +39,13 @@ trait HasGrData
             }
             $grData['amnesty']       = Arr::get($this->shop->offers_data, 'gr.amnesty');
             $grData['amnesty_until'] = Arr::get($this->shop->offers_data, 'gr.amnesty_until');
+            $grData['is_gift_opted_out']  = (bool) Arr::get($customer->settings, 'is_gift_opted_out', false);
+            $grData['route_gift_opt_out'] = [
+                'name'       => 'grp.models.customer.update',
+                'parameters' => [
+                    'customer' => $customer->id,
+                ],
+            ];
         }
         return $grData;
     }

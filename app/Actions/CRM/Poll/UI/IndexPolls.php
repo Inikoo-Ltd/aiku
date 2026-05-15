@@ -147,14 +147,8 @@ class IndexPolls extends OrgAction
             $title      = $this->parent->name;
             $model      = __('Poll');
             $icon       = [
-                'icon'  => ['fal', 'fa-cube'],
+                'icon'  => ['fal', 'fa-poll'],
                 'title' => __('Poll')
-            ];
-            $iconRight  = [
-                'icon' => 'fal fa-cube',
-            ];
-            $afterTitle = [
-                'label' => __('Polls')
             ];
         }
 

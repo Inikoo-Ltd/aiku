@@ -41,9 +41,9 @@ class UpdatePallet extends OrgAction
 
         $changes = $pallet->getChanges();
 
-        if ($hydrateParents && $pallet->pallet_return_id && Arr::has($modelData, 'state')) {
-            AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($pallet->palletReturn);
-        }
+        // if ($hydrateParents && $pallet->pallet_return_id && Arr::has($modelData, 'state')) {
+        //     AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($pallet->palletReturn);
+        // }
 
         RunPalletPostUpdateHydrators::dispatch(
             $pallet,

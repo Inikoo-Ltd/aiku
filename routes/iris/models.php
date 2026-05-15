@@ -14,6 +14,7 @@ use App\Actions\Iris\CRM\DeleteIrisBackInStockReminder;
 use App\Actions\Iris\CRM\DeleteIrisPortfolioFavourites;
 use App\Actions\Iris\CRM\StoreIrisBackInStockReminder;
 use App\Actions\Iris\CRM\StoreIrisFavourites;
+use App\Actions\Iris\CRM\UpdateIrisCustomer;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
@@ -28,13 +29,15 @@ use App\Actions\Retina\Dropshipping\Bundle\StoreOrUpdateRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\UpdateRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\UploadRetinaBundleProductImages;
-use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\UnsubscribeAurora;
+use App\Actions\Web\Website\Analytics\RecordWebsiteHit;
 use Illuminate\Support\Facades\Route;
 
+Route::post('record-hit', RecordWebsiteHit::class)->name('hit');
 Route::post('unsubscribe-aurora', UnsubscribeAurora::class)->name('unsubscribe_aurora');
 
 Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');
@@ -45,6 +48,8 @@ Route::post('delete-portfolio-multi-channels', DeleteIrisPortfolioFromMultiChann
 
 Route::post('favourite/{product:id}', StoreIrisFavourites::class)->name('favourites.store');
 Route::delete('un-favourite/{product:id}', DeleteIrisPortfolioFavourites::class)->name('favourites.delete');
+
+Route::patch('customer/update', UpdateIrisCustomer::class)->name('customer.update');
 
 Route::post('{product:id}/store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store')->withoutScopedBindings();
 Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::class)->name('transaction.update')->withoutScopedBindings();

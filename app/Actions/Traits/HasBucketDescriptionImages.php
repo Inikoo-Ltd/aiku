@@ -90,6 +90,40 @@ trait HasBucketDescriptionImages
                     'height' => $model->extraDescArt1Image->height ?? 0
                 ]
             ],
+            [
+                'label'        => __('Extra Description Image 2'),
+                'type'         => 'image',
+                'column_in_db' => 'extra_desc_art2',
+                'id'           => $model->extra_desc_art2,
+                'images'       => $model->imageSources(getImage: 'extraDescArt2Image'),
+                'dimensions'   => [
+                    'width'  => $model->extraDescArt2Image->width ?? 0,
+                    'height' => $model->extraDescArt2Image->height ?? 0
+                ]
+            ],
+            [
+                'label'        => __('Extra Description Image 3'),
+                'type'         => 'image',
+                'column_in_db' => 'extra_desc_art3',
+                'id'           => $model->extra_desc_art3,
+                'images'       => $model->imageSources(getImage: 'extraDescArt3Image'),
+                'dimensions'   => [
+                    'width'  => $model->extraDescArt3Image->width ?? 0,
+                    'height' => $model->extraDescArt3Image->height ?? 0
+                ]
+            ],
+            [
+                'label'        => __('Extra Description Image 4'),
+                'type'         => 'image',
+                'column_in_db' => 'extra_desc_art4',
+                'id'           => $model->extra_desc_art4,
+                'images'       => $model->imageSources(getImage: 'extraDescArt4Image'),
+                'dimensions'   => [
+                    'width'  => $model->extraDescArt4Image->width ?? 0,
+                    'height' => $model->extraDescArt4Image->height ?? 0
+                ]
+            ],
+
         ];
     }
 }

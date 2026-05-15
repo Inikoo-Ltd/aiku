@@ -19,7 +19,7 @@ import { trans } from "laravel-vue-i18n"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { faHandHoldingMagic, faPlus } from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import Tag from '@/Components/Tag.vue'

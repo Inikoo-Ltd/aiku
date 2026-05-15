@@ -411,7 +411,8 @@ class IndexCustomers extends OrgAction
                 ),
                 'title'       => __('Customers'),
                 'pageHead'    => array_filter([
-                    'title'         => __('Customers'),
+                    'title'         => $this->parent->name,
+                    'model'         => __('Customer'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('Customer')

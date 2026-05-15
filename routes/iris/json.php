@@ -9,8 +9,8 @@
 
 
 use App\Actions\Iris\Basket\GetIrisBasketTransactionProductData;
+use App\Actions\Iris\Json\GetIrisFooterData;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Iris\IrisCollectTrafficSources;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
 use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
@@ -20,7 +20,6 @@ use App\Actions\Helpers\Tag\Json\GetIrisShopTags;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Helpers\Brand\Json\GetIrisShopBrands;
 use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
-use App\Actions\Catalogue\Product\Json\GetIrisAnnouncements;
 use App\Actions\Catalogue\Product\Json\GetIrisLastOrderedProducts;
 use App\Actions\Catalogue\Product\Json\GetIrisProductEcomOrdering;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
@@ -61,16 +60,15 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 
 
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
-
     Route::get('basket-transaction-product-data/{transaction:id}', GetIrisBasketTransactionProductData::class)->name('basket_transaction_product_data');
 
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
+    Route::get('/footer', GetIrisFooterData::class)->name('footer');
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
-    Route::get('hit', IrisCollectTrafficSources::class)->name('hit');
 
     Route::get('collection/{collection:id}/portfolio-data', GetIrisPortfoliosInCollection::class)->name('collection.portfolio_data');
     Route::get('tags', GetIrisTags::class)->name('tags.index');
@@ -96,7 +94,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('channels', IndexRetinaDropshippingCustomerSalesChannels::class)->name('channels.index');
     Route::get('product/{product:id}', GetIrisProductEcomOrdering::class)->name('product.ecom_ordering_data');
 
-    Route::get('announcements', GetIrisAnnouncements::class)->name('announcements.index');
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant');
     Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant');
     Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');

@@ -31,7 +31,7 @@ import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import { notify } from '@kyvg/vue3-notification'
 import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { routeType } from '@/types/route'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'

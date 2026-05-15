@@ -86,6 +86,10 @@ class UpdateShop extends OrgAction
             );
         }
 
+        if (Arr::has($modelData, 'dispatch_require_shipping')) {
+            data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
+        }
+
         // Catalogue Descriptions etc
 
         if (Arr::has($modelData, 'collection_follow_master')) {
@@ -106,6 +110,10 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'product_follow_master')) {
             data_set($modelData, 'settings.catalog.product_follow_master', Arr::pull($modelData, 'product_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'related_product_follow_master')) {
+            data_set($modelData, 'settings.catalog.related_product_follow_master', Arr::pull($modelData, 'related_product_follow_master'));
         }
 
         // Catalogue Indexing etc
@@ -462,6 +470,7 @@ class UpdateShop extends OrgAction
             'sub_department_follow_master'                            => ['sometimes', 'boolean'],
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
+            'related_product_follow_master'                           => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
@@ -470,6 +479,7 @@ class UpdateShop extends OrgAction
             'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],
             'review_rating_labels.*'                                  => ['sometimes', 'array'],
             'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],
+            'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

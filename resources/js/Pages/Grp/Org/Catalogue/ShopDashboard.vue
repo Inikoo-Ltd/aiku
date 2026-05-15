@@ -16,7 +16,7 @@
   import { useLocaleStore } from "@/Stores/locale"
   import { trans } from 'laravel-vue-i18n'
   import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from 'chart.js'
-  import Image from '@/Components/Image.vue'
+  import Image from "@common/Components/Image.vue"
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
   import { PageHeadingTypes } from '@/types/PageHeading'
   import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue'

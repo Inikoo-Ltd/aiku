@@ -12,7 +12,7 @@ import { faBriefcase } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { useLiveUsers } from '@/Stores/active-users'
 import { useTruncate } from '../../Composables/useTruncate'
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import { Link } from '@inertiajs/vue3'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 library.add(faBriefcase)
@@ -28,7 +28,7 @@ const layout = useLayoutStore()
             <div class="relative text-xs flex items-center gap-x-1">
                 <div class="ring-1 h-2 aspect-square rounded-full"
                     :class="[useLiveUsers().count > 0 ? 'animate-pulse bg-green-400 ring-green-600' : 'bg-gray-400 ring-gray-600']" />
-                <span class="">{{ trans('Active users') }} ({{ useLiveUsers().count ?? 0 }})</span>
+                <span class="">{{ ctrans('Active users') }} ({{ useLiveUsers().count ?? 0 }})</span>
             </div>
         </PopoverButton>
 
@@ -48,10 +48,10 @@ const layout = useLayoutStore()
                                         <span class="text-xs">{{ dataUser?.contact_name || dataUser?.username }}</span>
                                         <div class="relative">
                                             <Transition name="spin-to-down">
-                                                <div v-if="dataUser.current_page?.label" :key="dataUser.current_page?.label" class="text-[9px] opacity-70">
+                                                <div v-if="dataUser.current_page?.label" :key="dataUser.current_page?.label" class="text-xxs opacity-70 text-left">
                                                     {{ useTruncate(dataUser?.current_page?.label, 17) }}
                                                 </div>
-                                                <div v-else class="text-[9px] text-white opacity-60 italic">{{ trans('Unknown') }}</div>
+                                                <div v-else class="text-xxs text-white opacity-60 italic text-left">{{ ctrans('Unknown') }}</div>
                                             </Transition>
                                         </div>
                                     </div>

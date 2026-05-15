@@ -9,7 +9,6 @@
 namespace App\Actions\Fulfilment\PalletReturnItem;
 
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
-use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -52,7 +51,6 @@ class SyncPalletReturnItem extends OrgAction
         data_set($modelData, 'pallet_return_id', $pallet->id);
 
         UpdatePallet::run($pallet, $modelData);
-        AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($pallet->palletReturn);
 
         return $pallet;
     }

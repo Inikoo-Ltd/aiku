@@ -54,13 +54,12 @@ class ShowIrisWebpage
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
-
         $baseWebpageData = [
-            'breadcrumbs'  => $this->getIrisBreadcrumbs(
+            'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
-            'webpage_data' => [
+            'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
                 'title'         => $webpage->title,
                 'description'   => $webpage->description,
@@ -69,9 +68,12 @@ class ShowIrisWebpage
                 'sub_type'      => $webpage->sub_type,
                 'model_type'    => $webpage->model_type
             ],
-            'webpage_img'  => $webpageImg,
-            'index_page'    => $webpage->index_page,
-            'follow_link'   => $webpage->follow_link
+            'webpage_img'                 => $webpageImg,
+            'index_page'                  => $webpage->index_page,
+            'follow_link'                 => $webpage->follow_link,
+            'webpage_slug'                => $webpage->slug,
+            'is_different_when_logged_in' => $webpage->is_different_when_logged_in,
+
         ];
 
         return array_merge($baseWebpageData, [
@@ -84,9 +86,9 @@ class ShowIrisWebpage
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
-        $xLoggedStatus = $request->header('X-Logged-Status');
-        if ($xLoggedStatus !== null) {
-            $loggedIn = $xLoggedStatus === 'In';
+        $loggedStatusFromHeader = $request->header('X-Logged-Status');
+        if ($loggedStatusFromHeader !== null) {
+            $loggedIn = $loggedStatusFromHeader === 'In';
         } else {
             $loggedIn = auth()->check();
         }
@@ -205,8 +207,10 @@ class ShowIrisWebpage
                 'website',
                 'domain',
                 'currency_data',
-                'shop_type'
+                'shop_type',
+                'locale'
             ]);
+
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
@@ -215,12 +219,13 @@ class ShowIrisWebpage
 
             return redirect()->to($webpageData, 301)
                 ->withHeaders([
-                    'x-original-referer' => request()->headers->get('referer', ''),
-                ])
-                ->with('from-iris-redirect', true);
+                    'Cache-Control'             => 'public, s-maxage=300, max-age=0',
+                    'X-Aiku-Cacheable-Redirect' => '1',
+                ]);
         }
 
-        $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
+        $browserTitle            = Arr::get($webpageData, 'webpage_data.title', '');
+        $isDifferentWhenLoggedIn = Arr::pull($webpageData, 'is_different_when_logged_in');
 
         $response = Inertia::render(
             'IrisWebpage',
@@ -228,6 +233,10 @@ class ShowIrisWebpage
         )->withViewData([
             'browserTitle' => $browserTitle,
         ])->toResponse(request());
+
+        $response->headers->set('Cache-Control', 'public, s-maxage=300, max-age=0');
+        $response->headers->set('X-Aiku-Cacheable-Inertia', '1');
+        $response->headers->set('X-Is-Diff', $isDifferentWhenLoggedIn ? 'Y' : 'N');
 
         $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
         if (isset($webpageData['webpage_id'])) {
@@ -257,7 +266,6 @@ class ShowIrisWebpage
                     ->where('website_id', $website->id)
                     ->first()?->to_webpage_id;
             }
-
         }
 
 

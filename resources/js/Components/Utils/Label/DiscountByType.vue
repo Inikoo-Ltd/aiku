@@ -17,7 +17,7 @@ const props = defineProps<{
             percentage_off: string
         }
     }
-    use_duration: boolean
+    use_duration?: boolean
 }>()
 
 const componentsMap = {
@@ -25,6 +25,12 @@ const componentsMap = {
     'Category Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
     'First Order Bonus': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/FirstOrder/OfferPivotFirstOrder.vue")),
     'Category Amount Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
+    'Department Quantity Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
+    'Subdepartment Quantity Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
+    'Department Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
+    'Subdepartment Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
+    'Category Quantity Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue"))
+
 } as const
 
 const fallbackComponent = null

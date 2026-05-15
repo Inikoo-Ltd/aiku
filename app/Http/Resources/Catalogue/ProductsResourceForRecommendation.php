@@ -1,0 +1,180 @@
+<?php
+
+/*
+ *  Author: Jonathan lopez <raul@inikoo.com>
+ *  Created: Sat, 22 Oct 2022 18:53:15 British Summer Time, Sheffield, UK
+ *  Copyright (c) 2022, inikoo
+ */
+
+namespace App\Http\Resources\Catalogue;
+
+use App\Enums\Catalogue\HealthRankEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Models\Catalogue\Product;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Carbon\Carbon;
+
+/**
+ * @property string $slug
+ * @property string $code
+ * @property mixed $created_at
+ * @property mixed $updated_at
+ * @property string $name
+ * @property mixed $state
+ * @property string $shop_slug
+ * @property mixed $shop_code
+ * @property mixed $shop_name
+ * @property mixed $department_slug
+ * @property mixed $department_code
+ * @property mixed $department_name
+ * @property mixed $family_slug
+ * @property mixed $family_code
+ * @property mixed $family_name
+ * @property mixed $organisation_name
+ * @property mixed $organisation_code
+ * @property mixed $organisation_slug
+ * @property mixed $price
+ * @property mixed $image_thumbnail
+ * @property mixed $current_historic_asset_id
+ * @property mixed $asset_id
+ * @property mixed $available_quantity
+ * @property mixed $customers_invoiced_all
+ * @property mixed $invoices_all
+ * @property mixed $sales_all
+ * @property mixed $id
+ * @property mixed $units
+ * @property mixed $currency_code
+ * @property mixed $rrp
+ * @property mixed $gross_weight
+ * @property mixed $images
+ * @property mixed $unit
+ * @property mixed $master_product_id
+ * @property mixed $web_images
+ * @property mixed $variant_slug
+ * @property mixed $is_variant_leader
+ * @property mixed $variant_code
+ * @property mixed $webpage
+ * @property mixed $is_for_sale
+ * @property mixed $discontinued_at
+ * @property mixed $health_rank
+ *
+ * @method imageSources(int $int, int $int1)
+ */
+class ProductsResourceForRecommendation extends JsonResource
+{
+    public function toArray($request): array
+    {
+        $state = $this->state->stateIcon()[$this->state->value];
+        if ($this->state != ProductStateEnum::DISCONTINUED && !$this->is_for_sale) {
+            $state = [
+                'tooltip' => __('Not for sale'),
+                'icon'    => 'fas fa-thumbtack',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
+            ];
+        }
+
+        $extraField = [];
+
+        /** @var Product $product */
+        $product = $this->resource;
+
+        // Don't worry, won't run if relationship is not eager loaded
+        if ($product->relationLoaded('orgStocks')) {
+            data_set($extraField, 'org_stocks', $this->getDataPickingFactor($product->orgStocks));
+            $pickingFactor = [];
+            foreach ($product->orgStocks as $orgStock) {
+                $pickingFactor[] = [
+                    'org_stock_id'   => $orgStock->id,
+                    'org_stock_code' => $orgStock->code,
+                    'org_stock_name' => $orgStock->name,
+                    'note'           => $orgStock->pivot->note,
+                    'is_on_demand'   => $orgStock->is_on_demand,
+                    'picking_factor' => riseDivisor(
+                        divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)),
+                        $orgStock->packed_in
+                    )
+                ];
+            }
+            data_set($extraField, 'product_org_stocks', $pickingFactor);
+        }
+
+
+        return [
+            'id'                                => $this->id,
+            'slug'                              => $this->slug,
+            'code'                              => $this->code,
+            'name'                              => $this->name,
+            'state'                             => $state,
+            'created_at'                        => Carbon::parse($this->created_at)->toDateTimeString(),
+            'updated_at'                        => $this->updated_at,
+            'discontinued_at'                   => $this->discontinued_at,
+            'shop_slug'                         => $this->shop_slug,
+            'shop_code'                         => $this->shop_code,
+            'shop_name'                         => $this->shop_name,
+            'organisation_name'                 => $this->organisation_name,
+            'organisation_code'                 => $this->organisation_code,
+            'organisation_slug'                 => $this->organisation_slug,
+            'department_slug'                   => $this->department_slug,
+            'department_code'                   => $this->department_code,
+            'department_name'                   => $this->department_name,
+            'family_slug'                       => $this->family_slug,
+            'family_code'                       => $this->family_code,
+            'family_name'                       => $this->family_name,
+            'price'                             => $this->price,
+            'units'                             => trimDecimalZeros($this->units),
+            'unit'                              => $this->unit,
+            'current_historic_asset_id'         => $this->current_historic_asset_id,
+            'asset_id'                          => $this->asset_id,
+            'available_quantity'                => trimDecimalZeros($this->available_quantity),
+            'gross_weight'                      => $this->gross_weight,
+            'rrp'                               => $this->rrp,
+            'rrp_per_unit'                      => $this->units != 0 ? $this->rrp / $this->units : '',
+            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
+            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
+            'invoices'                          => $this->invoices ?? 0,
+            'refunds'                           => $this->refunds ?? 0,
+            'dropshippers'                      => $this->dropshippers ?? 0,
+            'listings'                          => $this->listings ?? 0,
+            'sold'                              => $this->sold ?? 0,
+            'currency_code'                     => $this->currency_code,
+            'stock'                             => $this->available_quantity,
+            'image_thumbnail'                   => $this->web_images,
+            'master_product_id'                 => $this->master_product_id,
+            'variant_slug'                      => $this->variant_slug,
+            'is_variant_leader'                 => $this->is_variant_leader,
+            'variant_code'                      => $this->variant_code,
+            'iris_url'                          => $this->webpage?->canonical_url,
+            'is_for_sale'                       => $this->is_for_sale,
+            'health_rank'                       => $this->health_rank ? HealthRankEnum::from($this->health_rank)->stateIcon()[HealthRankEnum::from($this->health_rank)->value] : null,
+            'index_under_family'                => $product->index_under_family ?? null,
+            ...$extraField
+        ];
+    }
+
+    private function getDataPickingFactor($orgStocks): ?array
+    {
+        return $orgStocks->map(function ($orgStock) {
+            return [
+                'pick_fractional' => ($orgStock->pivot->quantity && $orgStock->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)), $orgStock->packed_in) : null,
+            ];
+        })->toArray();
+    }
+
+    private function calculateDelta($current, $previous): ?array
+    {
+        if (!$previous || $previous == 0) {
+            return null;
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value'       => $delta,
+            'formatted'   => number_format($delta, 1).'%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
+        ];
+    }
+}

@@ -26,7 +26,7 @@ import { router } from "@inertiajs/vue3"
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
-import MasterFamilySetOrderingPositionOfProduct from "@/Components/Master/FamilySetOrderingPositionOfProduct.vue"
+import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus)
@@ -61,7 +61,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
-        index_ordering: MasterFamilySetOrderingPositionOfProduct,
+        index_ordering: SetOrderingPositionOfProduct,
         sales: TableMasterProducts,
     }
 
@@ -155,39 +155,53 @@ const resetSelectionByScope = {
 
 const loadingOrder = ref(false)
 const SaveOrder = () => {
-    console.log(localData)
-    router.patch(route('grp.models.master_product_category.reorder_index', {
-        masterProductCategory: props.familyId
-    }), {
-        products: localData.value.map((product: any, index: number) => ({
-            id: product.id,
-            code : product.code,
-            index_under_master_family: product.index_under_family,
-        }))
-    }, {
-        preserveScroll: true,
-        onStart : () => {
-            loadingOrder.value = true
+    const products = localData.value?.data || localData.value || []
+
+    router.patch(
+        route('grp.models.master_product_category.reorder_index', {
+            masterProductCategory: props.familyId
+        }),
+        {
+            products: products.map((product: any, index: number) => ({
+                id: product.id,
+                code: product.code,
+                index_under_master_family:
+                    product.index_under_family ?? index,
+            }))
         },
-         onSuccess: () => {
-            notify({
-                title: trans("Success!"),
-                text: trans("Successfully reordered the products"),
-                type: "success"
-            })
-        },
-        onError: (errors) => {
-            console.log(errors)
-            notify({
-                title: trans("Something went wrong"),
-                text: errors.message || trans("Failed to reorder products"),
-                type: "error"
-            })
-        },
-        onFinish : ()=> {
-             loadingOrder.value = false
+        {
+            preserveScroll: true,
+
+            onStart: () => {
+                loadingOrder.value = true
+            },
+
+            onSuccess: () => {
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Successfully reordered the products"),
+                    type: "success"
+                })
+            },
+
+            onError: (errors: any) => {
+                console.log(errors)
+
+                notify({
+                    title: trans("Something went wrong"),
+                    text:
+                        errors?.message ||
+                        trans("Failed to reorder products"),
+                    type: "error"
+                })
+            },
+
+            onFinish: () => {
+                loadingOrder.value = false
+            }
         }
-})}
+    )
+}
 
 watch(() => currentTab.value, (tab) => {
     if (tab === 'index' || tab === 'index_ordering' || tab === 'sales') {

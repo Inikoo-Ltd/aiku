@@ -12,7 +12,7 @@ import {
 } from '@fal'
 import { faVideo } from '@fas'
 import { ulid } from 'ulid'
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import Dialog from 'primevue/dialog'
 
 const props = defineProps<{

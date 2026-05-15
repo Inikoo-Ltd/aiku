@@ -31,7 +31,7 @@ class ShowRetinaSysAdminDashboard extends RetinaAction
 
     public function handle(ActionRequest $request): Response
     {
-        $title = __('Manage Account');
+        $title = __('My Account');
 
         return Inertia::render(
             'SysAdmin/RetinaSysAdminDashboard',
@@ -80,7 +80,7 @@ class ShowRetinaSysAdminDashboard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.sysadmin.fulfilment.dashboard'
+                                'name' => 'retina.sysadmin.dashboard'
                             ],
                             'label' => __('Account'),
                         ]

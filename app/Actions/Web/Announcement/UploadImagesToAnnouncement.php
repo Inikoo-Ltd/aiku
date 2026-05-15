@@ -10,8 +10,8 @@ namespace App\Actions\Web\Announcement;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\WithUploadWebImage;
-use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
+use App\Models\Web\Announcement;
 use App\Models\Web\Website;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;

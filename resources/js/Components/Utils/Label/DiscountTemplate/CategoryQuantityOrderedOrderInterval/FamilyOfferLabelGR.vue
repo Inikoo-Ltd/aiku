@@ -13,6 +13,7 @@ library.add(faInfoCircle)
 
 const props = defineProps<{
     offer: {}
+    use_duration?: boolean
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)

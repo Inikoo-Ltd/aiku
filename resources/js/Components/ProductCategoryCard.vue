@@ -5,7 +5,7 @@ import { faImage, faCheck, faTimesCircle } from "@fas";
 import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { routeType } from "@/types/route";
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import { trans } from "laravel-vue-i18n"
 
 library.add(faAlbumCollection, faImage, faCheck, faTimesCircle);

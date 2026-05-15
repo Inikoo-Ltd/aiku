@@ -55,6 +55,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Audits\Transformer\OrderSubmitSummaryTransformer;
 use App\Audits\Transformer\RelationTransformer;
+use App\Models\Dispatching\ReturnDeliveryNote;
 
 /**
  * @property int $id
@@ -391,23 +392,6 @@ class Order extends Model implements HasMedia, Auditable
         return $data;
     }
 
-    public function readyForAuditing(): bool
-    {
-        if ($this->state === OrderStateEnum::CREATING) {
-            return false;
-        }
-
-        if ($this->isAuditingDisabled()) {
-            return false;
-        }
-
-        if ($this->isCustomEvent) {
-            return true;
-        }
-
-        return $this->isEventAuditable($this->auditEvent);
-    }
-
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -521,5 +505,9 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(ShippingZone::class);
     }
 
+    public function returnedDeliveryNote(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
+    }
 
 }

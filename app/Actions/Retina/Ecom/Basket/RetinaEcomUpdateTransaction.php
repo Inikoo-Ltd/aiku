@@ -22,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class RetinaEcomUpdateTransaction extends RetinaAction
 {
     private Order $order;
+    private Transaction $transaction;
 
     public function handle(Transaction $transaction, array $modelData)
     {
@@ -43,18 +44,23 @@ class RetinaEcomUpdateTransaction extends RetinaAction
 
     }
 
-    public function prepareForValidation()
+    public function prepareForValidation(ActionRequest $request)
     {
         if ($this->order->state != OrderStateEnum::CREATING) {
             throw ValidationException::withMessages([
                 'message' => __('This order has been submitted and cannot be updated'),
             ]);
         }
+        if (isset($request['quantity_ordered'])) {
+            $availableQuantity = $this->transaction->asset?->product?->available_quantity ?? PHP_INT_MAX;
+            $this->set('quantity_ordered', min($request['quantity_ordered'], $availableQuantity));
+        }
     }
 
     public function action(Transaction $transaction, Customer $customer, array $modelData): Transaction
     {
-        $this->order = $transaction->order;
+        $this->transaction = $transaction;
+        $this->order       = $transaction->order;
         $this->initialisationActions($customer, $modelData);
 
         return $this->handle($transaction, $this->validatedData);
@@ -62,7 +68,8 @@ class RetinaEcomUpdateTransaction extends RetinaAction
 
     public function asController(Transaction $transaction, ActionRequest $request)
     {
-        $this->order = $transaction->order;
+        $this->transaction = $transaction;
+        $this->order       = $transaction->order;
         $this->initialisation($request);
 
         $this->handle($transaction, $this->validatedData);

@@ -11,6 +11,7 @@ namespace App\Models\Dropshipping;
 use App\Actions\Dropshipping\Tiktok\Traits\WithTiktokApiServices;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
+use App\Models\DebugWebhooks;
 use App\Models\Traits\HasEmail;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
@@ -49,6 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\PlatformHasClient> $clients
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DebugWebhooks> $debugWebhooks
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\TiktokUserHasOrder> $orders
@@ -130,5 +132,10 @@ class TiktokUser extends Model
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
+    }
+
+    public function debugWebhooks(): MorphMany
+    {
+        return $this->morphMany(DebugWebhooks::class, 'model');
     }
 }

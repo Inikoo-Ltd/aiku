@@ -14,7 +14,7 @@ import SidebarDesktopNavigation from './SidebarDesktopNavigation.vue'
 library.add(faChevronRight, faExternalLink)
 
 const props = defineProps<{
-    containerStyle: {
+    containerStyle?: {
         
     }
     productCategories: {}
@@ -39,9 +39,9 @@ const props = defineProps<{
     customTopSubDepartments: ProductCategoryMenuSub[]
     customMenusBottom: {}[]
     customSubDepartments: []
-    activeIndex: {}
-    activeCustomIndex: {}
-    activeCustomTopIndex: {}
+    activeIndex?: number | null
+    activeCustomIndex?: number | null
+    activeCustomTopIndex?: number | null
     getTarget: Function
     setActiveCategory: Function
     setActiveCustomCategory: Function
@@ -51,9 +51,9 @@ const props = defineProps<{
     customTopFamilies: {}[]
     sortedProductCategories: ProductCategoryMenu[]
     sortedSubDepartments: ProductCategoryMenuSub[]
-    activeSubIndex: number
-    activeCustomSubIndex: {}
-    activeCustomTopSubIndex: {}
+    activeSubIndex?: number
+    activeCustomSubIndex?: number | null
+    activeCustomTopSubIndex?: number | null
     changeActiveSubIndex: Function
     changeActiveCustomSubIndex: Function
     changeActiveCustomTopSubIndex: Function
@@ -152,6 +152,11 @@ const borderWidth = computed(() => {
         <!-- Column 1: Categories + Custom Menus -->
         <div class="flex flex-col justify-between gap-y-10" :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r']">
             <div class="overflow-y-auto">
+                <!-- Skeleton: while sidebar fetch in-flight and no data yet -->
+                <div v-if="layout.iris.isSidebarLoading && !sortedProductCategories.length && !customMenusTop.length && !customMenusBottom.length" class="flex flex-col gap-y-3 p-2 px-4">
+                    <div v-for="i in 12" :key="`sk-cat-${i}`" class="w-full h-[1.9rem] skeleton" />
+                </div>
+
                 <!-- Sidebar: Top navigation -->
                 <div v-if="customMenusTop && customMenusTop.length > 0" class="borderBottomColorSameAsText">
                     <SidebarDesktopNavigation

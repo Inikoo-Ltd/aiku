@@ -27,7 +27,6 @@ enum PalletReturnStateEnum: string
     case PICKING      = 'picking';
     case PICKED       = 'picked';
     case DISPATCHED   = 'dispatched';
-    // case CONSOLIDATED = 'consolidated';
     case CANCEL       = 'cancel';
 
 
@@ -69,38 +68,44 @@ enum PalletReturnStateEnum: string
             ],
             'picking'    => [
                 'tooltip' => __('Picking'),
-                'icon'    => 'fal fa-truck',
-                'class'   => 'text-orange-500',
-                'color'   => '#FF6900',
+                'icon'    => 'fal fa-hand-paper',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
             ],
             'picked'     => [
                 'tooltip' => __('Picked'),
                 'icon'    => 'fal fa-check',
-                'class'   => 'text-slate-500',
-                'color'   => '#62748E',
+                'class'   => 'text-indigo-500',
+                'color'   => 'indigo',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
             ],
             'dispatched' => [
                 'tooltip' => __('Dispatched'),
                 'icon'    => 'fal fa-check-double',
-                'class'   => 'text-purple-500',
-                'color'   => '#AD46FF',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'check-double',
+                    'type' => 'font-awesome-5'
+                ]
             ],
             'cancel'     => [
                 'tooltip' => __('Cancel'),
                 'icon'    => 'fal fa-times',
                 'class'   => 'text-red-500',
-                'color'   => '#FB2C36',
+                'color'   => 'red',
+                'app'     => [
+                    'name' => 'times',
+                    'type' => 'font-awesome-5'
+                ]
             ],
-            // 'consolidated'     => [
-            //     'tooltip' => __('Consolidated'),
-            //     'icon'    => 'fal fa-times',
-            //     'class'   => 'text-red-500',
-            //     'color'   => 'red',
-            //     'app'     => [
-            //         'name' => 'times',
-            //         'type' => 'font-awesome-5'
-            //     ]
-            // ],
         ];
     }
 
@@ -120,7 +125,6 @@ enum PalletReturnStateEnum: string
             'picked'       => $stats->number_pallet_returns_state_picked,
             'dispatched'   => $stats->number_pallet_returns_state_dispatched,
             'cancel'       => $stats->number_pallet_returns_state_cancel,
-            // 'consolidated' => $stats->number_pallet_returns_state_consolidated,
         ];
     }
 
@@ -155,10 +159,6 @@ enum PalletReturnStateEnum: string
                 'title'    => __("Pallet return :reference cancelled", ['reference' => $reference]),
                 'subtitle' => __('Pallet return has been cancelled')
             ],
-            // 'consolidated'     => [
-            //     'title'    => __("Pallet return :reference consolidated", ['reference' => $reference]),
-            //     'subtitle' => __('Pallet return has been consolidated')
-            // ],
         ];
     }
 }

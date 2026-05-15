@@ -41,6 +41,7 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
         if (!$masterAssetId) {
             return;
         }
+
         $masterAsset = MasterAsset::find($masterAssetId);
 
         if (!$masterAsset) {
@@ -83,6 +84,7 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
             } else {
                 $metrics = ['dropshippers' => 0, 'listings' => 0];
             }
+
             $timeSeries->records()->updateOrCreate(
                 [
                     'master_asset_time_series_id' => $timeSeries->id,

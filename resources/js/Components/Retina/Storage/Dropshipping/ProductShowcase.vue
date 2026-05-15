@@ -9,7 +9,7 @@ import { useLocaleStore } from '@/Stores/locale'
 import { faCircle, faTrash } from '@fas'
 import { faLink } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { ref } from 'vue'
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { Image as ImageTS } from "@/types/Image"

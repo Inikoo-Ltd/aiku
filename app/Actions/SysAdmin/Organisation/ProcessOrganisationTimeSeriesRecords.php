@@ -24,7 +24,7 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $organisationId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -57,7 +57,7 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoices')
+        $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.organisation_id', $timeSeries->organisation_id)
             ->where('invoices.in_process', false)
             ->where('invoices.date', '>=', $from)
@@ -136,7 +136,7 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
 
     protected function getOrganisationPeriodMetrics(int $organisationId, Carbon $periodFrom, Carbon $periodTo): array
     {
-        // $basketsCreated = DB::table('orders')
+        // $basketsCreated = DB::connection('aiku_no_sticky')->table('orders')
         //     ->where('organisation_id', $organisationId)
         //     ->where('state', OrderStateEnum::CREATING)
         //     ->where('created_at', '>=', $periodFrom)
@@ -145,7 +145,7 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
         //     ->selectRaw('sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
         //     ->first();
 
-        // $basketsUpdated = DB::table('orders')
+        // $basketsUpdated = DB::connection('aiku_no_sticky')->table('orders')
         //     ->where('organisation_id', $organisationId)
         //     ->where('state', OrderStateEnum::CREATING)
         //     ->where('updated_at', '>=', $periodFrom)
@@ -154,14 +154,14 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
         //     ->selectRaw('sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
         //     ->first();
 
-        // $deliveryNotes = DB::table('delivery_notes')
+        // $deliveryNotes = DB::connection('aiku_no_sticky')->table('delivery_notes')
         //     ->where('organisation_id', $organisationId)
         //     ->where('date', '>=', $periodFrom)
         //     ->where('date', '<=', $periodTo)
         //     ->whereNull('deleted_at')
         //     ->count();
 
-        $registrationsBase = DB::table('customers')
+        $registrationsBase = DB::connection('aiku_no_sticky')->table('customers')
             ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
             ->where('customers.organisation_id', $organisationId)
             ->where('customers.registered_at', '>=', $periodFrom)

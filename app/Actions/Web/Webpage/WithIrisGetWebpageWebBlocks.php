@@ -40,7 +40,7 @@ trait WithIrisGetWebpageWebBlocks
                 continue;
             }
 
-            $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, $isLoggedIn);
+            $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock);
         }
 
         return $parsedWebBlocks;

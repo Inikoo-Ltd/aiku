@@ -19,7 +19,7 @@ import {
 	faFileAlt,
 } from "@fas"
 import { faHeart } from "@far"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
 library.add(

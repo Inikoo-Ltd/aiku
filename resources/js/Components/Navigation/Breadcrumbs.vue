@@ -37,6 +37,7 @@ const props = defineProps<{
                 label?: string
                 route?: routeType
                 url?: string
+                suffix?: string
             }
             model: {
                 icon?: string
@@ -124,7 +125,7 @@ const isLoading = ref<string | boolean>(false)
                             <component :is="breadcrumb.modelWithIndex?.index?.url || breadcrumb.modelWithIndex?.index?.route?.name ? Link : 'div'"  class="hover:text-gray-700 grid grid-flow-col items-center"
                                 :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' ">
                                 <FontAwesomeIcon icon="fal fa-bars" class="flex-shrink-0 h-3.5 w-3.5 mr-1" aria-hidden="true" />
-                                <span>{{ breadcrumb.modelWithIndex.index.label }}</span>
+                                <span>{{ breadcrumb.modelWithIndex.index.label }}</span> <span v-if="breadcrumb.modelWithIndex.index.suffix" class="ml-1 italic"> {{ breadcrumb.modelWithIndex.index.suffix }} </span>
                             </component>
                         </div>
                         <span class="mx-3 select-none">→</span>

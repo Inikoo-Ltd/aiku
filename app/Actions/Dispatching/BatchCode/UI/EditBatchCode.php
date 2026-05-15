@@ -39,9 +39,14 @@ class EditBatchCode extends OrgAction
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($batchCode, $request->route()->originalParameters()),
-                'title'       => __('Edit Batch Code').' '.$batchCode->code,
+                'title'       => __('Batch Code') . ': ' . $batchCode->code . ' (' . __('edit') . ')',
                 'pageHead'    => [
-                    'title'   => __('Edit Batch Code'),
+                    'icon'      => 'fal fa-barcode',
+                    'title'   => __('Edit'),
+                    'model'   => __('Batch code'),
+                    'container' => [
+                        'label' => $batchCode->code,
+                    ],
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -66,6 +71,14 @@ class EditBatchCode extends OrgAction
                                     'label'       => __('SKU'),
                                     'placeholder' => __('Select SKU'),
                                     'mode'        => 'single',
+                                    'options'     => [
+                                        [
+                                            'id'   => $batchCode->orgStock?->id,
+                                            'slug' => $batchCode->orgStock?->slug,
+                                            'code' => $batchCode->orgStock?->code,
+                                            'name' => $batchCode->orgStock?->name,
+                                        ]
+                                    ],
                                     'searchable'  => true,
                                     'labelProp'   => 'name',
                                     'valueProp'   => 'id',
@@ -85,7 +98,7 @@ class EditBatchCode extends OrgAction
                                 'expiry_date' => [
                                     'type'  => 'date',
                                     'label' => __('Expiry Date'),
-                                    'value' => $batchCode->expiry_date?->format('Y-m-d'),
+                                    'value' => $batchCode->expiry_date,
                                 ],
                             ],
                         ],

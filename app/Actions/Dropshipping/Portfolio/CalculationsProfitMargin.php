@@ -8,12 +8,17 @@
 
 namespace App\Actions\Dropshipping\Portfolio;
 
-use App\Actions\OrgAction;
+use Lorisleiva\Actions\Concerns\AsObject;
 
-class CalculationsProfitMargin extends OrgAction
+class CalculationsProfitMargin
 {
-    public function handle(float $revenue, float $cost): float
+    use AsObject;
+
+    public function handle(?float $revenue, float $cost): float
     {
+        if ($revenue === null) {
+            return 1;
+        }
 
         if ($revenue == 0) {
             return 1;

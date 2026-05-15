@@ -33,7 +33,7 @@ class WebBlockFamilyResource extends JsonResource
             'image'                   => Arr::get($family->web_images, 'main.original'),
             'description_image'       => Arr::get($family->web_images, 'description'),
             'description_video'       => $family->desc_video_url,
-            'extra_description_image' => Arr::get($family->web_images, 'main.original'),
+            'extra_description_image' => Arr::get($family->web_images, 'extraDescription'),
             'url'                     => $family->webpage->url,
             'offers_data'             => $family->offers_data,
             'web_images'              => $family->web_images
