@@ -118,7 +118,7 @@ const nextEl = ref(null)
       </button>
 
       <!-- Swiper -->
-      <div class="py-4 px-3 md:px-12">
+      <div class="py-4  md:px-12 px-[50px]">
         <Swiper
           ref="swiperRef"
           :slides-per-view="slidesPerView"
@@ -126,7 +126,7 @@ const nextEl = ref(null)
           :loop="shouldShowNavigation"
           :auto-height="false"
           :modules="[Navigation]"
-          class="w-full"
+          class="w-full px-[50px]"
           :navigation="{ prevEl, nextEl }"
         >
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">
@@ -153,6 +153,6 @@ const nextEl = ref(null)
 }
 
 .product-card :deep(img) {
-  @apply w-full max-w-[220px] aspect-square object-contain;
+@apply w-full max-w-[160px] sm:max-w-[220px] 2xl:max-w-[320px] aspect-square object-contain;
 }
 </style>
