@@ -68,10 +68,12 @@ class IndexReviewProductsInOrder extends OrgAction
                 'products.image_id as product_image_id',
                 'products.code as asset_code',
                 'products.name as asset_name',
+                'products.price as price',
                 'products.family_id as product_category_id',
                 'product_categories.name as product_category_name',
                 'transactions.order_id as order_id',
                 'transactions.shop_id as shop_id',
+                'transactions.net_amount as net_amount',
                 DB::raw('SUM(transactions.quantity_ordered) as quantity_ordered'),
 
                 DB::raw('MAX(product_reviews.id) as product_review_id'),
@@ -111,9 +113,12 @@ class IndexReviewProductsInOrder extends OrgAction
                 'products.name',
                 'products.image_id',
                 'products.family_id',
+                'products.price',
                 'product_categories.name',
                 'transactions.order_id',
                 'transactions.shop_id',
+                'transactions.shop_id',
+                'transactions.net_amount'
             ])
             ->allowedSorts(['asset_code', 'asset_name', 'product_review_rating'])
             ->allowedFilters([$globalSearch])
@@ -138,11 +143,10 @@ class IndexReviewProductsInOrder extends OrgAction
                 ->defaultSort('product_code');
 
             $table->column(key: 'image', label: '', canBeHidden: false, sortable: false, searchable: false);
-            $table->column(key: 'asset_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'asset_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             $table->column(key: 'product_review_rating', label: __('Rating'), sortable: true, searchable: false, align: 'right', type: 'number');
-            $table->column(key: 'product_review_status', label: __('Status'), sortable: false, searchable: false);
-            $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: false, searchable: true);
         };
     }
 }
