@@ -44,7 +44,9 @@ class CrawlWebsite
             return;
         }
 
-        $this->stopCurrentCrawls($crawl);
+        if (!$crawl->is_seeder) {
+            $this->stopCurrentCrawls($crawl);
+        }
 
         $crawl = $this->protectFromSurges($crawl);
 
