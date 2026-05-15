@@ -10,11 +10,11 @@ import { faSpinnerThird, faSave as fadSave } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faClipboard, faSpinner, faPencil, faDownload, faFileExport, faPlus as falPlus, faHistory, faListAlt, IconDefinition, faExternalLink } from "@fal"
 import { faArrowLeft, faTrashAlt, faPersonDolly, faTimes } from "@far"
-import { faPlus, faSave, faUpload, faTrashUndoAlt, faThLarge, faRocket, faMinus } from "@fas"
+import { faPlus, faSave, faUpload, faTrashUndoAlt, faThLarge, faRocket, faMinus, faStop } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Icon } from "@/types/Utils/Icon"
 
-library.add(faPlus, faSave, fadSave, faSpinner, faUpload, faDownload, falPlus, faRocket, faArrowLeft, faPencil, faTrashAlt, faSpinnerThird, faTrashUndoAlt, faPersonDolly, faFileExport, faClipboard, faHistory, faListAlt, faTimes, faThLarge, faMinus, faExternalLink)
+library.add(faPlus, faSave, fadSave, faSpinner, faUpload, faDownload, falPlus, faRocket, faArrowLeft, faPencil, faTrashAlt, faSpinnerThird, faTrashUndoAlt, faPersonDolly, faFileExport, faClipboard, faHistory, faListAlt, faTimes, faThLarge, faMinus, faExternalLink, faStop)
 
 const props = withDefaults(defineProps<{
     style?: string | object
