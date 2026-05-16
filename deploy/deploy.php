@@ -70,12 +70,7 @@ desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
-        if (currentHost()->getAlias() == 'staging') {
-            set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use --lts');
-            run("cd {{release_path}} && {{use_nvm}} && npm run build");
-        } else {
-            run("cd {{release_path}} && {{bin/npm}} run build");
-        }
+        run("cd {{release_path}} && {{bin/npm}} run build");
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
