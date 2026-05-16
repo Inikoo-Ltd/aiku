@@ -290,6 +290,17 @@ set('writable_dirs', function () use ($defaultWritableDirs) {
     return $defaultWritableDirs;
 });
 
+desc('👩🏼‍💻 One server only view cache ');
+task('deploy:view-cache', function () {
+    if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+        writeln('Skipping migrate on slave host '.currentHost()->getAlias());
+        return;
+    }
+
+    artisan('view:cache', ['skipIfNoEnv', 'showOutput'])();
+});
+
+
 desc('Deploys your project');
 task('deploy', [
     'deploy:unlock',
@@ -300,7 +311,7 @@ task('deploy', [
     'artisan:storage:link',
     'artisan:config:cache',
     'artisan:route:cache',
-    'artisan:view:cache',
+    'deploy:view-cache',
     'artisan:event:cache',
     'deploy:migrate',
     'deploy:check-fe-changes',
