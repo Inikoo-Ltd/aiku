@@ -328,7 +328,7 @@ sub vcl_backend_response {
         return (deliver);
     }
 
-    # Cache public logged-out 404s briefly to reduce repeated backend misses.
+    # Cache 404s briefly to reduce repeated backend misses.
     if (beresp.status == 404) {
         set beresp.ttl = 6h;
         set beresp.grace = 1m;
@@ -356,9 +356,10 @@ sub vcl_backend_response {
             beresp.http.X-Aiku-Cacheable-Inertia == "1" &&
             beresp.http.Content-Type ~ "(?i)application/json"
         ) {
-            set beresp.ttl = 5m;
+            set beresp.ttl = 10d;
             set beresp.grace = 1m;
             set beresp.do_gzip = true;
+
 
             if (beresp.http.Vary) {
                 set beresp.http.Vary = beresp.http.Vary + ", X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component, X-Requested-With";
@@ -367,6 +368,12 @@ sub vcl_backend_response {
             }
 
             unset beresp.http.X-Aiku-Cacheable-Inertia;
+
+              # Enable gzip on text-like content
+                if (beresp.http.Content-Type ~ "(text|javascript|json|xml|svg|font|css)") {
+                    set beresp.do_gzip = true;
+                }
+
             return (deliver);
         } else {
             set beresp.ttl = 0s;
@@ -379,8 +386,7 @@ sub vcl_backend_response {
     set beresp.ttl = 10d;
     set beresp.grace = 2m;
     set beresp.keep = 10m;
-    # Store original TTL as header for later use in vcl_deliver
-    set beresp.http.X-Varnish-TTL = beresp.ttl;
+
 
     # Enable gzip on text-like content
     if (beresp.http.Content-Type ~ "(text|javascript|json|xml|svg|font|css)") {

@@ -105,7 +105,7 @@ trait WithMasterCatalogueSubNavigation
                 ]
             ],
             app()->environment('local') ? [
-                'number'   => $masterShop->stats->number_master_families_with_vol_gr_offer,
+                'number'   => $masterShop->stats->number_master_families_with_vol_gr_discount,
                 'label'    => __('M. Vol/GR'),
                 'tooltip'    => __('Master Volume/Gold Reward Discount'),
                 'route'    => [

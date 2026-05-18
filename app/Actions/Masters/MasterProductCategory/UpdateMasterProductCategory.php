@@ -99,13 +99,19 @@ class UpdateMasterProductCategory extends OrgAction
             ]);
         }
 
-        if (Arr::has($modelData, 'offers_data')) {
-            $offersData = $modelData['offers_data'];
+        if (Arr::has($modelData, 'vol_gr_offer')) {
+            $volGR = Arr::pull($modelData, 'vol_gr_offer');
 
-            if (isset($offersData['volume_discount'])) {
+            if ($volGR) {
                 data_set($modelData, 'has_gr_vol_discount', true);
+
+                data_set($modelData, 'gr_vol_discount_percentage', $volGR['percentage_off']);
+                data_set($modelData, 'gr_vol_discount_quantity', $volGR['item_quantity']);
+
+                UpsertGoldRewardFromMasterProductCategory::dispatch($masterProductCategory);
             } else {
                 data_set($modelData, 'has_gr_vol_discount', false);
+                // TODO: Delete GR Reward from Master Product Category to Children
             }
         }
 
@@ -279,16 +285,15 @@ class UpdateMasterProductCategory extends OrgAction
             'description_title_i8n'                      => ['sometimes', 'array'],
             'description_i8n'                            => ['sometimes', 'array'],
             'description_extra_i8n'                      => ['sometimes', 'array'],
-            'offers_data'                                => ['sometimes', 'array'],
-            'offers_data.volume_discount'                => ['nullable', 'array'],
-            'offers_data.volume_discount.item_quantity'  => [
-                'required_with:offers_data.volume_discount.percentage_off',
+            'vol_gr_offer'                               => ['nullable', 'array'],
+            'vol_gr_offer.item_quantity'                 => [
+                'required_with:vol_gr_offer.percentage_off',
                 'nullable',
                 'integer',
                 'min:1'
             ],
-            'offers_data.volume_discount.percentage_off' => [
-                'required_with:offers_data.volume_discount.item_quantity',
+            'vol_gr_offer.percentage_off'                => [
+                'required_with:vol_gr_offer.item_quantity',
                 'nullable',
                 'numeric',
                 'min:1',
@@ -302,5 +307,15 @@ class UpdateMasterProductCategory extends OrgAction
         }
 
         return $rules;
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'vol_gr_offer.item_quantity.min' => 'Item quantity must be bigger than 1',
+            'vol_gr_offer.item_quantity.required_with' => 'Item quantity must be be bigger than 1',
+            'vol_gr_offer.percentage_off.min' => 'Discount must be bigger than 1',
+            'vol_gr_offer.percentage_off.required_with' => 'Discount must be bigger than 1',
+        ];
     }
 }

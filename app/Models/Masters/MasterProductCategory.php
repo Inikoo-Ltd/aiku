@@ -85,6 +85,8 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $extra_desc_art2
  * @property int|null $extra_desc_art3
  * @property int|null $extra_desc_art4
+ * @property numeric|null $gr_vol_discount_percentage
+ * @property int|null $gr_vol_discount_quantity
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Media|null $descArt1Image

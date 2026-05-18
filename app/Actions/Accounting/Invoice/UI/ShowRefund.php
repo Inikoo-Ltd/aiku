@@ -428,7 +428,7 @@ class ShowRefund extends OrgAction
     {
         $originalInvoice = $refund->originalInvoice;
 
-        $headCrumb = function (Invoice $refund, array $routeParameters, ?string $suffix = null, $suffixIndex = '') {
+        $headCrumb = function (Invoice $refund, array $routeParameters, ?string $suffix = null, $suffixIndex = '', ?string $customLabel = null) {
             return [
                 [
 
@@ -436,7 +436,7 @@ class ShowRefund extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Refunds').$suffixIndex,
+                            'label' => $customLabel ?? __('Refunds').$suffixIndex,
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -719,6 +719,28 @@ class ShowRefund extends OrgAction
                         ]
                     ],
                     $suffix
+                ),
+            ),
+            'grp.org.shops.show.crm.customers.show.orders.show.refunds.show',
+            => array_merge(
+                ShowOrder::make()->getBreadcrumbs($refund->order, 'grp.org.shops.show.crm.customers.show.orders.show', $routeParameters),
+                $headCrumb(
+                    $refund,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.orders.show',
+                            'parameters' => [
+                                ...$routeParameters,
+                                'tab'    => 'invoices'
+                            ]
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.orders.show.refunds.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    customLabel: 'Invoices'
                 ),
             ),
             default => []

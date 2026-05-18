@@ -5,6 +5,8 @@
   -->
 
 <script setup lang="ts">
+import { computed } from "vue"
+import { usePage } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
@@ -14,15 +16,39 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 
 const props = defineProps<{
-    data: object
+    data: any
     tab?: string,
 }>()
 
+const page = usePage()
 
+const labelMap: Record<string, string> = {
+    department: 'Department',
+    sub_department: 'Sub Department',
+    family: 'Family',
+    collection: 'Collection',
+}
 
+const parentInfo = computed(() => {
+    const qs = page.url.split('?')[1] || ''
+    const params = new URLSearchParams(qs)
+    const parent = params.get('parent')
+    if (!parent) return null
+
+    return {
+        label: labelMap[parent] ?? parent,
+        code: params.get('parent_code') ?? '',
+        name: params.get('parent_name') ?? '',
+    }
+})
 </script>
 
 <template>
+    <div v-if="parentInfo" class="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg mb-2">
+        <span class="text-xs uppercase tracking-wide text-amber-700 font-semibold">{{ parentInfo.label }}:</span>
+        <span class="text-sm font-medium text-gray-800" v-if="parentInfo.code">{{ parentInfo.code }}</span>
+        <span class="text-sm text-gray-500" v-if="parentInfo.name">— {{ parentInfo.name }}</span>
+    </div>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
@@ -30,7 +56,7 @@ const props = defineProps<{
             </div>
         </template>
          <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="$emit('select-collection', department.id)">
+            <span class="primaryLink" @click="$emit('select-collection', department.id, department.code, department.name)">
                 {{ department.code }}
             </span>
         </template>

@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import type { Component } from 'vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faFolderTree, faFolder, faCube, faAlbumCollection, faDotCircle as FarDotCircle } from '@far'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 import TableIrisDepartment from '../Components/Tables/TableIrisDepartment.vue'
 import TableIrisSubDepartment from '../Components/Tables/TableIrisSubDepartment.vue'
@@ -12,13 +16,23 @@ import TableIrisCollection from '../Components/Tables/TableIrisCollection.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faArrowLeft, faArrowRight, faWindowClose } from '@far'
 
+library.add(faFolderTree, faFolder, faCube, faAlbumCollection, FarDotCircle)
+
+const iconMap: Record<string, any> = {
+    department: faFolderTree,
+    sub_department: FarDotCircle,
+    family: faFolder,
+    product: faCube,
+    collection: faAlbumCollection,
+}
+
 const props = defineProps<{
     tabs: {
         current: string
         navigation: {
             key: string
             label: string
-        }[]
+    }[]
     }
     data: any
 }>()
@@ -35,7 +49,6 @@ const activeComponent = computed(() =>
     componentMap[props.tabs.current] ?? null
 )
 
-
 const scopeOrder = ['department', 'sub_department', 'family', 'product', 'collection']
 
 const nextScopeMap: Record<string, string | null> = {
@@ -51,11 +64,15 @@ type HistoryState = {
     scope: string
     parent?: string
     parent_key?: any
+    parent_code?: string
+    parent_name?: string
 }
 
 const history = ref<HistoryState[]>([
     { scope: props.tabs.current },
 ])
+
+const loadingTab = ref<string | null>(null)
 
 watch(
     () => props.tabs.current,
@@ -83,17 +100,23 @@ const canClear = computed(() => {
 
 
 const navigate = (state: HistoryState) => {
+    loadingTab.value = state.scope
     router.get(
         route(route().current() as string),
         {
             scope: state.scope,
             parent: state.parent,
             parent_key: state.parent_key,
+            parent_code: state.parent_code,
+            parent_name: state.parent_name,
         },
         {
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            onFinish: () => {
+                loadingTab.value = null
+            },
         }
     )
 }
@@ -106,6 +129,8 @@ const changeTab = (scope: string) => {
         scope,
         parent: last?.parent,
         parent_key: last?.parent_key,
+        parent_code: last?.parent_code,
+        parent_name: last?.parent_name,
     }
 
     history.value.push(state)
@@ -134,6 +159,8 @@ const goNext = () => {
         scope: nextScope,
         parent: last?.parent,
         parent_key: last?.parent_key,
+        parent_code: last?.parent_code,
+        parent_name: last?.parent_name,
     })
 
     navigate(history.value.at(-1)!)
@@ -145,7 +172,7 @@ const clearScope = () => {
 }
 
 
-const onSelectParent = (parentType: string, parentId: any) => {
+const onSelectParent = (parentType: string, parentId: any, parentCode?: string, parentName?: string) => {
     const nextScope = nextScopeMap[parentType]
     if (!nextScope) return
 
@@ -153,13 +180,13 @@ const onSelectParent = (parentType: string, parentId: any) => {
         scope: nextScope,
         parent: parentType,
         parent_key: parentId,
+        parent_code: parentCode,
+        parent_name: parentName,
     }
 
     history.value.push(state)
     navigate(state)
 }
-
-
 </script>
 
 <template>
@@ -167,32 +194,37 @@ const onSelectParent = (parentType: string, parentId: any) => {
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
 
             <!-- Top Bar -->
-            <div class="flex items-center justify-between px-4 py-4 h-fit border-b border-gray-100">
+            <div class="flex items-center justify-between px-2 h-fit border-b border-gray-200">
 
-                <!-- LEFT SIDE -->
-                <div class="flex items-center gap-2">
+                <!-- LEFT SIDE: Nav-style Tabs -->
+                <nav class="hidden md:flex items-center space-x-4 flex-1 overflow-x-auto">
+                    <button v-for="tab in tabs.navigation" :key="tab.key + tabs.current"
+                        type="button"
+                        @click="changeTab(tab.key)"
+                        :class="[
+                            'relative flex items-center py-2 font-medium text-xs md:text-sm transition duration-150 ease-in-out border-b-2 rounded-t-md gap-2 px-4 whitespace-nowrap',
+                            tab.key === tabs.current
+                                ? 'text-slate-600 border-slate-500'
+                                : 'text-gray-600 border-transparent hover:text-slate-600 hover:border-slate-300'
+                        ]">
+                        <LoadingIcon v-if="loadingTab === tab.key" class="h-4 w-4" />
+                        <FontAwesomeIcon v-else :icon="iconMap[tab.key] ?? FarDotCircle" fixed-width class="h-4 w-4" />
+                        <span>{{ tab.label }}</span>
+                    </button>
+                </nav>
 
-                    <!-- Desktop: Buttons -->
-                    <div class="hidden md:flex items-center gap-2">
-                        <Button v-for="tab in tabs.navigation" :key="tab.key + tabs.current"
-                            :type="tab.key === tabs.current ? 'primary' : 'secondary'" :label="tab.label"
-                            @click="changeTab(tab.key)" />
-                    </div>
-
-                    <!-- Mobile: Select Dropdown -->
-                    <div class="block md:hidden w-full">
-                        <select class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" :value="tabs.current"
-                            @change="changeTab($event.target.value)">
-                            <option v-for="tab in tabs.navigation" :key="tab.key" :value="tab.key">
-                                {{ tab.label }}
-                            </option>
-                        </select>
-                    </div>
-
+                <!-- Mobile: Select Dropdown -->
+                <div class="block md:hidden flex-1 py-2">
+                    <select class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" :value="tabs.current"
+                        @change="changeTab(($event.target as HTMLSelectElement).value)">
+                        <option v-for="tab in tabs.navigation" :key="tab.key" :value="tab.key">
+                            {{ tab.label }}
+                        </option>
+                    </select>
                 </div>
 
                 <!-- RIGHT SIDE -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1 pl-2">
                     <Button type="transparent" :disabled="!canBack" :icon="faArrowLeft" @click="goBack" />
                     <Button type="transparent" :disabled="!canNext" :icon="faArrowRight" @click="goNext" />
                     <Button type="transparent" :disabled="!canClear" :icon="faWindowClose" @click="clearScope" />
@@ -202,10 +234,10 @@ const onSelectParent = (parentType: string, parentId: any) => {
             <!-- Table -->
             <div class="p-3 iris-catalouge">
                 <component v-if="activeComponent" :is="activeComponent" :data="data" :tab="tabs.current"
-                    @select-department="id => onSelectParent('department', id)"
-                    @select-sub-department="id => onSelectParent('sub_department', id)"
-                    @select-family="id => onSelectParent('family', id)"
-                    @select-collection="id => onSelectParent('collection', id)" />
+                    @select-department="(id: any, code?: string, name?: string) => onSelectParent('department', id, code, name)"
+                    @select-sub-department="(id: any, code?: string, name?: string) => onSelectParent('sub_department', id, code, name)"
+                    @select-family="(id: any, code?: string, name?: string) => onSelectParent('family', id, code, name)"
+                    @select-collection="(id: any, code?: string, name?: string) => onSelectParent('collection', id, code, name)" />
             </div>
 
         </div>

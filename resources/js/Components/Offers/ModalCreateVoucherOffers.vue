@@ -71,7 +71,9 @@ const productFilters = ref<number | null>(null)
 const shopId = props.shop_data.id
 const shopSlug = props.shop_data.slug
 
-const categoryRoutes = {
+type CategoryTarget = 'department' | 'subdepartment' | 'family'
+
+const categoryRoutes: Record<CategoryTarget, { name: string; parameters: Record<string, unknown> }> = {
     department: {
         name: 'grp.json.shop.departments',
         parameters: { shop: shopSlug }
@@ -86,29 +88,31 @@ const categoryRoutes = {
     }
 }
 
-const activeCategoryRoute = computed(() => {
-    if (!target.value || !['department', 'subdepartment', 'family'].includes(target.value)) return null
-    return categoryRoutes[target.value as 'department' | 'subdepartment' | 'family']
-})
+const isCategoryTarget = (t: TargetType | null): t is CategoryTarget =>
+    t === 'department' || t === 'subdepartment' || t === 'family'
 
-const categoryTypeKey = computed(() => {
-    return target.value ?? 'empty'
-})
+const activeCategoryRoute = computed(() =>
+    isCategoryTarget(target.value) ? categoryRoutes[target.value] : null
+)
 
-const collectionRoute = computed(() => ({
+const collectionRoute = {
     name: 'grp.json.shop.catalogue.collections',
-    parameters: {
-        shop: shopSlug,
-        scope: shopSlug
-    }
-}))
+    parameters: { shop: shopSlug, scope: shopSlug }
+}
 
 const productFetchRoute = {
     name: 'grp.json.shop.products',
-    parameters: {
-        shop: shopSlug
-    }
+    parameters: { shop: shopSlug }
 }
+
+const targetOptions: { value: TargetType; label: string }[] = [
+    { value: 'shop', label: 'Shop' },
+    { value: 'department', label: 'Department' },
+    { value: 'subdepartment', label: 'Sub Department' },
+    { value: 'family', label: 'Family' },
+    { value: 'collection', label: 'Collection' },
+    { value: 'product', label: 'Product' },
+]
 
 const today = new Date(new Date().setHours(0, 0, 0, 0))
 
@@ -122,36 +126,31 @@ function formatDate(date: Date | null) {
     return `${year}-${month}-${day}`
 }
 
-const submitVoucherOffer = () => {
-    // Section: Submit
-    const targets: any[] = []
+const buildTargetPayload = () => {
+    const t = target.value
+    if (!t) return null
 
-    if (target.value === 'product' && productFilters.value) {
-        targets.push({
-            type: 'product',
-            id: productFilters.value,
-        })
-    } else if (
-        (target.value === 'department' || target.value === 'subdepartment' || target.value === 'family')
-        && categoryFilters.value
-    ) {
-        targets.push({
-            type: 'category',
-            category_type: target.value,
-            id: categoryFilters.value,
-        })
-    } else if (target.value === 'collection' && collectionFilters.value) {
-        targets.push({
-            type: 'collection',
-            id: collectionFilters.value,
-        })
-    } else if (target.value === 'shop' && shopId) {
-        targets.push({
-            type: 'shop',
-            id: shopId,
-        })
+    if (t === 'shop') {
+        return shopId ? { type: 'shop', id: shopId } : null
     }
-    
+    if (t === 'product') {
+        return productFilters.value ? { type: 'product', id: productFilters.value } : null
+    }
+    if (t === 'collection') {
+        return collectionFilters.value ? { type: 'collection', id: collectionFilters.value } : null
+    }
+    if (isCategoryTarget(t)) {
+        return categoryFilters.value
+            ? { type: t, id: categoryFilters.value }
+            : null
+    }
+    return null
+}
+
+const submitVoucherOffer = () => {
+    const targetPayload = buildTargetPayload()
+    const targets = targetPayload ? [targetPayload] : []
+
     const payload = {
         voucher: offerVoucher.value,
         name: offerLabel.value,
@@ -162,7 +161,8 @@ const submitVoucherOffer = () => {
         reuse_customer: reuseCustomer.value,
         discount_percentage: discountPercentage.value,
         targets: targets,
-    }    
+    }
+    
     router.post(
         route('grp.org.shops.show.discounts.campaigns.store_voucher', {
             organisation: props.shop_data.organisation,
@@ -206,13 +206,13 @@ const prevStep = () => {
     step.value = 1
 }
 
-watch(target, (val, old) => {
+watch(target, () => {
     categoryFilters.value = null
     collectionFilters.value = null
     productFilters.value = null
 })
 
-const resetForm = () => {
+function resetForm() {
     offerLabel.value = ''
     offerVoucher.value = ''
     startDate.value = null
@@ -236,28 +236,12 @@ const isStep1Invalid = computed(() => {
 })
 
 const isFormInvalid = computed(() => {
-    const fail = (r: string) => {
-        // console.log('[isFormInvalid] disabled because:', r, snapshot)
-        return true
-    }
+    if (isStep1Invalid.value) return true
 
-    if (isStep1Invalid.value) return fail('step1 invalid')
+    const pct = discountPercentage.value
+    if (pct === null || pct === undefined || pct <= 0 || pct > 100) return true
 
-    if (discountPercentage.value === null || discountPercentage.value === undefined) return fail('discountPercentage empty')
-    if (discountPercentage.value <= 0 || discountPercentage.value > 100) return fail('discountPercentage out of range')
-
-    if (!target.value) return fail('no target selected')
-
-    if (target.value === 'product' && !productFilters.value) return fail('product target but no product picked')
-    if (target.value === 'collection' && !collectionFilters.value) return fail('collection target but no collection picked')
-    if (
-        (target.value === 'department' || target.value === 'subdepartment' || target.value === 'family')
-        && !categoryFilters.value
-    ) {
-        return fail(`${target.value} target but no category picked`)
-    }
-    if (target.value === 'shop' && !shopId) return fail('shop target but no shopId')
-    return false
+    return buildTargetPayload() === null
 })
 </script>
 
@@ -385,37 +369,10 @@ const isFormInvalid = computed(() => {
                             </label>
 
                             <div class="flex flex-wrap gap-4">
-
-                                <div class="flex items-center gap-2">
-                                    <RadioButton v-model="target" value="shop" />
-                                    <label>{{ trans('Shop') }}</label>
+                                <div v-for="opt in targetOptions" :key="opt.value" class="flex items-center gap-2">
+                                    <RadioButton v-model="target" :value="opt.value" :inputId="`target-${opt.value}`" />
+                                    <label :for="`target-${opt.value}`">{{ trans(opt.label) }}</label>
                                 </div>
-
-                                <div class="flex items-center gap-2">
-                                    <RadioButton v-model="target" value="department" />
-                                    <label>{{ trans('Department') }}</label>
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <RadioButton v-model="target" value="subdepartment" />
-                                    <label>{{ trans('Sub Department') }}</label>
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <RadioButton v-model="target" value="family" />
-                                    <label>{{ trans('Family') }}</label>
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <RadioButton v-model="target" value="collection" />
-                                    <label>{{ trans('Collection') }}</label>
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <RadioButton v-model="target" value="product" />
-                                    <label>{{ trans('Product') }}</label>
-                                </div>
-
                             </div>
 
                         </div>
@@ -425,10 +382,8 @@ const isFormInvalid = computed(() => {
                             <label class="font-medium">
                                 {{ trans('Select Item') }}
                             </label>
-                            <!-- mode="multiple" -->
-                            <PureMultiselectInfiniteScroll :key="categoryTypeKey" v-model="categoryFilters"
-                                :fetchRoute="activeCategoryRoute" valueProp="id" labelProp="name"
-                                 />
+                            <PureMultiselectInfiniteScroll :key="target ?? 'none'" v-model="categoryFilters"
+                                :fetchRoute="activeCategoryRoute" valueProp="id" labelProp="name" />
 
                         </div>
 

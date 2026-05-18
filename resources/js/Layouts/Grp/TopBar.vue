@@ -232,9 +232,9 @@ const label = {
                     </Menu>
                 </div>
 
-                <div class="flex items-center justify-between pr-6 gap-x-3 flex-1 min-w-0 border-b border-gray-200">
+                <div class="flex items-center justify-between isolate xpr-6 gap-x-3 flex-1 min-w-0 border-b border-gray-200">
                     <!-- Section: Dropdown + subsections -->
-                    <div class="flex items-center gap-x-2 pl-2 overflow-x-auto flex-1 min-w-0">
+                    <div class="flex items-center gap-x-2 pl-2 xoverflow-x-auto flex-1 min-w-0">
                         <!-- Section: Dropdown -->
                         <div
                             v-if="
