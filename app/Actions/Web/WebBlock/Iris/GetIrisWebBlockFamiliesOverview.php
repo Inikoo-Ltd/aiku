@@ -7,7 +7,7 @@
  * copyright 2026
 */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -19,8 +19,9 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
+use Illuminate\Support\Arr;
 
-class GetWebBlockFamiliesOverview
+class GetIrisWebBlockFamiliesOverview
 {
     use AsObject;
 
@@ -32,8 +33,8 @@ class GetWebBlockFamiliesOverview
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', 'ProductCategory');
                 })
-                ->select(['product_categories.code', 'product_categories.web_images','product_categories.offers_data', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
-                ->selectRaw('\''.request()->path().'\' as parent_url')
+                ->select(['product_categories.code', 'product_categories.web_images', 'product_categories.offers_data', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->selectRaw('\'' . request()->path() . '\' as parent_url')
                 ->where(function ($query) use ($webpage) {
                     if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
                         $query->where('product_categories.department_id', $webpage->model_id)
@@ -69,8 +70,8 @@ class GetWebBlockFamiliesOverview
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
-                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images','product_categories.offers_data', 'webpages.url', 'webpages.url', 'webpages.canonical_url', 'title'])
-                ->selectRaw('\''.request()->path().'\' as parent_url')
+                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->selectRaw('\'' . request()->path() . '\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
@@ -83,19 +84,13 @@ class GetWebBlockFamiliesOverview
         }
 
         $productRoute = [
-            'workshop' => [
-                'name'       => 'grp.json.product_category.products.index',
-                'parameters' => [$webpage->model->slug],
-            ],
             'iris'     => [
                 'name'       => 'iris.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
             ],
         ];
 
-        $permissions = [];
 
-        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['families_overview']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_slug', $webpage->slug);
@@ -106,7 +101,13 @@ class GetWebBlockFamiliesOverview
         ]);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
 
-        return $webBlock;
+        return [
+            'type' => $webBlock['type'],
+            'structure' => Arr::get(
+                $webBlock,
+                'web_block.layout.data.fieldValue',
+                []
+            ),
+        ];
     }
-
 }
