@@ -266,7 +266,7 @@ watch(
 </script>
 
 <template>
-    <div class="space-y-4">
+    <div class="space-y-4 ">
         <div
             class="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4 lg:flex-row lg:items-center lg:justify-between"
         >
@@ -285,7 +285,7 @@ watch(
             </div>
 
             <div
-                class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3"
+                class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 rating"
             >
                 <div>
                     <div
@@ -312,7 +312,7 @@ watch(
                 <div
                     v-for="item in activeRatings"
                     :key="item.dimension"
-                    class="flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 transition-all duration-200 hover:border-gray-200 hover:bg-white sm:flex-row sm:items-center sm:justify-between"
+                    class=" rating flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 transition-all duration-200 hover:border-gray-200 hover:bg-white sm:flex-row sm:items-center sm:justify-between"
                 >
                     <div class="flex items-center gap-3">
                         <div
@@ -451,3 +451,9 @@ watch(
         </div>
     </div>
 </template>
+
+<style scoped>
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+    color: #f59e0b !important;
+}
+</style>

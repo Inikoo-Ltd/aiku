@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import Rating from "primevue/rating"
+import Textarea from "primevue/textarea"
+import Button from "primevue/button"
+
 import type { Image as ImageProxy } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
+import axios from "axios"
 
 interface SchemaItem {
     dimension: string
@@ -10,6 +15,7 @@ interface SchemaItem {
     is_required?: boolean
     weight?: number
 }
+
 
 type SchemaPayload =
     | SchemaItem[]
@@ -20,8 +26,10 @@ type SchemaPayload =
       }
 
 const props = defineProps<{
-    type: string
     schema: SchemaPayload
+    replier_type: string
+    reviewable_type : string
+    reviewable_id:number
     modelValue: {
         status?: "pending" | "approved" | "rejected" | null
         rating?: number | null
@@ -31,10 +39,17 @@ const props = defineProps<{
         rating_d?: number | null
         rating_e?: number | null
         message?: string | null
+        reply?: string | null
         image_thumbnail?: ImageProxy | string | null
         images?: File[] | null
     }
 }>()
+
+const emit = defineEmits<{
+    (e: "reply", value: string): void
+}>()
+const loadingSave = ref(false)
+const storeReply = ref("")
 
 const ratingKeyMap = {
     a: "rating_a",
@@ -48,7 +63,9 @@ const normalizedSchema = computed<SchemaItem[]>(() => {
     const items = Array.isArray(props.schema)
         ? props.schema
         : [
-              ...(props.schema ?? []),
+              ...(props.schema?.shop_reviews ?? []),
+              ...(props.schema?.product_reviews ?? []),
+              ...(props.schema?.product_category_reviews ?? []),
           ]
 
     return items.filter(
@@ -92,49 +109,86 @@ const averageRating = computed(() => {
     if (!values.length) return null
 
     const total = values.reduce((a, b) => a + b, 0)
+
     return Number((total / values.length).toFixed(1))
 })
 
-const formatSize = (bytes: number) => {
-    if (!bytes) return "0 B"
-    const k = 1024
-    const sizes = ["B", "KB", "MB", "GB"]
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+const postReply = async() => {
+     try {
+        loadingSave.value = true
+        await axios({
+            method: "post",
+            url: route('grp.models.review.reply.store'),
+            data: {
+                reviewable_type : props.reviewable_type,
+                reviewable_id : props.reviewable_id,
+                replier_type : props.replier_type,
+                body : storeReply.value
+            },
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        })
+        notify({
+            title: "Success",
+            text: "Review submitted successfully",
+            type: "success",
+        })
+    } catch (errors) {
+        console.error(errors)
+        notify({
+            title: "Error",
+            text: "Failed to submit review",
+            type: "error",
+        })
+    } finally {
+        loadingSave.value = false
+    }
 }
 </script>
 
 <template>
     <div class="space-y-4">
         <!-- Header -->
-        <div class="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div
+            class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3 lg:flex-row lg:items-center lg:justify-between"
+        >
             <div>
-                <h2 class="text-lg font-semibold text-gray-900">
+                <h2 class="text-base font-semibold text-gray-900">
                     {{ trans("Review") }}
                 </h2>
+
                 <p class="text-sm text-gray-500">
                     {{ trans("Customer feedback detail") }}
                 </p>
             </div>
 
-            <div class="flex items-center gap-3 rounded-xl border bg-white px-4 py-3">
-                <div class="text-2xl font-bold text-gray-900">
+            <div
+                class="rating flex items-center gap-3 rounded-xl border bg-white px-3 py-2"
+            >
+                <div class="text-xl font-bold text-gray-900 ">
                     {{ averageRating ?? "0.0" }}
                 </div>
 
-                <Rating :modelValue="averageRating || 0" readonly :cancel="false" />
+                <Rating
+                    :modelValue="averageRating || 0"
+                    readonly
+                    :cancel="false"
+                />
             </div>
         </div>
 
         <!-- Ratings -->
-        <div class="space-y-3">
+        <div class="rating grid gap-3 md:grid-cols-2">
             <div
                 v-for="item in activeRatings"
                 :key="item.dimension"
-                class="flex items-center justify-between rounded-xl border bg-white p-3"
+                class="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3"
             >
-                <div class="flex items-center gap-3">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-white">
+                <div class="flex items-center gap-3 rating">
+                    <div
+                        class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-sm font-semibold uppercase text-white"
+                    >
                         {{ item.dimension }}
                     </div>
 
@@ -142,7 +196,8 @@ const formatSize = (bytes: number) => {
                         <div class="text-sm font-medium text-gray-800">
                             {{ item.label }}
                         </div>
-                        <div v-if="item.required" class="text-xs text-red-500">
+
+                        <div v-if="item.required" class="text-[11px] text-red-500">
                             {{ trans("Required") }}
                         </div>
                     </div>
@@ -156,31 +211,115 @@ const formatSize = (bytes: number) => {
             </div>
         </div>
 
-        <!-- Message -->
-        <div class="space-y-2">
-            <div class="text-sm font-medium text-gray-800">
-                {{ trans("Review") }}
+        <!-- Customer Comment -->
+        <div class="space-y-3">
+            <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold uppercase text-white"
+                        >
+                            C
+                        </div>
+
+                        <div>
+                            <div class="text-sm font-semibold text-gray-900">
+                                {{ trans("Customer") }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {{ trans("Posted Review") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-xs font-medium text-gray-500">
+                        {{ averageRating ? averageRating + ' / 5' : 'No rating' }}
+                    </div>
+                </div>
+
+                <div
+                    class="mt-3 text-sm leading-relaxed whitespace-pre-line text-gray-700"
+                >
+                    {{ props.modelValue.message || "-" }}
+                </div>
             </div>
 
-            <div class="rounded-xl border bg-white p-3 text-sm text-gray-700">
-                {{ props.modelValue.message || "-" }}
+            <div v-if="props.modelValue.reply" class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-xs font-semibold uppercase text-white"
+                        >
+                            S
+                        </div>
+
+                        <div>
+                            <div class="text-sm font-semibold text-gray-900">
+                                {{ trans("Store") }}
+                            </div>
+                            <div class="text-xs text-orange-600">
+                                {{ trans("Official Reply") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700">
+                        {{ trans("Reply") }}
+                    </div>
+                </div>
+
+                <div
+                    class="mt-3 text-sm leading-relaxed whitespace-pre-line text-gray-700"
+                >
+                    {{ props.modelValue.reply }}
+                </div>
+            </div>
+
+            <div v-else class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-3">
+                <div class="mb-2 text-sm font-medium text-gray-800">
+                    {{ trans("Reply as Shop") }}
+                </div>
+
+                <Textarea
+                    v-model="storeReply"
+                    rows="4"
+                    autoResize
+                    class="w-full"
+                    :placeholder="trans('Write a professional reply...')"
+                />
+
+                <div class="mt-3 flex justify-end">
+                    <Button
+                        :label="trans('Send Reply')"
+                        size="small"
+                        @click="()=>postReply()"
+                    />
+                </div>
             </div>
         </div>
 
-        <!-- Images (view only) -->
-        <!-- <div v-if="props.modelValue.image_thumbnail" class="space-y-2">
+        <!-- Images -->
+        <!--
+        <div v-if="props.modelValue.image_thumbnail" class="space-y-2">
             <div class="text-sm font-medium text-gray-800">
                 {{ trans("Images") }}
             </div>
 
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <img
                     v-for="(img, i) in (props.modelValue.image_thumbnail as any[])"
                     :key="i"
                     :src="img"
-                    class="h-20 w-20 rounded object-cover border"
+                    class="h-20 w-20 rounded-xl border object-cover"
                 />
             </div>
-        </div> -->
+        </div>
+        -->
     </div>
 </template>
+
+<style scoped>
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+    color: #f59e0b !important;
+}
+</style>
