@@ -201,7 +201,9 @@ task(
             run('sleep 2');
             run('cd {{release_path}} && pwd && ./restart_varnish.sh');
             if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+                run('sleep 2');
                 artisan('crawl -d 2 --deployment --seeder', ['skipIfNoEnv', 'showOutput'])();
+                run('sleep 3');
                 artisan('crawl -d 3 --deployment', ['skipIfNoEnv', 'showOutput'])();
             }
         } else {
