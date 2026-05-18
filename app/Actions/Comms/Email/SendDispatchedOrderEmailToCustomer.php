@@ -204,7 +204,13 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                     }
                 }
             } elseif (!empty($shipment['tracking'])) {
-                $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': ' . $shipment['tracking'] . '</span></div>';
+                $shipperUrl = $shipment['shipper_url'] ?? null;
+                if ($shipperUrl) {
+                    $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': </span>';
+                    $html .= '<a href="' . $shipperUrl . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $shipment['tracking'] . '</span></a></div>';
+                } else {
+                    $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': ' . $shipment['tracking'] . '</span></div>';
+                }
             }
         }
 
