@@ -40,7 +40,7 @@ class GetUserOrganisationLayout
                     $organisation->slug
                 ]
             ],
-            'primary_warehouse_slug' => $primaryWarehouse?->slug,
+            // 'primary_warehouse_slug' => $primaryWarehouse?->slug,
             'authorised_shops'       => $this->getShops($user, $organisation),
             'authorised_fulfilments' => $this->getFulfilments($user, $organisation),
             'authorised_warehouses'  => $this->getAuthorisedWarehouses($user, $organisation),
