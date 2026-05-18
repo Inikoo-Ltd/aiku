@@ -38,10 +38,8 @@ const endDate = ref(null)
 const submitShopOffer = () => {
     // Section: Submit1
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_shop', {
-            organisation: props.shop_data.organisation,
-            shop: props.shop_data.slug,
-            offerCampaign: props.shop_data.offercampaign,
+        route('grp.models.shop_offer.store', {
+            shop: props.shop_data.id,
         }),
         {
             name: offerLabel.value,

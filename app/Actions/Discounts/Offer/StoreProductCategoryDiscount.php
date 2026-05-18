@@ -10,8 +10,6 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
@@ -32,9 +30,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategoryDiscount extends OrgAction
 {
-    use WithNoStrictRules;
-    use WithStoreOffer;
-
     /**
      * @throws \Throwable
      */
@@ -53,7 +48,7 @@ class StoreProductCategoryDiscount extends OrgAction
 
         $type = Arr::pull($modelData, 'type');
 
-        if ($type == 'quantity' && $itemQuantity <= 0) {
+        if ($type == 'quantity' && $itemQuantity <= 1) {
             $type = 'any';
         }
         if ($type == 'amount' && $itemAmount <= 0) {
@@ -131,7 +126,7 @@ class StoreProductCategoryDiscount extends OrgAction
         return $offer;
     }
 
-    private function getProductCategoryOfferType(ProductCategory $productCategory, bool $type): OfferTypeEnum
+    private function getProductCategoryOfferType(ProductCategory $productCategory, string $type): OfferTypeEnum
     {
         if ($type == 'quantity') {
             return match ($productCategory->type) {
@@ -139,22 +134,19 @@ class StoreProductCategoryDiscount extends OrgAction
                 ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_QUANTITY_ORDERED,
                 default => OfferTypeEnum::CATEGORY_QUANTITY_ORDERED,
             };
-        }
-
-        if ($type == 'amount') {
+        } elseif ($type == 'amount') {
             return match ($productCategory->type) {
                 ProductCategoryTypeEnum::DEPARTMENT => OfferTypeEnum::DEPARTMENT_AMOUNT_ORDERED,
                 ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_AMOUNT_ORDERED,
                 default => OfferTypeEnum::CATEGORY_AMOUNT_ORDERED,
             };
+        } else {
+            return match ($productCategory->type) {
+                ProductCategoryTypeEnum::DEPARTMENT => OfferTypeEnum::DEPARTMENT_ORDERED,
+                ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_ORDERED,
+                default => OfferTypeEnum::CATEGORY_ORDERED,
+            };
         }
-
-
-        return match ($productCategory->type) {
-            ProductCategoryTypeEnum::DEPARTMENT => OfferTypeEnum::DEPARTMENT_ORDERED,
-            ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferTypeEnum::SUB_DEPARTMENT_ORDERED,
-            default => OfferTypeEnum::CATEGORY_ORDERED,
-        };
     }
 
     public function rules(): array
