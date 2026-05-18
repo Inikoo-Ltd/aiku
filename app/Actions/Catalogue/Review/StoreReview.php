@@ -29,7 +29,7 @@ class StoreReview
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $nullableKeys = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
+        $nullableKeys = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e', 'customer_id'];
 
         $updates = [];
         foreach ($nullableKeys as $key) {
@@ -152,7 +152,7 @@ class StoreReview
         return [
             'reviewable_type' => ['required', Rule::in(['Product', 'ProductCategory', 'Shop', 'product_reviews', 'product_category_reviews', 'shop_reviews'])],
             'reviewable_id' => ['required', 'integer', 'min:1'],
-            'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'customer_id' => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
             'status' => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
             'rating' => ['required', 'numeric', 'min:1', 'max:5'],
             'rating_a' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
