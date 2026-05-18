@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { usePage } from "@inertiajs/vue3"
+import { Link, usePage } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { routeType } from "@/types/route"
@@ -61,14 +61,17 @@ const parentInfo = computed(() => {
         <span class="text-sm text-gray-500" v-if="parentInfo.name">— {{ parentInfo.name }}</span>
     </div>
     <Table :resource="data" :name="tab">
-           <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="$emit('select-family', department.id, department.code, department.name)">
+        <template #cell(code)="{ item: department }">
+            <Link
+                :href="route('iris.catalogue.family.show', { family: department.slug })"
+                class="primaryLink"
+            >
                 {{ department.code }}
-            </span>
+            </Link>
         </template>
          <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="item.image_thumbnail ?? item.image ?? item.web_images?.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
         <template #cell(current_products)="{ item: family }">

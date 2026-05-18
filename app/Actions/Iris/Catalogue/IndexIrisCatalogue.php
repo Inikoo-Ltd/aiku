@@ -281,11 +281,11 @@ class IndexIrisCatalogue extends IrisAction
         };
     }
 
-    public function action(array $modelData, ActionRequest $request): LengthAwarePaginator
+    public function action(array $modelData, ActionRequest $request, ?string $prefix = null): LengthAwarePaginator
     {
         $this->asAction = true;
         $this->initialisation($request);
 
-        return $this->handle($modelData);
+        return $this->handle($modelData, $prefix);
     }
 }

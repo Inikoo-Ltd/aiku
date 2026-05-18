@@ -52,13 +52,16 @@ const parentInfo = computed(() => {
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="item.image_thumbnail ?? item.image ?? item.web_images?.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
          <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="$emit('select-collection', department.id, department.code, department.name)">
+            <Link
+                :href="route('iris.catalogue.collection.show', { collection: department.slug })"
+                class="primaryLink"
+            >
                 {{ department.code }}
-            </span>
+            </Link>
         </template>
         <template #cell(state)="{ item: product }">  
             <Tag :label="product.state.label" v-tooltip="product.state.label">

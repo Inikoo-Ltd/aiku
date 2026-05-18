@@ -52,7 +52,7 @@ const parentInfo = computed(() => {
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="item.image_thumbnail ?? item.image ?? item.web_images?.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
         <template #cell(state)="{ item: product }">  
@@ -87,10 +87,13 @@ const parentInfo = computed(() => {
            </a>
         </template>
 
-        <template #cell(code)="{ item: department }">
-            <a :href="department.canonical_url" class="primaryLink" @click="$emit('select-family', department.id)">
-                {{ department.code }}
-            </a>
+        <template #cell(code)="{ item: product }">
+            <Link
+                :href="route('iris.catalogue.product.show', { product: product.slug })"
+                class="primaryLink"
+            >
+                {{ product.code }}
+            </Link>
         </template>
     </Table>
 </template>

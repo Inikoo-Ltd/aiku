@@ -1,9 +1,3 @@
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Wed, 08 May 2024 23:30:18 British Summer Time, Sheffield, UK
-  - Copyright (c) 2024, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
@@ -11,7 +5,6 @@ import Icon from "@/Components/Icon.vue";
 import { faSeedling } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Tag from "@/Components/Tag.vue";
-import { Department } from "@/types/department";
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
@@ -22,19 +15,13 @@ defineProps<{
     data: {}
     tab?: string
 }>();
-
-
-const emit = defineEmits<{
-    (e: 'select-department', id: any, code?: string, name?: string): void
-}>()
-
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-       <template #cell(image)="{ item: item }">
+        <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="item.web_images?.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
         <template #cell(state)="{ item: department }">
@@ -46,9 +33,12 @@ const emit = defineEmits<{
             </Tag>
         </template>
         <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="emit('select-department', department.id, department.code, department.name)">
+            <Link
+                :href="route('iris.catalogue.department.show', { department: department.slug })"
+                class="primaryLink"
+            >
                 {{ department.code }}
-            </span>
+            </Link>
         </template>
         <template #cell(number_current_families)="{ item: department }">
             {{ department["number_current_families"] }}
@@ -63,10 +53,10 @@ const emit = defineEmits<{
             {{ department["number_current_products"] }}
         </template>
 
-         <template #cell(url)="{ item: department }">
-           <a :href="`/${department.code}`"> 
+        <template #cell(url)="{ item: department }">
+            <a :href="`/${department.code}`">
                 <FontAwesomeIcon :icon="faExternalLink" />
-           </a>
+            </a>
         </template>
     </Table>
 </template>

@@ -8,8 +8,6 @@
 import { computed } from "vue"
 import { usePage } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import Icon from "@/Components/Icon.vue"
-import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3";
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -51,13 +49,16 @@ const parentInfo = computed(() => {
     </div>
     <Table :resource="data" :name="tab" class="mt-5">
          <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="$emit('select-sub-department', department.id, department.code, department.name)">
+            <Link
+                :href="route('iris.catalogue.sub_department.show', { subDepartment: department.slug })"
+                class="primaryLink"
+            >
                 {{ department.code }}
-            </span>
+            </Link>
         </template>
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="item.image_thumbnail ?? item.image ?? item.web_images?.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
           <template #cell(department_code)="{ item }">

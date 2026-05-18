@@ -25,6 +25,7 @@ class ShowIrisCatalogue extends IrisAction
     public function htmlResponse(LengthAwarePaginator $irisCatalogue, ActionRequest $request): Response
     {
         $response = Inertia::render('Catalogue', [
+            'catalogue_scope' => $this->validatedData['scope'],
             'tabs' => [
                 'current' => $this->validatedData['scope'],
                 'navigation' => $this->getTabNavigation($request->query('parent', null)),
