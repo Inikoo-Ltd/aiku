@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 28-04-2026-13h-56m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -18,7 +18,6 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
-use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
@@ -341,7 +340,6 @@ class ShowReturnDeliveryNote extends OrgAction
 
         $actions = $this->getActions($returnDeliveryNote, $request);
 
-        $warning = null;
 
         $model = __('Return');
 
