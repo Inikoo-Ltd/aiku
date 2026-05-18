@@ -41,7 +41,7 @@ class UpsertGoldRewardFromMasterProductCategory extends GrpAction
                     $productCategory,
                     [
                             'trigger_data_item_quantity' => $masterProductCategory->gr_vol_discount_quantity,
-                            'percentage_off'             => $masterProductCategory->gr_vol_discount_percentage,
+                            'percentage_off'             => (float) ($masterProductCategory->gr_vol_discount_percentage / 100),
                             'interval'                   => 30
                         ]
                 );
