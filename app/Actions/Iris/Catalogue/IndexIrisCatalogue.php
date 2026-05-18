@@ -98,9 +98,11 @@ class IndexIrisCatalogue extends IrisAction
             'department'        =>  $queryBuilder->addSelect([
                 'product_category_stats.number_current_sub_departments',
                 'product_category_stats.number_current_families',
+                'product_category_stats.number_current_collections',
             ]),
             'sub_department'    =>  $queryBuilder->addSelect([
                 'product_category_stats.number_current_families',
+                'product_category_stats.number_current_collections',
                 'department.code as department_code',
                 'department.name as department_name',
             ]),
@@ -201,10 +203,14 @@ class IndexIrisCatalogue extends IrisAction
             'department' => [
                 'number_current_families',
                 'number_current_sub_departments',
+                'number_current_collections',
                 'number_current_products',
             ],
-            'collection',
             'sub_department' => [
+                'number_current_families',
+                'number_current_collections',
+            ],
+            'collection' => [
                 'number_current_families',
                 'number_current_products',
             ],
@@ -260,11 +266,12 @@ class IndexIrisCatalogue extends IrisAction
                 'department' => [
                     ['key' => 'number_current_sub_departments', 'label' => __('Sub-departments'), 'sortable' => true],
                     ['key' => 'number_current_families', 'label' => __('Families'), 'sortable' => true],
+                    ['key' => 'number_current_collections', 'label' => __('Collections'), 'sortable' => true],
                     ['key' => 'number_current_products', 'label' => __('Products'), 'sortable' => true],
                 ],
                 'sub_department' => [
                     ['key' => 'number_current_families', 'label' => __('Families'), 'sortable' => true],
-                    ['key' => 'number_current_products', 'label' => __('Products'), 'sortable' => true],
+                    ['key' => 'number_current_collections', 'label' => __('Collections'), 'sortable' => true],
                 ],
                 'family'      => [
                     ['key' => 'number_current_products', 'label' => __('Products'), 'sortable' => true],
@@ -277,15 +284,15 @@ class IndexIrisCatalogue extends IrisAction
                 $table->column(key: $column['key'], label: $column['label'], tooltip: __('current :colLabel', ['colLabel' => strtolower($column['label'])]), sortable: $column['sortable']);
             }
 
-            $table->column(key: 'url', label: __('Go To Url'), align: 'right');
+            // $table->column(key: 'url', label: __('Go To Url'), align: 'right');
         };
     }
 
-    public function action(array $modelData, ActionRequest $request, ?string $prefix = null): LengthAwarePaginator
+    public function action(array $modelData, ActionRequest $request): LengthAwarePaginator
     {
         $this->asAction = true;
         $this->initialisation($request);
 
-        return $this->handle($modelData, $prefix);
+        return $this->handle($modelData);
     }
 }

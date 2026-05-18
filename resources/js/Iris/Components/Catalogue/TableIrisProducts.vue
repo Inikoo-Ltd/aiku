@@ -7,7 +7,9 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { usePage } from "@inertiajs/vue3"
-import Table from "@/Components/Table/Table.vue"
+import Table from "../Tables/Table.vue"
+import Icon from "@/Components/Icon.vue"
+import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3";
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -39,6 +41,7 @@ const parentInfo = computed(() => {
         name: params.get('parent_name') ?? '',
     }
 })
+console.log("products", props.data)
 </script>
 
 <template>
@@ -48,38 +51,50 @@ const parentInfo = computed(() => {
         <span class="text-sm text-gray-500" v-if="parentInfo.name">— {{ parentInfo.name }}</span>
     </div>
     <Table :resource="data" :name="tab" class="mt-5">
-         <template #cell(code)="{ item: department }">
-            <Link
-                :href="route('iris.catalogue.sub_department.show', { subDepartment: department.slug })"
-                class="primaryLink"
-            >
-                {{ department.code }}
-            </Link>
-        </template>
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.image_thumbnail ?? item.image ?? item.web_images?.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image
+                    :src="item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="w-6 aspect-square rounded-full overflow-hidden shadow"
+                />
             </div>
         </template>
-          <template #cell(department_code)="{ item }">
-           <!--  <span class="text-gray-500 mr-1 text-xs">
-                <Tag :label="item.department_code" v-tooltip="item.department_code">
-                    <template #label>
-                        {{ item.department_code }}
-                    </template>
-                </Tag>
-            </span> -->
+        <template #cell(state)="{ item: product }">  
+            <Tag :label="product.state.label" v-tooltip="product.state.label">
+                <template #label>
+                    <Icon :data="product.state" /> <span :class="product.state.class">{{ product.state.label }}</span>
+                </template>
+            </Tag>
+        </template>
+
+        <template #cell(department_code)="{ item }">
             <span class="font-medium">
                 {{ item.department_name }}
             </span>
         </template>
 
-           <template #cell(url)="{ item }">
-           <a :href="`/${item.code}`"> 
+        <template #cell(sub_department)="{ item }">
+            <span class="font-medium">
+                {{ item.sub_department_name }}
+            </span>
+        </template>
+
+         <template #cell(family)="{ item }">
+            <span class="font-medium">
+                {{ item.family_name }}
+            </span>
+        </template>
+
+          <template #cell(url)="{ item }">
+           <a :href="item.canonical_url"> 
                 <FontAwesomeIcon :icon="faExternalLink" />
            </a>
         </template>
 
-
+        <template #cell(code)="{ item: item }">
+            <a :href="item.canonical_url ?? item.iris_url" class="primaryLink"> 
+                {{ item.code }}          
+            </a>
+        </template>
     </Table>
 </template>

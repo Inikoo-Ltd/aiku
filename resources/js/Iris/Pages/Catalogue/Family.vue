@@ -12,10 +12,8 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 
 import IrisLayout from '@/Layouts/Iris.vue'
 import CatalogueLayout from '@/Iris/Layouts/CatalogueLayout.vue'
-
-import TableIrisProducts from '@/Iris/Components/Tables/TableIrisProducts.vue'
-
-import CatalogueOverview from '@/Iris/Components/CatalogueOverview.vue'
+import TableIrisProducts from '@/Iris/Components/Catalogue/TableIrisProducts.vue'
+import CatalogueOverview from '@/Iris/Components/Catalogue/CatalogueOverview.vue'
 
 library.add(faCube, faFolder, faTachometerAltFast)
 
@@ -73,14 +71,8 @@ const componentProps = computed(() => {
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
     <div class="px-4 py-4">
-        <CatalogueOverview
-            v-if="currentTab === 'overview'"
-            :entity="data.family"
-            :data-feed-url="data.data_feed_url"
-        />
-
         <component
-            v-else-if="component"
+            v-if="component"
             :is="component"
             v-bind="componentProps"
         />

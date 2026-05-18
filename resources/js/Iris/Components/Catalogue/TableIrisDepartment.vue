@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
-import Table from "@/Components/Table/Table.vue";
+import Table from "../Tables/Table.vue";
 import Icon from "@/Components/Icon.vue";
 import { faSeedling } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -11,7 +11,7 @@ import { faExternalLink } from "@far";
 
 library.add(faSeedling);
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
 }>();
@@ -21,7 +21,10 @@ defineProps<{
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.web_images?.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image
+                    :src="item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="w-6 aspect-square rounded-full overflow-hidden shadow"
+                />
             </div>
         </template>
         <template #cell(state)="{ item: department }">
@@ -35,7 +38,7 @@ defineProps<{
         <template #cell(code)="{ item: department }">
             <Link
                 :href="route('iris.catalogue.department.show', { department: department.slug })"
-                class="primaryLink"
+                class="primaryLink inline-block"
             >
                 {{ department.code }}
             </Link>
@@ -51,12 +54,6 @@ defineProps<{
         </template>
         <template #cell(number_current_products)="{ item: department }">
             {{ department["number_current_products"] }}
-        </template>
-
-        <template #cell(url)="{ item: department }">
-            <a :href="`/${department.code}`">
-                <FontAwesomeIcon :icon="faExternalLink" />
-            </a>
         </template>
     </Table>
 </template>

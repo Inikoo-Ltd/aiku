@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -11,6 +11,7 @@ import {
     faDotCircle as FarDotCircle,
     faBooks,
 } from '@far'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 library.add(faFolderTree, faFolder, faCube, faAlbumCollection, FarDotCircle, faBooks)
 
@@ -29,6 +30,8 @@ const tabs: ScopeTab[] = [
 ]
 
 const page = usePage()
+
+const isLoading = ref<string | boolean>(false)
 
 const activeScope = computed<string>(() => {
     const scope = page.props.catalogue_scope as string | undefined
@@ -51,8 +54,11 @@ const activeScope = computed<string>(() => {
                             ? 'text-slate-600 border-slate-500'
                             : 'text-gray-600 border-transparent hover:text-slate-600 hover:border-slate-300'
                     ]"
+                    @start="() => (isLoading = tab.key)"
+                    @finish="() => (isLoading = false)"
                 >
-                    <FontAwesomeIcon :icon="tab.icon" fixed-width class="h-4 w-4" />
+                    <LoadingIcon v-if="isLoading === tab.key" class="h-4 w-4 text-slate-600" />
+                    <FontAwesomeIcon v-else :icon="tab.icon" fixed-width class="h-4 w-4" />
                     <span>{{ tab.label }}</span>
                 </Link>
             </nav>

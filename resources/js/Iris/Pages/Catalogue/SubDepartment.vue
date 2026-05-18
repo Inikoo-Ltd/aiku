@@ -13,10 +13,10 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import IrisLayout from '@/Layouts/Iris.vue'
 import CatalogueLayout from '@/Iris/Layouts/CatalogueLayout.vue'
 
-import TableIrisFamilies from '@/Iris/Components/Tables/TableIrisFamilies.vue'
-import TableIrisProducts from '@/Iris/Components/Tables/TableIrisProducts.vue'
-import TableIrisCollection from '@/Iris/Components/Tables/TableIrisCollection.vue'
-import CatalogueOverview from '@/Iris/Components/CatalogueOverview.vue'
+import TableIrisFamilies from '@/Iris/Components/Catalogue/TableIrisFamilies.vue'
+import TableIrisProducts from '@/Iris/Components/Catalogue/TableIrisProducts.vue'
+import TableIrisCollection from '@/Iris/Components/Catalogue/TableIrisCollection.vue'
+import CatalogueOverview from '@/Iris/Components/Catalogue/CatalogueOverview.vue'
 
 library.add(faCube, faFolder, faDotCircle, faAlbumCollection, faTachometerAltFast)
 

@@ -5,11 +5,11 @@ import type { Component } from 'vue'
 import IrisLayout from '@/Layouts/Iris.vue'
 import CatalogueLayout from '@/Iris/Layouts/CatalogueLayout.vue'
 
-import TableIrisDepartment from '../Components/Tables/TableIrisDepartment.vue'
-import TableIrisSubDepartment from '../Components/Tables/TableIrisSubDepartment.vue'
-import TableIrisFamilies from '../Components/Tables/TableIrisFamilies.vue'
-import TableIrisProducts from '../Components/Tables/TableIrisProducts.vue'
-import TableIrisCollection from '../Components/Tables/TableIrisCollection.vue'
+import TableIrisDepartment from '../Components/Catalogue/TableIrisDepartment.vue'
+import TableIrisSubDepartment from '../Components/Catalogue/TableIrisSubDepartment.vue'
+import TableIrisFamilies from '../Components/Catalogue/TableIrisFamilies.vue'
+import TableIrisProducts from '../Components/Catalogue/TableIrisProducts.vue'
+import TableIrisCollection from '../Components/Catalogue/TableIrisCollection.vue'
 
 defineOptions({ layout: [IrisLayout, CatalogueLayout] })
 

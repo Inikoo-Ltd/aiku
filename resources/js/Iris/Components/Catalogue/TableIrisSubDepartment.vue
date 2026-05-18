@@ -6,29 +6,16 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { Link, usePage } from "@inertiajs/vue3"
-import Table from "@/Components/Table/Table.vue"
-import Icon from "@/Components/Icon.vue"
-import { routeType } from "@/types/route"
-import { library } from "@fortawesome/fontawesome-svg-core";
-
-import { faYinYang, faDotCircle, faCheck,} from "@fal";
+import { usePage } from "@inertiajs/vue3"
+import Table from "../Tables/Table.vue";
+import { Link } from "@inertiajs/vue3";
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 
-
-library.add(faCheck,faYinYang, faDotCircle)
-
 const props = defineProps<{
     data: any
     tab?: string,
-    routes: {
-        dataList: routeType
-        submitAttach: routeType
-        detach: routeType
-    }
-    isCheckBox?: boolean
 }>()
 
 const page = usePage()
@@ -60,40 +47,49 @@ const parentInfo = computed(() => {
         <span class="text-sm font-medium text-gray-800" v-if="parentInfo.code">{{ parentInfo.code }}</span>
         <span class="text-sm text-gray-500" v-if="parentInfo.name">— {{ parentInfo.name }}</span>
     </div>
-    <Table :resource="data" :name="tab">
-        <template #cell(code)="{ item: department }">
+    <Table :resource="data" :name="tab" class="mt-5">
+         <template #cell(code)="{ item: department }">
             <Link
-                :href="route('iris.catalogue.family.show', { family: department.slug })"
+                :href="route('iris.catalogue.sub_department.show', { subDepartment: department.slug })"
                 class="primaryLink"
             >
                 {{ department.code }}
             </Link>
         </template>
-         <template #cell(image)="{ item: item }">
+        <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.image_thumbnail ?? item.image ?? item.web_images?.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image
+                    :src="item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="w-6 aspect-square rounded-full overflow-hidden shadow"
+                />
             </div>
         </template>
-        <template #cell(current_products)="{ item: family }">
-            {{ family["current_products"] }}
-        </template>
-        <!-- Column: Department name -->
-        <template #cell(department_code)="{ item }">
+          <template #cell(department_code)="{ item }">
+           <!--  <span class="text-gray-500 mr-1 text-xs">
+                <Tag :label="item.department_code" v-tooltip="item.department_code">
+                    <template #label>
+                        {{ item.department_code }}
+                    </template>
+                </Tag>
+            </span> -->
             <span class="font-medium">
                 {{ item.department_name }}
             </span>
         </template>
 
-        <template #cell(sub_department)="{ item }">
-            <span class="font-medium">
-                {{ item.sub_department_name }}
-            </span>
+        <template #cell(number_current_families)="{ item }">
+            {{ item["number_current_families"] }}
+        </template>
+        <template #cell(number_current_collections)="{ item }">
+            {{ item["number_current_collections"] }}
         </template>
 
            <template #cell(url)="{ item }">
-           <a :href="`/${item.code}`"> 
+           <a :href="`/${item.code}`">
                 <FontAwesomeIcon :icon="faExternalLink" />
            </a>
         </template>
+
+
     </Table>
 </template>

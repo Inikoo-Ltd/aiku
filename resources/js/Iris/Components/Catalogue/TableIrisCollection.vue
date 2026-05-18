@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { usePage } from "@inertiajs/vue3"
-import Table from "@/Components/Table/Table.vue"
+import Table from "../Tables/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3";
@@ -52,8 +52,19 @@ const parentInfo = computed(() => {
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.image_thumbnail ?? item.image ?? item.web_images?.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image
+                    :src="item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="w-6 aspect-square rounded-full overflow-hidden shadow"
+                />
             </div>
+        </template>
+         <template #cell(code)="{ item: department }">
+            <Link
+                :href="route('iris.catalogue.collection.show', { collection: department.slug })"
+                class="primaryLink"
+            >
+                {{ department.code }}
+            </Link>
         </template>
         <template #cell(state)="{ item: product }">  
             <Tag :label="product.state.label" v-tooltip="product.state.label">
@@ -85,15 +96,6 @@ const parentInfo = computed(() => {
            <a :href="item.canonical_url"> 
                 <FontAwesomeIcon :icon="faExternalLink" />
            </a>
-        </template>
-
-        <template #cell(code)="{ item: product }">
-            <Link
-                :href="route('iris.catalogue.product.show', { product: product.slug })"
-                class="primaryLink"
-            >
-                {{ product.code }}
-            </Link>
         </template>
     </Table>
 </template>

@@ -9,8 +9,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 
 import IrisLayout from '@/Layouts/Iris.vue'
 import CatalogueLayout from '@/Iris/Layouts/CatalogueLayout.vue'
-
-import CatalogueOverview from '@/Iris/Components/CatalogueOverview.vue'
+import CatalogueOverview from '@/Iris/Components/Catalogue/CatalogueOverview.vue'
 
 library.add(faCube)
 
