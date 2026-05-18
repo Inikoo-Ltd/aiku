@@ -228,7 +228,7 @@ test('create fulfilment shop', function () {
         ->and($shopPermissions->count())->toBe(0)
         ->and($fulfilmentRoles->count())->toBe(2)
         ->and($fulfilmentPermissions->count())->toBe(4)
-        ->and($warehouseRoles->count())->toBe(9)
+        ->and($warehouseRoles->count())->toBe(10)
         ->and($warehousePermissions->count())->toBe(21);
 
     $user = $this->adminGuest->getUser();
@@ -2663,9 +2663,9 @@ test('pick pallet return item', function (PalletReturn $palletReturn) {
 
     $palletReturn->refresh();
     expect($palletReturn)->toBeInstanceOf(PalletReturn::class)
-        ->and($palletReturn->state)->toBe(PalletReturnStateEnum::PICKED)
+        ->and($palletReturn->state)->toBe(PalletReturnStateEnum::PICKING)
         ->and($palletReturnItem)->toBeInstanceOf(PalletReturnItem::class)
-        ->and($palletReturnItem->quantity_picked)->toBe(4)
+        ->and($palletReturnItem->quantity_picked)->toBe(4.0)
         ->and($palletReturnItem->state)->toBe(PalletReturnItemStateEnum::PICKED);
 
     return $palletReturn;

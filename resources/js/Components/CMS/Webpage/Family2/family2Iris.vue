@@ -6,7 +6,7 @@ import { get, isPlainObject } from "lodash-es"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { getStyles } from "@/Composables/styles"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import { getBestOffer } from "@/Composables/useOffers"
@@ -78,7 +78,7 @@ console.log(props)
     }">
 
     <!-- 🔧 LIMIT WIDTH biar tidak melebar di 2xl -->
-    <div class="mx-auto max-w-[2000px] w-full px-4 md:px-8 xl:px-12" >
+    <div class="mx-auto max-w-[2000px] w-full px-4 md:px-8 xl:px-12" id="family-description" >
 
       <div class="grid w-full grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
 
@@ -163,16 +163,18 @@ console.log(props)
           />
 
           <div class="btn-wrapper">
-              <LinkIris 
+            <!--   <LinkIris 
                 :href="fieldValue?.button?.link?.href" 
                 :canonical_url="fieldValue?.button?.link?.canonical_url"
                 :target="fieldValue?.button?.link?.target" 
-                :type="fieldValue?.button?.link?.type">
-                <Button 
-                  :label="fieldValue?.button?.text"
-                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" 
-                />
-              </LinkIris>
+                :type="fieldValue?.button?.link?.type"> -->
+                <a href="#family-extra-description">
+                  <Button 
+                    :label="fieldValue?.button?.text"
+                    :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" 
+                  />
+                </a>
+       <!--        </LinkIris> -->
             </div>
         </div>
 

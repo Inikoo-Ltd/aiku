@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 
 
@@ -8,6 +8,8 @@ const props = defineProps<{
 	theme?: any
 	blockData?: Object
 	indexBlock:number
+	screenType?: 'mobile' | 'tablet' | 'desktop'
+	code?: string
 }>()
 </script>
 

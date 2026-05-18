@@ -275,6 +275,8 @@ class ShowProspectMailshot extends OrgAction
                         'mailshot' => $mailshot->slug
                     ]
                 ],
+                'mailshotId' => $mailshot->id,
+                'groupId' => $mailshot->group_id,
 
             ]
         )->table(

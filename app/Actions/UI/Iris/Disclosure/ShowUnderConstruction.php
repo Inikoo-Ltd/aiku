@@ -22,10 +22,9 @@ class ShowUnderConstruction
     public function handle(ActionRequest $request): Response|RedirectResponse
     {
         if ($request->input('website')->status) {
-            return  Redirect::route('iris.home');
-
+            return Redirect::route('iris.home');
         }
 
-        return Inertia::render('Disclosure/UnderConstruction');
+        return Inertia::render('Disclosure/UnderConstruction', []);
     }
 }

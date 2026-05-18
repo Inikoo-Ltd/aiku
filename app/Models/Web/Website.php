@@ -14,7 +14,6 @@ use App\Enums\Web\Website\WebsiteCloudflareStatusEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Analytics\WebUserRequest;
-use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Media;
@@ -115,8 +114,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $live_family_description_snapshot_id
  * @property string|null $published_family_description_checksum
  * @property int|null $landing_page_id
- * @property-read Collection<int, Announcement> $announcements
+ * @property \Illuminate\Support\Carbon|null $last_visited_at
+ * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Collection<int, \App\Models\Web\Crawl> $crawls
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Media|null $favicon
@@ -194,6 +195,7 @@ class Website extends Model implements Auditable, HasMedia
         'closed_at'         => 'datetime',
         'fetched_at'        => 'datetime',
         'last_fetched_at'   => 'datetime',
+        'last_visited_at'   => 'datetime',
 
     ];
 
@@ -489,6 +491,11 @@ class Website extends Model implements Auditable, HasMedia
     public function announcements(): HasMany
     {
         return $this->hasMany(Announcement::class);
+    }
+
+    public function crawls(): HasMany
+    {
+        return $this->hasMany(Crawl::class);
     }
 
     public function llmsTxt(): HasMany

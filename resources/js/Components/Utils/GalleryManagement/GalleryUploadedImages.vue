@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, onBeforeMount, onMounted, onUnmounted, toRaw } from "vue"
 import axios from 'axios'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { notify } from '@kyvg/vue3-notification'
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { routeType } from "@/types/route"

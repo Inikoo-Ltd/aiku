@@ -10,38 +10,67 @@ namespace App\Actions\Web\Website;
 
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
+use App\Actions\Web\Crawl\CrawlWebsite;
+use App\Actions\Web\Crawl\StopCrawl;
+use App\Enums\Web\Crawl\CrawlStateEnum;
+use App\Enums\Web\Crawl\CrawlTriggerEnum;
+use App\Enums\Web\Crawl\CrawlTypeEnum;
+use App\Models\Web\Crawl;
 use App\Models\Web\Website;
+use Cache;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
 
-class BreakWebsiteCache extends OrgAction implements ShouldBeUniqueUntilProcessing
+class BreakWebsiteCache extends OrgAction
 {
-    public Website $website;
-
-    public function __construct(Website $website)
+    public function handle(Website $website, ?CrawlTriggerEnum $crawlTrigger, ?Command $command = null): Website
     {
-        $this->website = $website;
-    }
+        foreach (
+            Crawl::where('state', '!=', CrawlStateEnum::FINISH)
+                ->where('type', CrawlTypeEnum::HTML)
+                ->where('website_id', $website->id)->get() as $crawlToStop
+        ) {
+            StopCrawl::run($crawlToStop);
+        }
 
-    public function uniqueId()
-    {
-        return 'website-'.$this->website->id;
-    }
-
-    public function handle(Website $website, ?Command $command = null): Website
-    {
-        $key = config('iris.cache.website.prefix')."_$website->domain";
-        Cache::forget($key);
-
+        ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_domain:*', $command);
         ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*', $command);
         ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*', $command);
         ClearCacheByWildcard::run("irisData:website:$website->id:*", $command);
 
+        Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
+
         BreakWebsiteVarnishCache::run($website);
 
+        if ($crawlTrigger != null) {
+            $concurrency         = 10;
+            $totalCrawlInstances = (int)Crawl::where('running', true)
+                ->where('should_stop', false)
+                ->sum('concurrency');
+            if ($totalCrawlInstances > 10) {
+                $concurrency = 5;
+            }
+            if ($totalCrawlInstances < 5) {
+                $concurrency = 15;
+            }
+
+            /** @var Crawl $crawl */
+            $crawl = $website->crawls()->create(
+                [
+                    'depth'       => 10,
+                    'concurrency' => $concurrency,
+                    'trigger'     => $crawlTrigger,
+                    'type'        => CrawlTypeEnum::HTML
+                ]
+            );
+
+            $jobQueue = 'cache-warming';
+            if ($crawl->type == CrawlTypeEnum::INERTIA) {
+                $jobQueue = 'cache-warming-js';
+            }
+            CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
+        }
 
         return $website;
     }
@@ -50,7 +79,7 @@ class BreakWebsiteCache extends OrgAction implements ShouldBeUniqueUntilProcessi
     {
         $this->initialisationFromShop($website->shop, $request);
 
-        return $this->handle($website);
+        return $this->handle($website, CrawlTriggerEnum::USER);
     }
 
     public function htmlResponse(): RedirectResponse
@@ -65,8 +94,8 @@ class BreakWebsiteCache extends OrgAction implements ShouldBeUniqueUntilProcessi
 
     public function asCommand(Command $command): int
     {
-        $this->website = Website::where('slug', $command->argument('slug'))->first();
-        $this->handle($this->website, $command);
+        $website = Website::where('slug', $command->argument('slug'))->first();
+        $this->handle($website, CrawlTriggerEnum::COMMAND, $command);
 
         return 0;
     }

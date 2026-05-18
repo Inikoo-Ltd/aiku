@@ -15,7 +15,7 @@ class HydrateRedirect extends HydrateModel
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'hydrate:redirect {organisations?*} {--s|slugs=}';
+    public string $commandSignature = 'hydrate:redirects {organisations?*} {--s|slugs=}';
 
     public function __construct()
     {

@@ -23,6 +23,9 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Web\Crawl\PurgeStaleCrawls;
+use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
+use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
 use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
@@ -55,6 +58,24 @@ class Kernel extends ConsoleKernel
 
 
         if (config('app.master')) {
+            $this->logSchedule(
+                $schedule->job(RecordVarnishHitRatio::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RecordVarnishHitRatio',
+                ),
+                name: 'RecordVarnishHitRatio',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RecordVarnishMemoryUsage::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RecordVarnishMemoryUsage',
+                ),
+                name: 'RecordVarnishMemoryUsage',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
             $this->logSchedule(
                 $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'RunNewsletterScheduled',
@@ -474,6 +495,16 @@ class Kernel extends ConsoleKernel
         }
 
         if (config('app.slave')) {
+
+            $this->logSchedule(
+                $schedule->job(PurgeStaleCrawls::makeJob())->everyTenMinutes()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'PurgeStaleCrawls',
+                ),
+                name: 'PurgeStaleCrawls',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
             $this->logSchedule(
                 $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'SaveDataFeeds',
@@ -602,21 +633,57 @@ class Kernel extends ConsoleKernel
 
             $this->logSchedule(
                 $schedule->command('ui:recache-user-props')->weeklyOn(1, '06:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'RecacheUserUiProps',
+                    monitorSlug: 'BreakUserUiProps',
                 ),
-                name: 'RecacheUserUiProps',
+                name: 'BreakUserUiProps',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
 
 
             $schedule->command('queue:prune-failed --hours=168')->daily()->onOneServer();
+
+            $this->logSchedule(
+                $schedule->command('hydrate:fulfilments')->dailyAt('00:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydrateFulfilments',
+                ),
+                name: 'HydrateFulfilments',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:stored_items')->dailyAt('00:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydrateStoredItems',
+                ),
+                name: 'HydrateStoredItems',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:pallet_returns')->dailyAt('00:50')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydratePalletReturns',
+                ),
+                name: 'HydratePalletReturns',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:pallet_stored_items')->dailyAt('01:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydratePalletStoredItems',
+                ),
+                name: 'HydratePalletStoredItems',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 
     protected function commands(): void
     {
-        $this->load(__DIR__ . '/Commands');
+        $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
     }

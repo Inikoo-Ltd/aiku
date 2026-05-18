@@ -11,7 +11,7 @@ import MenuPopoverList from "@/Layouts/Grp/MenuPopoverList.vue"
 import TopBarSelectButton from "@/Layouts/Grp/TopBarSelectButton.vue"
 import { Menu, MenuButton, MenuItems, Disclosure, MenuItem } from "@headlessui/vue"
 import { trans } from "laravel-vue-i18n"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { faChevronDown } from "@far"
 import {
     faTerminal,
@@ -107,7 +107,7 @@ const label = {
         <ScreenWarning v-if="layoutStore.app.environment === 'staging'" class="relative top-0" />
 
         <div class="px-0">
-            <div class="flex h-11 lg:h-10 flex-shrink-0">
+            <div class="flex h-11 lg:h-10 flex-shrink-0 w-full">
                 <div class="flex items-center border-b border-gray-300">
                     <!-- Mobile: Hamburger -->
                     <button class="block md:hidden w-10 h-10 relative focus:outline-none" @click="$emit('sidebarOpen', !sidebarOpen)">
@@ -232,9 +232,9 @@ const label = {
                     </Menu>
                 </div>
 
-                <div class="flex items-center w-full justify-between pr-6 space-x-3 border-b border-gray-200">
+                <div class="flex items-center justify-between isolate xpr-6 gap-x-3 flex-1 min-w-0 border-b border-gray-200">
                     <!-- Section: Dropdown + subsections -->
-                    <div class="flex items-center gap-x-2 pl-2">
+                    <div class="flex items-center gap-x-2 pl-2 xoverflow-x-auto flex-1 min-w-0">
                         <!-- Section: Dropdown -->
                         <div
                             v-if="

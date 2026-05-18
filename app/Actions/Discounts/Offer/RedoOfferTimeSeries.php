@@ -23,7 +23,7 @@ class RedoOfferTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'offers:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -55,7 +55,7 @@ class RedoOfferTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $firstTransactionDate = DB::table('invoice_transactions')
+            $firstTransactionDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->whereExists(function ($query) use ($offer) {
                     $query->select(DB::raw(1))
                         ->from('transaction_has_offer_allowances')
@@ -65,7 +65,7 @@ class RedoOfferTimeSeries implements ShouldBeUnique
                 ->whereNull('deleted_at')
                 ->min('date');
 
-            $lastTransactionDate = DB::table('invoice_transactions')
+            $lastTransactionDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->whereExists(function ($query) use ($offer) {
                     $query->select(DB::raw(1))
                         ->from('transaction_has_offer_allowances')
@@ -85,11 +85,10 @@ class RedoOfferTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessOfferTimeSeriesRecords::dispatch($offer->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessOfferTimeSeriesRecords::dispatch($offer->id, $frequency, $from, $to);
             } else {
                 ProcessOfferTimeSeriesRecords::run($offer->id, $frequency, $from, $to);
             }
         }
     }
-
 }

@@ -27,6 +27,7 @@ use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterProductCategoryTimeSeriesResource;
 use App\Http\Resources\Masters\MasterVariantsResource;
+use App\Http\Resources\Masters\RelatedMasterProductsResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -109,7 +110,6 @@ class ShowMasterFamily extends GrpAction
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
-
         $tabs = [
             MasterFamilyTabsEnum::SALES->value =>
                 $this->tab === MasterFamilyTabsEnum::SALES->value
@@ -151,6 +151,47 @@ class ShowMasterFamily extends GrpAction
                         fn () => GetMasterProductCategoryImages::run($masterFamily)
                     ),
 
+            MasterFamilyTabsEnum::RELATED_PRODUCTS->value =>
+                $this->tab === MasterFamilyTabsEnum::RELATED_PRODUCTS->value
+                    ? fn () => [
+                    'id'       => $masterFamily->id,
+                    'data'     => RelatedMasterProductsResource::collection(GetMasterProductCategoryRelatedAssets::run($masterFamily)),
+                    'editable' => true,
+                    'route_sync_related_products' => [
+                        'name' => 'grp.models.master_product_category.related_assets.sync',
+                        'parameters' => [
+                            'masterProductCategory' => $masterFamily->id,
+                        ]
+                    ],
+                    'sync_payload_key' => 'master_asset_ids',
+                     'route_get_products' => [
+                        'name' => 'grp.masters.master_shops.show.master_products.index',
+                        'parameters' => [
+                            'masterShop' => $masterFamily->masterShop->slug,
+                        ]
+                    ]
+                ]
+                    : Inertia::lazy(
+                        fn () => [
+                        'id'       => $masterFamily->id,
+                        'data'     => RelatedMasterProductsResource::collection(GetMasterProductCategoryRelatedAssets::run($masterFamily)),
+                        'editable' => true,
+                        'route_sync_related_products' => [
+                            'name' => 'grp.models.master_product_category.related_assets.sync',
+                            'parameters' => [
+                                'masterProductCategory' => $masterFamily->id,
+                            ]
+                        ],
+                        'sync_payload_key' => 'master_asset_ids',
+                         'route_get_products' => [
+                        'name' => 'grp.masters.master_shops.show.master_products.index',
+                        'parameters' => [
+                            'masterShop' =>  $masterFamily->masterShop->slug,
+                        ]
+                    ]
+                    ]
+                    ),
+
             MasterFamilyTabsEnum::HISTORY->value =>
                 $this->tab == MasterFamilyTabsEnum::HISTORY->value
                     ? fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value))
@@ -161,7 +202,7 @@ class ShowMasterFamily extends GrpAction
 
         ];
 
-        $navigation = MasterFamilyTabsEnum::navigation();
+        $navigation                                  = MasterFamilyTabsEnum::navigation();
         $tabs[MasterFamilyTabsEnum::VARIANTS->value] =
             $this->tab === MasterFamilyTabsEnum::VARIANTS->value
                 ? fn () => MasterVariantsResource::collection(
@@ -285,13 +326,13 @@ class ShowMasterFamily extends GrpAction
                         ] : false,
                         $this->canEdit
                             ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('Add a master product to this family'),
-                                'label'   => __('Master Product'),
-                            ]
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Add a master product to this family'),
+                            'label'   => __('Master Product'),
+                        ]
                             : false,
-                        $this->canEdit && $masterFamily->masterShop->type->value  != 'dropshipping' ? [
+                        $this->canEdit && $masterFamily->masterShop->type->value != 'dropshipping' ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'key'     => 'variants',
@@ -314,9 +355,12 @@ class ShowMasterFamily extends GrpAction
                 'masterProductCategoryId' => $masterFamily->id,
                 'price_rrp_warning_ratio' => $masterFamily->masterShop->price_rrp_warning_ratio,
                 'shopsData'               => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
+                'vol_gr_reward'           => [
+                    'show_gr_vol'                   => app()->environment('local') ? $masterFamily->masterShop->gold_reward_eligible : false,
+                    'gr_vol_discount_quantity'      => $masterFamily->gr_vol_discount_quantity,
+                    'gr_vol_discount_percentage'    => $masterFamily->gr_vol_discount_percentage,
+                ],
                 ...$tabs,
-
-
             ]
         )
             ->table(IndexMailshots::make()->tableStructure(parent: $masterFamily))
@@ -324,7 +368,6 @@ class ShowMasterFamily extends GrpAction
             ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterFamilyTabsEnum::SALES->value))
             ->table(IndexMasterVariant::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value));
-
     }
 
 
@@ -401,7 +444,7 @@ class ShowMasterFamily extends GrpAction
                 )
             ),
             'grp.masters.master_shops.show.master_family.mismatch_detected.show',
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index'   =>
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop),
                 $headCrumb(

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { ulid } from 'ulid'
 import { inject, ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'

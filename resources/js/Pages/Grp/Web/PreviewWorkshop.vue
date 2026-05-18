@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { getComponent } from '@/Composables/getWorkshopComponents'
-import { getIrisComponent } from '@/Composables/getIrisComponents'
+import { getIrisComponent } from '@/Iris/Composables/getIrisComponents'
 import { ref, onMounted, provide, onBeforeUnmount, inject, watch, computed } from 'vue'
 import WebPreview from "@/Layouts/WebPreview.vue";
 import { sendMessageToParent } from '@/Composables/Workshop'

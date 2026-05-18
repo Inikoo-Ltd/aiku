@@ -18,6 +18,6 @@ class ShowClosedDown
 
     public function handle(): Response
     {
-        return Inertia::render('Disclosure/ClosedDown');
+        return Inertia::render('Disclosure/ClosedDown', []);
     }
 }

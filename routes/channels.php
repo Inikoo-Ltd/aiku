@@ -30,7 +30,7 @@ Broadcast::channel('shopify.{shopifyUserId}.upload-product.{portfolioId}', funct
     return true;
 });
 
-Broadcast::channel('shopify.{shopifyUserId}.fetch-product', function (int|string $shopifyUserId, int|string $portfolioId) {
+Broadcast::channel('platform.{platformUserId}.fetch-product', function (int|string $platformUserId, int|string $portfolioId) {
     return true;
 });
 

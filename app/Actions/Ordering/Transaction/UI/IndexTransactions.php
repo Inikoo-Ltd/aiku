@@ -9,7 +9,6 @@
 namespace App\Actions\Ordering\Transaction\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use Illuminate\Support\Facades\DB;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -130,23 +129,23 @@ class IndexTransactions extends OrgAction
                     ]
                 );
 
-            $table->column(key: 'image', label: '', canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'image', label: '', canBeHidden: false);
             $table->column(key: 'asset_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'asset_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
 
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            app()->isLocal() ? $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false, sortable: false, searchable: false) : '';
+            $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             if (
                 $parent instanceof Order
                 && (
-                    (!isset($parent->platform) && $parent->value === OrderStateEnum::CREATING)
+                    (!isset($parent->platform) && $parent->state === OrderStateEnum::CREATING)
                     || (isset($parent->platform) && $parent->platform->type === PlatformTypeEnum::MANUAL)
                 )
 
             ) {
-                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: false, searchable: true);
+                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, searchable: true);
             }
         };
     }

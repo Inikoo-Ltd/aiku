@@ -17,11 +17,12 @@ class WebpageFactory extends Factory
     public function definition(): array
     {
         return [
-            'code'    => fake()->lexify(),
-            'title'   => fake()->sentence(),
-            'sub_type' => WebpageSubTypeEnum::CONTENT,
-            'type'    => WebpageTypeEnum::CONTENT,
-            'url'     => fake()->lexify(),
+            'code'                        => fake()->lexify(),
+            'title'                       => fake()->sentence(),
+            'sub_type'                    => WebpageSubTypeEnum::CONTENT,
+            'type'                        => WebpageTypeEnum::CONTENT,
+            'url'                         => fake()->lexify(),
+            'is_different_when_logged_in' => false,
         ];
     }
 }

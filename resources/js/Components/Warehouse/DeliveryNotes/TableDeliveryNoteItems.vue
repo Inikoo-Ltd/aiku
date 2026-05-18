@@ -32,7 +32,7 @@ import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import axios from "axios";
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import LabelItemsWaitingForWarehouse from "./LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
 import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"

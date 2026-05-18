@@ -17,18 +17,17 @@
             href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Inter&family=Laila&family=Lobster&family=Playfair&family=Port+Lligat+Slab&family=Quicksand&family=Yatra+One&family=Raleway:ital,wght@0,200;0,400;0,500;0,700;0,900;1,200;1,400;1,500;1,700;1,900&display=swap"
             rel="stylesheet">
     </noscript>
-
-    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', ''))
-        @if(request()->header('X-Logged-Status') !== null || auth()->check())
-            @if(request()->header('X-Logged-Status') === 'In' || auth()->check())
-                <script async data-jsd-embedded
-                        data-key="{{Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', '') }}"
-                        data-base-url="https://jsd-widget.atlassian.com"
-                        src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
-            @endif
-        @endif
-    @endif
-
+{{--Note: this not work because of varnish X-Logged-Status is not longer set--}}
+{{--    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', ''))--}}
+{{--        @if(request()->header('X-Logged-Status') !== null || auth()->check())--}}
+{{--            @if(request()->header('X-Logged-Status') === 'In' || auth()->check())--}}
+{{--                <script async data-jsd-embedded--}}
+{{--                        data-key="{{Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', '') }}"--}}
+{{--                        data-base-url="https://jsd-widget.atlassian.com"--}}
+{{--                        src="https://jsd-widget.atlassian.com/assets/embed.js"></script>--}}
+{{--            @endif--}}
+{{--        @endif--}}
+{{--    @endif--}}
 
 
     @if(request()->input('favicons'))

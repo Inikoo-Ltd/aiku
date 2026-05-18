@@ -410,6 +410,42 @@ const onCopyDataCustomer = (field: string) => {
 	}
 }
 
+
+// Section: Shipment Platform (external (faire) or platform (tiktok))
+const isLoadingAddShipmentPlatform = ref(false)
+const onClickButtonShipmentPlatform = () => {
+	router.post(
+		route(props.shipments_routes?.get_external_shipment_route?.name, props.shipments_routes?.get_external_shipment_route?.parameters),
+		{
+			
+		},
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => { 
+				isLoadingAddShipmentPlatform.value = true
+			},
+			onSuccess: () => {
+				notify({
+					title: trans("Success"),
+					text: trans("Successfully submit the data"),
+					type: "success"
+				})
+				emits("addSuccsess", null)
+			},
+			onError: errors => {
+				notify({
+					title: trans("Something went wrong"),
+					text: trans("Failed to set location"),
+					type: "error"
+				})
+			},
+			onFinish: () => {
+				isLoadingAddShipmentPlatform.value = false
+			},
+		}
+	)
+}
 </script>
 
 <template>
@@ -512,22 +548,6 @@ const onCopyDataCustomer = (field: string) => {
 							<LoadingIcon />
 						</div>
 
-						<!--  <ModalConfirmationDelete v-else :routeDelete="{
-                            name: 'grp.models.shipment.delete',
-                            parameters: {
-
-                                shipment: shipment.id,
-                            }
-                        }" :title="trans('Are you sure you want to delete this shipment (:ship)?', { ship: shipment.name })"
-                            @success="DeleteShipment(shipmentIdx)"
-                            isFullLoading>
-                            <template #default="{ isOpenModal, changeModel }">
-                                <div @click="changeModel" class="cursor-pointer">
-                                    <FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600"
-                                        fixed-width aria-hidden="true" />
-                                </div>
-                            </template>
-</ModalConfirmationDelete> -->
 
 						<div
 							v-else-if="isEditable"
@@ -556,12 +576,12 @@ const onCopyDataCustomer = (field: string) => {
 
 			<div v-if="isEditable" class="gap-2 mb-2 flex">
 				<!-- Button: Shipment -->
-				<ButtonWithLink
+				<Button
 					v-if="!shipments.length && props.shipments_routes?.get_external_shipment_route?.name"
+					@click="() => onClickButtonShipmentPlatform()"
+					:loading="isLoadingAddShipmentPlatform"
 					:disabled="!props.shipments_routes?.get_external_shipment_route?.name"
 					:label="props.shipments_routes?.get_external_shipment_route?.label"
-					method="post"
-					:url="route(props.shipments_routes?.get_external_shipment_route?.name, props.shipments_routes?.get_external_shipment_route?.parameters)"
 					icon="fas fa-plus"
 					type="dashed"
 					:size="twBreakPoint().includes('lg') ? 'xs' : undefined"

@@ -67,11 +67,11 @@ class UpdateLocationOrgStock extends OrgAction
         $locationOrgStock = $this->update($locationOrgStock, $modelData, ['data']);
 
         if ($locationOrgStock->wasChanged('quantity')) {
-            OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->orgStock);
+            OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->org_stock_id)->delay(2);
             CalculateOrgStockCurrentStockHistories::dispatch($locationOrgStock->org_stock_id);
         }
 
-        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->orgStock);
+        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->org_stock_id)->delay(2);
 
         return $locationOrgStock;
     }

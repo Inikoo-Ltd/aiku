@@ -75,7 +75,7 @@ const toggleInterest = (interestValue: string) => {
     props.form.clearErrors('interest');
 };
 
-console.log('form', props)
+const selectedCountryCode = ref('')
 </script>
 
 <template>
@@ -195,7 +195,9 @@ console.log('form', props)
             fieldName="contact_address"
             :form="form"
             :options="{ countriesAddressData: countriesAddressData }"
-            :fieldData="addressFieldData" />
+            :fieldData="addressFieldData"
+            @select="(value) => selectedCountryCode = value.code"
+        />
     </div>
 
 
@@ -208,6 +210,7 @@ console.log('form', props)
         <TaxNumber
             :form="form"
             fieldName="tax_number"
+            :country_code="selectedCountryCode"
         >
         </TaxNumber>
     </div>

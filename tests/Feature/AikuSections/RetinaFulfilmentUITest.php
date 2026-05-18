@@ -679,7 +679,7 @@ test('edit sysadmin settings', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'Account management')
+                    ->where('title', 'Account settings')
                     ->etc()
             )
             ->has('formData');

@@ -15,6 +15,7 @@ use App\Actions\Traits\UI\WithFavicon;
 use App\Actions\Traits\UI\WithLogo;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
+use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Fulfilment\Fulfilment;
@@ -130,6 +131,16 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.welcome_message", Arr::pull($modelData, "welcome_message"));
         }
 
+        if (Arr::has($modelData, 'title_recommender')) {
+            data_set($modelData, 'settings.recommender_web_block.title', Arr::pull($modelData, 'title_recommender'));
+        }
+        if (Arr::has($modelData, 'min_amt_shown_recommender')) {
+            data_set($modelData, 'settings.recommender_web_block.min_amt_shown', Arr::pull($modelData, 'min_amt_shown_recommender', 5));
+        }
+        if (Arr::has($modelData, 'max_amt_shown_recommender')) {
+            data_set($modelData, 'settings.recommender_web_block.max_amt_shown', Arr::pull($modelData, 'max_amt_shown_recommender', 100));
+        }
+
         // Handle LLMs.txt file upload
         if (Arr::has($modelData, 'llms_txt') && $modelData['llms_txt'] instanceof \Illuminate\Http\UploadedFile) {
             $file = Arr::pull($modelData, 'llms_txt');
@@ -146,7 +157,7 @@ class UpdateWebsite extends OrgAction
         }
 
         if (Arr::hasAny($changes, ['domain', 'settings'])) {
-            BreakWebsiteCache::run($website);
+            BreakWebsiteCache::run($website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
 
         return $website;
@@ -272,6 +283,9 @@ class UpdateWebsite extends OrgAction
             'company_name_label' => ['sometimes', 'nullable', 'string'],
             'company_name_placeholder' => ['sometimes', 'nullable', 'string'],
             'tax_number_is_required' => ['sometimes', 'nullable','boolean'],
+            'title_recommender'         =>  ['sometimes', 'nullable', 'string'],
+            'min_amt_shown_recommender' =>  ['sometimes', 'numeric', 'min:1'],
+            'max_amt_shown_recommender' =>  ['sometimes', 'numeric', 'min:1'],
         ];
 
         if (!$this->strict) {

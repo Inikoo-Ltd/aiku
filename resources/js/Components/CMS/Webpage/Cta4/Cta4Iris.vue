@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
 import { inject, computed } from 'vue'
@@ -24,7 +24,7 @@ const props = defineProps<{
 	webpageData?: any
 	blockData?: Object,
 	screenType: 'mobile' | 'tablet' | 'desktop'
-	indexBlock:number
+	indexBlock?:number |string
 }>()
 
 const layout: any = inject("layout", {})

@@ -38,32 +38,29 @@ function paymentAccountRoute(paymentAccount: PaymentAccount) {
             return route(
                 "grp.org.accounting.payment-accounts.show",
                 {
-                    orgPaymentServiceProvider: (route().params as RouteParams).orgPaymentServiceProvider,
-                    paymentAccount: paymentAccount.slug
-                })
-
-
-    }
-
-}
-
-function providersRoute(paymentAccount: PaymentAccount) {
-    // console.log(route().current())
-    switch (route().current()) {
-
-
-        case "grp.org.accounting.payment-accounts.index":
-            return route(
-                "grp.org.accounting.org_payment_service_providers.show",
-                {
                     organisation: (route().params as RouteParams).organisation,
                     paymentAccount: paymentAccount.slug
                 })
 
 
     }
+
 }
 
+
+function providersRoute(paymentAccount: PaymentAccount) {
+    switch (route().current()) {
+
+        case "grp.org.accounting.payment-accounts.index":
+            return route(
+                "grp.org.accounting.org_payment_service_providers.show",
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    orgPaymentServiceProvider: paymentAccount.org_payment_service_provider_slug
+                }
+            )
+    }
+}
 function paymentsRoute(paymentAccount: PaymentAccount) {
     switch (route().current()) {
 

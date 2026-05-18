@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Table from '@/Components/Table/Table.vue'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -8,6 +8,10 @@ import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Tag from '@/Components/Tag.vue'
+import Select from 'primevue/select'
+import DatePicker from 'primevue/datepicker'
+import RadioButton from 'primevue/radiobutton'
+import Textarea from 'primevue/textarea'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
@@ -39,6 +43,8 @@ const hourOptions = Array.from({ length: 24 }, (_, index) =>
 const minuteOptions = Array.from({ length: 60 }, (_, index) =>
     index < 10 ? `0${index}` : `${index}`
 )
+
+const durationBaseMinutes = [0, 15, 30, 45]
 
 const form = useForm<{
     employee_id: number | null
@@ -80,6 +86,43 @@ const exportForm = useForm({
     employee_id: null as number | null,
     format: 'xlsx',
 })
+
+const hourSelectOptions = computed(() =>
+    hourOptions.map((hour) => ({
+        label: hour,
+        value: hour,
+    }))
+)
+
+const minuteSelectOptions = computed(() =>
+    minuteOptions.map((minute) => ({
+        label: minute,
+        value: minute,
+    }))
+)
+
+const durationHourOptions = computed(() =>
+    Array.from({ length: 13 }, (_, index) => ({
+        label: `${index} ${trans('hrs')}`,
+        value: String(index),
+    }))
+)
+
+const durationMinuteOptions = computed(() =>
+    durationBaseMinutes.map((minute) => ({
+        label: `${minute} ${trans('mins')}`,
+        value: String(minute),
+    }))
+)
+
+const exportFormatOptions = computed(() => [
+    { label: trans('Excel (XLSX)'), value: 'xlsx' },
+    { label: trans('CSV'), value: 'csv' },
+])
+
+const getFormError = (key: string): string | undefined => {
+    return (form.errors as Record<string, string | undefined>)[key]
+}
 
 const formatDuration = (minutes?: number | null): string => {
     if (!minutes) {
@@ -130,7 +173,7 @@ const closeExportModal = () => {
 }
 
 const submitExport = () => {
-    const orgId = route().params.organisation
+    const orgId = (route().params as Record<string, string | number | undefined>).organisation
 
     if (!orgId) {
         alert('Error: Cannot find organisation ID')
@@ -178,6 +221,52 @@ const toLocalISOString = (date: Date) => {
         ':' + pad(date.getSeconds()) +
         dif + pad(tzo / 60) + ':' + pad(tzo % 60);
 }
+
+const parseYmdDate = (value: string): Date | null => {
+    if (!value) {
+        return null
+    }
+
+    const [year, month, day] = value.split('-').map(Number)
+    if (!year || !month || !day) {
+        return null
+    }
+
+    return new Date(year, month - 1, day)
+}
+
+const formatYmdDate = (date: Date | null): string => {
+    if (!date) {
+        return ''
+    }
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
+const requestedDateModel = computed<Date | null>({
+    get: () => parseYmdDate(form.requested_date),
+    set: (value) => {
+        form.requested_date = formatYmdDate(value)
+    },
+})
+
+const exportFromDateModel = computed<Date | null>({
+    get: () => parseYmdDate(exportForm.from),
+    set: (value) => {
+        exportForm.from = formatYmdDate(value)
+    },
+})
+
+const exportToDateModel = computed<Date | null>({
+    get: () => parseYmdDate(exportForm.to),
+    set: (value) => {
+        exportForm.to = formatYmdDate(value)
+    },
+})
 
 const openEditModal = (item: any) => {
     isEditMode.value = true
@@ -497,17 +586,14 @@ const submitRequest = () => {
                 <label class="block text-sm font-medium text-gray-700">
                     {{ trans('Which staff member?') }}
                 </label>
-                <select
+                <Select
                     v-model="form.employee_id"
-                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                    <option :value="null" disabled>
-                        {{ trans('Select staff member') }}
-                    </option>
-                    <option v-for="employee in employeeOptions" :key="employee.value" :value="employee.value">
-                        {{ employee.label }}
-                    </option>
-                </select>
+                    :options="employeeOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="mt-1 w-full"
+                    :placeholder="trans('Select staff member')"
+                />
                 <div v-if="form.errors.employee_id" class="mt-1 text-sm text-red-600">
                     {{ form.errors.employee_id }}
                 </div>
@@ -517,21 +603,14 @@ const submitRequest = () => {
                 <label class="block text-sm font-medium text-gray-700">
                     {{ trans('What type of overtime do you want to submit?') }}
                 </label>
-                <select
+                <Select
                     v-model="form.overtime_type_id"
-                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                    <option :value="null" disabled>
-                        {{ trans('Select overtime type') }}
-                    </option>
-                    <option
-                        v-for="overtimeType in overtimeTypeOptions"
-                        :key="overtimeType.value"
-                        :value="overtimeType.value"
-                    >
-                        {{ overtimeType.label }}
-                    </option>
-                </select>
+                    :options="overtimeTypeOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="mt-1 w-full"
+                    :placeholder="trans('Select overtime type')"
+                />
                 <div v-if="form.errors.overtime_type_id" class="mt-1 text-sm text-red-600">
                     {{ form.errors.overtime_type_id }}
                 </div>
@@ -541,10 +620,11 @@ const submitRequest = () => {
                 <label class="block text-sm font-medium text-gray-700">
                     {{ trans('What date did the overtime occur?') }}
                 </label>
-                <input
-                    v-model="form.requested_date"
-                    type="date"
-                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                <DatePicker
+                    v-model="requestedDateModel"
+                    class="mt-1 w-full"
+                    dateFormat="yy-mm-dd"
+                    showIcon
                 />
                 <div v-if="form.errors.requested_date" class="mt-1 text-sm text-red-600">
                     {{ form.errors.requested_date }}
@@ -557,25 +637,23 @@ const submitRequest = () => {
                         {{ trans('What time did it start?') }}
                     </label>
                     <div class="mt-1 flex gap-2">
-                        <select
+                        <Select
                             v-model="form.start_hour"
-                            class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                            <option v-for="hour in hourOptions" :key="hour" :value="hour">
-                                {{ hour }}
-                            </option>
-                        </select>
-                        <select
+                            :options="hourSelectOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="w-full"
+                        />
+                        <Select
                             v-model="form.start_minute"
-                            class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                            <option v-for="minute in minuteOptions" :key="minute" :value="minute">
-                                {{ minute }}
-                            </option>
-                        </select>
+                            :options="minuteSelectOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="w-full"
+                        />
                     </div>
-                    <div v-if="form.errors.requested_start_at" class="mt-1 text-sm text-red-600">
-                        {{ form.errors.requested_start_at }}
+                    <div v-if="getFormError('requested_start_at')" class="mt-1 text-sm text-red-600">
+                        {{ getFormError('requested_start_at') }}
                     </div>
                 </div>
 
@@ -584,25 +662,23 @@ const submitRequest = () => {
                         {{ trans('How long was the overtime?') }}
                     </label>
                     <div class="mt-1 flex gap-2">
-                        <select
+                        <Select
                             v-model="form.duration_hours"
-                            class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                            <option v-for="hour in 13" :key="hour" :value="String(hour - 1)">
-                                {{ hour - 1 }} {{ trans('hrs') }}
-                            </option>
-                        </select>
-                        <select
+                            :options="durationHourOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="w-full"
+                        />
+                        <Select
                             v-model="form.duration_minutes"
-                            class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                            <option v-for="minute in [0, 15, 30, 45]" :key="minute" :value="String(minute)">
-                                {{ minute }} {{ trans('mins') }}
-                            </option>
-                        </select>
+                            :options="durationMinuteOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="w-full"
+                        />
                     </div>
-                    <div v-if="form.errors.requested_duration_minutes" class="mt-1 text-sm text-red-600">
-                        {{ form.errors.requested_duration_minutes }}
+                    <div v-if="getFormError('requested_duration_minutes')" class="mt-1 text-sm text-red-600">
+                        {{ getFormError('requested_duration_minutes') }}
                     </div>
                 </div>
             </div>
@@ -613,19 +689,19 @@ const submitRequest = () => {
                 </label>
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                     <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input
+                        <RadioButton
                             v-model="form.recorded_same_as_requested"
-                            type="radio"
                             :value="true"
-                            class="border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                            inputId="recorded_same_as_requested_true"
+                        />
                         <span>{{ trans('Same as requested time') }}</span>
                     </label>
                     <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input
+                        <RadioButton
                             v-model="form.recorded_same_as_requested"
-                            type="radio"
                             :value="false"
-                            class="border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                            inputId="recorded_same_as_requested_false"
+                        />
                         <span>{{ trans('Use different recorded time') }}</span>
                     </label>
                 </div>
@@ -636,20 +712,20 @@ const submitRequest = () => {
                             {{ trans('Recorded start time') }}
                         </label>
                         <div class="mt-1 flex gap-2">
-                            <select
+                            <Select
                                 v-model="form.recorded_start_hour"
-                                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option v-for="hour in hourOptions" :key="hour" :value="hour">
-                                    {{ hour }}
-                                </option>
-                            </select>
-                            <select
+                                :options="hourSelectOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                            />
+                            <Select
                                 v-model="form.recorded_start_minute"
-                                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option v-for="minute in minuteOptions" :key="minute" :value="minute">
-                                    {{ minute }}
-                                </option>
-                            </select>
+                                :options="minuteSelectOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                            />
                         </div>
                     </div>
 
@@ -658,20 +734,20 @@ const submitRequest = () => {
                             {{ trans('Recorded duration') }}
                         </label>
                         <div class="mt-1 flex gap-2">
-                            <select
+                            <Select
                                 v-model="form.recorded_duration_hours"
-                                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option v-for="hour in 13" :key="hour" :value="String(hour - 1)">
-                                    {{ hour - 1 }} {{ trans('hrs') }}
-                                </option>
-                            </select>
-                            <select
+                                :options="durationHourOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                            />
+                            <Select
                                 v-model="form.recorded_duration_minutes"
-                                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option v-for="minute in [0, 15, 30, 45]" :key="minute" :value="String(minute)">
-                                    {{ minute }} {{ trans('mins') }}
-                                </option>
-                            </select>
+                                :options="durationMinuteOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                            />
                         </div>
                     </div>
                 </div>
@@ -681,18 +757,13 @@ const submitRequest = () => {
                 <label class="block text-sm font-medium text-gray-700">
                     {{ trans('Status') }}
                 </label>
-                <select
+                <Select
                     v-model="form.status"
-                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                    <option
-                        v-for="status in statusOptions"
-                        :key="status.value"
-                        :value="status.value"
-                    >
-                        {{ status.label }}
-                    </option>
-                </select>
+                    :options="statusOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="mt-1 w-full"
+                />
                 <div v-if="form.errors.status" class="mt-1 text-sm text-red-600">
                     {{ form.errors.status }}
                 </div>
@@ -702,10 +773,10 @@ const submitRequest = () => {
                 <label class="block text-sm font-medium text-gray-700">
                     {{ trans('Any notes?') }}
                 </label>
-                <textarea
+                <Textarea
                     v-model="form.reason"
                     rows="3"
-                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    class="mt-1 w-full"
                 />
                 <div v-if="form.errors.reason" class="mt-1 text-sm text-red-600">
                     {{ form.errors.reason }}
@@ -718,6 +789,7 @@ const submitRequest = () => {
                     type="save"
                     :label="trans('Submit')"
                     :loading="form.processing"
+                    nativeType="submit"
                 />
             </div>
         </form>
@@ -737,20 +809,22 @@ const submitRequest = () => {
                     <label class="block text-sm font-medium text-gray-700">
                         {{ trans('From Date') }}
                     </label>
-                    <input
-                        v-model="exportForm.from"
-                        type="date"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    <DatePicker
+                        v-model="exportFromDateModel"
+                        class="mt-1 w-full"
+                        dateFormat="yy-mm-dd"
+                        showIcon
                     />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
                         {{ trans('To Date') }}
                     </label>
-                    <input
-                        v-model="exportForm.to"
-                        type="date"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    <DatePicker
+                        v-model="exportToDateModel"
+                        class="mt-1 w-full"
+                        dateFormat="yy-mm-dd"
+                        showIcon
                     />
                 </div>
             </div>
@@ -760,41 +834,25 @@ const submitRequest = () => {
                     <label class="block text-sm font-medium text-gray-700">
                         {{ trans('Overtime Type') }}
                     </label>
-                    <select
+                    <Select
                         v-model="exportForm.type"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                    >
-                        <option value="">
-                            {{ trans('All Types') }}
-                        </option>
-                        <option
-                            v-for="type in overtimeTypeOptions"
-                            :key="type.value"
-                            :value="type.value"
-                        >
-                            {{ type.label }}
-                        </option>
-                    </select>
+                        :options="[{ value: '', label: trans('All Types') }, ...overtimeTypeOptions]"
+                        optionLabel="label"
+                        optionValue="value"
+                        class="mt-1 w-full"
+                    />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
                         {{ trans('Status') }}
                     </label>
-                    <select
+                    <Select
                         v-model="exportForm.status"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                    >
-                        <option value="">
-                            {{ trans('All Statuses') }}
-                        </option>
-                        <option
-                            v-for="status in statusOptions"
-                            :key="status.value"
-                            :value="status.value"
-                        >
-                            {{ status.label }}
-                        </option>
-                    </select>
+                        :options="[{ value: '', label: trans('All Statuses') }, ...statusOptions]"
+                        optionLabel="label"
+                        optionValue="value"
+                        class="mt-1 w-full"
+                    />
                 </div>
             </div>
 
@@ -802,21 +860,13 @@ const submitRequest = () => {
                 <label class="block text-sm font-medium text-gray-700">
                     {{ trans('Employee') }}
                 </label>
-                <select
-                    v-model.number="exportForm.employee_id"
-                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                >
-                    <option :value="null">
-                        {{ trans('All Employees') }}
-                    </option>
-                    <option
-                        v-for="employee in employeeOptions"
-                        :key="employee.value"
-                        :value="employee.value"
-                    >
-                        {{ employee.label }}
-                    </option>
-                </select>
+                <Select
+                    v-model="exportForm.employee_id"
+                    :options="[{ value: null, label: trans('All Employees') }, ...employeeOptions]"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="mt-1 w-full"
+                />
             </div>
 
             <div>
@@ -824,29 +874,17 @@ const submitRequest = () => {
                     {{ trans('Export Format') }}
                 </label>
                 <div class="mt-2 flex gap-4">
-                    <label class="flex cursor-pointer items-center gap-2">
-                        <input
+                    <label
+                        v-for="formatOption in exportFormatOptions"
+                        :key="formatOption.value"
+                        class="flex cursor-pointer items-center gap-2"
+                    >
+                        <RadioButton
                             v-model="exportForm.format"
-                            type="radio"
-                            value="xlsx"
-                            class="text-blue-600 focus:ring-blue-500"
+                            :value="formatOption.value"
+                            :inputId="`overtime-export-format-${formatOption.value}`"
                         />
-                        <FontAwesomeIcon icon="fal fa-file-excel" class="text-green-600" />
-                        <span class="text-sm">
-                            {{ trans('Excel (XLSX)') }}
-                        </span>
-                    </label>
-                    <label class="flex cursor-pointer items-center gap-2">
-                        <input
-                            v-model="exportForm.format"
-                            type="radio"
-                            value="csv"
-                            class="text-blue-600 focus:ring-blue-500"
-                        />
-                        <FontAwesomeIcon icon="fal fa-file-csv" class="text-blue-600" />
-                        <span class="text-sm">
-                            {{ trans('CSV') }}
-                        </span>
+                        <span class="text-sm">{{ formatOption.label }}</span>
                     </label>
                 </div>
             </div>

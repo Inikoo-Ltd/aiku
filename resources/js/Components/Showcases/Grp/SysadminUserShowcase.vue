@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useLiveUsers } from '@/Stores/active-users'
 import { Image as ImageTS } from '@/types/Image'

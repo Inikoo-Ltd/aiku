@@ -9,7 +9,7 @@ import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { getStyles } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue";
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import SwitchLanguage from '@/Components/Iris/SwitchLanguage.vue'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'

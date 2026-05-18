@@ -62,25 +62,12 @@ const submit = async () => {
         }
     } catch (error: any) {
         form.reset('password')
-        // console.log('er', error.response.data)
         isLoading.value = false
-        listLoginError.value = error.response.data
-        // notify({
-        //     title: trans("Something went wrong"),
-        //     text: error.message || trans("Please try again or contact administrator"),
-        //     type: 'error'
-        // })
+        listLoginError.value = error.response?.data
+
     }
 
-    // form.post(route('retina.login.store', {
-    //     ref: route().params?.['ref']
-    // }), {
-    //     onSuccess: (e) => {
-    //         console.log('eeeeeeeee', e)
-    //     },
-    //     onError: () => isLoading.value = false,
-    //     onFinish: () => form.reset('password'),
-    // })
+
 }
 
 const inputUsername = ref(null)
@@ -114,6 +101,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
     if(data.status === 200) {
         if (data.data.logged_in) {
+
             window.location.href = await getRefRedirect()
         } else {
             isOpenModalRegistration.value = true

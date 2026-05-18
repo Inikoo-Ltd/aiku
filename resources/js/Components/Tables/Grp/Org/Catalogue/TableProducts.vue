@@ -24,7 +24,7 @@ import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
 import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
 import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack, faRunning} from "@fas"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
@@ -575,7 +575,7 @@ const repairTradeUnitFromChildren = async (product) => {
 
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">
-                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="product['image_thumbnail']" imageCover class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
 

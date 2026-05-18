@@ -71,9 +71,7 @@ const updateFormValue = (newValue) => {
     emits("update:form", target);
 };
 
-// const offerType = 'Category Ordered'
-// const offerType = 'Amount AND Order Number'
-// const offerType = 'Category Quantity Ordered'
+
 const offerType = props.fieldData.offer.type
 </script>
 

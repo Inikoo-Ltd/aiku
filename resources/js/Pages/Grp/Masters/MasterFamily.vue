@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBullhorn,
@@ -39,6 +39,7 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVariants.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
+import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 
 library.add(
     faFolder,
@@ -82,6 +83,12 @@ const props = defineProps<{
     isPerfectFamily: boolean
     price_rrp_warning_ratio : number
     mismatch_detected?: boolean
+    related_products : object
+    vol_gr_reward?: {
+        show_gr_vol: boolean
+        gr_vol_discount_quantity?: number
+        gr_vol_discount_percentage?: number
+    }
 }>()
 const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
@@ -102,13 +109,14 @@ const component = computed(() => {
         images : ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
         variants: TableMasterVariants,
+        related_products: ProductCategoryRecomendation
     }
     return components[currentTab.value] ?? ModelDetails
 })
 
 const showDialog = ref(false);
 
-console.log(props.price_rrp_warning_ratio)
+
 </script>
 
 <template>
@@ -159,7 +167,6 @@ console.log(props.price_rrp_warning_ratio)
         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
         {{ trans("This family is not assigned to any department. You can add it in edit section.") }}
     </Message>
-
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
      <div  class="bg-white pt-2 w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
@@ -189,7 +196,7 @@ console.log(props.price_rrp_warning_ratio)
         </Message>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward"/>
 
     <FormCreateMasterProduct
         :showDialog="showDialog"

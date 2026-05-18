@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { inject, ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from "vue"
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from "vue"
 
 import { library } from '@fortawesome/fontawesome-svg-core'
-import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from "laravel-vue-i18n"
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -15,7 +13,7 @@ import 'swiper/css/navigation'
 
 import Family3Render from './Families3Render.vue'
 import { getStyles } from '@/Composables/styles'
-import { sendMessageToParent } from '@/Composables/Workshop'
+
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -40,7 +38,6 @@ const props = defineProps<{
   indexBlock?: number
 }>()
 
-const layout: any = inject('layout', {})
 
 const prevEl = ref<HTMLElement | null>(null)
 const nextEl = ref<HTMLElement | null>(null)
@@ -74,25 +71,9 @@ const spaceBetween = computed(() => {
   return 24
 })
 
-const slideWidth = computed(() => {
-  const gap = spaceBetween.value
-  const totalGap = gap * (perRow.value - 1)
-  return `calc((100% - ${totalGap}px) / ${perRow.value})`
-})
 
-function scrollLeft() {
-  swiperInstance.value?.slidePrev()
-}
 
-function scrollRight() {
-  swiperInstance.value?.slideNext()
-}
 
-function activateBlock() {
-  if (typeof props.indexBlock !== 'undefined') {
-    sendMessageToParent('activeBlock', props.indexBlock)
-  }
-}
 
 /* ==== SAFE NAVIGATION INIT ==== */
 function bindNavigation(swiper: any) {
@@ -163,62 +144,43 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
 </script>
 
 <template>
-  <div ref="containerRef" :id="modelValue?.id ? modelValue?.id : 'families-3'+indexBlock"  :key="refreshTrigger">
+  <!-- swiper + view all -->
+  <div class="mx-8 flex items-stretch" :style="{ gap: `${spaceBetween}px`}">
 
-    <div v-if="allItems.length" class="px-4 py-10" :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-      ...getStyles(props.modelValue.container?.properties, props.screenType)
-    }" @click="activateBlock">
-      <div class="relative w-full">
-
-        <!-- left -->
-        <button ref="prevEl" type="button" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 text-gray-800"
-          @click.stop="scrollLeft">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" />
-        </button>
-
-        <!-- swiper -->
-        <div class="mx-8">
-          <Swiper :modules="[Navigation]" :loop="true" :slides-per-view="perRow" :space-between="spaceBetween"
-            :allow-touch-move="true" :navigation="true"  :initial-slide="0" @swiper="onSwiper" class="w-full swiper-mask">
-            <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
-              <div class="w-full h-full flex">
-
-                <!-- View All -->
-                <div v-if="item.__type === 'view_all'"
-                  class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all">
-                  <div :style="{
-                    fontWeight: 600,
-                    minHeight: maxHeight ? maxHeight + 'px' : undefined,
-                    ...getStyles(props.modelValue?.button?.view_more?.properties, props.screenType),
-                  }" class="flex-1 flex items-center justify-center bg-gray-100">
-                    <span class="text-sm font-semibold">
-                      {{ trans("View All") }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Normal item -->
-                <Family3Render v-else class="family-item w-full h-full" :data="item" :style="{
-                  ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType),
-                  fontWeight: 600
-                }" :screenType="props.screenType" />
-
-              </div>
-            </SwiperSlide>
-          </Swiper>
+    <!-- view all -->
+    <div class="shrink-0" :style="{
+      width: `calc((100% - (${perRow - 1} * ${spaceBetween}px)) / ${perRow})`
+    }">
+      <div
+        class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all">
+        <div :style="{
+          fontWeight: 600,
+          minHeight: maxHeight ? maxHeight + 'px' : undefined,
+          ...getStyles(props.modelValue?.button?.view_more?.properties, props.screenType),
+        }" class="flex-1 flex items-center justify-center bg-gray-100">
+          <span class="text-sm font-semibold">
+            {{ trans('View All') }}
+          </span>
         </div>
-
-        <!-- right -->
-        <button ref="nextEl" type="button" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 text-gray-800"
-          @click.stop="scrollRight">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" class="text-4xl" />
-        </button>
-
       </div>
     </div>
 
-    <EmptyState v-else :data="{ title: 'Empty Families' }" />
+    <!-- swiper -->
+    <div class="min-w-0" :style="{
+      width: `calc(100% - ((100% - (${perRow - 1} * ${spaceBetween}px)) / ${perRow}) - ${spaceBetween}px)`
+    }">
+      <Swiper :modules="[Navigation]" :loop="true" :slides-per-view="perRow" :space-between="spaceBetween"
+        :allow-touch-move="true" :navigation="true" :initial-slide="0" @swiper="onSwiper" class="w-full swiper-mask">
+        <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
+          <div class="w-full h-full flex">
+            <Family3Render class="family-item w-full h-full" :data="item" :style="{
+              ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType),
+              fontWeight: 600
+            }" :screenType="props.screenType" />
+          </div>
+        </SwiperSlide>
+      </Swiper>
+    </div>
   </div>
 </template>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Table from "@/Components/Table/Table.vue"
 import Tag from "@/Components/Tag.vue"

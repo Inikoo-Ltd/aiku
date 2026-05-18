@@ -12,7 +12,6 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 
 trait WithTiktokApiServices
 {
@@ -100,7 +99,8 @@ trait WithTiktokApiServices
             return $response->json();
         } catch (\Exception $e) {
             Log::error('API Request failed: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+
+            return ['error' => true, 'data' => $e->getMessage()];
         }
     }
 
@@ -125,6 +125,15 @@ trait WithTiktokApiServices
     public function getShippingProviders(string $deliveryOptionId): array
     {
         $path = "/logistics/$this->version/delivery_options/$deliveryOptionId/shipping_providers";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getShippingTemplates(): array
+    {
+        $path = "/logistics/202510/seller_templates";
 
         return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
@@ -164,6 +173,15 @@ trait WithTiktokApiServices
     public function uploadProductToTiktok(array $productData): array
     {
         $path = '/product/'.$this->version.'/products';
+
+        return $this->makeApiRequest('POST', $path, $productData, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function activateProduct(array $productData): array
+    {
+        $path = '/product/'.$this->version.'/products/activate';
 
         return $this->makeApiRequest('POST', $path, $productData, true, [
             'content-type' => 'application/json'
@@ -280,6 +298,42 @@ trait WithTiktokApiServices
         $path = "/product/$this->version/products/$productId/inventory/update";
 
         return $this->makeApiRequest('POST', $path, $attributes, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function recommendCategory(array $attributes)
+    {
+        $path = "/product/$this->version/categories/recommend";
+
+        return $this->makeApiRequest('POST', $path, $attributes, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getCategories()
+    {
+        $path = "/product/$this->version/categories";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getCategoryRules(string $leafCategoryId)
+    {
+        $path = "/product/$this->version/categories/$leafCategoryId/rules";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getCategoryAttributes(string $leafCategoryId)
+    {
+        $path = "/product/$this->version/categories/$leafCategoryId/attributes";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
         ]);
     }

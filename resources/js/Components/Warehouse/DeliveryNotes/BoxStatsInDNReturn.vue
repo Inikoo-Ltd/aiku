@@ -1,0 +1,860 @@
+<script setup lang="ts">
+import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
+import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
+import { trans } from "laravel-vue-i18n"
+import { Address, AddressOptions } from "@/types/PureComponent/Address"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt, faTruck } from "@fal"
+import { faCubes } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { Link, router } from "@inertiajs/vue3"
+import { inject, ref, toRaw } from "vue"
+import { routeType } from "@/types/route"
+import { set } from 'lodash-es'
+import { notify } from "@kyvg/vue3-notification"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
+import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
+import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
+import Select from 'primevue/select';
+import { faExchangeAlt, faLock , faLockOpen} from "@far"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
+import { useFormatTime } from "@/Composables/useFormatTime"
+
+library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
+
+const props = withDefaults(defineProps<{
+    boxStats: {
+        customer: {
+            reference: string
+            company_name: string
+            contact_name: string
+            email: string
+            phone: string
+            address: Address
+        }
+        is_collection?: boolean
+        is_replacement?: boolean
+        is_create_replacement?: boolean
+        currency_code: string
+        external_shop: {
+
+        } | null
+        delivery_note: {
+            reference?: string
+            route: routeType
+        },
+        customer_client?: {
+            name: string
+            contact_name?: string
+            email?: string
+            phone?: string
+        }
+        delivery_address: Address,
+        products: {
+            estimated_weight: number
+        }
+        packer: {
+            id: number
+            username: string
+        }
+        picker: {
+            id: number
+            username: string
+            contact_name: string
+        }
+        order?: {
+            reference: string
+            route: routeType
+        }
+        state: string
+        parcels: {
+            weight: number
+            dimensions: [number, number, number]
+        }[]
+        shipments: {
+            id: number
+            name: string
+            tracking: string
+            label?: string
+            label_type?: string
+            combined_label_url?: string
+            is_printable?: boolean
+            formatted_tracking_urls: {
+                url: string
+                tracking: string
+            }[]
+        }[]
+        platform?: {
+            logo: string
+            name: string
+        }
+        address: {
+            delivery: Address
+            options: AddressOptions
+        }
+        shipments_routes: {
+            submit_route: routeType
+            fetch_route: routeType
+            delete_route: routeType
+        }
+        shop_type: string  // 'dropshipping', 'b2b'
+        shipping_notes?: string
+        shipping_fields: {
+            company_name: string
+            contact_name: string
+            phone: string
+            email: string
+            address: {
+                delivery: Address
+                options: AddressOptions
+            }
+        }
+        shipping_fields_update_route: routeType
+        trolleys?: {
+            id: number
+            name: string
+            slug: string
+        }[]
+        parentDeliveryNote?: {
+            reference: string
+            slug: string
+            id: number
+        }
+        return_dn?: {
+            reference: string
+            slug: string
+            id: number
+        }
+    }
+    routes: {
+        pickers_list: routeType
+        packers_list: routeType
+        update: routeType
+        assignSelfTemporarily: routeType
+    }
+    deliveryNote: {
+        state: string
+        id: number
+    }
+    updateRoute: routeType
+    replaceAllTrigger?: number
+    warehouse: {
+        slug: string
+    }
+    allowActions: boolean
+    quick_pickers : any
+    showChangePickerPacker: boolean
+    isEditable: boolean
+    isShowButtonReplaceAll?: boolean
+}>(), {
+    isEditable: true
+})
+
+const emit = defineEmits<{
+    'replace-all': []
+}>()
+
+const layout = inject('layout', layoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
+
+// Section: Replace All functionality
+const onReplaceAll = () => {
+    emit('replace-all')
+}
+
+
+const isModalToQueue = ref(false);
+const selectedPicker = ref(props.boxStats.picker);
+const disable = ref(props.boxStats.state);
+const isLoading = ref<{ [key: string]: boolean }>({});
+const isLoadingToQueue = ref(false);
+
+
+
+const onUpdatePicker = () => {
+    const state = props.deliveryNote?.state;
+    const pickerId = selectedPicker.value?.id;
+
+    if (!pickerId) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Picker is not selected"),
+            type: "error"
+        });
+        return;
+    }
+
+    const isUnassigned = state === 'unassigned';
+
+    const routeConfig = props.routes[isUnassigned ? 'set_queue' : 'update'];
+
+    const routeName = routeConfig.name;
+    const routeParams = {
+        ...routeConfig.parameters,
+        ...(isUnassigned ? { user: pickerId } : {})
+    };
+
+    let payload = {};
+    if (!isUnassigned) {
+        payload = ['packing', 'packed'].includes(props.deliveryNote?.state)
+            ? { packer_user_id: pickerId }
+            : { picker_user_id: pickerId };
+    }
+
+    router.patch(route(routeName, routeParams), payload, {
+        onError: (error) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: error?.message ?? trans("Unknown error"),
+                type: "error"
+            });
+        },
+        onSuccess: () => {
+            isModalToQueue.value = false;
+        },
+        onStart: () => {
+            isLoadingToQueue.value = true;
+        },
+        onFinish: () => {
+            isLoadingToQueue.value = false;
+        },
+        preserveScroll: true
+    });
+};
+
+const assignSelfTemporarily = () => {
+    
+    const routeName = props.routes.assignSelfTemporarily.name;
+    const routeParams = {
+        ...props.routes.assignSelfTemporarily.parameters,
+    };
+    const payload = {picker_user_id: selectedPicker.value.id};
+
+    router.patch(
+        route(routeName, routeParams),
+        payload,
+        {
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
+                    type: "error"
+                });
+            },
+            onSuccess: () => {
+                isModalToQueue.value = false;
+            },
+            onStart: () => isLoadingToQueue.value = true,
+            onFinish: () => isLoadingToQueue.value = false,
+            preserveScroll: true
+        }
+    );
+}
+
+
+// Section: Parcels
+const isLoadingSubmitParcels = ref(false)
+const isModalParcels = ref(false)
+const parcelsCopy = ref([...toRaw(props.boxStats?.parcels || [])])
+const onDeleteParcel = (index: number) => {
+    parcelsCopy.value.splice(index, 1)
+}
+const onSubmitParcels = () => {
+    router.patch(route(props.updateRoute.name, props.updateRoute.parameters),
+        {
+            parcels: parcelsCopy.value,
+            // parcels: [{
+            // 	weight: 1,
+            // 	dimensions: [5, 5, 5],
+            // }],
+        },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                isLoadingSubmitParcels.value = true
+            },
+            onSuccess: () => {
+                isModalParcels.value = false
+                set(listError, 'box_stats_parcel', false)
+            },
+            onError: (errors) => {
+                notify({
+                    title: trans("Something went wrong."),
+                    text: trans("Failed to add Shipment. Please try again or contact administrator."),
+                    type: "error",
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitParcels.value = false
+            },
+        })
+}
+
+const listError = inject('listError', {})
+
+const parcelPresets = [
+    { label: '40 × 40 × 40 cm', weight: null, dimensions: [40, 40, 40] },
+    { label: '60 × 40 × 30 cm', weight: null, dimensions: [60, 40, 30] },
+    { label: '60 × 50 × 40 cm', weight: null, dimensions: [60, 50, 40] },
+    { label: '60 × 60 × 40 cm', weight: null, dimensions: [60, 60, 40] },
+    { label: '41 × 24 × 31 cm', weight: null, dimensions: [41, 24, 31] },
+    { label: '94 × 48 × 37 cm', weight: null, dimensions: [94, 48, 37] },
+    { label: '94 × 48 × 43 cm', weight: null, dimensions: [94, 48, 43] },
+    { label: '22 × 19 × 17 cm', weight: null, dimensions: [22, 19, 17] },
+    { label: '68 × 68 × 44 cm', weight: null, dimensions: [68, 68, 44] },
+]
+
+const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: { dimensions: any; weight: any }) => {
+
+    if (!preset) return
+
+    parcel.dimensions = [...preset.dimensions]
+
+    if (preset.weight) {
+        parcel.weight = preset.weight
+    }
+}
+
+</script>
+
+<template>
+    <div class="grid grid-cols-2 lg:grid-cols-3 xdivide-x xdivide-gray-300 border-b border-gray-200">
+        <!-- Box: Order -->
+        <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+            <div class="text-xs md:text-sm">
+                <div class="font-semibold xmb-2 text-base">
+                    {{ trans("Order") }}
+                </div>
+
+                <div class="space-y-0.5 pl-1">
+                    <!-- Field: Order reference -->
+                    <Link v-if="boxStats?.order"
+                        :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
+                        class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+                    <dt class="flex-none">
+                        <FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true'
+                            class="text-gray-500" />
+                    </dt>
+                    <dd class="text-gray-500 " v-tooltip="trans('Order')">
+                        {{ boxStats?.order?.reference }}
+                    </dd>
+                    </Link>
+                    <!-- Field: Reference Number -->
+                    <Link as="a" v-if="boxStats?.customer.reference"
+                        :href="route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)"
+                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
+                    <dt v-tooltip="'Company name'" class="flex-none">
+                        <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
+                            aria-hidden="true" />
+                    </dt>
+                    <dd class="text-gray-500" v-tooltip="trans('Customer')">
+                         {{ boxStats?.customer.name }} ({{ boxStats?.customer.reference }})
+                    </dd>
+                    </Link>
+                    <!-- Field: Contact name -->
+                    <div v-if="boxStats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
+                        v-tooltip="trans('Contact name')">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </dt>
+                        <dd class="text-gray-500">{{ boxStats?.customer.contact_name }}</dd>
+                    </div>
+                    <!-- Field: Company name -->
+                    <div v-if="boxStats?.customer.company_name && boxStats?.customer.company_name!=boxStats?.customer.name " class="pl-1 flex items-center w-full flex-none gap-x-2"
+                        v-tooltip="trans('Company name')">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
+                                aria-hidden="true" />
+                        </dt>
+                        <dd class="text-gray-500">{{ boxStats?.customer.company_name }}</dd>
+                    </div>
+                    <!-- Field: Email -->
+                    <div v-if="boxStats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                        <dt v-tooltip="'Email'" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
+                                aria-hidden="true" />
+                        </dt>
+                        <a :href="`mailto:${boxStats?.customer.email}`" v-tooltip="'Click to send email'"
+                            class="text-gray-500 hover:text-gray-700 truncate">{{ boxStats?.customer.email }}</a>
+                    </div>
+                    <!-- Field: Phone -->
+                    <div v-if="boxStats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                        <dt v-tooltip="'Phone'" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </dt>
+                        <a :href="`tel:${boxStats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
+                            class="text-gray-500 hover:text-gray-700">{{ boxStats?.customer.phone }}</a>
+                    </div>
+                    <!-- Field: Channel -->
+                    <dl v-if="boxStats?.platform?.name" class="pl-1 flex items-center w-full gap-x-2">
+                        <dt class="flex-none">
+                            <div class="block w-full rounded h-[18px]">
+                                <img :src="boxStats?.platform?.logo" :alt="boxStats?.platform?.name"
+                                    class="w-full h-full object-contain rounded" />
+                            </div>
+                        </dt>
+                        <dt class="text-gray-500 hover:text-gray-700">
+                            {{ boxStats?.platform?.name }}
+                        </dt>
+                    </dl>
+                </div>
+            </div>
+        </BoxStatPallet>
+
+        <!-- Box: Shipping -->
+        <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+            <div class="text-xs md:text-sm">
+
+
+                <template v-if="!boxStats?.is_collection">
+                    <div class="font-semibold xmb-2 text-base">
+                        {{ trans("Shipping") }}
+                    </div>
+
+                    <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
+                        <div class="border border-gray-300 p-4 rounded-lg">
+                            <div v-if="boxStats.customer_client" class="mb-3">
+                                <div class="xtext-xs text-gray-600 leading-snug">
+                                    <div>
+                                        <strong>{{ trans("Name") }}:</strong>
+                                        {{ boxStats.shipping_fields?.contact_name || boxStats.customer_client?.company_name }}
+                                    </div>
+                                    <div v-if="boxStats.customer_client.email">
+                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.shipping_fields?.email }}
+                                    </div>
+                                    <div v-if="boxStats.customer_client.phone">
+                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.shipping_fields?.phone }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-html="boxStats.delivery_address.formatted_address"
+                                class="xtext-xs text-gray-600 leading-snug">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="text-gray-500 italic pl-2">
+                        {{ trans("No shipping information available.") }}
+                    </div>
+
+
+                </template>
+                <div v-else class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
+
+                <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-gray-800 bg-gray-200 border border-gray-300 rounded-md">
+                    <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" />
+                    {{ trans('Cash on Delivery') }}
+                </div>
+
+            </div>
+        </BoxStatPallet>
+
+        <!-- Box: Delivery Note -->
+        <BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-t md:border-t-0 border-r border-gray-200" icon="fal fa-user">
+            <div class="text-xs md:text-sm">
+                <div class="font-semibold xmb-2 text-base">
+                    {{ trans("Delivery Note") }} 
+                    <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.helpers.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
+                        <FontAwesomeIcon :icon="faTruck"/>
+                        {{ boxStats.parentDeliveryNote?.reference }}
+                    </Link>
+                </div>
+
+                <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_create_replacement">
+                    <div class="flex gap-x-4 items-center">
+                        <!-- Section: Picker name -->
+                        <div v-if="boxStats?.picker?.contact_name">
+                            <dl class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                                <dt class="flex-none">
+                                    {{ ctrans("Handler") }}:
+                                </dt>
+                                <dd class="text-gray-500">
+                                    {{ boxStats?.picker?.contact_name }}
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- Section: Packer name -->
+                        <div v-if="boxStats?.packer?.contact_name">
+                            <dl v-tooltip="trans('Packer name')"
+                                class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                                <dt class="flex-none">
+                                    {{ trans("Packer") }}:
+                                </dt>
+                                <dd class="text-gray-500">
+                                    {{ boxStats?.packer?.contact_name }}
+                                </dd>
+                            </dl>
+                        </div>
+
+                        <FontAwesomeIcon
+                            v-if="boxStats?.picker?.id && boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
+                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                            class="cursor-pointer focus:outline-none"
+                            :icon="allowActions ? faLockOpen : faLock"
+                            @click="assignSelfTemporarily()"
+                        />
+
+                        <Button
+                            v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
+
+
+                        <Button
+                            v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+
+
+                     
+                    </div>
+
+                    <!-- Section: Trolleys -->
+                    <!-- <ManageTrolleysInDeliveryNote
+                        v-if="!(['unassigned', 'queued', 'dispatched', 'packed'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
+                        :deliveryNote
+                        :trolleys="boxStats.trolleys"
+                        :warehouse
+                        :isEditable
+                    /> -->
+                    
+                    <!-- Section: Picked Bays -->
+                    <!-- <div class="!mt-1.5 flex gap-x-2 items-center">
+                        <dl class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                            <dt class="flex-none">
+                                {{ trans("Picked bays") }}:
+                            </dt>
+                            <dd v-if="boxStats?.picked_bays?.length" class="font-bold xtext-gray-500">
+                                <span
+                                    v-for="bay in boxStats?.picked_bays"
+                                    :key="bay.id"
+                                    :to="`/bays/${bay.id}`"
+                                    xclass="underline opacity-70 hover:opacity-100"
+                                >
+                                    {{ bay?.name ?? '-' }}
+                                </span>
+                            </dd>
+                            <dd v-else class="text-gray-500">
+                                -
+                            </dd>
+                        </dl>
+
+                        {{ boxStats?.picked_bays }}
+                        <ChangePickedBays
+                            :warehouse="warehouse"
+                            :deliveryNote="deliveryNote"
+                            :pickedBays="boxStats?.picked_bays"
+                        />
+                    </div>
+                    
+                    <div class="!mt-2 border-t border-gray-300 w-full" /> -->
+
+
+                    <!-- Total Items -->
+                    <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon v-tooltip="trans('Total items')" icon="fal fa-cube" fixed-width
+                                aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500">
+                            {{ locale.number(boxStats.products?.number_items || 0) }} {{ ctrans("items") }} <span v-tooltip="ctrans('Data is recorded when the item is dispatched')" class="opacity-60 italic">({{ ctrans("sent") }})</span>
+                        </dd>
+                    </dl>
+
+                    <!-- Weight -->
+                    <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon v-tooltip="trans('Estimated weight of all items')" icon="fal fa-weight"
+                                fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500">
+                            {{ locale.number(boxStats?.products.estimated_weight) || '-' }} {{ ctrans("kilograms") }} <span v-tooltip="ctrans('Data is recorded when the item is dispatched')" class="opacity-60 italic">({{ ctrans("sent") }})</span>
+                        </dd>
+                    </dl>
+
+                    <!-- Dispatched at -->
+                    <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon v-tooltip="trans('Dispatched at')" icon="fal fa-check-double" fixed-width aria-hidden="true" class="text-green-500" />
+                        </dt>
+                        <dd class="text-gray-500">
+                            {{ deliveryNote?.dispatched_at ? useFormatTime(deliveryNote.dispatched_at, { formatTime: 'hm' }) : '-' }}
+                        </dd>
+                    </dl>
+
+                    <!-- Section: Parcels -->
+                    <div class="flex gap-x-1 pb-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+                        <FontAwesomeIcon v-tooltip="ctrans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
+                            fixed-width aria-hidden='true' />
+                        <div class=" group w-full pl-px">
+                            <div class="leading-4 xtext-base flex justify-between w-full py-1">
+                                <div class="text-gray-500">{{ ctrans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }}) <span v-tooltip="ctrans('Data is recorded when the item is dispatched')" class="opacity-60 italic">({{ ctrans("sent") }})</span></div>
+                            </div>
+
+                            <ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">
+                                <li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx"
+                                    class="xtabular-nums">
+                                    <span class="truncate">
+                                        {{ parcel.weight }} kg
+                                    </span>
+
+                                    <span class="text-gray-500 truncate">
+                                        ({{ parcel.dimensions?.[0] }}x{{ parcel.dimensions?.[1] }}x{{ parcel.dimensions?.[2] }} cm)
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Section: Shipments -->
+                    <dl v-if="boxStats.shipments" class="flex items-xcenter w-full pr-3 flex-none gap-x-1.5">
+                        <dt class="flex-none mt-1">
+                            <FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500 w-full">
+                            <ShipmentSection
+                                :shipping_fields="boxStats.shipping_fields"
+                                :shipping_fields_update_route="boxStats.shipping_fields_update_route"
+                                :shipments="boxStats.shipments"
+                                :shipments_routes="boxStats.shipments_routes"
+                                :address="boxStats.address"
+                                :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
+                                :currencyCode="boxStats?.currency_code"
+                                :external_shop="boxStats?.external_shop"
+                                :isEditable
+                            />
+                        </dd>
+                    </dl>
+
+                </div>
+
+                <div v-else class="space-y-0.5 pl-1">
+                    <!-- Field: Delivery notes reference -->
+                    <Link v-if="boxStats?.order && boxStats?.delivery_note"
+                        :href="route(boxStats?.delivery_note?.route?.name, boxStats?.delivery_note?.route?.parameters)"
+                        class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon icon='fal fa-truck' fixed-width aria-hidden='true' class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500 " v-tooltip="trans('Delivery Note')">
+                            {{ boxStats?.delivery_note?.reference }}
+                        </dd>
+                    </Link>
+                </div>
+            </div>
+        </BoxStatPallet>
+
+        <!-- Modal: Parcels -->
+        <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-2xl">
+            <div class="text-center font-bold mb-4">
+                {{ trans('Add shipment') }}
+            </div>
+
+            <div>
+                <Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
+                    <!-- Header Row -->
+                    <div class="grid grid-cols-12 items-center gap-x-6 mb-2">
+                        <div class="flex justify-center">
+                            <!-- <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" /> -->
+                        </div>
+
+                        <div class="col-span-2 flex items-center space-x-1">
+                            <FontAwesomeIcon icon="fal fa-weight" class="" fixed-width aria-hidden="true" />
+                            <span>kg</span>
+                        </div>
+                        <div class="col-span-9 flex items-center space-x-1">
+                            <FontAwesomeIcon icon="fal fa-ruler-triangle" class="" fixed-width aria-hidden="true" />
+                            <span>cm</span>
+                        </div>
+                    </div>
+
+                    <!-- Field: row parcels -->
+                    <div class="grid gap-y-1 max-h-64 overflow-y-auto">
+                        <TransitionGroup v-if="parcelsCopy?.length" name="list">
+                            <div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex"
+                                class="grid grid-cols-12 items-center gap-x-1">
+                                <div @click="() => onDeleteParcel(parcelIndex)" class="col-span-1 flex justify-center pr-2">
+                                    <FontAwesomeIcon icon="fal fa-trash-alt"
+                                        class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width
+                                        aria-hidden="true" />
+                                </div>
+                               
+                                <div class="col-span-1 flex justify-center">
+                                    <InputNumber
+                                        v-model="parcel.weight"
+                                        :min="0.001"
+                                        inputClass="!text-xs !w-6 sm:!w-12 sm:!text-sm !py-3 sm:!py-2 !px-1.5 !text-center"
+                                        size="small"
+                                        placeholder="0"
+                                        :locale="locale.locale_iso"
+                                        :max-fraction-digits="3"
+                                    />
+                                </div>
+
+                                <div class="col-span-7 sm:col-span-5 flex justify-center items-center gap-x-1 sm:gap-x-2 font-light ml-1 sm:ml-2">
+                                    <InputNumber
+                                        :min="0.001"
+                                        v-model="parcel.dimensions[0]"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
+                                        size="small"
+                                        placeholder="0"
+                                        fluid
+                                        :locale="locale.locale_iso"
+                                        :max-fraction-digits="1"
+                                    />
+                                    <div class="text-gray-400">x</div>
+                                    <InputNumber
+                                        :min="0.001"
+                                        v-model="parcel.dimensions[1]"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
+                                        size="small"
+                                        placeholder="0"
+                                        fluid
+                                        :locale="locale.locale_iso"
+                                        :max-fraction-digits="1"
+                                    />
+                                    <div class="text-gray-400">x</div>
+                                    <InputNumber
+                                        :min="0.001"
+                                        v-model="parcel.dimensions[2]"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
+                                        size="small"
+                                        placeholder="0"
+                                        fluid
+                                        :locale="locale.locale_iso"
+                                        :max-fraction-digits="1"
+                                    />
+                                </div>
+
+                                 <div class="col-span-3 sm:col-span-5 pl-1 sm:pl-0">
+                                    <Select
+                                        :modelValue="parcelPresets.find(p =>
+                                            p.dimensions.every((d,i)=>d===parcel.dimensions[i])
+                                        )"
+                                        :options="parcelPresets"
+                                        optionLabel="label"
+                                        placeholder="Preset Size"
+                                        class="w-20 sm:w-full text-xs sm:text-sm"
+                                        @change="(e)=>applyParcelPreset(parcel,e.value)"
+                                    />
+                                </div>
+                            </div>
+                        </TransitionGroup>
+                        <div v-else class="text-center text-gray-400">
+                            {{ trans('No parcels') }}
+                        </div>
+                    </div>
+
+                    <!-- Repeat for more rows -->
+                    <div class=" grid grid-cols-12 mt-2">
+                        <div></div>
+                        <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
+                            class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+                            <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
+                            {{ trans("Add another parcel") }}
+                        </div>
+                    </div>
+                </Fieldset>
+
+                <div class="flex justify-end mt-3">
+                    <Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="
+							!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)
+						" full @click="() => onSubmitParcels()" />
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Modal: change trolley -->
+    </div>
+
+
+    <Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
+		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
+			<div class="mx-auto font-semibold text-lg">
+				{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
+			</div>
+			<div class="mt-4 flex items-center w-full gap-x-1.5">
+				<dd class="flex-1">
+					<!-- Label for Picker -->
+					<div class="flex justify-between text-sm font-medium py-2">
+						{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
+                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="trans('I will do the picking myself')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
+					</div>
+					<PureMultiselectInfiniteScroll
+						v-model="selectedPicker"
+						required
+						:fetchRoute="routes.pickers_list"
+						:placeholder="trans('Select picker')"
+						labelProp="contact_name"
+						valueProp="id"
+						object
+						clearOnBlur
+						:loading="isLoading['picker' + selectedPicker?.id]"
+						:disabled="
+							disable == 'picker_assigned' ||
+							disable == 'packing' ||
+							disable == 'packed' ||
+							disable == 'finalised' ||
+							disable == 'settled' ||
+                            isLoadingToQueue
+						">
+						<template #singlelabel="{ value }">
+							<div
+								class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+								{{ value.contact_name }}
+							</div>
+						</template>
+						<template #option="{ option, isSelected, isPointed }">
+							<div class="w-full text-left text-sm whitespace-nowrap truncate">
+								{{ option.contact_name }}
+							</div>
+						</template>
+					</PureMultiselectInfiniteScroll>
+
+					<!-- Quick Pickers -->
+					<div v-if="quick_pickers && quick_pickers.length > 0" class="mt-3">
+						<div class="flex flex-wrap justify-center gap-2">
+							<button
+								v-for="picker in quick_pickers"
+								:key="picker.id"
+								@click="()=>{selectedPicker = picker, onUpdatePicker()}"
+								class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								:class="{
+									'bg-blue-500 text-white': selectedPicker?.id === picker.id,
+								}">
+								{{ picker.contact_name }}
+							</button>
+						</div>
+					</div>
+				</dd>
+			</div>
+			<div class="w-full mt-2">
+				<Button
+					@click="onUpdatePicker()"
+					:label="
+						delivery_note_state === 'queued'
+							? trans('Change picker')
+							: trans('Set Picker')
+					"
+					:iconRight="['fas', 'fa-arrow-right']"
+					full
+					:loading="isLoadingToQueue"
+					:disabled="!selectedPicker"
+					v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
+				</Button>
+			</div>
+		</div>
+	</Modal>
+</template>
+
+<style scoped>
+.p-toggleswitch {
+    --p-toggleswitch-checked-background: #3b82f6;
+}
+</style>

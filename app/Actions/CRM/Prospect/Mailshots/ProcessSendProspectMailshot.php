@@ -15,6 +15,7 @@ use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Mailshot\StoreMailshotRecipient;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientsStoredAt;
+use App\Actions\Comms\Traits\WithDispatchedEmailEncryption;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Prospect;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessSendProspectMailshot
 {
     use AsAction;
+    use WithDispatchedEmailEncryption;
 
     public string $jobQueue = 'ses';
 
@@ -60,9 +62,17 @@ class ProcessSendProspectMailshot
                     $prospect,
                     [
                         'outbox_id'     => $outboxId,
-                        'email_address' => $prospect->email
+                        'email_address' => $prospect->email,
+                        'data->additional_data' => [
+                            'prospect_name' => $prospect->contact_name ?? $prospect->name ?? " ",
+                            'prospect_email' => $prospect->email,
+                            'prospect_phone' => $prospect->phone ?? " ",
+                            'prospect_company_name' => $prospect->company_name ?? " ",
+                        ]
                     ]
                 );
+
+                $this->encryptAndStoreDispatchedEmailId($dispatchedEmail);
 
                 StoreMailshotRecipient::run(
                     $mailshot,
@@ -70,7 +80,7 @@ class ProcessSendProspectMailshot
                         'dispatched_email_id' => $dispatchedEmail->id,
                         'recipient_type'      => class_basename($prospect),
                         'recipient_id'        => $prospect->id,
-                        'recipient_name'      => $prospect->name ?? $prospect->contact_name ?? " ",
+                        'recipient_name'      => $prospect->contact_name ?? $prospect->name ?? " ",
                         'channel'             => $emailDeliveryChannel->id,
                     ]
                 );

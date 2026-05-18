@@ -18,7 +18,7 @@ library.add(faSearch, faTimes)
 const props = defineProps<{
 	header: { logo?: { image: { source: string } } }
 	screenType: string
-	productCategories: Array<any>
+	productCategories?: Array<any>
 	menu?: { data: Array<any> }
 	sidebarLogo: ImageTS
 	sidebar?: {
@@ -60,8 +60,10 @@ const activeCustomTopSubIndex = ref<number | null>(null) // active custom menu t
 
 
 const sortedProductCategories = computed(() => {
-	if (!props.productCategories) return []
-	return [...props.productCategories].sort((a, b) =>
+	const fromFetch = (sidebarMenu?.value ?? (irisLayout as any).iris?.sidebar)?.data?.fieldValue?.product_categories
+	const source = Array.isArray(fromFetch) && fromFetch.length ? fromFetch : props.productCategories
+	if (!source) return []
+	return [...source].sort((a, b) =>
 		(a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
 	)
 })
@@ -136,8 +138,6 @@ watch(
 const customMenusBottom = computed(() => internalCustomMenusBottom.value)
 const customMenusTop = computed(() => internalCustomMenusTop.value)
 
-
-console.log('wwwwww', irisLayout.iris.sidebar)
 const sidebarFieldValue = computed(() =>
     irisLayout.iris.sidebar?.data?.fieldValue ?? props.sidebar?.data?.fieldValue
 )
@@ -248,6 +248,7 @@ const checkMobile = () => {
 };
 
 onMounted(() => {
+	fetchSidebarOnce()
     checkMobile()
     window.addEventListener("resize", checkMobile)
 })
@@ -406,10 +407,7 @@ const fetchSidebarOnce = async () => {
 		layout.iris.isSidebarLoading = true
 		const baseUrl = window.location.origin
         const { data } = await axios.get(`${baseUrl}/json/sidebar`) as { data: DataJsonSidebar }
-        // const { data } = await axios.get(route("iris.json.sidebar")) as { data: DataJsonSidebar }
-        
-        console.log('ddddddata', data)
-
+        // const { data } = await axios.get(route("iris.json.sidebar")) as { data: DataJsonSidebar }		
         layout.iris.sidebar  = data.sidebar
 
 		layout.iris.isSidebarLoading = false

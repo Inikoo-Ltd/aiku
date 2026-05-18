@@ -5,7 +5,7 @@ import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from '@kyvg/vue3-notification'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import axios from 'axios'
 import { routeType } from "@/types/route";
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'

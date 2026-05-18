@@ -10,7 +10,7 @@ import Popover from "@/Components/Popover.vue";
 import { PalletDelivery, BoxStats, PalletReturn, PDRNotes } from "@/types/Pallet";
 import Modal from "@/Components/Utils/Modal.vue";
 import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue";
-import { computed, inject, ref } from "vue";
+import { computed, inject, onMounted, onUnmounted, ref } from "vue";
 import { capitalize } from "@/Composables/capitalize";
 import { routeType } from "@/types/route";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
@@ -42,6 +42,25 @@ const props = defineProps<{
 
 const layout = inject("layout", layoutStructure);
 const deliveryListError = inject("deliveryListError", []);
+
+// Section: Box Stats loading state
+const isBoxStatsLoading = ref(false)
+let removeStartListener: (() => void) | null = null
+let removeFinishListener: (() => void) | null = null
+onMounted(() => {
+  removeStartListener = router.on('start', (event) => {
+    if (event.detail.visit.only?.includes('box_stats')) {
+      isBoxStatsLoading.value = true
+    }
+  })
+  removeFinishListener = router.on('finish', () => {
+    isBoxStatsLoading.value = false
+  })
+})
+onUnmounted(() => {
+  removeStartListener?.()
+  removeFinishListener?.()
+})
 
 const isLoadingSetEstimatedDate = ref<string | boolean>(false);
 const isModalAddress = ref(false);
@@ -238,6 +257,12 @@ const disableBeforeToday = (date: Date) => {
 
 
 <template>
+  <div class="relative">
+  <Transition name="fade">
+    <div v-if="isBoxStatsLoading" class="absolute inset-0 bg-white/60 dark:bg-gray-900/60 flex items-center justify-center z-10 pointer-events-none">
+      <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-2xl text-gray-400" fixed-width aria-hidden="true" />
+    </div>
+  </Transition>
   <div class="h-min grid sm:grid-cols-2 lg:grid-cols-4 border-t border-b border-gray-200 divide-x divide-gray-300">
     <!-- Box: Detail -->
     <BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class="pb-2 py-5 px-3"
@@ -432,4 +457,5 @@ const disableBeforeToday = (date: Date) => {
       @onDone="() => (isDeliveryAddressManagementModal = false)"
     />
   </Modal>
+  </div>
 </template>

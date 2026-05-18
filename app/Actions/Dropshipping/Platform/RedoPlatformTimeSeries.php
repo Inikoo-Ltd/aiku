@@ -43,20 +43,22 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
         if (!$platformId) {
             return;
         }
+
         $platform = Platform::find($platformId);
+
         if (!$platform) {
             return;
         }
 
-        $shopIds = DB::table('invoices')->where('platform_id', $platform->id)->whereNull('deleted_at')->whereNotNull('shop_id')->distinct()->pluck('shop_id');
+        $shopIds = DB::connection('aiku_no_sticky')->table('invoices')->where('platform_id', $platform->id)->whereNull('deleted_at')->whereNotNull('shop_id')->distinct()->pluck('shop_id');
 
         foreach ($shopIds as $shopId) {
             if (!$from || !$to) {
                 $dates = collect([
-                    DB::table('invoices')->where('platform_id', $platform->id)->where('shop_id', $shopId)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
-                    DB::table('customer_sales_channels')->where('platform_id', $platform->id)->where('shop_id', $shopId)->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
-                    DB::table('portfolios')->where('platform_id', $platform->id)->where('shop_id', $shopId)->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
-                    DB::table('customer_clients')->where('platform_id', $platform->id)->where('shop_id', $shopId)->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
+                    DB::connection('aiku_no_sticky')->table('invoices')->where('platform_id', $platform->id)->where('shop_id', $shopId)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
+                    DB::connection('aiku_no_sticky')->table('customer_sales_channels')->where('platform_id', $platform->id)->where('shop_id', $shopId)->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
+                    DB::connection('aiku_no_sticky')->table('portfolios')->where('platform_id', $platform->id)->where('shop_id', $shopId)->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
+                    DB::connection('aiku_no_sticky')->table('customer_clients')->where('platform_id', $platform->id)->where('shop_id', $shopId)->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
                 ]);
 
                 $firstActivityDate = $dates->pluck('min_date')->filter()->min();
@@ -75,12 +77,11 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
 
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 if ($async) {
-                    ProcessPlatformTimeSeriesRecords::dispatch($platform->id, $shopId, $frequency, $resolvedFrom, $resolvedTo)->onQueue('low-priority');
+                    ProcessPlatformTimeSeriesRecords::dispatch($platform->id, $shopId, $frequency, $resolvedFrom, $resolvedTo);
                 } else {
                     ProcessPlatformTimeSeriesRecords::run($platform->id, $shopId, $frequency, $resolvedFrom, $resolvedTo);
                 }
             }
         }
     }
-
 }

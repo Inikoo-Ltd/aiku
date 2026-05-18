@@ -12,7 +12,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "../Pure/PureInput.vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
-import Image from "../Image.vue"
+import Image from "@common/Components/Image.vue"
 
 // Assumed notify function from your notification/notification library
 // import { notify } from "your-notification-lib"

@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Image from '@/Components/Image.vue';
+import Image from '@common/Components/Image.vue';
 
 library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faSpinnerThird)
 

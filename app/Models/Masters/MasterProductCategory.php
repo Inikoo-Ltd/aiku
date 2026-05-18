@@ -81,6 +81,11 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $desc_art4
  * @property int|null $desc_art5
  * @property int|null $extra_desc_art1
+ * @property int|null $extra_desc_art2
+ * @property int|null $extra_desc_art3
+ * @property int|null $extra_desc_art4
+ * @property numeric|null $gr_vol_discount_percentage
+ * @property int|null $gr_vol_discount_quantity
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Media|null $descArt1Image
@@ -89,6 +94,9 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $descArt4Image
  * @property-read Media|null $descArt5Image
  * @property-read Media|null $extraDescArt1Image
+ * @property-read Media|null $extraDescArt2Image
+ * @property-read Media|null $extraDescArt3Image
+ * @property-read Media|null $extraDescArt4Image
  * @property-read array $translatable_columns_from
  * @property-read Group|null $group
  * @property-read Media|null $image
@@ -102,7 +110,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read MasterProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
- * @property-read LaravelCollection<int, Asset> $relatedMasterAssets
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $relatedMasterAssets
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
@@ -282,9 +290,26 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
     }
 
+    public function extraDescArt2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art2');
+    }
+
+    public function extraDescArt3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art3');
+    }
+
+    public function extraDescArt4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art4');
+    }
+
     public function relatedMasterAssets(): BelongsToMany
     {
         return $this->belongsToMany(MasterAsset::class, 'master_product_category_has_related_assets')
+            ->orderByPivot('position')
+            ->withPivot('id', 'position')
             ->withTimestamps();
     }
 

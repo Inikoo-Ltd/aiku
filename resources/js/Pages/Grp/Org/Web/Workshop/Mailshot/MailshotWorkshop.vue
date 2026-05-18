@@ -17,7 +17,7 @@ import Multiselect from "@vueform/multiselect"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle } from '@fal'
 import { faUserCog } from '@fas'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import Modal from '@/Components/Utils/Modal.vue'
@@ -28,9 +28,10 @@ import { useTabChange } from "@/Composables/tab-change";
 import TableEmailTemplate from "@/Components/Tables/TableEmailTemplate.vue";
 import TablePreviousMailshots from "@/Components/Tables/TablePreviousMailshots.vue"
 import TableOtherStoreMailshots from "@/Components/Tables/TableOtherStoreMailshots.vue"
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { usePage } from "@inertiajs/vue3"
 
-library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
+library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
 
 const props = defineProps<{
     title: string,
@@ -40,6 +41,7 @@ const props = defineProps<{
     updateRoute: routeType
     snapshot: routeType
     unpublished_layout: any
+    compiledLayout: string | null
     mergeTags: Array<any>
     mergeContents: Array<any> | null
     status: string
@@ -70,7 +72,19 @@ const options = ref([
     { name: 'Suspended', value: "suspended" },
 ]);
 
-const onSendPublish = async (data) => {
+const compiledLayout = ref(props.compiledLayout ?? '')
+const compiledLayoutSize = computed(() => {
+    return (new Blob([compiledLayout.value]).size / 1024).toFixed(2)
+})
+
+const emailSizeWarningTooltip = computed(() => {
+    return `Your email content is ${compiledLayoutSize.value} KB, which exceeds Gmail’s recommended 102 KB limit`
+})
+
+
+const onSendPublish = async (data: any) => {
+    compiledLayout.value = data?.htmlFile
+
     try {
         const response = await axios.post(route(props.publishRoute.name, props.publishRoute.parameters), {
             comment: comment.value,
@@ -308,6 +322,14 @@ watch(
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
+            <div>
+                <div class="text-sm text-gray-600 mr-2 flex items-center gap-2">
+                    Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
+                    <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
+                        class="text-yellow-500 text-lg" v-tooltip="emailSizeWarningTooltip" fixed-width />
+                </div>
+            </div>
+
             <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
                 :icon="faPlus" :disabled="!isBeefreeReady" />

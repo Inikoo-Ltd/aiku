@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getIrisComponent } from "@/Composables/getIrisComponents";
+import { getIrisComponent } from "@/Iris/Composables/getIrisComponents";
 import { routeType } from "@/types/route";
 import { inject, provide, computed, ref } from "vue";
 import { notify } from "@kyvg/vue3-notification";
@@ -93,7 +93,7 @@ provide("onLogout", onClickLogout);
 
   <!-- Section: Mobile Header -->
   <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)" class="sticky top-0 z-50"> 
-      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :productCategories="menu.product_categories" :screenType="screenType" />
+      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :productCategories="menu?.product_categories ?? []" :screenType="screenType" />
   </div>
 
 </template>

@@ -9,7 +9,7 @@ import { faPlus } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import type { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 
 type Variant = {
@@ -525,8 +525,8 @@ const noLeader = computed(() => {
 
                     <!-- Leader -->
                     <td class="px-4 text-center">
-                      <input v-if="!node.children" type="checkbox" :disabled="!node.product || !node.all_child_has_webpage" :checked="node.is_leader"
-                        v-tooltip="!node.all_child_has_webpage ? trans(`Unable to set this product as a leader. One or more of it's child has no webpage. A leader product is required to have webpage`) : ''"
+                      <input v-if="!node.children" type="checkbox" :disabled="!node.product" :checked="node.is_leader"
+                        v-tooltip="!node.product ? '' : (!node.all_child_has_webpage ? trans(`One or more of it's child in a shop has no webpage. Choosing this product as a leader would create webpage under said shop`) : '')"
                         @change="setLeader(node, $event.target.checked)"
                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>

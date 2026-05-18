@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'

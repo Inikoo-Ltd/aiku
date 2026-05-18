@@ -23,6 +23,7 @@ use App\Actions\Dispatching\PickedBay\UI\IndexPickedBays;
 use App\Actions\Dispatching\PickedBay\UI\ShowPickedBay;
 use App\Actions\Dispatching\PickingSession\UI\IndexPickingSessions;
 use App\Actions\Dispatching\PickingSession\UI\ShowPickingSession;
+use App\Actions\Fulfilment\PickingSession\UI\ShowFulfilmentPickingSession;
 use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
@@ -47,7 +48,6 @@ Route::get('/waiting_crm_items/shop/{shopType}', [IndexWaitingCrmDeliveryNoteIte
 
 Route::get('/waiting_crm_items_still_picking', IndexWaitingCrmDeliveryNoteItemsStillInPicking::class)->name('waiting_crm_items_still_picking');
 Route::get('/waiting_crm_items_still_picking/shop/{shopType}', [IndexWaitingCrmDeliveryNoteItemsStillInPicking::class, 'inShopTypes'])->name('waiting_crm_items_still_picking.shop');
-
 
 Route::get('/delivery-notes', IndexDeliveryNotes::class)->name('delivery-notes');
 Route::get('/delivery-notes/shop/{shopType}', [IndexDeliveryNotes::class, 'inShopTypes'])->name('delivery-notes.shop');
@@ -107,6 +107,7 @@ Route::get('picking-sessions/picking', [IndexPickingSessions::class, 'Picking'])
 Route::get('picking-sessions/waiting', [IndexPickingSessions::class, 'Waiting'])->name('picking_sessions.waiting');
 Route::get('picking-sessions/picked', [IndexPickingSessions::class, 'Picked'])->name('picking_sessions.picked');
 Route::get('picking-sessions/packed', [IndexPickingSessions::class, 'Packed'])->name('picking_sessions.packed');
+Route::get('picking-sessions/fulfilment/{pickingSession}', ShowFulfilmentPickingSession::class)->name('picking_sessions.fulfilment.show');
 Route::get('picking-sessions/{pickingSession}', ShowPickingSession::class)->name('picking_sessions.show');
 
 Route::prefix('trolleys')->as('trolleys.')->group(function () {

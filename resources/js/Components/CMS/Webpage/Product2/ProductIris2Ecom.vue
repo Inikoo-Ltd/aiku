@@ -32,7 +32,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import Product2Image from "./Product2Image.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { trans } from "laravel-vue-i18n"

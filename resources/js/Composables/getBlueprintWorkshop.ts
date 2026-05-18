@@ -1,3 +1,4 @@
+import { blueprint } from './../Components/CMS/Webpage/LuigiLastSeen1/Blueprint';
 import Footer1Blueprint from "@/Components/CMS/Website/Footers/footerTheme1/bluprint"
 import Topbar1Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar1/Blueprint"
 import Topbar2Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar2/Blueprint"
@@ -52,7 +53,7 @@ import TimelineIris2 from "@/Components/CMS/Webpage/Step2/Blueprint"
 import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
 import CollectionDescription from '@/Components/CMS/Webpage/CollectionDescription/Blueprint'
 import DepartmentDescription from "@/Components/CMS/Webpage/DepartmentDescription/Blueprint"
-import SubDepartmentDesciption from "@/Components/CMS/Webpage/SubDepartmentDesciption/Blueprint"
+import SubDepartmentDesciption from "../Components/CMS/Webpage/SubDepartmentDescription/Blueprint"
 import { Mainbluprint } from '@/Components/CMS/Webpage/Product1/BlueprintWebpages'
 import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
 import Product1DSBlueprint from '@/Components/CMS/Webpage/Product1/Dropshipping/Blueprint'
@@ -66,6 +67,7 @@ import { blueprint as RecommendersCustomerRecentlyBought  } from "@/Components/C
 import SliderBlueprint  from "@/Components/CMS/Webpage/Slider-1/Blueprint"
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Blueprint'
 import Family2ExtraDescriptionBlueprint from "@/Components/CMS/Webpage/Family2ExtraDescription/Blueprint"
+import RecomendationFromMaster from "../Components/CMS/Webpage/RecommendationFromMaster/Blueprint"
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
@@ -163,7 +165,8 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'carousel-cta' : CtaCarousel.blueprint,
 		'carousel-image-background' : CarouselImageBackgroundIrisBlueprint.blueprint,
 		'step-2' : TimelineIris2.blueprint,
-		'slider-1' : SliderBlueprint.blueprint
+		'slider-1' : SliderBlueprint.blueprint,
+		'recommendation-from-master' : RecomendationFromMaster.blueprint
 	}
 
 	const blueprint = components[componentName]

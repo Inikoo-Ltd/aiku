@@ -6,12 +6,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { SubSection } from "@/types/Navigation"
-import { faPallet, faTruck, faTruckCouch, faTruckRamp } from "@fal";
+import { faEnvelope, faPallet, faTruck, faTruckCouch, faTruckRamp } from "@fal";
 import { faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, faDotCircle as FarDotCircle } from "@far";
 import { ref, computed } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faDotCircle, faTruck, faPallet, faTruckRamp, faTruckCouch, faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, FarDotCircle)
+library.add(faDotCircle, faTruck, faPallet, faTruckRamp, faTruckCouch, faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, FarDotCircle, faEnvelope)
 
 const layoutStore = useLayoutStore()
 
@@ -41,16 +41,19 @@ const mainColor = computed(() => {
         <template v-for="(subSection, idxSubSec) in subSections" :key="idxSubSec">
             <component :is="subSection?.route?.name ? Link : 'div'"
                 :href="subSection?.route?.name ? route(subSection?.route?.name, subSection?.route?.parameters) : '#'" :class="[
-                    'relative flex items-center gap-2 px-4 py-2 font-medium text-xs md:text-sm transition duration-150 ease-in-out border-b-2 rounded-t-md',
+                    'relative flex items-center py-2 font-medium text-xs md:text-sm transition duration-150 ease-in-out border-b-2 rounded-t-md',
                     isSubSectionActive(subSection?.root)
                         ? `text-[${mainColor}] border-[${mainColor}] bg-[${mainColor}1A]`
-                        : `text-gray-600 border-transparent hover:text-[${mainColor}] hover:border-[${mainColor}] hover:bg-[${mainColor}0D]`
+                        : `text-gray-600 border-transparent hover:text-[${mainColor}] hover:border-[${mainColor}] hover:bg-[${mainColor}0D]`,
+                    subSection.type == 'icon' 
+                        ? `px-2 !ml-auto` 
+                        : `gap-2 px-4`
                 ]" :title="capitalize(subSection.tooltip ?? subSection.label ?? '')"
                 @start="() => isLoading = 'subSection' + idxSubSec" @finish="() => isLoading = false">
                 <LoadingIcon v-if="isLoading === 'subSection' + idxSubSec" class="h-4 w-4" />
-                <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" fixed-width class="h-4 w-4" />
+                <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" fixed-width class="h-4 w-4"/>
                 <FontAwesomeIcon v-else icon="fas fa-dot-circle" fixed-width class="h-4 w-4" />
-                <span class="whitespace-nowrap">
+                <span v-if="subSection.type !== 'icon' "class="whitespace-nowrap">
                     {{ capitalize(subSection?.label || '') }}
                 </span>
             </component>

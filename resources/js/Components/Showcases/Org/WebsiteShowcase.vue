@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { faFragile, faGlobe, faLink, faSearch, faPencil, faPlaneArrival } from "@fal"
+import { faFragile, faGlobe, faLink, faSearch, faPencil, faPlaneArrival, faUser, faChartLine } from "@fal"
 import { computed, ref, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -20,7 +20,7 @@ import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival)
+library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChartLine)
 
 const props = defineProps<{
     data: {
@@ -34,6 +34,7 @@ const props = defineProps<{
         layout: any
         stats: StatsBoxTS[]
         content_blog_stats: StatsBoxTS[]
+        website_stats: StatsBoxTS[]
         website_type: string
     }
     route_storefront: routeType
@@ -115,20 +116,26 @@ const links = computed(() => {
                     <div class="grid grid-cols-2 gap-2 md:max-w-lg">
                         <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
                     </div>
+                    <div class="mt-6 font-semibold w-fit text-lg mb-2">
+                        {{ trans('Stats') }}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
+                        <StatsBox v-for="stat in props.data.website_stats" :stat />
+                    </div>
                 </div>
 
                 <!-- Section: PIC Webmaster and SEO -->
-                <div v-if="layout?.app?.environment === 'local'" class="mt-6">
+                <div v-if="props.data.pic?.webmaster?.length || props.data.pic?.seo?.length" class="mt-6">
                     <div class="font-semibold w-fit text-lg mb-2">
                         {{ trans('Person in Contact') }}
                     </div>
 
-                    <div>
-                        {{ trans("Webmaster") }}:  {{ props.data.pic?.webmaster?.map(x => x.name).join(', ') }}
+                    <div v-if="props.data.pic?.webmaster?.length">
+                        {{ trans("Webmaster") }}:  {{ props.data.pic.webmaster.map(x => x.name).join(', ') }}
                     </div>
 
-                    <div>
-                        {{ trans("SEO") }}:  {{ props.data.pic?.seo?.map(x => x.name).join(', ') }}
+                    <div v-if="props.data.pic?.seo?.length">
+                        {{ trans("SEO") }}:  {{ props.data.pic.seo.map(x => x.name).join(', ') }}
                     </div>
                 </div>
             </div>

@@ -37,9 +37,19 @@ trait OfferCampaignShopOffersTrait
                         'icon'  => ['fal', 'comment-dollar'],
                         'title' => __('Offer campaign')
                     ],
-                    'title'         => $offerCampaign->name,
+                    'title'         => OfferCampaignTypeEnum::from($offerCampaign->type->value)->labels()[$offerCampaign->type->value],
                     'model'         => __('Offer Campaign'),
                     'iconRight'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
+                    'actions' => app()->environment('local') ? [
+                        [
+                            'type'  => 'button',
+                            'key'   => 'create_offer_shop',
+                            // 'route' => [
+                            //     'name'       => preg_replace('/show$/', 'create_family_offer', request()->route()->getName()),
+                            //     'parameters' => array_values(request()->route()->originalParameters())
+                            // ]
+                        ]
+                    ] : [],
                 ],
                 'tabs'                                               => [
                     'current'    => $this->tab,
@@ -47,9 +57,12 @@ trait OfferCampaignShopOffersTrait
                         OfferCampaignTabsEnum::GR_AMNESTY
                     ])
                 ],
-                'shop_data' => [
+                'shop_data'                            => [
+                    'id'            => $offerCampaign->shop_id,
                     'slug'          => $offerCampaign->shop->slug,
                     'currency_code' => $offerCampaign->shop->currency->code,
+                    'organisation'  => $offerCampaign->shop->organisation->slug,
+                    'offercampaign' => $offerCampaign->slug,
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)

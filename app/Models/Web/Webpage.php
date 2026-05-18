@@ -93,6 +93,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $layout_style
  * @property bool $index_page
  * @property bool $follow_link
+ * @property \Illuminate\Support\Carbon|null $last_published_at
+ * @property bool $is_different_when_logged_in
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
@@ -141,20 +143,22 @@ class Webpage extends Model implements Auditable, HasMedia
     use HasImage;
 
     protected $casts = [
-        'data'             => 'array',
-        'settings'         => 'array',
-        'published_layout' => 'array',
-        'migration_data'   => 'array',
-        'seo_data'         => 'array',
-        'structured_data'  => 'array',
-        'state'            => WebpageStateEnum::class,
-        'sub_type'         => WebpageSubTypeEnum::class,
-        'type'             => WebpageTypeEnum::class,
-        'ready_at'         => 'datetime',
-        'live_at'          => 'datetime',
-        'closed_at'        => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime'
+        'data'                        => 'array',
+        'settings'                    => 'array',
+        'published_layout'            => 'array',
+        'migration_data'              => 'array',
+        'seo_data'                    => 'array',
+        'structured_data'             => 'array',
+        'state'                       => WebpageStateEnum::class,
+        'sub_type'                    => WebpageSubTypeEnum::class,
+        'type'                        => WebpageTypeEnum::class,
+        'ready_at'                    => 'datetime',
+        'live_at'                     => 'datetime',
+        'closed_at'                   => 'datetime',
+        'fetched_at'                  => 'datetime',
+        'last_fetched_at'             => 'datetime',
+        'last_published_at'           => 'datetime',
+        'is_different_when_logged_in' => 'boolean',
     ];
 
     protected $attributes = [
@@ -285,8 +289,7 @@ class Webpage extends Model implements Auditable, HasMedia
 
     public function getCanonicalUrl(): ?string
     {
-
-        $url = $this->canonical_url;
+        $url         = $this->canonical_url;
         $environment = app()->environment();
 
 

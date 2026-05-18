@@ -71,9 +71,10 @@ import Column4Workshop from '@/Components/CMS/Webpage/Column4/Column4Workshop.vu
 import Slider1Workshop from '@/Components/CMS/Webpage/Slider-1/Slider1Workshop.vue'
 import CollectionDescriptionWorkshop from '@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionWorkshop.vue'
 import DepartmentDescriptionWorkshop from '@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionWorkshop.vue'
-import SubDepartmentDesciptionWorkshop from '@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionWorkshop.vue'
+import SubDepartmentDescriptionWorkshop from '../Components/CMS/Webpage/SubDepartmentDescription/SubDepartmentDescriptionWorkshop.vue'
 import Family2ExtraDescriptionWorkshop from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue'
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Families1OverviewWorkshop.vue'
+import RecommendationFromMasterWorkshop from '../Components/CMS/Webpage/RecommendationFromMaster/RecommendationFromMasterWorkshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -98,7 +99,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         //description catalouge
         'collection-description-1' : CollectionDescriptionWorkshop,
         'department-description-1' : DepartmentDescriptionWorkshop,
-        'sub-department-description-1' : SubDepartmentDesciptionWorkshop,
+        'sub-department-description-1' : SubDepartmentDescriptionWorkshop,
 
         //sub-department
         'sub-departments-1' : SubDepartmentWorkshop1,
@@ -172,8 +173,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'carousel-image-background' : CarouselImageBackground,
         'step-2' : TimelineWorkshop2,
         'slider-1' : Slider1Workshop,
-
-
+        'recommendation-from-master' : RecommendationFromMasterWorkshop
     }
 }
 

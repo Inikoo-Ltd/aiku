@@ -20,10 +20,10 @@ enum MasterFamilyTabsEnum: string
     // case FAMILIES     = 'families';
     case IMAGES    = 'images';
     case SALES     = 'sales';
+    case RELATED_PRODUCTS    = 'related_products';
 
     case HISTORY   = 'history';
     case VARIANTS   = 'variants';
-
 
     public function blueprint(): array
     {
@@ -56,6 +56,10 @@ enum MasterFamilyTabsEnum: string
                  'title' => __('Master Variants'),
                  'icon'  => 'fal fa-shapes',
              ],
+            MasterFamilyTabsEnum::RELATED_PRODUCTS => [
+                'title' => __('Related Products'),
+                'icon'  => 'fal fa-repeat',
+            ],
         };
     }
 }

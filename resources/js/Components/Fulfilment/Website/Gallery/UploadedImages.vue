@@ -9,7 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, onBeforeMount } from "vue"
 import axios from 'axios'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { notify } from '@kyvg/vue3-notification'
 import { faSpinnerThird } from '@fad'
 import EmptyState from "@/Components/Utils/EmptyState.vue"

@@ -200,10 +200,6 @@ class UpdateCustomer extends OrgAction
                 });
         }
 
-        if (Arr::has($modelData, 'disable_order_auto_processing')) {
-            data_set($modelData, 'settings.disable_order_auto_processing', Arr::pull($modelData, 'disable_order_auto_processing', false));
-        }
-
         if (Arr::hasAny($modelData, ['contact_name', 'company_name'])) {
             $contact_name = Arr::exists($modelData, 'contact_name') ? Arr::get($modelData, 'contact_name') : $customer->contact_name;
             $company_name = Arr::exists($modelData, 'company_name') ? Arr::get($modelData, 'company_name') : $customer->company_name;
@@ -223,6 +219,13 @@ class UpdateCustomer extends OrgAction
 
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
         UpdateCustomerComms::run($customer->comms, $emailSubscriptionsData);
+
+        // Section: Opt-out from eligible gift
+        if (Arr::has($modelData, 'is_gift_opted_out')) {
+            $settings = $customer->settings ?? [];
+            data_set($settings, 'is_gift_opted_out', Arr::pull($modelData, 'is_gift_opted_out'));
+            $customer->update(['settings' => $settings]);
+        }
 
         $oldRegisteredAt = $customer->registered_at;
 
@@ -345,9 +348,9 @@ class UpdateCustomer extends OrgAction
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
-            'disable_order_auto_processing'                         => ['sometimes', 'boolean'],
             'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
             'ukims'                                                 => ['sometimes', 'nullable', 'string', 'max:255'],
+            'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
         ];
 
         if ($this?->asAction) {

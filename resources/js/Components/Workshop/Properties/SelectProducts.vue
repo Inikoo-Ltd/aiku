@@ -9,7 +9,7 @@ import axios from 'axios'
 import { set } from 'lodash-es'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { Select } from 'primevue'
 import { isFutureDatePassed } from '@/Composables/useFormatTime'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
