@@ -203,7 +203,7 @@ task(
             if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
                 run('sleep 2');
                 artisan('crawl -d 2 --deployment --seeder', ['skipIfNoEnv', 'showOutput'])();
-                run('sleep 3');
+                run('sleep 10');
                 artisan('crawl -d 3 --deployment', ['skipIfNoEnv', 'showOutput'])();
             }
         } else {
