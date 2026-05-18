@@ -330,9 +330,9 @@ class GetGroupNavigation
         return [
             'label'   => __('Website'),
             'icon'    => ['fal', 'fa-globe'],
-            'root'    => '',
+            'root'    => 'grp.websites.',
             'route'   => [
-                'name' => ''
+                'name' => 'grp.websites.index'
             ],
             'topMenu' => []
         ];
