@@ -10,6 +10,10 @@
 namespace App\Enums\GoodsIn\ReturnDeliveryNote;
 
 use App\Enums\EnumHelperTrait;
+use App\Models\Catalogue\Shop;
+use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 
 enum ReturnDeliveryNoteStateEnum: string
 {
@@ -88,6 +92,23 @@ enum ReturnDeliveryNoteStateEnum: string
                 ]
             ]
 
+        ];
+    }
+
+    public static function count(Group|Organisation|Shop|Warehouse $parent): array
+    {
+        if ($parent instanceof Organisation || $parent instanceof Group) {
+            $stats = $parent->procurementStats;
+        } else {
+            $stats = $parent->stats;
+        }
+
+        return [
+            'received'         => $stats->number_return_delivery_notes_state_received,
+            'returning'        => $stats->number_return_delivery_notes_state_returning,
+            'returned'         => $stats->number_return_delivery_notes_state_returned,
+            'done'             => $stats->number_return_delivery_notes_state_done,
+            'cancelled'        => $stats->number_return_delivery_notes_state_cancelled,
         ];
     }
 }

@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\UI;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
+use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
@@ -16,6 +17,7 @@ use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
+use App\Http\Resources\Procurement\ReturnDeliveryNotesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -111,8 +113,13 @@ class ShowOrdersBacklog extends OrgAction
                 OrdersBacklogTabsEnum::DISPATCHED_TODAY->value => $this->tab == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))
                     : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))),
+
+                OrdersBacklogTabsEnum::RETURNED->value => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ?
+                    fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value))
+                    : Inertia::lazy(fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value))),
             ]
-        )->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))
+        )
+            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_PAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_PAID->value))
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value))
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_WAREHOUSE->value, bucket: OrdersBacklogTabsEnum::IN_WAREHOUSE->value))
@@ -125,7 +132,9 @@ class ShowOrdersBacklog extends OrgAction
 
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED->value, bucket: OrdersBacklogTabsEnum::PACKED->value))
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::FINALISED->value, bucket: OrdersBacklogTabsEnum::FINALISED->value))
-            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value));
+            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))
+
+            ->table(IndexReturnDeliveryNotes::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value));
     }
 
     public function getBreadcrumbs(Group|Organisation|Shop $parent, array $routeParameters): array
