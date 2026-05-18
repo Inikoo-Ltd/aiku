@@ -52,7 +52,6 @@ type RatingLabel = {
 const props = defineProps<{
     data: {
         data: ReviewTablePayload
-        reviewable_id?: number
         reviewable_type?: "ProductCategory" | "Product" | "Shop"
         rating_labels?: RatingLabel[]
         replier_type:String
@@ -119,11 +118,11 @@ const renderStars = (rating: number): string => {
     <Dialog v-model:visible="isDialogVisible" modal header="Review Detail" :style="{ width: '40rem' }"
         :breakpoints="{ '960px': '75vw', '641px': '90vw' }" @hide="closeModal">
         <div v-if="selectedItem" class="space-y-3">
-            <ModalReviewReply 
-                :modelValue="selectedItem" 
-                :schema="data.rating_labels"  
+            <ModalReviewReply
+                :modelValue="selectedItem"
+                :schema="data.rating_labels"
                 :replier_type="data.replier_type"
-                :reviewable_id="data.reviewable_id"
+                :reviewable_id="selectedItem.id"
                 :reviewable_type="data.reviewable_type"
             />
         </div>

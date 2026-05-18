@@ -42,7 +42,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use Inertia\Inertia;
@@ -474,7 +473,6 @@ class ShowProduct extends OrgAction
                 ),
                 $product
             ),
-            'reviewable_id' => $product->id,
             'rating_labels' => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::ProductReviews),
             'reviewable_type' => 'product_reviews',
             'replier_type' => 'merchant'

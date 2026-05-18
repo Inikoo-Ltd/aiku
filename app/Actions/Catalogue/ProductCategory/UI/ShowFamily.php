@@ -371,7 +371,6 @@ class ShowFamily extends OrgAction
                 IndexReviews::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value),
                 $family
             ),
-            'reviewable_id' => $family->id,
             'rating_labels' => $this->ratingLabelsForShop($family->shop->id, ReviewContextEnum::ProductCategoryReviews),
             'reviewable_type' => 'ProductCategory',
         ];
