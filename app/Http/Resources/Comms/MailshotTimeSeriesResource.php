@@ -33,6 +33,7 @@ class MailshotTimeSeriesResource extends JsonResource
             'spam' => (int) $this->number_dispatched_emails_state_spam,
             'unsubscribed' => (int) $this->number_dispatched_emails_state_unsubscribed,
             'delay' => (int) $this->number_dispatched_emails_state_sent_to_provider,
+            'open_rate' => $this->openRate(),
         ];
     }
 

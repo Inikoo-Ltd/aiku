@@ -58,4 +58,18 @@ class MailshotTimeSeriesRecord extends Model
     {
         return $this->belongsTo(MailshotTimeSeries::class);
     }
+
+    public function openRate(): float
+    {
+        return $this->number_dispatched_emails > 0
+            ? round($this->number_dispatched_emails_state_opened / $this->number_dispatched_emails * 100, 2)
+            : 0;
+    }
+
+    public function clickedRate(): float
+    {
+        return $this->number_dispatched_emails > 0
+            ? round($this->number_dispatched_emails_state_clicked / $this->number_dispatched_emails * 100, 2)
+            : 0;
+    }
 }

@@ -20,6 +20,7 @@ const props = defineProps<{
         spam: number;
         unsubscribed: number;
         delay: number;
+        open_rate: any;
     }>;
 }>();
 
