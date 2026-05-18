@@ -9,10 +9,12 @@ use App\Models\Reviews\ProductCategoryReview;
 use App\Models\Reviews\ProductReview;
 use App\Models\Reviews\ShopReview;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
@@ -63,7 +65,7 @@ class UpdateReview
         return $updatedReview;
     }
 
-    public function asController(ActionRequest $request): JsonResponse
+    public function asController(ActionRequest $request): ProductReview|ProductCategoryReview|ShopReview
     {
         $review = $this->resolveReview((string) $request->validated('reviewable_type'), (int) $request->route('review'));
 
@@ -77,14 +79,30 @@ class UpdateReview
             abort_unless((int) $review->customer_id === (int) $customerId, 403);
 
             $modelData['customer_id'] = (int) $customerId;
-            $modelData['status'] = ReviewStatusEnum::Pending->value;
+            $modelData['status'] = data_get($modelData, 'status', $review->status?->value);
         }
 
         $updatedReview = $this->handle($review, $modelData);
 
+        return $updatedReview;
+    }
+
+    public function jsonResponse(ProductReview|ProductCategoryReview|ShopReview $review): JsonResponse
+    {
         return response()->json([
             'status' => 'success',
-            'data'   => $updatedReview,
+            'data'   => $review->load('media'),
+        ]);
+    }
+
+    public function htmlResponse(ProductReview|ProductCategoryReview|ShopReview $review, ActionRequest $request): RedirectResponse
+    {
+        $request->route()?->getName();
+
+        return Redirect::back()->with('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Review updated successfully.'),
         ]);
     }
 
@@ -94,7 +112,7 @@ class UpdateReview
             'reviewable_type'        => ['required', Rule::in(['Product', 'ProductCategory', 'Shop', 'product_reviews', 'product_category_reviews', 'shop_reviews'])],
             'customer_id'           => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
             'status'                => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
-            'rating'                => ['sometimes', 'integer', 'min:1', 'max:5'],
+            'rating'                => ['sometimes', 'numeric', 'min:1', 'max:5'],
             'rating_a'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_b'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_c'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
