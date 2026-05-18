@@ -9,7 +9,7 @@ import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { getStyles } from "@/Composables/styles"
 
-import Family1Render from "./Families1Render.vue"
+import Family1Render from "@/Iris/Components/Families1Render.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
