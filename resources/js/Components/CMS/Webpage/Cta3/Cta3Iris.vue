@@ -3,7 +3,7 @@ import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { inject } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Components/Iris/LinkIris.vue";
+import LinkIris from "@/Iris/Components/LinkIris.vue";
 
 
 const props = defineProps<{

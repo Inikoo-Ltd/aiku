@@ -7,7 +7,7 @@ import Family1Render from './Families1Render.vue'
 import { getStyles } from "@/Composables/styles"
 import { computed, inject, ref } from "vue"
 import { trans } from "laravel-vue-i18n"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
