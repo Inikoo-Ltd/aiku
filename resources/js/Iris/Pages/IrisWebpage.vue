@@ -10,7 +10,7 @@ import { faCheck, faPlus, faMinus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
-import { getIrisComponent } from "@/Composables/getIrisComponents"
+import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
 import { usePage } from "@inertiajs/vue3"
 import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
 
@@ -109,16 +109,15 @@ onBeforeUnmount(() => {
                     :screenType="screenType"
                     :code="web_block_data.type"
                     :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
-                    :theme="layout?.app?.theme"
-                    :key="web_block_data.id"
                     :fieldValue="web_block_data?.web_block?.layout?.data?.fieldValue || web_block_data.structure"
-                    :indexBlock="index"
+                    :indexBlock="Number(index)"
                 />
             </div>
 
             <!-- REVIEW -->
-            <div v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)"
-                 class="my-10 2xl:my-16">
+            <div 
+                v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)"
+                class="my-10 2xl:my-16">
                 <div>
                     <ReviewByStore :code="'review-by-store'" />
                 </div>

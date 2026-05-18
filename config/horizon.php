@@ -384,6 +384,38 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
+        'cache-warming'    => [
+            'connection'          => 'redis-long-running',
+            'queue'               => ['cache-warming'],
+            'balance'             => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses'        => 5,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            'memory'              => 1280,
+            'tries'               => 1,
+            'timeout'             => 10800,
+            'retry_after'         => 600,
+            'nice'                => 0,
+            'balanceMaxShift'     => 1,
+            'balanceCooldown'     => 3,
+        ],
+        'cache-warming-js'    => [
+            'connection'          => 'redis-long-running',
+            'queue'               => ['cache-warming-js'],
+            'balance'             => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses'        => 5,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            'memory'              => 1280,
+            'tries'               => 1,
+            'timeout'             => 10800,
+            'retry_after'         => 600,
+            'nice'                => 0,
+            'balanceMaxShift'     => 1,
+            'balanceCooldown'     => 3,
+        ],
         'ses'             => [
             'connection'      => 'redis',
             'queue'           => ['ses-analytics', 'ses-send', 'ses'],
@@ -466,7 +498,13 @@ return [
             ],
             'stock-history'   => [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 12),
-            ]
+            ],
+            'cache-warming' => [
+                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING', 3),
+            ],
+            'cache-warming-js' => [
+                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING_JS', 1),
+            ],
 
         ],
         'staging'    => [
@@ -514,7 +552,13 @@ return [
             ],
             'stock-history'   => [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 2),
-            ]
+            ],
+            'cache-warming' => [
+                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING', 1),
+            ],
+            'cache-warming-js' => [
+                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING_JS', 1),
+            ],
 
 
         ],
@@ -566,7 +610,13 @@ return [
             ],
             'stock-history'   => [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 4),
-            ]
+            ],
+            'cache-warming' => [
+                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING', 1),
+            ],
+            'cache-warming-js' => [
+                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING_JS', 1),
+            ],
 
         ],
     ],

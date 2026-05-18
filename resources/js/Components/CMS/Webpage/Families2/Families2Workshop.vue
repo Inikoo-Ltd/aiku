@@ -18,7 +18,7 @@ import 'swiper/css/free-mode'
 import Family2Render from './Families2Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -190,75 +190,78 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
 </script>
 
 <template>
-  <div  :id="modelValue?.id ? modelValue?.id : 'families-2'+indexBlock" :key="refreshTrigger" ref="containerRef">
-    <div v-if="allItems.length" class="px-4 py-10" :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-      ...getStyles(props.modelValue.container?.properties, props.screenType)
-    }" @click="activateBlock">
-      <div class="flex items-center gap-4 w-full">
+<div :id="modelValue?.id ? modelValue?.id : 'families-2' + indexBlock" :key="refreshTrigger"
+  ref="containerRef">
+  <div v-if="allItems.length" class="px-4 py-10" :style="{
+    ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+    ...getStyles(props.modelValue.container?.properties, props.screenType)
+  }" @click="activateBlock">
 
-        <div class="relative flex-1 ">
-          <!-- PREV -->
-          <button v-if="swiperInstance?.allowSlidePrev" ref="prevEl"
-            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full cursor-pointer text-gray-500"
-            @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
-            <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
-          </button>
+    <div class="flex items-center gap-4 w-full">
 
-          <Swiper @swiper="(s) => (swiperInstance = s)" :modules="[Autoplay, Thumbs, FreeMode, Navigation]" :loop="true"
-            slides-per-view="auto" :space-between="spaceBetween" :freeMode="true" class="w-full swiper-mask">
-            <SwiperSlide class="!w-auto flex">
-              <LinkIris :href="modelValue?.webpage_data?.overview_url" type="internal" class="h-full flex">
-                <div>
-                  <div class="inline-flex items-center rounded-3xl border border-gray/10
-          justify-center h-auto px-3  sm:py-3
-           text-base font-semibold leading-tight text-center
-           overflow-hidden sm:overflow-visible"  :style="{
-                  background: '#ffff',
-                  ...getStyles(
-                    props.modelValue?.button?.view_more?.properties,
-                    props.screenType
-
-                  ), 
-                }">
-                    <span class="whitespace-normal break-words w-full text-center
-             sm:whitespace-normal sm:max-w-full" :class="{
-              '!w-full !text-xs': screenType === 'mobile'
-            }">
-                      {{ trans("View All") }}
-                    </span>
-                  </div>
-                </div>
-              </LinkIris>
-            </SwiperSlide>
-            <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="!w-auto flex">
-              <div class="h-full flex">
-                <Family2Render class="family-item h-full flex items-center" :data="item" :style="{
-                  ...getStyles(
-                    props.modelValue?.chip?.container?.properties,
-                    props.screenType
-                  )
-                }" :screenType="props.screenType" />
-              </div>
-            </SwiperSlide>
-
-          </Swiper>
-
-          <!-- NEXT -->
-          <button v-if="swiperInstance?.allowSlideNext" ref="nextEl"
-            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full cursor-pointer text-gray-500"
-            @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
-            <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" />
-          </button>
+      <!-- VIEW ALL -->
+      <LinkIris :href="modelValue?.webpage_data?.overview_url" type="internal"
+        class="shrink-0 flex items-center">
+        <div class="inline-flex items-center justify-center rounded-3xl border border-gray/10
+          h-auto px-3 sm:py-3 text-base font-semibold leading-tight text-center"
+          :style="{
+            background: '#ffff',
+            ...getStyles(
+              props.modelValue?.button?.view_more?.properties,
+              props.screenType
+            ),
+          }">
+          <span class="whitespace-normal break-words text-center" :class="{
+            '!text-xs': screenType === 'mobile'
+          }">
+            {{ trans('View All') }}
+          </span>
         </div>
+      </LinkIris>
 
+      <!-- SWIPER -->
+      <div class="relative flex-1 min-w-0">
+
+        <!-- PREV -->
+        <button v-if="swiperInstance?.allowSlidePrev" ref="prevEl"
+          class="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full cursor-pointer text-gray-500"
+          @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
+          <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
+        </button>
+
+        <Swiper @swiper="(s) => (swiperInstance = s)"
+          :modules="[Autoplay, Thumbs, FreeMode, Navigation]" :loop="true" slides-per-view="auto"
+          :space-between="spaceBetween" :freeMode="true" class="w-full swiper-mask">
+
+          <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index"
+            class="!w-auto flex">
+            <div class="h-full flex">
+              <Family2Render class="family-item h-full flex items-center" :data="item" :style="{
+                ...getStyles(
+                  props.modelValue?.chip?.container?.properties,
+                  props.screenType
+                )
+              }" :screenType="props.screenType" />
+            </div>
+          </SwiperSlide>
+
+        </Swiper>
+
+        <!-- NEXT -->
+        <button v-if="swiperInstance?.allowSlideNext" ref="nextEl"
+          class="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full cursor-pointer text-gray-500"
+          @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right"
+          type="button">
+          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" />
+        </button>
 
       </div>
-    </div>
 
-    <EmptyState v-else :data="{ title: 'Empty Families' }">
-    </EmptyState>
+    </div>
   </div>
+
+  <EmptyState v-else :data="{ title: 'Empty Families' }" />
+</div>
 </template>
 
 <style scoped>
@@ -276,19 +279,4 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
   display: none !important;
 }
 
-.swiper-mask {
- /*  --mask-size: 48px;
-
-  -webkit-mask-image: linear-gradient(to right,
-      transparent 0,
-      black var(--mask-size),
-      black calc(100% - var(--mask-size)),
-      transparent 100%);
-
-  mask-image: linear-gradient(to right,
-      transparent 0,
-      black var(--mask-size),
-      black calc(100% - var(--mask-size)),
-      transparent 100%); */
-}
 </style>

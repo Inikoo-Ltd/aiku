@@ -217,6 +217,7 @@ use App\Actions\Fulfilment\RecurringBillTransaction\StoreRecurringBillTransactio
 use App\Actions\Fulfilment\RecurringBillTransaction\UpdateRecurringBillTransaction;
 use App\Actions\Fulfilment\RentalAgreement\UpdateRentalAgreement;
 use App\Actions\Fulfilment\Space\StoreSpace;
+use App\Actions\Fulfilment\Space\StopSpaceRental;
 use App\Actions\Fulfilment\Space\UpdateSpace;
 use App\Actions\Fulfilment\StoredItem\AttachStoredItemToReturn;
 use App\Actions\Fulfilment\StoredItem\DeleteStoredItem;
@@ -915,6 +916,7 @@ Route::post('customer/{customer:id}/note', StoreCustomerNote::class)->name('cust
 Route::prefix('fulfilment-customer-space/{fulfilmentCustomer:id}')->as('fulfilment_customer_space.')->group(function () {
     Route::post('', StoreSpace::class)->name('store');
     Route::patch('spaces/{space:id}', UpdateSpace::class)->name('update')->withoutScopedBindings();
+    Route::post('spaces/{space:id}/stop-rental', StopSpaceRental::class)->name('stop_rental')->withoutScopedBindings();
 });
 
 Route::post('group/{group:id}/organisation', StoreOrganisation::class)->name('organisation.store');
@@ -1234,6 +1236,7 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
+
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
 Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');
 Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
@@ -1250,6 +1253,8 @@ Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.upda
 
 require __DIR__.'/models/inventory/warehouse.php';
 require __DIR__.'/models/goods_in/return.php';
+require __DIR__.'/models/goods_in/return_delivery_note.php';
+require __DIR__.'/models/goods_in/return_delivery_note_item.php';
 require __DIR__.'/models/inventory/location_org_stock.php';
 require __DIR__.'/models/inventory/warehouse_area.php';
 require __DIR__.'/models/inventory/location.php';

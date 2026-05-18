@@ -95,6 +95,19 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 	}
 }
 
+function returnNoteRoute(returnDeliveryNote) {
+	switch(route().current()) {
+		case "grp.org.warehouses.show.incoming.return_delivery_notes.index":
+			return route('grp.org.warehouses.show.incoming.return_delivery_notes.show', [
+				route().params["organisation"],
+				route().params["warehouse"],
+				returnDeliveryNote.slug,
+			]);
+		default:
+			return route("grp.helpers.redirect_return_notes", returnDeliveryNote.id)
+	}
+}
+
 function customerRoute(deliveryNote: DeliveryNote) {
 	// console.log('deliveryNote', deliveryNote)
 	if (!deliveryNote.customer_slug) {
@@ -203,6 +216,14 @@ const generateRouteDeliveryNote = (id: string) => {
 					fixed-width
 					aria-hidden="true" />
 				<NotesDisplay :item="deliveryNote" reference-field="reference" />
+			</div>
+		</template>
+
+		<template #cell(reference_return)="{ item: deliveryNote }">
+			<div class="flex gap-2 flex-wrap items-center">
+				<Link :href="returnNoteRoute(deliveryNote)" class="primaryLink">
+					{{ deliveryNote["reference"] }}
+				</Link>
 			</div>
 		</template>
 
@@ -336,6 +357,20 @@ const generateRouteDeliveryNote = (id: string) => {
 			<span v-if="deliveryNote.weight_bracket" class="text-sm text-gray-700">
 				{{ deliveryNote.weight_bracket }}
 			</span>
+		</template>
+
+		<template #cell(batch_code_sku)="{ item: deliveryNote }">
+			<Link
+				v-if="deliveryNote.org_stock_route"
+				:href="route(deliveryNote.org_stock_route.name, deliveryNote.org_stock_route.parameters)"
+				class="primaryLink">
+				{{ deliveryNote.batch_code_sku }}
+			</Link>
+			<span v-else class="text-sm text-gray-700">{{ deliveryNote.batch_code_sku || '—' }}</span>
+		</template>
+
+		<template #cell(batch_code_expiry_date)="{ item: deliveryNote }">
+			<span class="text-sm text-gray-700">{{ useFormatTime(deliveryNote.batch_code_expiry_date) || '—' }}</span>
 		</template>
 	</Table>
 

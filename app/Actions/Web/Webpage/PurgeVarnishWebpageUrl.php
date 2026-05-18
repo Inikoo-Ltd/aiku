@@ -25,9 +25,6 @@ class PurgeVarnishWebpageUrl extends OrgAction
 
         $host = strtolower($canonicalUrl['host']);
         $path = $canonicalUrl['path'] ?? '/';
-        if (isset($canonicalUrl['query'])) {
-            $path .= '?'.$canonicalUrl['query'];
-        }
         $webpagePath = Str::start($webpage->url, '/');
 
         foreach (config('iris.cache.varnish_hosts') as $varnishHost) {
@@ -64,7 +61,7 @@ class PurgeVarnishWebpageUrl extends OrgAction
      */
     public function asCommand(Command $command): int
     {
-        $webpage = Webpage::where('slug', $command->argument('slug'))->first();
+        $webpage = Webpage::where('slug', $command->argument('slug'))->firstOrFail();
         $this->handle($webpage, $command);
 
         return 0;

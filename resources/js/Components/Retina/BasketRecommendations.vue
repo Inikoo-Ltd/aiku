@@ -15,7 +15,9 @@ import { faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { reactive } from 'vue'
-import LinkIris from '../Iris/LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
+import { RecommendationCollector } from '@/Composables/Unique/LuigiDataCollector'
+import { debounce } from 'lodash-es'
 // import { Carousel } from 'primevue'
 library.add(faCircle)
 
@@ -117,6 +119,11 @@ const fetchRecommenders = async (nextPage = false) => {
       }
     }
 
+    // Send Analytics - only for new (delta) items
+    if (layout.app.environment === 'production' && delta.length) {
+        RecommendationCollector({ ...response.data[0], hits: delta })
+    }
+
     // Kalau ini first load, delta = semua; kalau load berikutnya, delta = penambahan 7 (idealnya)
     listProducts.value = [...listProducts.value, ...delta]
   } catch (error: any) {
@@ -126,14 +133,16 @@ const fetchRecommenders = async (nextPage = false) => {
   }
 }
 
+const debFetchRecom = debounce((xxx?: boolean) => fetchRecommenders(xxx), 300) // untuk mencegah fetch berlebihan saat scroll cepat
+
 const onReachEnd = () => {
-  // minta halaman berikutnya: page bertambah 1 → size bertambah 7
-  fetchRecommenders(true)
+    // minta halaman berikutnya: page bertambah 1 → size bertambah 7
+    debFetchRecom(true)
 }
 
 
 onMounted(() => {
-    fetchRecommenders()
+    debFetchRecom()
 })
 
 
@@ -177,7 +186,7 @@ onBeforeUnmount(() => {
             class="w-full"
             spaceBetween="12"
             autoHeight
-            @reachEnd="() => onReachEnd()"
+            @reachEnd="(e) => (e.slides?.length > 0 ? onReachEnd() : false)"
         >
 
             <template v-if="listProducts?.length">

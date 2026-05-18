@@ -11,8 +11,8 @@ import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
 import { inject, computed } from 'vue'
 import { faCube, faLink, faImage } from "@fal"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import Button from "@iris/Components/IrisButton.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { get, isPlainObject } from 'lodash-es'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSpinnerThird } from "@fas"
@@ -25,6 +25,7 @@ const props = defineProps<{
 	blockData?: Object,
 	screenType: 'mobile' | 'tablet' | 'desktop'
 	indexBlock?: number | string
+	code?: string
 }>()
 
 const layout: any = inject("layout", {})

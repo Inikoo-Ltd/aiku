@@ -84,6 +84,11 @@ const props = defineProps<{
     price_rrp_warning_ratio : number
     mismatch_detected?: boolean
     related_products : object
+    vol_gr_reward?: {
+        show_gr_vol: boolean
+        gr_vol_discount_quantity?: number
+        gr_vol_discount_percentage?: number
+    }
 }>()
 const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
@@ -191,7 +196,7 @@ const showDialog = ref(false);
         </Message>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :product_category_id="props.masterProductCategoryId" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward"/>
 
     <FormCreateMasterProduct
         :showDialog="showDialog"

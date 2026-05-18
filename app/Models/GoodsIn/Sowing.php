@@ -52,6 +52,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read OrgStock|null $orgStock
  * @property-read OrgStockMovement|null $orgStockMovement
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \App\Models\GoodsIn\ReturnDeliveryNote|null $return
+ * @property-read \App\Models\GoodsIn\ReturnDeliveryNoteItem|null $returnItem
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read User|null $sower
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sowing newModelQuery()
@@ -104,5 +106,15 @@ class Sowing extends Model
     public function orgStockMovement(): BelongsTo
     {
         return $this->belongsTo(OrgStockMovement::class, 'org_stock_movement_id');
+    }
+
+    public function returnItem(): BelongsTo
+    {
+        return $this->belongsTo(ReturnDeliveryNoteItem::class, 'return_item_id');
+    }
+
+    public function return(): BelongsTo
+    {
+        return $this->belongsTo(ReturnDeliveryNote::class, 'return_item_id');
     }
 }

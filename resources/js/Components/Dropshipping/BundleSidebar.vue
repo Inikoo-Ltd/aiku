@@ -42,9 +42,9 @@ const showGenerateModalAI = ref<boolean>(false)
 const customerChannelsId = ref<string | null>(null)
 
 const customerChannelOptions = computed(() => {
-    const data = layout?.user.customerSalesChannels
+    const data = layout?.user?.customerSalesChannels
 
-    return data ? Object.values(data) : []
+    return data && typeof data === 'object' ? Object.values(data) : []
 })
 
 const resolveParams = (config: any) => {

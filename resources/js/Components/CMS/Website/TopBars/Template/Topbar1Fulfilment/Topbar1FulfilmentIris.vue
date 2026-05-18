@@ -9,7 +9,7 @@ import { faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus } from
 import { library } from "@fortawesome/fontawesome-svg-core"
 
 import { TopbarFulfilmentTypes } from "@/types/TopbarFulfilment"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 
 library.add(faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus)

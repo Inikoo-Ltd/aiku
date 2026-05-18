@@ -1,0 +1,113 @@
+<?php
+
+/*
+ * author Louis Perez
+ * created on 17-03-2026-16h-21m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
+
+namespace App\Actions\Web\WebBlock\Iris;
+
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Http\Resources\Web\WebBlockFamiliesResource;
+use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
+use App\Models\Web\Webpage;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsObject;
+use Illuminate\Support\Arr;
+
+class GetIrisWebBlockFamiliesOverview
+{
+    use AsObject;
+
+    public function handle(Webpage $webpage, array $webBlock): array
+    {
+        if ($webpage->model instanceof ProductCategory) {
+            $families = DB::table('product_categories')
+                ->leftJoin('webpages', function ($join) {
+                    $join->on('product_categories.id', '=', 'webpages.model_id')
+                        ->where('webpages.model_type', 'ProductCategory');
+                })
+                ->select(['product_categories.code', 'product_categories.web_images', 'product_categories.offers_data', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->selectRaw('\'' . request()->path() . '\' as parent_url')
+                ->where(function ($query) use ($webpage) {
+                    if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
+                        $query->where('product_categories.department_id', $webpage->model_id)
+                            ->orWhereIn('product_categories.id', function ($sub) use ($webpage) {
+                                $sub->select('chm.model_id')
+                                    ->from('collection_has_models as chm')
+                                    ->where('chm.model_type', 'ProductCategory')
+                                    ->whereIn('chm.collection_id', function ($sub2) use ($webpage) {
+                                        $sub2->select('mhc.collection_id')
+                                            ->from('model_has_collections as mhc')
+                                            ->where('mhc.model_id', $webpage->model_id);
+                                    });
+                            });
+                    } else {
+                        $query->where('product_categories.sub_department_id', $webpage->model_id);
+                    }
+                })
+                ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+                ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
+                ->where('show_in_website', true)
+                ->whereNotNull('webpages.id')
+                ->where('webpages.state', WebpageStateEnum::LIVE->value)
+                ->whereNull('product_categories.deleted_at')
+                ->whereNull('webpages.deleted_at')
+                ->get();
+        } elseif ($webpage->model instanceof Collection) {
+            $families = DB::table('product_categories')
+                ->leftJoin('collection_has_models', function ($join) {
+                    $join->on('collection_has_models.model_id', '=', 'product_categories.id')
+                        ->where('collection_has_models.model_type', '=', 'ProductCategory');
+                })
+                ->leftJoin('webpages', function ($join) {
+                    $join->on('product_categories.id', '=', 'webpages.model_id')
+                        ->where('webpages.model_type', '=', 'ProductCategory');
+                })
+                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->selectRaw('\'' . request()->path() . '\' as parent_url')
+                ->where('collection_has_models.collection_id', $webpage->model_id)
+                ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+                ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
+                ->where('show_in_website', true)
+                ->whereNull('product_categories.deleted_at')
+                ->whereNull('webpages.deleted_at')
+                ->get();
+        } else {
+            return $webBlock;
+        }
+
+        $productRoute = [
+            'iris'     => [
+                'name'       => 'iris.json.product_category.products.index',
+                'parameters' => [$webpage->model->slug],
+            ],
+        ];
+
+
+        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['families_overview']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_slug', $webpage->slug);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.parent', [
+            'id'   => $webpage->model->id,
+            'slug' => $webpage->model->slug,
+            'type' => $webpage->sub_type,
+        ]);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
+
+        return [
+            'type' => $webBlock['type'],
+            'structure' => Arr::get(
+                $webBlock,
+                'web_block.layout.data.fieldValue',
+                []
+            ),
+        ];
+    }
+}

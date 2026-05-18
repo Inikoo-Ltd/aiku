@@ -20,7 +20,7 @@ import { getStyles } from "@/Composables/styles";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { debounce, get } from "lodash-es";
 import { trans } from "laravel-vue-i18n";
-import LinkIris from "@/Components/Iris/LinkIris.vue";
+import LinkIris from "@/Iris/Components/LinkIris.vue";
 import { menuCategoriesToMenuStructure } from "@/Composables/Iris/useMenu"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Image from "@common/Components/Image.vue";

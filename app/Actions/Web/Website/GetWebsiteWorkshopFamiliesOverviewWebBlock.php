@@ -28,9 +28,9 @@ class GetWebsiteWorkshopFamiliesOverviewWebBlock
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'departments'   => WebsiteDepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
+            'parent_product_category'   => WebsiteDepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
             'layout'    => Arr::get($website->unpublishedFamiliesOverviewSnapshot, 'layout.families_overview', []),
-            'autosaveRoute' => [
+            'auto_save_route' => [
                 'name'       => 'grp.models.website.autosave.families_overview',
                 'parameters' => [
                     'website' => $website->id
@@ -39,7 +39,11 @@ class GetWebsiteWorkshopFamiliesOverviewWebBlock
             'update_sub_department_route' => [
                 'name' => 'grp.models.product_category.update',
                 'parameters' => []
-            ]
+            ],
+             'route_get_list' => [
+                'name' => 'grp.json.workshop.families_under_department.index',
+                'parameters' => []
+            ],
         ];
     }
 }

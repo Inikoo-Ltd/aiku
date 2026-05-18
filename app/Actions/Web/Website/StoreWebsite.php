@@ -88,7 +88,6 @@ class StoreWebsite extends OrgAction
                 ]
             ]
         );
-        $website->webStats()->create();
 
         GroupHydrateWebsites::dispatch($shop->group)->delay($this->hydratorsDelay);
         OrganisationHydrateWebsites::dispatch($shop->organisation)->delay($this->hydratorsDelay);

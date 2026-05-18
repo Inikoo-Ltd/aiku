@@ -40,6 +40,7 @@ use App\Actions\Masters\MasterProductCategory\UI\EditMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesGR;
+use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesVolGrReward;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesInMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesWithMismatch;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
@@ -246,6 +247,10 @@ Route::name("master_shops")->prefix('master-shops')
 
             Route::prefix('master-gr')->as('.master_gr.')->group(function () {
                 Route::get('', IndexMasterFamiliesGR::class)->name('index');
+            });
+
+            Route::prefix('master-families-vol-gr-reward')->as('.master_families.vol_gr_reward.')->group(function () {
+                Route::get('', IndexMasterFamiliesVolGrReward::class)->name('index');
             });
 
             Route::prefix('master-sub-departments')->as('.master_sub_departments.')->group(function () {

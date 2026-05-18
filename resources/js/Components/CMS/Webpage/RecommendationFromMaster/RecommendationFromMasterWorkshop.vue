@@ -62,7 +62,7 @@ const sendMessageToParent = (type: string, value: any) => {
 </script>
 
 <template>
-  <div v-if="compSwiperOptions.length >= modelValue?.recommendation_settings.min_amt_shown"
+  <div v-if="compSwiperOptions.length >= (modelValue?.recommendation_settings?.min_amt_shown || 5)"
     :id="modelValue?.id ? modelValue?.id : 'recommended-master' + indexBlock" class="w-full pb-6" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue.container?.properties, screenType),
@@ -71,10 +71,10 @@ const sendMessageToParent = (type: string, value: any) => {
     <!-- Title -->
     <div class="px-4 py-6 pb-2 flex items-center justify-center">
       <div class="text-3xl font-semibold text-gray-800">
-        <div v-if="fieldValue?.recommendation_settings.title" v-html="fieldValue?.recommendation_settings.title">
+        <div v-if="modelValue?.recommendation_settings.title" v-html="modelValue?.recommendation_settings.title">
         </div>
         <div v-else>
-          {{ trans("Recommendations") }}
+          {{ ctrans("Recommendations") }}
         </div>
       </div>
     </div>

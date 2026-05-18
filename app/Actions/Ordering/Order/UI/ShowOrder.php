@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
@@ -40,6 +41,7 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Ordering\DispatchedEmailsInOrderResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\TransactionsResource;
+use App\Http\Resources\Procurement\ReturnDeliveryNotesResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -552,6 +554,10 @@ class ShowOrder extends OrgAction
                     fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
                     : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
+                OrderTabsEnum::RETURNS->value => $this->tab == OrderTabsEnum::RETURNS->value ?
+                    fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::RETURNS->value))
+                    : Inertia::lazy(fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::RETURNS->value))),
+
                 OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
@@ -593,6 +599,12 @@ class ShowOrder extends OrgAction
                 IndexPayments::make()->tableStructure(
                     parent: $order,
                     prefix: OrderTabsEnum::PAYMENTS->value
+                )
+            )
+            ->table(
+                IndexReturnDeliveryNotes::make()->tableStructure(
+                    parent: $order,
+                    prefix: OrderTabsEnum::RETURNS->value
                 )
             )
             ->table(

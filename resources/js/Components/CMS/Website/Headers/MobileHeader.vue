@@ -35,7 +35,7 @@ import { faLambda } from "@fad";
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { computed } from 'vue'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import { trans } from 'laravel-vue-i18n'

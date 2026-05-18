@@ -17,7 +17,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
 import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'

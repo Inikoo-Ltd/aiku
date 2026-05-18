@@ -19,7 +19,7 @@ trait WithGetWebpageWebBlocks
         $parsedWebBlocks = [];
 
         foreach ($webBlocks as $key => $webBlock) {
-            $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, false, false);
+            $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, false);
         }
 
         return $parsedWebBlocks;

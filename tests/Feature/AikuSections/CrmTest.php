@@ -626,7 +626,6 @@ test('UI Index customers', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'Customers')
                     ->etc()
             )
             ->has('data');

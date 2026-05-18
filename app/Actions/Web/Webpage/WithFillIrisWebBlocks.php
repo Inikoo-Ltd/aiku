@@ -8,12 +8,12 @@
 
 namespace App\Actions\Web\Webpage;
 
-use App\Actions\Web\WebBlock\GetBlockSubDepartment;
+use App\Actions\Web\WebBlock\Iris\GetIrisBlockSubDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartment;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesOverview;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCollection;
 use App\Actions\Web\WebBlock\GetWebBlockBlog;
-use App\Actions\Web\WebBlock\GetWebBlockCollection;
 use App\Actions\Web\WebBlock\GetWebBlockFamilies;
-use App\Actions\Web\WebBlock\GetWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\GetWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
@@ -27,24 +27,24 @@ use Illuminate\Support\Arr;
 
 trait WithFillIrisWebBlocks
 {
-    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isLoggedIn, bool $isIris = true)
+    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isIris = true)
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
         if ($webBlockType == 'department-description-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'sub-department-description-1') {
-            $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
-            $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockCollection::run($webpage, $webBlock);
         } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
-            $parsedWebBlocks[$key] = GetWebBlockFamiliesOverview::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockFamiliesOverview::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'products-')) {
-            $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock, $isLoggedIn);
+            $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock);
         } elseif ($webBlockType == 'family-1') {
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['family-2', 'family-2-extra-description', 'family-3', 'family-3-extra-description'])) {

@@ -26,23 +26,26 @@ class GetWebsiteWorkshopFamilyWebBlock
     public function handle(Website $website): array
     {
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->whereJsonContains('website_type', $website->shop->type)->get();
-
         $subDepartments = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'sub_departments'   => WorkshopSubDepartmentsResource::collection($subDepartments),
+            'parent_product_category'   => WorkshopSubDepartmentsResource::collection($subDepartments),
             'layout'    => Arr::get($website->unpublishedFamilySnapshot, 'layout.family', []),
-            'autosaveRoute' => [
+            'auto_save_route' => [
                 'name'       => 'grp.models.website.autosave.family',
                 'parameters' => [
                     'website' => $website->id
                 ]
             ],
-            'update_family_route' => [
+            'update_route' => [
                 'name' => 'grp.models.product_category.update',
                 'parameters' => []
-            ]
+            ],
+            'route_get_list' => [
+                'name' => 'grp.json.workshop.families.index',
+                'parameters' => []
+            ],
         ];
     }
 }

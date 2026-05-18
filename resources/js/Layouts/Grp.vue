@@ -21,82 +21,82 @@ import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import {
-	faPoll,
-	faPhotoVideo, faQuestionCircle,
-	faBrowser,
-	faMegaphone,
-	faAllergies,
-	faSpellCheck,
-	faHandPaper,
-	faHourglassStart, faHourglassHalf, faHourglass,
-	faSadTear,
-	faRainbow,
-	faParking,
-	faSeedling,
-	faBoxCheck,
-	faUsers,
-	faShoppingBasket,
-	faLayerGroup,
-	faInboxOut,
-	faTachometerAltFast,
-	faGlobe,
-	faParachuteBox,
-	faStore,
-	faClock,
-	faTransporter,
-	faRulerTriangle,
-	faRulerCombined,
-	faAtom,
-	faAtomAlt, faGift,
-	faBan,
-	faSnooze,
-	faFileInvoice,
-	faInboxIn,
-	faPaperPlane,
-	faDraftingCompass,
-	faFolderDownload,
-	faExternalLinkAlt,
-	faCheck,
-	faTimes,
-	faTrashAlt,
-	faAsterisk,
-	faPauseCircle,
-	faExclamationTriangle,
-	faSunset,
-	faChair,
-	faSkull,
-	faSkullCow,
-	faToggleOn,
-	faBroadcastTower, faImage,
-	faEye,
-	faEyeSlash,
-	faCheckDouble,
-	faSmile, faUserHeadset,
-	faMailBulk, faEllipsisV,
-	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument,faUnlink, faBoxOpen, faArrowRight as falArrowRight,
-	faStar as faStarLight,
-	faArrowUp as faArrowUpLight,
-	faMinus as faMinusLight,
-	faTimesCircle as faTimesCircleLight,
-	faUserAlien,
-	faTombstone as faTombstoneLight,
-	faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-	faBarcode
+    faPoll,
+    faPhotoVideo, faQuestionCircle,
+    faBrowser,
+    faMegaphone,
+    faAllergies,
+    faSpellCheck,
+    faHandPaper,
+    faHourglassStart, faHourglassHalf, faHourglass,
+    faSadTear,
+    faRainbow,
+    faParking,
+    faSeedling,
+    faBoxCheck,
+    faUsers,
+    faShoppingBasket,
+    faLayerGroup,
+    faInboxOut,
+    faTachometerAltFast,
+    faGlobe,
+    faParachuteBox,
+    faStore,
+    faClock,
+    faTransporter,
+    faRulerTriangle,
+    faRulerCombined,
+    faAtom,
+    faAtomAlt, faGift,
+    faBan,
+    faSnooze,
+    faFileInvoice,
+    faInboxIn,
+    faPaperPlane,
+    faDraftingCompass,
+    faFolderDownload,
+    faExternalLinkAlt,
+    faCheck,
+    faTimes,
+    faTrashAlt,
+    faAsterisk,
+    faPauseCircle,
+    faExclamationTriangle,
+    faSunset,
+    faChair,
+    faSkull,
+    faSkullCow,
+    faToggleOn,
+    faBroadcastTower, faImage,
+    faEye,
+    faEyeSlash,
+    faCheckDouble,
+    faSmile, faUserHeadset,
+    faMailBulk, faEllipsisV,
+    faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument, faUnlink, faBoxOpen, faArrowRight as falArrowRight,
+    faStar as faStarLight,
+    faArrowUp as faArrowUpLight,
+    faMinus as faMinusLight,
+    faTimesCircle as faTimesCircleLight,
+    faUserAlien,
+    faTombstone as faTombstoneLight,
+    faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
+    faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
 import {
-	faAsterisk as fasAsterisk,
-	faBoxHeart,
-	faBadgePercent,
-	faExclamation,
-	faInfo,
-	faPlay,
-	faGlobe as fasGlobe,
-	faStar,
-	faCheckCircle,
-	faTimesCircle,
-	faSkull as fasSkull, faMonument, faCubes, faExclamationTriangle as fasExclamationTriangle, faCandleHolder, faMedal
+    faAsterisk as fasAsterisk,
+    faBoxHeart,
+    faBadgePercent,
+    faExclamation,
+    faInfo,
+    faPlay,
+    faGlobe as fasGlobe,
+    faStar,
+    faCheckCircle,
+    faTimesCircle,
+    faSkull as fasSkull, faMonument, faCubes, faExclamationTriangle as fasExclamationTriangle, faCandleHolder, faMedal
 } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
@@ -108,85 +108,85 @@ import { setColorStyleRoot } from "@/Composables/useApp"
 import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import { useColorTheme } from "@/Composables/useStockList"
-import { computed } from 'vue'
+import { computed } from "vue"
 
 library.add(
-	faRainbow,
-	faAtomAlt, faGift,
-	faOctopusDeploy,
-	faPoll,
-	faPhotoVideo, faQuestionCircle,
-	faBrowser,
-	faMegaphone,
-	faAllergies,
-	faSpellCheck,
-	faHandPaper,
-	faHourglassStart, faHourglassHalf, faHourglass,
-	faSadTear,
-	faPauseCircle,
-	faBoxHeart,
-	faExclamationTriangle,
-	faSunset,
-	faChair,
-	falMonument,
-	faSkull,
-	faSkullCow,
-	faToggleOn,
-	faBroadcastTower, faImage,
-	faEye,
-	faEyeSlash,
-	faCheckDouble,
-	fasAsterisk,
-	faExclamation,
-	faInfo,
-	faPlay,
-	fasGlobe,
-	faStar,
-	faCheckCircle,
-	faTimesCircle,
-	fasSkull,
-	faUsers,
-	faShoppingBasket,
-	faLayerGroup,
-	faInboxOut,
-	faSearch,
-	faBell,
-	faArrowRight,
-	faShippingFast,
-	faTachometerAltFast,
-	faGlobe,
-	faParachuteBox,
-	faStore,
-	faClock,
-	faTransporter,
-	faParking,
-	faSeedling,
-	faBoxCheck,
-	faStackOverflow,
-	faRulerTriangle,
-	faRulerCombined,
-	faAtom,
-	faBan,
-	faSnooze,
-	faFileInvoice,
-	faInboxIn,
-	faPaperPlane,
-	faDraftingCompass,
-	faFolderDownload,
-	faExternalLinkAlt,
-	faTimes,
-	faTrashAlt,
-	faCheck,
-	faAsterisk,
-	faMailBulk, faEllipsisV,
-	faShare, faUndoAlt,faRobot,faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses,
-	faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
-	faBadgePercent, faUserHeadset,
-	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
-	faUserAlien,
-	faTombstoneLight,
-	faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-	faBarcode
+    faRainbow,
+    faAtomAlt, faGift,
+    faOctopusDeploy,
+    faPoll,
+    faPhotoVideo, faQuestionCircle,
+    faBrowser,
+    faMegaphone,
+    faAllergies,
+    faSpellCheck,
+    faHandPaper,
+    faHourglassStart, faHourglassHalf, faHourglass,
+    faSadTear,
+    faPauseCircle,
+    faBoxHeart,
+    faExclamationTriangle,
+    faSunset,
+    faChair,
+    falMonument,
+    faSkull,
+    faSkullCow,
+    faToggleOn,
+    faBroadcastTower, faImage,
+    faEye,
+    faEyeSlash,
+    faCheckDouble,
+    fasAsterisk,
+    faExclamation,
+    faInfo,
+    faPlay,
+    fasGlobe,
+    faStar,
+    faCheckCircle,
+    faTimesCircle,
+    fasSkull,
+    faUsers,
+    faShoppingBasket,
+    faLayerGroup,
+    faInboxOut,
+    faSearch,
+    faBell,
+    faArrowRight,
+    faShippingFast, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield,
+    faTachometerAltFast,
+    faGlobe,
+    faParachuteBox,
+    faStore,
+    faClock,
+    faTransporter,
+    faParking,
+    faSeedling,
+    faBoxCheck,
+    faStackOverflow,
+    faRulerTriangle,
+    faRulerCombined,
+    faAtom,
+    faBan,
+    faSnooze,
+    faFileInvoice,
+    faInboxIn,
+    faPaperPlane,
+    faDraftingCompass,
+    faFolderDownload,
+    faExternalLinkAlt,
+    faTimes,
+    faTrashAlt,
+    faCheck,
+    faAsterisk,
+    faMailBulk, faEllipsisV,
+    faShare, faUndoAlt, faRobot, faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses,
+    faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
+    faBadgePercent, faUserHeadset,
+    faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
+    faUserAlien,
+    faTombstoneLight,
+    faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
+    faBarcode
 )
 
 provide("layout", useLayoutStore())
@@ -201,176 +201,176 @@ const sidebarOpen = ref(false)
 
 // Section: Notification
 watch(
-	() => usePage().props?.flash?.notification,
-	(notif) => {
-		console.log("notif ret", notif)
-		if (!notif) return
+    () => usePage().props?.flash?.notification,
+    (notif) => {
+        console.log("notif ret", notif)
+        if (!notif) return
 
-		notify({
-			title: notif.title,
-			text: notif.description,
-			type: notif.status,
-		})
-	},
-	{
-		immediate: true,
-	}
+        notify({
+            title: notif.title,
+            text: notif.description,
+            type: notif.status
+        })
+    },
+    {
+        immediate: true
+    }
 )
 
 
 // Section: Redirect
 watch(
-	() => usePage().props?.flash?.redirect,
-	(redirect: { url: string; target?: string }) => {
-		if (!redirect?.url) return
+    () => usePage().props?.flash?.redirect,
+    (redirect: { url: string; target?: string }) => {
+        if (!redirect?.url) return
 
-		if (redirect.target === '_blank') {
-			window.open(redirect.url, '_blank')
-		} else {
-			window.location.href = redirect.url
-		}
-	},
-	{
-		immediate: true,
-	}
+        if (redirect.target === "_blank") {
+            window.open(redirect.url, "_blank")
+        } else {
+            window.location.href = redirect.url
+        }
+    },
+    {
+        immediate: true
+    }
 )
 
 // Section: Modal
 interface Modal {
-	title: string
-	description: string
-	type: "success" | "error" | "info" | "warning"
+    title: string
+    description: string
+    type: "success" | "error" | "info" | "warning"
 }
 
 const selectedModal = ref<Modal | null>(null)
 const isModalOpen = ref(false)
 watch(
-	() => usePage().props?.flash?.modal,
-	(modal: Modal) => {
-		console.log("modal ret", modal)
-		if (!modal) return
+    () => usePage().props?.flash?.modal,
+    (modal: Modal) => {
+        console.log("modal ret", modal)
+        if (!modal) return
 
-		selectedModal.value = modal
-		isModalOpen.value = true
-	},
-	{
-		immediate: true,
-	}
+        selectedModal.value = modal
+        isModalOpen.value = true
+    },
+    {
+        immediate: true
+    }
 )
 
 // Method: listen if app recently deployed
 const isLoadingRefreshPage = ref(false)
 const isModalNeedToRefresh = ref(false)
 const onCheckAppVersion = () => {
-	const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData) => {
-		if (route().current()?.includes("dashboard.show")) {
-			onRefreshPage()
-		} else {
-			isModalNeedToRefresh.value = true
-		}
-		console.log("---------- App version check:", eventData)
-	})
+    const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData) => {
+        if (route().current()?.includes("dashboard.show")) {
+            onRefreshPage()
+        } else {
+            isModalNeedToRefresh.value = true
+        }
+        console.log("---------- App version check:", eventData)
+    })
 
-	// console.log('Websocket subscription:', xxx.subscription.subscribed)
+    // console.log('Websocket subscription:', xxx.subscription.subscribed)
 }
 const onRefreshPage = () => {
-	isLoadingRefreshPage.value = true
-	window.location.reload()
+    isLoadingRefreshPage.value = true
+    window.location.reload()
 }
 
 // Section: Screen Type
 const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
 const checkScreenType = () => {
-	const width = screen.width
-	if (width < 640) screenType.value = "mobile"
-	else if (width >= 640 && width < 1024) screenType.value = "tablet"
-	else screenType.value = "desktop"
+    const width = screen.width
+    if (width < 640) screenType.value = "mobile"
+    else if (width >= 640 && width < 1024) screenType.value = "tablet"
+    else screenType.value = "desktop"
 }
 provide("screenType", screenType)
 
 const requestNotificationPermission = () => {
-	if (!("Notification" in window)) return
-	if (Notification.permission === "default") {
-		Notification.requestPermission()
-	}
-	if (Notification.permission === "denied") {
-			notify({
-				title: trans('Alert'),
-				text: trans('You must allow notification to get notif from chat'),
-				type: "error"
-			})
-		}
+    if (!("Notification" in window)) return
+    if (Notification.permission === "default") {
+        Notification.requestPermission()
+    }
+    if (Notification.permission === "denied") {
+        notify({
+            title: trans("Alert"),
+            text: trans("You must allow notification to get notif from chat"),
+            type: "error"
+        })
+    }
 }
 
 const baseUrl = layout?.appUrl ?? ""
 const myAgentId = layout.user?.id
 onMounted(() => {
-	fetchUnreadCount(baseUrl, '', myAgentId)
-	checkScreenType()
-	onCheckAppVersion()
-	setColorStyleRoot(layout?.app?.theme)
+    fetchUnreadCount(baseUrl, "", myAgentId)
+    checkScreenType()
+    onCheckAppVersion()
+    setColorStyleRoot(layout?.app?.theme)
 })
 
 const fallbackTheme = useColorTheme[3]
 
 const safeTheme = computed(() => {
-	const t = layout?.app?.theme
+    const t = layout?.app?.theme
 
-	return (t && t.length >= 8) ? t : fallbackTheme
+    return (t && t.length >= 8) ? t : fallbackTheme
 })
 console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>
 
 <template>
-	<div
-		id="grp_app"
-		class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
-		:class="[
+    <div
+        id="grp_app"
+        class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
+        :class="[
 			Object.values(layout.rightSidebar).some((value) => value.show) ? 'w-[80%]' : 'mr-0',
 		]">
-		<TopBar
-			@sidebarOpen="(value: boolean) => sidebarOpen = value"
-			:sidebarOpen="sidebarOpen"
-			:logoRoute="`grp.dashboard.show`"
-			urlPrefix="grp." />
+        <TopBar
+            @sidebarOpen="(value: boolean) => sidebarOpen = value"
+            :sidebarOpen="sidebarOpen"
+            :logoRoute="`grp.dashboard.show`"
+            urlPrefix="grp." />
 
-		<!-- Section: Breadcrumbs -->
-		<Breadcrumbs
-			class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
-			:class="[
+        <!-- Section: Breadcrumbs -->
+        <Breadcrumbs
+            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
+            :class="[
 				layout.leftSidebar.show
 					? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-144px)] lg:w-[calc(100%-192px)]'
 					: 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-36px)] lg:w-[calc(100%-48px)]',
 				layout.app.environment === 'staging' ? 'top-11 lg:top-16' : 'top-11 lg:top-10',
 			]"
-			:breadcrumbs="usePage().props.breadcrumbs ?? []"
-			:navigation="usePage().props.navigation ?? []"
-			:layout="layout" />
+            :breadcrumbs="usePage().props.breadcrumbs ?? []"
+            :navigation="usePage().props.navigation ?? []"
+            :layout="layout" />
 
-		<!-- Sidebar: Left -->
-		<div class="">
-			<!-- Mobile Helper: background to close hamburger -->
-			<div
-				class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden"
-				v-if="sidebarOpen"
-				@click="sidebarOpen = !sidebarOpen" />
-			<LeftSideBar
-				class="-left-2/3 z-20 block md:left-[0]"
-				:class="[{ 'left-[0]': sidebarOpen }]"
-				@click="sidebarOpen = !sidebarOpen" />
-		</div>
+        <!-- Sidebar: Left -->
+        <div class="">
+            <!-- Mobile Helper: background to close hamburger -->
+            <div
+                class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden"
+                v-if="sidebarOpen"
+                @click="sidebarOpen = !sidebarOpen" />
+            <LeftSideBar
+                class="-left-2/3 z-20 block md:left-[0]"
+                :class="[{ 'left-[0]': sidebarOpen }]"
+                @click="sidebarOpen = !sidebarOpen" />
+        </div>
 
-		<!-- Main Content -->
-		<main
-			class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
-			:class="[
+        <!-- Main Content -->
+        <main
+            class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
+            :class="[
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
 				layout.app.environment === 'staging' ? 'mt-6' : '',
 			]">
-			<slot />
-		</main>
+            <slot />
+        </main>
 
-		<!-- Sidebar: Right -->
+        <!-- Sidebar: Right -->
         <Teleport to="body">
             <RightSideBar
                 v-if="Object.values(layout.rightSidebar).some((value) => value.show)"
@@ -381,187 +381,187 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
                         : '-right-44',
                 ]" />
         </Teleport>
-		<Teleport to="body">
-			<div>
-				<Transition>
-					<div
-						v-if="layout.stackedComponents?.length"
-						@click="layout.stackedComponents.pop()"
-						class="fixed top-0 left-0 h-screen w-screen bg-black/40 z-[99] cursor-pointer" />
-				</Transition>
-				<Transition name="stacked-component">
-					<StackedComponents v-if="layout.stackedComponents?.length" />
-				</Transition>
-			</div>
-		</Teleport>
-	</div>
+        <Teleport to="body">
+            <div>
+                <Transition>
+                    <div
+                        v-if="layout.stackedComponents?.length"
+                        @click="layout.stackedComponents.pop()"
+                        class="fixed top-0 left-0 h-screen w-screen bg-black/40 z-[99] cursor-pointer" />
+                </Transition>
+                <Transition name="stacked-component">
+                    <StackedComponents v-if="layout.stackedComponents?.length" />
+                </Transition>
+            </div>
+        </Teleport>
+    </div>
 
-	<Footer />
+    <Footer />
 
-	<Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
-		<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-			<div
-				class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
-				<div>
-					<div
-						class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
-						<FontAwesomeIcon
-							v-if="selectedModal?.status == 'error'"
-							icon="fal fa-times"
-							class="text-red-500 text-2xl"
-							fixed-width
-							aria-hidden="true" />
-						<FontAwesomeIcon
-							v-if="selectedModal?.status == 'success'"
-							icon="fal fa-check"
-							class="text-green-500 text-2xl"
-							fixed-width
-							aria-hidden="true" />
-						<FontAwesomeIcon
-							v-if="selectedModal?.status == 'warning'"
-							icon="fas fa-exclamation"
-							class="text-orange-500 text-2xl"
-							fixed
-							aria-hidden="true" />
-						<FontAwesomeIcon
-							v-if="selectedModal?.status == 'info'"
-							icon="fas fa-info"
-							class="text-gray-500 text-2xl"
-							fixed-width
-							aria-hidden="true" />
-					</div>
+    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div
+                class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+                <div>
+                    <div
+                        class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
+                        <FontAwesomeIcon
+                            v-if="selectedModal?.status == 'error'"
+                            icon="fal fa-times"
+                            class="text-red-500 text-2xl"
+                            fixed-width
+                            aria-hidden="true" />
+                        <FontAwesomeIcon
+                            v-if="selectedModal?.status == 'success'"
+                            icon="fal fa-check"
+                            class="text-green-500 text-2xl"
+                            fixed-width
+                            aria-hidden="true" />
+                        <FontAwesomeIcon
+                            v-if="selectedModal?.status == 'warning'"
+                            icon="fas fa-exclamation"
+                            class="text-orange-500 text-2xl"
+                            fixed
+                            aria-hidden="true" />
+                        <FontAwesomeIcon
+                            v-if="selectedModal?.status == 'info'"
+                            icon="fas fa-info"
+                            class="text-gray-500 text-2xl"
+                            fixed-width
+                            aria-hidden="true" />
+                    </div>
 
-					<div class="mt-3 text-center sm:mt-5">
-						<div as="h3" class="font-semibold text-2xl">
-							{{ selectedModal?.title }}
-						</div>
-						<div class="mt-2 text-sm text-gray-500">
-							{{ selectedModal?.description }}
-						</div>
-					</div>
-				</div>
-				<div class="mt-5 sm:mt-6">
-					<Button
-						@click="() => (isModalOpen = false)"
-						:label="ctrans('Ok, Get it')"
-						full />
-				</div>
-			</div>
-		</div>
-	</Modal>
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-2xl">
+                            {{ selectedModal?.title }}
+                        </div>
+                        <div class="mt-2 text-sm text-gray-500">
+                            {{ selectedModal?.description }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 sm:mt-6">
+                    <Button
+                        @click="() => (isModalOpen = false)"
+                        :label="ctrans('Ok, Get it')"
+                        full />
+                </div>
+            </div>
+        </div>
+    </Modal>
 
-	<Modal
-		:isOpen="isModalNeedToRefresh"
-		aonClose="isModalNeedToRefresh = false"
-		width="w-full max-w-lg">
-		<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-			<div
-				class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
-				<div>
-					<div
-						class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
-						<FontAwesomeIcon
-							:icon="faSmile"
-							class="text-green-500 text-2xl"
-							fixed-width
-							aria-hidden="true" />
-					</div>
+    <Modal
+        :isOpen="isModalNeedToRefresh"
+        aonClose="isModalNeedToRefresh = false"
+        width="w-full max-w-lg">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div
+                class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+                <div>
+                    <div
+                        class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
+                        <FontAwesomeIcon
+                            :icon="faSmile"
+                            class="text-green-500 text-2xl"
+                            fixed-width
+                            aria-hidden="true" />
+                    </div>
 
-					<div class="mt-3 text-center sm:mt-5">
-						<div as="h3" class="font-semibold text-2xl">
-							{{ ctrans("Hey, sorry for your inconvenience.") }}
-						</div>
-						<div class="mt-2 text-sm text-gray-500">
-							{{
-								ctrans(
-									"Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
-								)
-							}}
-						</div>
-					</div>
-				</div>
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-2xl">
+                            {{ ctrans("Hey, sorry for your inconvenience.") }}
+                        </div>
+                        <div class="mt-2 text-sm text-gray-500">
+                            {{
+                                ctrans(
+                                    "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
+                                )
+                            }}
+                        </div>
+                    </div>
+                </div>
 
-				<div class="mt-5 sm:mt-6 flex flex-col gap-4">
-					<Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
-					<Button @click="() => isModalNeedToRefresh = false" :label="ctrans('Dismiss')" full type="tertiary" />
-				</div>
-			</div>
-		</div>
-	</Modal>
+                <div class="mt-5 sm:mt-6 flex flex-col gap-4">
+                    <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
+                    <Button @click="() => isModalNeedToRefresh = false" :label="ctrans('Dismiss')" full type="tertiary" />
+                </div>
+            </div>
+        </div>
+    </Modal>
 
-	<!-- Global declaration: Notification -->
-	<notifications
-		dangerously-set-inner-html
-		:max="3"
-		xwidth="500"
-		classes="custom-style-notification"
-		:pauseOnHover="true">
-		<template #body="props">
-			<Notification :notification="props" />
-		</template>
-	</notifications>
+    <!-- Global declaration: Notification -->
+    <notifications
+        dangerously-set-inner-html
+        :max="3"
+        xwidth="500"
+        classes="custom-style-notification"
+        :pauseOnHover="true">
+        <template #body="props">
+            <Notification :notification="props" />
+        </template>
+    </notifications>
 </template>
 
 <style lang="scss">
 /* Navigation: Aiku */
 .navigationActive {
-	@apply rounded py-2 font-semibold transition-all duration-0 ease-out;
-	box-shadow: v-bind(
-		"`0 0 0 1px color-mix(in srgb, ${layout?.app?.theme[2]}, 20% white)`"
-	) !important;
-	background-color: v-bind("layout?.app?.theme[2]");
-	color: v-bind("layout?.app?.theme[3]");
+    @apply rounded py-2 font-semibold transition-all duration-0 ease-out;
+    box-shadow: v-bind(
+        "`0 0 0 1px color-mix(in srgb, ${layout?.app?.theme[2]}, 20% white)`"
+    ) !important;
+    background-color: v-bind("layout?.app?.theme[2]");
+    color: v-bind("layout?.app?.theme[3]");
 }
 
 .navigation {
-	@apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
-	color: v-bind("layout?.app?.theme[1]");
+    @apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
+    color: v-bind("layout?.app?.theme[1]");
 }
 
 .subNavActive {
-	@apply bg-indigo-200/20 sm:border-l-4 sm:border-indigo-100 text-white font-semibold transition-all duration-0 ease-in-out;
+    @apply bg-indigo-200/20 sm:border-l-4 sm:border-indigo-100 text-white font-semibold transition-all duration-0 ease-in-out;
 }
 
 .subNav {
-	@apply hover:bg-white/80 text-gray-100 hover:text-indigo-500 font-semibold transition-all duration-0 ease-in-out;
+    @apply hover:bg-white/80 text-gray-100 hover:text-indigo-500 font-semibold transition-all duration-0 ease-in-out;
 }
 
 .navigationSecondActive {
-	@apply transition-all duration-100 ease-in-out;
+    @apply transition-all duration-100 ease-in-out;
 }
 
 .navigationSecond {
-	@apply hover:bg-gray-100 text-gray-400 hover:text-gray-500 transition-all duration-100 ease-in-out;
+    @apply hover:bg-gray-100 text-gray-400 hover:text-gray-500 transition-all duration-100 ease-in-out;
 }
 
 .bottomNavigationActive {
-	@apply w-5/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
-	background-color: v-bind("safeTheme[4]");
+    @apply w-5/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
+    background-color: v-bind("safeTheme[4]");
 }
 
 .bottomNavigation {
-	@apply bg-gray-300 w-0 group-hover:w-3/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
+    @apply bg-gray-300 w-0 group-hover:w-3/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
 }
 
 .bottomNavigationSecondaryActive {
-	@apply w-5/6 bg-gray-400 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
+    @apply w-5/6 bg-gray-400 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
 }
 
 .bottomNavigationSecondary {
-	@apply bg-gray-200 w-0 group-hover:w-3/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
+    @apply bg-gray-200 w-0 group-hover:w-3/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
 }
 
 .primaryLink {
-	background: v-bind(
-		'`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "77"})`'
-	);
+    background: v-bind(
+        '`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "77"})`'
+    );
 
-	&:hover,
-	&:focus {
-		color: v-bind("`${safeTheme[7]}`");
-	}
+    &:hover,
+    &:focus {
+        color: v-bind("`${safeTheme[7]}`");
+    }
 
-	@apply focus:ring-0 focus:outline-none focus:border-none
+    @apply focus:ring-0 focus:outline-none focus:border-none
     bg-no-repeat [background-position:0%_100%]
     transition-all
     [background-size:100%_0.2em]
@@ -571,16 +571,16 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 }
 
 .secondaryLink {
-	background: v-bind(
-		'`linear-gradient(to top, ${safeTheme[6] + "77"}, ${safeTheme[6] + "11"})`'
-	);
+    background: v-bind(
+        '`linear-gradient(to top, ${safeTheme[6] + "77"}, ${safeTheme[6] + "11"})`'
+    );
 
-	&:hover,
-	&:focus {
-		color: v-bind("`${safeTheme[7]}`");
-	}
+    &:hover,
+    &:focus {
+        color: v-bind("`${safeTheme[7]}`");
+    }
 
-	@apply focus:ring-0 focus:outline-none focus:border-none
+    @apply focus:ring-0 focus:outline-none focus:border-none
     bg-no-repeat [background-position:0%_100%]
     [background-size:100%_0.2em]
     motion-safe:transition-all motion-safe:duration-200
@@ -590,13 +590,13 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 // For icon box in FlatTreemap
 .specialBoxActive {
-	background: v-bind(
-		'`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`'
-	);
-	color: v-bind("`${safeTheme[1]}`");
-	border: v-bind('`2px solid ${safeTheme[0] + "99"}`') !important;
+    background: v-bind(
+        '`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`'
+    );
+    color: v-bind("`${safeTheme[1]}`");
+    border: v-bind('`2px solid ${safeTheme[0] + "99"}`') !important;
 
-	@apply rounded overflow-hidden
+    @apply rounded overflow-hidden
     cursor-pointer
     focus:ring-0 focus:outline-none
     bg-no-repeat [background-position:0%_100%]
@@ -606,18 +606,18 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 }
 
 .specialBox {
-	background: v-bind(
-		'`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`'
-	);
-	color: v-bind("`${safeTheme[0]}`");
-	border: v-bind('`2px solid ${safeTheme[0] + "99"}`') !important;
+    background: v-bind(
+        '`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`'
+    );
+    color: v-bind("`${safeTheme[0]}`");
+    border: v-bind('`2px solid ${safeTheme[0] + "99"}`') !important;
 
-	&:hover,
-	&:focus {
-		color: v-bind("`${safeTheme[1]}`");
-	}
+    &:hover,
+    &:focus {
+        color: v-bind("`${safeTheme[1]}`");
+    }
 
-	@apply rounded overflow-hidden
+    @apply rounded overflow-hidden
     cursor-pointer
     focus:ring-0 focus:outline-none
     bg-no-repeat [background-position:0%_100%]
@@ -628,11 +628,11 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 }
 
 .vue-notification-group {
-	width: 300px !important;
+    width: 300px !important;
 
-	@media (min-width: 640px) {
-		width: 500px !important;
-	}
+    @media (min-width: 640px) {
+        width: 500px !important;
+    }
 }
 
 

@@ -437,6 +437,7 @@ class GetShopNavigation
                         [
                             "label"   => __("Dashboard"),
                             "icon"    => ["fal", "fa-tachometer-alt"],
+                            "root"    => "grp.org.shops.show.crm.dashboard",
                             "route"   => [
                                 "name"       => "grp.org.shops.show.crm.dashboard",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
@@ -445,6 +446,7 @@ class GetShopNavigation
                         [
                             "label"   => __("Customers"),
                             "icon"    => ["fal", "fa-user"],
+                            "root"    => "grp.org.shops.show.crm.customers.",
                             "route"   => [
                                 "name"       => "grp.org.shops.show.crm.customers.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
@@ -453,6 +455,7 @@ class GetShopNavigation
                         [
                             "label"   => __("Prospects"),
                             "icon"    => ["fal", "fa-user-plus"],
+                            "root"    => "grp.org.shops.show.crm.prospects.",
                             "route"   => [
                                 "name"       => "grp.org.shops.show.crm.prospects.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],

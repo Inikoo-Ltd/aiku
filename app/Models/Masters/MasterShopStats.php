@@ -58,6 +58,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_mismatched_master_products_inactive
  * @property int $number_mismatched_master_families_active
  * @property int $number_mismatched_master_families_inactive
+ * @property int $number_master_families_with_vol_gr_discount
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newQuery()

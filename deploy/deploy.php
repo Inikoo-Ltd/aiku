@@ -63,24 +63,14 @@ task('deploy:migrate', function () {
 
 desc('Modified npm:install');
 task('npm:my_install', function () {
-    if (currentHost()->getAlias() == 'staging') {
-        set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use --lts');
-        run("cd {{release_path}} && {{use_nvm}} && npm ci");
-    } else {
         run('cd {{release_path}} && {{bin/npm}} ci');
-    }
 });
 
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
-        if (currentHost()->getAlias() == 'staging') {
-            set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use --lts');
-            run("cd {{release_path}} && {{use_nvm}} && npm run build");
-        } else {
-            run("cd {{release_path}} && {{bin/npm}} run build");
-        }
+        run("cd {{release_path}} && {{bin/npm}} run build");
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
@@ -208,6 +198,10 @@ task(
         if ($shouldFlush) {
             writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
             run('cd {{release_path}} && pwd && ./restart_varnish.sh');
+            if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+                artisan('crawl -d 2 --deployment --seeder', ['skipIfNoEnv', 'showOutput'])();
+                artisan('crawl -d 3 --deployment', ['skipIfNoEnv', 'showOutput'])();
+            }
         } else {
             writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
         }
@@ -286,6 +280,17 @@ set('writable_dirs', function () use ($defaultWritableDirs) {
     return $defaultWritableDirs;
 });
 
+desc('👩🏼‍💻 One server only view cache ');
+task('deploy:view-cache', function () {
+    if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+        writeln('Skipping migrate on slave host '.currentHost()->getAlias());
+        return;
+    }
+
+    artisan('view:cache', ['skipIfNoEnv', 'showOutput'])();
+});
+
+
 desc('Deploys your project');
 task('deploy', [
     'deploy:unlock',
@@ -296,7 +301,7 @@ task('deploy', [
     'artisan:storage:link',
     'artisan:config:cache',
     'artisan:route:cache',
-    'artisan:view:cache',
+    'deploy:view-cache',
     'artisan:event:cache',
     'deploy:migrate',
     'deploy:check-fe-changes',

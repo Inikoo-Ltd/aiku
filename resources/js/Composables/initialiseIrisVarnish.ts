@@ -147,8 +147,6 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
 
   const varnish = await getVarnishData()
 
-  console.log("Customer Data", varnish)
-
   if (!varnish) {
     return
   }

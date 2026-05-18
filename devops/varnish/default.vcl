@@ -82,12 +82,12 @@ sub vcl_init {
 
 
     new logged_in_vdir = directors.random();
-    logged_in_vdir.add_backend(helio_in,1);
-    logged_in_vdir.add_backend(boro_in,99);
+    logged_in_vdir.add_backend(helio_in,10);
+    logged_in_vdir.add_backend(boro_in,80);
 
     new logged_out_vdir = directors.random();
-    logged_out_vdir.add_backend(helio,50);
-    logged_out_vdir.add_backend(boro,50);
+    logged_out_vdir.add_backend(helio,35);
+    logged_out_vdir.add_backend(boro,65);
 
 }
 
@@ -149,7 +149,6 @@ sub vcl_recv {
         return (synth(200, "Banned (aiku)"));
     }
 
-
     if (req.method == "PURGE") {
         # 3. Security: Check ACL and token
         if (!client.ip ~ purge) {
@@ -157,7 +156,6 @@ sub vcl_recv {
         }
         return (purge);
     }
-
 
     # Determine login header (used by app, backend selection, and cache key)
     # If the warm-up header is present, trust it and bypass cookie derivation
@@ -171,6 +169,13 @@ sub vcl_recv {
     } else {
         call set_login_flag_from_cookie;
     }
+
+    if (req.http.X-Is-Diff=="Y") {
+         set req.http.X-Web-State = req.http.X-Logged-Status;
+    }else{
+         set req.http.X-Web-State ="B";
+    }
+
 
     # Select backend weights based on the derived login status
     if (req.http.X-Logged-Status == "In") {
@@ -188,8 +193,6 @@ sub vcl_recv {
     if (req.method != "GET" && req.method != "HEAD") {
         return (pass);
     }
-
-
 
     # Do not cache unsubscribe.php
     if (req.url ~ "^/unsubscribe\.php(\?.*)?$") {
@@ -252,10 +255,7 @@ sub vcl_hash {
     hash_data(req.http.host);
     hash_data(req.url);
 
-    # Separate cache buckets by login status
-    if (req.http.X-Logged-Status) {
-        hash_data(req.http.X-Logged-Status);
-    }
+    hash_data(req.http.X-Web-State);
 
     # Categorize requests into two hash buckets based on X-Inertia header.
     if (req.http.X-Inertia) {
@@ -328,9 +328,9 @@ sub vcl_backend_response {
         return (deliver);
     }
 
-    # Cache public logged-out 404s briefly to reduce repeated backend misses.
-    if (beresp.status == 404 && bereq.http.X-Logged-Status == "Out") {
-        set beresp.ttl = 3h;
+    # Cache 404s briefly to reduce repeated backend misses.
+    if (beresp.status == 404) {
+        set beresp.ttl = 6h;
         set beresp.grace = 1m;
         return (deliver);
     }
@@ -356,9 +356,10 @@ sub vcl_backend_response {
             beresp.http.X-Aiku-Cacheable-Inertia == "1" &&
             beresp.http.Content-Type ~ "(?i)application/json"
         ) {
-            set beresp.ttl = 5m;
+            set beresp.ttl = 10d;
             set beresp.grace = 1m;
             set beresp.do_gzip = true;
+
 
             if (beresp.http.Vary) {
                 set beresp.http.Vary = beresp.http.Vary + ", X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component, X-Requested-With";
@@ -367,6 +368,12 @@ sub vcl_backend_response {
             }
 
             unset beresp.http.X-Aiku-Cacheable-Inertia;
+
+              # Enable gzip on text-like content
+                if (beresp.http.Content-Type ~ "(text|javascript|json|xml|svg|font|css)") {
+                    set beresp.do_gzip = true;
+                }
+
             return (deliver);
         } else {
             set beresp.ttl = 0s;
@@ -379,8 +386,7 @@ sub vcl_backend_response {
     set beresp.ttl = 10d;
     set beresp.grace = 2m;
     set beresp.keep = 10m;
-    # Store original TTL as header for later use in vcl_deliver
-    set beresp.http.X-Varnish-TTL = beresp.ttl;
+
 
     # Enable gzip on text-like content
     if (beresp.http.Content-Type ~ "(text|javascript|json|xml|svg|font|css)") {
@@ -397,7 +403,6 @@ sub vcl_deliver {
         unset resp.http.Set-Cookie;
     }
 
-
     # Add debug headers (can be removed in production)
     if (obj.hits > 0) {
         set resp.http.X-Cache = "HIT";
@@ -405,11 +410,6 @@ sub vcl_deliver {
         set resp.http.X-Cache = "MISS";
     }
     set resp.http.X-Cache-Hits = obj.hits;
-
-    # Echo login derivation for observability and for the app if needed
-    if (req.http.X-Logged-Status) {
-        set resp.http.X-Logged-Status = req.http.X-Logged-Status;
-    }
 
     if (req.http.X-Original-Referer) {
         set resp.http.X-Original-Referer = req.http.X-Original-Referer;
@@ -419,6 +419,9 @@ sub vcl_deliver {
         set resp.http.X-Traffic-Sources = req.http.X-Stripped-Query;
     }
 
+    if (req.http.X-Web-State) {
+        set resp.http.X-Web-State = req.http.X-Web-State;
+    }
 
     if (resp.status == 301 || resp.status == 302 || resp.status == 303 || resp.status == 307 || resp.status == 308) {
         if (!resp.http.Cache-Control) {

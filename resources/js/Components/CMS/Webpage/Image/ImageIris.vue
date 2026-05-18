@@ -14,7 +14,7 @@ import { computed } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 
@@ -49,7 +49,8 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
-  indexBlock:index
+  indexBlock?: number
+  code?: string
 }>()
 
 
