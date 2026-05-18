@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { faYinYang } from '@fal'
+import { computed } from 'vue'
 
 library.add(faYinYang);
 
@@ -44,6 +45,38 @@ const isCellNumber = () => {
     
     return false
 }
+
+const headerAlignmentClass = computed(() => {
+    if (
+        props.cell?.align === 'right' ||
+        isCellNumber() ||
+        props.cell?.type == 'number' ||
+        props.cell?.type == 'currency' ||
+        props.cell?.type === 'date' ||
+        props.cell?.type === 'date_hm' ||
+        props.cell?.type === 'date_hms'
+    ) {
+        return 'text-right'
+    }
+
+    if (props.cell?.align === 'center') {
+        return 'text-center'
+    }
+
+    return 'text-left'
+})
+
+const headerJustifyClass = computed(() => {
+    if (props.cell?.type == 'avatar' || props.cell?.type == 'icon' || props.cell?.align === 'center') {
+        return 'justify-center'
+    }
+
+    if (isCellNumber()) {
+        return 'justify-end'
+    }
+
+    return 'justify-start'
+})
 </script>
 
 <template>
@@ -52,16 +85,14 @@ const isCellNumber = () => {
     <th v-show="!cell?.hidden" class="font-normal"
         :class="[
             cell?.type == 'avatar' || cell?.type == 'icon' ? 'thead-avatar px-5 w-1' : 'px-6 w-auto',
-            cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms'
-                ? 'text-right'
-                : cell?.align === 'center' ? 'text-center' : 'text-left'
+            headerAlignmentClass
         ]"
     >
         <component :is="cell?.sortable ? 'button' : 'div'" class="py-1"
             :dusk="cell?.sortable ? `sort-${cell?.key}` : null" @click.prevent="onClick">
             <!-- <slot name="pagehead" :data="{isCellNumber : isCellNumber, cell}"> -->
                 <div class="flex items-center justify-start"
-                    :class="{'justify-center': cell?.type == 'avatar' || cell?.type == 'icon' || cell?.align === 'center', 'justify-end': isCellNumber()}">
+                    :class="headerJustifyClass">
                     
                     <!-- Label: object -->
                     <div v-if="typeof cell?.label === 'object'">
@@ -84,7 +115,13 @@ const isCellNumber = () => {
                     
                     <!-- Label: simple and icon -->
                     <div v-else class="text-xs md:text-sm lg:text-base w-full" v-tooltip="cell?.tooltip"
-                        :class="[cell?.type == 'number' || cell?.type == 'currency' ? 'text-right pr-3' : '']"
+                        :class="[
+                            cell?.type == 'number' || cell?.type == 'currency'
+                                ? 'text-right pr-3'
+                                : cell?.align === 'center'
+                                    ? 'text-center'
+                                    : ''
+                        ]"
                     >
                         <FontAwesomeIcon
                             v-if="cell?.icon"
@@ -123,4 +160,3 @@ const isCellNumber = () => {
         </component>
     </th>
 </template>
-
