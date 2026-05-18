@@ -185,20 +185,6 @@ const reviewCustomers = computed(() => {
     }
 })
 
-const reviewRatingLabels = computed(() => {
-    const reviewsData = props.reviews as Record<string, any> | undefined
-    return Array.isArray(reviewsData?.rating_labels) ? reviewsData.rating_labels : []
-})
-
-// Warning flag
-/* const showMissingTaxonomyMessage = computed(() => {
-    if(props.is_external_shop) {
-        return false
-    }
-    return !props.taxonomy?.department && !props.taxonomy?.family
-})
- */
-const layout = inject("layout", {})
 const routeVariant = () => {
     return route(
         'grp.org.shops.show.catalogue.families.show.variants.show',
@@ -288,7 +274,7 @@ const goToEdit = () => {
         </template>
         <template #other>
         </template>
-        <template #otherBefore>
+      <!--   <template #otherBefore>
             
             <ModalCreateGiftOffers 
                 v-if="currentTab === 'offers' && layout.app.environment === 'local'"
@@ -304,13 +290,8 @@ const goToEdit = () => {
                 :rating_labels="reviewRatingLabels"
                 v-tooltip="'Create New Review'"
             />
-        </template>
+        </template> -->
     </PageHeading>
-
-
-    <!-- <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">
-        {{trans('Both department and family data are missing in taxonomy.')}}
-    </Message> -->
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
@@ -330,20 +311,7 @@ const goToEdit = () => {
         </Breadcrumb>
     </div>
 
-
-    <component
-        v-if="currentTab === 'reviews'"
-        :is="component"
-        :data="props[currentTab]"
-        :tab="currentTab"
-        :handleTabUpdate
-        :salesData="salesData"
-        :reviewable_id="props.product_id"
-        reviewable_type="Product"
-        :customers="reviewCustomers"
-        :rating_labels="reviewRatingLabels"
-    />
-    <component v-else :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
 </template>
 
 

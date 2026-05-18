@@ -38,14 +38,14 @@ const reviewRatingLabels = computed(() => {
 
     <PageHeading :data="pageHead">
         <template #otherBefore>
-            <ModalCreateCategoryReviews
+           <!--  <ModalCreateCategoryReviews
                 :product_category_id="props.shop_id"
                 :reviewable_id="props.shop_id"
                 reviewable_type="Shop"
                 :customers="reviewCustomers"
                 :rating_labels="reviewRatingLabels"
                 v-tooltip="'Create New Review'"
-            />
+            /> -->
         </template>
     </PageHeading>
 

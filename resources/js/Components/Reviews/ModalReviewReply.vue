@@ -1,299 +1,186 @@
 <script setup lang="ts">
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Modal from "@/Components/Utils/Modal.vue"
-import Tag from "@/Components/Tag.vue"
+import { computed } from "vue"
+import Rating from "primevue/rating"
 import type { Image as ImageProxy } from "@/types/Image"
-import { Textarea } from "primevue"
-import ImagePrime from "primevue/image"
-import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { router } from "@inertiajs/vue3"
-import { computed, ref } from "vue"
-import axios from "axios"
+
+interface SchemaItem {
+    dimension: string
+    label?: string
+    is_required?: boolean
+    weight?: number
+}
+
+type SchemaPayload =
+    | SchemaItem[]
+    | {
+          shop_reviews?: SchemaItem[]
+          product_reviews?: SchemaItem[]
+          product_category_reviews?: SchemaItem[]
+      }
 
 const props = defineProps<{
-    review: {
-        id: number
-        reviewable_type: "product_reviews" | "product_category_reviews" | "shop_reviews"
-        contact_name?: string | null
-        customer_name?: string | null
-        rating?: number | null
+    type: string
+    schema: SchemaPayload
+    modelValue: {
         status?: "pending" | "approved" | "rejected" | null
+        rating?: number | null
+        rating_a?: number | null
+        rating_b?: number | null
+        rating_c?: number | null
+        rating_d?: number | null
+        rating_e?: number | null
         message?: string | null
-        created_at?: string | null
-        image_gallery?: Array<ImageProxy | string> | null
-        image_thumbnails?: Array<ImageProxy | string> | null
-        existing_reply?: {
-            id: number
-            body?: string | null
-            is_public?: boolean
-            status?: "pending" | "approved" | "rejected" | null
-        } | null
+        image_thumbnail?: ImageProxy | string | null
+        images?: File[] | null
     }
-    hideDefaultButton?: boolean
 }>()
 
-const isOpenModal = ref(false)
-const body = ref("")
-const isSubmitting = ref(false)
-const errors = ref<Record<string, string[]>>({})
-const activeReplyVisibility = ref<"public" | "private">("public")
+const ratingKeyMap = {
+    a: "rating_a",
+    b: "rating_b",
+    c: "rating_c",
+    d: "rating_d",
+    e: "rating_e",
+} as const
 
-const modalTitle = computed(() => trans("Reply Review"))
-const customerName = computed(() => props.review.contact_name ?? props.review.customer_name ?? trans("Customer"))
-const ratingValue = computed(() => {
-    const value = Number(props.review.rating ?? 0)
-    if (!Number.isFinite(value) || value <= 0) {
-        return 0
-    }
+const normalizedSchema = computed<SchemaItem[]>(() => {
+    const items = Array.isArray(props.schema)
+        ? props.schema
+        : [
+              ...(props.schema ?? []),
+          ]
 
-    return Math.max(0, Math.min(5, Math.round(value)))
+    return items.filter(
+        (item, index, self) =>
+            index ===
+            self.findIndex(
+                (x) =>
+                    String(x.dimension).toLowerCase() ===
+                    String(item.dimension).toLowerCase()
+            )
+    )
 })
-const ratingStars = computed(() => "★".repeat(ratingValue.value))
-const ratingEmptyStars = computed(() => "☆".repeat(Math.max(0, 5 - ratingValue.value)))
-const reviewStatusValue = computed(() => props.review.status ?? "pending")
-const reviewStatusLabel = computed(() => {
-    if (reviewStatusValue.value === "approved") {
-        return trans("Approved")
-    }
 
-    if (reviewStatusValue.value === "rejected") {
-        return trans("Rejected")
-    }
+const activeRatings = computed(() => {
+    const grouped = new Map()
 
-    return trans("Pending")
-})
-const reviewStatusTheme = computed(() => {
-    if (reviewStatusValue.value === "approved") {
-        return 3
-    }
+    normalizedSchema.value.forEach((item) => {
+        const dimension = String(item.dimension ?? "").toLowerCase()
+        const field = ratingKeyMap[dimension as keyof typeof ratingKeyMap]
 
-    if (reviewStatusValue.value === "rejected") {
-        return 7
-    }
+        if (!field || grouped.has(dimension)) return
 
-    return 8
-})
-const reviewMessage = computed(() => {
-    const value = props.review.message?.trim()
-    return value && value.length > 0 ? value : "-"
-})
-const reviewImages = computed<ImageProxy[]>(() => {
-    const images = props.review.image_gallery ?? props.review.image_thumbnails
-    if (!Array.isArray(images)) {
-        return []
-    }
-
-    return images
-        .map((image): ImageProxy | null => {
-            if (typeof image === "string" && image.length > 0) {
-                return { original: image }
-            }
-
-            if (image && typeof image === "object" && typeof image.original === "string") {
-                return image
-            }
-
-            return null
+        grouped.set(dimension, {
+            dimension,
+            field,
+            label: item.label?.trim() || `Rating ${dimension.toUpperCase()}`,
+            required: item.is_required ?? false,
         })
-        .filter((image): image is ImageProxy => image !== null)
+    })
+
+    return ["a", "b", "c", "d", "e"]
+        .map((key) => grouped.get(key))
+        .filter(Boolean)
 })
-const reviewImageUrls = computed<string[]>(() =>
-    reviewImages.value
-        .map((image) => image.webp ?? image.original)
-        .filter((url): url is string => typeof url === "string" && url.length > 0)
-)
-const reviewedAt = computed(() => {
-    if (!props.review.created_at) {
-        return "-"
-    }
 
-    const date = new Date(props.review.created_at)
-    if (Number.isNaN(date.getTime())) {
-        return "-"
-    }
+const averageRating = computed(() => {
+    const values = activeRatings.value
+        .map((item: any) => Number(props.modelValue?.[item.field as any]))
+        .filter((v) => !Number.isNaN(v) && v > 0)
 
-    return date.toLocaleString()
+    if (!values.length) return null
+
+    const total = values.reduce((a, b) => a + b, 0)
+    return Number((total / values.length).toFixed(1))
 })
-const canSubmit = computed(() => body.value.trim().length > 0 && !isSubmitting.value)
-const isPublicReply = computed(() => activeReplyVisibility.value === "public")
-const submitLabel = computed(() => (isPublicReply.value ? trans("Post public reply") : trans("Post private reply")))
-const existingReplyId = computed(() => props.review.existing_reply?.id ?? null)
 
-const openModal = (): void => {
-    errors.value = {}
-    body.value = props.review.existing_reply?.body?.trim() ?? ""
-    activeReplyVisibility.value = props.review.existing_reply?.is_public === false ? "private" : "public"
-    isOpenModal.value = true
-}
-
-const closeModal = (): void => {
-    isOpenModal.value = false
-    errors.value = {}
-}
-
-const submitReply = async (): Promise<void> => {
-    if (isSubmitting.value) {
-        return
-    }
-
-    if (body.value.trim().length === 0) {
-        errors.value = {
-            body: [trans("Reply is required")],
-        }
-        return
-    }
-
-    isSubmitting.value = true
-    errors.value = {}
-
-    try {
-        if (existingReplyId.value) {
-            await axios.patch(route("grp.models.review.reply.update", { reviewReply: existingReplyId.value }), {
-                body: body.value,
-                is_public: isPublicReply.value,
-                status: props.review.existing_reply?.status ?? "approved",
-            })
-        } else {
-            await axios.post(route("grp.models.review.reply.store"), {
-                reviewable_type: props.review.reviewable_type,
-                reviewable_id: props.review.id,
-                body: body.value,
-                is_public: isPublicReply.value,
-                status: "approved",
-            })
-        }
-
-        notify({
-            title: trans("Success"),
-            text: existingReplyId.value ? trans("Reply updated successfully") : trans("Reply created successfully"),
-            type: "success",
-        })
-
-        closeModal()
-        router.reload()
-    } catch (error: any) {
-        errors.value = error?.response?.data?.errors ?? {}
-        const serverMessage = error?.response?.data?.message
-        notify({
-            title: trans("Something went wrong"),
-            text: serverMessage || trans("Failed to create reply"),
-            type: "error",
-        })
-    } finally {
-        isSubmitting.value = false
-    }
-}
-
-const autoGenerateReply = (): void => {
-    const rating = Number(props.review.rating ?? 0)
-    const cleanedMessage = props.review.message?.trim()
-
-    if (rating >= 4) {
-        body.value = `${trans("Hi")} ${customerName.value}, ${trans("thank you for your positive review and high rating. We are happy to know you had a great experience with us.")}`
-    } else if (rating >= 2) {
-        body.value = `${trans("Hi")} ${customerName.value}, ${trans("thank you for your review. We appreciate your feedback and will keep improving to provide a better experience.")}`
-    } else {
-        body.value = `${trans("Hi")} ${customerName.value}, ${trans("thank you for sharing your feedback. We are sorry your experience did not meet expectations. Our team is reviewing this and will improve our service.")}`
-    }
-
-    if (cleanedMessage) {
-        body.value = `${body.value} ${trans("We have noted your comment")}: "${cleanedMessage}".`
-    }
+const formatSize = (bytes: number) => {
+    if (!bytes) return "0 B"
+    const k = 1024
+    const sizes = ["B", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
 }
 </script>
 
 <template>
-    <div>
-        <slot name="trigger" :openModal="openModal">
-            <Button
-                v-if="!hideDefaultButton"
-                type="tertiary"
-                icon="fal fa-reply"
-                size="xs"
-                @click="openModal"
-            />
-        </slot>
-
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
-            <div class="space-y-4 p-1">
-                <div class="text-xl font-semibold text-gray-800">{{ modalTitle }}</div>
-                <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div class="text-lg font-semibold text-gray-900">{{ customerName }}</div>
-                        <div class="text-base leading-none text-amber-400">
-                            <span>{{ ratingStars }}</span>
-                            <span class="text-gray-300">{{ ratingEmptyStars }}</span>
-                        </div>
-                        <Tag :theme="reviewStatusTheme" :label="reviewStatusLabel" />
-                    </div>
-                    <div class="mt-3 text-lg font-semibold leading-7 text-gray-900">
-                        {{ reviewMessage }}
-                    </div>
-                    <div v-if="reviewImageUrls.length" class="mt-3 grid grid-cols-3 gap-2">
-                        <ImagePrime
-                            v-for="(imageUrl, index) in reviewImageUrls"
-                            :key="`${review.id}-reply-image-${index}`"
-                            :src="imageUrl"
-                            preview
-                            imageClass="h-20 w-full rounded border border-gray-200 object-cover cursor-pointer"
-                            class="w-full"
-                        />
-                    </div>
-                    <div class="mt-2 text-right text-xs text-gray-500">
-                        {{ ` ${reviewedAt}` }}
-                    </div>
-                </div>
-
-                <div class="border-b border-gray-200">
-                    <div class="flex items-center gap-6">
-                        <button
-                            type="button"
-                            class="border-b-2 px-1 pb-2 text-sm font-semibold transition"
-                            :class="activeReplyVisibility === 'public' ? 'border-cyan-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-800'"
-                            @click="activeReplyVisibility = 'public'"
-                        >
-                            {{ trans("Public reply") }}
-                        </button>
-                        <button
-                            type="button"
-                            class="border-b-2 px-1 pb-2 text-sm font-semibold transition"
-                            :class="activeReplyVisibility === 'private' ? 'border-cyan-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-800'"
-                            @click="activeReplyVisibility = 'private'"
-                        >
-                            {{ trans("Private reply") }}
-                        </button>
-                    </div>
-                </div>
-
-                <div class="space-y-2">
-                    <Textarea
-                        v-model="body"
-                        rows="6"
-                        class="w-full"
-                        :placeholder="trans('Write your reply')"
-                    />
-                    <div v-if="errors.body?.[0]" class="text-sm text-red-500">{{ errors.body[0] }}</div>
-                </div>
-
-                <div class="flex justify-end gap-3">
-                    <Button
-                        type="tertiary"
-                        :label="trans('Auto generate reply')"
-                        icon="fal fa-wand-magic-sparkles"
-                        :disabled="isSubmitting"
-                        @click="autoGenerateReply"
-                    />
-                    <Button type="cancel" @click="closeModal" />
-                    <Button
-                        :isLoading="isSubmitting"
-                        :disabled="!canSubmit"
-                        icon="fal fa-paper-plane"
-                        :label="submitLabel"
-                        @click="submitReply"
-                    />
-                </div>
+    <div class="space-y-4">
+        <!-- Header -->
+        <div class="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">
+                    {{ trans("Review") }}
+                </h2>
+                <p class="text-sm text-gray-500">
+                    {{ trans("Customer feedback detail") }}
+                </p>
             </div>
-        </Modal>
+
+            <div class="flex items-center gap-3 rounded-xl border bg-white px-4 py-3">
+                <div class="text-2xl font-bold text-gray-900">
+                    {{ averageRating ?? "0.0" }}
+                </div>
+
+                <Rating :modelValue="averageRating || 0" readonly :cancel="false" />
+            </div>
+        </div>
+
+        <!-- Ratings -->
+        <div class="space-y-3">
+            <div
+                v-for="item in activeRatings"
+                :key="item.dimension"
+                class="flex items-center justify-between rounded-xl border bg-white p-3"
+            >
+                <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-white">
+                        {{ item.dimension }}
+                    </div>
+
+                    <div>
+                        <div class="text-sm font-medium text-gray-800">
+                            {{ item.label }}
+                        </div>
+                        <div v-if="item.required" class="text-xs text-red-500">
+                            {{ trans("Required") }}
+                        </div>
+                    </div>
+                </div>
+
+                <Rating
+                    :modelValue="props.modelValue?.[item.field]"
+                    readonly
+                    :cancel="false"
+                />
+            </div>
+        </div>
+
+        <!-- Message -->
+        <div class="space-y-2">
+            <div class="text-sm font-medium text-gray-800">
+                {{ trans("Review") }}
+            </div>
+
+            <div class="rounded-xl border bg-white p-3 text-sm text-gray-700">
+                {{ props.modelValue.message || "-" }}
+            </div>
+        </div>
+
+        <!-- Images (view only) -->
+        <!-- <div v-if="props.modelValue.image_thumbnail" class="space-y-2">
+            <div class="text-sm font-medium text-gray-800">
+                {{ trans("Images") }}
+            </div>
+
+            <div class="flex gap-2">
+                <img
+                    v-for="(img, i) in (props.modelValue.image_thumbnail as any[])"
+                    :key="i"
+                    :src="img"
+                    class="h-20 w-20 rounded object-cover border"
+                />
+            </div>
+        </div> -->
     </div>
 </template>

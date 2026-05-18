@@ -12,6 +12,8 @@ import { trans } from "laravel-vue-i18n"
 import { faPencil, faReply, faEye } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed } from "vue"
+import Dialog from "primevue/dialog"
+import { ref } from "vue"
 
 
 library.add(
@@ -48,45 +50,43 @@ type RatingLabel = {
 }
 
 const props = defineProps<{
-    data: ReviewTablePayload
-    tab?: string
-    product_category_id?: number
-    reviewable_id?: number
-    reviewable_type?: "ProductCategory" | "Product" | "Shop"
-    customers?: {
-        data: Array<{
-            customer_id: number
-            label: string
-            contact_name?: string | null
-            username?: string
-            email?: string | null
-        }>
-        meta?: {
-            current_page?: number
-            per_page?: number
-            next_page?: number | null
-            has_more?: boolean
-        }
+    data: {
+        data : ReviewTablePayload
+        reviewable_id?: number
+        reviewable_type?: "ProductCategory" | "Product" | "Shop"
+        rating_labels?: RatingLabel[]
     }
-    rating_labels?: RatingLabel[]
+    tab?: string
 }>()
 
-const reviewableId = computed(() => props.reviewable_id ?? props.product_category_id ?? 0)
-const reviewableType = computed(() => props.reviewable_type ?? "ProductCategory")
+const isDialogVisible = ref(false)
+const selectedItem = ref<any | null>(null)
+
+const openModal = (item: any) => {
+    console.log(item)
+    selectedItem.value = item
+    isDialogVisible.value = true
+}
+
+const closeModal = () => {
+    isDialogVisible.value = false
+    selectedItem.value = null
+}
 
 const renderStars = (rating: number): string => {
     const numericRating = Number(rating)
     const value = Number.isFinite(numericRating) ? Math.max(0, Math.min(5, Math.round(numericRating))) : 0
     return "★".repeat(value)
 }
+
+console.log(props)
 </script>
 
 <template>
     <div class="p-4">
         <ReviewStatsPanel :stats="data.stats" :rating-labels="rating_labels" />
     </div>
-
-    <Table :resource="data" :name="tab">
+    <Table :resource="data.data" :name="tab">
         <template #cell(image_thumbnails)="{ item }">
             <div class="flex items-center gap-1">
                 <template v-if="Array.isArray(item.image_thumbnails) && item.image_thumbnails.length">
@@ -108,47 +108,17 @@ const renderStars = (rating: number): string => {
         </template>
         <template #cell(action)="{ item }">
             <div class="flex items-center justify-end gap-1">
-                <ModalCreateCategoryReviews :hideDefaultButton="true" mode="detail" :product_category_id="reviewableId"
-                    :reviewable_type="reviewableType" :review="item" :customers="customers"
-                    :rating_labels="rating_labels">
-                    <template #trigger="{ openModal }">
-                        <Button type="tertiary" :icon="faEye" size="xs" @click="openModal" />
-                    </template>
-                </ModalCreateCategoryReviews>
-
-                <ModalCreateCategoryReviews :hideDefaultButton="true" mode="update" :product_category_id="reviewableId"
-                    :reviewable_type="reviewableType" :review="item" :customers="customers"
-                    :rating_labels="rating_labels">
-                    <template #trigger="{ openModal }">
-                        <Button type="tertiary" :icon="faPencil" size="xs" @click="openModal" />
-                    </template>
-                </ModalCreateCategoryReviews>
-
-                <ModalReviewReply :hideDefaultButton="true" :review="{
-                    id: item.id,
-                    reviewable_type: item.reviewable_type,
-                    contact_name: item.contact_name,
-                    customer_name: item.customer_name,
-                    rating: item.rating,
-                    status: item.status,
-                    message: item.message,
-                    created_at: item.created_at,
-                    image_gallery: item.image_gallery,
-                    image_thumbnails: item.image_thumbnails,
-                    existing_reply: item.existing_reply
-                }">
-                    <template #trigger="{ openModal }">
-                        <Button type="tertiary" :icon="faReply" size="xs" @click="openModal" />
-                    </template>
-                </ModalReviewReply>
-
-                <ModalConfirmationDelete :routeDelete="item.delete_route"
-                    :title="trans('Are you sure you want to delete this review?')" isFullLoading>
-                    <template #default="{ changeModel }">
-                        <Button icon="fal fa-trash-alt" type="negative" size="xs" @click="changeModel" />
-                    </template>
-                </ModalConfirmationDelete>
+                        <Button type="tertiary" :icon="faEye" size="xs" @click="()=>openModal(item)" />
             </div>
         </template>
     </Table>
+
+
+    <Dialog v-model:visible="isDialogVisible" modal header="Review Detail" :style="{ width: '40rem' }"
+        :breakpoints="{ '960px': '75vw', '641px': '90vw' }" @hide="closeModal">
+        <div v-if="selectedItem" class="space-y-3">
+           <ModalReviewReply :modelValue="selectedItem"  :schema="data.rating_labels"/>
+        </div>
+    </Dialog>
+
 </template>

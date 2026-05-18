@@ -44,8 +44,10 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Reviews\ReviewRatingLabel;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowProduct extends OrgAction
@@ -461,12 +463,41 @@ class ShowProduct extends OrgAction
         return new ProductsResource($product);
     }
 
-    private function getReviewsTabData(Product $product): AnonymousResourceCollection
+
+    private function getReviewsTabData(Product $product): array
     {
-        return ReviewsResource::collectionWithTabMeta(
-            IndexReviews::make()->inProduct(parent: $product, prefix: ProductTabsEnum::REVIEWS->value),
-            $product
-        );
+        return [
+            'data' => ReviewsResource::collectionWithTabMeta(
+                IndexReviews::make()->inProduct(
+                    parent: $product,
+                    prefix: ProductTabsEnum::REVIEWS->value
+                ),
+                $product
+            ),
+            'reviewable_id' => $product->id,
+            'rating_labels' => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::ProductReviews),
+            'reviewable_type' => 'Product',
+        ];
+    }
+
+    private function ratingLabelsForShop(int $shopId, ReviewContextEnum $context): array
+    {
+        return ReviewRatingLabel::query()
+            ->whereRaw('LOWER(model_type) = ?', ['shop'])
+            ->where('model_id', $shopId)
+            ->whereRaw('LOWER(review_context) = ?', [$context->value])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('dimension')
+            ->get(['dimension', 'label', 'is_required', 'weight'])
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
+                'dimension' => $reviewRatingLabel->dimension?->value ?? (string) $reviewRatingLabel->dimension,
+                'label' => (string) $reviewRatingLabel->label,
+                'is_required' => (bool) $reviewRatingLabel->is_required,
+                'weight' => (float) $reviewRatingLabel->weight,
+            ])
+            ->values()
+            ->all();
     }
 
     public function getBreadcrumbs(Organisation|Shop|Fulfilment|ProductCategory $parent, Product $product, string $routeName, array $routeParameters, $suffix = null): array

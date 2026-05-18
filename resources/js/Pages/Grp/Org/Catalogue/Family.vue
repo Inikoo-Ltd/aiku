@@ -178,13 +178,13 @@ const showDialog = ref(false)
                 :product_category_id="props.product_category_id"
                 v-tooltip="'Create New Offer'"
             />
-            <ModalCreateCategoryReviews
+          <!--   <ModalCreateCategoryReviews
                 v-if="currentTab === 'reviews'"
                 :product_category_id="props.product_category_id"
                 :customers="reviewCustomers"
                 :rating_labels="reviewRatingLabels"
                 v-tooltip="'Create New Review'"
-            />
+            /> -->
         </template>
     </PageHeading>
 
