@@ -72,8 +72,7 @@ const saveProductReview = async () => {
               method: "patch" as const,
               params: {
                   review:
-                      selectedItem.value?.reviews?.product?.payload
-                          ?.reviewable_id,
+                      selectedItem.value?.reviews?.product?.review_id,
               },
           }
         : {
