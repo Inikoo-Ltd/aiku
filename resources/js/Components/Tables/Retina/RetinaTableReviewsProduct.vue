@@ -75,8 +75,7 @@ const saveProductReview = async () => {
     const routeParams = isUpdate
         ? {
               review:
-                  selectedItem.value?.reviews?.product?.payload
-                      ?.reviewable_id,
+                  selectedItem.value?.reviews?.product?.review_id,
           }
         : undefined
 

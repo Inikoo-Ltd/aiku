@@ -25,6 +25,27 @@ class UpdateReview
     use AsAction;
     use HasReviewHydrators;
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $nullableKeys = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
+
+        $updates = [];
+        foreach ($nullableKeys as $key) {
+            if (!$request->has($key)) {
+                continue;
+            }
+
+            $value = $request->input($key);
+            if ($value === '' || $value === 'null') {
+                $updates[$key] = null;
+            }
+        }
+
+        if ($updates !== []) {
+            $request->merge($updates);
+        }
+    }
+
     public function handle(ProductReview|ProductCategoryReview|ShopReview $review, array $modelData): ProductReview|ProductCategoryReview|ShopReview
     {
         $updatedReview = DB::transaction(function () use ($review, $modelData) {
