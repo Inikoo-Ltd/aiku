@@ -4,7 +4,7 @@ import { Navigation, Pagination, Autoplay, Thumbs } from "swiper/modules"
 import "swiper/css"
 import "swiper/css/navigation"
 import "swiper/css/pagination"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 
 import Image from "@common/Components/Image.vue"
 import { inject, ref, watch, computed, nextTick, onMounted } from "vue"

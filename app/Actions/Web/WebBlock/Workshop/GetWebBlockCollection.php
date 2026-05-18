@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Http\Resources\Web\WebBlockProductCategoryDescriptionResource;
 use App\Models\Web\Webpage;

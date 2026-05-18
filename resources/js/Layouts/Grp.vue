@@ -81,7 +81,7 @@ import {
     faUserAlien,
     faTombstone as faTombstoneLight,
     faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-    faBarcode, faGhost
+    faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -152,7 +152,7 @@ library.add(
     faSearch,
     faBell,
     faArrowRight,
-    faShippingFast, faGhost,
+    faShippingFast, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield,
     faTachometerAltFast,
     faGlobe,
     faParachuteBox,

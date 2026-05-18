@@ -420,7 +420,7 @@ class IndexCustomers extends OrgAction
                     'actions'       => $action,
                     'subNavigation' => $subNavigation,
                 ]),
-                'data' => CustomersResource::collection($customers),
+                // 'data' => CustomersResource::collection($customers),
                 'download_route' => [
                     'xlsx' => [
                         'name'       => 'grp.org.shops.show.crm.customers.export',

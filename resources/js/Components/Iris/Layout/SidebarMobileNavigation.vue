@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faChevronRight } from "@far"
-import LinkIris from "../LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import { ref } from "vue"
