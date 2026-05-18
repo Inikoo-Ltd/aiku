@@ -757,9 +757,15 @@ provide("goNext", goNext)
 					{{ trans('Connect to Tiktok channel') }}
 				</div>
 			</div>
-			<div class="flex items-start gap-3 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">
-				<FontAwesomeIcon icon="fal fa-info-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
-				<span>{{ trans("TikTok integration is currently in beta testing and may not be fully functional. Please proceed with caution.") }}</span>
+			<div class="flex flex-col gap-1 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">
+				<div class="">
+					<FontAwesomeIcon icon="fas fa-exclamation-triangle" class="align-baseline mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+					<span class="ml-0.5 font-bold text-base">{{ ctrans("Warning!") }}</span>
+				</div>
+				<ul class="list-disc list-outside space-y-1 pl-6">
+					<li>{{ ctrans("TikTok integration is currently in beta testing and may not be fully functional. Please proceed with caution.") }}</li>
+					<li>{{ ctrans("When you use TikTok Shipping, you must update your logistical preferences to Pick Up.") }}</li>
+				</ul>
 			</div>
 			<ProgressBar />
 			<component :is="stepTiktokComponents[currentStep]" :props="props" />
