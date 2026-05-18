@@ -193,7 +193,7 @@ const confirmSchedule = async () => {
                 notify({
                     type: 'success',
                     title: 'Success',
-                    text: `Mailshot scheduled for ${scheduleDateTime.value.toLocaleString()}`,
+                    text: `Mailshot scheduled for ${formattedDateTime}`,
                 })
                 showSchedulePicker.value = false;
                 schedulePicker.value?.hide();
