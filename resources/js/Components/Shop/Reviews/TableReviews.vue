@@ -5,9 +5,8 @@ import ReviewStatsPanel from "@/Components/Shop/Reviews/ReviewStatsPanel.vue"
 import Image from "@/Common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
-import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
+import { router } from "@inertiajs/vue3"
 import ModalReviewReply from "@/Components/Reviews/ModalReviewReply.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
 import { faPencil, faReply, faEye } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -79,6 +78,11 @@ const renderStars = (rating: number): string => {
     return "★".repeat(value)
 }
 
+const aftreReply = () => {
+    isDialogVisible.value = false
+    router.reload({only: ['pageHead', 'reviews']})
+}
+
 
 </script>
 
@@ -124,6 +128,7 @@ const renderStars = (rating: number): string => {
                 :replier_type="data.replier_type"
                 :reviewable_id="selectedItem.id"
                 :reviewable_type="data.reviewable_type"
+                @reply-after-update="aftreReply"
             />
         </div>
     </Dialog>

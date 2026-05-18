@@ -2,12 +2,16 @@
 import { computed, ref } from "vue"
 import Rating from "primevue/rating"
 import Textarea from "primevue/textarea"
-import Button from "primevue/button"
+
 
 import type { Image as ImageProxy } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
+import { useFormatTime } from "@/Composables/useFormatTime";
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { faPencil, faReply, faTrashAlt } from "@far"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 interface SchemaItem {
     dimension: string
@@ -20,16 +24,16 @@ interface SchemaItem {
 type SchemaPayload =
     | SchemaItem[]
     | {
-          shop_reviews?: SchemaItem[]
-          product_reviews?: SchemaItem[]
-          product_category_reviews?: SchemaItem[]
-      }
+        shop_reviews?: SchemaItem[]
+        product_reviews?: SchemaItem[]
+        product_category_reviews?: SchemaItem[]
+    }
 
 const props = defineProps<{
     schema: SchemaPayload
     replier_type: string
-    reviewable_type : string
-    reviewable_id:number
+    reviewable_type: string
+    reviewable_id: number
     modelValue: {
         status?: "pending" | "approved" | "rejected" | null
         rating?: number | null
@@ -46,10 +50,13 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-    (e: "reply", value: string): void
+    (e: "replyAfterUpdate", value: string): void
 }>()
 const loadingSave = ref(false)
+const loadingDelete = ref(false)
+const isEditMode = ref(false)
 const storeReply = ref("")
+const editReplyText = ref("")
 
 const ratingKeyMap = {
     a: "rating_a",
@@ -63,10 +70,10 @@ const normalizedSchema = computed<SchemaItem[]>(() => {
     const items = Array.isArray(props.schema)
         ? props.schema
         : [
-              ...(props.schema?.shop_reviews ?? []),
-              ...(props.schema?.product_reviews ?? []),
-              ...(props.schema?.product_category_reviews ?? []),
-          ]
+            ...(props.schema?.shop_reviews ?? []),
+            ...(props.schema?.product_reviews ?? []),
+            ...(props.schema?.product_category_reviews ?? []),
+        ]
 
     return items.filter(
         (item, index, self) =>
@@ -113,27 +120,29 @@ const averageRating = computed(() => {
     return Number((total / values.length).toFixed(1))
 })
 
-const postReply = async() => {
-     try {
+const postReply = async () => {
+    try {
         loadingSave.value = true
         await axios({
             method: "post",
             url: route('grp.models.review.reply.store'),
             data: {
-                reviewable_type : props.reviewable_type,
-                reviewable_id : props.reviewable_id,
-                replier_type : props.replier_type,
-                body : storeReply.value
+                reviewable_type: props.reviewable_type,
+                reviewable_id: props.reviewable_id,
+                replier_type: props.replier_type,
+                body: storeReply.value
             },
             headers: {
                 "Content-Type": "multipart/form-data",
             },
         })
+        emit('replyAfterUpdate', storeReply.value)
         notify({
             title: "Success",
             text: "Review submitted successfully",
             type: "success",
         })
+        storeReply.value = ""
     } catch (errors) {
         console.error(errors)
         notify({
@@ -145,14 +154,88 @@ const postReply = async() => {
         loadingSave.value = false
     }
 }
+
+const enterEditMode = () => {
+    isEditMode.value = true
+    editReplyText.value = props.modelValue.existing_reply?.body || ""
+}
+
+const cancelEditMode = () => {
+    isEditMode.value = false
+    editReplyText.value = ""
+}
+
+const updateReply = async () => {
+    try {
+        loadingSave.value = true
+        const replyId = props.modelValue.existing_reply?.id
+        await axios({
+            method: "patch",
+            url: route('grp.models.review.reply.update', { reviewReply: replyId }),
+            data: {
+                body: editReplyText.value
+            },
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        })
+        emit('replyAfterUpdate', storeReply.value)
+        notify({
+            title: "Success",
+            text: "Reply updated successfully",
+            type: "success",
+        })
+        isEditMode.value = false
+        editReplyText.value = ""
+    } catch (errors) {
+        console.error(errors)
+        notify({
+            title: "Error",
+            text: "Failed to update reply",
+            type: "error",
+        })
+    } finally {
+        loadingSave.value = false
+    }
+}
+
+const deleteReply = async () => {
+    if (!confirm(trans("Are you sure you want to delete this reply?"))) return
+
+    try {
+        loadingDelete.value = true
+        const replyId = props.modelValue.existing_reply?.id
+        await axios({
+            method: "delete",
+            url: route('grp.models.review.reply.delete', { reviewReply: replyId }),
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        })
+        emit('replyAfterUpdate', storeReply.value)
+        notify({
+            title: "Success",
+            text: "Reply deleted successfully",
+            type: "success",
+        })
+    } catch (errors) {
+        console.error(errors)
+        notify({
+            title: "Error",
+            text: "Failed to delete reply",
+            type: "error",
+        })
+    } finally {
+        loadingDelete.value = false
+    }
+}
 </script>
 
 <template>
     <div class="space-y-4">
         <!-- Header -->
         <div
-            class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3 lg:flex-row lg:items-center lg:justify-between"
-        >
+            class="flex flex-col gap-3 rounded border border-gray-200 bg-gray-50 p-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <h2 class="text-base font-semibold text-gray-900">
                     {{ trans("Review") }}
@@ -163,35 +246,20 @@ const postReply = async() => {
                 </p>
             </div>
 
-            <div
-                class="rating flex items-center gap-3 rounded-xl border bg-white px-3 py-2"
-            >
+            <div class="rating flex items-center gap-3 rounded-xl border bg-white px-3 py-2">
                 <div class="text-xl font-bold text-gray-900 ">
                     {{ averageRating ?? "0.0" }}
                 </div>
 
-                <Rating
-                    :modelValue="averageRating || 0"
-                    readonly
-                    :cancel="false"
-                />
+                <Rating :modelValue="averageRating || 0" readonly :cancel="false" />
             </div>
         </div>
 
         <!-- Ratings -->
         <div class="rating grid gap-3 md:grid-cols-2">
-            <div
-                v-for="item in activeRatings"
-                :key="item.dimension"
-                class="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3"
-            >
+            <div v-for="item in activeRatings" :key="item.dimension"
+                class="flex items-center justify-between rounded border border-gray-200 bg-white p-3">
                 <div class="flex items-center gap-3 rating">
-                    <div
-                        class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-sm font-semibold uppercase text-white"
-                    >
-                        {{ item.dimension }}
-                    </div>
-
                     <div>
                         <div class="text-sm font-medium text-gray-800">
                             {{ item.label }}
@@ -203,31 +271,26 @@ const postReply = async() => {
                     </div>
                 </div>
 
-                <Rating
-                    :modelValue="props.modelValue?.[item.field]"
-                    readonly
-                    :cancel="false"
-                />
+                <Rating :modelValue="props.modelValue?.[item.field]" readonly :cancel="false" />
             </div>
         </div>
 
         <!-- Customer Comment -->
         <div class="space-y-3">
-            <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <div class="rounded border border-gray-200 bg-white p-3 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <div
-                            class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold uppercase text-white"
-                        >
+                            class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold uppercase text-white">
                             C
                         </div>
 
                         <div>
                             <div class="text-sm font-semibold text-gray-900">
-                                {{ trans("Customer") }}
+                                {{ modelValue.contact_name }}
                             </div>
                             <div class="text-xs text-gray-500">
-                                {{ trans("Posted Review") }}
+                                {{ useFormatTime(modelValue.created_at) }}
                             </div>
                         </div>
                     </div>
@@ -237,63 +300,78 @@ const postReply = async() => {
                     </div>
                 </div>
 
-                <div
-                    class="mt-3 text-sm leading-relaxed whitespace-pre-line text-gray-700"
-                >
+                <div class="mt-3 text-sm leading-relaxed whitespace-pre-line text-gray-700">
                     {{ props.modelValue.message || "-" }}
                 </div>
             </div>
 
-            <div v-if="props.modelValue.reply" class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-xs font-semibold uppercase text-white"
-                        >
-                            S
+            <div v-if="props.modelValue.reply_status == 'Yes'" class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+                <div v-if="!isEditMode" class="space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-xs font-semibold uppercase text-white">
+                                S
+                            </div>
+
+                            <div>
+                                <div class="text-sm font-semibold text-gray-900">
+                                    {{ trans("Store") }}
+                                </div>
+                                <div class="text-xs text-orange-600">
+                                    {{ trans("Official Reply") }}
+                                </div>
+                            </div>
                         </div>
 
-                        <div>
-                            <div class="text-sm font-semibold text-gray-900">
-                                {{ trans("Store") }}
-                            </div>
-                            <div class="text-xs text-orange-600">
-                                {{ trans("Official Reply") }}
-                            </div>
+                        <div class="flex gap-3">
+                            <button @click="enterEditMode" class="text-gray-500 hover:text-gray-700 transition"
+                                :title="trans('Edit')">
+                                <FontAwesomeIcon :icon="faPencil" />
+                            </button>
+                            <button @click="deleteReply" :disabled="loadingDelete"
+                                class="text-gray-500 hover:text-red-600 transition disabled:opacity-50"
+                                :title="trans('Delete')">
+                                <FontAwesomeIcon :icon="faTrashAlt" />
+                            </button>
                         </div>
                     </div>
 
-                    <div class="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700">
-                        {{ trans("Reply") }}
+                    <div class="text-sm leading-relaxed whitespace-pre-line text-gray-700">
+                        {{ props.modelValue?.existing_reply?.body }}
                     </div>
                 </div>
 
-                <div
-                    class="mt-3 text-sm leading-relaxed whitespace-pre-line text-gray-700"
-                >
-                    {{ props.modelValue.reply }}
+                <div v-else class="space-y-3">
+                    <div class="text-sm font-medium text-gray-800">
+                        {{ trans("Edit Reply") }}
+                    </div>
+
+                    <Textarea v-model="editReplyText" rows="4" autoResize class="w-full"
+                        :placeholder="trans('Write a professional reply...')" />
+
+                    <div class="flex justify-end gap-2">
+                        <Button :label="trans('Cancel')" size="xs" type="secondary" @click="cancelEditMode" />
+                        <Button :label="trans('Update Reply')" size="xs" @click="updateReply" :loading="loadingSave"
+                            :icon="faPencil" />
+                    </div>
                 </div>
             </div>
+
+
+
 
             <div v-else class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-3">
                 <div class="mb-2 text-sm font-medium text-gray-800">
                     {{ trans("Reply as Shop") }}
                 </div>
 
-                <Textarea
-                    v-model="storeReply"
-                    rows="4"
-                    autoResize
-                    class="w-full"
-                    :placeholder="trans('Write a professional reply...')"
-                />
+                <Textarea v-model="storeReply" rows="4" autoResize class="w-full"
+                    :placeholder="trans('Write a professional reply...')" />
 
                 <div class="mt-3 flex justify-end">
-                    <Button
-                        :label="trans('Send Reply')"
-                        size="small"
-                        @click="()=>postReply()"
-                    />
+                    <Button :label="trans('Send Reply')" size="xs" @click="() => postReply()" :loading="loadingSave"
+                        :icon="faReply" />
                 </div>
             </div>
         </div>
