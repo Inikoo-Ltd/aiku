@@ -52,14 +52,16 @@ const isCellNumber = () => {
     <th v-show="!cell?.hidden" class="font-normal"
         :class="[
             cell?.type == 'avatar' || cell?.type == 'icon' ? 'thead-avatar px-5 w-1' : 'px-6 w-auto',
-            cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms' ? 'text-right' : 'text-left'
+            cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms'
+                ? 'text-right'
+                : cell?.align === 'center' ? 'text-center' : 'text-left'
         ]"
     >
         <component :is="cell?.sortable ? 'button' : 'div'" class="py-1"
             :dusk="cell?.sortable ? `sort-${cell?.key}` : null" @click.prevent="onClick">
             <!-- <slot name="pagehead" :data="{isCellNumber : isCellNumber, cell}"> -->
                 <div class="flex items-center justify-start"
-                    :class="{'justify-center': cell?.type == 'avatar' || cell?.type == 'icon', 'justify-end': isCellNumber()}">
+                    :class="{'justify-center': cell?.type == 'avatar' || cell?.type == 'icon' || cell?.align === 'center', 'justify-end': isCellNumber()}">
                     
                     <!-- Label: object -->
                     <div v-if="typeof cell?.label === 'object'">

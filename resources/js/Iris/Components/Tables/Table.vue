@@ -921,7 +921,9 @@ const isLoading = ref<string | boolean>(false)
                                                         ? 'text-center min-w-fit px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
                                                             ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
-                                                            : 'px-6',
+                                                            : column.align === 'center'
+                                                                ? 'text-center px-3'
+                                                                : 'px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className

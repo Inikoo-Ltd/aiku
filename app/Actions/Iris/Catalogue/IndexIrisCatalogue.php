@@ -238,7 +238,7 @@ class IndexIrisCatalogue extends IrisAction
 
             $table->withGlobalSearch();
 
-            $table->column(key: 'image', label: '', type: 'avatar');
+            $table->column(key: 'image', label: __('Image'), align: 'center');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                   ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
