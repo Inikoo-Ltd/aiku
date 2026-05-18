@@ -14,7 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import { debounce, get, set } from "lodash-es"
 import { inject, ref } from "vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import GridProducts from "@/Components/Product/GridProducts/GridProducts.vue"
 

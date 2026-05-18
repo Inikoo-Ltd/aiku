@@ -14,7 +14,7 @@ import { inject, computed } from 'vue'
 import { faCube, faLink, faImage } from "@fal"
 import { faSpinnerThird } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { get, isPlainObject } from 'lodash-es'
 
 library.add(faCube, faLink, faImage, faSpinnerThird)

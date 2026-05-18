@@ -15,7 +15,7 @@ import { faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { reactive } from 'vue'
-import LinkIris from '../Iris/LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { RecommendationCollector } from '@/Composables/Unique/LuigiDataCollector'
 import { debounce } from 'lodash-es'
 // import { Carousel } from 'primevue'

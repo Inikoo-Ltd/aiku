@@ -29,7 +29,7 @@ import "swiper/css"
 
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import Product2Image from "./Product2Image.vue"
 import Image from "@common/Components/Image.vue"

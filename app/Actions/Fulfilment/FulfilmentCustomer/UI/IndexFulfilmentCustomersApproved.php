@@ -183,7 +183,7 @@ class IndexFulfilmentCustomersApproved extends OrgAction
                 ),
                 'title'       => __('customers'),
                 'pageHead'    => [
-                    'title'         => __('customers'),
+                    'title'         => __('Customers'),
                     'icon'          => [
                         'icon'    => ['fal', 'fa-user'],
                         'tooltip' => $this->fulfilment->shop->name.' '.__('Fulfilment customers')

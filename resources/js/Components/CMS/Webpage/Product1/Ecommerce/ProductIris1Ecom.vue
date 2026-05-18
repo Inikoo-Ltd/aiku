@@ -14,7 +14,7 @@ import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 import { trans } from "laravel-vue-i18n"
