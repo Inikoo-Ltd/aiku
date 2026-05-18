@@ -12,6 +12,8 @@ use App\Actions\Dropshipping\WooCommerce\Traits\WithWooCommerceApiRequest;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
@@ -59,6 +61,15 @@ class CheckTemporaryWooUserApiKeys extends RetinaAction
         }
 
         throw ValidationException::withMessages(['url' => __('You are not connected yet, click auth store to connect and follow the instructions.')]);
+    }
+
+    public $commandSignature = 'CheckTemporaryWooUserApiKeys {customerSalesChannel}';
+
+    public function asCommand(Command $command): void
+    {
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+
+        $this->handle($customerSalesChannel->customer);
     }
 
     public function asController(ActionRequest $request): string
