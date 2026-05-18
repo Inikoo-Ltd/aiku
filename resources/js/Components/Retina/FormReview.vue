@@ -6,6 +6,8 @@ import Textarea from "primevue/textarea"
 import Icon from "@/Components/Icon.vue"
 import type { Image as ImageProxy } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
+import PureMultiselectInfiniteScroll from "../Pure/PureMultiselectInfiniteScroll.vue"
+import Organisation from "@/Pages/Grp/Organisations/Organisation.vue"
 
 interface SchemaItem {
     dimension: string
@@ -25,18 +27,21 @@ type SchemaPayload =
 const props = defineProps<{
     type: string
     schema: SchemaPayload
-    modelValue: {
-        status?: "pending" | "approved" | "rejected" | null
-        rating?: number | null
-        rating_a?: number | null
-        rating_b?: number | null
-        rating_c?: number | null
-        rating_d?: number | null
-        rating_e?: number | null
-        message?: string | null
-        image_thumbnail?: ImageProxy | string | null
-        images?: File[] | null
-    }
+    use_customer?:boolean
+    modelValue:
+        | {
+              status?: "pending" | "approved" | "rejected" | null
+              rating?: number | null
+              rating_a?: number | null
+              rating_b?: number | null
+              rating_c?: number | null
+              rating_d?: number | null
+              rating_e?: number | null
+              message?: string | null
+              image_thumbnail?: ImageProxy | string | null
+              images?: File[] | null
+          }
+        | null
 }>()
 
 const emit = defineEmits<{
@@ -50,15 +55,16 @@ const maxImageCount = 3
 const maxTotalBytes = 20 * 1024 * 1024
 
 const form = useForm({
-    message: props.modelValue.message ?? "",
-    rating_a: props.modelValue.rating_a ?? null,
-    rating_b: props.modelValue.rating_b ?? null,
-    rating_c: props.modelValue.rating_c ?? null,
-    rating_d: props.modelValue.rating_d ?? null,
-    rating_e: props.modelValue.rating_e ?? null,
-    rating: props.modelValue.rating ?? null,
-    status: props.modelValue.status ?? 'approved',
-    images: props.modelValue.images ?? [],
+    message: props.modelValue?.message ?? "",
+    rating_a: props.modelValue?.rating_a ?? null,
+    rating_c: props.modelValue?.rating_c ?? null,
+    rating_b: props.modelValue?.rating_b ?? null,
+    rating_d: props.modelValue?.rating_d ?? null,
+    rating_e: props.modelValue?.rating_e ?? null,
+    rating: props.modelValue?.rating ?? null,
+    status: props.modelValue?.status ?? 'approved',
+    images: props.modelValue?.images ?? [],
+    customer_id: props.modelValue?.customer_id ?? null,
 })
 
 const totalSize = computed(() =>
@@ -148,9 +154,7 @@ const normalizedSchema = computed<SchemaItem[]>(() => {
     const items = Array.isArray(props.schema)
         ? props.schema
         : [
-            ...(props.schema.shop_reviews ?? []),
-            ...(props.schema.product_reviews ?? []),
-            ...(props.schema.product_category_reviews ?? []),
+            ...(props.schema ?? []),
         ]
 
     return items.filter(
@@ -250,6 +254,7 @@ watch(
         rating_e: form.rating_e,
         rating: form.rating,
         images: form.images,
+        customer_id : form.customer_id,
     }),
     (value) => {
         emit("update:modelValue", {
@@ -349,6 +354,31 @@ watch(
                 class="rounded-xl border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500"
             >
                 {{ trans( "No review dimensions available." )}}
+            </div>
+
+
+            <div v-if="use_customer" class="space-y-2 pt-1">
+                <label class="text-sm font-medium text-gray-800">
+                    {{ trans("Customer") }}
+                </label>
+
+                <PureMultiselectInfiniteScroll 
+                    v-model="form.customer_id" 
+                    :fetchRoute="{
+                        name: 'grp.org.shops.show.crm.customers.index',
+                        parameters: {
+                            organisation: route().params.organisation,
+                            shop: route().params.shop,
+                        },
+                    }" 
+                    label="name" 
+                    trackBy="id" 
+                    valueProp="id" 
+                    searchable 
+                    :canClear="true" 
+                    :closeOnSelect="true"
+                    :placeholder="trans('Select customer')" \
+                />
             </div>
 
             <div class="space-y-2 pt-1">

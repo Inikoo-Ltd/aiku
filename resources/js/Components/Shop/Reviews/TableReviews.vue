@@ -6,7 +6,7 @@ import Image from "@/Common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import { router } from "@inertiajs/vue3"
-import ModalReviewReply from "@/Components/Reviews/ModalReviewReply.vue"
+import ReviewReply from "@/Components/Reviews/ReviewReply.vue"
 import { trans } from "laravel-vue-i18n"
 import { faPencil, faReply, faEye } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -122,7 +122,7 @@ const aftreReply = () => {
     <Dialog v-model:visible="isDialogVisible" modal header="Review Detail" :style="{ width: '40rem' }"
         :breakpoints="{ '960px': '75vw', '641px': '90vw' }" @hide="closeModal">
         <div v-if="selectedItem" class="space-y-3">
-            <ModalReviewReply
+            <ReviewReply
                 :modelValue="selectedItem"
                 :schema="data.rating_labels"
                 :replier_type="data.replier_type"

@@ -64,8 +64,6 @@ const openDialog = (item: any) => {
 }
 
 const saveProductReview = async () => {
-    console.log(selectedItem.value)
-
     const isUpdate = !!selectedItem.value?.product_review_rating
 
     const routeName = isUpdate
