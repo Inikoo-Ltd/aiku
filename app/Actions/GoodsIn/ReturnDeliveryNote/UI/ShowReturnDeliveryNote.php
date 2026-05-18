@@ -65,6 +65,7 @@ class ShowReturnDeliveryNote extends OrgAction
         return $this->handle($returnDeliveryNote);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): ReturnDeliveryNote
     {
         $this->parent = $shop;
@@ -109,7 +110,7 @@ class ShowReturnDeliveryNote extends OrgAction
         return $actions;
     }
 
-    public function getActions(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): array
+    public function getActions(ReturnDeliveryNote $returnDeliveryNote): array
     {
         $isEditable = false;
         if ($this->parent instanceof Warehouse) {
@@ -338,16 +339,11 @@ class ShowReturnDeliveryNote extends OrgAction
             $isEditable = true;
         }
 
-        $actions = $this->getActions($returnDeliveryNote, $request);
+        $actions = $this->getActions($returnDeliveryNote);
 
 
         $model = __('Return');
 
-        $allowAction = ($returnDeliveryNote->packer_user_id && $returnDeliveryNote->packer_user_id != request()->user()->id);
-
-        if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
-            $allowAction = $returnDeliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
-        }
 
         $showChangePickerPacker = $returnDeliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
