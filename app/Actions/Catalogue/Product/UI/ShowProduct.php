@@ -227,6 +227,31 @@ class ShowProduct extends OrgAction
 
         $actions = [];
 
+        if ($this->canEdit) {
+
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'create',
+                'key'   => 'create-review',
+                'label' => __('Review'),
+                'route' => [
+                    'name'       => 'grp.models.review.store',
+                    'parameters' => []
+                ]
+            ];
+
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('Edit'),
+                'route' => [
+                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ];
+        }
+
+
         $actions[] = [
             'type'    => 'button',
             'style'   => 'edit',
@@ -242,17 +267,7 @@ class ShowProduct extends OrgAction
             ]
         ];
 
-        if ($this->canEdit) {
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'edit',
-                'label' => __('Edit'),
-                'route' => [
-                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ];
-        }
+        
 
         if ($product->webpage) {
             $actions = array_merge($actions, [
@@ -438,6 +453,7 @@ class ShowProduct extends OrgAction
                 ...$componentData,
                 'variant'       => $product->variant,
                 'is_variant_leader' => $product->is_variant_leader,
+                'rating_labels'     => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::ProductReviews),
             ]
         )
             ->table(IndexAssetTimeSeries::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
