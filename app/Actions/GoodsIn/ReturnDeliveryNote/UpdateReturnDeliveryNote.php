@@ -33,6 +33,7 @@ class UpdateReturnDeliveryNote extends OrgAction
                 ReturnDeliveryNoteStateEnum::CANCELLED => 'cancelled_at',
                 ReturnDeliveryNoteStateEnum::RETURNING => 'returning_at',
                 ReturnDeliveryNoteStateEnum::RETURNED  => 'returned_at',
+                ReturnDeliveryNoteStateEnum::DONE      => 'done_at',
                 default => null,
             };
 

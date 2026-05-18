@@ -1,30 +1,25 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 02-06-2025-08h-34m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 18 May 2026 15:23:19 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dropshipping\WooCommerce\Orders;
 
-use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
-use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\SubmitPalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedWooCommerceAddress;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -43,13 +38,12 @@ class StoreFulfilmentFromWooCommerce extends OrgAction
     {
         $fulfilmentCustomer = $wooCommerceUser->customer->fulfilmentCustomer;
         $wooProducts = collect(Arr::get($wooOrderData, 'line_items', []));
-        $customerClient = $this->digestWooCustomerClient($wooCommerceUser, $wooOrderData);
         $storedItemModels = $this->digestWooProducts($wooCommerceUser, $wooOrderData);
 
         $wooUserHasProductExists = $wooCommerceUser->customerSalesChannel->portfolios()
             ->whereIn('platform_product_id', $wooProducts->pluck('product_id'))->exists();
 
-        if(! $wooUserHasProductExists) {
+        if (! $wooUserHasProductExists) {
             return;
         }
 
@@ -73,52 +67,7 @@ class StoreFulfilmentFromWooCommerce extends OrgAction
         SubmitPalletReturn::run($palletReturn, []);
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function digestWooCustomerClient(WooCommerceUser $wooCommerceUser, array $wooOrderData): CustomerClient
-    {
-        $reference = trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name').' '.Arr::get($wooOrderData, 'shipping.company'));
 
-        $customerClientID = DB::table('customer_clients')
-            ->select('id')
-            ->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
-            ->where('reference', $reference)
-            ->first();
-
-        if (!$customerClientID) {
-            $customerClient = StoreCustomerClient::make()->action($wooCommerceUser->customerSalesChannel, [
-                'reference'    => $reference,
-                'email'        => Arr::get($wooOrderData, 'billing.email'),
-                'contact_name' => trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name')),
-                'company_name' => Arr::get($wooOrderData, 'shipping.company'),
-                'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'shipping.phone')),
-                'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
-            ]);
-        } else {
-            $customerClient = CustomerClient::find($customerClientID->id);
-            $customerClient = UpdateCustomerClient::make()->action($customerClient, [
-                'email'        => Arr::get($wooOrderData, 'billing.email'),
-                'contact_name' => trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name')),
-                'company_name' => Arr::get($wooOrderData, 'shipping.company'),
-                'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'shipping.phone')),
-                'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
-
-            ]);
-        }
-
-
-        return $customerClient;
-    }
-
-    private function sanitizePhone($phone): array|string|null
-    {
-        // Extract only digits
-        $digits = preg_replace('/[^0-9]/', '', $phone);
-
-        // Ensure minimum 10 digits
-        return strlen($digits) >= 10 ? $digits : str_pad($digits, 10, '0', STR_PAD_RIGHT);
-    }
 
     public function digestWooAddress($wooOrderData): Address
     {

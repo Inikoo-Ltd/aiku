@@ -529,6 +529,16 @@ class GetShopNavigation
                             ],
                         ],
                         [
+                            "label"   => __("Returns"),
+                            "tooltip" => __("Returns"),
+                            "icon"    => ["fal", "fa-exchange"],
+                            'root'    => 'grp.org.shops.show.ordering.return_delivery_notes.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.return_delivery_notes.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
                             "label"   => __("Couriers"),
                             "tooltip" => __("Couriers"),
                             "icon"    => ["fal", "fa-shipping-fast"],

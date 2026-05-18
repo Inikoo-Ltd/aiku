@@ -18,17 +18,17 @@ class GetIrisWebBlockCollection
     use AsObject;
 
     public function handle(Webpage $webpage, array $webBlock): array
-    { 
-            $resource = WebBlockProductCategoryDescriptionResource::make($webpage->model)->toArray(request());
-            data_set($webBlock, 'web_block.layout.data.fieldValue.collection', $resource);
+    {
+        $resource = WebBlockProductCategoryDescriptionResource::make($webpage->model)->toArray(request());
+        data_set($webBlock, 'web_block.layout.data.fieldValue.collection', $resource);
 
-            return [
-                'type' => $webBlock['type'],
-                'structure' => Arr::get(
-                    $webBlock,
-                    'web_block.layout.data.fieldValue',
-                    []
-                ),
-            ];
+        return [
+            'type' => $webBlock['type'],
+            'structure' => Arr::get(
+                $webBlock,
+                'web_block.layout.data.fieldValue',
+                []
+            ),
+        ];
     }
 }
