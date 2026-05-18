@@ -29,6 +29,7 @@ import { faCheck } from "@far"
 import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
+import { method } from "lodash"
 
 library.add(
     fadExclamationTriangle,
@@ -62,11 +63,13 @@ const openDialog = (item: any) => {
     isOpenDialog.value = true
 }
 
-
 const saveProductReview = async () => {
-    const routeConfig = selectedItem.value?.product_review_rating
+    const isUpdate = !!selectedItem.value?.product_review_rating
+
+    const routeConfig = isUpdate
         ? {
               name: "retina.models.review.update",
+              method: "patch" as const,
               params: {
                   review:
                       selectedItem.value?.reviews?.product?.payload
@@ -75,15 +78,18 @@ const saveProductReview = async () => {
           }
         : {
               name: "retina.models.review.store",
+              method: "post" as const,
               params: undefined,
           }
 
-    router.post(
+    const payload = {
+        ...selectedItem.value?.reviews?.product,
+        ...selectedItem.value?.reviews?.product?.payload,
+    }
+
+    router[routeConfig.method](
         route(routeConfig.name, routeConfig.params),
-        {
-            ...selectedItem.value?.reviews?.product,
-            ...selectedItem.value?.reviews?.product?.payload,
-        },
+        payload,
         {
             onStart: () => {
                 loadingSave.value = true
@@ -95,12 +101,6 @@ const saveProductReview = async () => {
 
             onSuccess: () => {
                 isOpenDialog.value = false
-
-                notify({
-                    title: "Success",
-                    text: "Review submitted successfully",
-                    type: "success",
-                })
             },
 
             onError: (errors) => {
@@ -115,7 +115,6 @@ const saveProductReview = async () => {
         }
     )
 }
-
 </script>
 
 <template>
