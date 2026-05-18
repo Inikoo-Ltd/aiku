@@ -117,15 +117,12 @@ class StoreReview
 
     public function htmlResponse(ProductReview|ProductCategoryReview|ShopReview $review, ActionRequest $request): RedirectResponse
     {
-        $isApproved = $review->status === ReviewStatusEnum::Approved->value;
         $request->route()?->getName();
 
         return Redirect::back()->with('notification', [
             'status'      => 'success',
             'title'       => __('Success!'),
-            'description' => $isApproved
-                ? __('Review submitted successfully.')
-                : __('Review submitted and awaiting approval.'),
+            'description' => __('Review submitted successfully.'),
         ]);
     }
 
