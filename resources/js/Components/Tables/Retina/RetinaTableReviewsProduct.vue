@@ -4,12 +4,11 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, ref } from "vue"
 
 import Image from "@/Common/Components/Image.vue"
-import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
 import Rating from "primevue/rating"
 import Dialog from "primevue/dialog"
-import Button from "primevue/button"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 import {
     faConciergeBell,
@@ -27,6 +26,9 @@ import {
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
+import FormReview from "@/Components/Retina/FormReview.vue"
+import { notify } from "@kyvg/vue3-notification"
+import { router } from "@inertiajs/vue3"
 
 library.add(
     fadExclamationTriangle,
@@ -45,7 +47,7 @@ library.add(
     faExclamationCircle
 )
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
 }>()
@@ -53,12 +55,67 @@ defineProps<{
 const locale = inject("locale", retinaLayoutStructure)
 const isOpenDialog = ref(false)
 const selectedItem = ref<any>(null)
+const loadingSave = ref(false)
 
 const openDialog = (item: any) => {
-    console.log(item)
     selectedItem.value = item
     isOpenDialog.value = true
 }
+
+
+const saveProductReview = async () => {
+    const routeConfig = selectedItem.value?.product_review_rating
+        ? {
+              name: "retina.models.review.update",
+              params: {
+                  review:
+                      selectedItem.value?.reviews?.product?.payload
+                          ?.reviewable_id,
+              },
+          }
+        : {
+              name: "retina.models.review.store",
+              params: undefined,
+          }
+
+    router.post(
+        route(routeConfig.name, routeConfig.params),
+        {
+            ...selectedItem.value?.reviews?.product,
+            ...selectedItem.value?.reviews?.product?.payload,
+        },
+        {
+            onStart: () => {
+                loadingSave.value = true
+            },
+
+            onFinish: () => {
+                loadingSave.value = false
+            },
+
+            onSuccess: () => {
+                isOpenDialog.value = false
+
+                notify({
+                    title: "Success",
+                    text: "Review submitted successfully",
+                    type: "success",
+                })
+            },
+
+            onError: (errors) => {
+                console.error(errors)
+
+                notify({
+                    title: "Error",
+                    text: "Failed to submit review",
+                    type: "error",
+                })
+            },
+        }
+    )
+}
+
 </script>
 
 <template>
@@ -71,10 +128,7 @@ const openDialog = (item: any) => {
 
         <template #cell(asset_name)="{ item }">
             <div class="flex items-center gap-2 text-sm">
-                <span
-                    v-tooltip="'code'"
-                    class="px-2 py-1 rounded-md bg-gray-100 text-gray-700 font-medium"
-                >
+                <span v-tooltip="'code'" class="px-2 py-1 rounded-md bg-gray-100 text-gray-700 font-medium">
                     {{ item.asset_code }}
                 </span>
 
@@ -91,14 +145,8 @@ const openDialog = (item: any) => {
         </template>
 
         <template #cell(product_review_rating)="{ item }">
-            <div
-                class="flex justify-end cursor-pointer"
-                @click="openDialog(item)"
-            >
-                <Rating
-                    v-model="item.product_review_rating"
-                    :disabled="true"
-                />
+            <div class="flex justify-end cursor-pointer" @click="openDialog(item)">
+                <Rating v-model="item.product_review_rating" :disabled="true" />
             </div>
         </template>
 
@@ -107,20 +155,13 @@ const openDialog = (item: any) => {
         </template>
     </Table>
 
-    <Dialog
-        v-model:visible="isOpenDialog"
-        modal
-        header="Product Review"
-        :style="{ width: '500px' }"
-    >
-        <pre>{{ selectedItem.reviews }}</pre>
-
+    <Dialog v-model:visible="isOpenDialog" modal header="Product Review" :style="{ width: '550px' }" :content-style="{ overflow: 'auto' }">
+        <FormReview v-model="selectedItem.reviews.product" :schema="data.rating_labels.product_reviews" />
         <template #footer>
-            <Button
-                label="Close"
-                severity="secondary"
-                @click="isOpenDialog = false"
-            />
+            <div class="flex justify-end gap-5">
+                <Button label="Close" type="secondary" @click="isOpenDialog = false" />
+                <Button label="Save" type="save" :loading="loadingSave" @click="saveProductReview" />
+            </div>
         </template>
     </Dialog>
 </template>
