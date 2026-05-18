@@ -12,9 +12,11 @@ use App\Models\Reviews\ProductCategoryReview;
 use App\Models\Reviews\ProductReview;
 use App\Models\Reviews\ShopReview;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
@@ -82,7 +84,7 @@ class StoreReview
         return $review;
     }
 
-    public function asController(ActionRequest $request): JsonResponse
+    public function asController(ActionRequest $request): ProductReview|ProductCategoryReview|ShopReview
     {
         $modelData = $request->validated();
         if ($this->isCustomerRequest($request)) {
@@ -92,7 +94,7 @@ class StoreReview
             abort_unless(is_numeric($customerId), 403);
 
             $modelData['customer_id'] = (int) $customerId;
-            $modelData['status'] = ReviewStatusEnum::Pending->value;
+            $modelData['status'] = data_get($modelData, 'status', ReviewStatusEnum::Approved->value);
         }
 
         $reviewable = $this->resolveReviewable(
@@ -102,9 +104,28 @@ class StoreReview
 
         $review = $this->handle($reviewable, $modelData);
 
+        return $review;
+    }
+
+    public function jsonResponse(ProductReview|ProductCategoryReview|ShopReview $review): JsonResponse
+    {
         return response()->json([
             'status' => 'success',
             'data'   => $review->load('media'),
+        ]);
+    }
+
+    public function htmlResponse(ProductReview|ProductCategoryReview|ShopReview $review, ActionRequest $request): RedirectResponse
+    {
+        $isApproved = $review->status === ReviewStatusEnum::Approved->value;
+        $request->route()?->getName();
+
+        return Redirect::back()->with('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => $isApproved
+                ? __('Review submitted successfully.')
+                : __('Review submitted and awaiting approval.'),
         ]);
     }
 
@@ -115,7 +136,7 @@ class StoreReview
             'reviewable_id' => ['required', 'integer', 'min:1'],
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'status' => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'rating' => ['required', 'numeric', 'min:1', 'max:5'],
             'rating_a' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_b' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_c' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
