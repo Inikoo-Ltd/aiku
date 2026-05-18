@@ -21,8 +21,6 @@ class ReviewsResource extends JsonResource
 
         return self::collection($reviews)->additional([
             'stats'     => self::getStats($reviewable, $ratingLabels),
-            'customers' => self::getReviewCustomers($reviewable),
-            'rating_labels' => $ratingLabels,
         ]);
     }
 
