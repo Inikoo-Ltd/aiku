@@ -239,7 +239,7 @@ library.add(
 	/>
 
 	<!-- Modal: Select picker -->
-	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title="trans('Selesssct Picker')">
+	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title="trans('Select Picker')">
 		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
 			<div class="mx-auto font-semibold text-lg">
 				{{ ctrans("Select Handler") }}

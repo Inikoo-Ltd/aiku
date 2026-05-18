@@ -6,7 +6,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faEnvelope } from "@fal"
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import icon from "@/Components/Icon.vue"
 import { faSpellCheck, faSeedling, faPaperPlane, faStop } from "@fal"
 
 library.add(faSpellCheck, faSeedling, faPaperPlane, faStop, faEnvelope)
@@ -16,7 +15,7 @@ const props = defineProps<{
 	title: string
 	pageHead: object
 }>()
-function emailAddresRoute(email: any) {
+function emailAddressRoute(email: any) {
 	return route("grp.overview.comms-marketing.email-addresses.show", [email.data.email])
 }
 </script>
@@ -26,7 +25,7 @@ function emailAddresRoute(email: any) {
 	<PageHeading :data="pageHead"></PageHeading>
 	<Table :resource="data" class="mt-5">
 		<template #cell(email)="{ item: email }">
-			<Link :href="emailAddresRoute(email)" class="primaryLink">
+			<Link :href="emailAddressRoute(email)" class="primaryLink">
 				{{ email["email"] }}
 			</Link>
 		</template>

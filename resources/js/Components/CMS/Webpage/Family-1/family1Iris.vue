@@ -61,8 +61,6 @@ const bestOffer = computed(() => {
   return getBestOffer(props.fieldValue?.family?.offers_data)
 })
 
-const _popoverInfoCircle = ref<InstanceType<any> | null>(null)
-const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
 const cleanedDescription = computed(() => {
   const html = props.fieldValue.family.description || ''
@@ -104,7 +102,7 @@ const cleanedDescription = computed(() => {
 
         <!-- Description Title (SEO: Heading) -->
         <h1 v-if="fieldValue.family.name" class="text-[1.5rem] leading-[2rem] font-semibold">
-            {{ fieldValue.family.name }}
+            {{ fieldValue.family.description_title || fieldValue.family.name }}
         </h1>
 
         <!-- Main Description -->

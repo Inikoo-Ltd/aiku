@@ -25,7 +25,7 @@ defineProps<{
 
 
 const emit = defineEmits<{
-    (e: 'select-department', department: any): void
+    (e: 'select-department', id: any, code?: string, name?: string): void
 }>()
 
 </script>
@@ -46,7 +46,7 @@ const emit = defineEmits<{
             </Tag>
         </template>
         <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="$emit('select-department', department.id)">
+            <span class="primaryLink" @click="emit('select-department', department.id, department.code, department.name)">
                 {{ department.code }}
             </span>
         </template>

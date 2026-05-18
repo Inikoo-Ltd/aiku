@@ -36,7 +36,7 @@ class IndexReturnDeliveryNotes extends OrgAction
 
     private string $bucket = 'all';
 
-    public function handle(Warehouse $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
+    public function handle(Warehouse|Order $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {

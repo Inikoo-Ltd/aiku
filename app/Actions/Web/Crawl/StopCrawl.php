@@ -28,6 +28,17 @@ class StopCrawl
         );
 
         Cache::put("crawl.{$crawl->id}.should_stop", true, now()->addMinutes(5));
+
+        if ($crawl->state == CrawlStateEnum::READY) {
+            $crawl->update(
+                [
+                    'state'         => CrawlStateEnum::FINISH,
+                    'end_at'        => now(),
+                    'running'       => false,
+                    'finish_reason' => 'interrupted',
+                ]
+            );
+        }
     }
 
     public function getCommandSignature(): string
@@ -39,20 +50,17 @@ class StopCrawl
     {
         $websiteIds = [];
         if ($command->argument('website')) {
-            $website = Website::where('slug', $command->argument('website'))->firstOrFail();
+            $website      = Website::where('slug', $command->argument('website'))->firstOrFail();
             $websiteIds[] = $website->id;
         } else {
             $websiteIds = Website::where('migrated', true)->pluck('id')->toArray();
         }
 
+        /** @var Crawl $crawl */
         foreach (Crawl::where('state', '!=', CrawlStateEnum::FINISH)->whereIn('website_id', $websiteIds)->get() as $crawl) {
-            $command->info("Stopping crawl: ID {$crawl->id} Website ($website->domain) ");
+            $command->info("Stopping crawl: ID {$crawl->id} Website ({$crawl->website->domain}) ");
             $this->handle($crawl);
         }
-
-
-
-
 
 
         return 0;

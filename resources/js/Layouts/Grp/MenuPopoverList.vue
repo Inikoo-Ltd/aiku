@@ -67,6 +67,7 @@ watch(() => layout.value?.organisationsState, () => {
 const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
     console.log('menu popover list')
     const visitNormally = () => {
+        console.log('showare', showare.route)
         router.visit(route(showare.route?.name, showare.route?.parameters))
     }
 
@@ -76,6 +77,7 @@ const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
         visitNormally()
     } else if (paramsLength === 2) {
         if (layout.currentParams?.organisation && layout.currentParams?.shop) { // ✅
+            console.log('sho', showare.org_slug)
             router.visit(route(layout.currentRoute, { organisation: showare.org_slug, shop: showare.slug }))
         } else if (layout.currentParams?.organisation && layout.currentParams?.warehouse) { // ✅
             router.visit(route(layout.currentRoute, { organisation: showare.org_slug, warehouse: showare.slug }))

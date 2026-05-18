@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $should_stop
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property bool $is_seeder
  * @property-read \App\Models\Web\Website|null $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Crawl newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Crawl newQuery()
@@ -44,7 +45,8 @@ class Crawl extends Model
         'end_at'   => 'datetime',
         'state'    => CrawlStateEnum::class,
         'type'     => CrawlTypeEnum::class,
-        'trigger'  => CrawlTriggerEnum::class
+        'trigger'  => CrawlTriggerEnum::class,
+        'is_seeder' => 'boolean'
     ];
 
     protected $guarded = [];

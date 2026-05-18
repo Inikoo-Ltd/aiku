@@ -44,7 +44,9 @@ class CrawlWebsite
             return;
         }
 
-        $this->stopCurrentCrawls($crawl);
+        if (!$crawl->is_seeder) {
+            $this->stopCurrentCrawls($crawl);
+        }
 
         $crawl = $this->protectFromSurges($crawl);
 
@@ -58,7 +60,7 @@ class CrawlWebsite
         $this->crawl = $crawl;
 
         $crawler = Crawler::create($this->crawl->website->storefront->canonical_url);
-        if ($crawl->type == CrawlTypeEnum::JAVASCRIPT) {
+        if ($crawl->type == CrawlTypeEnum::INERTIA) {
             $crawler->executeJavaScript();
         }
 
@@ -80,7 +82,8 @@ class CrawlWebsite
     {
         $totalCrawlInstances = (int)Crawl::where('running', true)->sum('concurrency');
 
-        $available = 18 - $totalCrawlInstances;
+        $available     = 20 - $totalCrawlInstances;
+        $realAvailable = $available;
 
         if ($available < 1) {
             $available = 1;
@@ -89,6 +92,17 @@ class CrawlWebsite
         }
 
         $concurrency = min($available, $crawl->concurrency);
+        if ($realAvailable > 15) {
+            $concurrency = max(7, $crawl->concurrency);
+        } elseif ($realAvailable > 10) {
+            $concurrency = max(4, $crawl->concurrency);
+        } elseif ($realAvailable > 7) {
+            $concurrency = max(3, $crawl->concurrency);
+        } elseif ($realAvailable > 5) {
+            $concurrency = max(2, $crawl->concurrency);
+        }
+
+
         $crawl->update(
             [
                 'concurrency' => $concurrency
@@ -104,6 +118,7 @@ class CrawlWebsite
             Crawl::where('state', '!=', CrawlStateEnum::FINISH)
                 ->where('id', '!=', $crawl->id)
                 ->where('type', $crawl->type)
+                ->where('is_seeder', false)
                 ->where('website_id', $crawl->website_id)->get() as $crawlToStop
         ) {
             StopCrawl::run($crawlToStop);
@@ -163,22 +178,24 @@ class CrawlWebsite
 
     public function getCommandSignature(): string
     {
-        return 'crawl {website?} {--d|depth=10} {--c|concurrency=10} {--t|type=html} {--deployment}';
+        return 'crawl {website?} {--d|depth=10} {--c|concurrency=10} {--t|type=html} {--deployment} {--s|seeder}';
     }
 
 
     public function asCommand(Command $command): int
     {
         $type = $command->option('type');
-        if (!in_array($type, ['html', 'javascript'])) {
+        if (!in_array($type, ['html', 'inertia', 'i'])) {
             $command->error("Invalid type option. Accepted values are: html, javascript");
 
             return 1;
         }
 
-        $crawlType = $type === 'javascript' ? CrawlTypeEnum::JAVASCRIPT : CrawlTypeEnum::HTML;
+
+        $crawlType = $type === 'inertia' || $type === 'i' ? CrawlTypeEnum::INERTIA : CrawlTypeEnum::HTML;
 
         $trigger = $command->option('deployment') ? CrawlTriggerEnum::DEPLOYMENT : CrawlTriggerEnum::COMMAND;
+
         if ($command->argument('website')) {
             $website = Website::where('slug', $command->argument('website'))->firstOrFail();
             $command->info("Crawling website: $website->slug (ID: $website->id)");
@@ -189,7 +206,8 @@ class CrawlWebsite
                     'depth'       => $command->option('depth'),
                     'concurrency' => $command->option('concurrency'),
                     'trigger'     => $trigger,
-                    'type'        => $crawlType
+                    'type'        => $crawlType,
+                    'is_seeder'   => $command->option('seeder')
                 ]
             );
 
@@ -198,7 +216,7 @@ class CrawlWebsite
             return 0;
         }
 
-        CrawlWebsites::run(CrawlTypeEnum::HTML, $trigger, $command);
+        CrawlWebsites::run(CrawlTypeEnum::HTML, $trigger, $command->option('depth'), $command->option('seeder'), $command);
 
         return 0;
     }

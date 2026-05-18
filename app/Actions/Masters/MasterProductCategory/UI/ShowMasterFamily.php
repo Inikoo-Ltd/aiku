@@ -355,9 +355,12 @@ class ShowMasterFamily extends GrpAction
                 'masterProductCategoryId' => $masterFamily->id,
                 'price_rrp_warning_ratio' => $masterFamily->masterShop->price_rrp_warning_ratio,
                 'shopsData'               => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
+                'vol_gr_reward'           => [
+                    'show_gr_vol'                   => app()->environment('local') ? $masterFamily->masterShop->gold_reward_eligible : false,
+                    'gr_vol_discount_quantity'      => $masterFamily->gr_vol_discount_quantity,
+                    'gr_vol_discount_percentage'    => $masterFamily->gr_vol_discount_percentage,
+                ],
                 ...$tabs,
-
-
             ]
         )
             ->table(IndexMailshots::make()->tableStructure(parent: $masterFamily))
