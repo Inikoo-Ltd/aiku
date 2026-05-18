@@ -24,7 +24,7 @@ class GetUserOrganisationLayout
 
     public function handle(User $user, Organisation $organisation): array
     {
-        $primaryWarehouse = DB::table('warehouses')->select('slug')->whereNull('deleted_at')->where('organisation_id', $organisation->id)->first();
+        // $primaryWarehouse = DB::table('warehouses')->select('slug')->whereNull('deleted_at')->where('organisation_id', $organisation->id)->first();
 
         return [
             'id'                     => $organisation->id,
@@ -107,6 +107,8 @@ class GetUserOrganisationLayout
                 'code'  => $fulfilment->shop->code,
                 'label' => $fulfilment->shop->name,
                 'state' => $fulfilment->shop->state,
+                'org_slug'             => $organisation->slug,
+                'website_slug'         => $fulfilment->shop->website?->slug ?? null,
                 'type'  => $fulfilment->shop->type,
                 'route' => [
                     'name'       => 'grp.org.fulfilments.show.operations.dashboard',
@@ -136,6 +138,7 @@ class GetUserOrganisationLayout
                 'label'                => $shop->name,
                 'state'                => $shop->state,
                 'org_slug'             => $organisation->slug,
+                'website_slug'         => $shop->website?->slug ?? null,
                 'type'                 => $shop->type,
                 'website_domain'       => $shop->website?->domain ?? null,
                 'route'                => [
