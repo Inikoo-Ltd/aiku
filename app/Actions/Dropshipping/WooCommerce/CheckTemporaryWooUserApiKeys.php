@@ -63,7 +63,7 @@ class CheckTemporaryWooUserApiKeys extends RetinaAction
         throw ValidationException::withMessages(['url' => __('You are not connected yet, click auth store to connect and follow the instructions.')]);
     }
 
-    public $commandSignature = 'CheckTemporaryWooUserApiKeys {customerSalesChannel}';
+    public $commandSignature = 'CheckTemporaryWooUserApiKeys {customerSalesChannel?}';
 
     public function asCommand(Command $command): void
     {

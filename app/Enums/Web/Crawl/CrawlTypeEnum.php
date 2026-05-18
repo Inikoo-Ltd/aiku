@@ -16,6 +16,7 @@ enum CrawlTypeEnum: string
 
     case HTML = 'html';
     case INERTIA = 'inertia';
+    case JAVASCRIPT = 'javascript';
 
 
 }

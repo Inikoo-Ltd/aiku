@@ -98,7 +98,11 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
                 ->exists();
 
             if ($hasOutProducts) {
-                StoreOrderFromWooCommerce::run($wooCommerceUser, $wooOrder);
+                if ($wooCommerceUser->customer->is_dropshipping) {
+                    StoreOrderFromWooCommerce::run($wooCommerceUser, $wooOrder);
+                } else {
+                    StoreFulfilmentFromWooCommerce::run($wooCommerceUser, $wooOrder);
+                }
             }
         }
     }
