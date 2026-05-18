@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, ref, watch, toRefs, nextTick, onMounted } from "vue"
 import { get, isPlainObject, debounce } from "lodash-es"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 import { getStyles } from "@/Composables/styles"
@@ -129,32 +129,24 @@ console.log("Family3 Workshop Props:", props)
 </script>
 
 <template>
-  <div
-    :id="modelValue?.id ? modelValue?.id : 'family-3' + indexBlock"
-    :style="{
-      ...getStyles(
-        layout?.app?.webpage_layout?.container?.properties,
-        screenType
-      ),
-      ...getStyles(
-        modelValue?.container?.properties,
-        screenType
-      )
-    }"
-  >
-    <div class="w-full px-4 py-6">
-      <div
-        class="grid grid-cols-1 lg:grid-cols-2 md:gap-8 gap-0 lg:gap-12 items-start"
-      >
-        <div
-          class="flex flex-col gap-5 min-w-0"
-          :class="imageOrder"
-        >
+ <div :id="modelValue?.id ? modelValue?.id : 'family-3' + indexBlock" :style="{
+    ...getStyles(
+      layout?.app?.webpage_layout?.container?.properties,
+      screenType
+    ),
+    ...getStyles(
+      modelValue?.container?.properties,
+      screenType
+    )
+  }">
+    <div class="w-full px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 md:gap-8 gap-0 lg:gap-12 items-start">
+        <div class="flex flex-col gap-5 min-w-0" :class="imageOrder">
 
           <!-- TITLE -->
           <div class="space-y-2">
             <h1 class="product-title">
-             <textarea ref="titleRef" v-model="name" @input="autoResize" rows="1" placeholder="Family Title" class="w-full resize-none overflow-hidden bg-transparent border-none p-0 m-0
+                <textarea ref="titleRef" v-model="name" @input="autoResize" rows="1" placeholder="Family Title" class="w-full resize-none overflow-hidden bg-transparent border-none p-0 m-0
            text-2xl md:text-3xl font-semibold text-gray-900
            leading-tight
            focus:outline-none focus:ring-0
@@ -167,34 +159,19 @@ console.log("Family3 Workshop Props:", props)
           <div class="w-full relative hidden md:block">
 
             <!-- NAVIGATION -->
-            <div
-              v-if="images.length > 3"
-              :class="`nav-btn left-3 swiper-btn-prev-${swiperId}`"
-            >
-              <FontAwesomeIcon
-                :icon="faChevronCircleLeft"
-              />
+            <div v-if="images.length > 3" :class="`nav-btn left-3 swiper-btn-prev-${swiperId}`">
+              <FontAwesomeIcon :icon="faChevronCircleLeft" />
             </div>
 
-            <div
-              v-if="images.length > 3"
-              :class="`nav-btn right-3 swiper-btn-next-${swiperId}`"
-            >
-              <FontAwesomeIcon
-                :icon="faChevronCircleRight"
-              />
+            <div v-if="images.length > 3" :class="`nav-btn right-3 swiper-btn-next-${swiperId}`">
+              <FontAwesomeIcon :icon="faChevronCircleRight" />
             </div>
 
             <!-- SWIPER -->
-            <Swiper
-              :key="images.length"
-              :modules="[Navigation]"
-              :loop="images.length > 3"
-              :navigation="{
-                prevEl: `.swiper-btn-prev-${swiperId}`,
-                nextEl: `.swiper-btn-next-${swiperId}`
-              }"
-              :breakpoints="{
+            <Swiper :key="images.length" :modules="[Navigation]" :loop="images.length > 3" :navigation="{
+              prevEl: `.swiper-btn-prev-${swiperId}`,
+              nextEl: `.swiper-btn-next-${swiperId}`
+            }" :breakpoints="{
                 0: {
                   slidesPerView: 1,
                   spaceBetween: 12
@@ -207,21 +184,11 @@ console.log("Family3 Workshop Props:", props)
                   slidesPerView: 3,
                   spaceBetween: 20
                 }
-              }"
-            >
-              <SwiperSlide
-                v-for="(img, i) in images"
-                :key="i"
-              >
-                <div
-                  class="relative w-full aspect-square overflow-hidden rounded-2xl bg-gray-100"
-                >
-                  <Image
-                    :src="img.original"
-                    :imageCover="true"
-                    :alt="`image-description-${i}`"
-                    class="absolute inset-0 w-full h-full object-cover transition duration-300 hover:scale-105"
-                  />
+              }">
+              <SwiperSlide v-for="(img, i) in images" :key="i">
+                <div class="relative w-full aspect-square overflow-hidden rounded-2xl bg-gray-100">
+                  <Image :src="img.original" :imageCover="true" :alt="`image-description-${i}`"
+                    class="absolute inset-0 w-full h-full object-cover transition duration-300 hover:scale-105" />
                 </div>
               </SwiperSlide>
             </Swiper>
@@ -229,62 +196,29 @@ console.log("Family3 Workshop Props:", props)
           </div>
         </div>
 
-        <div
-          class="flex flex-col min-w-0"
-          :class="textOrder"
-        >
+        <div class="flex flex-col min-w-0" :class="textOrder">
 
 
-         <div class="discount-wrapper" :class="{
-            'invisible pointer-events-none':
-              !layout.iris.is_logged_in ||
-              !modelValue?.family?.offers_data?.number_offers
-          }">
+          <div class="discount-wrapper" :class="'invisible pointer-events-none'">
 
-           <!--  <DiscountByType
-              v-if="showTriggers"
-              :offers_data="
-                modelValue?.family?.offers_data
-              "
-              template="triggers_labels"
-              class="discount-pill"
-            />
+           <!--  <DiscountByType v-if="showTriggers" :offers_data="modelValue?.family?.offers_data
+              " template="triggers_labels" class="discount-pill" />
 
-            <DiscountByType
-              :offers_data="
-                modelValue?.family?.offers_data
-              "
-              template="active-inactive-gr"
-              class="discount-pill"
-            /> -->
+            <DiscountByType :offers_data="modelValue?.family?.offers_data
+              " template="active-inactive-gr" class="discount-pill" /> -->
 
           </div>
 
           <!-- DESCRIPTION -->
-          <div
-            v-html="cleanedDescription"
-            class="description-content"
-          />
+          <div v-html="cleanedDescription" class="description-content" />
 
           <!-- BUTTON -->
-          <div class="mt-3 text-center md:text-left">
-           <!--  <LinkIris
-              :href="modelValue?.button?.link?.href"
-              :target="modelValue?.button?.link?.target"
-            > -->
-              <Button
-                :label="modelValue?.button?.text"
-                :injectStyle="
-                  getStyles(
-                    modelValue?.button?.container
-                      ?.properties,
-                    screenType
-                  )
-                "
-              />
-           <!--  </LinkIris> -->
+          <div class="mt-3 text-center md:text-right">
+              <button id="family-3-button" :label="modelValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
+             text-sm md:text-base font-medium
+             hover:underline underline-offset-4 mr-5 italic
+             transition-all duration-200" >{{ modelValue?.button?.text }}</button>
           </div>
-
         </div>
 
       </div>
@@ -293,27 +227,13 @@ console.log("Family3 Workshop Props:", props)
 </template>
 
 <style scoped>
-
-
 .product-title {
-  @apply text-2xl
-  font-semibold
-  text-gray-900
-  leading-tight
-  break-words
-  md:text-start
-  text-center
+  @apply text-2xl font-semibold text-gray-900 leading-tight break-words md:text-start text-center min-h-[40px]
 }
 
 
-
 .description-content {
-  @apply text-sm
-  md:text-base
-  text-gray-600
-  leading-7
-  text-center
-  md:text-left;
+  @apply text-sm md:text-base text-gray-600 leading-7 text-center md:text-left;
 }
 
 .description-content :deep(p) {
@@ -323,67 +243,42 @@ console.log("Family3 Workshop Props:", props)
 .description-content :deep(h2),
 .description-content :deep(h3),
 .description-content :deep(h4) {
-  @apply text-gray-900
-  font-semibold
-  mt-6
-  mb-3;
+  @apply text-gray-900 font-semibold mt-6 mb-3;
 }
 
 .description-content :deep(ul) {
-  @apply list-disc
-  pl-5
-  space-y-2;
+  @apply list-disc pl-5 space-y-2;
 }
 
 .description-content :deep(ol) {
-  @apply list-decimal
-  pl-5
-  space-y-2;
+  @apply list-decimal pl-5 space-y-2;
+}
+
+
+.description-content :deep(ul) {
+  @apply list-disc pl-5 ml-0 mt-2 space-y-2 list-outside;
 }
 
 .discount-wrapper {
-  @apply flex
-  flex-wrap
-  items-center
-  justify-center
-  gap-2
-  min-w-0
-  md:justify-start
-  mt-3
-  md:mt-0
-  min-h-[40px];
+  @apply flex flex-wrap items-stretch justify-center gap-2 min-w-0 md:justify-start mt-3 md:mt-1 min-h-[40px];
 }
 
 .discount-pill {
-  @apply min-w-0 md:max-w-[50%] max-w-full;
+  @apply flex min-w-0 md:max-w-[50%] max-w-full self-stretch;
 }
 
+
 .discount-wrapper :deep(.offer-max-discount) {
-  @apply flex
-  items-center
-  rounded-lg
-  overflow-hidden
-  border
-  border-gray-200
-  bg-white
-  shadow-sm
-  h-[38px];
+  @apply flex items-center rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm h-[38px];
 }
 
 .discount-wrapper :deep(.volume-discount-label) {
-  @apply justify-start
+  @apply justify-start mb-0
 }
 
 /* LEFT SIDE */
 .discount-wrapper :deep(.discount-percentage) {
-  @apply flex
-  items-center
-  justify-center
-  font-bold
-  text-sm
-  px-3
-  w-fit
-  whitespace-nowrap;
+  @apply flex items-center justify-center font-bold text-sm px-3 w-fit whitespace-nowrap;
 }
 
 .discount-wrapper :deep(.percentage-text) {
@@ -392,51 +287,31 @@ console.log("Family3 Workshop Props:", props)
 
 /* RIGHT SIDE */
 .discount-wrapper :deep(.discount-content) {
-  @apply flex
-  items-center
-  gap-1
-  px-3
-  min-w-0
-  h-full
-  bg-white;
+  @apply flex items-center gap-1 px-3 min-w-0 h-full bg-white;
 }
 
 .discount-wrapper :deep(.discount-content > div) {
-  @apply min-w-0 ;
+  @apply min-w-0;
 }
 
 /* TITLE */
 .discount-wrapper :deep(.discount-title) {
-  @apply text-[11px]
-  font-medium
-  text-gray-700
-  leading-tight
-  truncate;
+  @apply text-[11px] font-medium text-gray-700 leading-tight truncate;
 }
 
 /* SUBTEXT */
 .discount-wrapper :deep(.discount-triggers) {
-  @apply text-xs 
-  leading-tight
-  truncate;
+  @apply text-xs leading-tight truncate;
 }
 
 
 .discount-wrapper :deep(.gr-wrapper) {
-  @apply flex
-  items-center
-  gap-1
-  rounded-lg
-  border
-  shadow-sm
-  px-3
-  h-[38px]
-  w-fit
+  @apply flex items-center gap-1 rounded-lg border shadow-sm px-3 min-h-[40px] h-full mb-0;
 }
+
+
 .discount-wrapper :deep(.inactive-text) {
-  @apply text-xs 
-  truncate
-  leading-tight;
+  @apply text-xs truncate;
 }
 
 .discount-wrapper :deep(.gr-content) {
@@ -446,41 +321,31 @@ console.log("Family3 Workshop Props:", props)
 
 .discount-wrapper :deep(.info-icon),
 .discount-wrapper :deep(.gr-info-icon) {
-  @apply flex
-  items-center
-  justify-center
-  flex-shrink-0;
+  @apply flex items-center justify-center flex-shrink-0;
 }
 
 .discount-wrapper :deep(svg) {
-  @apply w-3
-  h-3;
+  @apply w-3 h-3;
 }
 
 
 .discount-wrapper :deep(.gr-logo) {
-  @apply h-4
-  w-auto;
+  @apply h-4 w-auto;
 }
 
 
 .discount-wrapper :deep(.info-icon),
 .discount-wrapper :deep(.gr-info-icon) {
-  @apply flex
-  items-center
-  justify-center
-  flex-shrink-0;
+  @apply flex items-center justify-center flex-shrink-0;
 }
 
 .discount-wrapper :deep(svg) {
-  @apply w-3
-  h-3;
+  @apply w-3 h-3;
 }
 
 
 .discount-wrapper :deep(.gr-logo) {
-  @apply h-4
-  w-auto;
+  @apply h-4 w-auto;
 }
 
 
@@ -493,14 +358,9 @@ console.log("Family3 Workshop Props:", props)
   display: flex;
   align-items: center;
   justify-content: center;
-
   width: 36px;
   height: 36px;
-
   border-radius: 9999px;
-
-  background: rgba(255, 255, 255, 0.9);
-
   cursor: pointer;
 
   font-size: 18px;

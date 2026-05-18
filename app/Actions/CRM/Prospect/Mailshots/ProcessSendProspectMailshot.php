@@ -15,6 +15,7 @@ use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Mailshot\StoreMailshotRecipient;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientsStoredAt;
+use App\Actions\Comms\Traits\WithDispatchedEmailEncryption;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Prospect;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessSendProspectMailshot
 {
     use AsAction;
+    use WithDispatchedEmailEncryption;
 
     public string $jobQueue = 'ses';
 
@@ -69,6 +71,8 @@ class ProcessSendProspectMailshot
                         ]
                     ]
                 );
+
+                $this->encryptAndStoreDispatchedEmailId($dispatchedEmail);
 
                 StoreMailshotRecipient::run(
                     $mailshot,

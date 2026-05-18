@@ -151,9 +151,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $webpage->refresh();
 
-        if (count($countFamilyDescriptionBlock) == 0) {
-            $this->setFamilyWebBlockOnTop($webpage, $familyDescriptionBlock);
-        }
+        $this->setFamilyWebBlockOnTop($webpage, $familyDescriptionBlock);
 
         if ($command->option('hide-description')) {
             $this->setDescriptionWebBlockHidden($webpage);
@@ -238,7 +236,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 $webBlocks[$key] = 2;
             } elseif ($key == $familyExtraDesc) {
                 $webBlocks[$key] = 3;
-            } elseif ($key == $recommendationFromMaster){
+            } elseif ($key == $recommendationFromMaster) {
                 $webBlocks[$key] = 4;
             } elseif ($key == $trendsWebBlock) {
                 $webBlocks[$key] = $trendsWebBlockPosition;

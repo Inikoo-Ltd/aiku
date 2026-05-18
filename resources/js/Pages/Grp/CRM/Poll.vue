@@ -8,7 +8,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faTrashAlt } from "@fal";
+import { faAsterisk, faTrashAlt } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import TablePollOptions from "@/Components/Tables/Grp/Org/CRM/TablePollOptions.vue";
@@ -17,6 +17,7 @@ import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { PageHeadingTypes } from "@/types/PageHeading"
+import { faExclamationCircle } from "@fas";
 
 library.add(faTrashAlt);
 
@@ -72,6 +73,14 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #afterTitle2>
+            <FontAwesomeIcon
+                v-if="props.data.in_registration_required"
+                v-tooltip="trans('Is required in Registration page')"
+                :icon="faExclamationCircle"
+                class="text-red-500 text-xl animate-pulse"
+            />
+        </template>
         <template #otherBefore>
             <ModalConfirmationDelete
                 :routeDelete="{
@@ -91,7 +100,6 @@ const component = computed(() => {
                     />
                 </template>
             </ModalConfirmationDelete>
-
         </template>
     </PageHeading>
 

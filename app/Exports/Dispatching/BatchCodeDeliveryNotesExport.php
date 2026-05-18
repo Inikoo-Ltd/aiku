@@ -40,6 +40,20 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
                 ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
 
+        $batchCodeSku = function ($q) {
+            $q->select('code')
+                ->from('org_stocks')
+                ->where('id', $this->batchCode->org_stock_id)
+                ->limit(1);
+        };
+
+        $batchCodeExpiryDate = function ($q) {
+            $q->select('expiry_date')
+                ->from('batch_codes')
+                ->where('id', $this->batchCode->id)
+                ->limit(1);
+        };
+
         return \App\Models\Dispatching\DeliveryNote::query()
             ->whereIn(
                 'delivery_notes.id',
@@ -66,6 +80,8 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
             ])
             ->selectSub($pickingSessionsCount, 'picking_sessions_count')
             ->selectSub($pickingSessionIds, 'picking_session_ids')
+            ->selectSub($batchCodeSku, 'batch_code_sku')
+            ->selectSub($batchCodeExpiryDate, 'batch_code_expiry_date')
             ->orderBy('delivery_notes.date', 'desc');
     }
 
@@ -75,6 +91,8 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
             __('State'),
             __('Reference'),
             __('Batch Code'),
+            __('SKU'),
+            __('Expiration Date'),
             __('Date'),
             __('Customer'),
             __('Phone'),
@@ -100,6 +118,8 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
             'I' => NumberFormat::FORMAT_TEXT,
             'J' => NumberFormat::FORMAT_TEXT,
             'K' => NumberFormat::FORMAT_TEXT,
+            'L' => NumberFormat::FORMAT_TEXT,
+            'M' => NumberFormat::FORMAT_TEXT,
         ];
     }
 
@@ -109,6 +129,8 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
             (string)$row->state?->value ?? '',
             (string)$row->reference,
             (string)$this->batchCode->code,
+            (string)($row->batch_code_sku ?? ''),
+            (string)($row->batch_code_expiry_date ?? ''),
             (string)($row->date ? $row->date->format('Y-m-d') : ''),
             (string)($row->customer_name ?? ''),
             (string)($row->customer_phone ?? ''),

@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<{
     offer?: Offer
     use_duration?: boolean
 }>(), {
-    use_duration: true
+    use_duration: true   
 })
 
 const _popoverInfoCircle = ref()
@@ -28,7 +28,7 @@ const maxDiscountLabel = computed(() => {
 
     return (val * 100).toFixed(2).replace(/\.00$/, "")
 })
-console.log('maxDiscountLabel', props.offer)
+
 </script>
 
 <template>

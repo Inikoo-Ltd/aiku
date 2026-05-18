@@ -20,38 +20,27 @@ class GetWebBlockProducts
 {
     use AsObject;
 
-    public function handle(Webpage $webpage, array $webBlock, bool $isLoggedIn): array
+    public function handle(Webpage $webpage, array $webBlock): array
     {
         /** @var Collection|ProductCategory $model */
         $model = $webpage->model;
 
         if ($webpage->model_type == 'Collection') {
-            if ($isLoggedIn) {
-                $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'in_stock'));
-                $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'out_of_stock'));
-            } else {
-                $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'all'));
-            }
-        } elseif ($isLoggedIn) {
+            $products           = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'in_stock'));
+            $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'out_of_stock'));
+        } else {
             $products           = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'in_stock'));
             $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'out_of_stock'));
-        } else {
-            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'all'));
         }
 
-
         $permissions = ['edit'];
-
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-
         data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_type', $webpage->sub_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_id', $webpage->model_id);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_slug', $model?->slug);
-        if ($isLoggedIn) {
-            data_set($webBlock, 'web_block.layout.data.fieldValue.products_out_of_stock', $productsOutOfStock);
-        }
+        data_set($webBlock, 'web_block.layout.data.fieldValue.products_out_of_stock', $productsOutOfStock);
 
         return $webBlock;
     }

@@ -132,7 +132,7 @@ class GetWebsiteWorkshopLayout
         }
 
         $propsValue = [
-            'theme' => Arr::get($website->published_layout, 'theme')
+            'layout' => Arr::get($website->published_layout, 'theme')
         ];
 
         return array_merge($workshopRoutes, $propsValue);

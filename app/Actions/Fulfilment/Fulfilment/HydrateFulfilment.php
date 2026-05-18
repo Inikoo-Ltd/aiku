@@ -33,6 +33,7 @@ class HydrateFulfilment extends HydrateModel
         FulfilmentHydratePallets::run($fulfilment);
         FulfilmentHydratePalletDeliveries::run($fulfilment);
         FulfilmentHydratePalletReturns::run($fulfilment);
+
         FulfilmentHydrateRecurringBills::run($fulfilment);
         FulfilmentHydrateStoredItems::run($fulfilment);
         FulfilmentHydrateStoredItemAudits::run($fulfilment);

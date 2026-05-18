@@ -19,6 +19,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -52,17 +53,16 @@ class StoreProductToTiktok extends RetinaAction
             }
 
             $recommendCategory = $tiktokUser->recommendCategory([
-                'product_title' => $product->family?->name ?? $product->name
+                'product_title' => $product->family?->name ?? Str::words($product->name, 2, '')
             ]);
 
-
-            $leafCategoryId = Arr::get($recommendCategory, 'data.leaf_category_id');
+            $leafCategoryId = Arr::get($recommendCategory, 'data.leaf_category_id', '600009');
             $leafCategoryId = $this->resolveSafeCategoryId($tiktokUser, $leafCategoryId);
 
             $categoryRules = $tiktokUser->getCategoryRules($leafCategoryId);
             $requiredCertifications = collect(Arr::get($categoryRules, 'data.product_certifications', []))
-                ->filter(fn($cert) => Arr::get($cert, 'is_required') === true)
-                ->map(fn($cert) => [
+                ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
+                ->map(fn ($cert) => [
                     'id'    => Arr::get($cert, 'id'),
                     'files' => []
                 ])
@@ -73,7 +73,7 @@ class StoreProductToTiktok extends RetinaAction
             $attributes = Arr::get($categoryAttributes, 'data.attributes', []);
 
             $productAttributes = collect($attributes)
-                ->filter(fn($attribute) => Arr::get($attribute, 'is_requried') === true)
+                ->filter(fn ($attribute) => Arr::get($attribute, 'is_requried') === true)
                 ->map(function ($attribute) {
                     $firstValue = Arr::first(Arr::get($attribute, 'values', []));
 
@@ -106,9 +106,15 @@ class StoreProductToTiktok extends RetinaAction
             $h = max(Arr::get($product->marketing_dimensions, 'h', 1), 20);
             $l = max(Arr::get($product->marketing_dimensions, 'l', 1), 80);
 
+            $description = $portfolio->customer_description;
+
+            if (! $description) {
+                $description = $portfolio->item_name;
+            }
+
             $productData = [
                 'title' => $portfolio->customer_product_name,
-                'description' => $portfolio->customer_description,
+                'description' => $description,
                 'price' => (string) $portfolio->customer_price,
                 'category_id' => $leafCategoryId,
                 'main_images' => $productImages,
@@ -138,6 +144,7 @@ class StoreProductToTiktok extends RetinaAction
                                 'warehouse_id' => (string) $tiktokUser->tiktok_warehouse_id
                             ]
                         ],
+                        'seller_sku' => $portfolio->sku,
                         'price' => [
                             'amount' => (string) $portfolio->customer_price,
                             'currency' => $tiktokUser->customer->shop->currency->code
@@ -147,6 +154,14 @@ class StoreProductToTiktok extends RetinaAction
             ];
 
             $tiktokProduct = $tiktokUser->uploadProductToTiktok($productData);
+
+            if (Arr::get($tiktokProduct, 'error')) {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => [
+                        'message' => Arr::get($tiktokProduct, 'data')
+                    ]
+                ]);
+            }
 
             /*$result = $tiktokUser->activateProduct([
                 'product_ids' => [Arr::get($tiktokProduct, 'data.product_id')]
@@ -168,7 +183,7 @@ class StoreProductToTiktok extends RetinaAction
             } else {
                 UpdatePlatformPortfolioLog::run($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $tiktokProduct
+                    'response' => Arr::get($tiktokProduct, 'data')
                 ]);
             }
 
@@ -209,7 +224,7 @@ class StoreProductToTiktok extends RetinaAction
 
         $rules = $tiktokUser->getCategoryRules($categoryId);
         $hasRequiredCerts = collect(Arr::get($rules, 'data.product_certifications', []))
-            ->filter(fn($cert) => Arr::get($cert, 'is_required') === true)
+            ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
             ->isNotEmpty();
 
         if (!$hasRequiredCerts) {
@@ -218,7 +233,8 @@ class StoreProductToTiktok extends RetinaAction
 
         $allCategories = $tiktokUser->getCategories();
         $leafAvailable = collect(Arr::get($allCategories, 'data.categories', []))
-            ->filter(fn($cat) =>
+            ->filter(
+                fn ($cat) =>
                 Arr::get($cat, 'is_leaf') === true &&
                 in_array('AVAILABLE', Arr::get($cat, 'permission_statuses', []))
             )
@@ -228,7 +244,7 @@ class StoreProductToTiktok extends RetinaAction
             $catId = Arr::get($cat, 'id');
             $catRules = $tiktokUser->getCategoryRules($catId);
             $certRequired = collect(Arr::get($catRules, 'data.product_certifications', []))
-                ->filter(fn($cert) => Arr::get($cert, 'is_required') === true)
+                ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
                 ->isNotEmpty();
 
             if (!$certRequired) {

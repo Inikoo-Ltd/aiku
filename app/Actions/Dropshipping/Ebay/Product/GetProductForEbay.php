@@ -23,16 +23,35 @@ class GetProductForEbay
 
     public $commandSignature = 'dropshipping:ebay:product:get {customerSalesChannel}';
 
+
+    public function handle(?EbayUser $ebayUser, $query = '', $offset = 0): array
+    {
+        if (!$ebayUser) {
+            return [];
+        }
+
+        if (!blank($query)) {
+            $product  = $ebayUser->getProduct($query);
+            $products = [$product];
+        } else {
+            $rawProducts = $ebayUser->getProducts(offset: $offset);
+            $products    = Arr::get($rawProducts, 'inventoryItems', []);
+        }
+        $hasErrors = collect($products)->contains(fn ($product) => isset($product['errors']));
+
+        return $hasErrors ? [] : array_map([$this, 'transformToStandardFormat'], $products);
+    }
+
     /**
      * @throws \Exception
      */
     private function transformToStandardFormat($product): array
     {
         return [
-            'id' => Arr::get($product, 'sku'),
-            'name' => Arr::get($product, 'product.title'),
-            'slug' => Arr::get($product, 'sku'),
-            'code' => Arr::get($product, 'sku'),
+            'id'     => Arr::get($product, 'sku'),
+            'name'   => Arr::get($product, 'product.title'),
+            'slug'   => Arr::get($product, 'sku'),
+            'code'   => Arr::get($product, 'sku'),
             'images' => [
                 [
                     'src' => Arr::get($product, 'product.imageUrls.0')
@@ -41,19 +60,6 @@ class GetProductForEbay
         ];
     }
 
-    public function handle(EbayUser $ebayUser, $query = '', $offset = 0): array
-    {
-        if (!blank($query)) {
-            $product = $ebayUser->getProduct($query);
-            $products = [$product];
-        } else {
-            $rawProducts = $ebayUser->getProducts(offset: $offset);
-            $products = Arr::get($rawProducts, 'inventoryItems', []);
-        }
-        $hasErrors = collect($products)->contains(fn ($product) => isset($product['errors']));
-
-        return $hasErrors ? [] : array_map([$this, 'transformToStandardFormat'], $products);
-    }
 
     public function asController(EbayUser $ebayUser, ActionRequest $request): array
     {

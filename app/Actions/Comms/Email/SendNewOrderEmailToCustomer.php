@@ -43,11 +43,15 @@ class SendNewOrderEmailToCustomer extends OrgAction
             return null;
         }
 
+        $previousLocale = app()->getLocale();
+        app()->setLocale($order->shop->language->code);
+
         list($emailHtmlBody, $dispatchedEmail) = $this->getEmailBody(
             $order->customer,
             OutboxCodeEnum::ORDER_CONFIRMATION
         );
         if (!$emailHtmlBody) {
+            app()->setLocale($previousLocale);
             return null;
         }
         $outbox = $dispatchedEmail->outbox;
@@ -57,7 +61,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $paymentInfo = $order->to_be_paid_by == OrderToBePaidByEnum::BANK ?
             $this->generateOrderPaymentByBankTransferHtml($order) : $this->generateOrderPaymentsHtml($order);
 
-        return $this->sendEmailWithMergeTags(
+        $result = $this->sendEmailWithMergeTags(
             $dispatchedEmail,
             $outbox->emailOngoingRun->sender(),
             $outbox->emailOngoingRun?->email?->subject,
@@ -77,6 +81,10 @@ class SendNewOrderEmailToCustomer extends OrgAction
             ],
             senderName: $outbox->emailOngoingRun->senderName(),
         );
+
+        app()->setLocale($previousLocale);
+
+        return $result;
     }
 
     public string $commandSignature = 'test:send-new_order-email';

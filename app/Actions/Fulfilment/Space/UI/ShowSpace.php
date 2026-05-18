@@ -12,6 +12,7 @@ namespace App\Actions\Fulfilment\Space\UI;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
+use App\Enums\Fulfilment\Space\SpaceStateEnum;
 use App\Enums\UI\Fulfilment\SpaceTabsEnum;
 use App\Http\Resources\Fulfilment\SpaceResource;
 use App\Models\Fulfilment\Fulfilment;
@@ -41,18 +42,35 @@ class ShowSpace extends OrgAction
 
     public function htmlResponse(Space $space, ActionRequest $request): Response
     {
-        $actions = null;
-        if ($request->user()->authTo("supervisor-fulfilment-shop.".$this->fulfilment->id)) {
-            $actions = [
-                [
-                    'type'  => 'button',
-                    'style' => 'edit',
-                    'route' => [
-                        'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                        'parameters' => array_values($request->route()->originalParameters())
-                    ]
-                ]
+        $actions = [];
+        if ($this->canEdit) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'route' => [
+                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    'parameters' => array_values($request->route()->originalParameters()),
+                ],
             ];
+
+            if ($space->state === SpaceStateEnum::RENTING) {
+                $actions[] = [
+                    'type'        => 'button',
+                    'style'       => 'negative',
+                    'label'       => __('Stop rental'),
+                    'tooltip'     => __('Stop rental'),
+                    'icon'        => ['fas', 'fa-stop'],
+                    'fullLoading' => true,
+                    'route'       => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.fulfilment_customer_space.stop_rental',
+                        'parameters' => [
+                            'fulfilmentCustomer' => $space->fulfilment_customer_id,
+                            'space'              => $space->id,
+                        ],
+                    ],
+                ];
+            }
         }
 
         return Inertia::render(
@@ -75,7 +93,7 @@ class ShowSpace extends OrgAction
                             'icon'  => ['fal', 'fa-parking'],
                             'title' => __('Space')
                         ],
-                    'actions' => $actions
+                    'actions' => $actions ?: null
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

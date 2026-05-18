@@ -13,9 +13,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Goods\Stock;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class RedoStockTimeSeries implements ShouldBeUnique
 {
@@ -24,7 +22,7 @@ class RedoStockTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue         = 'default-long-slave';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'stocks:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -34,7 +32,7 @@ class RedoStockTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(string $from, string $to): string
     {
-        return "{$from}_{$to}";
+        return "{$from}_$to";
     }
 
     public function handle(?int $stockId, ?string $from = null, ?string $to = null, bool $async = false): void
@@ -67,26 +65,11 @@ class RedoStockTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessStockTimeSeriesRecords::dispatch($stock->id, $frequency, $from, $to)->delay(300);
+                ProcessStockTimeSeriesRecords::dispatch($stock->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessStockTimeSeriesRecords::run($stock->id, $frequency, $from, $to);
             }
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
-
-        $query->chunk(1000, function (Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                try {
-                    $this->handle($modelId->id, $from, $to, false);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
 }

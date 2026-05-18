@@ -6,7 +6,7 @@ import { faHeart as fasHeart, faStarHalfAlt } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faQuestionCircle } from "@fal"
 
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'

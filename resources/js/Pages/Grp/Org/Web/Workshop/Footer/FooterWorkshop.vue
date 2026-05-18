@@ -13,7 +13,7 @@ import axios from 'axios'
 import { debounce, isArray } from 'lodash-es'
 import Publish from '@/Components/Publish.vue'
 import ScreenView from "@/Components/ScreenView.vue"
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import HeaderListModal from '@/Components/CMS/Fields/ListModal.vue'
 import { trans } from "laravel-vue-i18n"
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'

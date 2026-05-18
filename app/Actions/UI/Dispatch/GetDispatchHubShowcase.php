@@ -19,12 +19,15 @@ class GetDispatchHubShowcase
 
     public function handle(Warehouse $warehouse): array
     {
+        $organisation = $warehouse->organisation;
+        $stats        = $organisation->stats;
+
         return [
-            GetDispatchHubFulfilmentWidget::run($warehouse),
+            ...($stats->has_fulfilment ? GetDispatchHubFulfilmentWidget::run($warehouse) : []),
             GetDispatchHubB2BWidget::run($warehouse),
-            GetDispatchHubExternalWidget::run($warehouse),
+            ...($stats->has_marketplace ? [GetDispatchHubExternalWidget::run($warehouse)] : []),
             GetDispatchHubB2CWidget::run($warehouse),
-            GetDispatchHubDropshippingWidget::run($warehouse),
+            ...($stats->has_dropshipping ? [GetDispatchHubDropshippingWidget::run($warehouse)] : []),
             'waiting_items_still_picking' => [
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')

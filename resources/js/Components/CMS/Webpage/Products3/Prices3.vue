@@ -126,7 +126,7 @@ const _popoverProfit = ref(null)
             text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
 
         <!-- HEADER -->
-        <div class="border-b pb-2 mb-2 flex items-center justify-between gap-1 whitespace-nowrap text-[9px] sm:text-[10px] md:text-[11px]"
+        <div class="border-b pb-2 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 whitespace-nowrap text-[9px] sm:text-[10px] md:text-[11px]"
             v-if="product?.rrp_per_unit ?? 0 > 0"
         >
 
@@ -139,7 +139,7 @@ const _popoverProfit = ref(null)
                 </span>
             </div>
 
-            <div class="flex items-center gap-1 justify-end whitespace-nowrap">
+            <div class="flex items-center gap-1 md:justify-end justify-start whitespace-nowrap min-w-0">
                 <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
                     @mouseleave="_popoverProfit?.hide"
                     class="cursor-pointer opacity-60 hover:opacity-100 text-[8px] sm:text-[9px] md:text-[10px]">
@@ -150,7 +150,7 @@ const _popoverProfit = ref(null)
                     {{ trans("Profit") }}:
                 </span>
 
-                <span class="font-bold text-green-700">
+                <span class="font-bold text-green-700 truncate min-w-0">
                     (
                     {{
                         (layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)
@@ -263,11 +263,16 @@ const _popoverProfit = ref(null)
                 </div>
 
                 <DiscountByType v-if="bestOffer?.type == 'Category Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false"/>
+                <DiscountByType v-if="bestOffer?.type == 'Category Quantity Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false"/>
                 <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'" :offers_data="product?.product_offers_data" template="first-order" />
                 <DiscountByType v-if="bestOffer?.type == 'Category Amount Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'Department Quantity Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'Subdepartment Quantity Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'Department Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
 
 
-                <div v-if="bestOffer" class="font-bold text-right min-w-0" :class="bestOffer?.type === 'Category Ordered' || bestOffer?.type === 'Category Amount Ordered'
+                <div v-if="bestOffer" class="font-bold text-right min-w-0 text-xs" :class="bestOffer?.type === 'Category Ordered' ||  bestOffer?.type === 'Category Amount Ordered' || bestOffer?.type === 'Category Amount Ordered'
                         ? 'text-red-700'
                         : bestOffer?.type === 'First Order'
                             ? 'text-[#2a919e]'
@@ -291,9 +296,10 @@ const _popoverProfit = ref(null)
                     <template v-else>
 
                         <div class="flex justify-end items-center gap-1 min-w-0">
-                            <span class="truncate min-w-0 font-normal  text-[8px] sm:text-[9px] md:text-[10px]">
+                            <span class="truncate min-w-0 font-normal  text-xs sm:text-[9px] md:text-xs">
                                 {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
                             </span>
+                            
                           <!--   <span class="truncate min-w-0 font-normal text-[8px] sm:text-[9px] md:text-[10px]" :title="product.unit">
                                 ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/{{ product.unit }})
                             </span> -->
@@ -310,7 +316,7 @@ const _popoverProfit = ref(null)
 
 
         <!-- MEMBER -->
-        <div v-if="showIntervalOffer" class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px]">
+        <div v-if="showIntervalOffer" class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] discount">
             <MemberPriceLabel v-if="showMemberPrice" :offer="bestOffer" />
 
             <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"

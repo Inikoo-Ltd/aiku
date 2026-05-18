@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\Invoice\RunInvoiceHydrators;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
@@ -53,6 +54,10 @@ class FinaliseRefund extends OrgAction
         );
 
         RunInvoiceHydrators::run($refund, $this->hydratorsDelay);
+        $order = $refund->order;
+        if ($order) {
+            UpdateOrderPaymentsStatus::run($order);
+        }
 
         return $refund;
     }

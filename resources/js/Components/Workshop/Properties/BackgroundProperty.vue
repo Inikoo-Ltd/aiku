@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
 import { ref } from 'vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
 import PureRadio from '@/Components/Pure/PureRadio.vue'
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'

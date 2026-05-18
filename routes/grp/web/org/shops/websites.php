@@ -48,6 +48,7 @@ use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
 use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
+use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
@@ -168,6 +169,10 @@ Route::prefix('{website}/announcements')->name('announcements.')->group(function
     Route::get('{announcement:ulid}/edit', EditAnnouncement::class)->name('edit')->withoutScopedBindings();
     Route::get('/{announcement:ulid}/workshop', ShowAnnouncementWorkshop::class)->name('workshop');
     Route::get('/{announcement:ulid}', ShowAnnouncement::class)->name('show')->withoutScopedBindings();
+});
+
+Route::prefix('{website}/crawls')->name('crawls.')->group(function () {
+    Route::get('', IndexCrawls::class)->name('index');
 });
 
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {

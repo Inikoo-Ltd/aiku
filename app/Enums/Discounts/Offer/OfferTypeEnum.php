@@ -19,8 +19,8 @@ enum OfferTypeEnum: string
     case AMOUNT_AND_ORDER_INTERVAL = "Amount AND Order Interval";
     case AMOUNT = "Amount";
     case CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED = "Category For Every Quantity Any Product Ordered";
-    case DEPARTMENT_QUANTITY_ORDERED = "Department Quantity Ordered";
-    case CATEGORY_QUANTITY_ORDERED = "Category Quantity Ordered";
+
+
     case VOLGR_GIFT = "VolGr Gift";
     case VOUCHER = "Voucher";
     case GR_AMNESTY = "GR Amnesty";
@@ -28,11 +28,21 @@ enum OfferTypeEnum: string
     case EVERY_ORDER = "Every Order";
     case VOUCHER_AND_ORDER_NUMBER = "Voucher AND Order Number";
     case PRODUCT_AMOUNT_ORDERED = "Product Amount Ordered";
-    case CATEGORY_ORDERED = "Category Ordered";
+
     case DEPARTMENT_ORDERED = "Department Ordered";
     case SUB_DEPARTMENT_ORDERED = "Subdepartment Ordered";
-    case PRODUCT_IN_CATEGORY_CARTON = "Product In Category Carton";
+    case CATEGORY_ORDERED = "Category Ordered";
+
+    case DEPARTMENT_QUANTITY_ORDERED = "Department Quantity Ordered";
+    case SUB_DEPARTMENT_QUANTITY_ORDERED = "Subdepartment Quantity Ordered";
+    case CATEGORY_QUANTITY_ORDERED = "Category Quantity Ordered";
+
+    case DEPARTMENT_AMOUNT_ORDERED = "Department Amount Ordered";
+    case SUB_DEPARTMENT_AMOUNT_ORDERED = "Subdepartment Amount Ordered";
     case CATEGORY_AMOUNT_ORDERED = "Category Amount Ordered";
+
+    case PRODUCT_IN_CATEGORY_CARTON = "Product In Category Carton";
+
     case AMOUNT_AND_ORDER_NUMBER = "Amount AND Order Number";
     case ORDER_NUMBER = "Order Number";
     case CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL = "Category Quantity Ordered Order Interval";
@@ -74,8 +84,13 @@ enum OfferTypeEnum: string
 
             self::AMOUNT,
             self::ORDER_TOTAL_NET_AMOUNT_AND_ORDER_NUMBER,
+            self::DEPARTMENT_AMOUNT_ORDERED,
+            self::SUB_DEPARTMENT_AMOUNT_ORDERED,
             self::CATEGORY_AMOUNT_ORDERED
-                => $this->amountIcon(),
+
+
+
+            => $this->amountIcon(),
 
             self::AMOUNT_AND_ORDER_NUMBER,
             self::ORDER_NUMBER,

@@ -9,10 +9,8 @@ use App\Models\Helpers\Brand;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Laravel\Telescope\Telescope;
-use Throwable;
 
 class RedoBrandTimeSeries implements ShouldBeUnique
 {
@@ -21,7 +19,7 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue         = 'default-long-slave';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'brands:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -31,7 +29,7 @@ class RedoBrandTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(string $from, string $to): string
     {
-        return "{$from}_{$to}";
+        return "{$from}_$to";
     }
 
     protected function beforeCommand(Command $command): void
@@ -83,7 +81,7 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         foreach ($shopIds as $shopId) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 if ($async) {
-                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to);
+                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to)->onQueue('sales_slave_historic');
                 } else {
                     ProcessBrandTimeSeriesRecords::run($brand->id, $shopId, $frequency, $from, $to);
                 }
@@ -91,19 +89,4 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
-
-        $query->chunk(1000, function (Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                try {
-                    $this->handle($modelId->id, $from, $to, false);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
 }

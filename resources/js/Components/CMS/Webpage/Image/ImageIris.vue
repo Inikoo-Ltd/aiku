@@ -2,7 +2,7 @@
 import { faCube, faStar, faImage } from "@fas"
 import { faPencil } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination } from 'swiper/modules'
@@ -49,7 +49,8 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
-  indexBlock:index
+  indexBlock?: number
+  code?: string
 }>()
 
 

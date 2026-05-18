@@ -46,6 +46,27 @@ class IndexDeliveryNotesInBatchCode
                 ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
 
+        $batchCodeSku = function ($q) use ($batchCode) {
+            $q->select('code')
+                ->from('org_stocks')
+                ->where('id', $batchCode->org_stock_id)
+                ->limit(1);
+        };
+
+        $batchCodeOrgStockSlug = function ($q) use ($batchCode) {
+            $q->select('slug')
+                ->from('org_stocks')
+                ->where('id', $batchCode->org_stock_id)
+                ->limit(1);
+        };
+
+        $batchCodeExpiryDate = function ($q) use ($batchCode) {
+            $q->select('expiry_date')
+                ->from('batch_codes')
+                ->where('id', $batchCode->id)
+                ->limit(1);
+        };
+
         return QueryBuilder::for(DeliveryNote::class)
             ->whereIn(
                 'delivery_notes.id',
@@ -92,6 +113,9 @@ class IndexDeliveryNotesInBatchCode
                 BatchCode::query()->select('code')->where('id', $batchCode->id)->limit(1),
                 'batch_code'
             )
+            ->selectSub($batchCodeSku, 'batch_code_sku')
+            ->selectSub($batchCodeOrgStockSlug, 'org_stock_slug')
+            ->selectSub($batchCodeExpiryDate, 'batch_code_expiry_date')
             ->allowedSorts(['reference', 'date', 'number_items'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -117,6 +141,8 @@ class IndexDeliveryNotesInBatchCode
                 ->column(key: 'state', label: '', type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'batch_code', label: __('Batch Code'), canBeHidden: false, sortable: false)
+                ->column(key: 'batch_code_sku', label: __('SKU'), canBeHidden: false, sortable: false)
+                ->column(key: 'batch_code_expiry_date', label: __('Expiration Date'), canBeHidden: false, sortable: false)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true)
                 ->column(key: 'customer_phone', label: __('Phone'), canBeHidden: false, sortable: false)

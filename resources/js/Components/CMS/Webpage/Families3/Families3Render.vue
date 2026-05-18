@@ -4,7 +4,7 @@ import { faStar, faCircle, faSpinnerThird } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight, faImage } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 library.add(
   faCube,

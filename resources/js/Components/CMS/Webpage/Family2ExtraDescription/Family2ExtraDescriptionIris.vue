@@ -10,11 +10,12 @@ import {
 
 import { get, isPlainObject } from "lodash-es"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 import { getStyles } from "@/Composables/styles"
+import { data } from "autoprefixer"
 
 const props = defineProps<{
   fieldValue: any
@@ -54,28 +55,22 @@ const imageOrder = computed(() =>
 const textOrder = computed(() =>
   isImageLeft.value ? "lg:order-2" : "lg:order-1"
 )
-
 const images = computed(() => {
-  const data =
-    props.fieldValue?.family?.extra_description_image
-
-  if (!data) return []
-
-  if (Array.isArray(data)) {
-    return data.slice(0, 4)
-  }
-
-  return [data]
+  return props.fieldValue?.family?.extra_description_image || {}
 })
 
 const displayImages = computed(() => {
-  const filled = [...images.value]
+  const data = []
 
-  while (filled.length < 4) {
-    filled.push(null)
+  for (const key in images.value) {
+    data.push(get(images.value, key))
   }
 
-  return filled
+  while (data.length < 4) {
+    data.push(null)
+  }
+
+  return data.slice(0, 4)
 })
 
 const cleanedDescription = computed(() => {
@@ -97,9 +92,12 @@ const checkOverflow = async () => {
 watch(cleanedDescription, checkOverflow)
 
 onMounted(checkOverflow)
+
+
 </script>
 
 <template>
+<!--   <pre>{{ displayImages }}</pre> -->
   <div
     :id="
       fieldValue?.id
@@ -118,7 +116,7 @@ onMounted(checkOverflow)
       )
     }"
   >
-    <div class="w-full px-4 py-8 lg:py-14">
+    <div class="w-full px-4 py-8 lg:py-4" id="family-extra-description">
       <div
         class="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center"
       >
@@ -153,7 +151,7 @@ onMounted(checkOverflow)
           :class="textOrder"
         >
           <!-- DESCRIPTION -->
-          <div class="relative">
+          <div class="relative ">
             <div
               ref="descriptionRef"
               v-html="cleanedDescription"
@@ -179,29 +177,22 @@ onMounted(checkOverflow)
           </button>
 
           <!-- BUTTON -->
-          <div class="mt-7 text-center md:text-left">
-            <LinkIris
+          <div class="mt-7 text-center md:text-right">
+            <!-- <LinkIris
               :href="
                 fieldValue?.button?.link?.href
               "
               :target="
                 fieldValue?.button?.link?.target
               "
-            >
-              <Button
-                id="family-2-extra-description-button"
-                :label="
-                  fieldValue?.button?.text
-                "
-                :injectStyle="
-                  getStyles(
-                    fieldValue?.button?.container
-                      ?.properties,
-                    screenType
-                  )
-                "
-              />
-            </LinkIris>
+            > -->
+            <a href="#family-description">
+            <button id="family-3-button" :label="fieldValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
+             text-sm md:text-base font-medium
+             hover:underline underline-offset-4 mr-5 italic
+             transition-all duration-200" >{{ fieldValue?.button?.text }}</button>
+             </a>
+            <!-- </LinkIris> -->
           </div>
         </div>
       </div>
@@ -210,6 +201,7 @@ onMounted(checkOverflow)
 </template>
 
 <style scoped>
+
 .description-content {
   @apply text-sm
   md:text-[15px]
@@ -222,6 +214,31 @@ onMounted(checkOverflow)
   transition-all
   duration-300;
 }
+
+
+.description-content :deep(p) {
+  @apply mb-0;
+}
+
+.description-content :deep(h2),
+.description-content :deep(h3),
+.description-content :deep(h4) {
+  @apply text-gray-900 font-semibold mt-6 mb-3;
+}
+
+.description-content :deep(ul) {
+  @apply list-disc pl-5 space-y-2;
+}
+
+.description-content :deep(ol) {
+  @apply list-decimal pl-5 space-y-2;
+}
+
+
+.description-content :deep(ul) {
+  @apply list-disc pl-5 ml-0 mt-2 space-y-2 list-outside;
+}
+
 
 .description-collapsed {
   max-height: 390px;
@@ -244,34 +261,6 @@ onMounted(checkOverflow)
     mask-image 0.35s ease;
 }
 
-.description-content :deep(p) {
-  @apply mb-5;
-}
-
-.description-content :deep(h2),
-.description-content :deep(h3),
-.description-content :deep(h4) {
-  @apply text-gray-900
-  font-semibold
-  mt-8
-  mb-4
-  text-xl
-  leading-snug;
-}
-
-.description-content :deep(ul) {
-  @apply list-disc
-  pl-5
-  space-y-2
-  mb-5;
-}
-
-.description-content :deep(ol) {
-  @apply list-decimal
-  pl-5
-  space-y-2
-  mb-5;
-}
 
 .description-content :deep(img) {
   @apply rounded-2xl

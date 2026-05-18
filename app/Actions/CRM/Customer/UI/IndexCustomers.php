@@ -409,12 +409,13 @@ class IndexCustomers extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Customers'),
+                'title'       => __('Customers').' @'.strtolower($this->parent->code) ?? $this->parent->name,
                 'pageHead'    => array_filter([
-                    'title'         => __('Customers'),
+                    'title'         => $this->parent->code ?? $this->parent->name,
+                    'model'         => __('Customers'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('Customer')
+                        'title' => __('Customers')
                     ],
                     'actions'       => $action,
                     'subNavigation' => $subNavigation,

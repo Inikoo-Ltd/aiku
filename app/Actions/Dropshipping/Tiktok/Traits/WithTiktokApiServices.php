@@ -12,7 +12,6 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 
 trait WithTiktokApiServices
 {
@@ -100,7 +99,8 @@ trait WithTiktokApiServices
             return $response->json();
         } catch (\Exception $e) {
             Log::error('API Request failed: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+
+            return ['error' => true, 'data' => $e->getMessage()];
         }
     }
 
@@ -125,6 +125,15 @@ trait WithTiktokApiServices
     public function getShippingProviders(string $deliveryOptionId): array
     {
         $path = "/logistics/$this->version/delivery_options/$deliveryOptionId/shipping_providers";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getShippingTemplates(): array
+    {
+        $path = "/logistics/202510/seller_templates";
 
         return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'

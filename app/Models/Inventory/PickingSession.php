@@ -11,9 +11,11 @@ namespace App\Models\Inventory;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Dispatching\Trolley;
+use App\Models\Fulfilment\PalletReturn;
+use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -24,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Dispatching\Trolley;
 
 /**
  * @property int $id
@@ -49,10 +52,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $quantity_packed
  * @property numeric $picking_percentage
  * @property numeric $packing_percentage
+ * @property PickingSessionTypeEnum $type
+ * @property int $number_pallet_returns
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNote> $deliveryNotes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNotesItems
  * @property-read Group|null $group
  * @property-read Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturnItem> $palletReturnItems
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $palletReturns
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Trolley> $trolleys
  * @property-read User|null $user
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
@@ -70,6 +77,7 @@ class PickingSession extends Model
 
     protected $casts = [
         'state'                  => PickingSessionStateEnum::class,
+        'type'                   => PickingSessionTypeEnum::class,
     ];
 
     public function getRouteKeyName(): string
@@ -117,6 +125,21 @@ class PickingSession extends Model
     public function deliveryNotesItems(): HasMany
     {
         return $this->hasMany(DeliveryNoteItem::class);
+    }
+
+    public function palletReturns(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PalletReturn::class,
+            'picking_session_has_pallet_returns',
+            'picking_session_id',
+            'pallet_return_id'
+        );
+    }
+
+    public function palletReturnItems(): HasMany
+    {
+        return $this->hasMany(PalletReturnItem::class);
     }
 
     public function trolleys(): HasMany

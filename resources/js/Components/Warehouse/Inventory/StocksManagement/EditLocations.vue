@@ -34,12 +34,12 @@ const onAddNewLocation = () => {
             location: newLocation.value?.id
         }),
         {
-            
+
         },
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingAddNewLocation.value = true
             },
             onSuccess: () => {

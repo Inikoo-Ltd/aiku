@@ -54,6 +54,7 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\RecurringBill;
 use App\Models\Fulfilment\Space;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
@@ -237,6 +238,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, RecurringBill> $recurringBills
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
+ * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
@@ -919,6 +921,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function workSchedules(): MorphMany
     {
         return $this->morphMany(WorkSchedule::class, 'schedulable');
+    }
+
+    public function returnDeliveryNotes(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
     }
 
     public function getDefaultWorkSchedule(): ?WorkSchedule

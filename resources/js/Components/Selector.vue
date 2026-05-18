@@ -5,12 +5,11 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import Image from '@/Components/Image.vue'
+import Image from '../Common/Components/Image.vue'
 import Pagination from '@/Components/Table/Pagination.vue'
 import { routeType } from '@/types/route'
 import { debounce } from 'lodash-es'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheckCircle } from "@fas"
 
 const props = defineProps<{
   modelValue?: any[]
@@ -31,7 +30,7 @@ const isLoading = ref(false)
 // temp selected
 const selected = ref<any[]>([])
 
-// open dialog
+// open dialogue
 const open = () => {
   selected.value = [...(props.modelValue || [])]
   showDialog.value = true

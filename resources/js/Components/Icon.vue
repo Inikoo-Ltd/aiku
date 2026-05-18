@@ -8,7 +8,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Icon as IconTS } from "@/types/Utils/Icon"
 import ZombieIcon from "@/Components/Icons/ZombieIcon.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 const svgComponents: Record<string, unknown> = {
     zombie: ZombieIcon,

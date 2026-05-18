@@ -10,6 +10,7 @@ namespace App\Actions\Traits\UI;
 
 use App\Actions\Helpers\Media\SaveModelFavicon;
 use App\Actions\Web\Website\BreakWebsiteCache;
+use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Models\Web\Website;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -32,8 +33,7 @@ trait WithFavicon
                 scope: 'favicon'
             );
 
-            BreakWebsiteCache::run($website);
-
+            BreakWebsiteCache::run($website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
 
         return $website;

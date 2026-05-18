@@ -11,10 +11,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
-import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents";
-import ListItem from "@tiptap/extension-list-item";
-import Image from "@/Components/Image.vue";
+import { getProductsRenderB2bComponent } from "@/Iris/Composables/getIrisComponents";
+import Image from "@common/Components/Image.vue";
 
 library.add(faFileDownload)
 

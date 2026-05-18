@@ -128,6 +128,7 @@ class ShowProspectMailshotWorkshop extends OrgAction
 
 
                 'unpublished_layout' => $templateLayout ?? $email->unpublishedSnapshot->layout,
+                'compiledLayout'     => $email?->liveSnapshot?->compiled_layout,
                 'snapshot'    => $email->unpublishedSnapshot,
                 'builder'     => $email->builder,
                 'imagesUploadRoute'   => [

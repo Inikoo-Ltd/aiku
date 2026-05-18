@@ -52,6 +52,7 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Country;
@@ -233,6 +234,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Query> $queries
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
+ * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read Shop|null $seederShop
@@ -797,6 +799,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function workSchedules(): MorphMany
     {
         return $this->morphMany(WorkSchedule::class, 'schedulable');
+    }
+
+    public function returnDeliveryNotes(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
     }
 
     public function getEffectiveWorkSchedule(): array

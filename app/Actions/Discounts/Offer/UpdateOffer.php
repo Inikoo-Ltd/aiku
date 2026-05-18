@@ -33,7 +33,7 @@ class UpdateOffer extends OrgAction
 
     public function handle(Offer $offer, array $modelData): Offer
     {
-        // dd($offer);
+
         $newTriggerData = null;
         if (isset($modelData['trigger_data_item_quantity'])) {
             $newTriggerData = array_merge(

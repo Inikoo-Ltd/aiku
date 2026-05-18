@@ -64,6 +64,7 @@ use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Query;
@@ -236,6 +237,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read LaravelCollection<int, RecurringBill> $recurringBills
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
+ * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\Helpers\Media|null $seoImage
@@ -1000,6 +1002,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function externalSubscriberEmailRecipients(): HasMany
     {
         return $this->hasMany(ExternalSubscriberEmailRecipient::class);
+    }
+
+    public function returnDeliveryNotes(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
     }
 
 }

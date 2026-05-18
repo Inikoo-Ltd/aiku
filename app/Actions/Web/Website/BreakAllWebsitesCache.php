@@ -11,29 +11,16 @@ namespace App\Actions\Web\Website;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
-use Illuminate\Http\RedirectResponse;
-use Lorisleiva\Actions\ActionRequest;
 
 class BreakAllWebsitesCache extends OrgAction
 {
     public function handle(?Command $command = null): void
     {
         foreach (Website::all() as $website) {
-            BreakWebsiteCache::run($website, $command);
+            BreakWebsiteCache::run($website, null, $command);
         }
     }
 
-    public function asController(ActionRequest $request): void
-    {
-        $this->initialisationFromGroup($this->group, $request);
-
-        $this->handle();
-    }
-
-    public function htmlResponse(): RedirectResponse
-    {
-        return back();
-    }
 
     public function getCommandSignature(): string
     {

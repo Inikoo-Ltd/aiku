@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCube, faLink, faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { getIrisComponent } from "@/Composables/getIrisComponents"
+import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
 import { trans } from 'laravel-vue-i18n'
 import { getStyles } from "@/Composables/styles"
 

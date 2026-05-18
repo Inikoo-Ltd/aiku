@@ -21,7 +21,7 @@ import Pagination from '@/Components/Table/Pagination.vue'
 import TableFilterSearch from '@/Components/Table/TableFilterSearch.vue'
 import TableWrapper from '@/Components/Table/TableWrapper.vue'
 import HeaderCell from '@/Components/Table/HeaderCell.vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 
 // Product Components
 import RecordCounter from './RecordCounter.vue'

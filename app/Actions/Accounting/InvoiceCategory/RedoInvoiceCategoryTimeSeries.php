@@ -13,9 +13,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Accounting\InvoiceCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
 {
@@ -24,7 +22,7 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue         = 'default-long-slave';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'invoice-categories:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -32,9 +30,13 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
         $this->model = InvoiceCategory::class;
     }
 
-    public function getJobUniqueId(string $from, string $to): string
+    public function getJobUniqueId(?int $invoiceCategoryId, string $from, string $to): string
     {
-        return "{$from}_{$to}";
+        if ($invoiceCategoryId == null) {
+            $invoiceCategoryId = 'empty';
+        }
+
+        return $invoiceCategoryId.":{$from}_$to";
     }
 
     public function handle(?int $invoiceCategoryId, ?string $from = null, ?string $to = null, bool $async = false): void
@@ -63,26 +65,12 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessInvoiceCategoryTimeSeriesRecords::dispatch($invoiceCategory->id, $frequency, $from, $to);
+                ProcessInvoiceCategoryTimeSeriesRecords::dispatch($invoiceCategory->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessInvoiceCategoryTimeSeriesRecords::run($invoiceCategory->id, $frequency, $from, $to);
             }
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
 
-        $query->chunk(1000, function (Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                try {
-                    $this->handle($modelId->id, $from, $to, false);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
 }

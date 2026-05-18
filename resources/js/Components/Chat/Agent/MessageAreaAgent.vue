@@ -15,7 +15,7 @@ import {
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"

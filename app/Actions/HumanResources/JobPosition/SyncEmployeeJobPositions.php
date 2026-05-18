@@ -12,7 +12,7 @@ use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateJobPositionsSha
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateEmployees;
 use App\Actions\SysAdmin\CleanUserCaches;
 use App\Actions\SysAdmin\User\SyncRolesFromJobPositions;
-use App\Actions\UI\Grp\RecacheUserUiProps;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\JobPosition;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -79,7 +79,7 @@ class SyncEmployeeJobPositions
                     'grp-first-load-props:'.$user->id.':*'
                 ]
             );
-            RecacheUserUiProps::dispatch($user);
+            BreakUserUiProps::dispatch($user);
         }
     }
 }

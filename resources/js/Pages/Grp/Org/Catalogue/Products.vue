@@ -24,7 +24,7 @@ import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPencil } from '@far'
 import { faWarning } from '@fortawesome/free-solid-svg-icons'
-import FamilySetOrderingPositionOfProduct from '@/Components/Product/OrderProduct.vue'
+import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 import { notify } from '@kyvg/vue3-notification'
 
 library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faTools)
@@ -79,7 +79,7 @@ const component = computed(() => {
         index: TableProducts,
         sales: TableProducts,
         attachments: AttachmentManagement,
-        index_ordering : FamilySetOrderingPositionOfProduct
+        index_ordering : SetOrderingPositionOfProduct
     }
     return mapping[currentTab.value]
 })
@@ -161,10 +161,12 @@ const repairTradeUnitToChildren = async () => {
 const loadingOrder = ref(false)
 const SaveOrder = () => {
     // console.log(localData.value.index_ordering);
+    const products = localData.value?.index_ordering || localData.value?.index_ordering?.data || []
+
     router.patch(route('grp.models.product_category.reorder_index', {
         productCategory: props.familyId
     }), {
-        products: localData.value?.index_ordering?.data.map((product: any, index: number) => ({
+        products: products.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
             index_under_family: product.index_under_family || index,

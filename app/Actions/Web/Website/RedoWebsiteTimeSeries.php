@@ -13,9 +13,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Web\Website;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class RedoWebsiteTimeSeries implements ShouldBeUnique
 {
@@ -34,7 +32,7 @@ class RedoWebsiteTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(string $from, string $to): string
     {
-        return "{$from}_{$to}";
+        return "{$from}_$to";
     }
 
     public function handle(?int $websiteId, ?string $from = null, ?string $to = null, bool $async = false): void
@@ -63,26 +61,11 @@ class RedoWebsiteTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessWebsiteTimeSeriesRecords::dispatch($website->id, $frequency, $from, $to);
+                ProcessWebsiteTimeSeriesRecords::dispatch($website->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessWebsiteTimeSeriesRecords::run($website->id, $frequency, $from, $to);
             }
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
-
-        $query->chunk(1000, function (Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                try {
-                    $this->handle($modelId->id, $from, $to, false);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
 }

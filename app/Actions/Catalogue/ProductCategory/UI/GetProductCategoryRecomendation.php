@@ -10,70 +10,68 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\Product\UI\IndexProducts;
 use App\Actions\OrgAction;
-use App\Http\Resources\Catalogue\ProductsResource;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Services\QueryBuilder;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class GetProductCategoryRecomendation extends OrgAction
 {
-
-    public function handle(ProductCategory $productCategory): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, bool $includeMasterRelatedProducts = false): Collection
     {
-        $productCategory->refresh();
+        $localRecommendations = DB::table('product_category_has_related_products')
+            ->leftJoin('products', 'product_id', 'products.id')
+            ->where('product_category_id', $productCategory->id)
+            ->whereNotNull('products.id')
+            ->orderBy('product_category_has_related_products.position')
+            ->select([
+                'products.id',
+                'products.slug',
+                'products.code',
+                'products.name',
+                'products.web_images',
+                DB::raw('product_category_has_related_products.position as position'),
+            ])->get();
 
-        $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
-        $queryBuilder->leftJoin('currencies', 'currencies.id', 'shops.currency_id');
-        $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('variants as variant', 'variant.id', '=', 'products.variant_id');
-        $queryBuilder->where('products.is_main', true);
-        $queryBuilder->whereNull('products.exclusive_for_customer_id');
-        $queryBuilder->leftJoin('assets', 'products.asset_id', 'assets.id');
-        $queryBuilder->whereIn('products.id', $productCategory->relatedProducts->pluck('id'));
-        $queryBuilder->leftJoin('product_category_has_related_products', function ($join) use ($productCategory) {
-            $join->on('products.id', '=', 'product_category_has_related_products.product_id')
-                ->where('product_category_has_related_products.product_category_id', '=', $productCategory->id);
-        });
+        if (!$productCategory->master_product_category_id) {
+            return $localRecommendations;
+        }
 
-        $selects = [
-            'products.id',
-            'products.code',
-            'products.name',
-            'products.state',
-            'products.price',
-            'products.rrp',
-            'products.unit',
-            'products.is_for_sale',
-            'products.created_at',
-            'products.updated_at',
-            'products.slug',
-            'products.asset_id',
-            'products.available_quantity',
-            'products.units',
-            'products.web_images',
-            DB::raw('products.price / products.units as rrp_per_unit'),
-            'currencies.code as currency_code',
-            'variant.slug as variant_slug',
-            'variant.code as variant_code',
-            'products.is_variant_leader as is_variant_leader',
-            'products.master_product_id',
-            'assets.health_rank',
-            'product_category_has_related_products.position'
-        ];
+        $masterRecommendations = DB::table('master_product_category_has_related_assets')
+            ->leftJoin('products', function ($join) use ($productCategory) {
+                $join->on('products.master_product_id', '=', 'master_product_category_has_related_assets.master_asset_id')
+                    ->where('products.shop_id', '=', $productCategory->shop_id);
+            })
+            ->where('master_product_category_has_related_assets.master_product_category_id', $productCategory->master_product_category_id)
+            ->whereNotNull('products.id')
+            ->orderBy('master_product_category_has_related_assets.position')
+            ->select([
+                'products.id',
+                'products.slug',
+                'products.code',
+                'products.name',
+                'products.web_images',
+                DB::raw('master_product_category_has_related_assets.position as position'),
+            ])->get();
 
-        $queryBuilder
-            ->with('orgStocks')
-            ->select($selects)
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id')
-            ->orderBy('product_category_has_related_products.position', 'asc');
+        if (!$includeMasterRelatedProducts) {
+            return $localRecommendations;
+        }
 
-        return $queryBuilder
-                ->withPaginator(null, tableName: request()->route()->getName())
-                ->withQueryString();
+        $mergedRecommendations = $localRecommendations->values();
+        $existingProductIds = $localRecommendations->pluck('id')->all();
+        $nextPosition = (int) ($localRecommendations->max('position') ?? 0);
+
+        foreach ($masterRecommendations as $masterRecommendation) {
+            if (\in_array($masterRecommendation->id, $existingProductIds, true)) {
+                continue;
+            }
+
+            $nextPosition++;
+            $masterRecommendation->position = $nextPosition;
+            $mergedRecommendations->push($masterRecommendation);
+        }
+
+        return $mergedRecommendations;
     }
 }

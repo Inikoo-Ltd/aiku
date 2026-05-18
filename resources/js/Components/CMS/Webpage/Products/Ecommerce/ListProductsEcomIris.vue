@@ -19,7 +19,7 @@ import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
 import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import ReviewFamily from "@/Components/CMS/Reviews/ReviewFamily.vue"
 import { useFormatTime } from "@/Composables/useFormatTime";
 
@@ -50,7 +50,7 @@ const props = defineProps<{
     webpageData?: any
     blockData?: {}
     screenType: "mobile" | "tablet" | "desktop"
-    code:string
+    code : string
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)

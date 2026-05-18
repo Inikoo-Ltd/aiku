@@ -20,17 +20,20 @@ class SyncShopRelatedProductsFromMasterCategory
     public function handle(MasterProductCategory $masterProductCategory): void
     {
         foreach ($masterProductCategory->productCategories as $productCategory) {
+            if (!data_get($productCategory->shop->settings, 'catalog.related_product_follow_master', false)) {
+                continue;
+            }
+
             $productIds = [];
             foreach ($masterProductCategory->relatedMasterAssets as $masterAsset) {
                 $product = Product::where('shop_id', $productCategory->shop_id)->where('master_product_id', $masterAsset->id)->first();
                 if ($product) {
-                    $productIds[] = [
-                        'id' => $product->id,
-                        'position' => $masterAsset->pivot->position
-                    ];
+                    $productIds[] = $product->id;
                 }
             }
-            SyncProductCategoryRelatedProducts::make()->action($productCategory, ['product_ids' => $productIds]);
+            SyncProductCategoryRelatedProducts::make()->action($productCategory, [
+                'product_ids' => $productIds
+            ]);
         }
     }
 }

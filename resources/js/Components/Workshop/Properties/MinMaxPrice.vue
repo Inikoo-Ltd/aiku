@@ -6,7 +6,7 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 
 const props = withDefaults(defineProps<{
-  modelValue: Record<string, any> | null,
+  modelValue?: Record<string, any> | null,
   name?: string,
   min?: number,
   max?: number

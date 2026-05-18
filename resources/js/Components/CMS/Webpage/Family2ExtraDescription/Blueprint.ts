@@ -22,59 +22,6 @@ export default {
 				options : [ "Image-left", "Image-right" ],
 			}
 		},
-		/* {
-			name: "Image",
-			key: ["image"],
-			replaceForm: [
-				{
-					key: ["source"],
-					label: "Image",
-					type: "image-cropped",
-					props_data: {
-						stencilProps: {
-							aspectRatio: [16 / 9, null],
-							movable: true,
-							scalable: true,
-							resizable: true,
-						},
-					},
-				},
-				{
-					key: ["alt"],
-					label: "Alternate Text",
-					type: "text",
-				},
-				{
-					key: ["link"],
-					label: "Link",
-					type: "link",
-				},
-				{
-					key: ['container',"properties",'dimension'],
-					label: "Dimension",
-					type: "dimension",
-					useIn: ["desktop", "tablet", "mobile"],
-				}
-			]
-		}, */
-		/* {
-			name: "Text Block",
-			key: ["text_block"],
-			replaceForm: [
-				{
-					key: ["properties", "padding"],
-					useIn: ["desktop", "tablet", "mobile"],
-					label: "Padding",
-					type: "padding",
-				},
-				{
-					key: ["properties", "margin"],
-					useIn: ["desktop", "tablet", "mobile"],
-					label: "Margin",
-					type: "margin",
-				},
-			],
-		}, */
 		{
 			name: "Button",
 			key: ["button"],
@@ -89,35 +36,6 @@ export default {
 					key: ["text"],
 					label: "Text",
 					type: "text",
-				},
-				{
-					key: ["container", "properties", "text"],
-					type: "textProperty",
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["container", "properties", "background"],
-					label: "Background",
-					type: "background",
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["container", "properties", "margin"],
-					label: "Margin",
-					type: "margin",
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["container", "properties", "padding"],
-					label: "Padding",
-					type: "padding",
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["container", "properties", "border"],
-					label: "Border",
-					type: "border",
-					useIn: ["desktop", "tablet", "mobile"],
 				},
 			],
 		},

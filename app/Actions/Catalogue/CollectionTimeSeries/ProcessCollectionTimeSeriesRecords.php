@@ -32,7 +32,6 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $collectionId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-
         $from .= ' 00:00:00';
         $to   .= ' 23:59:59';
 
@@ -55,8 +54,6 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(CollectionTimeSeries $timeSeries, string $from, string $to): void
     {
-        $processedPeriods = [];
-
         $assetsIDs = $timeSeries->collection->products->pluck('id')->unique()->toArray();
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')

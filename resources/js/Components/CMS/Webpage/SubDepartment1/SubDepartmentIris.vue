@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { faGalaxy, faTimesCircle } from "@fas";
 import { getStyles } from "@/Composables/styles"
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import { computed, ref, inject } from "vue";
 import {
   faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse,
@@ -44,7 +44,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: object
   screenType: 'mobile' | 'tablet' | 'desktop'
-  indexBlock:number
+  indexBlock?:number | string
 }>();
 
 const fallbackPerRow = {

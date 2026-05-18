@@ -131,6 +131,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_spaces_state_reserved
  * @property int $number_spaces_state_renting
  * @property int $number_spaces_state_finished
+ * @property int $number_pallets_state_not_picked
+ * @property int $number_pallets_with_stored_items_state_not_picked
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read \App\Models\Fulfilment\RecurringBill|null $currentRecurringBill
  * @property-read Customer|null $customer

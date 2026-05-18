@@ -17,6 +17,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Sentry;
 
 class StoreShopifyProductVariant extends RetinaAction
@@ -37,7 +38,7 @@ class StoreShopifyProductVariant extends RetinaAction
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            Log::error("Failed to initialize Shopify GraphQL client");
 
             return [false, 'Failed to initialize Shopify GraphQL client'];
         }
@@ -48,12 +49,12 @@ class StoreShopifyProductVariant extends RetinaAction
 
         $productID = $portfolio->platform_product_id;
 
-        if(! $portfolio->sku) {
+        if (! $portfolio->sku) {
             return [false, 'Portfolio does not contains SKU'];
         }
 
         if (!$productID) {
-            Sentry::captureMessage("No Shopify product ID found in portfolio");
+            Log::error("No Shopify product ID found in portfolio C");
 
             return [false, 'No Shopify product ID found in portfolio'];
         }
@@ -149,7 +150,7 @@ class StoreShopifyProductVariant extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product variant update failed A: ".$errorMessage);
+                Log::error("Product variant update failed A: ".$errorMessage);
 
                 return [false, $errorMessage];
             }
@@ -163,7 +164,7 @@ class StoreShopifyProductVariant extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product variant update failed B: ".$errorMessage);
+                Log::error("Product variant update failed B: ".$errorMessage);
 
 
                 return [false, $errorMessage];

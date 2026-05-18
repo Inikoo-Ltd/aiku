@@ -17,7 +17,7 @@ library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, f
 import { router } from '@inertiajs/vue3';
 import { useGenerateAIImages } from '@/Composables/useGenerateAIImages';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
-import Image from '../Image.vue';
+import Image from '../../Common/Components/Image.vue';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useLocaleStore } from "@/Stores/locale"
 import { useConfirm, ConfirmDialog } from "primevue"
@@ -42,9 +42,9 @@ const showGenerateModalAI = ref<boolean>(false)
 const customerChannelsId = ref<string | null>(null)
 
 const customerChannelOptions = computed(() => {
-    const data = layout?.user.customerSalesChannels
+    const data = layout?.user?.customerSalesChannels
 
-    return data ? Object.values(data) : []
+    return data && typeof data === 'object' ? Object.values(data) : []
 })
 
 const resolveParams = (config: any) => {

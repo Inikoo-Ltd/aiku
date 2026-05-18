@@ -9,7 +9,7 @@ type Offer = {
 
 const props = defineProps<{
     template : string
-    use_duration : boolean
+    use_duration?: boolean
     offer: {
         offers: Offer[]
     }

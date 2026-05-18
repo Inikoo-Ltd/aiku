@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { ref, onMounted, onBeforeUnmount } from "vue"
 import Moveable from "vue3-moveable"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"

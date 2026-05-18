@@ -20,6 +20,7 @@ use App\Models\Helpers\Media;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Sentry;
 
@@ -32,12 +33,12 @@ class StoreShopifyProduct extends RetinaAction
     {
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $portfolio->customerSalesChannel->user;
-        $website = $portfolio->customerSalesChannel?->shop?->website;
+        $website     = $portfolio->customerSalesChannel?->shop?->website;
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            Log::error("Failed to initialize Shopify GraphQL client");
 
             return [false, 'Failed to initialize Shopify GraphQL client'];
         }
@@ -100,7 +101,7 @@ class StoreShopifyProduct extends RetinaAction
             MUTATION;
 
 
-            $customAttributes = [];
+            $customAttributes     = [];
             $tradeUnitAttachments = Arr::get($this->getAttachmentData($product), 'public', []);
             foreach ($tradeUnitAttachments as $key => $tradeUnitAttachment) {
                 /** @var Media|null $attachment */
@@ -108,27 +109,27 @@ class StoreShopifyProduct extends RetinaAction
 
                 if ($attachment) {
                     $customAttributes[] = [
-                        'id' => (string)$attachment->id,
-                        'name' => '<strong>' . Arr::get($tradeUnitAttachment, 'label') . '</strong>',
-                        'option' => '<a href="https://' . $website?->domain . '/attachment/'.$attachment->ulid.'/download' . '">' .
-                            Arr::get($tradeUnitAttachment, 'label') . '</a>'
+                        'id'     => (string)$attachment->id,
+                        'name'   => '<strong>'.Arr::get($tradeUnitAttachment, 'label').'</strong>',
+                        'option' => '<a href="https://'.$website?->domain.'/attachment/'.$attachment->ulid.'/download'.'">'.
+                            Arr::get($tradeUnitAttachment, 'label').'</a>'
                     ];
                 }
             }
 
             $attachmentLinks = '';
             foreach ($customAttributes as $attr) {
-                $attachmentLinks .= $attr['name'] . ': ' . $attr['option'] . '<br>';
+                $attachmentLinks .= $attr['name'].': '.$attr['option'].'<br>';
             }
 
-            $description = '<br><br>' . $attachmentLinks;
+            $description = '<br><br>'.$attachmentLinks;
 
             // Prepare variables for the mutation
             $variables = [
                 'product' => [
                     'title'           => $product->name,
-                    'handle'          => Str::slug($product->name) . substr(now()->timestamp, -3),
-                    'descriptionHtml' => $product->description.' '.$product->description_extra . ' ' .$description,
+                    'handle'          => Str::slug($product->name).substr(now()->timestamp, -3),
+                    'descriptionHtml' => $product->description.' '.$product->description_extra.' '.$description,
                     'productType'     => $product->family?->name,
                     'vendor'          => $product->shop->name,
                     'tags'            => $product->tags()->pluck('name')->toArray()
@@ -152,7 +153,7 @@ class StoreShopifyProduct extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product creation failed: ".$errorMessage);
+                Log::error("Product creation failed: ".$errorMessage);
 
                 return [false, $errorMessage];
             }
@@ -166,7 +167,7 @@ class StoreShopifyProduct extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product creation failed: ".$errorMessage);
+                Log::error("Product creation failed: ".$errorMessage);
 
                 return [false, $errorMessage];
             }
@@ -178,7 +179,7 @@ class StoreShopifyProduct extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => ['No product data in response']
                 ]);
-                Sentry::captureMessage("Product creation failed: No product data in response");
+                Log::error("Product creation failed: No product data in response");
 
                 return [false, 'No product data in response'];
             }
@@ -300,7 +301,7 @@ class StoreShopifyProduct extends RetinaAction
             ['Images Count', count($result['images'] ?? [])]
         ]);
 
-        // Display variants information if available
+        // Display variant information if available
         if (!empty($result['variants'])) {
             $command->info("\nVariants Information:");
             $variantData = [];

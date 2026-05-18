@@ -8,7 +8,7 @@ import { Navigation } from "swiper/modules"
 import "swiper/css"
 import "swiper/css/navigation"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 
@@ -46,7 +46,7 @@ const showTriggers = computed(() => {
     !(layout?.user?.gr_data?.amnesty ||
       layout?.user?.gr_data?.customer_is_gr) &&
     bestOffer.value.type ===
-      "Category Quantity Ordered Order Interval"
+    "Category Quantity Ordered Order Interval"
   )
 })
 
@@ -92,27 +92,19 @@ const cleanedDescription = computed(() => {
 </script>
 
 <template>
-  <div
-    :id="fieldValue?.id ? fieldValue?.id : 'family-3' + indexBlock"
-    :style="{
-      ...getStyles(
-        layout?.app?.webpage_layout?.container?.properties,
-        screenType
-      ),
-      ...getStyles(
-        fieldValue?.container?.properties,
-        screenType
-      )
-    }"
-  >
-    <div class="w-full px-4 py-6">
-      <div
-        class="grid grid-cols-1 lg:grid-cols-2 md:gap-8 gap-0 lg:gap-12 items-start"
-      >
-        <div
-          class="flex flex-col gap-5 min-w-0"
-          :class="imageOrder"
-        >
+  <div :id="fieldValue?.id ? fieldValue?.id : 'family-3' + indexBlock" :style="{
+    ...getStyles(
+      layout?.app?.webpage_layout?.container?.properties,
+      screenType
+    ),
+    ...getStyles(
+      fieldValue?.container?.properties,
+      screenType
+    )
+  }">
+    <div class="w-full px-4" id="family-description">
+      <div class="grid grid-cols-1 lg:grid-cols-2 md:gap-8 gap-0 lg:gap-12 items-start">
+        <div class="flex flex-col gap-5 min-w-0" :class="imageOrder">
 
           <!-- TITLE -->
           <div class="space-y-2">
@@ -125,34 +117,19 @@ const cleanedDescription = computed(() => {
           <div class="w-full relative hidden md:block">
 
             <!-- NAVIGATION -->
-            <div
-              v-if="images.length > 3"
-              :class="`nav-btn left-3 swiper-btn-prev-${swiperId}`"
-            >
-              <FontAwesomeIcon
-                :icon="faChevronCircleLeft"
-              />
+            <div v-if="images.length > 3" :class="`nav-btn left-3 swiper-btn-prev-${swiperId}`">
+              <FontAwesomeIcon :icon="faChevronCircleLeft" />
             </div>
 
-            <div
-              v-if="images.length > 3"
-              :class="`nav-btn right-3 swiper-btn-next-${swiperId}`"
-            >
-              <FontAwesomeIcon
-                :icon="faChevronCircleRight"
-              />
+            <div v-if="images.length > 3" :class="`nav-btn right-3 swiper-btn-next-${swiperId}`">
+              <FontAwesomeIcon :icon="faChevronCircleRight" />
             </div>
 
             <!-- SWIPER -->
-            <Swiper
-              :key="images.length"
-              :modules="[Navigation]"
-              :loop="images.length > 3"
-              :navigation="{
-                prevEl: `.swiper-btn-prev-${swiperId}`,
-                nextEl: `.swiper-btn-next-${swiperId}`
-              }"
-              :breakpoints="{
+            <Swiper :key="images.length" :modules="[Navigation]" :loop="images.length > 3" :navigation="{
+              prevEl: `.swiper-btn-prev-${swiperId}`,
+              nextEl: `.swiper-btn-next-${swiperId}`
+            }" :breakpoints="{
                 0: {
                   slidesPerView: 1,
                   spaceBetween: 12
@@ -165,21 +142,11 @@ const cleanedDescription = computed(() => {
                   slidesPerView: 3,
                   spaceBetween: 20
                 }
-              }"
-            >
-              <SwiperSlide
-                v-for="(img, i) in images"
-                :key="i"
-              >
-                <div
-                  class="relative w-full aspect-square overflow-hidden rounded-2xl bg-gray-100"
-                >
-                  <Image
-                    :src="img.original"
-                    :imageCover="true"
-                    :alt="`image-description-${i}`"
-                    class="absolute inset-0 w-full h-full object-cover transition duration-300 hover:scale-105"
-                  />
+              }">
+              <SwiperSlide v-for="(img, i) in images" :key="i">
+                <div class="relative w-full aspect-square overflow-hidden rounded-2xl bg-gray-100">
+                  <Image :src="img.original" :imageCover="true" :alt="`image-description-${i}`"
+                    class="absolute inset-0 w-full h-full object-cover transition duration-300 hover:scale-105" />
                 </div>
               </SwiperSlide>
             </Swiper>
@@ -187,10 +154,7 @@ const cleanedDescription = computed(() => {
           </div>
         </div>
 
-        <div
-          class="flex flex-col min-w-0"
-          :class="textOrder"
-        >
+        <div class="flex flex-col min-w-0" :class="textOrder">
 
 
           <div class="discount-wrapper" :class="{
@@ -199,51 +163,31 @@ const cleanedDescription = computed(() => {
               !fieldValue?.family?.offers_data?.number_offers
           }">
 
-            <DiscountByType
-              v-if="showTriggers"
-              :offers_data="
-                fieldValue?.family?.offers_data
-              "
-              template="triggers_labels"
-              class="discount-pill"
-            />
+            <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data
+              " template="triggers_labels" class="discount-pill" />
 
-            <DiscountByType
-              :offers_data="
-                fieldValue?.family?.offers_data
-              "
-              template="active-inactive-gr"
-              class="discount-pill"
-            />
+            <DiscountByType :offers_data="fieldValue?.family?.offers_data
+              " template="active-inactive-gr" class="discount-pill" />
 
           </div>
 
           <!-- DESCRIPTION -->
-          <div
-            v-html="cleanedDescription"
-            class="description-content"
-          />
+          <div v-html="cleanedDescription" class="description-content" />
 
           <!-- BUTTON -->
-          <div class="mt-3 text-center md:text-left">
-            <LinkIris
-              :href="fieldValue?.button?.link?.href"
-              :target="fieldValue?.button?.link?.target"
-            >
-              <Button
-                 id="family-3-button"
-                :label="fieldValue?.button?.text"
-                :injectStyle="
-                  getStyles(
-                    fieldValue?.button?.container
-                      ?.properties,
-                    screenType
-                  )
-                "
-              />
-            </LinkIris>
-          </div>
+          <div class="mt-3 text-center md:text-right">
+           <!--  <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"> -->
+              <a href="#family-extra-description">
+              <button id="family-3-button" :label="fieldValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
+             text-sm md:text-base font-medium
+             hover:underline underline-offset-4 mr-5 italic
+             transition-all duration-200">{{ fieldValue?.button?.text }}</button>
 
+            </a>
+
+      
+     <!--        </LinkIris> -->
+          </div>
         </div>
 
       </div>
@@ -252,27 +196,13 @@ const cleanedDescription = computed(() => {
 </template>
 
 <style scoped>
-
-
 .product-title {
-  @apply text-2xl
-  font-semibold
-  text-gray-900
-  leading-tight
-  break-words
-  md:text-start
-  text-center
+  @apply text-2xl font-semibold text-gray-900 leading-tight break-words md:text-start text-center min-h-[40px]
 }
 
 
-
 .description-content {
-  @apply text-sm
-  md:text-base
-  text-gray-600
-  leading-7
-  text-center
-  md:text-left;
+  @apply text-sm md:text-base text-gray-600 leading-7 text-center md:text-left;
 }
 
 .description-content :deep(p) {
@@ -282,67 +212,42 @@ const cleanedDescription = computed(() => {
 .description-content :deep(h2),
 .description-content :deep(h3),
 .description-content :deep(h4) {
-  @apply text-gray-900
-  font-semibold
-  mt-6
-  mb-3;
+  @apply text-gray-900 font-semibold mt-6 mb-3;
 }
 
 .description-content :deep(ul) {
-  @apply list-disc
-  pl-5
-  space-y-2;
+  @apply list-disc pl-5 space-y-2;
 }
 
 .description-content :deep(ol) {
-  @apply list-decimal
-  pl-5
-  space-y-2;
+  @apply list-decimal pl-5 space-y-2;
+}
+
+
+.description-content :deep(ul) {
+  @apply list-disc pl-5 ml-0 mt-2 space-y-2 list-outside;
 }
 
 .discount-wrapper {
-  @apply flex
-  flex-wrap
-  items-center
-  justify-center
-  gap-2
-  min-w-0
-  md:justify-start
-  mt-3
-  md:mt-0
-  min-h-[40px];
+  @apply flex flex-wrap items-stretch justify-center gap-2 min-w-0 md:justify-start mt-3 md:mt-1 min-h-[40px];
 }
 
 .discount-pill {
-  @apply min-w-0 md:max-w-[50%] max-w-full;
+  @apply flex min-w-0 md:max-w-[50%] max-w-full self-stretch;
 }
 
+
 .discount-wrapper :deep(.offer-max-discount) {
-  @apply flex
-  items-center
-  rounded-lg
-  overflow-hidden
-  border
-  border-gray-200
-  bg-white
-  shadow-sm
-  h-[38px];
+  @apply flex items-center rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm h-[38px];
 }
 
 .discount-wrapper :deep(.volume-discount-label) {
-  @apply justify-start
+  @apply justify-start mb-0
 }
 
 /* LEFT SIDE */
 .discount-wrapper :deep(.discount-percentage) {
-  @apply flex
-  items-center
-  justify-center
-  font-bold
-  text-sm
-  px-3
-  w-fit
-  whitespace-nowrap;
+  @apply flex items-center justify-center font-bold text-sm px-3 w-fit whitespace-nowrap;
 }
 
 .discount-wrapper :deep(.percentage-text) {
@@ -351,51 +256,31 @@ const cleanedDescription = computed(() => {
 
 /* RIGHT SIDE */
 .discount-wrapper :deep(.discount-content) {
-  @apply flex
-  items-center
-  gap-1
-  px-3
-  min-w-0
-  h-full
-  bg-white;
+  @apply flex items-center gap-1 px-3 min-w-0 h-full bg-white;
 }
 
 .discount-wrapper :deep(.discount-content > div) {
-  @apply min-w-0 ;
+  @apply min-w-0;
 }
 
 /* TITLE */
 .discount-wrapper :deep(.discount-title) {
-  @apply text-[11px]
-  font-medium
-  text-gray-700
-  leading-tight
-  truncate;
+  @apply text-[11px] font-medium text-gray-700 leading-tight truncate;
 }
 
 /* SUBTEXT */
 .discount-wrapper :deep(.discount-triggers) {
-  @apply text-xs 
-  leading-tight
-  truncate;
+  @apply text-xs leading-tight truncate;
 }
 
 
 .discount-wrapper :deep(.gr-wrapper) {
-  @apply flex
-  items-center
-  gap-1
-  rounded-lg
-  border
-  shadow-sm
-  px-3
-  h-[38px]
-  w-fit
+  @apply flex items-center gap-1 rounded-lg border shadow-sm px-3 min-h-[43px] h-full mb-0 md:w-[47%] w-full;
 }
+
+
 .discount-wrapper :deep(.inactive-text) {
-  @apply text-xs 
-  truncate
-  leading-tight;
+  @apply text-xs truncate;
 }
 
 .discount-wrapper :deep(.gr-content) {
@@ -405,41 +290,31 @@ const cleanedDescription = computed(() => {
 
 .discount-wrapper :deep(.info-icon),
 .discount-wrapper :deep(.gr-info-icon) {
-  @apply flex
-  items-center
-  justify-center
-  flex-shrink-0;
+  @apply flex items-center justify-center flex-shrink-0;
 }
 
 .discount-wrapper :deep(svg) {
-  @apply w-3
-  h-3;
+  @apply w-3 h-3;
 }
 
 
 .discount-wrapper :deep(.gr-logo) {
-  @apply h-4
-  w-auto;
+  @apply h-4 w-auto;
 }
 
 
 .discount-wrapper :deep(.info-icon),
 .discount-wrapper :deep(.gr-info-icon) {
-  @apply flex
-  items-center
-  justify-center
-  flex-shrink-0;
+  @apply flex items-center justify-center flex-shrink-0;
 }
 
 .discount-wrapper :deep(svg) {
-  @apply w-3
-  h-3;
+  @apply w-3 h-3;
 }
 
 
 .discount-wrapper :deep(.gr-logo) {
-  @apply h-4
-  w-auto;
+  @apply h-4 w-auto;
 }
 
 
@@ -452,21 +327,14 @@ const cleanedDescription = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-
   width: 36px;
   height: 36px;
-
   border-radius: 9999px;
-
-  background: rgba(255, 255, 255, 0.9);
-
   cursor: pointer;
 
   font-size: 18px;
   color: #111;
 
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.08);
 
   transition: 0.2s ease;
 }

@@ -8,6 +8,9 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
+use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\Pallet\PickWholePalletInPalletReturn;
@@ -25,6 +28,7 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -36,26 +40,34 @@ class PickedPalletReturn extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(PalletReturn $palletReturn, array $modelData = []): PalletReturn
+    public function handle(PalletReturn $palletReturn, array $modelData = [], ?User $user = null): PalletReturn
     {
         $modelData[PalletReturnStateEnum::PICKED->value.'_at']   = now();
         $modelData['state']                                      = PalletReturnStateEnum::PICKED;
+        if ($user) {
+            $modelData['packer_user_id'] = $user->id;
+        }
 
         $palletReturn = $this->update($palletReturn, $modelData);
 
         if ($palletReturn->type != PalletReturnTypeEnum::PALLET) {
             abort(419);
         }
-        $unpickedPallets = $palletReturn->pallets->filter(
-            fn ($pallet) =>
-        $pallet->pivot->state !== PalletReturnItemStateEnum::PICKED->value &&
-        $pallet->pivot->state !== PalletReturnItemStateEnum::NOT_PICKED->value
+        $pendingPallets = $palletReturn->pallets->filter(
+            fn ($pallet) => $pallet->pivot->state === PalletReturnItemStateEnum::PICKING->value
         );
-        foreach ($unpickedPallets as $pallet) {
+        foreach ($pendingPallets as $pallet) {
             $palletReturnItem = PalletReturnItem::find($pallet->pivot->id);
             PickWholePalletInPalletReturn::make()->action($palletReturnItem, []);
         }
-        AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturn);
+        // AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturn);
+
+        $pickingSessions = $palletReturn->pickingSessions()->get();
+        foreach ($pickingSessions as $pickingSession) {
+            (new CalculateFulfilmentPickingSessionPicks())->action($pickingSession);
+            (new AutoFinishPickingFulfilmentPickingSession())->action($pickingSession);
+            (new AutoFinishPackingFulfilmentPickingSession())->action($pickingSession);
+        }
 
         GroupHydratePalletReturns::dispatch($palletReturn->group);
         OrganisationHydratePalletReturns::dispatch($palletReturn->organisation);
@@ -87,7 +99,9 @@ class PickedPalletReturn extends OrgAction
     {
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        $user = $request->user();
+
+        return $this->handle($palletReturn, $this->validatedData, $user instanceof User ? $user : null);
     }
 
     /**
@@ -97,7 +111,9 @@ class PickedPalletReturn extends OrgAction
     {
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        $user = $request->user();
+
+        return $this->handle($palletReturn, $this->validatedData, $user instanceof User ? $user : null);
     }
 
     /**

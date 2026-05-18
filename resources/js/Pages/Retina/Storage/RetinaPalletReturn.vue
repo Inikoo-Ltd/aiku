@@ -577,7 +577,7 @@ const openModalAddPallet = ref(false)
         :key="timeline.state"
         :state="timeline.state"
         :tab="currentTab"
-        :route_checkmark="currentTab == 'pallets' ? routeStorePallet : route_check_stored_items"
+        :route_checkmark="currentTab == 'pallets' || currentTab == 'goods' ? routeStorePallet : route_check_stored_items"
         :palletReturn="data?.data"
         :detachRoute="attachmentRoutes.detachRoute"
     >

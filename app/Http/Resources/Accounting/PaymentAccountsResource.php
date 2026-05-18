@@ -41,6 +41,7 @@ class PaymentAccountsResource extends JsonResource
             'payment_service_provider_slug' => $this->payment_service_provider_slug,
             'payment_service_provider_name' => $this->payment_service_provider_name,
             'payment_service_provider_code' => $this->payment_service_provider_code,
+            'org_payment_service_provider_slug' => $this->org_payment_service_provider_slug,
         );
     }
 }

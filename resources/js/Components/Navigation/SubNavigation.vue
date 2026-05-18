@@ -19,6 +19,7 @@ interface SubNav {
         icon: string | string[]
         tooltip: string
     }
+    active?: boolean
     align: "left" | "right"
     root?: string
     route: routeType
@@ -34,6 +35,9 @@ const isLoading = ref<string | boolean | number>(false)
 const locale = inject("locale", aikuLocaleStructure)
 
 const isSubNavActive = (subNav: SubNav) => {
+    if (typeof subNav.active === 'boolean') {
+        return subNav.active
+    }
     const isRouteIncludeRoot = layout.currentRoute.includes(subNav.root || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx')
     const isRouteSameAsRoot = layout.currentRoute === subNav.route?.name
     const isLayoutRootActiveExist = subNav.route?.name?.includes(layout.root_active || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx')

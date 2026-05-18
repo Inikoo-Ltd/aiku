@@ -18,7 +18,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faDesktopAlt, faQuestionCircle } from '@far'
 import { faWindows } from '@fortawesome/free-brands-svg-icons'
 import { faServer } from '@fas'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 
 library.add(faReceipt, faCrown,faRoad, faQuestionCircle ,faServer ,faDesktopAlt, faWindows,faUserCircle, faUserSlash, faBlender, faTimes, faCheck, faYinYang)
 

@@ -57,6 +57,7 @@ trait HasBasketDetails
 
     protected function getGrGifts(Order $order): array
     {
+        // For Retina: Basket page
         $grGifts = [
             'status'      => false,
             'is_eligible' => false,
@@ -89,6 +90,11 @@ trait HasBasketDetails
                 'is_eligible' => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
                 'meter'       => [$order->gross_amount, Arr::get($offersData, 'gr.gifts_min_amount', 0)],
                 'gifts'       => $grGiftsData,
+                'is_gift_opted_out'     => (bool) Arr::get($order->customer->settings, 'is_gift_opted_out', false),
+                'route_customer_update' => [
+                    'name'       => 'retina.models.customer.update',
+                    'parameters' => ['customer' => $order->customer->id],
+                ],
             ];
         }
 

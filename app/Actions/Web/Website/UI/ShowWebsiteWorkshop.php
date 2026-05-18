@@ -229,7 +229,8 @@ class ShowWebsiteWorkshop extends OrgAction
                 'publishRoute' => [
                     'website_layout' =>  [
                         'method'     => 'patch',
-                        'name'       => 'grp.models.website.update',
+                       /*  'name'       => 'grp.models.website.update', */
+                        'name'       => 'grp.models.website.update.theme',
                         'parameters' => [
                             'website' => $website->id
                         ]

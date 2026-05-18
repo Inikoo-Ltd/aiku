@@ -17,15 +17,15 @@ enum CustomerDropshippingTabsEnum: string
     use HasTabs;
 
     case SHOWCASE            = 'showcase';
-    case HISTORY             = 'history';
     case TIMELINE            = 'timeline';
+
+    case HISTORY             = 'history';
     case ATTACHMENTS         = 'attachments';
-    // case DISPATCHED_EMAILS   = 'dispatched_emails';
-    case PAYMENTS = 'payments';
+    case PAYMENTS            = 'payments';
     case CREDIT_TRANSACTIONS = 'credit_transactions';
     case FAVOURITES          = 'favourites';
     case REMINDERS           = 'reminders';
-    case DISPATCHED_EMAILS           = 'dispatched_emails';
+    case DISPATCHED_EMAILS   = 'dispatched_emails';
 
 
     public function blueprint(): array
@@ -39,17 +39,18 @@ enum CustomerDropshippingTabsEnum: string
                 'title' => __('Timeline'),
                 'icon'  => 'fal fa-code-branch',
             ],
+
+            CustomerDropshippingTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
             CustomerDropshippingTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
                 'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon'
-            ],
-            CustomerDropshippingTabsEnum::DISPATCHED_EMAILS => [
-                'align' => 'right',
-                'title' => __('Dispatched emails'),
-                'icon'  => 'fal fa-paper-plane',
-                'type'  => 'icon',
             ],
             CustomerDropshippingTabsEnum::PAYMENTS => [
                 'align' => 'right',
@@ -63,11 +64,11 @@ enum CustomerDropshippingTabsEnum: string
                 'icon'  => 'fal fa-piggy-bank',
                 'type'  => 'icon',
             ],
-            CustomerDropshippingTabsEnum::HISTORY => [
-                'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+            CustomerDropshippingTabsEnum::FAVOURITES => [
+                'title' => __('Favourites'),
+                'icon'  => 'fal fa-heart',
                 'align' => 'right',
+                'type'  => 'icon',
             ],
             CustomerDropshippingTabsEnum::REMINDERS => [
                 'title' => __('Reminders'),
@@ -75,10 +76,10 @@ enum CustomerDropshippingTabsEnum: string
                 'align' => 'right',
                 'type'  => 'icon',
             ],
-            CustomerDropshippingTabsEnum::FAVOURITES => [
-                'title' => __('Favourites'),
-                'icon'  => 'fal fa-heart',
+            CustomerDropshippingTabsEnum::DISPATCHED_EMAILS => [
                 'align' => 'right',
+                'title' => __('Dispatched emails'),
+                'icon'  => 'fal fa-paper-plane',
                 'type'  => 'icon',
             ],
         };

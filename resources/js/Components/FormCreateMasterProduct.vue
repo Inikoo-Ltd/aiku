@@ -40,7 +40,7 @@ import { ulid } from "ulid";
 import { notify } from "@kyvg/vue3-notification";
 import { cloneDeep } from "lodash";
 import PureInputNumber from "./Pure/PureInputNumber.vue";
-import Image from "./Image.vue";
+import Image from "@common/Components/Image.vue";
 import { faPencil, faImage } from "@fal";
 import { faBoxUp } from "@fas";
 import Toggle from "./Pure/Toggle.vue";
