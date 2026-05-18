@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Tiktok\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
@@ -68,6 +69,16 @@ class StoreTiktokOrder extends RetinaAction
                 strict: false,
                 forceHydrators: true,
             );
+        }
+
+        $packageId = Arr::get($order, 'packages.0.id');
+        $package = $tiktokUser->getPackageDetail($packageId);
+        $handOverMethod = Arr::get($package, 'data.handover_method');
+
+        if($handOverMethod && $handOverMethod !== 'PICKUP') {
+            UpdateOrder::run($order, [
+                'shipping_notes' => __('We\'re unable to ship this order due to customer\'s default pickup method is not PICKUP. Please contact customer to change the pickup method to PICKUP. TikTok Order ID: .' . $order->platform_order_id)
+            ]);
         }
 
         try {
