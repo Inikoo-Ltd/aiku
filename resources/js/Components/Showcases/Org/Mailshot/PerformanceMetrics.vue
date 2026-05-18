@@ -71,6 +71,27 @@ const processTimeSeriesData = (period: string, metric: string) => {
 
 
 
+const totalValue = computed(() => {
+    if (!props.timeSeriesData || props.timeSeriesData.length === 0) {
+        return 0;
+    }
+    return props.timeSeriesData.reduce((sum, item) => {
+        switch (selectedMetric.value) {
+            case 'error': return sum + item.error;
+            case 'sent': return sum + item.sent;
+            case 'delivered': return sum + item.delivered;
+            case 'hard_bounce': return sum + item.hard_bounce;
+            case 'soft_bounce': return sum + item.soft_bounce;
+            case 'opened': return sum + item.opened;
+            case 'clicked': return sum + item.clicked;
+            case 'spam': return sum + item.spam;
+            case 'unsubscribed': return sum + item.unsubscribed;
+            case 'delay': return sum + item.delay;
+            default: return sum;
+        }
+    }, 0);
+});
+
 const chartData = computed(() => {
     const { labels, data } = processTimeSeriesData(selectedPeriod.value, selectedMetric.value);
 
@@ -177,6 +198,13 @@ const shouldShow = computed(() => {
                         {{ metric.label }}
                     </option>
                 </select>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <label for="average-select" class="text-sm font-medium text-gray-700">
+                    Total
+                </label>
+                <span class="text-sm font-bold text-gray-900">{{ totalValue.toLocaleString() }}</span>
             </div>
         </div>
 
