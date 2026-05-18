@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, watch } from "vue"
+import { computed, watch, ref } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Rating from "primevue/rating"
 import Textarea from "primevue/textarea"
+import Icon from "@/Components/Icon.vue"
 import type { Image as ImageProxy } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
 
@@ -34,12 +35,19 @@ const props = defineProps<{
         rating_e?: number | null
         message?: string | null
         image_thumbnail?: ImageProxy | string | null
+        images?: File[] | null
     }
 }>()
 
 const emit = defineEmits<{
     (event: "update:modelValue", value: typeof props.modelValue): void
 }>()
+
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const fileErrors = ref<string | null>(null)
+const imagePreviews = ref<{ file: File; objectURL: string }[]>([])
+const maxImageCount = 3
+const maxTotalBytes = 20 * 1024 * 1024
 
 const form = useForm({
     message: props.modelValue.message ?? "",
@@ -50,7 +58,83 @@ const form = useForm({
     rating_e: props.modelValue.rating_e ?? null,
     rating: props.modelValue.rating ?? null,
     status: props.modelValue.status ?? 'approved',
+    images: props.modelValue.images ?? [],
 })
+
+const totalSize = computed(() =>
+    (form.images ?? []).reduce(
+        (acc, file) => acc + (file?.size ?? 0),
+        0
+    )
+)
+
+const selectedImageCount = computed(() => (form.images ?? []).length)
+const totalSizeText = computed(() => formatSize(totalSize.value))
+
+const chooseFiles = () => {
+    fileInputRef.value?.click()
+}
+
+const clearImages = () => {
+    imagePreviews.value.forEach((item) => URL.revokeObjectURL(item.objectURL))
+    imagePreviews.value = []
+    form.images = []
+    fileErrors.value = null
+    if (fileInputRef.value) {
+        fileInputRef.value.value = ""
+    }
+}
+
+const removeImage = (index: number) => {
+    const [removed] = imagePreviews.value.splice(index, 1)
+
+    if (removed) {
+        URL.revokeObjectURL(removed.objectURL)
+    }
+
+    form.images = imagePreviews.value.map((item) => item.file)
+}
+
+const handleFileInputChange = (event: Event) => {
+    const input = event.target as HTMLInputElement
+
+    if (!input.files) {
+        return
+    }
+
+    const selectedFiles = Array.from(input.files)
+    const totalSelectedBytes = selectedFiles.reduce(
+        (acc, file) => acc + file.size,
+        0
+    )
+
+    if (selectedFiles.length > maxImageCount) {
+        fileErrors.value = trans(
+            "Please upload no more than {count} images.",
+            { count: maxImageCount }
+        )
+        input.value = ""
+        return
+    }
+
+    if (totalSelectedBytes > maxTotalBytes) {
+        fileErrors.value = trans(
+            "Total image size must not exceed {size}.",
+            { size: "20 MB" }
+        )
+        input.value = ""
+        return
+    }
+
+    fileErrors.value = null
+
+    imagePreviews.value.forEach((item) => URL.revokeObjectURL(item.objectURL))
+    imagePreviews.value = selectedFiles.map((file) => ({
+        file,
+        objectURL: URL.createObjectURL(file),
+    }))
+    form.images = selectedFiles
+}
 
 const ratingKeyMap = {
     a: "rating_a",
@@ -131,6 +215,21 @@ const averageRating = computed(() => {
     )
 })
 
+const formatSize = (bytes: number) => {
+    const k = 1024
+    const dm = 2
+    const sizes = ["B", "KB", "MB", "GB"]
+
+    if (bytes === 0) {
+        return "0 B"
+    }
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    const formattedSize = parseFloat((bytes / Math.pow(k, i)).toFixed(dm))
+
+    return `${formattedSize} ${sizes[i]}`
+}
+
 watch(
     averageRating,
     (value) => {
@@ -150,6 +249,7 @@ watch(
         rating_d: form.rating_d,
         rating_e: form.rating_e,
         rating: form.rating,
+        images: form.images,
     }),
     (value) => {
         emit("update:modelValue", {
@@ -263,6 +363,90 @@ watch(
                     :placeholder="trans('Tell people what you liked or disliked...')"
                     class="w-full rounded-xl"
                 />
+            </div>
+
+
+            <div class="space-y-2 pt-1">
+                <label class="text-sm font-medium text-gray-800">
+                    {{ trans("Your Image") }}
+                </label>
+
+                <p class="text-sm text-gray-500">
+                    {{ trans("Upload up to 3 images, total max 20 MB. Accepted formats: JPG, PNG, GIF.") }}
+                </p>
+
+                <div class="rounded-2xl border border-gray-200 bg-white p-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                @click="chooseFiles"
+                                class="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                            >
+                                <Icon :data="{ icon: 'fal fa-images', class: 'text-sm text-gray-500' }" />
+                                {{ trans("Choose images") }}
+                            </button>
+
+                            <button
+                                type="button"
+                                @click="clearImages"
+                                :disabled="selectedImageCount === 0"
+                                class="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <Icon :data="{ icon: 'fal fa-times', class: 'text-sm text-gray-500' }" />
+                                {{ trans("Clear all") }}
+                            </button>
+                        </div>
+
+                        <div class="text-sm text-gray-500">
+                            {{ selectedImageCount }} / 3 • {{ totalSizeText }}
+                        </div>
+                    </div>
+
+                    <input
+                        ref="fileInputRef"
+                        type="file"
+                        class="hidden"
+                        accept="image/*"
+                        multiple
+                        @change="handleFileInputChange"
+                    />
+
+                    <div v-if="fileErrors" class="mt-3 text-sm text-red-500">
+                        {{ fileErrors }}
+                    </div>
+
+                    <div v-if="imagePreviews.length" class="grid gap-3 pt-4 sm:grid-cols-3">
+                        <div
+                            v-for="(item, index) in imagePreviews"
+                            :key="item.file.name + item.file.size"
+                            class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50"
+                        >
+                            <img
+                                :src="item.objectURL"
+                                :alt="item.file.name"
+                                class="h-36 w-full object-cover"
+                            />
+
+                            <div class="space-y-1 p-3">
+                                <div class="truncate text-sm font-medium text-gray-800">
+                                    {{ item.file.name }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ formatSize(item.file.size) }}
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                @click="removeImage(index)"
+                                class="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-sm transition hover:bg-gray-100"
+                            >
+                                <Icon :data="{ icon: 'fal fa-times', class: 'text-xs' }" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

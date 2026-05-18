@@ -28,8 +28,8 @@ import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
 import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from "@kyvg/vue3-notification"
+import axios from "axios"
 import { router } from "@inertiajs/vue3"
-import { method } from "lodash"
 
 library.add(
     fadExclamationTriangle,
@@ -64,55 +64,73 @@ const openDialog = (item: any) => {
 }
 
 const saveProductReview = async () => {
+    console.log(selectedItem.value)
+
     const isUpdate = !!selectedItem.value?.product_review_rating
 
-    const routeConfig = isUpdate
+    const routeName = isUpdate
+        ? "retina.models.review.update"
+        : "retina.models.review.store"
+
+    const routeParams = isUpdate
         ? {
-              name: "retina.models.review.update",
-              method: "patch" as const,
-              params: {
-                  review:
-                      selectedItem.value?.reviews?.product?.review_id,
-              },
+              review:
+                  selectedItem.value?.reviews?.product?.payload
+                      ?.reviewable_id,
           }
-        : {
-              name: "retina.models.review.store",
-              method: "post" as const,
-              params: undefined,
-          }
+        : undefined
 
     const payload = {
         ...selectedItem.value?.reviews?.product,
         ...selectedItem.value?.reviews?.product?.payload,
     }
 
-    router[routeConfig.method](
-        route(routeConfig.name, routeConfig.params),
-        payload,
-        {
-            onStart: () => {
-                loadingSave.value = true
-            },
+    /**
+     * BUILD FORM DATA (MULTIPART)
+     */
+    const formData = new FormData()
 
-            onFinish: () => {
-                loadingSave.value = false
-            },
-
-            onSuccess: () => {
-                isOpenDialog.value = false
-            },
-
-            onError: (errors) => {
-                console.error(errors)
-
-                notify({
-                    title: "Error",
-                    text: "Failed to submit review",
-                    type: "error",
-                })
-            },
+    Object.entries(payload || {}).forEach(([key, value]) => {
+        if (key === "images" && Array.isArray(value)) {
+            value.forEach((file: File) => {
+                formData.append("images[]", file)
+            })
+        } else {
+            formData.append(key, value as any)
         }
-    )
+    })
+
+    try {
+        loadingSave.value = true
+
+        await axios({
+            method: isUpdate ? "patch" : "post",
+            url: route(routeName, routeParams),
+            data: formData,
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        })
+
+        isOpenDialog.value = false
+
+        router.reload({only: ['pageHead', 'reviews']})
+        notify({
+            title: "Success",
+            text: "Review submitted successfully",
+            type: "success",
+        })
+    } catch (errors) {
+        console.error(errors)
+
+        notify({
+            title: "Error",
+            text: "Failed to submit review",
+            type: "error",
+        })
+    } finally {
+        loadingSave.value = false
+    }
 }
 </script>
 

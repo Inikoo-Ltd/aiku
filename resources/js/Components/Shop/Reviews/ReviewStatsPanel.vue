@@ -86,81 +86,69 @@ const categoryRatings = computed(() => {
 </script>
 
 <template>
-    <div class="flex flex-col gap-3">
-        <div class="grid grid-cols-2 gap-3">
-            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
-                <FontAwesomeIcon icon="fal fa-clipboard-list" class="text-lg text-indigo-400" />
+    <div class="w-full">
+        <div class="grid w-full grid-cols-5 gap-3">
+
+            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
+                    <FontAwesomeIcon icon="fal fa-clipboard-list" class="text-indigo-500" />
+                </div>
                 <div class="min-w-0">
                     <div class="text-xs text-gray-500">{{ trans("Total Reviews") }}</div>
-                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
                         {{ normalizedStats.total }}
                     </div>
                 </div>
             </div>
-            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
-                <FontAwesomeIcon icon="fal fa-star" class="text-lg text-amber-400" />
+
+            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                    <FontAwesomeIcon icon="fal fa-star" class="text-amber-500" />
+                </div>
                 <div class="min-w-0">
                     <div class="text-xs text-gray-500">{{ trans("Average Rating") }}</div>
-                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
                         {{ normalizedStats.averageRating }}
                     </div>
                 </div>
             </div>
-            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
-                <FontAwesomeIcon icon="fal fa-badge-check" class="text-lg text-emerald-500" />
+
+            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+                    <FontAwesomeIcon icon="fal fa-badge-check" class="text-emerald-500" />
+                </div>
                 <div class="min-w-0">
                     <div class="text-xs text-gray-500">{{ trans("Approved") }}</div>
-                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
                         {{ normalizedStats.statusApproved }}
                     </div>
                 </div>
             </div>
-            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
-                <FontAwesomeIcon icon="fal fa-clock" class="text-lg text-amber-500" />
+
+            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                    <FontAwesomeIcon icon="fal fa-clock" class="text-amber-500" />
+                </div>
                 <div class="min-w-0">
                     <div class="text-xs text-gray-500">{{ trans("Pending") }}</div>
-                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
                         {{ normalizedStats.statusPending }}
                     </div>
                 </div>
             </div>
-            <div class="col-span-2 flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
-                <FontAwesomeIcon icon="fal fa-times-circle" class="text-lg text-rose-500" />
+
+            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50">
+                    <FontAwesomeIcon icon="fal fa-times-circle" class="text-rose-500" />
+                </div>
                 <div class="min-w-0">
                     <div class="text-xs text-gray-500">{{ trans("Rejected") }}</div>
-                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
                         {{ normalizedStats.statusRejected }}
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
-            <div class="mb-2 text-xs font-medium text-gray-500">{{ trans("Rating Distribution") }}</div>
-            <div class="flex flex-col gap-2">
-                <div
-                    v-for="row in ratingBreakdown"
-                    :key="row.stars"
-                    class="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2"
-                >
-                    <span class="text-sm text-amber-500">{{ row.stars }}</span>
-                    <span class="text-sm font-semibold text-gray-700 tabular-nums">{{ row.value }}</span>
-                </div>
-            </div>
-        </div>
-
-        <div v-if="categoryRatings.length" class="rounded-lg border border-gray-200 bg-white px-4 py-3">
-            <div class="mb-2 text-xs font-medium text-gray-500">{{ trans("Category Ratings") }}</div>
-            <div class="flex flex-col gap-2">
-                <div
-                    v-for="row in categoryRatings"
-                    :key="row.key"
-                    class="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2"
-                >
-                    <span class="text-sm text-gray-600">{{ row.label }}</span>
-                    <span class="text-sm font-semibold text-gray-700 tabular-nums">{{ row.average }}</span>
-                </div>
-            </div>
         </div>
     </div>
 </template>
