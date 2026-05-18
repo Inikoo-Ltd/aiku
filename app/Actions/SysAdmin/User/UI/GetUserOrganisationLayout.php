@@ -80,6 +80,7 @@ class GetUserOrganisationLayout
                 'slug'  => $warehouse->slug,
                 'code'  => $warehouse->code,
                 'label' => $warehouse->name,
+                'org_slug'          => $organisation->slug,
                 'route' => [
                     'name'       => 'grp.org.warehouses.show.infrastructure.dashboard',
                     'parameters' => [

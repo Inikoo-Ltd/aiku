@@ -123,19 +123,19 @@ const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
             visitNormally()
         }
     } else if (paramsLength > 2) {
-        if (layout.currentParams?.organisation && layout.currentParams?.shop) {
+        if (layout.currentParams?.organisation && props.navKey === 'shop') {
             try {
                 router.visit(route(layout.currentRoute, { organisation: showare.org_slug, shop: showare.slug }))
             } catch {
                 visitNormally()
             }
-        } else if (layout.currentParams?.organisation && layout.currentParams?.warehouse) {
+        } else if (layout.currentParams?.organisation && props.navKey === 'warehouse') {
             try {
                 router.visit(route(layout.currentRoute, { organisation: showare.org_slug, warehouse: showare.slug }))
             } catch {
                 visitNormally()
             }
-        } else if (layout.currentParams?.organisation && layout.currentParams?.fulfilment) {
+        } else if (layout.currentParams?.organisation && props.navKey === 'fulfilment') {
             try {
                 router.visit(route(layout.currentRoute, { organisation: showare.org_slug, fulfilment: showare.slug }))
             } catch {
