@@ -25,6 +25,7 @@ use Exception;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\HumanResources\Employee;
 
 class CreateEmployee extends OrgAction
 {
@@ -32,6 +33,20 @@ class CreateEmployee extends OrgAction
 
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
+        $jobTitleOptions = Employee::query()
+            ->whereNotNull('job_title')
+            ->where('job_title', '!=', '')
+            ->select('job_title')
+            ->distinct()
+            ->orderBy('job_title')
+            ->pluck('job_title')
+            ->map(fn (string $jobTitle): array => [
+                'label' => $jobTitle,
+                'value' => $jobTitle,
+            ])
+            ->values()
+            ->all();
+
         return Inertia::render(
             'CreateModel',
             [
@@ -214,11 +229,12 @@ class CreateEmployee extends OrgAction
                             'title'  => __('job'),
                             'fields' => [
                                 'job_title' => [
-                                    'type'        => 'input',
-                                    'label'       => __('Job title'),
-                                    'placeholder' => __('Job title'),
-                                    'searchable'  => true,
-                                    'value'       => ''
+                                    'type' => 'job_title_select_create',
+                                    'label' => __('Job Title'),
+                                    'placeholder' => __('Job Title'),
+                                    'searchable' => true,
+                                    'options' => $jobTitleOptions,
+                                    'value' => '',
                                 ],
                                 'positions' => [
                                     'type'     => 'employeePosition',

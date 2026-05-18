@@ -8,86 +8,63 @@
 
 namespace App\Actions\UI\Websites;
 
-use App\Actions\OrgAction;
+use App\Actions\GrpAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Models\SysAdmin\Organisation;
+use App\Actions\Web\Crawl\UI\IndexCrawls;
+use App\Enums\Web\Website\WebsiteDashboardTabsEnum;
+use App\Http\Resources\Web\CrawlsResource;
+use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebsitesDashboard extends OrgAction
+class WebsitesDashboard extends GrpAction
 {
-    public function handle($scope)
+    use AsAction;
+
+    public function asController(ActionRequest $request): Group
     {
-        return $scope;
+        $this->initialisation(group(), $request)->withTab(WebsiteDashboardTabsEnum::values());
+
+        return group();
     }
 
-    public function authorize(ActionRequest $request): bool
+    public function htmlResponse(Group $group): Response
     {
-        return $request->user()->authTo("websites.view");
-    }
-
-
-    public function asController(Organisation $organisation, ActionRequest $request): Organisation
-    {
-        $this->initialisation($organisation, $request);
-        return $organisation;
-    }
-
-
-
-    public function htmlResponse(Organisation $organisation): Response
-    {
-
         return Inertia::render(
-            'Web/WebsitesDashboard',
+            'Org/Web/WebsitesDashboard',
             [
                 'breadcrumbs'  => $this->getBreadcrumbs(),
-                'title'        => __('websites dashboard'),
+                'title'        => __('Websites Dashboard'),
                 'pageHead'     => [
-                    'title'     => __('websites dashboard'),
+                    'title'     => __('Websites Dashboard'),
                 ],
-                'flatTreeMaps' => [
-                    [
+                'tabs'         => [
+                    'current'    => $this->tab,
+                    'navigation' => WebsiteDashboardTabsEnum::navigation()
+                ],
 
-                        [
-                            'name'  => __('websites'),
-                            'icon'  => ['fal', 'fa-globe'],
-                            'route'  => ['grp.org.shops.show.web.websites.index'],
-                            'index' => [
-                                'number' => $organisation->webStats->number_websites
-                            ]
-
-                        ],
-
-
-
-                    ]
-]
-
+                WebsiteDashboardTabsEnum::CRAWLS->value => $this->tab == WebsiteDashboardTabsEnum::CRAWLS->value ?
+                    fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))
+                    : Inertia::lazy(fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))),
             ]
-        );
+        )->table(IndexCrawls::make()->tableStructure(parent: $group, prefix: WebsiteDashboardTabsEnum::CRAWLS->value));
     }
-
 
     public function getBreadcrumbs(): array
     {
-        return
-            array_merge(
-                ShowGroupDashboard::make()->getBreadcrumbs(),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name' => 'grp.web.dashboard'
-                            ],
-                            'label' => __('websites dashboard'),
-                        ]
-                    ]
+        return [
+            ...ShowGroupDashboard::make()->getBreadcrumbs(),
+            [
+                'type'   => 'simple',
+                'simple' => [
+                    'route' => [
+                        'name' => 'grp.websites.index'
+                    ],
+                    'label' => __('Websites Dashboard'),
                 ]
-            );
+            ]
+        ];
     }
-
-
 }

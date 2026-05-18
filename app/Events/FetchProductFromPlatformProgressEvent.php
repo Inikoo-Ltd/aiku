@@ -10,6 +10,7 @@ namespace App\Events;
 
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -23,10 +24,10 @@ class FetchProductFromPlatformProgressEvent implements ShouldBroadcastNow
     use SerializesModels;
 
 
-    public ShopifyUser|TiktokUser $platformUser;
+    public ShopifyUser|TiktokUser|WooCommerceUser $platformUser;
     public array $modelData;
 
-    public function __construct(ShopifyUser|TiktokUser $platformUser, array $modelData)
+    public function __construct(ShopifyUser|TiktokUser|WooCommerceUser $platformUser, array $modelData)
     {
         $this->platformUser     = $platformUser;
         $this->modelData     = $modelData;

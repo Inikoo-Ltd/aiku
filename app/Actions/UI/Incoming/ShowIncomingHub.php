@@ -10,8 +10,7 @@ namespace App\Actions\UI\Incoming;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Enums\GoodsIn\Return\ReturnStateEnum;
-use App\Models\GoodsIn\OrderReturn;
+use App\Enums\UI\Incoming\IncomingHubTabsEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -27,93 +26,39 @@ class ShowIncomingHub extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-
         return $request->user()->authTo("incoming.{$this->warehouse->id}.view");
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse): Warehouse
+    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
     {
-        $this->initialisationFromWarehouse($warehouse, []);
+        $this->initialisationFromWarehouse($warehouse, [])->withTab(IncomingHubTabsEnum::values());
 
         return $this->handle($warehouse);
     }
 
-
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
-        $palletDeliveries = $warehouse->stats->number_pallet_deliveries_state_confirmed + $warehouse->stats->number_pallet_deliveries_state_received + $warehouse->stats->number_pallet_deliveries_state_booking_in;
-
-        // Count returns waiting to receive
-        $returnsWaitingToReceive = OrderReturn::where('warehouse_id', $warehouse->id)
-            ->where('state', ReturnStateEnum::WAITING_TO_RECEIVE)
-            ->count();
-
         return Inertia::render(
             'Org/Incoming/IncomingHub',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => 'incoming',
-                'pageHead'    => [
+                'title'    => 'incoming',
+                'pageHead' => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-arrow-to-bottom'],
                         'title' => __('Incoming')
                     ],
                     'title' => __('Incoming Hub'),
                 ],
-                'box_stats'   => [
-                    [
-                        'name'  => __('Stock Deliveries'),
-                        'value' => $warehouse->organisation->procurementStats->number_stock_deliveries,
-                        'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-                        'icon'  => [
-                            'icon'    => 'fal fa-truck-container',
-                            'tooltip' => __('Stock Deliveries')
-                        ]
-                    ],
-                    [
-                        'name'  => __('Fulfilment Deliveries'),
-                        'value' => $palletDeliveries,
-                        'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.pallet_deliveries.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-                        'icon'  => [
-                            'icon'    => 'fal fa-truck-couch',
-                            'tooltip' => __('Fulfilment Deliveries')
-                        ]
-                    ],
-                    // [
-                    //     'name'  => __('Returns'),
-                    //     'value' => $returnsWaitingToReceive,
-                    //     'route' => [
-                    //         'name'       => 'grp.org.warehouses.show.incoming.returns.index',
-                    //         'parameters' => $request->route()->originalParameters()
-                    //     ],
-                    //     'icon'  => [
-                    //         'icon'    => 'fal fa-undo-alt',
-                    //         'tooltip' => __('Customer Returns')
-                    //     ]
-                    // ],
-                    [
-                        'name'  => __('Returns'),
-                        'value' => ($warehouse->stats->number_return_delivery_notes_state_received + $warehouse->stats->number_return_delivery_notes_state_returning),
-                        'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-                        'icon'  => [
-                            'icon'    => 'fal fa-exchange',
-                            'tooltip' => __('Return Delivery Notes')
-                        ]
-                    ],
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => IncomingHubTabsEnum::navigation()
                 ],
-
-
+                'stock_deliveries'      => GetIncomingHubStockDeliveryWidget::run($warehouse),
+                'pallet_deliveries'     => GetIncomingHubPalletDeliveryWidget::run($warehouse),
+                'return_delivery_notes' => GetIncomingHubReturnDeliveryNoteWidget::run($warehouse),
             ]
         );
     }
@@ -130,11 +75,11 @@ class ShowIncomingHub extends OrgAction
                             'name'       => 'grp.org.warehouses.show.incoming.backlog',
                             'parameters' => $routeParameters
                         ],
+                        'icon'  => ['fal', 'fa-arrow-to-bottom'],
                         'label' => __('Goods in'),
                     ]
                 ]
             ]
         );
     }
-
 }

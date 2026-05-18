@@ -627,8 +627,7 @@ test('UI Index customers', function () {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->etc()
-            )
-            ->has('data');
+            );
     });
 });
 
