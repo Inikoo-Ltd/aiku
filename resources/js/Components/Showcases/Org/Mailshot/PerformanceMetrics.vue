@@ -5,6 +5,7 @@ import { trans } from 'laravel-vue-i18n';
 
 const props = defineProps<{
     mailshotState: string;
+    totalOpened: number;
     timeSeriesData?: Array<{
         id: number;
         period: string;
@@ -202,9 +203,9 @@ const shouldShow = computed(() => {
 
             <div class="flex items-center space-x-4">
                 <label for="average-select" class="text-sm font-medium text-gray-700">
-                    Total
+                    Total Opened
                 </label>
-                <span class="text-sm font-bold text-gray-900">{{ totalValue.toLocaleString() }}</span>
+                <span class="text-sm font-bold text-gray-900">{{ props.totalOpened }}</span>
             </div>
         </div>
 

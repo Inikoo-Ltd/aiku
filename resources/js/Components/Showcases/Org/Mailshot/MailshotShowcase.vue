@@ -237,6 +237,7 @@ onUnmounted(() => {
     }
 })
 
+console.log("Stats", stats.value)
 </script>
 
 <template>
@@ -306,7 +307,9 @@ onUnmounted(() => {
             </div>
 
             <!-- Performance Metrics -->
-            <PerformanceMetrics :mailshot-state="mailshotState" :time-series-data="data.time_series_data" />
+            <PerformanceMetrics :mailshot-state="mailshotState"
+                :total-opened="stats?.find((s: any) => s.key === 'number_opened_emails')?.value ?? 0"
+                :time-series-data="data.time_series_data" />
 
 
             <!-- Full preview modal -->
