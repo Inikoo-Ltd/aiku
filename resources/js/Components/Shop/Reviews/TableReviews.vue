@@ -51,10 +51,11 @@ type RatingLabel = {
 
 const props = defineProps<{
     data: {
-        data : ReviewTablePayload
+        data: ReviewTablePayload
         reviewable_id?: number
         reviewable_type?: "ProductCategory" | "Product" | "Shop"
         rating_labels?: RatingLabel[]
+        replier_type:String
     }
     tab?: string
 }>()
@@ -79,13 +80,14 @@ const renderStars = (rating: number): string => {
     return "★".repeat(value)
 }
 
-console.log(props)
+
 </script>
 
 <template>
     <div class="p-4">
         <ReviewStatsPanel :stats="data.stats" :rating-labels="rating_labels" />
     </div>
+
     <Table :resource="data.data" :name="tab">
         <template #cell(image_thumbnails)="{ item }">
             <div class="flex items-center gap-1">
@@ -108,7 +110,7 @@ console.log(props)
         </template>
         <template #cell(action)="{ item }">
             <div class="flex items-center justify-end gap-1">
-                        <Button type="tertiary" :icon="faEye" size="xs" @click="()=>openModal(item)" />
+                <Button type="tertiary" :icon="faEye" size="xs" @click="() => openModal(item)" />
             </div>
         </template>
     </Table>
@@ -117,7 +119,13 @@ console.log(props)
     <Dialog v-model:visible="isDialogVisible" modal header="Review Detail" :style="{ width: '40rem' }"
         :breakpoints="{ '960px': '75vw', '641px': '90vw' }" @hide="closeModal">
         <div v-if="selectedItem" class="space-y-3">
-           <ModalReviewReply :modelValue="selectedItem"  :schema="data.rating_labels"/>
+            <ModalReviewReply 
+                :modelValue="selectedItem" 
+                :schema="data.rating_labels"  
+                :replier_type="data.replier_type"
+                :reviewable_id="data.reviewable_id"
+                :reviewable_type="data.reviewable_type"
+            />
         </div>
     </Dialog>
 

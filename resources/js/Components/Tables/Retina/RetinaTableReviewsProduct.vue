@@ -160,7 +160,7 @@ const saveProductReview = async () => {
         </template>
 
         <template #cell(product_review_rating)="{ item }">
-            <div class="flex justify-end cursor-pointer" @click="openDialog(item)">
+            <div class="flex justify-end cursor-pointer rating" @click="openDialog(item)">
                 <Rating v-model="item.product_review_rating" :disabled="true" />
             </div>
         </template>
@@ -180,3 +180,10 @@ const saveProductReview = async () => {
         </template>
     </Dialog>
 </template>
+
+
+<style scoped>
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+    color: #f59e0b !important;
+}
+</style>

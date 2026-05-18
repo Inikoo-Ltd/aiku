@@ -272,25 +272,6 @@ const goToEdit = () => {
                 </ButtonReindexWebpage>
             </div>
         </template>
-        <template #other>
-        </template>
-      <!--   <template #otherBefore>
-            
-            <ModalCreateGiftOffers 
-                v-if="currentTab === 'offers' && layout.app.environment === 'local'"
-                v-tooltip="'Create New Offer'"
-                :shop_data="props.shop_data"
-                :product_id="props.product_id"
-                 />
-            <ModalCreateCategoryReviews
-                v-if="currentTab === 'reviews'"
-                :product_category_id="props.product_id"
-                reviewable_type="Product"
-                :customers="reviewCustomers"
-                :rating_labels="reviewRatingLabels"
-                v-tooltip="'Create New Review'"
-            />
-        </template> -->
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />

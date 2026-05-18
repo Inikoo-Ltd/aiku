@@ -476,7 +476,8 @@ class ShowProduct extends OrgAction
             ),
             'reviewable_id' => $product->id,
             'rating_labels' => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::ProductReviews),
-            'reviewable_type' => 'Product',
+            'reviewable_type' => 'product_reviews',
+            'replier_type' => 'merchant'
         ];
     }
 
