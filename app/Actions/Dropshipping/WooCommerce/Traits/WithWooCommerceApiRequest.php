@@ -178,7 +178,7 @@ trait WithWooCommerceApiRequest
             if ($response->successful()) {
                 $data = $response->json();
 
-                if(!$data) {
+                if (!$data) {
                     $data = json_decode(preg_replace('/^\xEF\xBB\xBF/', '', $response->body()), true);
                 }
 
@@ -201,8 +201,6 @@ trait WithWooCommerceApiRequest
                 'method' => $method,
                 'error'  => $e->getMessage()
             ]);
-
-            // Sentry::captureMessage($e->getMessage());
 
             return [
                 ['message' => 'WooCommerce API Connection Error: '.$e->getMessage()],

@@ -63,7 +63,7 @@ task('deploy:migrate', function () {
 
 desc('Modified npm:install');
 task('npm:my_install', function () {
-        run('cd {{release_path}} && {{bin/npm}} ci');
+    run('cd {{release_path}} && {{bin/npm}} ci');
 });
 
 desc('🏗️ Build vue app');
