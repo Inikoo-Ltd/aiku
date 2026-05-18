@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
+use App\Events\FetchProductFromPlatformProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\StoredItem;
@@ -48,7 +49,7 @@ class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
                 $products = array_merge($products, $response);
             }
 
-            if(count($response) === 10) {
+            if (count($response) === 10) {
                 $nextPage = true;
                 $page++;
             } else {
@@ -57,13 +58,17 @@ class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
 
         } while ($nextPage);
 
-        foreach ($products as $product) {
-            DB::transaction(function () use ($product, $wooCommerceUser, $shopType) {
+        DB::transaction(function () use ($products, $wooCommerceUser, $shopType) {
+            $numberSuccess = 0;
+            $numberFails = 0;
+            $numberTotal = count($products);
+
+            foreach ($products as $product) {
                 try {
                     $name = Arr::get($product, 'name');
                     $reference = Arr::get($product, 'slug');
 
-                    if(! $reference) {
+                    if (!$reference) {
                         $reference = Str::slug($name);
                     }
 
@@ -87,7 +92,7 @@ class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
                                 $wooCommerceUser->customerSalesChannel,
                                 $storedItem,
                                 [
-                                    'platform_product_id' => (string) Arr::get($product, 'id'),
+                                    'platform_product_id' => (string)Arr::get($product, 'id'),
                                 ]
                             );
                         }
@@ -96,12 +101,25 @@ class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
                             'state' => StoredItemStateEnum::ACTIVE
                         ]);
                     }
-                } catch (\Throwable $th) {
-                    // dd($th);
-                }
-            });
 
-        }
+                    $numberSuccess++;
+                } catch (\Throwable $th) {
+                    $numberFails++;
+                }
+
+                FetchProductFromPlatformProgressEvent::dispatch($wooCommerceUser, [
+                    'number_total' => $numberTotal,
+                    'number_success' => $numberSuccess,
+                    'number_fails' => $numberFails
+                ]);
+            }
+
+            FetchProductFromPlatformProgressEvent::dispatch($wooCommerceUser, [
+                'number_total' => $numberTotal,
+                'number_success' => $numberTotal,
+                'number_fails' => $numberFails
+            ]);
+        });
     }
 
     /**
