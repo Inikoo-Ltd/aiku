@@ -69,8 +69,9 @@ class GetGroupNavigation
             $groupNavigation['organisations'] = $this->getOrganisationsNavs();
         }
 
-        if (app()->environment('local')) {
+        if (app()->isLocal()) {
             $groupNavigation['sales-channels'] = $this->getSalesChannelsNavs();
+            $groupNavigation['website'] = $this->getWebsiteNavs();
         }
 
         if ($user->hasPermissionTo('group-overview')) {
@@ -324,7 +325,18 @@ class GetGroupNavigation
         ];
     }
 
-
+    private function getWebsiteNavs(): array
+    {
+        return [
+            'label'   => __('Website'),
+            'icon'    => ['fal', 'fa-globe'],
+            'root'    => '',
+            'route'   => [
+                'name' => ''
+            ],
+            'topMenu' => []
+        ];
+    }
 
     private function getOverviewNavs(): array
     {
