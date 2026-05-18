@@ -121,7 +121,7 @@ class IndexRedirects extends OrgAction
             ]);
 
         return $queryBuilder
-            ->allowedSorts(['url', 'type', 'to_webpage_url'])
+            ->allowedSorts(['url', 'type', 'to_webpage_url', 'path'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
