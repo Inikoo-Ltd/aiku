@@ -1,45 +1,38 @@
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Wed, 21 Aug 2024 12:57:59 Central Indonesia Time, Kuala Lumpur, Malaysia
-  - Copyright (c) 2024, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { computed, ref } from "vue"
+import { useTabChange } from "@/Composables/tab-change"
+import IncomingDashboard from "@/Components/Warehouse/IncomingDashboard.vue"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
-// defineProps(['title', 'pageHead', 'flatTreeMaps'])
 const props = defineProps<{
     title: string
-    pageHead: {}
-    box_stats: {
-        name: string
-        number: number
-        route: routeType
-        icon: {
-            icon: string
-            tooltip: string
-        }
-    }[]
+    pageHead: PageHeadingTypes
+    tabs: {
+        current: string
+        navigation: {}
+    }
+    stock_deliveries: object
+    pallet_deliveries: object
+    return_delivery_notes: object
 }>()
 
+let currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt } from '@fal'
-import SimpleBox from '@/Components/DataDisplay/SimpleBox.vue'
-import { routeType } from '@/types/route'
-
-library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt);
-
+const tabData = computed(() => {
+    if (currentTab.value === "pallet_deliveries") return props.pallet_deliveries
+    if (currentTab.value === "return_delivery_notes") return props.return_delivery_notes
+    return props.stock_deliveries
+})
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <!-- {{ box_stats }} -->
-
-    <SimpleBox v-if="box_stats" :box_stats="box_stats" />
-
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <IncomingDashboard :tab="currentTab" :data="tabData" />
 </template>

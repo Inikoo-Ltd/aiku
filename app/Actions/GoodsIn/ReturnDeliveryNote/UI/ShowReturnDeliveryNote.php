@@ -113,6 +113,7 @@ class ShowReturnDeliveryNote extends OrgAction
         }
 
         $hasUnHandledItems = ReturnDeliveryNoteItem::where('return_delivery_note_id', $returnDeliveryNote->id)
+            ->where('total_expected_qty', '>', 0)
             ->where('is_handled', false)
             ->exists();
 
@@ -550,7 +551,7 @@ class ShowReturnDeliveryNote extends OrgAction
                     $returnDeliveryNote,
                     [
                         'index' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes',
+                            'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.index',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
                         ],
                         'model' => [
