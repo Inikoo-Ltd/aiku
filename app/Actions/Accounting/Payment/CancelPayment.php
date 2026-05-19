@@ -48,13 +48,13 @@ class CancelPayment extends OrgAction
             'state' => PaymentStateEnum::CANCELLED,
         ]);
 
-        if ($payment->type == PaymentTypeEnum::REFUND) {
-            // If refund is cancelled. Original payment total refund will be updated
-            $originalPayment = $payment->originalPayment;
+        $originalPayment = $payment->originalPayment;
 
-            // This is correct, well since refund amount is minus
-            $originalPayment->update([
-                'total_refund' => $originalPayment->total_refund + $payment->amount,
+        if ($payment->type == PaymentTypeEnum::REFUND && $originalPayment) {
+            // If refund is cancelled. Original payment total refund will be updated
+            $totalRefund = abs($originalPayment->refunds()->whereNot('state', PaymentStateEnum::CANCELLED->value)->sum('amount'));
+            $originalPayment?->update([
+                'total_refund' => $totalRefund,
             ]);
         };
 
