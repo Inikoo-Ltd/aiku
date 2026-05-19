@@ -9,16 +9,17 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { TradeUnit } from "@/types/trade-unit"
 import Icon from "@/Components/Icon.vue"
-import { faSeedling, faScarecrow } from "@fal"
+import { faSeedling, faScarecrow, faPencil } from "@fal"
 import { faCheckCircle, faSkull, faTriangle, faEquals, faMinus } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject } from "vue"
+import { inject, computed } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
-library.add(faCheckCircle, faSeedling, faSkull, faScarecrow, faTriangle, faEquals, faMinus)
+library.add(faCheckCircle, faSeedling, faSkull, faScarecrow, faTriangle, faEquals, faMinus, faPencil)
 
 const locale = inject("locale", aikuLocaleStructure)
+const isOrphanPage = computed(() => route().current('grp.trade_units.units.orphan'))
 
 defineProps<{
     data: {}
@@ -64,9 +65,27 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(name)="{ item: tradeUnit }">
             {{ tradeUnit["name"] }}
         </template>
+        <template #cell(net_weight)="{ item: tradeUnit }">
+            <div class="flex items-center gap-2">
+                <span>{{ tradeUnit["net_weight"] ?? '-' }}</span>
+                <Link v-if="!tradeUnit['net_weight'] && !isOrphanPage" :href="route('grp.trade_units.units.edit', [tradeUnit.slug, { section: 2 }])" class="text-gray-400 hover:text-gray-600">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
+                </Link>
+            </div>
+        </template>
+
         <template #cell(marketing_weight)="{ item: tradeUnit }">
             {{ tradeUnit["marketing_weight"] }}
         </template>
+        <template #cell(marketing_dimensions)="{ item: tradeUnit }">
+            <div class="flex items-center gap-2">
+                <span>{{ tradeUnit["marketing_dimensions"] && Object.keys(tradeUnit["marketing_dimensions"]).length ? JSON.stringify(tradeUnit["marketing_dimensions"]) : '-' }}</span>
+                <Link v-if="!tradeUnit['marketing_dimensions'] || !Object.keys(tradeUnit['marketing_dimensions']).length" :href="route('grp.trade_units.units.edit', [tradeUnit.slug, { section: 2 }])" class="text-gray-400 hover:text-gray-600">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
+                </Link>
+            </div>
+        </template>
+
         <template #cell(type)="{ item: tradeUnit }">
             <div class="capitalize">{{ tradeUnit["type"] }}</div>
         </template>
@@ -125,7 +144,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(brands)="{ item }">
-            <span 
+            <span
                 v-if="item.brands?.name"
                 v-tooltip="'Click to go to Brand'"
                 class="border border-gray-400 bg-gray-200 rounded-md px-2 py-1 font-light cursor-pointer hover:opacity-[80%] transition ease-in-out whitespace-nowrap"
@@ -138,7 +157,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <template #cell(tags)="{ item }">
             <div class="flex gap-x-1 gap-y-1 flex-wrap">
-                <span 
+                <span
                     v-for="tag in item.tags"
                     :style="'background-color:'+tag.class_color"
                     class="px-2 py-1 border rounded-md text-white"

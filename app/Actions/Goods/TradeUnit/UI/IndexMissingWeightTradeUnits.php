@@ -10,6 +10,7 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Enums\UI\Goods\TradeUnitsTabsEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
@@ -24,7 +25,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexOrphanTradeUnits extends GrpAction
+class IndexMissingWeightTradeUnits extends GrpAction
 {
     use WithGoodsAuthorisation;
 
@@ -54,7 +55,8 @@ class IndexOrphanTradeUnits extends GrpAction
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $this->group->id);
         $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
-        $queryBuilder->whereNull('trade_units.trade_unit_family_id');
+        $queryBuilder->whereNull('trade_units.marketing_weight');
+        $queryBuilder->where('trade_units.status', '!=', TradeUnitStatusEnum::DISCONTINUED);
 
         $queryBuilder
             ->defaultSort('trade_units.code')
@@ -123,12 +125,12 @@ class IndexOrphanTradeUnits extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Orphan Trade Units'),
+                'title'       => __('Without Marketing Weight'),
                 'pageHead'    => [
-                    'title'         => __('Orphan Trade Units'),
+                    'title'         => __('Without Marketing Weight'),
                     'iconRight'     => [
-                        'icon'  => ['fal', 'fa-atom'],
-                        'title' => __('Orphan Trade Units'),
+                        'icon'  => ['fal', 'fa-weight'],
+                        'title' => __('Without Marketing Weight'),
                     ],
                 ],
                 'tabs'        => [
@@ -157,7 +159,7 @@ class IndexOrphanTradeUnits extends GrpAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Orphan Trade Units'),
+                        'label' => __('Without Marketing Weight'),
                         'icon'  => 'fal fa-bars'
                     ],
                     'suffix' => $suffix
