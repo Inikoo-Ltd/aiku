@@ -263,7 +263,11 @@ trait WithTiktokApiServices
         $path = "/fulfillment/$this->version/packages/$packageId/ship";
 
         return $this->makeApiRequest('POST', $path, [
-            'handover_method' => 'PICKUP'
+            'handover_method' => 'PICKUP',
+            'pickup_slot' => [
+                'start_time' => now()->toIso8601String(),
+                'end_time' => now()->addDays(5)->toIso8601String()
+            ]
         ], true, [
             'content-type' => 'application/json'
         ]);

@@ -3,22 +3,24 @@
 /*
  * author Louis Perez
  * created on 28-04-2026-10h-09m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithReturnDeliveryNotesSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
-use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Http\Resources\Procurement\ReturnDeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\WebUser;
+use App\Models\Catalogue\Shop;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -31,12 +33,31 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexReturnDeliveryNotes extends OrgAction
 {
-    use WithDispatchingAuthorisation;
     use WithReturnDeliveryNotesSubNavigation;
 
+    private Warehouse|Shop $parent;
     private string $bucket = 'all';
 
-    public function handle(Warehouse|Order $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
+    protected function getElementGroups(Group|Organisation|Shop|Warehouse|Order $parent): array
+    {
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => array_merge_recursive(
+                    ReturnDeliveryNoteStateEnum::labels(),
+                    ReturnDeliveryNoteStateEnum::count($parent)
+                ),
+
+                'engine' => function ($query, $elements) {
+                    $query->whereIn('return_delivery_notes.state', $elements);
+                }
+            ],
+
+
+        ];
+    }
+
+    public function handle(Group|Organisation|Shop|Warehouse|Order $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -58,6 +79,21 @@ class IndexReturnDeliveryNotes extends OrgAction
             $query->where('return_delivery_notes.warehouse_id', $parent->id);
         } elseif ($parent instanceof Order) {
             $query->where('return_delivery_notes.order_id', $parent->id);
+        } elseif ($parent instanceof Organisation) {
+            $query->where('organisations.id', $parent->id);
+        } elseif ($parent instanceof Shop) {
+            $query->where('shops.id', $parent->id);
+        }
+
+        if (!($parent instanceof Order)) {
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $query->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
         }
 
         $query->where('shops.is_aiku', true);
@@ -153,12 +189,8 @@ class IndexReturnDeliveryNotes extends OrgAction
         ->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
     }
 
-    public function tableStructure(Warehouse|Order $parent, $prefix = null, $bucket = 'all'): Closure
+    public function tableStructure(Group|Organisation|Shop|Warehouse|Order $parent, $prefix = null, $bucket = 'all'): Closure
     {
-        $employee = null;
-        if (!request()->user() instanceof WebUser) {
-            $employee = request()->user()->employees()->first() ?? null;
-        }
 
         return function (InertiaTable $table) use ($parent, $prefix, $bucket) {
             if ($prefix) {
@@ -170,7 +202,19 @@ class IndexReturnDeliveryNotes extends OrgAction
             $table->betweenDates(['date']);
 
             $noResults = __("No returned delivery notes found");
-            $count = $parent->organisation->orderingStats->number_delivery_notes;
+            $count = 0;
+
+
+
+            if ($bucket == 'all' && !($parent instanceof Order)) {
+                foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
+                }
+            }
 
             $table
                 ->withGlobalSearch()
@@ -197,6 +241,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         return $this->handle(parent: $warehouse, bucket: $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function received(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
@@ -206,6 +251,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         return $this->handle(parent: $warehouse, bucket: $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function returning(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
@@ -215,6 +261,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         return $this->handle(parent: $warehouse, bucket: $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function returned(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
@@ -224,13 +271,23 @@ class IndexReturnDeliveryNotes extends OrgAction
         return $this->handle(parent: $warehouse, bucket: $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function processed(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
-        $this->bucket = 'processed';
+        $this->bucket = 'done';
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent: $shop, bucket: $this->bucket);
     }
 
 
@@ -238,7 +295,7 @@ class IndexReturnDeliveryNotes extends OrgAction
     {
         $headCrumb = function (array $routeParameters = [], ?string $suffix = null) {
             if (!$suffix && $this->bucket !== 'all') {
-                $suffix = "({$this->bucket})";
+                $suffix = "($this->bucket)";
             }
 
             return [
@@ -255,6 +312,15 @@ class IndexReturnDeliveryNotes extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.ordering.return_delivery_notes.index'  => array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
             'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
             'grp.org.warehouses.show.incoming.return_delivery_notes.state.returning',
             'grp.org.warehouses.show.incoming.return_delivery_notes.state.returned',

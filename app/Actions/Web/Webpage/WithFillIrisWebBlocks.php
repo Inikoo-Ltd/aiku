@@ -12,18 +12,19 @@ use App\Actions\Web\WebBlock\Iris\GetIrisBlockSubDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCollection;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartments;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilies;
 use App\Actions\Web\WebBlock\GetWebBlockBlog;
-use App\Actions\Web\WebBlock\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\GetWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\GetWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
-use App\Actions\Web\WebBlock\GetWebBlockSubDepartments;
 use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
+
 
 trait WithFillIrisWebBlocks
 {
@@ -40,9 +41,9 @@ trait WithFillIrisWebBlocks
         } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamiliesOverview::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
-            $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
-            $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockFamilies::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'products-')) {
             $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock);
         } elseif ($webBlockType == 'family-1') {

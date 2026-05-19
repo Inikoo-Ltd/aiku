@@ -765,6 +765,7 @@ provide("goNext", goNext)
 				<ul class="list-disc list-outside space-y-1 pl-6">
 					<li>{{ ctrans("TikTok integration is currently in beta testing and may not be fully functional. Please proceed with caution.") }}</li>
 					<li>{{ ctrans("When you use TikTok Shipping, you must update your logistical preferences to Pick Up.") }}</li>
+					<li>{{ ctrans("See the full guide") }} <a href="https://aw-dropship.info/knowledge-base/tiktok-shop-sales-channel-warehouse-setup-guide/" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:text-amber-900">{{ ctrans("here") }}</a></li>
 				</ul>
 			</div>
 			<ProgressBar />

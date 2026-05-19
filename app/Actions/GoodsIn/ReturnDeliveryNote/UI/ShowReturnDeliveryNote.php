@@ -3,12 +3,13 @@
 /*
  * author Louis Perez
  * created on 28-04-2026-13h-56m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\IndexReturnDeliveryNoteItems;
 use App\Actions\Helpers\Country\UI\GetAddressData;
@@ -17,7 +18,6 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
-use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
@@ -65,6 +65,15 @@ class ShowReturnDeliveryNote extends OrgAction
         return $this->handle($returnDeliveryNote);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShop(Organisation $organisation, Shop $shop, ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): ReturnDeliveryNote
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
+
+        return $this->handle($returnDeliveryNote);
+    }
+
     public function wrappedActions(ReturnDeliveryNote $returnDeliveryNote): array
     {
         $isEditable = false;
@@ -101,11 +110,31 @@ class ShowReturnDeliveryNote extends OrgAction
         return $actions;
     }
 
-    public function getActions(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): array
+    public function getActions(ReturnDeliveryNote $returnDeliveryNote): array
     {
         $isEditable = false;
         if ($this->parent instanceof Warehouse) {
             $isEditable = true;
+        } elseif ($this->parent instanceof Shop) {
+            return match ($returnDeliveryNote->state) {
+                ReturnDeliveryNoteStateEnum::RETURNED => [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'save',
+                        'icon'    => 'fas fa-box-check',
+                        'label'   => __('Finished Processing'),
+                        'key'     => 'finish-processing',
+                        'route'   => [
+                            'method'        => 'patch',
+                            'name'          => 'grp.models.return_delivery_note.state.done',
+                            'parameters'    =>  [
+                                'returnDeliveryNote'    => $returnDeliveryNote->id
+                            ]
+                        ],
+                    ]
+                ],
+                default => []
+            };
         }
 
         if (!$isEditable) {
@@ -187,28 +216,6 @@ class ShowReturnDeliveryNote extends OrgAction
         $order     = $returnDeliveryNote->order;
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
 
-        $additionalShipmentRoutes = [];
-
-        // TODO LATER
-        $trolleys = [];
-        // foreach ($returnDeliveryNote->trolleys as $trolley) {
-        //     $trolleys[] = [
-        //         'id'   => $trolley->id,
-        //         'slug' => $trolley->slug,
-        //         'name' => $trolley->name,
-        //     ];
-        // }
-
-        // TODO LATER
-        $pickedBays = [];
-        // foreach ($returnDeliveryNote->pickedBays as $pickedBay) {
-        //     $pickedBays[] = [
-        //         'id'   => $pickedBay->id,
-        //         'slug' => $pickedBay->slug,
-        //         'name' => $pickedBay->code,
-        //     ];
-        // }
-
         return [
             'state'                        => $returnDeliveryNote->state,
             'state_icon'                   => ReturnDeliveryNoteStateEnum::stateIcon()[$returnDeliveryNote->state->value],
@@ -258,9 +265,7 @@ class ShowReturnDeliveryNote extends OrgAction
             ],
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
             'picker'                       => $returnDeliveryNote->handlerUser,
-            'picked_bays'                  => $pickedBays,
             'parcels'                      => $deliveryNote->parcels,
-            'trolleys'                     => $trolleys,
             'shop_type'                    => $returnDeliveryNote->shop->type,
             'shipping_fields'              => [
                 'company_name' => $deliveryNote->company_name,
@@ -334,17 +339,11 @@ class ShowReturnDeliveryNote extends OrgAction
             $isEditable = true;
         }
 
-        $actions = $this->getActions($returnDeliveryNote, $request);
+        $actions = $this->getActions($returnDeliveryNote);
 
-        $warning = null;
 
         $model = __('Return');
 
-        $allowAction = ($returnDeliveryNote->packer_user_id && $returnDeliveryNote->packer_user_id != request()->user()->id);
-
-        if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
-            $allowAction = $returnDeliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
-        }
 
         $showChangePickerPacker = $returnDeliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
@@ -357,10 +356,6 @@ class ShowReturnDeliveryNote extends OrgAction
                 $request->route()->getName(),
                 $request->route()->originalParameters(),
             ),
-            // 'navigation'    => [
-            //     'previous' => $this->getPrevious($deliveryNote, $request),
-            //     'next'     => $this->getNext($deliveryNote, $request),
-            // ], // TODO
             'pageHead'      => [
                 'title'           => $returnDeliveryNote->reference,
                 'model'           => $model,
@@ -374,8 +369,7 @@ class ShowReturnDeliveryNote extends OrgAction
                 'actions'         => $actions,
                 'wrapped_actions' => $this->wrappedActions($returnDeliveryNote),
             ],
-            // 'warning'       => $warning,
-            // 'isEditable'    => $isEditable,
+            'isEditable'    => $isEditable,
             'tabs'          => [
                 'current'    => $returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING
                     ? DeliveryNoteTabsEnum::PENDING_ITEMS->value
@@ -393,23 +387,10 @@ class ShowReturnDeliveryNote extends OrgAction
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
-            // 'allowActions'        => $allowAction,
             'timelines'           => $this->getTimeline($returnDeliveryNote),
             'box_stats'           => $this->getBoxStats($returnDeliveryNote),
-            // 'shop_type'           => $returnDeliveryNote->shop->type,
             'notes'               => $this->getDeliveryNoteNotes($returnDeliveryNote),
             'quick_pickers'       => $this->quickGetPickers(),
-            'routes'              => [
-                // TODO ALL ROUTE, for now acts as a placeholder
-                // 'assignSelfTemporarily' => [
-                //     'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note.temp-picker',
-                //     'parameters' => [
-                //         'organisation' => $returnDeliveryNote->deliveryNote->organisation->slug,
-                //         'shop'         => $returnDeliveryNote->deliveryNote->shop->slug,
-                //         'deliveryNote' => $returnDeliveryNote->deliveryNote->slug,
-                //     ]
-                // ]
-            ],
             'returned_delivery_note_state' => [
                 'value' => $returnDeliveryNote->state,
                 'label' => $returnDeliveryNote->state->labels()[$returnDeliveryNote->state->value],
@@ -423,8 +404,6 @@ class ShowReturnDeliveryNote extends OrgAction
 
             'delivery_note'     => DeliveryNoteResource::make($returnDeliveryNote->deliveryNote)->toArray(request()),
             'dn_return'         => ReturnDeliveryNoteResource::make($returnDeliveryNote)->toArray(request()),
-
-            // 'is_faire_order'                => ($returnDeliveryNote->shop->engine == ShopEngineEnum::FAIRE),
             'showChangePickerPacker'        => $showChangePickerPacker,
             'shop'                               => [
                 'type' => $returnDeliveryNote->shop?->type?->value,
@@ -497,14 +476,6 @@ class ShowReturnDeliveryNote extends OrgAction
                     "bgColor"     => "#FF7DBD",
                     "field"       => "customer_notes"
                 ],
-                // [
-                //     "label"       => __("Public"),
-                //     "note"        => $returnDeliveryNote->public_notes ?? '',
-                //     "information" => __("This note will be visible to public, both staff and the customer can see."),
-                //     "editable"    => true,
-                //     "bgColor"     => "#94DB84",
-                //     "field"       => "public_notes"
-                // ],
                 [
                     "label"       => __("Order private note"),
                     "note"        => $returnDeliveryNote->internal_notes ?? '',
@@ -542,6 +513,24 @@ class ShowReturnDeliveryNote extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.ordering.return_delivery_notes.show'
+            => array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $returnDeliveryNote,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.ordering.return_delivery_notes.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.ordering.return_delivery_notes.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'returnDeliveryNote'])
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
             'grp.org.warehouses.show.incoming.return_delivery_notes.show'
             => array_merge(
                 ShowProcurementDashboard::make()->getBreadcrumbs(
@@ -566,107 +555,4 @@ class ShowReturnDeliveryNote extends OrgAction
         };
     }
 
-
-    // TODO
-    // public function getPrevious(DeliveryNote $deliveryNote, ActionRequest $request): ?array
-    // {
-    //     $query    = DeliveryNote::where('reference', '<', $deliveryNote->reference);
-    //     $query    = $this->getNextPrevCommon($query, $deliveryNote, $request);
-    //     $previous = $query->orderBy('reference', 'desc')->first();
-
-    //     return $this->getNavigation($previous, $request->route()->getName(), $request->route()->originalParameters());
-    // }
-
-    // public function getNext(DeliveryNote $deliveryNote, ActionRequest $request): ?array
-    // {
-    //     $query = DeliveryNote::where('reference', '>', $deliveryNote->reference);
-    //     $query = $this->getNextPrevCommon($query, $deliveryNote, $request);
-    //     $next  = $query->orderBy('reference')->first();
-
-    //     return $this->getNavigation($next, $request->route()->getName(), $request->route()->originalParameters());
-    // }
-
-    // TODO
-    // private function getNextPrevCommon($query, DeliveryNote $deliveryNote, ActionRequest $request)
-    // {
-    //     if ($request->route()->getName() == 'shops.show.delivery-notes.show') {
-    //         $query->where('delivery_notes.shop_id', $deliveryNote->shop_id);
-    //     } elseif ($request->route()->getName() == 'grp.org.shops.show.ordering.orders.show.delivery-note') {
-    //         $query->leftjoin('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id');
-    //         $query->where('delivery_note_order.order_id', $this->parent->id);
-    //     } elseif ($request->route()->getName() == 'grp.org.shops.show.crm.customers.show.delivery_notes.show') {
-    //         $query->where('delivery_notes.customer_id', $this->parent->id);
-    //     }
-
-    //     return $query;
-    // }
-
-    // private function getNavigation(?DeliveryNote $deliveryNote, string $routeName, $routeParameters): ?array
-    // {
-    //     if (!$deliveryNote) {
-    //         return null;
-    //     }
-
-    //     return match ($routeName) {
-    //         'delivery-notes.show',
-    //         'shops.delivery-notes.show' => [
-    //             'label' => $deliveryNote->reference,
-    //             'route' => [
-    //                 'name'       => $routeName,
-    //                 'parameters' => [
-    //                     'deliveryNote' => $deliveryNote->slug
-    //                 ]
-
-    //             ]
-    //         ],
-    //         'shops.show.delivery-notes.show' => [
-    //             'label' => $deliveryNote->reference,
-    //             'route' => [
-    //                 'name'       => $routeName,
-    //                 'parameters' => [
-    //                     'shop'         => $deliveryNote->shop->slug,
-    //                     'deliveryNote' => $deliveryNote->slug
-    //                 ]
-
-    //             ]
-    //         ],
-    //         'grp.org.warehouses.show.dispatching.delivery_notes.show' => [
-    //             'label' => $deliveryNote->reference,
-    //             'route' => [
-    //                 'name'       => $routeName,
-    //                 'parameters' => [
-    //                     'organisation' => $deliveryNote->organisation->slug,
-    //                     'warehouse'    => $deliveryNote->warehouse->slug,
-    //                     'deliveryNote' => $deliveryNote->slug
-    //                 ]
-
-    //             ]
-    //         ],
-    //         'grp.org.shops.show.ordering.delivery-notes.show' => [
-    //             'label' => $deliveryNote->reference,
-    //             'route' => [
-    //                 'name'       => $routeName,
-    //                 'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'deliveryNote'])
-
-    //             ]
-    //         ],
-    //         'grp.org.shops.show.ordering.orders.show.delivery-note' => [
-    //             'label' => $deliveryNote->reference,
-    //             'route' => [
-    //                 'name'       => $routeName,
-    //                 'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'order', 'deliveryNote'])
-
-    //             ]
-    //         ],
-    //         'grp.org.shops.show.crm.customers.show.delivery_notes.show' => [
-    //             'label' => $deliveryNote->reference,
-    //             'route' => [
-    //                 'name'       => $routeName,
-    //                 'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'deliveryNote'])
-
-    //             ]
-    //         ],
-    //         default => null
-    //     };
-    // }
 }

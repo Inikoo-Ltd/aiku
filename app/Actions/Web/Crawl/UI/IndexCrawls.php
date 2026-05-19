@@ -17,6 +17,7 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Web\Crawl;
 use App\Models\Web\Website;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -29,7 +30,7 @@ class IndexCrawls extends OrgAction
 {
     use WithWebAuthorisation;
 
-    private Website $parent;
+    private Website|Group $parent;
 
     protected function getElementGroups(Website $website): array
     {
@@ -47,7 +48,7 @@ class IndexCrawls extends OrgAction
         ];
     }
 
-    public function handle(Website $website, $prefix = null): LengthAwarePaginator
+    public function handle(Website|Group $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -62,15 +63,20 @@ class IndexCrawls extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Crawl::class);
-        $queryBuilder->where('crawls.website_id', $website->id);
 
-        foreach ($this->getElementGroups($website) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: $prefix
-            );
+        if ($parent instanceof Group) {
+            $queryBuilder->whereIn('crawls.website_id', $parent->websites()->pluck('websites.id'));
+        } else {
+            $queryBuilder->where('crawls.website_id', $parent->id);
+
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
         }
 
         return $queryBuilder
@@ -93,11 +99,11 @@ class IndexCrawls extends OrgAction
             ])
             ->allowedSorts(['id', 'state', 'trigger', 'type', 'start_at', 'end_at', 'urls_processed', 'urls_found', 'created_at'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Website $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Website|Group $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
@@ -106,12 +112,14 @@ class IndexCrawls extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-                $table->elementGroup(
-                    key: $key,
-                    label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
-                );
+            if ($parent instanceof Website) {
+                foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
+                }
             }
 
             $table
@@ -139,6 +147,11 @@ class IndexCrawls extends OrgAction
     public function jsonResponse(LengthAwarePaginator $crawls): AnonymousResourceCollection
     {
         return CrawlsResource::collection($crawls);
+    }
+
+    public function inGroup(Group $group, $prefix = null): LengthAwarePaginator
+    {
+        return $this->handle($group, $prefix);
     }
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
