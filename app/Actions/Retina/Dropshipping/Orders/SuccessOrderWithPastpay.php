@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Accounting\OrderPaymentApiPoint\UpdateOrderPaymentApiPoint;
 use App\Actions\Accounting\PaymentGateway\Pastpay\WithPastpayConfiguration;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
@@ -17,6 +18,7 @@ use App\Actions\Ordering\Order\CalculateOrderHangingCharges;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
 use App\Actions\RetinaAction;
+use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -59,6 +61,7 @@ class SuccessOrderWithPastpay extends RetinaAction
         $toPay = (int) round((float) $toPay * 100);
 
         try {
+            $orderPaymentApiPoint = $order->orderPaymentApiPoint;
             $amount = $toPay / 100;
 
             $paymentData = [
@@ -68,6 +71,8 @@ class SuccessOrderWithPastpay extends RetinaAction
                 'state'                   => PaymentStateEnum::COMPLETED,
                 'type'                    => PaymentTypeEnum::PAYMENT,
                 'payment_account_shop_id' => $paymentAccountShop->id,
+                'api_point_type'          => class_basename($orderPaymentApiPoint),
+                'api_point_id'            => $orderPaymentApiPoint->id,
                 'data'                    => [
                     'pastpay' => $order->data
                 ],
@@ -88,6 +93,24 @@ class SuccessOrderWithPastpay extends RetinaAction
             AttachPaymentToOrder::make()->action($order, $payment, [
                 'amount' => $payment->amount,
             ]);
+
+            if ($order->total_amount > $order->payment_amount && $order->customer->balance > 0) {
+                SettleRetinaOrderWithBalance::run($order);
+            }
+
+            UpdateOrderPaymentApiPoint::run(
+                $orderPaymentApiPoint,
+                [
+                    'state'        => OrderPaymentApiPointStateEnum::SUCCESS,
+                    'processed_at' => now(),
+                    'data'         => [
+                        'payment_id' => $payment->id,
+                    ]
+                ]
+            );
+
+
+            $order->refresh();
 
             SubmitOrder::run($order);
 
