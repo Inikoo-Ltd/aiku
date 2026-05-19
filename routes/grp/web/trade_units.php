@@ -7,6 +7,8 @@
  */
 
 use App\Actions\Goods\TradeUnit\UI\EditTradeUnit;
+use App\Actions\Goods\TradeUnit\UI\IndexMissingDimensionsTradeUnits;
+use App\Actions\Goods\TradeUnit\UI\IndexMissingWeightTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexOrphanTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnit;
@@ -33,6 +35,8 @@ Route::prefix('units')->as('units.')->group(function () {
     Route::get('/discontinued', [IndexTradeUnits::class, 'discontinued'])->name('discontinued');
     Route::get('/anomality', [IndexTradeUnits::class, 'anomality'])->name('anomality');
     Route::get('/orphan', IndexOrphanTradeUnits::class)->name('orphan');
+    Route::get('/missing-weight', IndexMissingWeightTradeUnits::class)->name('missing_weight');
+    Route::get('/missing-dimensions', IndexMissingDimensionsTradeUnits::class)->name('missing_dimensions');
     Route::prefix('{tradeUnit:slug}')->group(function () {
         Route::get('', ShowTradeUnit::class)->name('show');
         Route::get('edit', EditTradeUnit::class)->name('edit');
