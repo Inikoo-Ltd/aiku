@@ -9,7 +9,7 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { TradeUnit } from "@/types/trade-unit"
 import Icon from "@/Components/Icon.vue"
-import { faSeedling, faScarecrow, faPencil, faSave, faTimes } from "@fal"
+import { faSeedling, faScarecrow, faPencil, faSave, faTimes, faSpinnerThird } from "@fal"
 import { faCheckCircle, faSkull, faTriangle, faEquals, faMinus } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -19,7 +19,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureInputDimension from "@/Components/Pure/PureInputDimension.vue"
 
-library.add(faCheckCircle, faSeedling, faSkull, faScarecrow, faTriangle, faEquals, faMinus, faPencil, faSave, faTimes)
+library.add(faCheckCircle, faSeedling, faSkull, faScarecrow, faTriangle, faEquals, faMinus, faPencil, faSave, faTimes, faSpinnerThird)
 
 const locale = inject("locale", aikuLocaleStructure)
 const showEditActions = computed(() =>
@@ -37,6 +37,7 @@ const editingCell = ref<Record<number, EditingField>>({})
 const editingMarketingWeight = ref<Record<number, string | null>>({})
 const editingDimensions = ref<Record<number, any>>({})
 const loadingSave = ref<number[]>([])
+const savedValues = ref<Record<number, Partial<TradeUnit>>>({})
 
 function onEdit(tradeUnit: TradeUnit, field: EditingField) {
     editingCell.value[tradeUnit.id] = field
@@ -55,7 +56,7 @@ function onCancel(tradeUnit: TradeUnit) {
     delete editingDimensions.value[tradeUnit.id]
 }
 
-function onSave(tradeUnit: TradeUnit) {
+async function onSave(tradeUnit: TradeUnit) {
     const field = editingCell.value[tradeUnit.id]
     if (!field) return
 
@@ -70,23 +71,27 @@ function onSave(tradeUnit: TradeUnit) {
         payload.marketing_dimensions = editingDimensions.value[tradeUnit.id]
     }
 
-    router.patch(
-        route("grp.models.trade-unit.update", { tradeUnit: tradeUnit.id }),
-        payload,
-        {
-            preserveScroll: true,
-            onStart: () => loadingSave.value.push(tradeUnit.id),
-            onSuccess: () => {
-                Object.assign(tradeUnit, payload)
-                delete editingCell.value[tradeUnit.id]
-                delete editingMarketingWeight.value[tradeUnit.id]
-                delete editingDimensions.value[tradeUnit.id]
-            },
-            onFinish: () => {
-                loadingSave.value = loadingSave.value.filter(id => id !== tradeUnit.id)
-            },
-        }
-    )
+    loadingSave.value.push(tradeUnit.id)
+
+    try {
+        await axios.patch(route("grp.models.trade-unit.update", { tradeUnit: tradeUnit.id }), payload)
+        savedValues.value[tradeUnit.id] = { ...savedValues.value[tradeUnit.id], ...payload }
+        delete editingCell.value[tradeUnit.id]
+        delete editingMarketingWeight.value[tradeUnit.id]
+        delete editingDimensions.value[tradeUnit.id]
+    } finally {
+        loadingSave.value = loadingSave.value.filter(id => id !== tradeUnit.id)
+    }
+}
+
+const formatDimensions = (dims: any): string => {
+    if (!dims || !Object.keys(dims).length) return ''
+    const parts = []
+    if (dims.l != null) parts.push(`L: ${dims.l}`)
+    if (dims.w != null) parts.push(`W: ${dims.w}`)
+    if (dims.h != null) parts.push(`H: ${dims.h}`)
+    const unit = dims.units ?? ''
+    return parts.join(' × ') + (unit ? ` ${unit}` : '')
 }
 
 function tradeUnitRoute(tradeUnit: TradeUnit) {
@@ -136,17 +141,18 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         <div class="w-24">
                             <PureInput v-model="editingMarketingWeight[tradeUnit.id]" type="number" step="1" min="0" autofocus />
                         </div>
-                        <span class="text-gray-500 text-sm">gram</span>
+                        <span class="text-gray-500 text-sm">grams</span>
                     </div>
-                    <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700">
-                        <FontAwesomeIcon icon="fal fa-save" class="h-5 w-5" />
+                    <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700 disabled:opacity-50">
+                        <FontAwesomeIcon v-if="loadingSave.includes(tradeUnit.id)" icon="fal fa-spinner-third" class="h-5 w-5 animate-spin" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-5 w-5" />
                     </button>
-                    <button @click="onCancel(tradeUnit)" class="text-gray-400 hover:text-gray-600">
+                    <button @click="onCancel(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-gray-400 hover:text-gray-600 disabled:opacity-50">
                         <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" />
                     </button>
                 </template>
                 <template v-else>
-                    <span>{{ tradeUnit["marketing_weight"] != null ? tradeUnit["marketing_weight"] + ' g' : '' }}</span>
+                    <span>{{ (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) != null ? (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) + ' g' : '' }}</span>
                     <button v-if="showEditActions" @click="onEdit(tradeUnit, 'marketing_weight')" class="text-gray-400 hover:text-gray-600">
                         <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
                     </button>
@@ -160,15 +166,16 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     <div class="shrink-0">
                         <PureInputDimension v-model="editingDimensions[tradeUnit.id]" />
                     </div>
-                    <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700">
-                        <FontAwesomeIcon icon="fal fa-save" class="h-5 w-5" />
+                    <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700 disabled:opacity-50">
+                        <FontAwesomeIcon v-if="loadingSave.includes(tradeUnit.id)" icon="fal fa-spinner-third" class="h-5 w-5 animate-spin" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-5 w-5" />
                     </button>
-                    <button @click="onCancel(tradeUnit)" class="text-gray-400 hover:text-gray-600">
+                    <button @click="onCancel(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-gray-400 hover:text-gray-600 disabled:opacity-50">
                         <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" />
                     </button>
                 </template>
                 <template v-else>
-                    <span>{{ tradeUnit["marketing_dimensions"] && Object.keys(tradeUnit["marketing_dimensions"]).length ? JSON.stringify(tradeUnit["marketing_dimensions"]) : '' }}</span>
+                    <span>{{ formatDimensions(savedValues[tradeUnit.id]?.marketing_dimensions ?? tradeUnit["marketing_dimensions"]) }}</span>
                     <button v-if="showEditActions" @click="onEdit(tradeUnit, 'marketing_dimensions')" class="text-gray-400 hover:text-gray-600">
                         <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
                     </button>
