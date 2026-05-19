@@ -120,6 +120,8 @@ class CollectionsResource extends JsonResource
             'parents_data'            => $this->parseCollectionParentsData($this->parents_data),
             'image_thumbnail'         => Arr::get($this->web_images, 'main.thumbnail'),
             'currency_code'           => $this->currency_code ?? null,
+            'number_current_families'       => $this->number_current_families ?? 0,
+            'number_current_products'       => $this->number_current_products ?? 0,
             'sales_grp_currency_external' => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),

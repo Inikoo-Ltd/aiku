@@ -90,7 +90,7 @@ class FamiliesResource extends JsonResource
             'description'                   => $this->description,
             'created_at'                    => $this->created_at,
             'updated_at'                    => $this->updated_at,
-            'number_current_products'       => $this->number_current_products,
+            'number_current_products'       => $this->number_current_products ?? 0,
             'collections'                   => $collections,
             'sales_grp_currency_external'   => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,

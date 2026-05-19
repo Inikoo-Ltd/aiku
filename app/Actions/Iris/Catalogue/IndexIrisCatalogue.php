@@ -157,6 +157,10 @@ class IndexIrisCatalogue extends IrisAction
                     'products.created_at',
                     'products.updated_at',
                     'products.web_images',
+                    'products.price',
+                    'products.rrp',
+                    'products.available_quantity',
+                    'products.gross_weight',
                     'webpages.canonical_url',
                     'department.code as department_code',
                     'department.name as department_name',
@@ -252,9 +256,11 @@ class IndexIrisCatalogue extends IrisAction
             }
 
             if ($scope == 'product') {
-                $table->column(key: 'department_code', label:  __(key: 'Department'));
-                $table->column(key: 'sub_department', label:  __(key: 'Sub Department'));
-                $table->column(key: 'family', label:  __(key: 'Family'));
+                 $table
+                ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'gross_weight', label: __('Weight'), canBeHidden: false, align: 'right')
+                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
             $columns = match ($scope) {
@@ -271,7 +277,7 @@ class IndexIrisCatalogue extends IrisAction
                 ],
                 'sub_department' => [
                     ['key' => 'number_current_families', 'label' => __('Families'), 'sortable' => true],
-                    ['key' => 'number_current_collections', 'label' => __('Collections'), 'sortable' => true],
+                    // ['key' => 'number_current_collections', 'label' => __('Collections'), 'sortable' => true],
                 ],
                 'family'      => [
                     ['key' => 'number_current_products', 'label' => __('Products'), 'sortable' => true],
