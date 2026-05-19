@@ -39,7 +39,7 @@ class IndexMissingWeightTradeUnits extends GrpAction
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value);
     }
 
-    public function handle(string $prefix = null): LengthAwarePaginator
+    public function handle(?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {

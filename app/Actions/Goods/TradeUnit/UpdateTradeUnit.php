@@ -256,7 +256,7 @@ class UpdateTradeUnit extends GrpAction
             'barcode'                      => ['sometimes', 'required'],
             'gross_weight'                 => ['sometimes', 'required', 'numeric'],
             'net_weight'                   => ['sometimes', 'required', 'numeric'],
-            'marketing_weight'             => ['sometimes', 'required', 'integer'],
+            'marketing_weight'             => ['sometimes', 'required', 'numeric','min:1'],
             'marketing_dimensions'         => ['sometimes', 'required'],
             'type'                         => ['sometimes', 'required'],
             'image_id'                     => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
