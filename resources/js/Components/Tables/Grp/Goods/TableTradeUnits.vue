@@ -128,8 +128,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(marketing_weight)="{ item: tradeUnit }">
             <div class="flex items-center justify-end gap-2">
                 <template v-if="editingCell[tradeUnit.id] === 'marketing_weight'">
-                    <div class="w-24 shrink-0">
-                        <PureInput v-model="editingMarketingWeight[tradeUnit.id]" type="number" autofocus />
+                    <div class="flex items-center gap-1 shrink-0">
+                        <div class="w-24">
+                            <PureInput v-model="editingMarketingWeight[tradeUnit.id]" type="number" autofocus />
+                        </div>
+                        <span class="text-gray-500 text-sm">g</span>
                     </div>
                     <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700">
                         <FontAwesomeIcon icon="fal fa-save" class="h-3.5 w-3.5" />
