@@ -3,7 +3,6 @@ import { faCube, faLink } from "@fal"
 import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 

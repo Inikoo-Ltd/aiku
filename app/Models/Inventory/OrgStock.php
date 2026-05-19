@@ -173,6 +173,8 @@ class OrgStock extends Model implements Auditable
         'code',
         'name',
         'state',
+        'is_on_demand',
+        'packed_in',
     ];
 
     public function getSlugOptions(): SlugOptions

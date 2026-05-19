@@ -15,7 +15,7 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import 'swiper/css/free-mode'
 
-import Family2Render from './Families2Render.vue'
+import Family2Render from '@/Iris/Components/Families2Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
 import LinkIris from "@/Iris/Components/LinkIris.vue"

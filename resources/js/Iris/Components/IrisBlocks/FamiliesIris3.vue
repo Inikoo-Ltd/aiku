@@ -12,7 +12,7 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/free-mode'
 
-import Family3Render from './Families3Render.vue'
+import Family3Render from '@/Iris/Components/Families3Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
 import LinkIris from "@/Iris/Components/LinkIris.vue"
