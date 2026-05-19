@@ -49,6 +49,7 @@ class IndexOrgStocksInTradeUnit extends OrgAction
                 'org_stocks.slug',
                 'org_stocks.name',
                 'org_stocks.state',
+                'org_stocks.packed_in',
                 'model_has_trade_units.quantity as quantity',
                 'organisations.code as organisation_code',
                 'organisations.name as organisation_name',

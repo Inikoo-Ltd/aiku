@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Console\Command;
 use Sentry;
 
 class AcceptShopifyCancellationRequest extends OrgAction
@@ -27,7 +28,7 @@ class AcceptShopifyCancellationRequest extends OrgAction
             $mutation = <<<'MUTATION'
                     mutation acceptCancellationRequest($id: ID!, $message: String!) {
                         fulfillmentOrderAcceptCancellationRequest(
-                            id: $id, 
+                            id: $id,
                             message: $message
                         ) {
                             fulfillmentOrder {
@@ -52,5 +53,15 @@ class AcceptShopifyCancellationRequest extends OrgAction
         } catch (\Exception $e) {
             Sentry::captureException($e);
         }
+    }
+
+    public string $commandSignature = 'AcceptShopifyCancellationRequest {shopify_user_id} {order}';
+
+    public function asCommand(Command $command): void
+    {
+        $orderId = $command->argument('order');
+        $shopifyUser = ShopifyUser::find($command->argument('shopify_user_id'));
+
+        $this->handle($shopifyUser, $orderId, 'Accepted');
     }
 }

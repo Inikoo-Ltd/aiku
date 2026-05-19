@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { faGalaxy, faTimesCircle } from "@fas";
 import { getStyles } from "@/Composables/styles"
-import Image from "@common/Components/Image.vue";
 import { computed, ref, inject } from "vue";
 import {
-  faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse,
+  faBaby, faCactus, faObjectGroup, faUser, faHouse,
   faTruck, faTag, faPhone, faInfoCircle
 } from "@fal";
 import {
@@ -18,11 +15,9 @@ import {
   faPoundSign, faClock
 } from "@far";
 import { faLambda } from "@fad";
-import { trans } from "laravel-vue-i18n"
 import LinkIris from "@/Iris/Components/LinkIris.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-// Tambahkan semua ikon ke library
 library.add(
   faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda,
   faBackpack, faHouse, faTruck, faTag, faPhone, faInfoCircle,
@@ -132,7 +127,6 @@ const idxSlideLoading = ref<number | null>(null)
           <LoadingIcon />
         </div>
       </LinkIris>
-
     </div>
   </div>
 </template>

@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -16,8 +16,10 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
+use Illuminate\Support\Arr;
+use App\Actions\Web\WebBlock\GetWebBlockCollections;
 
-class GetWebBlockSubDepartments
+class GetIrisWebBlockSubDepartments
 {
     use AsObject;
 
@@ -50,25 +52,25 @@ class GetWebBlockSubDepartments
             ->get();
 
         $productRoute = [
-            'workshop' => [
-                'name'       => 'grp.json.product_category.products.index',
-                'parameters' => [$department->slug],
-            ],
             'iris'     => [
                 'name'       => 'iris.json.product_category.products.index',
                 'parameters' => [$department->slug],
             ],
         ];
 
-        $permissions = [];
-
-        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', WebBlockSubDepartmentsResource::collection($subDepartments)->toArray(request()));
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));
 
-        return $webBlock;
+         return [
+            'type' => $webBlock['type'],
+            'structure' => Arr::get(
+                $webBlock,
+                'web_block.layout.data.fieldValue',
+                []
+            ),
+        ];
     }
 
 }
