@@ -14,6 +14,7 @@ import { faCheckCircle, faSkull, faTriangle, faEquals, faMinus } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, computed, ref } from "vue"
+import axios from "axios"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureInputDimension from "@/Components/Pure/PureInputDimension.vue"
@@ -61,7 +62,10 @@ function onSave(tradeUnit: TradeUnit) {
     const payload: Record<string, any> = {}
 
     if (field === 'marketing_weight') {
-        payload.marketing_weight = editingMarketingWeight.value[tradeUnit.id]
+        const raw = editingMarketingWeight.value[tradeUnit.id]
+        const parsed = Number(raw)
+        if (raw === null || raw === '' || !Number.isInteger(parsed) || parsed < 0) return
+        payload.marketing_weight = parsed
     } else {
         payload.marketing_dimensions = editingDimensions.value[tradeUnit.id]
     }
@@ -130,15 +134,15 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <template v-if="editingCell[tradeUnit.id] === 'marketing_weight'">
                     <div class="flex items-center gap-1 shrink-0">
                         <div class="w-24">
-                            <PureInput v-model="editingMarketingWeight[tradeUnit.id]" type="number" autofocus />
+                            <PureInput v-model="editingMarketingWeight[tradeUnit.id]" type="number" step="1" min="0" autofocus />
                         </div>
-                        <span class="text-gray-500 text-sm">g</span>
+                        <span class="text-gray-500 text-sm">gram</span>
                     </div>
                     <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700">
-                        <FontAwesomeIcon icon="fal fa-save" class="h-3.5 w-3.5" />
+                        <FontAwesomeIcon icon="fal fa-save" class="h-5 w-5" />
                     </button>
                     <button @click="onCancel(tradeUnit)" class="text-gray-400 hover:text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-times" class="h-3.5 w-3.5" />
+                        <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" />
                     </button>
                 </template>
                 <template v-else>
@@ -157,10 +161,10 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         <PureInputDimension v-model="editingDimensions[tradeUnit.id]" />
                     </div>
                     <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700">
-                        <FontAwesomeIcon icon="fal fa-save" class="h-3.5 w-3.5" />
+                        <FontAwesomeIcon icon="fal fa-save" class="h-5 w-5" />
                     </button>
                     <button @click="onCancel(tradeUnit)" class="text-gray-400 hover:text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-times" class="h-3.5 w-3.5" />
+                        <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" />
                     </button>
                 </template>
                 <template v-else>
