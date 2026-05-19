@@ -297,7 +297,7 @@ class IndexIrisCatalogue extends IrisAction
                 $table->column(key: $column['key'], label: $column['label'], tooltip: __('current :colLabel', ['colLabel' => strtolower($column['label'])]), sortable: $column['sortable']);
             }
 
-            $table->column(key: 'public_url', label: __('Webpage'), align: 'right');
+            $table->column(key: 'public_url', label: __('Webpage'), align: 'center');
         };
     }
 
