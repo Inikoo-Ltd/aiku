@@ -55,5 +55,12 @@ defineProps<{
         <template #cell(number_current_products)="{ item: department }">
             {{ department["number_current_products"] }}
         </template>
+        <template #cell(public_url)="{ item: department }">
+            <div class="flex justify-center">
+                <a v-if="department.public_url" :href="department.public_url" target="_blank">
+                    <FontAwesomeIcon :icon="faExternalLink" />
+                </a>
+            </div>
+        </template>
     </Table>
 </template>

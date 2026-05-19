@@ -46,6 +46,19 @@ class ShowIrisCollection extends IrisAction
                     'current'    => $this->tab,
                     'navigation' => IrisCollectionTabsEnum::navigation($collection),
                 ],
+                'mini_breadcrumbs' => array_filter([
+                    [
+                        'label'   => $collection->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.collection.show',
+                            'parameters' => [
+                                'collection' => $collection->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Collection'),
+                        'icon'    => ['fal', 'album-collection'],
+                    ],
+                ]),
 
                 'data' => [
                     'collection' => CollectionResource::make($collection)->resolve(),

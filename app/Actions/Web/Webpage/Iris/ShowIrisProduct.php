@@ -39,6 +39,52 @@ class ShowIrisProduct extends IrisAction
                     ],
                     'iconRight' => $product->state->stateIcon()[$product->state->value],
                 ],
+                'mini_breadcrumbs' => array_filter([
+                    $product->department ? [
+                        'label'   => $product->department->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.department.show',
+                            'parameters' => [
+                                'department' => $product->department->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Department'),
+                        'icon'    => ['fal', 'folder-tree'],
+                    ] : [],
+                    $product->subDepartment ? [
+                        'label'   => $product->subDepartment->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.sub_department.show',
+                            'parameters' => [
+                                'subDepartment' => $product->subDepartment->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Sub-Department'),
+                        'icon'    => ['fal', 'folder-download'],
+                    ] : [],
+                    $product->family ? [
+                        'label'   => $product->family->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.family.show',
+                            'parameters' => [
+                                'family' => $product->family->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Family'),
+                        'icon'    => ['fal', 'folder'],
+                    ] : [],
+                    [
+                        'label'   => $product->code,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.product.show',
+                            'parameters' => [
+                                'product' => $product->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Product'),
+                        'icon'    => ['fal', 'cube'],
+                    ],
+                ]),
 
                 'data' => [
                     'product'       => ProductResource::make($product)->resolve(),

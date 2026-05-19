@@ -92,10 +92,12 @@ const parentInfo = computed(() => {
             </span>
         </template>
 
-          <template #cell(url)="{ item }">
-           <a :href="item.canonical_url"> 
-                <FontAwesomeIcon :icon="faExternalLink" />
-           </a>
+        <template #cell(public_url)="{ item: item }">
+            <div class="flex justify-center">
+                <a v-if="item.public_url" :href="item.public_url" target="_blank">
+                    <FontAwesomeIcon :icon="faExternalLink" />
+                </a>
+            </div>
         </template>
     </Table>
 </template>

@@ -97,6 +97,7 @@ class SubDepartmentsResource extends JsonResource
             'listings'                      => $this->listings ?? 0,
             'sold'                          => $this->sold ?? 0,
             'health_rank'              => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'public_url'               => $this->canonical_url,
         ];
     }
 

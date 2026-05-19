@@ -84,10 +84,12 @@ const parentInfo = computed(() => {
             {{ item["number_current_collections"] }}
         </template>
 
-           <template #cell(url)="{ item }">
-           <a :href="`/${item.code}`">
-                <FontAwesomeIcon :icon="faExternalLink" />
-           </a>
+        <template #cell(public_url)="{ item: item }">
+            <div class="flex justify-center">
+                <a v-if="item.public_url" :href="item.public_url" target="_blank">
+                    <FontAwesomeIcon :icon="faExternalLink" />
+                </a>
+            </div>
         </template>
 
 

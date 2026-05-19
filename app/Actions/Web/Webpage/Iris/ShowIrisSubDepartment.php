@@ -48,6 +48,30 @@ class ShowIrisSubDepartment extends IrisAction
                     'current'    => $this->tab,
                     'navigation' => IrisSubDepartmentTabsEnum::navigation($subDepartment),
                 ],
+                'mini_breadcrumbs' => array_filter([
+                    $subDepartment->department ? [
+                        'label'   => $subDepartment->department->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.department.show',
+                            'parameters' => [
+                                'department' => $subDepartment->department->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Department'),
+                        'icon'    => ['fal', 'folder-tree'],
+                    ] : [],
+                    [
+                        'label'   => $subDepartment->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.sub_department.show',
+                            'parameters' => [
+                                'subDepartment' => $subDepartment->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Sub-Department'),
+                        'icon'    => ['fal', 'folder-download'],
+                    ],
+                ]),
 
                 'data' => [
                     'sub_department' => SubDepartmentResource::make($subDepartment)->resolve(),

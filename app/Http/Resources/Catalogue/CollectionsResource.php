@@ -130,6 +130,7 @@ class CollectionsResource extends JsonResource
             'invoices_delta'          => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
             'current_interval'        => $this->current_interval ?? 'ytd',
             'health_rank'             => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'public_url'              => $this->canonical_url ?? $this->webpage_url,
         ];
     }
 

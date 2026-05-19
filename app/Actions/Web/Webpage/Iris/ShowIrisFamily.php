@@ -46,6 +46,41 @@ class ShowIrisFamily extends IrisAction
                     'current'    => $this->tab,
                     'navigation' => IrisFamilyTabsEnum::navigation($family),
                 ],
+                'mini_breadcrumbs' => array_filter([
+                    $family->department ? [
+                        'label'   => $family->department->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.department.show',
+                            'parameters' => [
+                                'department' => $family->department->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Department'),
+                        'icon'    => ['fal', 'folder-tree'],
+                    ] : [],
+                    $family->subDepartment ? [
+                        'label'   => $family->subDepartment->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.sub_department.show',
+                            'parameters' => [
+                                'subDepartment' => $family->subDepartment->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Sub-Department'),
+                        'icon'    => ['fal', 'folder-download'],
+                    ] : [],
+                    [
+                        'label'   => $family->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.family.show',
+                            'parameters' => [
+                                'family' => $family->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Family'),
+                        'icon'    => ['fal', 'folder'],
+                    ],
+                ]),
 
                 'data' => [
                     'family'        => FamilyResource::make($family)->resolve(),

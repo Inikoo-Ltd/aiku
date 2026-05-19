@@ -50,6 +50,20 @@ class ShowIrisDepartment extends IrisAction
                     'navigation' => IrisDepartmentTabsEnum::navigation($department),
                 ],
 
+                'mini_breadcrumbs' => array_filter([
+                    [
+                        'label'   => $department->name,
+                        'to'      => [
+                            'name'       => 'iris.catalogue.department.show',
+                            'parameters' => [
+                                'department' => $department->slug,
+                            ],
+                        ],
+                        'tooltip' => __('Department'),
+                        'icon'    => ['fal', 'folder-tree'],
+                    ],
+                ]),
+                
                 'data' => [
                     'department'    => DepartmentResource::make($department)->resolve(),
                     'data_feed_url' => route('iris.product_category.data_feed', ['productCategory' => $department->slug]),

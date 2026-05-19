@@ -112,6 +112,7 @@ class FamiliesResource extends JsonResource
             'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
             'image_thumbnail'               => Arr::get($this->web_images, 'main.thumbnail'),
             'health_rank'                   => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'public_url'                    => $this->canonical_url,
         ];
     }
 
