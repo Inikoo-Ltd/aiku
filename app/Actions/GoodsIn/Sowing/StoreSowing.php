@@ -29,12 +29,12 @@ class StoreSowing extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    protected DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem  $parent;
-    protected User $user;
+    protected DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem $parent;
+    protected ?User $user;
 
     public function handle(DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem $parent, array $modelData): Sowing
     {
-        $locationOrgStock = null;
+        $locationOrgStock   = null;
         $locationOrgStockId = Arr::pull($modelData, 'location_org_stock_id', null);
         if ($locationOrgStockId) {
             $locationOrgStock = LocationOrgStock::find($locationOrgStockId);
@@ -103,7 +103,7 @@ class StoreSowing extends OrgAction
             ],
             'quantity'              => ['required', 'numeric', 'gt:0'],
             'sower_user_id'         => [
-                'required',
+                'sometimes',
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
             ],
             'original_picking_id'   => ['sometimes', 'nullable', 'exists:pickings,id'],
@@ -120,14 +120,14 @@ class StoreSowing extends OrgAction
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
-        $this->user = $request->user();
+        $this->user   = $request->user();
         $this->parent = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
         $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(ReturnDeliveryNoteItem|DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Sowing
+    public function action(ReturnDeliveryNoteItem|DeliveryNoteItem $deliveryNoteItem, ?User $user, array $modelData): Sowing
     {
         $this->asAction = true;
         $this->user     = $user;
