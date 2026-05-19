@@ -11,7 +11,6 @@ enum IrisSubDepartmentTabsEnum: string
     use EnumHelperTrait;
     use HasTabsWithQuantity;
 
-    case OVERVIEW = 'overview';
     case FAMILIES = 'families';
     case PRODUCTS = 'products';
     case COLLECTIONS = 'collections';
@@ -23,10 +22,6 @@ enum IrisSubDepartmentTabsEnum: string
         $collections = $parent->stats->number_collections_state_active;
 
         return match ($this) {
-            IrisSubDepartmentTabsEnum::OVERVIEW => [
-                'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
-            ],
             IrisSubDepartmentTabsEnum::FAMILIES => [
                 'title' => __('Families') . " ({$families})",
                 'icon'  => 'fal fa-folder',

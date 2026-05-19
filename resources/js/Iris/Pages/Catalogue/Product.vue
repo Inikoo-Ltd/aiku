@@ -7,13 +7,10 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 
-import IrisLayout from '@/Layouts/Iris.vue'
-import CatalogueLayout from '@/Iris/Layouts/CatalogueLayout.vue'
 import CatalogueOverview from '@/Iris/Components/Catalogue/CatalogueOverview.vue'
+import CatalogueTabs from '@/Iris/Components/Catalogue/CatalogueTabs.vue'
 
 library.add(faCube)
-
-defineOptions({ layout: [IrisLayout, CatalogueLayout] })
 
 defineProps<{
     title: string
@@ -34,9 +31,16 @@ defineProps<{
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
 
-    <div class="px-4 py-4">
-        <CatalogueOverview :entity="data.product" :data-feed-url="data.data_feed_url" />
+    <div class="max-w-7xl mx-auto my-8">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <CatalogueTabs />
+
+            <PageHeading :data="pageHead" />
+
+            <div class="px-4 py-4">
+                <CatalogueOverview :entity="data.product" :data-feed-url="data.data_feed_url" />
+            </div>
+        </div>
     </div>
 </template>

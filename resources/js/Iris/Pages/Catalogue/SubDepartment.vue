@@ -10,17 +10,13 @@ import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 
-import IrisLayout from '@/Layouts/Iris.vue'
-import CatalogueLayout from '@/Iris/Layouts/CatalogueLayout.vue'
-
 import TableIrisFamilies from '@/Iris/Components/Catalogue/TableIrisFamilies.vue'
 import TableIrisProducts from '@/Iris/Components/Catalogue/TableIrisProducts.vue'
 import TableIrisCollection from '@/Iris/Components/Catalogue/TableIrisCollection.vue'
 import CatalogueOverview from '@/Iris/Components/Catalogue/CatalogueOverview.vue'
+import CatalogueTabs from '@/Iris/Components/Catalogue/CatalogueTabs.vue'
 
 library.add(faCube, faFolder, faDotCircle, faAlbumCollection, faTachometerAltFast)
-
-defineOptions({ layout: [IrisLayout, CatalogueLayout] })
 
 const props = defineProps<{
     title: string
@@ -75,14 +71,21 @@ const componentProps = computed(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
-    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <div class="px-4 py-4">
-        <component
-            v-if="component"
-            :is="component"
-            v-bind="componentProps"
-        />
+    <div class="max-w-7xl mx-auto my-8">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <CatalogueTabs />
+
+            <PageHeading :data="pageHead" />
+            <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+
+            <div class="px-4 py-4">
+                <component
+                    v-if="component"
+                    :is="component"
+                    v-bind="componentProps"
+                />
+            </div>
+        </div>
     </div>
 </template>

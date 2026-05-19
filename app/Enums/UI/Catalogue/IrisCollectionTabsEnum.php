@@ -11,7 +11,6 @@ enum IrisCollectionTabsEnum: string
     use EnumHelperTrait;
     use HasTabsWithQuantity;
 
-    case OVERVIEW = 'overview';
     case FAMILIES = 'families';
     case PRODUCTS = 'products';
 
@@ -21,10 +20,6 @@ enum IrisCollectionTabsEnum: string
         $products = $parent->stats->number_products ?? 0;
 
         return match ($this) {
-            IrisCollectionTabsEnum::OVERVIEW => [
-                'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
-            ],
             IrisCollectionTabsEnum::FAMILIES => [
                 'title' => __('Families') . " ({$families})",
                 'icon'  => 'fal fa-folder',

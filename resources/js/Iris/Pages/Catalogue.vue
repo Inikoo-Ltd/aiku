@@ -2,16 +2,13 @@
 import { computed } from 'vue'
 import type { Component } from 'vue'
 
-import IrisLayout from '@/Layouts/Iris.vue'
-import CatalogueLayout from '@/Iris/Layouts/CatalogueLayout.vue'
+import CatalogueTabs from '@/Iris/Components/Catalogue/CatalogueTabs.vue'
 
 import TableIrisDepartment from '../Components/Catalogue/TableIrisDepartment.vue'
 import TableIrisSubDepartment from '../Components/Catalogue/TableIrisSubDepartment.vue'
 import TableIrisFamilies from '../Components/Catalogue/TableIrisFamilies.vue'
 import TableIrisProducts from '../Components/Catalogue/TableIrisProducts.vue'
 import TableIrisCollection from '../Components/Catalogue/TableIrisCollection.vue'
-
-defineOptions({ layout: [IrisLayout, CatalogueLayout] })
 
 const props = defineProps<{
     tabs: {
@@ -36,7 +33,12 @@ const activeComponent = computed(() => componentMap[props.tabs.current] ?? null)
 </script>
 
 <template>
-    <div class="p-3">
-        <component v-if="activeComponent" :is="activeComponent" :data="data" :tab="tabs.current" />
+    <div class="max-w-7xl mx-auto my-8">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <CatalogueTabs />
+            <div class="p-3">
+                <component v-if="activeComponent" :is="activeComponent" :data="data" :tab="tabs.current" />
+            </div>
+        </div>
     </div>
 </template>
