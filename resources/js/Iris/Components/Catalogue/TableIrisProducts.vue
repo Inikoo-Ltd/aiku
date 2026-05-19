@@ -87,7 +87,7 @@ console.log("products", props.data)
 
         <template #cell(public_url)="{ item: item }">
             <div class="flex justify-center">
-                <a v-if="item.public_url" :href="item.public_url" target="_blank">
+                <a v-if="item.public_url" :href="item.public_url ?? item.iris_url" target="_blank">
                     <FontAwesomeIcon :icon="faExternalLink" />
                 </a>
             </div>
