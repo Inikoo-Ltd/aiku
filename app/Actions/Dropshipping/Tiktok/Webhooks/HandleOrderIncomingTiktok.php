@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Tiktok\Webhooks;
 
 use App\Actions\Dropshipping\Tiktok\Order\ShowTiktokOrderApi;
 use App\Actions\Dropshipping\Tiktok\Order\ValidateIncomingTiktokOrder;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -48,7 +49,11 @@ class HandleOrderIncomingTiktok
                         ->first();
 
                     if ($orderToBeCancel) {
-                        CancelOrder::run($orderToBeCancel);
+                        UpdateOrder::make()->action($orderToBeCancel, [
+                            'internal_notes' => __('Order cancelled by Tiktok'),
+                        ]);
+
+                        CancelOrder::make()->action($orderToBeCancel);
                     }
                 }
             }

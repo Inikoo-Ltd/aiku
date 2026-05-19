@@ -8,8 +8,10 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Traits;
 
+use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -82,6 +84,12 @@ trait WithTiktokApiServices
     public function makeApiRequest(string $method, string $path, array $productData = [], bool $requireShopCipher = true, array $headers = [], bool $requireSign = true, array $params = [])
     {
         try {
+            $expiredTokenAt = now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($this->access_token_expire_in));
+
+            if ($expiredTokenAt) {
+                AuthenticateTiktokAccount::make()->getAccessTokenViaRefreshToken($this);
+            }
+
             $apiRequest = $this->restApi($path, $productData, $requireShopCipher, $headers, $requireSign, $params);
 
             $response = match (strtoupper($method)) {
@@ -256,6 +264,12 @@ trait WithTiktokApiServices
         ], true, [
             'content-type' => 'application/json'
         ]);
+    }
+
+    private function handleUnauthorized(): void
+    {
+        Log::warning('Unauthorized access detected. Refreshing token or taking necessary action.');
+        // Add your logic here for handling unauthorized access, e.g., refreshing the token.
     }
 
     public function shipPackage(string $packageId): array
