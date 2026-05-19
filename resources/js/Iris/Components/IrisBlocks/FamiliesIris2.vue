@@ -14,7 +14,7 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import 'swiper/css/free-mode'
 
-import Family2Render from './Families2Render.vue'
+import Family2Render from '@/Iris/Components/Families2Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
 import LinkIris from "@/Iris/Components/LinkIris.vue"
@@ -187,7 +187,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 </script>
 
 <template>
-  <div :id="fieldValue?.id ? fieldValue?.id : 'families-2'+indexBlock" component="families-2" :key="refreshTrigger"
+  <div :id="fieldValue?.id ? fieldValue?.id : 'families-2' + indexBlock" component="families-2" :key="refreshTrigger"
     ref="containerRef">
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
