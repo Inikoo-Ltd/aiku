@@ -66,7 +66,6 @@ const onNoStructureUpload = () => {
 		  	</template>
 
 			<template #button-download-pdf="{ action }">
-				{{ route(action.route?.name, action.route?.parameters) }}
 				<a
 					:href="route(action.route?.name, action.route?.parameters)"
 					:target="'_blank'"

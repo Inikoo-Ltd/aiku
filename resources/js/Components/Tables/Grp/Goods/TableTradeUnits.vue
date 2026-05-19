@@ -9,21 +9,81 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { TradeUnit } from "@/types/trade-unit"
 import Icon from "@/Components/Icon.vue"
-import { faSeedling, faScarecrow } from "@fal"
+import { faSeedling, faScarecrow, faPencil, faSave, faTimes } from "@fal"
 import { faCheckCircle, faSkull, faTriangle, faEquals, faMinus } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject } from "vue"
+import { inject, computed, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import PureInputDimension from "@/Components/Pure/PureInputDimension.vue"
 
-library.add(faCheckCircle, faSeedling, faSkull, faScarecrow, faTriangle, faEquals, faMinus)
+library.add(faCheckCircle, faSeedling, faSkull, faScarecrow, faTriangle, faEquals, faMinus, faPencil, faSave, faTimes)
 
 const locale = inject("locale", aikuLocaleStructure)
+const showEditActions = computed(() =>
+    route().current('grp.trade_units.units.missing_weight') ||
+    route().current('grp.trade_units.units.missing_dimensions')
+)
 
 defineProps<{
     data: {}
     tab?: string
 }>()
+
+type EditingField = 'marketing_weight' | 'marketing_dimensions'
+const editingCell = ref<Record<number, EditingField>>({})
+const editingMarketingWeight = ref<Record<number, string | null>>({})
+const editingDimensions = ref<Record<number, any>>({})
+const loadingSave = ref<number[]>([])
+
+function onEdit(tradeUnit: TradeUnit, field: EditingField) {
+    editingCell.value[tradeUnit.id] = field
+    if (field === 'marketing_weight') {
+        editingMarketingWeight.value[tradeUnit.id] = tradeUnit.marketing_weight ?? null
+    } else {
+        editingDimensions.value[tradeUnit.id] = tradeUnit.marketing_dimensions && Object.keys(tradeUnit.marketing_dimensions).length
+            ? { ...tradeUnit.marketing_dimensions }
+            : null
+    }
+}
+
+function onCancel(tradeUnit: TradeUnit) {
+    delete editingCell.value[tradeUnit.id]
+    delete editingMarketingWeight.value[tradeUnit.id]
+    delete editingDimensions.value[tradeUnit.id]
+}
+
+function onSave(tradeUnit: TradeUnit) {
+    const field = editingCell.value[tradeUnit.id]
+    if (!field) return
+
+    const payload: Record<string, any> = {}
+
+    if (field === 'marketing_weight') {
+        payload.marketing_weight = editingMarketingWeight.value[tradeUnit.id]
+    } else {
+        payload.marketing_dimensions = editingDimensions.value[tradeUnit.id]
+    }
+
+    router.patch(
+        route("grp.models.trade-unit.update", { tradeUnit: tradeUnit.id }),
+        payload,
+        {
+            preserveScroll: true,
+            onStart: () => loadingSave.value.push(tradeUnit.id),
+            onSuccess: () => {
+                Object.assign(tradeUnit, payload)
+                delete editingCell.value[tradeUnit.id]
+                delete editingMarketingWeight.value[tradeUnit.id]
+                delete editingDimensions.value[tradeUnit.id]
+            },
+            onFinish: () => {
+                loadingSave.value = loadingSave.value.filter(id => id !== tradeUnit.id)
+            },
+        }
+    )
+}
 
 function tradeUnitRoute(tradeUnit: TradeUnit) {
     return route(
@@ -64,9 +124,51 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(name)="{ item: tradeUnit }">
             {{ tradeUnit["name"] }}
         </template>
+
         <template #cell(marketing_weight)="{ item: tradeUnit }">
-            {{ tradeUnit["marketing_weight"] }}
+            <div class="flex items-center justify-end gap-2">
+                <template v-if="editingCell[tradeUnit.id] === 'marketing_weight'">
+                    <div class="w-24 shrink-0">
+                        <PureInput v-model="editingMarketingWeight[tradeUnit.id]" type="number" autofocus />
+                    </div>
+                    <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700">
+                        <FontAwesomeIcon icon="fal fa-save" class="h-3.5 w-3.5" />
+                    </button>
+                    <button @click="onCancel(tradeUnit)" class="text-gray-400 hover:text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-times" class="h-3.5 w-3.5" />
+                    </button>
+                </template>
+                <template v-else>
+                    <span>{{ tradeUnit["marketing_weight"] != null ? tradeUnit["marketing_weight"] + ' g' : '' }}</span>
+                    <button v-if="showEditActions" @click="onEdit(tradeUnit, 'marketing_weight')" class="text-gray-400 hover:text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
+                    </button>
+                </template>
+            </div>
         </template>
+
+        <template #cell(marketing_dimensions)="{ item: tradeUnit }">
+            <div class="flex items-center justify-end gap-2">
+                <template v-if="editingCell[tradeUnit.id] === 'marketing_dimensions'">
+                    <div class="shrink-0">
+                        <PureInputDimension v-model="editingDimensions[tradeUnit.id]" />
+                    </div>
+                    <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700">
+                        <FontAwesomeIcon icon="fal fa-save" class="h-3.5 w-3.5" />
+                    </button>
+                    <button @click="onCancel(tradeUnit)" class="text-gray-400 hover:text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-times" class="h-3.5 w-3.5" />
+                    </button>
+                </template>
+                <template v-else>
+                    <span>{{ tradeUnit["marketing_dimensions"] && Object.keys(tradeUnit["marketing_dimensions"]).length ? JSON.stringify(tradeUnit["marketing_dimensions"]) : '' }}</span>
+                    <button v-if="showEditActions" @click="onEdit(tradeUnit, 'marketing_dimensions')" class="text-gray-400 hover:text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
+                    </button>
+                </template>
+            </div>
+        </template>
+
         <template #cell(type)="{ item: tradeUnit }">
             <div class="capitalize">{{ tradeUnit["type"] }}</div>
         </template>
@@ -125,7 +227,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(brands)="{ item }">
-            <span 
+            <span
                 v-if="item.brands?.name"
                 v-tooltip="'Click to go to Brand'"
                 class="border border-gray-400 bg-gray-200 rounded-md px-2 py-1 font-light cursor-pointer hover:opacity-[80%] transition ease-in-out whitespace-nowrap"
@@ -138,7 +240,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <template #cell(tags)="{ item }">
             <div class="flex gap-x-1 gap-y-1 flex-wrap">
-                <span 
+                <span
                     v-for="tag in item.tags"
                     :style="'background-color:'+tag.class_color"
                     class="px-2 py-1 border rounded-md text-white"

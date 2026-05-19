@@ -4,7 +4,7 @@ import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { ctrans } from "@/Composables/useTrans"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
 import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -86,7 +86,7 @@ const nextEl = ref(null)
     :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType),
-    }"
+    }"  
     :dropdown-type="fieldValue?.settings?.products_data?.type"
   >
     <!-- Title -->
@@ -120,9 +120,9 @@ const nextEl = ref(null)
           :navigation="{ prevEl, nextEl }"
         >
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">
-            <div class="h-full flex flex-col px-3 2xl:px-12">
+            <div class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
               <div v-if="product" class="flex-1 flex flex-col product-card">
-                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'" :product="product" />
+                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'" :product="product" :hideLogin="true"/>
                 <ProductRender v-else :product="product" :productHasPortfolio="[]" />
               </div>
             </div>
