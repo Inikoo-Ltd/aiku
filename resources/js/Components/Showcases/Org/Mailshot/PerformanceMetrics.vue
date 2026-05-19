@@ -20,7 +20,10 @@ const props = defineProps<{
         spam: number;
         unsubscribed: number;
         delay: number;
-        open_rate: any;
+        open_rate: number;
+        clicked_rate: number;
+        spam_rate: number;
+        unsubscribe_rate: number;
     }>;
 }>();
 
@@ -33,6 +36,8 @@ const periods = [
     { key: 'month', label: 'Month' }
 ];
 
+const rateMetrics = ['open_rate', 'clicked_rate', 'spam_rate', 'unsubscribe_rate'];
+
 const metrics = [
     { key: 'error', label: 'Error' },
     { key: 'sent', label: 'Sent' },
@@ -43,7 +48,11 @@ const metrics = [
     { key: 'opened', label: 'Opened' },
     { key: 'clicked', label: 'Clicked' },
     { key: 'spam', label: 'Spam' },
-    { key: 'unsubscribed', label: 'Unsubscribed' }
+    { key: 'unsubscribed', label: 'Unsubscribed' },
+    { key: 'open_rate', label: 'Open Rate' },
+    { key: 'clicked_rate', label: 'Clicked Rate' },
+    { key: 'spam_rate', label: 'Spam Rate' },
+    { key: 'unsubscribe_rate', label: 'Unsubscribe Rate' }
 ];
 
 const processTimeSeriesData = (period: string, metric: string) => {
@@ -64,6 +73,10 @@ const processTimeSeriesData = (period: string, metric: string) => {
             case 'spam': return item.spam;
             case 'unsubscribed': return item.unsubscribed;
             case 'delay': return item.delay;
+            case 'open_rate': return item.open_rate;
+            case 'clicked_rate': return item.clicked_rate;
+            case 'spam_rate': return item.spam_rate;
+            case 'unsubscribe_rate': return item.unsubscribe_rate;
             default: return 0;
         }
     });
@@ -73,12 +86,32 @@ const processTimeSeriesData = (period: string, metric: string) => {
 
 
 
+const isRateMetric = (metric: string) => rateMetrics.includes(metric);
+
 const totalValue = computed(() => {
     if (!props.timeSeriesData || props.timeSeriesData.length === 0) {
         return 0;
     }
+
+    const metric = selectedMetric.value;
+
+    if (isRateMetric(metric)) {
+        // For rate metrics, calculate average
+        const sum = props.timeSeriesData.reduce((acc, item) => {
+            switch (metric) {
+                case 'open_rate': return acc + item.open_rate;
+                case 'clicked_rate': return acc + item.clicked_rate;
+                case 'spam_rate': return acc + item.spam_rate;
+                case 'unsubscribe_rate': return acc + item.unsubscribe_rate;
+                default: return acc;
+            }
+        }, 0);
+        return props.timeSeriesData.length > 0 ? sum / props.timeSeriesData.length : 0;
+    }
+
+    // For count metrics, calculate sum
     return props.timeSeriesData.reduce((sum, item) => {
-        switch (selectedMetric.value) {
+        switch (metric) {
             case 'error': return sum + item.error;
             case 'sent': return sum + item.sent;
             case 'delivered': return sum + item.delivered;
@@ -204,9 +237,11 @@ const shouldShow = computed(() => {
 
             <div class="flex items-center space-x-4">
                 <label for="average-select" class="text-sm font-medium text-gray-700">
-                    Total Opened
+                    {{ isRateMetric(selectedMetric) ? 'Average Rate' : 'Total Opened' }}
                 </label>
-                <span class="text-sm font-bold text-gray-900">{{ props.totalOpened }}</span>
+                <span class="text-sm font-bold text-gray-900">
+                    {{ isRateMetric(selectedMetric) ? `${totalValue.toFixed(2)}%` : props.totalOpened }}
+                </span>
             </div>
         </div>
 
