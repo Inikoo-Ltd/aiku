@@ -394,12 +394,12 @@ trait WithTabsBox
                 ])->values()->toArray(),
             ],
             [
-                'label'         => __('Is Returned'),
+                'label'         => __('Returns'),
                 'currency_code' => $currencyCode,
                 'tabs'          => [
                     [
                         'tab_slug'    => 'returned',
-                        'label'       => __('Is Returned'),
+                        'label'       => __('Returns'),
                         'value'       => $return_stat ?? 0,
                         'icon_data'   => [
                             'tooltip' => __('Returned'),
