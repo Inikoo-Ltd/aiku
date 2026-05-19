@@ -66,17 +66,12 @@ class CreateShippingZone extends OrgAction
                                     'label'    => __('Name'),
                                     'required' => true,
                                 ],
-                                'status' => [
-                                    'type'    => 'toggle',
-                                    'label'   => __('Active'),
-                                    'value'   => true,
-                                ],
                                 'position' => [
                                     'type'     => 'input',
                                     'inputType' => 'number',
                                     'label'    => __('Position'),
                                     'required' => true,
-                                    'value'    => 1,
+                                    'value'    => null,
                                 ],
                                 'is_failover' => [
                                     'type'  => 'toggle',
@@ -98,16 +93,23 @@ class CreateShippingZone extends OrgAction
                                     'type'     => 'pricing_zone',
                                     'label'    => __('Price'),
                                     'required' => true,
-                                    'value'    => [],
-                                ],
+                                    'value'    => [
+                                        'type'  => 'Step Order Items Net Amount',
+                                        'steps' => [
+                                            [
+                                                'from'  => 0,
+                                                'to'    => 'INF',
+                                                'price' => 0,
+                                            ],
+                                        ],
+                                    ],
+                            ],
                             ],
                         ],
                     ],
                     'route' => [
-                        'name'       => 'grp.models.billables.shipping-zones.store',
-                        'parameters' => [
-                            'shippingZoneSchema' => $shippingZoneSchema->id,
-                        ],
+                        'name'       => 'grp.org.shops.show.billables.shipping.show.shipping-zone.create',
+                        'parameters' =>  array_values($request->route()->originalParameters())
                     ],
                 ],
             ]
