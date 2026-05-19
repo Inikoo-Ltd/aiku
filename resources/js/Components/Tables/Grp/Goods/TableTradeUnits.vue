@@ -84,6 +84,16 @@ async function onSave(tradeUnit: TradeUnit) {
     }
 }
 
+const formatDimensions = (dims: any): string => {
+    if (!dims || !Object.keys(dims).length) return ''
+    const parts = []
+    if (dims.l != null) parts.push(`L: ${dims.l}`)
+    if (dims.w != null) parts.push(`W: ${dims.w}`)
+    if (dims.h != null) parts.push(`H: ${dims.h}`)
+    const unit = dims.units ?? ''
+    return parts.join(' × ') + (unit ? ` ${unit}` : '')
+}
+
 function tradeUnitRoute(tradeUnit: TradeUnit) {
     return route(
         "grp.trade_units.units.show",
@@ -165,7 +175,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </button>
                 </template>
                 <template v-else>
-                    <span>{{ (savedValues[tradeUnit.id]?.marketing_dimensions ?? tradeUnit["marketing_dimensions"]) && Object.keys(savedValues[tradeUnit.id]?.marketing_dimensions ?? tradeUnit["marketing_dimensions"] ?? {}).length ? JSON.stringify(savedValues[tradeUnit.id]?.marketing_dimensions ?? tradeUnit["marketing_dimensions"]) : '' }}</span>
+                    <span>{{ formatDimensions(savedValues[tradeUnit.id]?.marketing_dimensions ?? tradeUnit["marketing_dimensions"]) }}</span>
                     <button v-if="showEditActions" @click="onEdit(tradeUnit, 'marketing_dimensions')" class="text-gray-400 hover:text-gray-600">
                         <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
                     </button>
