@@ -108,8 +108,12 @@ if (isClient) {
 }
 
 const syncLoginState = () => {
-    const iris = JSON.parse(localStorage.getItem("iris") || "{}")
-    isLoggedIn.value = iris?.is_logged_in === true
+    try {
+        const iris = JSON.parse(window?.localStorage?.getItem("iris") ?? "{}")
+        isLoggedIn.value = iris?.is_logged_in === true
+    } catch {
+        isLoggedIn.value = false
+    }
 }
 
 const saveChatSession = (sessionData: ChatSessionData) => {

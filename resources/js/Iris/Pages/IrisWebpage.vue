@@ -15,7 +15,15 @@ import { usePage } from "@inertiajs/vue3"
 import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
 
 const props = defineProps<{
-    webpage_data: any
+    webpage_data: {  // ShowIrisWebpage
+        seo_data: {}
+        title: string
+        description: string
+        canonical_url: string
+        type: string  // 'catalogue'
+        sub_type: string  // 'department' | 'sub_department' | 'family' | 'product'
+        model_type: string  // 'ProductCategory' | 'Product'
+    }
     web_blocks: any,
     webpage_img: any,
     index_page: boolean,

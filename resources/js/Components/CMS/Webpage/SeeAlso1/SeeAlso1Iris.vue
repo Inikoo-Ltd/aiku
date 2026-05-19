@@ -3,7 +3,7 @@ import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
 import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
-import Blueprint from './Blueprint'
+import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 
 // Swiper
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -14,10 +14,7 @@ import { Navigation, Pagination } from 'swiper/modules'
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
-import { library } from '@fortawesome/fontawesome-svg-core'
 import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
-library.add(faChevronLeft, faChevronRight)
 
 
 const props = defineProps<{
@@ -44,7 +41,6 @@ const emits = defineEmits<{
 
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint(props.webpageData)?.blueprint?.map(b => b?.key?.join("-")) || []
 
 const slidesPerView = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -96,12 +92,12 @@ console.log('see also', props)
     <!-- Carousel with custom navigation -->
     <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" >
       <!-- Tombol Navigasi Custom -->
-      <button ref="prevEl" class="swiper-nav-button  left-0 top-1/2">
-        <FontAwesomeIcon :icon="faChevronLeft" />
+      <button ref="prevEl" class="swiper-nav-button hidden lg:block left-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg"/>
       </button>
 
-      <button ref="nextEl" class="swiper-nav-button  right-0 top-1/2">
-        <FontAwesomeIcon :icon="faChevronRight" />
+      <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg"/>
       </button>
 
       <!-- Swiper -->
@@ -121,7 +117,6 @@ console.log('see also', props)
       <Swiper   
         :modules="[Navigation]"
         :slides-per-view="slidesPerView"
-        :space-between="20"
         :navigation="{ prevEl, nextEl }"
         :autoHeight="false"
         pagination
@@ -129,7 +124,7 @@ console.log('see also', props)
       >
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
-            <div v-if="product" class="flex-1 flex flex-col">
+            <div v-if="product" class="h-full flex flex-col px-3 2xl:px-12">
               <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
@@ -147,7 +142,7 @@ console.log('see also', props)
 
 <style scoped>
 .swiper-nav-button {
-  @apply absolute top-1/2 transform -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full shadow-md p-2 hover:bg-gray-100 transition-all duration-300;
+  @apply absolute top-1/2 transform -translate-y-1/2 z-10;
 }
 
 .swiper-nav-button svg {

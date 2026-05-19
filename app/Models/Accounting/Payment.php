@@ -224,4 +224,9 @@ class Payment extends Model implements Auditable
     {
         return $this->hasMany(Payment::class, 'original_payment_id');
     }
+
+    public function originalPayment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class, 'original_payment_id');
+    }
 }

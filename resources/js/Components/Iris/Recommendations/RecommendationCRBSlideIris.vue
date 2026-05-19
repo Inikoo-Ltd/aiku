@@ -39,15 +39,15 @@ const isLoadingVisit = ref(false)
             <!-- Section: Title -->
             <component :is="product.canonical_url ? Link : 'div'"
                 :href="product.canonical_url"
-                class="text-[13px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em] block hover:!underline !cursor-pointer text-pretty"
+                class="text-[13px] md:text-[16px] text-center font-semibold leading-snug line-clamp-2 min-h-[3em] block hover:!underline !cursor-pointer text-pretty"
             >
                 {{ product.name }}
             </component>
 
             <!-- Section: code -->
-            <div class="text-xs text-gray-400 mb-2">
+          <!--   <div class="text-xs text-gray-400 mb-2">
                 {{ product.code }}
-            </div>
+            </div> -->
 
             <!-- Section:  and date -->
             <div v-if="layout?.iris?.is_logged_in" class="mt-auto">
