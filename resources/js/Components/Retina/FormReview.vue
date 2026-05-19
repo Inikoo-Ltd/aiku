@@ -296,7 +296,7 @@ watch(
                     <div
                         class="text-2xl font-bold leading-none text-gray-900"
                     >
-                        {{ averageRating ?? "0.0" }}
+                        {{ activeRatings.length ? averageRating || 0 : form.rating  ?? "0.0" }}
                     </div>
 
                     <div class="mt-1 text-[11px] text-gray-500">
@@ -305,9 +305,10 @@ watch(
                 </div>
 
                 <Rating
-                    :modelValue="averageRating || 0"
-                    readonly
+                    :modelValue="activeRatings.length ? averageRating || 0 : form.rating"
+                    :readonly="activeRatings.length > 0"
                     :cancel="false"
+                    @update:model-value="(e)=> form.rating = e"
                 />
             </div>
         </div>
@@ -348,13 +349,6 @@ watch(
                     />
                 </div>
             </template>
-
-            <div
-                v-else
-                class="rounded-xl border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500"
-            >
-                {{ trans( "No review dimensions available." )}}
-            </div>
 
 
             <div v-if="use_customer" class="space-y-2 pt-1">
