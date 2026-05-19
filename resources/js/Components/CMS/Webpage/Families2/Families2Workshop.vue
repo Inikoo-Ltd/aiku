@@ -18,7 +18,7 @@ import 'swiper/css/free-mode'
 import Family2Render from './Families2Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 

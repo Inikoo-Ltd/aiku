@@ -6,7 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import LinkIris from '../LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { router } from '@inertiajs/vue3'
 import { ProductCategoryMenu, ProductCategoryMenuSub } from '@/Composables/Iris/useMenu'
 import { getStyles } from '@/Composables/styles'

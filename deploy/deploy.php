@@ -63,7 +63,7 @@ task('deploy:migrate', function () {
 
 desc('Modified npm:install');
 task('npm:my_install', function () {
-        run('cd {{release_path}} && {{bin/npm}} ci');
+    run('cd {{release_path}} && {{bin/npm}} ci');
 });
 
 desc('🏗️ Build vue app');
@@ -197,9 +197,13 @@ task(
 
         if ($shouldFlush) {
             writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
+
+            run('sleep 2');
             run('cd {{release_path}} && pwd && ./restart_varnish.sh');
             if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+                run('sleep 2');
                 artisan('crawl -d 2 --deployment --seeder', ['skipIfNoEnv', 'showOutput'])();
+                run('sleep 10');
                 artisan('crawl -d 3 --deployment', ['skipIfNoEnv', 'showOutput'])();
             }
         } else {

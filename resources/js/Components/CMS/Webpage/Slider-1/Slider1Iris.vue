@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage } from '@fal'
 import { faSpinnerThird } from '@fas'
 import { getStyles } from '@/Composables/styles'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 
 
 const props = defineProps<{

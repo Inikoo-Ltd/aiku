@@ -8,7 +8,7 @@ import { getStyles } from "@/Composables/styles"
 
 import Image from "@common/Components/Image.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"

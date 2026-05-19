@@ -562,6 +562,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
             :item="selectedItemValue"
             :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
             @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
+            :ignoreNoQty="true"
         />
     </Modal>
 </template>

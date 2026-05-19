@@ -13,6 +13,7 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { ref } from "vue";
 import { notify } from "@kyvg/vue3-notification";
+import Toggle from "@/Components/Pure/Toggle.vue";
 
 defineProps<{
     data: {}
@@ -124,6 +125,14 @@ const deleteRedirect = (item) => {
             <div v-else class="text-gray-400 italic">
                 {{ trans("No target webpage") }}
             </div>
+        </template>
+
+        <template #cell(path)="{ item: data }">
+            {{ data.full_path }} 
+            <span class="italic" v-if="data.full_path != data.path">
+                <br>
+                ({{ data.path }})
+            </span>
         </template>
         
         <template #cell(actions_from_website)="{ item: data }">

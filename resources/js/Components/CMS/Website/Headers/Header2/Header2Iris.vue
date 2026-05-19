@@ -4,7 +4,7 @@ import { inject, ref } from "vue"
 import Image from "@common/Components/Image.vue"
 import MobileHeader from "../MobileHeader.vue";
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import LinkIris from "@/Components/Iris/LinkIris.vue";
+import LinkIris from "@/Iris/Components/LinkIris.vue";
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 

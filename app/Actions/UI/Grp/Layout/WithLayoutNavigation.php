@@ -183,7 +183,7 @@ trait WithLayoutNavigation
                         ],
 
                         [
-                            'label' => __('Holidays'),
+                            // 'label' => __('Holidays'),
                             'icon'  => ['fal', 'fa-umbrella'],
                             'root'  => 'grp.org.hr.holidays.',
                             'route' => [
@@ -193,7 +193,7 @@ trait WithLayoutNavigation
                         ],
 
                         [
-                            'label' => __('Employees'),
+                            // 'label' => __('Employees'),
                             'icon'  => ['fal', 'fa-user-hard-hat'],
                             'root'  => 'grp.org.hr.employees.',
                             'route' => [
@@ -248,7 +248,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
-                            'label' => __('Analytics'),
+                            // 'label' => __('Analytics'),
                             'icon'  => ['fal', 'fa-chart-line'],
                             'root'  => 'grp.org.hr.analytics.',
                             'route' => [

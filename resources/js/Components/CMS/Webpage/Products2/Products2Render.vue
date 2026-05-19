@@ -10,7 +10,7 @@ import Image from "@common/Components/Image.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 

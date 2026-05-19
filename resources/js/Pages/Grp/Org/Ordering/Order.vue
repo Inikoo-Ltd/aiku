@@ -1199,12 +1199,6 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 v-tooltip="trans('Create replacement')" />
         </template>
 
-        <template #button-return="{ action }">
-            <Button @click="() => onCreateReturn(action)" :label="trans('Return')" xsize="xs" type="secondary"
-                icon="fal fa-undo-alt" key="2" :disabled="returnLoading" :loading="returnLoading"
-                v-tooltip="trans('Create return')" />
-        </template>
-
         <!-- Button Wrapped: Edit -->
         <template #wrapped-0="{ action }">
             <ButtonWithLink

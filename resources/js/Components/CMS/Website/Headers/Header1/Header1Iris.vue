@@ -24,7 +24,7 @@ import {
 import { faHeart } from "@far"
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 
 library.add(
 	faPresentation,

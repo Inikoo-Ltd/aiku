@@ -50,6 +50,7 @@ class CancelReturnDeliveryNote extends OrgAction
         data_set($modelData, 'state', ReturnDeliveryNoteStateEnum::CANCELLED);
 
         $returnDeliveryNote = DB::transaction(function () use ($returnDeliveryNote, $modelData) {
+            $deliveryNote = $returnDeliveryNote->deliveryNote;
             $returnDeliveryNote = UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, $modelData);
 
             foreach ($returnDeliveryNote->returnDeliveryNoteItem as $item) {
@@ -63,7 +64,10 @@ class CancelReturnDeliveryNote extends OrgAction
             }
 
             UpdateDeliveryNote::make()->action($returnDeliveryNote->deliveryNote, [
-                'is_returned'   => false
+                'is_returned' => $deliveryNote->returnedDeliveryNote()
+                    ->where('state', '!=', ReturnDeliveryNoteStateEnum::CANCELLED)
+                    ->where('id', '!=', $returnDeliveryNote->id)
+                    ->exists()
             ]);
 
             return $returnDeliveryNote;

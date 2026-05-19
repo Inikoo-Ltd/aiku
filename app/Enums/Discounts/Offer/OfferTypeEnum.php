@@ -21,7 +21,7 @@ enum OfferTypeEnum: string
     case CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED = "Category For Every Quantity Any Product Ordered";
 
 
-    case VOLGR_GIFT = "VolGr Gift";
+    case VOL_GR_GIFT = "VolGr Gift";
     case VOUCHER = "Voucher";
     case GR_AMNESTY = "GR Amnesty";
     case PRODUCT_FOR_EVERY_QUANTITY_ORDERED = "Product For Every Quantity Ordered";
@@ -29,14 +29,17 @@ enum OfferTypeEnum: string
     case VOUCHER_AND_ORDER_NUMBER = "Voucher AND Order Number";
     case PRODUCT_AMOUNT_ORDERED = "Product Amount Ordered";
 
+    case SHOP_ORDERED = "Shop Ordered";
     case DEPARTMENT_ORDERED = "Department Ordered";
     case SUB_DEPARTMENT_ORDERED = "Subdepartment Ordered";
     case CATEGORY_ORDERED = "Category Ordered";
 
+    case SHOP_QUANTITY_ORDERED = "Shop Quantity Ordered";
     case DEPARTMENT_QUANTITY_ORDERED = "Department Quantity Ordered";
     case SUB_DEPARTMENT_QUANTITY_ORDERED = "Subdepartment Quantity Ordered";
     case CATEGORY_QUANTITY_ORDERED = "Category Quantity Ordered";
 
+    case SHOP_AMOUNT_ORDERED = "Shop Amount Ordered";
     case DEPARTMENT_AMOUNT_ORDERED = "Department Amount Ordered";
     case SUB_DEPARTMENT_AMOUNT_ORDERED = "Subdepartment Amount Ordered";
     case CATEGORY_AMOUNT_ORDERED = "Category Amount Ordered";
@@ -59,35 +62,37 @@ enum OfferTypeEnum: string
 
     public function icon(): array
     {
-        return match($this) {
+        return match ($this) {
             self::FAMILY_FOR_EVERY_QUANTITY_ORDERED,
             self::FAMILY_QUANTITY_ORDERED,
             self::CATEGORY_FOR_EVERY_QUANTITY_ORDERED,
             self::CATEGORY_QUANTITY_ORDERED,
-            self::DEPARTMENT_QUANTITY_ORDERED
-                => $this->quantityIcon(),
+            self::DEPARTMENT_QUANTITY_ORDERED,
+            self::SUB_DEPARTMENT_QUANTITY_ORDERED,
+            self::SHOP_QUANTITY_ORDERED
+            => $this->quantityIcon(),
 
             self::PRODUCT_QUANTITY_ORDERED,
             self::PRODUCT_FOR_EVERY_QUANTITY_ORDERED,
-            self::PRODUCT_AMOUNT_ORDERED
-                => $this->productIcon(),
+            self::PRODUCT_AMOUNT_ORDERED,
+            => $this->productIcon(),
 
             self::ORDER_INTERVAL,
             self::AMOUNT_AND_ORDER_INTERVAL,
             self::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL
-                => $this->intervalIcon(),
+            => $this->intervalIcon(),
 
             self::VOUCHER,
             self::VOUCHER_AND_AMOUNT,
             self::VOUCHER_AND_ORDER_NUMBER
-                => $this->voucherIcon(),
+            => $this->voucherIcon(),
 
             self::AMOUNT,
             self::ORDER_TOTAL_NET_AMOUNT_AND_ORDER_NUMBER,
             self::DEPARTMENT_AMOUNT_ORDERED,
             self::SUB_DEPARTMENT_AMOUNT_ORDERED,
-            self::CATEGORY_AMOUNT_ORDERED
-
+            self::CATEGORY_AMOUNT_ORDERED,
+            self::SHOP_AMOUNT_ORDERED
 
 
             => $this->amountIcon(),
@@ -95,23 +100,24 @@ enum OfferTypeEnum: string
             self::AMOUNT_AND_ORDER_NUMBER,
             self::ORDER_NUMBER,
             self::EVERY_ORDER
-                => $this->orderIcon(),
+            => $this->orderIcon(),
 
             self::CATEGORY_ORDERED,
+            self::SHOP_ORDERED,
             self::DEPARTMENT_ORDERED,
             self::SUB_DEPARTMENT_ORDERED,
             self::PRODUCT_IN_CATEGORY_CARTON,
             self::CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED
-                => $this->catalogueIcon(),
+            => $this->catalogueIcon(),
 
-            self::VOLGR_GIFT
-                => $this->giftIcon(),
+            self::VOL_GR_GIFT
+            => $this->giftIcon(),
 
             self::GR_AMNESTY
-                => $this->amnestyIcon(),
+            => $this->amnestyIcon(),
 
             self::DISCRETIONARY
-                => $this->defaultIcon(),
+            => $this->defaultIcon(),
         };
     }
 
