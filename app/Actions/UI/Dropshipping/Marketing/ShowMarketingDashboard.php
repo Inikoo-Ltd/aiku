@@ -110,6 +110,15 @@ class ShowMarketingDashboard extends OrgAction
                             'parameters' => $request->route()->originalParameters()
                         ]
                     ],
+                    [
+                        'name' => __('WhatsApp Marketing'),
+                        'value' => $this->shop->commsStats->number_whatsapp_marketing ?? 0,
+                        'icon'  => ['fab', 'fa-whatsapp'],
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.marketing.whatsapp.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ],
 
                 ]
 

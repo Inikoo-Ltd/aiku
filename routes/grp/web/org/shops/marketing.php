@@ -28,8 +28,10 @@ use App\Actions\Comms\Mailshot\UI\ShowMailshotTemplateWorkshop;
 use App\Actions\UI\Dropshipping\Marketing\ShowMarketingDashboard;
 use App\Actions\UI\Dropshipping\Marketing\ShowMailshotSettings;
 use App\Actions\UI\Dropshipping\Marketing\UpdateMailshotSettings;
+use App\Actions\Comms\WhatsApp\UI\IndexWhatsAppMarketing;
 
 Route::get('', ShowMarketingDashboard::class)->name('dashboard');
+Route::get('whatsapp', [IndexWhatsAppMarketing::class, 'inShop'])->name('whatsapp.index');
 Route::get('settings', ShowMailshotSettings::class)->name('mailshot_settings');
 Route::patch('settings', UpdateMailshotSettings::class)->name('mailshot_settings.update');
 Route::name("newsletters.")->prefix('newsletters')

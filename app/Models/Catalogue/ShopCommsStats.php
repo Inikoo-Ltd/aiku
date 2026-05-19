@@ -96,6 +96,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_price_change_notification
  * @property int $number_outboxes_type_invoice_date_changed
  * @property int $number_outboxes_type_web_user_registration
+ * @property int $number_whatsapp_marketing
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static Builder<static>|ShopCommsStats newModelQuery()
  * @method static Builder<static>|ShopCommsStats newQuery()
