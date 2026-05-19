@@ -125,12 +125,12 @@ class IndexMissingWeightTradeUnits extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Without Marketing Weight'),
+                'title'       => __('Trade units without marketing weight'),
                 'pageHead'    => [
-                    'title'         => __('Without Marketing Weight'),
+                    'title'         => __('Trade units without weight'),
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-weight'],
-                        'title' => __('Without Marketing Weight'),
+                        'title' => __('Trade units without marketing weight'),
                     ],
                 ],
                 'tabs'        => [

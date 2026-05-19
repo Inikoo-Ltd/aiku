@@ -59,7 +59,7 @@ class ShowTradeUnitsDashboard extends OrgAction
                     ],
                     [
                         'is_negative'     => true,
-                        'label'           => __('Orphan Trade Units'),
+                        'label'           => __('Trade Units No family'),
                         'route'           => [
                             'name'       => 'grp.trade_units.units.orphan',
                             'parameters' => []
