@@ -39,11 +39,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_master_assets_type_shipping_zone
  * @property int $number_current_master_assets_type_shipping_zone
  * @property int $number_trade_units
+ * @property int $number_orphan_trade_units
  * @property int $number_trade_units_with_barcode
  * @property int $number_trade_units_with_net_weight
  * @property int $number_trade_units_with_gross_weight
  * @property int $number_trade_units_with_marketing_weight
+ * @property int $number_trade_units_without_marketing_weight
  * @property int $number_trade_units_with_marketing_dimensions
+ * @property int $number_trade_units_without_marketing_dimensions
  * @property int $number_trade_units_with_images
  * @property int $number_stock_families
  * @property int $number_current_stock_families active + discontinuing
