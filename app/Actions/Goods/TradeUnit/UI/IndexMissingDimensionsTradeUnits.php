@@ -105,7 +105,7 @@ class IndexMissingDimensionsTradeUnits extends GrpAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'marketing_dimensions', label: __('Dimensions'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'marketing_dimensions', label: __('Dimensions'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
         };
     }

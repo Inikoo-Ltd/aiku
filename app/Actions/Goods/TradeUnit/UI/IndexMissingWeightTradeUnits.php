@@ -66,7 +66,7 @@ class IndexMissingWeightTradeUnits extends GrpAction
                 'trade_units.name',
                 'trade_units.description',
                 'trade_units.gross_weight',
-                'trade_units.net_weight',
+                'trade_units.marketing_weight',
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
                 'trade_units.type',
@@ -105,7 +105,7 @@ class IndexMissingWeightTradeUnits extends GrpAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'marketing_weight', label: __('Marketing Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
         };
     }

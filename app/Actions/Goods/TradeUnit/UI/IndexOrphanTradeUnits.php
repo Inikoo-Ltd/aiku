@@ -103,7 +103,7 @@ class IndexOrphanTradeUnits extends GrpAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
