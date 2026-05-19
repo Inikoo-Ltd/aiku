@@ -22,6 +22,8 @@ const props = defineProps<{
     product_id?: number
 }>()
 
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
 const isOpenModal = ref(false)
 
 const offerLabel = ref('')
@@ -30,10 +32,9 @@ const quantity = ref<number | null>(1)
 const productId = ref<number | null>(0)
 const selectedProduct = ref<any | null>(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
-const startDate = ref<Date | null>(null)
+const startDate = ref<Date | null>(today)
 const endDate = ref<Date | null>(null)
 
-const today = new Date(new Date().setHours(0, 0, 0, 0))
 
 function formatDate(date: Date | null) {
     if (!date) return null
@@ -107,7 +108,7 @@ const resetForm = () => {
     selectedProduct.value = null
     quantity.value = 1
     dateType.value = 'permanent'
-    startDate.value = null
+    startDate.value = today
     endDate.value = null
 }
 
