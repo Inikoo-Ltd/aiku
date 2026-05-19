@@ -464,9 +464,9 @@ watch(
             </transition>
 
             <!-- Main Content -->
-            <div class="flex-1">
+            <div class="flex-1" >
                 <!-- Search & Sort -->
-                <div class="px-4 pt-1 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="px-4 pt-3 pb-2 flex flex-col md:flex-row justify-between items-center gap-4"   :style="getStyles(fieldValue?.container?.properties, screenType)">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
                         <template v-if="!props.fieldValue?.settings?.is_hide_filter">
                             <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-2 !w-auto"
