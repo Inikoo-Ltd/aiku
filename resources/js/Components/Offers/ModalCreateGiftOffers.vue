@@ -54,12 +54,12 @@ const submitCategoryOffer = () => {
         }),
         {
             name: offerLabel.value,
-            productId: productId.value || props.product_id,
+            product_id: productId.value || props.product_id,
             quantity: quantity.value,
-            offer_amount: offerAmount.value,
-            date_type: dateType.value,
-            start_date: formatDate(startDate.value),
-            end_date: formatDate(endDate.value)
+            min_order_amount: offerAmount.value,
+            duration: dateType.value,
+            start_at: formatDate(startDate.value),
+            end_at: formatDate(endDate.value)
         },
         {
             preserveScroll: true,
