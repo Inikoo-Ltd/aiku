@@ -130,14 +130,14 @@ class EditMasterFamily extends OrgAction
                                     'label' => __('Name'),
                                     'value' => $masterProductCategory->name
                                 ],
-                                /* 'description_title' => [
+                                'description_title' => [
                                     'type'    => 'input',
                                     'label'   => __('Description title'),
                                     'options' => [
                                         'counter' => true,
                                     ],
                                     'value'   => $masterProductCategory->description_title
-                                ], */
+                                ],
                                 'description'       => [
                                     'type'    => 'textEditor',
                                     'label'   => __('Description'),
