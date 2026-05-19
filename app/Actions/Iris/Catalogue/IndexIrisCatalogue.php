@@ -33,6 +33,10 @@ class IndexIrisCatalogue extends IrisAction
 
         return $queryBuilder
             ->where('collections.shop_id', $this->shop->id)
+            ->leftJoin('webpages', function ($join) {
+                $join->on('collections.id', 'webpages.model_id')
+                    ->where('webpages.model_type', class_basename(Collection::class));
+            })
             ->select([
                     'collections.id',
                     'collections.slug',
@@ -43,6 +47,7 @@ class IndexIrisCatalogue extends IrisAction
                     'collections.description',
                     'collections.created_at',
                     'collections.updated_at',
+                    'webpages.canonical_url',
             ])
             ->withCount(['families as number_current_families', 'products as number_current_products']);
     }
@@ -81,6 +86,7 @@ class IndexIrisCatalogue extends IrisAction
         $queryBuilder
             ->where('product_categories.shop_id', $this->shop->id)
             ->join('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
+            ->leftJoin('webpages', 'webpages.id', 'product_categories.webpage_id')
             ->select([
                     'product_categories.id',
                     'product_categories.slug',
@@ -91,6 +97,7 @@ class IndexIrisCatalogue extends IrisAction
                     'product_categories.description',
                     'product_categories.created_at',
                     'product_categories.updated_at',
+                    'webpages.canonical_url',
                     'product_category_stats.number_current_products',
             ]);
 
@@ -290,7 +297,7 @@ class IndexIrisCatalogue extends IrisAction
                 $table->column(key: $column['key'], label: $column['label'], tooltip: __('current :colLabel', ['colLabel' => strtolower($column['label'])]), sortable: $column['sortable']);
             }
 
-            // $table->column(key: 'url', label: __('Go To Url'), align: 'right');
+            $table->column(key: 'public_url', label: __('Webpage'), align: 'right');
         };
     }
 
