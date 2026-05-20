@@ -58,7 +58,6 @@ class IndexOrphanTradeUnits extends GrpAction
             'trade_units.description',
             'trade_units.gross_weight',
             'trade_units.net_weight',
-            'trade_units.marketing_weight',
             'trade_units.marketing_dimensions',
             'trade_units.volume',
             'trade_units.type',
@@ -88,7 +87,7 @@ class IndexOrphanTradeUnits extends GrpAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products', 'marketing_weight', 'health_rank'];
+        $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products', 'health_rank'];
 
         if ($prefix === TradeUnitsTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -126,7 +125,8 @@ class IndexOrphanTradeUnits extends GrpAction
             } else {
                 $this->addColumnCodeAndName($table);
                 $this->addColumnNumberCurrentStocks($table);
-                $this->addColumnMarketingWeight($table);
+                $this->addColumnNumberCurrentProducts($table);
+                $this->addColumnType($table, 'Unit label');
             }
         };
     }
@@ -146,12 +146,12 @@ class IndexOrphanTradeUnits extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Orphan Trade Units'),
+                'title'       => __('Trade Units No Family'),
                 'pageHead'    => [
-                    'title'         => __('Orphan Trade Units'),
+                    'title'         => __('Trade Units No Family'),
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-atom'],
-                        'title' => __('Orphan Trade Units'),
+                        'title' => __('Trade Units No Family'),
                     ],
                 ],
                 'tabs'        => [

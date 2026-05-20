@@ -63,13 +63,13 @@ class GetIrisWebBlockSubDepartments
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', WebBlockSubDepartmentsResource::collection($subDepartments)->toArray(request()));
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));
 
-         return [
-            'type' => $webBlock['type'],
-            'structure' => Arr::get(
-                $webBlock,
-                'web_block.layout.data.fieldValue',
-                []
-            ),
+        return [
+           'type' => $webBlock['type'],
+           'structure' => Arr::get(
+               $webBlock,
+               'web_block.layout.data.fieldValue',
+               []
+           ),
         ];
     }
 

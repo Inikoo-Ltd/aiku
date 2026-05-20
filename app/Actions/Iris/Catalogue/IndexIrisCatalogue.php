@@ -263,7 +263,7 @@ class IndexIrisCatalogue extends IrisAction
             }
 
             if ($scope == 'product') {
-                 $table
+                $table
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'gross_weight', label: __('Weight'), canBeHidden: false, align: 'right')
                 ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

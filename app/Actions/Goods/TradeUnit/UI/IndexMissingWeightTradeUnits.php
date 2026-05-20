@@ -64,8 +64,6 @@ class IndexMissingWeightTradeUnits extends GrpAction
             'trade_units.marketing_dimensions',
             'trade_units.volume',
             'trade_units.type',
-            'trade_unit_stats.number_current_stocks',
-            'trade_unit_stats.number_current_products',
             'trade_units.id',
         ];
 
@@ -89,7 +87,7 @@ class IndexMissingWeightTradeUnits extends GrpAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products'];
+        $allowedSorts = ['code', 'type', 'name'];
 
         if ($prefix === TradeUnitsTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -125,7 +123,6 @@ class IndexMissingWeightTradeUnits extends GrpAction
                 $this->addSalesColumns($table);
             } else {
                 $this->addColumnCodeAndName($table);
-                $table->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'net_weight', label: __('Net Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'marketing_weight', label: __('Marketing Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'marketing_dimensions', label: __('Dimensions'), canBeHidden: false, sortable: false, searchable: false, align: 'right');

@@ -25,6 +25,9 @@ class CloseChatSession
 {
     use AsAction;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(
         ChatSession $chatSession,
         ?int $actorId = null,
@@ -57,9 +60,7 @@ class CloseChatSession
                 ]);
 
                 $agent = ChatAgent::find($assignment->chat_agent_id);
-                if ($agent) {
-                    $agent->decrementChatCount();
-                }
+                $agent?->decrementChatCount();
             }
 
             $closedByLabel = match ($actorType) {
@@ -70,7 +71,7 @@ class CloseChatSession
             };
 
             $systemMessage = $chatSession->messages()->create([
-                'message_text' => "Chat session has been closed by {$closedByLabel}",
+                'message_text' => "Chat session has been closed by $closedByLabel",
                 'message_type' => ChatMessageTypeEnum::TEXT->value,
                 'sender_type'  => ChatSenderTypeEnum::SYSTEM->value,
                 'is_read'      => true,
@@ -88,6 +89,9 @@ class CloseChatSession
     }
 
 
+    /**
+     * @throws \Throwable
+     */
     public function asApiController(ChatSession $chatSession): JsonResponse
     {
         [$actorType, $actorId] = $chatSession->web_user_id
@@ -109,7 +113,7 @@ class CloseChatSession
         }
 
         try {
-            $this->handle($chatSession, $agent->id, ChatActorTypeEnum::AGENT);
+            $this->handle($chatSession, $agent->id);
         } catch (Exception $e) {
             throw ValidationException::withMessages([
                 'message' => $e->getMessage(),
