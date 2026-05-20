@@ -48,11 +48,14 @@ class GroupHydrateTradeUnits implements ShouldBeUnique
 
         $stats = [
             'number_trade_units'                              => $tradeUnits->count(),
-            'number_orphan_trade_units'                       => $group->tradeUnits()->whereNull('trade_unit_family_id')->count(),
-            'number_trade_units_without_marketing_weight'     => $group->tradeUnits()->whereNull('marketing_weight')->where('status', '!=', \App\Enums\Goods\TradeUnit\TradeUnitStatusEnum::DISCONTINUED)->count(),
+            'number_orphan_trade_units'                       => $group->tradeUnits()->whereNull('trade_unit_family_id')->whereIn('status', [TradeUnitStatusEnum::ACTIVE, TradeUnitStatusEnum::IN_PROCESS])->count(),
+            'number_trade_units_without_marketing_weight'     => $group->tradeUnits()->whereNull('marketing_weight')->whereIn('status', [TradeUnitStatusEnum::ACTIVE, TradeUnitStatusEnum::IN_PROCESS])->count(),
             'number_trade_units_without_marketing_dimensions' => $group->tradeUnits()->where(function ($q) {
                 $q->whereNull('marketing_dimensions')->orWhere('marketing_dimensions', '{}');
-            })->where('status', '!=', \App\Enums\Goods\TradeUnit\TradeUnitStatusEnum::DISCONTINUED)->count(),
+            })->whereIn('status', [TradeUnitStatusEnum::ACTIVE, TradeUnitStatusEnum::IN_PROCESS])->count(),
+            'number_trade_units_without_weight'               => $group->tradeUnits()->where(function ($q) {
+                $q->whereNull('marketing_weight')->orWhereNull('net_weight');
+            })->whereIn('status', [TradeUnitStatusEnum::ACTIVE, TradeUnitStatusEnum::IN_PROCESS])->count(),
         ];
 
         $stats = array_merge(
