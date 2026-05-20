@@ -23,6 +23,7 @@ use App\Actions\Billables\UI\ShowBillablesDashboard;
 use App\Stubs\UIDummies\EditDummy;
 use App\Stubs\UIDummies\ShowDummy;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Billables\ShippingZone\UI\CreateShippingZone;
 
 Route::get('', ShowBillablesDashboard::class)->name('dashboard');
 
@@ -36,9 +37,12 @@ Route::name("shipping.")->prefix('shipping')
             Route::get('', ShowShippingZoneSchema::class)->name('show');
             Route::get('edit', EditShippingZoneSchema::class)->name('edit');
             Route::patch('shipping-zone/reorder', ReorderShippingZones::class)->name('show.shipping-zone.reorder');
-            Route::prefix('shipping-zone/{shippingZone}')->name('show.shipping-zone')->group(function () {
-                Route::get('', ShowShippingZone::class)->name('.show');
-                Route::get('/edit', EditShippingZone::class)->name('.edit');
+            Route::prefix('shipping-zone')->name('show.shipping-zone.')->group(function () {
+                Route::get('create', CreateShippingZone::class)->name('create');
+                Route::prefix('{shippingZone}')->group(function () {
+                    Route::get('', ShowShippingZone::class)->name('show');
+                    Route::get('edit', EditShippingZone::class)->name('edit');
+                });
             });
         });
     });
