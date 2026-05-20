@@ -15,11 +15,19 @@ class WatiTemplateResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'           => $this->id,
-            'element_name' => $this->element_name,
-            'category'     => $this->category,
-            'status'       => $this->status,
-            'created_at'   => $this->created_at,
+            'id'            => $this->id,
+            'element_name'  => $this->element_name,
+            'category'      => $this->category,
+            'status'        => $this->status,
+            'created_at'    => $this->created_at,
+            'type'          => $this->type,
+            'language'      => $this->language,
+            'quality'       => $this->quality,
+            'header'        => $this->header,
+            'body_original' => $this->body_original,
+            'footer'        => $this->footer,
+            'buttons'       => $this->buttons,
+            'buttons_type'  => $this->buttons_type,
         ];
     }
 }

@@ -14,13 +14,14 @@ use App\Actions\UI\Marketing\MarketingHub;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
+use App\Models\Comms\WatiTemplate;
 use App\Models\CRM\TrafficSource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 
 trait HasUIMailshots
 {
-    public function getBreadcrumbs(string $routeName, array $routeParameters, Group|Outbox|PostRoom|Organisation|Shop|TrafficSource $parent, $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, Group|Outbox|PostRoom|Organisation|Shop|TrafficSource|WatiTemplate $parent, $suffix = null): array
     {
         $headCrumb = function (array $routeParameters = []) use ($routeName, $suffix) {
             return [
@@ -125,6 +126,26 @@ trait HasUIMailshots
                             ],
                             'label' => __('Wati Templates'),
                             'icon'  => 'fal fa-bars'
+                        ],
+                    ],
+                ]
+            ),
+            'grp.org.shops.show.marketing.wati-templates.show' =>
+            array_merge(
+                $this->getBreadcrumbs(
+                    'grp.org.shops.show.marketing.wati-templates.index',
+                    $routeParameters,
+                    $parent
+                ),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.marketing.wati-templates.show',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => $parent instanceof WatiTemplate ? $parent->element_name : __('Template'),
                         ],
                     ],
                 ]
