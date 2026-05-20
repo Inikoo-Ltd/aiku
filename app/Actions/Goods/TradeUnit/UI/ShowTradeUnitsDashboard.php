@@ -71,7 +71,7 @@ class ShowTradeUnitsDashboard extends OrgAction
                     ],
                     [
                         'is_negative'     => true,
-                        'label'           => __('Without Marketing Weight'),
+                        'label'           => __('Without Weight'),
                         'route'           => [
                             'name'       => 'grp.trade_units.units.missing_weight',
                             'parameters' => []
@@ -79,7 +79,7 @@ class ShowTradeUnitsDashboard extends OrgAction
                         'icon'            => 'fal fa-weight',
                         'backgroundColor' => '#ff000011',
                         'color'           => '#df1c1cff',
-                        'value'           => $this->group->goodsStats->number_trade_units_without_marketing_weight,
+                        'value'           => $this->group->goodsStats->number_trade_units_without_weight,
                     ],
                     [
                         'is_negative'     => true,

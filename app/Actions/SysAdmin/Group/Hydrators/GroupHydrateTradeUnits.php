@@ -53,6 +53,9 @@ class GroupHydrateTradeUnits implements ShouldBeUnique
             'number_trade_units_without_marketing_dimensions' => $group->tradeUnits()->where(function ($q) {
                 $q->whereNull('marketing_dimensions')->orWhere('marketing_dimensions', '{}');
             })->where('status', '!=', \App\Enums\Goods\TradeUnit\TradeUnitStatusEnum::DISCONTINUED)->count(),
+            'number_trade_units_without_weight'               => $group->tradeUnits()->where(function ($q) {
+                $q->whereNull('marketing_weight')->orWhereNull('net_weight');
+            })->where('status', '!=', \App\Enums\Goods\TradeUnit\TradeUnitStatusEnum::DISCONTINUED)->count(),
         ];
 
         $stats = array_merge(
