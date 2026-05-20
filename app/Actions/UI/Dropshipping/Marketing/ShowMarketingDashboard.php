@@ -102,6 +102,15 @@ class ShowMarketingDashboard extends OrgAction
                         ]
                     ],
                     [
+                        'name' => __('Wati Templates'),
+                        'value' => $this->shop->commsStats->number_wati_templates,
+                        'icon'  => ['fal', 'fa-comment'],
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.marketing.templates.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ],
+                    [
                         'name' => __('Traffic Sources'),
                         'value' => $this->shop->commsStats->number_traffic_sources ?? 0,
                         'icon'  => ['fal', 'fa-traffic-light'],
