@@ -32,8 +32,9 @@ defineProps<{
     tab?: string
 }>()
 
-type EditingField = 'marketing_weight' | 'marketing_dimensions'
+type EditingField = 'net_weight' | 'marketing_weight' | 'marketing_dimensions'
 const editingCell = ref<Record<number, EditingField>>({})
+const editingNetWeight = ref<Record<number, string | null>>({})
 const editingMarketingWeight = ref<Record<number, string | null>>({})
 const editingDimensions = ref<Record<number, any>>({})
 const loadingSave = ref<number[]>([])
@@ -41,7 +42,9 @@ const savedValues = ref<Record<number, Partial<TradeUnit>>>({})
 
 function onEdit(tradeUnit: TradeUnit, field: EditingField) {
     editingCell.value[tradeUnit.id] = field
-    if (field === 'marketing_weight') {
+    if (field === 'net_weight') {
+        editingNetWeight.value[tradeUnit.id] = tradeUnit.net_weight ?? null
+    } else if (field === 'marketing_weight') {
         editingMarketingWeight.value[tradeUnit.id] = tradeUnit.marketing_weight ?? null
     } else {
         editingDimensions.value[tradeUnit.id] = tradeUnit.marketing_dimensions && Object.keys(tradeUnit.marketing_dimensions).length
@@ -52,6 +55,7 @@ function onEdit(tradeUnit: TradeUnit, field: EditingField) {
 
 function onCancel(tradeUnit: TradeUnit) {
     delete editingCell.value[tradeUnit.id]
+    delete editingNetWeight.value[tradeUnit.id]
     delete editingMarketingWeight.value[tradeUnit.id]
     delete editingDimensions.value[tradeUnit.id]
 }
@@ -62,7 +66,12 @@ async function onSave(tradeUnit: TradeUnit) {
 
     const payload: Record<string, any> = {}
 
-    if (field === 'marketing_weight') {
+    if (field === 'net_weight') {
+        const raw = editingNetWeight.value[tradeUnit.id]
+        const parsed = Number(raw)
+        if (raw === null || raw === '' || !Number.isInteger(parsed) || parsed < 0) return
+        payload.net_weight = parsed
+    } else if (field === 'marketing_weight') {
         const raw = editingMarketingWeight.value[tradeUnit.id]
         const parsed = Number(raw)
         if (raw === null || raw === '' || !Number.isInteger(parsed) || parsed < 0) return
@@ -77,6 +86,7 @@ async function onSave(tradeUnit: TradeUnit) {
         await axios.patch(route("grp.models.trade-unit.update", { tradeUnit: tradeUnit.id }), payload)
         savedValues.value[tradeUnit.id] = { ...savedValues.value[tradeUnit.id], ...payload }
         delete editingCell.value[tradeUnit.id]
+        delete editingNetWeight.value[tradeUnit.id]
         delete editingMarketingWeight.value[tradeUnit.id]
         delete editingDimensions.value[tradeUnit.id]
     } finally {
@@ -134,6 +144,32 @@ const getIntervalStateColor = (isPositive: boolean) => {
             {{ tradeUnit["name"] }}
         </template>
 
+        <template #cell(net_weight)="{ item: tradeUnit }">
+            <div class="flex items-center justify-end gap-2">
+                <template v-if="editingCell[tradeUnit.id] === 'net_weight'">
+                    <div class="flex items-center gap-1 shrink-0">
+                        <div class="w-24">
+                            <PureInput v-model="editingNetWeight[tradeUnit.id]" type="number" step="1" min="0" autofocus />
+                        </div>
+                        <span class="text-gray-500 text-sm">grams</span>
+                    </div>
+                    <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700 disabled:opacity-50">
+                        <FontAwesomeIcon v-if="loadingSave.includes(tradeUnit.id)" icon="fal fa-spinner-third" class="h-5 w-5 animate-spin" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-5 w-5" />
+                    </button>
+                    <button @click="onCancel(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-gray-400 hover:text-gray-600 disabled:opacity-50">
+                        <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" />
+                    </button>
+                </template>
+                <template v-else>
+                    <span>{{ (savedValues[tradeUnit.id]?.net_weight ?? tradeUnit["net_weight"]) != null ? (savedValues[tradeUnit.id]?.net_weight ?? tradeUnit["net_weight"]) + ' g' : showEditActions ? '' : '-' }}</span>
+                    <button v-if="showEditActions" @click="onEdit(tradeUnit, 'net_weight')" class="text-gray-400 hover:text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
+                    </button>
+                </template>
+            </div>
+        </template>
+
         <template #cell(marketing_weight)="{ item: tradeUnit }">
             <div class="flex items-center justify-end gap-2">
                 <template v-if="editingCell[tradeUnit.id] === 'marketing_weight'">
@@ -152,7 +188,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </button>
                 </template>
                 <template v-else>
-                    <span>{{ (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) != null ? (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) + ' g' : '' }}</span>
+                    <span>{{ (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) != null ? (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) + ' g' : showEditActions ? '' : '-' }}</span>
                     <button v-if="showEditActions" @click="onEdit(tradeUnit, 'marketing_weight')" class="text-gray-400 hover:text-gray-600">
                         <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
                     </button>
