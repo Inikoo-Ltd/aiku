@@ -34,7 +34,11 @@ class StoreShippingZone extends OrgAction
         data_set($modelData, 'organisation_id', $shippingZoneSchema->organisation_id);
         data_set($modelData, 'shop_id', $shippingZoneSchema->shop_id);
         data_set($modelData, 'currency_id', $shippingZoneSchema->shop->currency_id);
-        data_set($modelData, 'position', ShippingZone::where('shop_id', $shippingZoneSchema->shop_id)->max('position') + 1);
+        data_set(
+            $modelData,
+            'position',
+            (ShippingZone::where('shipping_zone_schema_id', $shippingZoneSchema->id)->max('position') ?? 0) + 1
+        );
 
 
         return DB::transaction(function () use ($shippingZoneSchema, $modelData) {
