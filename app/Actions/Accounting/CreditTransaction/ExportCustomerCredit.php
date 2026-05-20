@@ -15,6 +15,10 @@ class ExportCustomerCredit extends OrgAction
     use AsAction;
     use WithExportData;
 
+    /**
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     */
     public function handle(Organisation $organisation, string $beforeDate, string $type = 'xlsx'): BinaryFileResponse
     {
         $export = new CustomerCreditExport($organisation, $beforeDate);
@@ -24,6 +28,10 @@ class ExportCustomerCredit extends OrgAction
         return $this->export($export, $filename, $type);
     }
 
+    /**
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     */
     public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
     {
         $this->initialisation($organisation, $request);

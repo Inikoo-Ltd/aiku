@@ -22,7 +22,14 @@ const beforeDate = ref<Date | null>(props.before_date ? new Date(props.before_da
 
 const applyFilter = () => {
     if (!beforeDate.value) return
-    const formatted = beforeDate.value.toISOString().split("T")[0]
+
+    const year = beforeDate.value.getFullYear()
+    const month = String(beforeDate.value.getMonth() + 1).padStart(2, "0")
+    const day = String(beforeDate.value.getDate()).padStart(2, "0")
+    const formatted = `${year}-${month}-${day}`
+
+
+  //  const formatted = beforeDate.value.toISOString().split("T")[0]
     router.get(route(route().current(), route().params), { before_date: formatted }, {
         preserveState: true,
         preserveScroll: true,
@@ -47,7 +54,7 @@ const exportExcel = () => {
         <div class="flex items-end gap-4 mb-6">
             <div class="flex flex-col gap-1">
                 <label class="text-sm font-medium text-gray-700">
-                    {{ $t("Before Date") }}
+                    {{ $t("Until end of this day") }}
                     <span class="text-red-500">*</span>
                 </label>
                 <DatePicker
