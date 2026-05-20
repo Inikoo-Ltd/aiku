@@ -274,6 +274,7 @@ function resetForm() {
 }
 
 const isStep1Invalid = computed(() => {
+    if(!voucherExists.value) return true
     if (!offerVoucher.value?.trim()) return true
     if (!offerLabel.value?.trim()) return true
     if (!startDate.value) return true

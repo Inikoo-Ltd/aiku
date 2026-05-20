@@ -97,7 +97,7 @@ function getCountryLabel(code: string): string {
 </script>
 
 <template>
-  <div class="space-y-4 text-sm max-w-[450px] mx-auto">
+  <div class="space-y-4 text-sm  mx-auto">
     <!-- Add Button -->
     <div class="flex justify-end mb-2">
       <Button :icon="faPlus" label="Add Region" type="add" size="xs" @click="addNewItem" />

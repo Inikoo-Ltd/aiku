@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link, usePage } from "@inertiajs/vue3"
+import { Link } from "@inertiajs/vue3"
 import type { Links, Meta } from "@/types/Table"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -17,6 +17,7 @@ import HeaderCell from '@/Components/Table/HeaderCell.vue'
 import { faBars } from "@far"
 import { ref, onMounted, onUnmounted, inject, computed, watch } from "vue"
 import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faWeight, faBox, faClock, faTruck, faGripVertical)
 
@@ -73,11 +74,11 @@ const columns = ref([
 ])
 
 const routeParams = computed(() => {
-	const page = usePage()
+	const params = route().params as RouteParams
 	return {
-		organisation: page.props.auth?.organisation?.slug || '',
-		shop: page.props.auth?.shop?.slug || '',
-		shippingZoneSchema: page.props.shippingZoneSchema?.slug || ''
+		organisation: params.organisation || '',
+		shop: params.shop || '',
+		shippingZoneSchema: params.shippingZoneSchema || ''
 	}
 })
 
@@ -119,7 +120,7 @@ const handleDragChange = async (event: any) => {
 		position: item.position,
 	}))
 
-	/* try {
+	try {
 		await axios.patch(
 			route(
 				"grp.org.shops.show.billables.shipping.show.shipping-zone.reorder",
@@ -129,13 +130,16 @@ const handleDragChange = async (event: any) => {
 					routeParams.value.shippingZoneSchema,
 				]
 			),
-			{
-				positions: payload,
-			}
+			{ positions: payload }
 		)
 	} catch (error) {
 		console.error("Failed to reorder shipping zones:", error)
-	} */
+		notify({
+			title: "Failed to Save",
+			text: "Shipping zones reordered failed.",
+			type: "error",
+		})
+	}
 }
 
 const togglePostalInfo = (territoryId: string) => {
@@ -306,7 +310,7 @@ onUnmounted(() => {
 								<!-- TBC Case -->
 								<div v-if="zone.price.type === 'TBC'" class="text-gray-500 italic">
 									<font-awesome-icon icon="fal fa-clock" class="text- mr-1" />
-								 	{{ ctrans('Shipping price: TBC') }} 
+								 	{{ ctrans('Shipping price: TBC') }}
 								</div>
 
 								<!-- Step Pricing -->

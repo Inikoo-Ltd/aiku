@@ -17,6 +17,7 @@ use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Rules\IUnique;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -119,6 +120,16 @@ class StoreShippingZone extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function asController(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZone
+    {
+        $this->initialisationFromShop($shippingZoneSchema->shop, $request);
+
+        return $this->handle($shippingZoneSchema, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
     public function action(ShippingZoneSchema $shippingZoneSchema, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): ShippingZone
     {
         if (!$audit) {
@@ -130,5 +141,20 @@ class StoreShippingZone extends OrgAction
         $this->initialisationFromShop($shippingZoneSchema->shop, $modelData);
 
         return $this->handle($shippingZoneSchema, $this->validatedData);
+    }
+
+    public function htmlResponse(ShippingZone $shippingZone)
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Shipping zone successfully created.'),
+        ]);
+
+        return redirect()->route('grp.org.shops.show.billables.shipping.show', [
+            'organisation'       => $shippingZone->organisation->slug,
+            'shop'               => $shippingZone->shop->slug,
+            'shippingZoneSchema' => $shippingZone->schema->slug,
+        ]);
     }
 }

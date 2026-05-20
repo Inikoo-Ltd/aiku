@@ -63,7 +63,7 @@ class ShowIrisDepartment extends IrisAction
                         'icon'    => ['fal', 'folder-tree'],
                     ],
                 ]),
-                
+
                 'data' => [
                     'department'    => DepartmentResource::make($department)->resolve(),
                     'data_feed_url' => route('iris.product_category.data_feed', ['productCategory' => $department->slug]),
