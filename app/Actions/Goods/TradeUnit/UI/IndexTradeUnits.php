@@ -298,15 +298,6 @@ class IndexTradeUnits extends GrpAction
                 'number' => $this->group->goodsStats->number_trade_units_status_in_process
             ],
             [
-                'label'  => __('Discontinued'),
-                'root'   => 'grp.trade_units.units.discontinued',
-                'route'  => [
-                    'name'       => 'grp.trade_units.units.discontinued',
-                    'parameters' => []
-                ],
-                'number' => $this->group->goodsStats->number_trade_units_status_discontinued
-            ],
-            [
                 'label'  => __('Discontinuing'),
                 'root'   => 'grp.trade_units.units.discontinuing',
                 'route'  => [
@@ -314,6 +305,15 @@ class IndexTradeUnits extends GrpAction
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_discontinuing
+            ],
+            [
+                'label'  => __('Discontinued'),
+                'root'   => 'grp.trade_units.units.discontinued',
+                'route'  => [
+                    'name'       => 'grp.trade_units.units.discontinued',
+                    'parameters' => []
+                ],
+                'number' => $this->group->goodsStats->number_trade_units_status_discontinued
             ],
             [
                 'label'  => __('Anomality'),
