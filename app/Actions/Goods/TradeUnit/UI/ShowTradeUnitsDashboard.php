@@ -118,6 +118,24 @@ class ShowTradeUnitsDashboard extends OrgAction
                         'icon'  => 'fal fa-ruler-combined',
                         'value' => $this->group->goodsStats->number_trade_units_without_marketing_dimensions,
                     ],
+                    [
+                        'label' => __('Without Description'),
+                        'route' => [
+                            'name'       => 'grp.trade_units.units.missing_description',
+                            'parameters' => []
+                        ],
+                        'icon'  => 'fal fa-align-left',
+                        'value' => $this->group->goodsStats->number_trade_units_without_description,
+                    ],
+                    [
+                        'label' => __('Without Brand'),
+                        'route' => [
+                            'name'       => 'grp.trade_units.units.missing_brand',
+                            'parameters' => []
+                        ],
+                        'icon'  => 'fal fa-tag',
+                        'value' => $this->group->goodsStats->number_trade_units_without_brand,
+                    ],
                 ],
             ]
         );

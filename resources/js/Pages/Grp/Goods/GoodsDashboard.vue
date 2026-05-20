@@ -12,11 +12,11 @@ import StatsBox from '@/Components/Stats/StatsBox.vue'
 import StatsBoxNegativeList from '@/Components/Stats/StatsBoxNegativeList.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faWeight, faScarecrow } from '@fal'
+import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faWeight, faScarecrow, faAlignLeft, faTag } from '@fal'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { StatsBoxTS } from '@/types/Components/StatsBox'
 
-library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faWeight, faScarecrow)
+library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faWeight, faScarecrow, faAlignLeft, faTag)
 
 defineProps<{
     title: string

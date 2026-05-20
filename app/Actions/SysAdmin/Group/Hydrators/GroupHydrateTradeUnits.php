@@ -56,6 +56,15 @@ class GroupHydrateTradeUnits implements ShouldBeUnique
             'number_trade_units_without_weight'               => $group->tradeUnits()->where(function ($q) {
                 $q->whereNull('marketing_weight')->orWhereNull('net_weight');
             })->whereIn('status', [TradeUnitStatusEnum::ACTIVE, TradeUnitStatusEnum::IN_PROCESS])->count(),
+            'number_trade_units_without_description'          => $group->tradeUnits()->where(function ($q) {
+                $q->whereNull('description')->orWhere('description', '');
+            })->whereIn('status', [TradeUnitStatusEnum::ACTIVE, TradeUnitStatusEnum::IN_PROCESS])->count(),
+            'number_trade_units_without_brand'                => $group->tradeUnits()->whereIn('status', [TradeUnitStatusEnum::ACTIVE, TradeUnitStatusEnum::IN_PROCESS])
+                ->whereNotExists(function ($q) {
+                    $q->from('model_has_brands')
+                        ->whereColumn('model_has_brands.model_id', 'trade_units.id')
+                        ->where('model_has_brands.model_type', 'TradeUnit');
+                })->count(),
         ];
 
         $stats = array_merge(
