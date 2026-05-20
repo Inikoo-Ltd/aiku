@@ -32,6 +32,10 @@ class WatiTemplate extends Model
         'quality',
         'creation_method',
         'last_modified',
+        'client_name',
+        'custom_params',
+        'hsm',
+        'catalog_info',
     ];
 
     protected function casts(): array
@@ -40,6 +44,9 @@ class WatiTemplate extends Model
             'language'      => 'array',
             'header'        => 'array',
             'buttons'       => 'array',
+            'custom_params' => 'array',
+            'hsm'           => 'array',
+            'catalog_info'  => 'array',
             'last_modified' => 'datetime',
         ];
     }

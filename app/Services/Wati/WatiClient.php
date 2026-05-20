@@ -89,9 +89,12 @@ class WatiClient
         ]);
     }
 
-    public function getTemplates(): array
+    public function getTemplates(int $pageSize = 20, int $pageNumber = 1): array
     {
-        return $this->get("{$this->apiBase}/messageTemplates");
+        return $this->get("{$this->apiBase}/messageTemplates", [
+            'pageSize'   => $pageSize,
+            'pageNumber' => $pageNumber,
+        ]);
     }
 
     public function getBroadcastsOverview(string $dateFrom, string $dateTo, ?string $channel = null, ?string $searchString = null): array

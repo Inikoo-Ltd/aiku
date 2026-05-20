@@ -77,6 +77,7 @@ use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
+use App\Actions\Comms\Wati\SyncWatiTemplates;
 use App\Actions\Comms\Outbox\PublishOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
@@ -816,6 +817,7 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
 });
 
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
+    Route::post('wati-templates/sync', SyncWatiTemplates::class)->name('wati-templates.sync')->withoutScopedBindings();
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
     Route::post('prospect/mailshot/{mailshot:id}/send', SendProspectMailShot::class)->name('prospect.mailshot.send')->withoutScopedBindings();

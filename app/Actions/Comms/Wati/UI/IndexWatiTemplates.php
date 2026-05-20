@@ -91,8 +91,21 @@ class IndexWatiTemplates extends OrgAction
                 ),
                 'title'    => $title,
                 'pageHead' => [
-                    'title' => $title,
-                    'icon'  => ['fal', 'fa-comment'],
+                    'title'   => $title,
+                    'icon'    => ['fal', 'fa-comment'],
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'secondary',
+                            'label' => __('Sync'),
+                            'icon'  => ['fal', 'fa-sync'],
+                            'route' => [
+                                'name'       => 'grp.models.shop.wati-templates.sync',
+                                'parameters' => ['shop' => $this->parent->id],
+                                'method'     => 'post',
+                            ],
+                        ],
+                    ],
                 ],
                 'data' => WatiTemplateResource::collection($watiTemplates),
             ]
