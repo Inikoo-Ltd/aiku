@@ -79,7 +79,8 @@ class EditShippingZone extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Edit schema'),
+                            'label'  => __('Territory & Price'),
+                            'icon'   => 'fa-light fa-shipping-fast ',
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
