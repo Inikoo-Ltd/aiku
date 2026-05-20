@@ -8,8 +8,8 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
-use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
+use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Inventory\OrgStock;
@@ -24,7 +24,7 @@ class SyncOrgStockTradeUnits
         $orgStock->tradeUnits()->sync($tradeUnitsData);
 
         foreach ($orgStock->tradeUnits as $tradeUnit) {
-            TradeUnitHydrateStatusFromOrgStocks::dispatch($tradeUnit);
+            SetTradeUnitStatus::dispatch($tradeUnit);
             TradeUnitsHydrateOrgStocks::dispatch($tradeUnit);
         }
         $orgStock = ModelHydrateSingleTradeUnits::run($orgStock);
