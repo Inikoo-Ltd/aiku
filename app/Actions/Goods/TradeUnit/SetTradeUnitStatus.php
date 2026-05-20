@@ -6,10 +6,11 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\TradeUnit\Hydrators;
+namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Goods\TradeUnit;
@@ -17,7 +18,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class TradeUnitHydrateStatusFromOrgStocks implements ShouldBeUnique
+class SetTradeUnitStatus implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -32,6 +33,21 @@ class TradeUnitHydrateStatusFromOrgStocks implements ShouldBeUnique
     {
         $oldStatus = $tradeUnit->status;
         $status    = $this->getTradeUnitStatusFromOrgStocks($tradeUnit);
+
+        if($status==TradeUnitStatusEnum::ACTIVE){
+            $hasActiveProducts = false;
+            foreach ($tradeUnit->products as $product) {
+                if($product->state==ProductStateEnum::ACTIVE || $product->state==ProductStateEnum::DISCONTINUING){
+                    $hasActiveProducts = true;
+                    break;
+                }
+            }
+            if(!$hasActiveProducts){
+                $status = TradeUnitStatusEnum::IN_PROCESS;
+            }
+
+        }
+
 
 
         $tradeUnit->update([
@@ -96,9 +112,15 @@ class TradeUnitHydrateStatusFromOrgStocks implements ShouldBeUnique
             return 0;
         }
 
-        $command->withProgressBar(TradeUnit::all(), function (TradeUnit $tradeUnit) {
+        $bar = $command->getOutput()->createProgressBar(TradeUnit::count());
+        $bar->setFormat('debug');
+
+        foreach (TradeUnit::all() as $tradeUnit) {
             $this->handle($tradeUnit);
-        });
+            $bar->advance();
+        }
+
+        $bar->finish();
 
         $command->newLine();
 

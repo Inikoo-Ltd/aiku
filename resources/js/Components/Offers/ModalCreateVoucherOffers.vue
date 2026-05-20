@@ -206,7 +206,7 @@ const submitVoucherOffer = () => {
         discount_percentage: discountPercentage.value,
         targets: targets,
     }
-    
+
     router.post(
         route('grp.org.shops.show.discounts.campaigns.store_voucher', {
             organisation: props.shop_data.organisation,
