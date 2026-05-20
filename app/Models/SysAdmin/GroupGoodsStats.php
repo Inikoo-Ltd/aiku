@@ -76,6 +76,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_trade_units_without_marketing_weight
  * @property int $number_trade_units_without_marketing_dimensions
  * @property int $number_trade_units_without_weight
+ * @property int $number_trade_units_without_description
+ * @property int $number_trade_units_without_brand
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newQuery()
