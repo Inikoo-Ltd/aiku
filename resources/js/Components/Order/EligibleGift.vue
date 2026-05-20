@@ -53,7 +53,7 @@ const onChangeGift = async (val: Gift) => {
                 props.routeUpdate.name,
                 props.routeUpdate.parameters
             ),
-            { gift_id: val.id }
+            { gift_id: val.selected ? 0 : val.id }
         )
 
         const targetGift = props.giftOptions.find(x => x.id === val.id)
