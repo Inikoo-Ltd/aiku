@@ -455,7 +455,7 @@ Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine
 });
 
 Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
-    Route::get('create', StoreShippingZone::class)->name('create');
+    Route::post('create', StoreShippingZone::class)->name('create');
     Route::patch('{shippingZone:id}', UpdateShippingZone::class)->name('update');
 });
 

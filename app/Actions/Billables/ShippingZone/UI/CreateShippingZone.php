@@ -108,7 +108,7 @@ class CreateShippingZone extends OrgAction
                         ],
                     ],
                     'route' => [
-                        'name'       => 'grp.org.shops.show.billables.shipping.show.shipping-zone.create',
+                        'name'       => 'grp.models.shipping_zone.create',
                         'parameters' =>  array_values($request->route()->originalParameters())
                     ],
                 ],
