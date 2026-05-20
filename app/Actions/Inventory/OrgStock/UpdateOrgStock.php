@@ -10,8 +10,8 @@ namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
-use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
+use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
@@ -19,11 +19,11 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Inventory\Warehouse;
-use App\Models\SysAdmin\Organisation;
 
 class UpdateOrgStock extends OrgAction
 {
@@ -43,7 +43,7 @@ class UpdateOrgStock extends OrgAction
             OrganisationHydrateOrgStocks::dispatch($orgStock->organisation);
 
             foreach ($orgStock->tradeUnits as $tradeUnit) {
-                TradeUnitHydrateStatusFromOrgStocks::dispatch($tradeUnit);
+                SetTradeUnitStatus::dispatch($tradeUnit);
                 TradeUnitsHydrateOrgStocks::dispatch($tradeUnit);
             }
 

@@ -4,15 +4,20 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ref, computed, watch } from 'vue'
 import { DatePicker, InputNumber, RadioButton } from 'primevue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 import PureInput from '../Pure/PureInput.vue'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import Toggle from '../Pure/Toggle.vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
-
+import { faSpinnerThird, faCheckCircle, faTimesCircle } from "@fas";
+library.add(
+    faSpinnerThird, faCheckCircle, faTimesCircle
+);
 const props = defineProps<{
     shop_data: {
         id: number
@@ -56,6 +61,45 @@ const endDate = ref<Date | null>(
         : null
 )
 const reuseCustomer = ref(false)
+
+const isCheckingVoucher = ref(false)
+const voucherExists = ref<boolean | null>(null)
+let voucherCheckTimeout: ReturnType<typeof setTimeout> | null = null
+
+const checkVoucherExistence = async (code: string) => {
+    isCheckingVoucher.value = true
+    try {
+        const { data } = await axios.get(
+            route('grp.org.shops.show.discounts.campaigns.check_voucher', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+            }),
+            { params: { code } }
+        )
+        voucherExists.value = data.exists
+    } catch (error) {
+        voucherExists.value = null
+    } finally {
+        isCheckingVoucher.value = false
+    }
+}
+
+watch(offerVoucher, (value) => {
+    voucherExists.value = null
+
+    if (voucherCheckTimeout) {
+        clearTimeout(voucherCheckTimeout)
+    }
+
+    const code = value?.trim()
+    if (!code) {
+        isCheckingVoucher.value = false
+        return
+    }
+
+    voucherCheckTimeout = setTimeout(() => checkVoucherExistence(code), 400)
+})
 
 // tools step
 const step = ref(1)
@@ -215,6 +259,8 @@ watch(target, () => {
 function resetForm() {
     offerLabel.value = ''
     offerVoucher.value = ''
+    voucherExists.value = null
+    isCheckingVoucher.value = false
     startDate.value = null
     endDate.value = null
     discountPercentage.value = null
@@ -288,6 +334,19 @@ const isFormInvalid = computed(() => {
                         </label>
 
                         <PureInput v-model="offerVoucher" :maxLength="60" :placeholder="trans('Enter Voucher code')" />
+
+                        <p v-if="isCheckingVoucher" class="text-sm text-gray-500 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-spinner-third" spin class="text-xs" />
+                            {{ trans('Checking voucher code') }}…
+                        </p>
+                        <p v-else-if="voucherExists === true" class="text-sm text-green-600 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" />
+                            {{ trans('Voucher code exists') }}
+                        </p>
+                        <p v-else-if="voucherExists === false" class="text-sm text-red-500 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
+                            {{ trans('Voucher code not found') }}
+                        </p>
 
                     </div>
                     <!-- offer name -->
