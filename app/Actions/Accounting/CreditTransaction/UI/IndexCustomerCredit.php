@@ -48,9 +48,10 @@ class IndexCustomerCredit extends OrgAction
                 $join->on('credit_transactions.customer_id', '=', 'customers.id')
                     ->where('credit_transactions.date', '<', $beforeDate);
             })
-            ->leftJoin('currencies', 'credit_transactions.currency_id', '=', 'currencies.id')
-            ->groupBy('customers.id', 'customers.slug', 'customers.reference', 'customers.name', 'customers.email', 'shops.code')
-            ->havingRaw('COUNT(credit_transactions.id) > 0')
+            ->join('organisations', 'organisations.id', '=', 'customers.organisation_id')
+            ->join('currencies', 'currencies.id', '=', 'organisations.currency_id')
+            ->groupBy('customers.id', 'customers.slug', 'customers.reference', 'customers.name', 'customers.email', 'shops.code', 'currencies.symbol', 'currencies.code')
+            ->havingRaw('COALESCE(SUM(credit_transactions.org_amount), 0) != 0')
             ->selectRaw('
                 customers.id,
                 customers.slug,
@@ -58,17 +59,11 @@ class IndexCustomerCredit extends OrgAction
                 customers.name,
                 customers.email,
                 shops.code as shop_code,
-                COALESCE(SUM(credit_transactions.amount), 0) as credit_balance,
+                COALESCE(SUM(credit_transactions.org_amount), 0) as credit_balance,
                 MAX(credit_transactions.date) as latest_transaction_date,
-                (SELECT c2.symbol FROM credit_transactions ct2
-                    LEFT JOIN currencies c2 ON ct2.currency_id = c2.id
-                    WHERE ct2.customer_id = customers.id AND ct2.date < ?
-                    ORDER BY ct2.date DESC LIMIT 1) as currency_symbol,
-                (SELECT c2.code FROM credit_transactions ct2
-                    LEFT JOIN currencies c2 ON ct2.currency_id = c2.id
-                    WHERE ct2.customer_id = customers.id AND ct2.date < ?
-                    ORDER BY ct2.date DESC LIMIT 1) as currency_code
-            ', [$beforeDate, $beforeDate]);
+                currencies.symbol as currency_symbol,
+                currencies.code as currency_code
+            ');
 
         $this->records = $queryBuilder->toBase()->getCountForPagination();
 
