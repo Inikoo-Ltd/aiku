@@ -19,6 +19,7 @@ use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -32,6 +33,12 @@ class PayOrderWithPastpay extends RetinaAction
 
     public function handle(Order $order, array $modelData): array
     {
+        $customer = $order->customer;
+
+        if(! $customer?->taxNumber) {
+            throw ValidationException::withMessages(['message' => __('You don\'t have tax number.')]);
+        }
+
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $order->shop->paymentAccountShops()
             ->where('type', PaymentAccountTypeEnum::PASTPAY)
