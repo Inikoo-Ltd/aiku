@@ -78,7 +78,7 @@ const titleContent = computed(() => props.fieldValue?.recommendation_settings?.t
 const prevEl = ref(null)
 const nextEl = ref(null)
 
-console.log(props)
+console.log('related product :', props)
 </script>
 
 <template>
@@ -119,7 +119,7 @@ console.log(props)
           :loop="shouldShowNavigation"
           :auto-height="false"
           :modules="[Navigation]"
-          class="w-full px-[50px]"
+          class="w-full px-0 md:px-[50px]"
           :navigation="{ prevEl, nextEl }"
         >
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">
