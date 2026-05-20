@@ -95,7 +95,8 @@ class EditShippingZone extends OrgAction
                                 'price' => [
                                     'type'  => 'pricing_zone',
                                     'label' => __('Price'),
-                                    'value' => $shippingZone->price
+                                    'value' => $shippingZone->price,
+                                    'currency' => $shippingZone->shop->currency
                                 ],
                             ],
                         ]

@@ -98,6 +98,7 @@ class CreateShippingZone extends OrgAction
                                     'type'     => 'pricing_zone',
                                     'label'    => __('Price'),
                                     'required' => true,
+                                    'currency' => $shippingZoneSchema->shop->currency,
                                     'value'    => [
                                         'type'  => 'Step Order Items Net Amount',
                                         'steps' => [
