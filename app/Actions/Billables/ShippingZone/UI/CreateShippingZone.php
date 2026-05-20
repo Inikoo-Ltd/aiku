@@ -73,6 +73,11 @@ class CreateShippingZone extends OrgAction
                                     'required' => true,
                                     'value'    => null,
                                 ],
+                                'status' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Status'),
+                                    'value' => true,
+                                ],
                                 'is_failover' => [
                                     'type'  => 'toggle',
                                     'label' => __('Failover zone'),
@@ -109,7 +114,7 @@ class CreateShippingZone extends OrgAction
                     ],
                     'route' => [
                         'name'       => 'grp.models.shipping_zone.create',
-                        'parameters' =>  array_values($request->route()->originalParameters())
+                        'parameters' => [$shippingZoneSchema->id],
                     ],
                 ],
             ]

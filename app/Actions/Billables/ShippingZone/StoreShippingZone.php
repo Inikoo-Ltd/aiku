@@ -105,7 +105,7 @@ class StoreShippingZone extends OrgAction
         ];
 
         if (!$this->strict) {
-                $rules['last_fetched_at'] = ['sometimes', 'date'];
+            $rules['last_fetched_at'] = ['sometimes', 'date'];
             $rules['source_id']  = ['sometimes', 'string', 'max:255'];
         }
 
@@ -124,14 +124,12 @@ class StoreShippingZone extends OrgAction
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($shippingZoneSchema->shop, $modelData);
-
         return $this->handle($shippingZoneSchema, $this->validatedData);
     }
 
     public function asController(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZone
     {
         $this->initialisationFromShop($shippingZoneSchema->shop, $request);
-
         return $this->handle($shippingZoneSchema, $this->validatedData);
     }
 
