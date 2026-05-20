@@ -112,6 +112,23 @@ trait HasUIMailshots
                     ],
                 ]
             ),
+            'grp.org.shops.show.marketing.wati-templates.index' =>
+            array_merge(
+                MarketingHub::make()->getBreadcrumbs($routeName, $routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.marketing.wati-templates.index',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Wati Templates'),
+                            'icon'  => 'fal fa-bars'
+                        ],
+                    ],
+                ]
+            ),
             default => []
         };
     }

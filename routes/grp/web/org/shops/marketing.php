@@ -22,6 +22,7 @@ use App\Actions\Comms\Mailshot\UI\ShowMailshotWorkshop;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotRecipients;
 use App\Actions\Comms\Mailshot\UI\EditMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
+use App\Actions\Comms\Wati\UI\IndexWatiTemplates;
 use App\Actions\Comms\Mailshot\UI\IndexMarketingMailshots;
 use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotTemplateWorkshop;
@@ -65,4 +66,8 @@ Route::name("templates.")->prefix('templates')
         Route::get('{emailTemplate}/workshop', ShowMailshotTemplateWorkshop::class)->name('workshop');
         Route::get('{emailTemplate}/edit', EditMailshotTemplate::class)->name('edit');
         Route::post('{emailTemplate}/send-test', [SendTestEmail::class, 'asControllerTemplate'])->name('send-test');
+    });
+Route::name("wati-templates.")->prefix('wati-templates')
+    ->group(function () {
+        Route::get('', IndexWatiTemplates::class)->name('index');
     });
