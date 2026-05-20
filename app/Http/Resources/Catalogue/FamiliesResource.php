@@ -90,7 +90,7 @@ class FamiliesResource extends JsonResource
             'description'                   => $this->description,
             'created_at'                    => $this->created_at,
             'updated_at'                    => $this->updated_at,
-            'number_current_products'       => $this->number_current_products,
+            'number_current_products'       => $this->number_current_products ?? 0,
             'collections'                   => $collections,
             'sales_grp_currency_external'   => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
@@ -112,6 +112,7 @@ class FamiliesResource extends JsonResource
             'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
             'image_thumbnail'               => Arr::get($this->web_images, 'main.thumbnail'),
             'health_rank'                   => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'public_url'                    => $this->canonical_url,
         ];
     }
 
