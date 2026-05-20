@@ -196,7 +196,7 @@ library.add(
 	</PageHeading>
 
 	<!-- Section: Box Note (TODO: update the routes ) -->
-	<div v-if="delivery_note.state === 'returned'" class="relative">
+	<!-- <div v-if="delivery_note.state === 'returned'" class="relative">
 		<div class="p-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
 			<BoxNote
 				v-for="(note, index) in notes.note_list"
@@ -209,7 +209,7 @@ library.add(
 					method: 'patch',
 				}" />
 		</div>
-	</div>
+	</div> -->
 
 	<!-- Section: Timeline -->
 	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
@@ -227,7 +227,7 @@ library.add(
 		:boxStats="box_stats"
 		:routes
 		:deliveryNote="delivery_note"
-		:updateRoute="routes.update"
+		:updateRoute="routes?.update"
 		:warehouse
 	/>
 
@@ -239,7 +239,7 @@ library.add(
 	/>
 
 	<!-- Modal: Select picker -->
-	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title="trans('Selesssct Picker')">
+	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title="trans('Select Picker')">
 		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
 			<div class="mx-auto font-semibold text-lg">
 				{{ ctrans("Select Handler") }}

@@ -100,39 +100,21 @@ class IndexReturnDeliveryNoteItems extends OrgAction
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            // $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
-            // $allowAction = ($parent->packer_user_id && $parent->packer_user_id == request()->user()->id);
+            if ($parent->state != ReturnDeliveryNoteStateEnum::DONE) {
+                $table->column(key: 'expected_quantity', label: __('Expected Qty'), canBeHidden: false, align: 'right');
+            }
 
-            // if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
-            //     $allowAction = $parent->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
-            // }
-            // if (app()->isLocal()) {
-            //     $allowAction = true;
-            // }
-
-
-            // if (!$parent || !$allowAction) {
-            //     $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false, sortable: false, searchable: false);
-            //     $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            //     $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            //     $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            // } else {
-            $table->column(key: 'expected_quantity', label: __('Expected Qty'), canBeHidden: false, sortable: false, searchable: false);
             if (in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNING])) {
                 $table->column(key: 'sowings', label: __('Sowings'), canBeHidden: false);
             }
 
-            if (in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNING, ReturnDeliveryNoteStateEnum::RETURNED])) {
-                $table->column(key: 'total_item_damaged', label: __('Damaged'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            if (in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNING, ReturnDeliveryNoteStateEnum::RETURNED, ReturnDeliveryNoteStateEnum::DONE])) {
                 $table->column(key: 'total_item_not_returned', label: __('Not Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'total_item_damaged', label: __('Damaged'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'total_item_returned', label: __('Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
-
-            // if (!in_array($parent->state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
-            //     $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
-            // }
         };
     }
 

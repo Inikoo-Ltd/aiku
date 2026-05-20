@@ -178,6 +178,10 @@ trait WithWooCommerceApiRequest
             if ($response->successful()) {
                 $data = $response->json();
 
+                if (!$data) {
+                    $data = json_decode(preg_replace('/^\xEF\xBB\xBF/', '', $response->body()), true);
+                }
+
                 // Cache GET requests if enabled
                 if ($method === 'GET' && $useCache) {
                     Cache::put($cacheKey, $data, Carbon::now()->addMinutes($this->cacheDuration));
@@ -197,8 +201,6 @@ trait WithWooCommerceApiRequest
                 'method' => $method,
                 'error'  => $e->getMessage()
             ]);
-
-            // Sentry::captureMessage($e->getMessage());
 
             return [
                 ['message' => 'WooCommerce API Connection Error: '.$e->getMessage()],
@@ -613,7 +615,6 @@ trait WithWooCommerceApiRequest
                 $this->initWooCommerceApi();
             }
             $result = $this->makeWooCommerceRequest('GET', 'settings');
-
             if ($result === null) {
                 return false;
             }
@@ -621,7 +622,6 @@ trait WithWooCommerceApiRequest
             return count($result) > 0;
         } catch (\Exception $e) {
             \Sentry::captureMessage($e->getMessage());
-
             return false;
         }
     }

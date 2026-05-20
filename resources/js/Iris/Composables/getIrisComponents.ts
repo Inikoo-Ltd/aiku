@@ -46,16 +46,15 @@ import Topbar3Iris from "@/Components/CMS/Website/TopBars/Template/Topbar3/Topba
 import Menu1Workshop from "@/Components/CMS/Website/Menus/Menu1Workshop.vue"
 import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
 import SeeAlso1Iris from "@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue"
-import family1Iris from "@/Components/CMS/Webpage/Family-1/family1Iris.vue"
-import family2Iris from "@/Components/CMS/Webpage/Family2/family2Iris.vue"
-import family3Iris from "@/Components/CMS/Webpage/Family3/family3Iris.vue"
-import FamiliesIris1 from "@/Components/CMS/Webpage/Families1/FamiliesIris1.vue"
-import FamiliesIris2 from "@/Components/CMS/Webpage/Families2/FamiliesIris2.vue"
-import FamiliesIris3 from "@/Components/CMS/Webpage/Families3/FamiliesIris3.vue"
+import family1Iris from "@/Iris/Components/IrisBlocks/family1Iris.vue"
+import family2Iris from "@/Iris/Components/IrisBlocks/family2Iris.vue"
+import family3Iris from "@/Iris/Components/IrisBlocks/family3Iris.vue"
+import FamiliesIris1 from "@/Iris/Components/IrisBlocks/FamiliesIris1.vue"
+import FamiliesIris2 from "@/Iris/Components/IrisBlocks/FamiliesIris2.vue"
+import FamiliesIris3 from "@/Iris/Components/IrisBlocks/FamiliesIris3.vue"
 
-
-import SubDepartment1Iris from "@/Components/CMS/Webpage/SubDepartment1/SubDepartmentIris.vue"
-import SubDepartment2Iris from "@/Components/CMS/Webpage/SubDepartment2/SubDepartmentIris.vue"
+import SubDepartment1Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris.vue"
+import SubDepartment2Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris2.vue"
 
 import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue"
 import WowsbarBannerIris from "@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerIris.vue"
@@ -91,10 +90,10 @@ import BlogIris from "@/Components/CMS/Webpage/Blog/BlogIris.vue"
 import Step2Iris from "@/Components/CMS/Webpage/Step2/Step2Iris.vue"
 import Step1Iris from "@/Components/CMS/Webpage/Step1/Step1Iris.vue"
 import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
-import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionIris.vue"
+import CollectionDescriptionIris from "@/Iris/Components/IrisBlocks/CollectionDescriptionIris.vue"
 import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
-import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
-import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/FamiliesOverviewIris1.vue'
+import Family2ExtraDescriptionIris from '@/Iris/Components/IrisBlocks/Family2ExtraDescriptionIris.vue'
+import Families1Overview from '@/Iris/Components/IrisBlocks/FamiliesOverviewIris1.vue'
 import RecommendationFromMasterIris from '@/Components/CMS/Webpage/RecommendationFromMaster/RecommendationFromMasterIris.vue';
 
 const async = (loader: () => Promise<Component>) =>

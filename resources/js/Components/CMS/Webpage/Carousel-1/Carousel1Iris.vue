@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay } from 'swiper/modules'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import Image from "@common/Components/Image.vue"
 import { ulid } from 'ulid'
 import { inject, ref, watch, computed, nextTick } from 'vue'

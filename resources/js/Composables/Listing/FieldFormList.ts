@@ -52,6 +52,7 @@ const JobPosition = defineAsyncComponent(() => import('@/Components/Forms/Fields
 const Interest = defineAsyncComponent(() => import('@/Components/Forms/Fields/Interest.vue'))
 const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/Fields/EmployeePosition.vue'))
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
+const JobTitleSelectCreate = defineAsyncComponent(() => import('@/Components/Forms/Fields/JobTitleSelectCreate.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
@@ -165,7 +166,8 @@ export const componentsList: { [key: string]: Component } = {
     'emergency_contact' : EmergencyContact,
     'website_reviews' : WebsiteReview,
     'input_translation_use_option' : InputTranslationWithOptionLanguages,
-    'clocking_machine_qr_expiry': ClockingMachineQrExpiry
+    'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
+    'job_title_select_create': JobTitleSelectCreate
 }
 
 export const getComponent = (componentName: string) => {

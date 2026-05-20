@@ -50,6 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property int|null $handler_id Main handler
  * @property int|null $handler_user_id
+ * @property string|null $done_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read DeliveryNote|null $deliveryNote

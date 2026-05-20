@@ -65,6 +65,15 @@ class ShowShippingZoneSchema extends OrgAction
                     'actions'       => [
                         $this->canEdit ? [
                             'type'  => 'button',
+                            'style' => 'create',
+                            'label' => 'Create shipping zone',
+                            'route' => [
+                                'name'       => "grp.org.shops.show.billables.shipping.show.shipping-zone.create",
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : false,
+                        $this->canEdit ? [
+                            'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
@@ -83,7 +92,7 @@ class ShowShippingZoneSchema extends OrgAction
                     fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema, ShippingZoneSchemaTabsEnum::ZONES->value))
                     : Inertia::lazy(fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema)))
             ]
-        )->table(IndexShippingZones::make()->tableStructure(parent: $shippingZoneSchema, prefix: ShippingZoneSchemaTabsEnum::ZONES->value));
+        );
     }
 
 

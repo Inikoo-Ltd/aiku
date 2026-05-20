@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 07 July 2025 17:48:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Mon, 07 July 2025 17:48:00 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -28,6 +28,7 @@ use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\LocationOrgStock;
+use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -42,7 +43,7 @@ class CancelDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, ?User $user, $modifyOrder = true): DeliveryNote
     {
         $oldState = $deliveryNote->state;
 
@@ -64,7 +65,7 @@ class CancelDeliveryNote extends OrgAction
         data_set($modelData, 'cancelled_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::CANCELLED);
 
-        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $modifyOrder) {
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $modifyOrder, $user) {
             $deliveryNote = $this->update($deliveryNote, $modelData);
 
 
@@ -86,7 +87,7 @@ class CancelDeliveryNote extends OrgAction
                 if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK) {
                     StoreSowing::make()->action(
                         $deliveryNoteItem,
-                        request()->user(),
+                        $user,
                         [
                             'location_org_stock_id' => $locationPickingStock->id,
                             'quantity'              => $picking->quantity,
@@ -99,7 +100,7 @@ class CancelDeliveryNote extends OrgAction
                 if ($toPick > 0) {
                     StoreNotPickPicking::make()->action(
                         $deliveryNoteItem,
-                        request()->user(),
+                        $user,
                         [
                             'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,
                             'not_picked_note'   => "Delivery Note $deliveryNote->reference cancelled.",
@@ -161,7 +162,7 @@ class CancelDeliveryNote extends OrgAction
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $request->user());
     }
 
     /**
@@ -210,7 +211,7 @@ class CancelDeliveryNote extends OrgAction
         $modifyOrder = (bool)$command->option('modifyOrder');
 
         $this->initialisationFromShop($deliveryNote->shop, []);
-        $this->handle($deliveryNote, $modifyOrder);
+        $this->handle($deliveryNote, null, $modifyOrder);
 
         $command->info("Cancelled delivery note $deliveryNote->reference");
 

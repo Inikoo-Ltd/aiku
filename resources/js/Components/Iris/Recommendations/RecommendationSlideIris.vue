@@ -8,7 +8,7 @@ import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import { inject, ref } from 'vue'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 const props = defineProps<{

@@ -61,6 +61,19 @@ class EditEmployee extends OrgAction
         $jobPositionsOrganisationData = GetEmployeeJobPositionsData::run($employee);
         $jobPositionsGroupData = GetUserGroupScopeJobPositionsData::run($user);
         $latestContract = $employee->getMedia('contracts')->sortByDesc('id')->first();
+        $jobTitleOptions = Employee::query()
+            ->whereNotNull('job_title')
+            ->where('job_title', '!=', '')
+            ->select('job_title')
+            ->distinct()
+            ->orderBy('job_title')
+            ->pluck('job_title')
+            ->map(fn (string $jobTitle): array => [
+                'label' => $jobTitle,
+                'value' => $jobTitle,
+            ])
+            ->values()
+            ->all();
 
         $sections['properties'] = [
             'label' => __('Properties'),
@@ -119,21 +132,13 @@ class EditEmployee extends OrgAction
                 ],
 
                 'job_title' => [
-                    'type' => 'select',
+                    'type' => 'job_title_select_create',
                     'label' => __('Job Title'),
                     'placeholder' => __('Job Title'),
                     'searchable' => true,
-                    'options' => [
-                        ['label' => 'Developer - Front End', 'value' => 'developer-front-end'],
-                        ['label' => 'Developer - Back End', 'value' => 'developer-back-end'],
-                        ['label' => 'Developer - Full Stack', 'value' => 'developer-full-stack'],
-                        ['label' => 'Marketing - Social Media Specialist', 'value' => 'marketing-social-media-specialist'],
-                        ['label' => 'Marketing - PPC', 'value' => 'marketing-ppc'],
-                        ['label' => 'Marketing - SEO', 'value' => 'marketing-seo'],
-                        ['label' => 'Managerial - Manager Officer', 'value' => 'managerial-manager-officer'],
-                        ['label' => 'Managerial - Finance & Accounting', 'value' => 'managerial-finance-and-accounting'],
-                    ],
-                    'required' => true
+                    'options' => $jobTitleOptions,
+                    'required' => true,
+                    'value' => $employee->job_title ?? '',
                 ],
 
                 'type' => [

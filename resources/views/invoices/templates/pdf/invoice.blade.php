@@ -101,6 +101,7 @@
     </style>
 </head>
 <body>
+@php($order = $invoice->order)
 <htmlpageheader name="myHeader">
     <br><br>
     <table width="100%" style="font-size: 9pt;">
@@ -126,7 +127,9 @@
                 @endif
             </td>
 
-            <td style="text-align: right;">{{ $invoiceNumberLabel }}<br />
+            <td style="text-align: right;">
+                {{ $invoiceNumberLabel }}
+                <br>
                 <b>{{ $invoice->reference }}</b>
             </td>
 
@@ -143,6 +146,11 @@
             <h1>
                 {{ $typeLabel }} {{ $invoice->reference }}
             </h1>
+            @if($order)
+                <h3>
+                    {{ __('Order') }}: #{{ $order->reference }}
+                </h3>
+            @endif
         </td>
         <td style="text-align: right">
             <div>
@@ -191,14 +199,15 @@
                             class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
                     @endif
-                @if($invoice->tax_number  && $invoice->tax_number_valid)
+                @if($invoice->tax_number && $invoice->tax_number_valid)
                     <div>
-                        <span class="address_label">{{ __('Tax Number') }}:</span> <span
-                                class="address_value">{{ $invoice->tax_number }}</span>
+                        <span class="address_label">{{ __('Tax Number') }}:</span> <span class="address_value">{{ $invoice->tax_number }}</span>
                     </div>
                 @endif
                 @if($invoice->identity_document_number)
-                   {{$invoice->identity_document_number}}
+                    <div>
+                        <span class="address_label">{{ __('EORI') }}:</span> <span class="address_value"> {{$invoice->identity_document_number}} </span>
+                    </div>
                 @endif
             </div>
         </td>
@@ -294,132 +303,210 @@
     </thead>
     <tbody>
 
-    @if($group_by_tariff_code)
-        @php($transactionGroups = $transactions->groupBy(fn($t) => $t->model?->tariff_code ?? __('No Tariff Code')))
-    @else
-        @php($transactionGroups = collect([$transactions]))
-    @endif
-
-    @foreach($transactionGroups as $tariffCode => $groupTransactions)
         @if($group_by_tariff_code)
-            <tr>
-                <td colspan="6" style="background-color:#EEEEEE;font-weight:bold;border:0.1mm solid #000000;">
-                    {{ __('Tariff Code') }}: {{ $tariffCode }}
-                </td>
-            </tr>
+            @php($transactionGroups = $transactions->groupBy(fn($t) => $t->model?->tariff_code ?? __('No Tariff Code')))
+        @else
+            @php($transactionGroups = collect([$transactions]))
         @endif
 
-        @foreach($groupTransactions as $transaction)
-            <tr class="@if($loop->last && $loop->parent->last) last @endif">
-                <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
+        @foreach($transactionGroups as $tariffCode => $groupTransactions)
+            @if($group_by_tariff_code)
+                <tr>
+                    <td colspan="6" style="background-color:#EEEEEE;font-weight:bold;border:0.1mm solid #000000;">
+                        {{ __('Tariff Code') }}: {{ $tariffCode }}
+                    </td>
+                </tr>
+            @endif
 
-                <td style="text-align:left" colspan="2">
-                    @if($transaction->historicAsset)
-                        @if(!$pro_mode && $transaction->model && $transaction->model->units > 1)
-                            {{ trimDecimalZeros($transaction->model->units) }}x
+            @foreach($groupTransactions as $transaction)
+                <tr class="@if($loop->last && $loop->parent->last) last @endif">
+                    <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
+
+                    <td style="text-align:left" colspan="2">
+                        @if($transaction->historicAsset)
+                            @if(!$pro_mode && $transaction->model && $transaction->model->units > 1)
+                                {{ trimDecimalZeros($transaction->model->units) }}x
+                            @endif
+                            {{ $transaction->historicAsset->name }}
+                            @if(isset($transaction->pallet))
+                                <br>
+                                {{ __('Pallet') }}: {{$transaction->customerPallet}} ({{ $transaction->pallet }})
+                            @endif
+                            @if(isset($transaction->handling_date))
+                                <br>
+                                {{ __('Date') }}: {{ $transaction->handling_date }}
+                            @endif
+                            @if($rrp && $transaction->model?->rrp)
+                                <br>
+                                RRP: {{ $transaction->model->rrp }}
+                            @endif
+                            @if($parts)
+                                <br>
+                                {{ __('Parts') }}: {{ $transaction->historicAsset->name }}
+                            @endif
+                            @if($commodity_codes && $transaction->model?->tariff_code)
+                                <br>
+                                {{ __('Tariff Code') }}: {{ $transaction->model->tariff_code }}
+                            @endif
+                            @if($barcode && $transaction->model?->barcode)
+                                <br>
+                                {{ __('Barcode') }}: {{ $transaction->model->barcode }}
+                            @endif
+                            @if($weight && $transaction->model?->marketing_weight)
+                                <br>
+                                {{ __('Weight') }}: {{ $transaction->model->marketing_weight }}g
+                            @endif
+                            @if($country_of_origin && $transaction->model?->country_of_origin)
+                                <br>
+                                {{ __('Country of Origin') }}: {{ $transaction->model->country_of_origin }}
+                            @endif
+                            @if($cpnp && $transaction->model?->cpnp_number)
+                                <br>
+                                CPNP: {{ $transaction->model->cpnp_number }}
+                            @endif
                         @endif
-                        {{ $transaction->historicAsset->name }}
-                        @if(isset($transaction->pallet))
-                            <br>
-                            {{ __('Pallet') }}: {{$transaction->customerPallet}} ({{ $transaction->pallet }})
-                        @endif
-                        @if(isset($transaction->handling_date))
-                            <br>
-                            {{ __('Date') }}: {{ $transaction->handling_date }}
-                        @endif
-                        @if($rrp && $transaction->model?->rrp)
-                            <br>
-                            RRP: {{ $transaction->model->rrp }}
-                        @endif
-                        @if($parts)
-                            <br>
-                            {{ __('Parts') }}: {{ $transaction->historicAsset->name }}
-                        @endif
-                        @if($commodity_codes && $transaction->model?->tariff_code)
-                            <br>
-                            {{ __('Tariff Code') }}: {{ $transaction->model->tariff_code }}
-                        @endif
-                        @if($barcode && $transaction->model?->barcode)
-                            <br>
-                            {{ __('Barcode') }}: {{ $transaction->model->barcode }}
-                        @endif
-                        @if($weight && $transaction->model?->marketing_weight)
-                            <br>
-                            {{ __('Weight') }}: {{ $transaction->model->marketing_weight }}g
-                        @endif
-                        @if($country_of_origin && $transaction->model?->country_of_origin)
-                            <br>
-                            {{ __('Country of Origin') }}: {{ $transaction->model->country_of_origin }}
-                        @endif
-                        @if($cpnp && $transaction->model?->cpnp_number)
-                            <br>
-                            CPNP: {{ $transaction->model->cpnp_number }}
-                        @endif
+                    </td>
+                    @php($sameGrossNet = $transaction->gross_amount == $transaction->net_amount)
+
+                    @if($pro_mode)
+                        <td style="text-align:right">
+                            @if($transaction->quantity==0 || $transaction->quantity==null)
+                                {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
+                            @elseif($transaction->historicAsset)
+                                @if($sameGrossNet)
+                                    {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
+                                @else 
+                                    <s>{{ $invoice->currency->symbol . number_format($transaction->gross_amount / $transaction->quantity, 2) }}</s><br>
+                                    {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
+                                @endif
+                            @endif
+                        </td>
+                        <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
+                    @else
+                        <td style="text-align:left">
+                            @if($transaction->quantity==0 || $transaction->quantity==null)
+                                {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
+                            @elseif($transaction->historicAsset)
+                                @if($sameGrossNet)
+                                    {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
+                                @else 
+                                    <s>{{ $invoice->currency->symbol . number_format($transaction->gross_amount / $transaction->quantity, 2) }}</s><br>
+                                    {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
+                                @endif
+                            @endif
+                        </td>
+                        <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
                     @endif
-                </td>
-
-                @if($pro_mode)
-                    <td style="text-align:right">
-                        @if($transaction->quantity==0 || $transaction->quantity==null)
-                            {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
-                        @elseif($transaction->historicAsset)
-                            {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
-                        @endif
-                    </td>
-                    <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
-                @else
-                    <td style="text-align:left">
-                        @if($transaction->quantity==0 || $transaction->quantity==null)
-                            {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
-                        @elseif($transaction->historicAsset)
-                            {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
-                        @endif
-                    </td>
-                    <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
-                @endif
-
-                <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
-            </tr>
+                    @if ($sameGrossNet)
+                        <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
+                    @else
+                        <td style="text-align:right"> 
+                            <s>{{ $invoice->currency->symbol . $transaction->gross_amount }}</s> <br>
+                            {{ $invoice->currency->symbol . $transaction->net_amount }}
+                        </td>
+                    @endif
+                </tr>
+            @endforeach
         @endforeach
-    @endforeach
 
     </tbody>
     <tbody class="totals">
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td>{{ __('Charges') }}</td>
-        <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
-    </tr>
+        @php($hasDiscounts = $order->goods_amount != $order->gross_amount)
 
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td>{{ __('Shipping') }}</td>
-        <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
-    </tr>
+        @if ($order && $hasDiscounts)
 
-    <tr class="total_net">
-        <td style="border:none" colspan="4"></td>
-        <td>{{__('Total Net')}}</td>
-        <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
-    </tr>
+            <tr>
+                <td style="border:none" colspan="4"></td>
+                <td>{{ __('Total Gross') }}</td>
+                <td>{{ $invoice->currency->symbol . $order->gross_amount }}</td>
+            </tr>
+            
+            <tr>
+                <td style="border:none" colspan="4"></td>
+                <td style="color: #16a34a">{{ __('Discounts') }}</td>
+                <td style="color: #16a34a">- {{ $invoice->currency->symbol . ($order->gross_amount - $order->goods_amount) }}</td>
+            </tr>
 
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
-            {{ __('Tax') }}
+            <tr>
+                <td style="border:none" colspan="4"></td>
+                <td>{{ __('Items Net') }}</td>
+                <td>{{ $invoice->currency->symbol . $order->goods_amount }}</td>
+            </tr>
 
-            <br><small>{{$invoice->taxCategory->name}}
-                ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
-            </small>
-        </td>
-        <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
-    </tr>
+            <tr>
+                <td style="border:none" colspan="4"></td>
+                <td>{{ __('Charges') }}</td>
+                <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
+            </tr>
 
-    <tr class="total">
-        <td style="border:none" colspan="4"></td>
-        <td><b>{{ __('Total') }}</b></td>
-        <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
-    </tr>
+            <tr>
+                <td style="border:none" colspan="4"></td>
+                <td>{{ __('Shipping') }}</td>
+                <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
+            </tr>
+
+            <tr class="total_net">
+                <td style="border:none" colspan="4"></td>
+                <td>{{__('Total Net')}}</td>
+                <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
+            </tr>
+
+            <tr>
+                <td style="border:none" colspan="4"></td>
+                <td class="totals">
+                    {{ __('Tax') }}
+                    <br>
+                    <small>
+                        {{$invoice->taxCategory->name}} ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
+                    </small>
+                </td>
+                <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
+            </tr>
+
+            <tr class="total">
+                <td style="border:none" colspan="4"></td>
+                <td><b>{{ __('Total') }}</b></td>
+                <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
+            </tr>
+
+        @else
+
+            <tr>
+                <td style="border:none" colspan="4"></td>
+                <td>{{ __('Charges') }}</td>
+                <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
+            </tr>
+
+            <tr>
+                <td style="border:none" colspan="4"></td>
+                <td>{{ __('Shipping') }}</td>
+                <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
+            </tr>
+
+            <tr class="total_net">
+                <td style="border:none" colspan="4"></td>
+                <td>{{__('Total Net')}}</td>
+                <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
+            </tr>
+
+            <tr>
+                <td style="border:none" colspan="4"></td>
+                <td class="totals">
+                    {{ __('Tax') }}
+                    <br>
+                    <small>
+                        {{$invoice->taxCategory->name}} ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
+                    </small>
+                </td>
+                <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
+            </tr>
+
+            <tr class="total">
+                <td style="border:none" colspan="4"></td>
+                <td><b>{{ __('Total') }}</b></td>
+                <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
+            </tr>
+        @endif
     </tbody>
 
 </table>
