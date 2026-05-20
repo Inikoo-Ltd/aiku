@@ -34,15 +34,15 @@ class SetTradeUnitStatus implements ShouldBeUnique
         $oldStatus = $tradeUnit->status;
         $status    = $this->getTradeUnitStatusFromOrgStocks($tradeUnit);
 
-        if($status==TradeUnitStatusEnum::ACTIVE){
+        if ($status == TradeUnitStatusEnum::ACTIVE) {
             $hasActiveProducts = false;
             foreach ($tradeUnit->products as $product) {
-                if($product->state==ProductStateEnum::ACTIVE || $product->state==ProductStateEnum::DISCONTINUING){
+                if ($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) {
                     $hasActiveProducts = true;
                     break;
                 }
             }
-            if(!$hasActiveProducts){
+            if (!$hasActiveProducts) {
                 $status = TradeUnitStatusEnum::IN_PROCESS;
             }
 

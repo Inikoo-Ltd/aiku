@@ -10,7 +10,6 @@
 namespace App\Actions\Web\WebBlock;
 
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInRecommendation;
-use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;

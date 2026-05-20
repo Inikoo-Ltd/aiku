@@ -25,7 +25,6 @@ use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
-
 trait WithFillIrisWebBlocks
 {
     public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isIris = true)
