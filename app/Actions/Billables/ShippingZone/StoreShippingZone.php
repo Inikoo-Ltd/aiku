@@ -16,8 +16,6 @@ use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Rules\IUnique;
-use App\Http\Resources\Ordering\ShippingZoneResource;
-use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -100,12 +98,14 @@ class StoreShippingZone extends OrgAction
             'status'      => ['required', 'boolean'],
             'price'       => ['required', 'array'],
             'territories' => ['sometimes', 'array'],
-                'position'    => ['sometimes', 'integer'],
-                'is_failover' => ['sometimes', 'boolean'],
+            'position'    => ['required', 'integer'],
+            'is_failover' => ['sometimes', 'boolean'],
+
         ];
 
         if (!$this->strict) {
-            $rules['last_fetched_at'] = ['sometimes', 'date'];
+            $rules['fetched_at'] = ['sometimes', 'date'];
+            $rules['created_at'] = ['sometimes', 'date'];
             $rules['source_id']  = ['sometimes', 'string', 'max:255'];
         }
 
@@ -124,32 +124,7 @@ class StoreShippingZone extends OrgAction
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($shippingZoneSchema->shop, $modelData);
+
         return $this->handle($shippingZoneSchema, $this->validatedData);
-    }
-
-    public function asController(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZone
-    {
-        $this->initialisationFromShop($shippingZoneSchema->shop, $request);
-        return $this->handle($shippingZoneSchema, $this->validatedData);
-    }
-
-    public function jsonResponse(ShippingZone $shippingZone): ShippingZoneResource
-    {
-        return new ShippingZoneResource($shippingZone);
-    }
-
-    public function htmlResponse(ShippingZone $shippingZone)
-    {
-        request()->session()->flash('notification', [
-            'status'      => 'success',
-            'title'       => __('Success!'),
-            'description' => __('Shipping zone successfully created.'),
-        ]);
-
-        return redirect()->route('grp.org.shops.show.billables.shipping.show', [
-            'organisation'       => $shippingZone->organisation->slug,
-            'shop'               => $shippingZone->shop->slug,
-            'shippingZoneSchema' => $shippingZone->schema->slug,
-        ]);
     }
 }

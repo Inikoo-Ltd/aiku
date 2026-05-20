@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -61,7 +60,6 @@ class DepartmentResource extends JsonResource
             'show_in_website'  => $department->show_in_website,
             'url_master'       => $urlMaster,
             'image'           => $department->imageSources(720, 480),
-            'image_thumbnail'   => Arr::get($this->web_images, 'main.thumbnail'),
             'description'   => $department->description,
             'description_title' => $department->description_title,
             'description_extra' => $department->description_extra,

@@ -2,8 +2,8 @@
 import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
 import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+import { sendMessageToParent } from "@/Composables/Workshop"
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
 
 // Swiper
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -14,6 +14,7 @@ import { Navigation, Pagination } from 'swiper/modules'
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 
 
 const props = defineProps<{
@@ -123,8 +124,8 @@ console.log('see also', props)
       >
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
-            <div v-if="product" class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" :hideLogin="true"/>
+            <div v-if="product" class="h-full flex flex-col px-3 2xl:px-12">
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
 

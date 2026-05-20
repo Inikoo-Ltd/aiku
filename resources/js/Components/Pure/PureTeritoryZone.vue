@@ -97,34 +97,41 @@ function getCountryLabel(code: string): string {
 </script>
 
 <template>
-  <div class="space-y-4 text-sm  mx-auto">
+  <div class="space-y-4 text-sm max-w-[450px] mx-auto">
     <!-- Add Button -->
     <div class="flex justify-end mb-2">
       <Button :icon="faPlus" label="Add Region" type="add" size="xs" @click="addNewItem" />
     </div>
 
     <!-- List of Regions -->
-    <div v-if="items.length" v-for="(item, index) in items" :key="index"
-      class="p-3 rounded border border-gray-300 bg-white shadow-sm space-y-2">
+    <div
+      v-for="(item, index) in items"
+      :key="index"
+      class="p-3 rounded border border-gray-300 bg-white shadow-sm space-y-2"
+    >
       <!-- Country Code -->
       <div class="flex justify-between items-center">
         <div>
           <span class="text-gray-500">Country:</span>
           <span class="font-mono font-medium text-black">
-            <img class="inline pr-1 pl-1 h-[1em]" :src="'/flags/' + item.country_code.toLowerCase() + '.png'"
-              :alt="item.country_code" :title="getCountryLabel(item.country_code)" />
+            <img
+              class="inline pr-1 pl-1 h-[1em]"
+              :src="'/flags/' + item.country_code.toLowerCase() + '.png'"
+              :alt="item.country_code"
+              :title="getCountryLabel(item.country_code)"
+            />
             {{ getCountryLabel(item.country_code) }}
           </span>
         </div>
 
         <!-- Edit/Delete Buttons -->
         <div class="flex items-center ">
-          <Button :icon="faEdit" type="edit" size="xs" @click="openEditModal(index)">
-            <template #icon>
+          <Button :icon="faEdit" type="edit" size="xs" @click="openEditModal(index)" >
+             <template #icon>
               <FontAwesomeIcon :icon="faPencil" class="w-4 h-4" />
             </template>
           </Button>
-          <Button :icon="faTrash" type="edit" class="text-red-500" size="xs" @click="deleteItem(index)">
+          <Button :icon="faTrash" type="edit" class="text-red-500" size="xs" @click="deleteItem(index)" >
             <template #icon>
               <FontAwesomeIcon :icon="faTrash" class="text-red-500 w-4 h-4" />
             </template>
@@ -148,52 +155,56 @@ function getCountryLabel(code: string): string {
         </div>
       </div>
     </div>
-    <div v-else
-      class="flex items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center">
-      <div class="space-y-1">
-        <p class="text-sm font-medium text-gray-600">
-          {{ ctrans('No territories selected') }}
-        </p>
+  </div>
+
+ <!-- Modal for Add/Edit -->
+<!-- Modal for Add/Edit -->
+<Dialog v-model:visible="showModal" modal header="Region Editor" :style="{ width: '450px' }">
+  <div class="space-y-4 text-sm">
+    <!-- Add mode -->
+    <div v-if="selectedIndex === -1">
+      <label class="block mb-1 text-gray-600">Country</label>
+      <PureMultiselect
+        :modelValue="editCountryCode"
+        @update:modelValue="val => editCountryCode = val"
+        :options="countryOptions"
+        :searchable="true"
+        label="label"
+        valueProp="code"
+        mode="single"
+        required
+      />
+    </div>
+
+    <!-- Edit mode -->
+    <div v-else>
+      <label class="block mb-1 text-gray-600">Country</label>
+      <div class="flex items-center font-medium text-black bg-gray-50 p-2 rounded">
+        <img
+          class="inline pr-1 pl-1 h-[1em]"
+          :src="'/flags/' + editCountryCode.toLowerCase() + '.png'"
+          :alt="editCountryCode"
+          :title="getCountryLabel(editCountryCode)"
+        />
+        {{ getCountryLabel(editCountryCode) }}
       </div>
+    </div>
+
+    <div>
+      <label class="block mb-1 text-gray-600">Included Postal Codes</label>
+      <PureTextarea v-model="editIncludedPostalCodes" rows="3" class="w-full" autoResize />
+    </div>
+
+    <div>
+      <label class="block mb-1 text-gray-600">Excluded Postal Codes</label>
+      <PureTextarea v-model="editExcludedPostalCodes" rows="3" class="w-full" autoResize />
     </div>
   </div>
 
-  <!-- Modal for Add/Edit -->
-  <!-- Modal for Add/Edit -->
-  <Dialog v-model:visible="showModal" modal header="Region Editor" :style="{ width: '450px' }">
-    <div class="space-y-4 text-sm">
-      <!-- Add mode -->
-      <div v-if="selectedIndex === -1">
-        <label class="block mb-1 text-gray-600">Country</label>
-        <PureMultiselect :modelValue="editCountryCode" @update:modelValue="val => editCountryCode = val"
-          :options="countryOptions" :searchable="true" label="label" valueProp="code" mode="single" required />
-      </div>
-
-      <!-- Edit mode -->
-      <div v-else>
-        <label class="block mb-1 text-gray-600">Country</label>
-        <div class="flex items-center font-medium text-black bg-gray-50 p-2 rounded">
-          <img class="inline pr-1 pl-1 h-[1em]" :src="'/flags/' + editCountryCode.toLowerCase() + '.png'"
-            :alt="editCountryCode" :title="getCountryLabel(editCountryCode)" />
-          {{ getCountryLabel(editCountryCode) }}
-        </div>
-      </div>
-
-      <div>
-        <label class="block mb-1 text-gray-600">Included Postal Codes</label>
-        <PureTextarea v-model="editIncludedPostalCodes" rows="3" class="w-full" autoResize />
-      </div>
-
-      <div>
-        <label class="block mb-1 text-gray-600">Excluded Postal Codes</label>
-        <PureTextarea v-model="editExcludedPostalCodes" rows="3" class="w-full" autoResize />
-      </div>
-    </div>
-
-    <template #footer>
-      <Button label="Cancel" type="exit" @click="showModal = false" />
-      <Button type="create" :label="selectedIndex === -1 ? 'Add' : 'Set Changes'" @click="saveEdit" />
-    </template>
-  </Dialog>
+  <template #footer>
+    <Button label="Cancel" type="exit" @click="showModal = false" />
+    <Button type="create" :label="selectedIndex === -1 ? 'Add' : 'Set Changes'" @click="saveEdit" />
+  </template>
+</Dialog>
 
 </template>

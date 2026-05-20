@@ -143,6 +143,7 @@ class CalculateOrderDiscounts
             ->whereIn('trigger_type', [
                 'Customer',
                 'ProductCategory',
+                'ShopAiku'//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
             ])->get();
         foreach ($offersData as $offerData) {
             if ($offerData->type == 'Amount AND Order Number') {

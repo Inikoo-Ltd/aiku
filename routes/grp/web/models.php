@@ -20,7 +20,6 @@ use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
-use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
@@ -454,9 +453,8 @@ Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine
     Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
 });
 
-Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
-    Route::post('{shippingZoneSchema:id}/create', StoreShippingZone::class)->name('create');
-    Route::patch('{shippingZone:id}', UpdateShippingZone::class)->name('update');
+Route::prefix('shipping-zone/{shippingZone:id}')->name('shipping_zone.')->group(function () {
+    Route::patch('', UpdateShippingZone::class)->name('update');
 });
 
 Route::patch('fulfilment/{fulfilment:id}', UpdateFulfilment::class)->name('fulfilment.update');

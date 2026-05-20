@@ -147,7 +147,6 @@ class ProductsResource extends JsonResource
             'is_variant_leader'                 => $this->is_variant_leader,
             'variant_code'                      => $this->variant_code,
             'iris_url'                          => $this->webpage?->canonical_url,
-            'public_url'                        => $this->canonical_url ?? $this->webpage?->canonical_url,
             'is_for_sale'                       => $this->is_for_sale,
             'health_rank'                       => $this->health_rank ? HealthRankEnum::from($this->health_rank)->stateIcon()[HealthRankEnum::from($this->health_rank)->value] : null,
             'index_under_family'                => $product->index_under_family ?? null,

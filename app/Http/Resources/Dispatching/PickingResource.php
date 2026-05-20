@@ -29,12 +29,6 @@ class PickingResource extends JsonResource
 {
     public function toArray($request): array
     {
-        //todo: do this in a left join better
-        $pickerName = __('Unknown');
-        if ($this->picker) {
-            $pickerName = $this->picker->contact_name;
-        }
-
         return [
             'id'                         => $this->id,
             'not_picked_reason'          => $this->not_picked_reason,
@@ -45,7 +39,7 @@ class PickingResource extends JsonResource
                 $this->orgStock?->packed_in
             ),
             'engine'                     => $this->engine,
-            'picker_name'                => $pickerName,
+            'picker_name'                => $this->picker->contact_name,
             'type'                       => $this->type,
             'location_code'              => $this->location?->code,
             'location_slug'              => $this->location?->slug,

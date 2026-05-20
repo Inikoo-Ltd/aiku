@@ -345,13 +345,9 @@ class ShowReturnDeliveryNote extends OrgAction
         $model = __('Return');
 
 
-        $showChangePickerPacker = true;
+        $showChangePickerPacker = $returnDeliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
         $returnDeliveryNote->returnDeliveryNoteItem;
-
-        if ($returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING) {
-            $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
-        }
 
         $props = [
             'title'         => __('Return').' '.$returnDeliveryNote->reference,
@@ -373,9 +369,12 @@ class ShowReturnDeliveryNote extends OrgAction
                 'actions'         => $actions,
                 'wrapped_actions' => $this->wrappedActions($returnDeliveryNote),
             ],
-            'is_editable'    => $isEditable,
+            'isEditable'    => $isEditable,
             'tabs'          => [
-                'current'    => $this->tab,
+                'current'    => $returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING
+                    ? DeliveryNoteTabsEnum::PENDING_ITEMS->value
+                    :
+                    $this->tab,
                 'navigation' => $returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING
                     ?
                     DeliveryNoteTabsEnum::navigation($returnDeliveryNote)

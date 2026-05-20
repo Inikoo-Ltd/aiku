@@ -15,9 +15,6 @@ const props = withDefaults(defineProps<{
     type: string
     steps: Array<{ from: number, to: number | string, price: number }>
   }
-  currency : {
-    code : string
-  }
 }>(), {})
 
 const emit = defineEmits<{
@@ -148,8 +145,6 @@ function removeStep(index: number) {
             :modelValue="item.price"
             @update:modelValue="val => updateStep(index, 'price', val)"
             inputClass="w-full"
-            mode="currency" 
-            :currency='currency.code'
           />
         </div>
 

@@ -24,7 +24,6 @@ use App\Actions\CRM\ChatSession\GetChatAgentSpecializations;
 use App\Actions\CRM\ChatSession\GetChatStatus;
 use App\Actions\CRM\ChatSession\StoreOfflineMessage;
 use App\Actions\CRM\ChatSession\GetAgentUnreadMessagesSummary;
-use App\Actions\CRM\ChatSession\CloseChatSession;
 
 Route::get('/ping', function () {
     return 'pong';
@@ -38,8 +37,6 @@ Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-messa
 Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
     ->name('sessions.update');
-Route::put('/sessions/{chatSession:ulid}/close', [CloseChatSession::class, 'asApiController'])
-    ->name('sessions.close');
 
 Route::post('/sessions/{chatSession:ulid}/typing', HandleChatTyping::class)
     ->name('sessions.typing');

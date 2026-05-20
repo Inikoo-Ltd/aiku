@@ -10,7 +10,6 @@ import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
 import InformationIcon from '../Utils/InformationIcon.vue'
-import axios from 'axios'
 
 const props = defineProps<{
     shop_data: {
@@ -32,16 +31,13 @@ const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 
-const today = new Date(new Date().setHours(0, 0, 0, 0))
-
 const offerLabel = ref('')
-const startDate = ref<Date | null>(today)
+const startDate = ref(null)
 const endDate = ref(null)
 
 const submitShopOffer = () => {
-    isLoadingSubmit.value = true
-
-    axios.post(
+    // Section: Submit1
+    router.post(
         route('grp.models.shop_offer.store', {
             shop: props.shop_data.id,
         }),
@@ -54,37 +50,36 @@ const submitShopOffer = () => {
             duration: dateType.value,
             start_at: formatDate(startDate.value),
             end_at: formatDate(endDate.value)
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmit.value = true
+            },
+            onSuccess: () => {
+                resetForm()
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to submit the data, please try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmit.value = false
+            },
         }
     )
-    .then((response) => {
-        notify({
-            title: trans("Success"),
-            text: trans("Successfully submit the data"),
-            type: "success"
-        })
-        resetForm()
-        isOpenModal.value = false
-
-        router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
-            organisation: props.shop_data.organisation,
-            shop: props.shop_data.slug,
-            offerCampaign: props.shop_data.offercampaign,
-            offer: response.data.slug
-        }))
-    })
-    .catch((error) => {
-        const errors = error.response?.data?.errors || {}
-        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again")
-        notify({
-            title: trans("Something went wrong"),
-            text: errMsg,
-            type: "error"
-        })
-    })
-    .finally(() => {
-        isLoadingSubmit.value = false
-    })
 }
+
+const today = new Date(new Date().setHours(0, 0, 0, 0))
 
 function formatDate(date: Date | null) {
     if (!date) return null
@@ -100,7 +95,7 @@ const resetForm = () => {
     offerLabel.value = ''
     typeOffer.value = 'quantity'
     dateType.value = 'permanent'
-    startDate.value = today
+    startDate.value = null
     endDate.value = null
     discountPercentage.value = null
     offerAmount.value = 0
@@ -126,14 +121,12 @@ const isFormInvalid = computed(() => {
 })
 
 watch(typeOffer, (val) => {
-    offerQtyItems.value = 1
     if (val === 'quantity') {
         offerAmount.value = 0
     } else if (val === 'amount') {
-        offerQtyItems.value = 0
+        offerQtyItems.value = 1
     }
 })
-
 
 watch(dateType, (val) => {
     if (val === 'permanent') {
@@ -178,8 +171,15 @@ resetForm();
                                 <RadioButton v-model="typeOffer" inputId="type-quantity" name="quantity"
                                     value="quantity" size="small" />
                                 <label for="type-quantity" class="cursor-pointer">
-                                    {{ trans('All Orders') }}
+                                    {{ trans('By quantity') }}
+                                    <InformationIcon :information="trans('Total quantities of the items')" />
                                 </label>
+                            </div>
+                            <div class="min-h-[40px]">
+                            <InputNumber v-model="offerQtyItems" v-show="typeOffer === 'quantity'"  fluid
+                                inputId="offer_quantity_item" :placeholder="trans('Enter minimum quantity')"
+                                :disabled="typeOffer !== 'quantity'" :min="0" class="w-full" inputClass="w-full"
+                                :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? trans('items') : trans('item'))" />
                             </div>
                         </div>
 
@@ -190,10 +190,11 @@ resetForm();
                                 <label for="type-amount" class="cursor-pointer">{{ trans('By minimum amount')
                                     }}</label>
                             </div>
-                            <InputNumber v-if="typeOffer === 'amount'" v-model="offerAmount" fluid
-                                inputId="offer_amount" mode="currency" inputClass="w-full"
-                                :placeholder="trans('Enter minimum amount')"
-                                :currency="props.shop_data.currency_code" locale="en-US" class="w-full" />
+                            <div class="min-h-[40px]">
+                            <InputNumber v-show="typeOffer === 'amount'" v-model="offerAmount"   fluid inputId="offer_amount" mode="currency" inputClass="w-full" :placeholder="trans('Enter minimum amount')" 
+                                :currency="props.shop_data.currency_code" locale="en-US" class="w-full"
+                                :disabled="typeOffer !== 'amount'" />
+                                </div>
                         </div>
                     </div>
                 </div>

@@ -754,10 +754,6 @@ class ShowDeliveryNote extends OrgAction
 
         $this->return = $deliveryNote->returnedDeliveryNote()->whereNot('state', ReturnDeliveryNoteStateEnum::CANCELLED)->first();
 
-        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
-            $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
-        }
-
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -796,7 +792,7 @@ class ShowDeliveryNote extends OrgAction
             ] : null,
             'is_editable'    => $isEditable,
             'tabs'          => [
-                'current'    => $this->tab,
+                'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
                 'navigation' => $deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED
                     ?
                     DeliveryNoteTabsEnum::navigation($deliveryNote)

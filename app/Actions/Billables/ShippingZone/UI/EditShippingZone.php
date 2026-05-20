@@ -79,8 +79,7 @@ class EditShippingZone extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Territory & Price'),
-                            'icon'   => 'fa-light fa-shipping-fast ',
+                            'title'  => __('Edit schema'),
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
@@ -89,15 +88,14 @@ class EditShippingZone extends OrgAction
                                 ],
                                 'territories' => [
                                     'type'  => 'territory_zone',
-                                    'label' => __('Territory'),
+                                    'label' => __('territory'),
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),
                                 ],
                                 'price' => [
                                     'type'  => 'pricing_zone',
                                     'label' => __('Price'),
-                                    'value' => $shippingZone->price,
-                                    'currency' => $shippingZone->shop->currency
+                                    'value' => $shippingZone->price
                                 ],
                             ],
                         ]

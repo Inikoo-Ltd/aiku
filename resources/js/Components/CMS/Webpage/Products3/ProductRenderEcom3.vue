@@ -40,7 +40,6 @@ const props = withDefaults(defineProps<{
     isLoadingFavourite: boolean
     isLoadingRemindBackInStock: boolean
     screenType: string
-    hideLogin?:boolean
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -338,8 +337,8 @@ defineExpose({
                      {{ trans('Recommended retail price')   }} : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
                     </span>
 
-                </div> 
-                <a  v-if="!hideLogin" :href="urlLoginWithRedirect()" class="block w-full">
+                </div> <!-- CTA -->
+                <a :href="urlLoginWithRedirect()" class="block w-full">
                     <Button :label="trans('Login or Register for Wholesale Prices')"
                         class="w-full rounded-none text-xs py-2" full :injectStyle="buttonStyleLogin" />
                 </a>

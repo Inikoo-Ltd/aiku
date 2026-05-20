@@ -4,7 +4,7 @@ import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { ctrans } from "@/Composables/useTrans"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -12,7 +12,6 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Navigation } from "swiper/modules"
-import { captureConsoleIntegration } from "@sentry/vue"
 
 
 interface FieldValue {
@@ -77,8 +76,6 @@ const titleContent = computed(() => props.fieldValue?.recommendation_settings?.t
 
 const prevEl = ref(null)
 const nextEl = ref(null)
-
-console.log('related product :', props)
 </script>
 
 <template>
@@ -89,7 +86,7 @@ console.log('related product :', props)
     :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType),
-    }"  
+    }"
     :dropdown-type="fieldValue?.settings?.products_data?.type"
   >
     <!-- Title -->
@@ -119,13 +116,13 @@ console.log('related product :', props)
           :loop="shouldShowNavigation"
           :auto-height="false"
           :modules="[Navigation]"
-          class="w-full px-0 md:px-[50px]"
+          class="w-full px-[50px]"
           :navigation="{ prevEl, nextEl }"
         >
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">
-            <div class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
+            <div class="h-full flex flex-col px-3 2xl:px-12">
               <div v-if="product" class="flex-1 flex flex-col product-card">
-                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'" :product="product" :hideLogin="true"/>
+                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'" :product="product" />
                 <ProductRender v-else :product="product" :productHasPortfolio="[]" />
               </div>
             </div>
