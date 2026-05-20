@@ -60,6 +60,15 @@ class IndexTradeUnits extends GrpAction
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value, bucket: 'active');
     }
 
+    public function discontinuing(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'discontinuing';
+        $this->parent = group();
+        $this->initialisation($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
+
+        return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value, bucket: 'discontinuing');
+    }
+
     public function discontinued(ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'discontinued';
@@ -92,6 +101,8 @@ class IndexTradeUnits extends GrpAction
             $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::IN_PROCESS);
         } elseif ($bucket == 'active') {
             $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::ACTIVE);
+        } elseif ($bucket == 'discontinuing') {
+            $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::DISCONTINUING);
         } elseif ($bucket == 'discontinued') {
             $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::DISCONTINUED);
         } elseif ($bucket == 'anomality') {
@@ -104,7 +115,6 @@ class IndexTradeUnits extends GrpAction
             'trade_units.name',
             'trade_units.description',
             'trade_units.gross_weight',
-            'trade_units.marketing_weight',
             'trade_units.marketing_dimensions',
             'trade_units.volume',
             'trade_units.type',
@@ -134,7 +144,7 @@ class IndexTradeUnits extends GrpAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products', 'marketing_weight', 'health_rank'];
+        $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products', 'health_rank'];
 
         if ($prefix === TradeUnitsTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -178,16 +188,10 @@ class IndexTradeUnits extends GrpAction
                 $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $this->addColumnCodeAndName($table);
+
+                $this->addColumnNumberCurrentStocks($table);
+                $this->addColumnNumberCurrentProducts($table);
                 $this->addColumnType($table, 'Unit label');
-
-                $routeName = request()->route()->getName();
-                if (str_starts_with($routeName, 'grp.goods.')) {
-                    $this->addColumnNumberCurrentStocks($table);
-                } else {
-                    $this->addColumnNumberCurrentProducts($table);
-                }
-
-                $this->addColumnMarketingWeight($table);
             }
         };
     }
@@ -203,8 +207,9 @@ class IndexTradeUnits extends GrpAction
         $title = match ($this->bucket) {
             'active' => __('Active Trade Units'),
             'in_process' => __('In process Trade Units'),
-            'discontinued' => __('Discontinued Trade Units'),
-            'anomality' => __('Anomality Trade Units'),
+            'discontinued'  => __('Discontinued Trade Units'),
+            'discontinuing' => __('Discontinuing Trade Units'),
+            'anomality'     => __('Anomality Trade Units'),
             default => __('Trade Units')
         };
 
@@ -300,6 +305,15 @@ class IndexTradeUnits extends GrpAction
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_discontinued
+            ],
+            [
+                'label'  => __('Discontinuing'),
+                'root'   => 'grp.trade_units.units.discontinuing',
+                'route'  => [
+                    'name'       => 'grp.trade_units.units.discontinuing',
+                    'parameters' => []
+                ],
+                'number' => $this->group->goodsStats->number_trade_units_status_discontinuing
             ],
             [
                 'label'  => __('Anomality'),

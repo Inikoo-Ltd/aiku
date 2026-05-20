@@ -32,6 +32,7 @@ Route::prefix('units')->as('units.')->group(function () {
     Route::get('/all', IndexTradeUnits::class)->name('index');
     Route::get('/active', [IndexTradeUnits::class, 'active'])->name('active');
     Route::get('/in-process', [IndexTradeUnits::class, 'inProcess'])->name('in_process');
+    Route::get('/discontinuing', [IndexTradeUnits::class, 'discontinuing'])->name('discontinuing');
     Route::get('/discontinued', [IndexTradeUnits::class, 'discontinued'])->name('discontinued');
     Route::get('/anomality', [IndexTradeUnits::class, 'anomality'])->name('anomality');
     Route::get('/orphan', IndexOrphanTradeUnits::class)->name('orphan');

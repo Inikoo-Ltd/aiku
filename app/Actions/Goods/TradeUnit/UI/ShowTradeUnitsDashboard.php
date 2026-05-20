@@ -40,12 +40,44 @@ class ShowTradeUnitsDashboard extends OrgAction
                     [
                         'label' => __('Trade Units'),
                         'route' => [
-                            'name'       => 'grp.trade_units.units.active',
+                            'name'       => 'grp.trade_units.units.index',
                             'parameters' => []
                         ],
                         'color' => '#35858E',
                         'icon'  => 'fal fa-atom',
-                        'value' => $this->group->goodsStats->number_trade_units_status_active,
+                        'value' => $this->group->goodsStats->number_trade_units,
+                        'metas' => [
+                            [
+                                'icon'    => ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_active,
+                                'tooltip' => __('Active'),
+                                'route'   => ['name' => 'grp.trade_units.units.active', 'parameters' => []],
+                            ],
+                            [
+                                'icon'    => ['icon' => 'fal fa-seedling', 'class' => 'text-indigo-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_in_process,
+                                'tooltip' => __('In Process'),
+                                'route'   => ['name' => 'grp.trade_units.units.in_process', 'parameters' => []],
+                            ],
+                            [
+                                'icon'    => ['icon' => 'fal fa-exclamation-triangle', 'class' => 'text-orange-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_discontinuing,
+                                'tooltip' => __('Discontinuing'),
+                                'route'   => ['name' => 'grp.trade_units.units.discontinuing', 'parameters' => []],
+                            ],
+                            [
+                                'icon'    => ['icon' => 'fas fa-skull', 'class' => 'text-yellow-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_discontinued,
+                                'tooltip' => __('Discontinued'),
+                                'route'   => ['name' => 'grp.trade_units.units.discontinued', 'parameters' => []],
+                            ],
+                            [
+                                'icon'    => ['icon' => 'fal fa-scarecrow', 'class' => 'text-slate-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_anomality,
+                                'tooltip' => __('Anomality'),
+                                'route'   => ['name' => 'grp.trade_units.units.anomality', 'parameters' => []],
+                            ],
+                        ],
                     ],
                     [
                         'label' => __('Trade Unit Families'),
