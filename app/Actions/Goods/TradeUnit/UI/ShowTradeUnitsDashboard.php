@@ -45,7 +45,7 @@ class ShowTradeUnitsDashboard extends OrgAction
                         ],
                         'color' => '#35858E',
                         'icon'  => 'fal fa-atom',
-                        'value' => $this->group->goodsStats->number_trade_units,
+                        'value' => $this->group->goodsStats->number_trade_units_status_active,
                     ],
                     [
                         'label' => __('Trade Unit Families'),
@@ -55,11 +55,11 @@ class ShowTradeUnitsDashboard extends OrgAction
                         ],
                         'color' => '#7DA78C',
                         'icon'  => 'fal fa-atom',
-                        'value' => $this->group->goodsStats->number_trade_unit_families,
+                        'value' => $this->group->goodsStats->number_stock_families_state_active,
                     ],
                     [
                         'is_negative'     => true,
-                        'label'           => __('Orphan Trade Units'),
+                        'label'           => __('Trade Units No family'),
                         'route'           => [
                             'name'       => 'grp.trade_units.units.orphan',
                             'parameters' => []

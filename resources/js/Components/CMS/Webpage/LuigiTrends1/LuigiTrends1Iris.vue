@@ -175,7 +175,7 @@ onMounted(() => {
 
             <div class="py-4 px-3 md:px-12" id="LuigiTrends1">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4" :pagination="{ clickable: true }"
-                   autoHeight  class="w-full px-[50px]">
+                   autoHeight    class="w-full px-0 md:px-[50px]">
                     <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
                         <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
                         </div>

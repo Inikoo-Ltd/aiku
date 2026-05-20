@@ -12,6 +12,7 @@ use App\Actions\Billables\Charge\UI\IndexCharges;
 use App\Actions\Billables\Charge\UI\IndexCustomersInCharge;
 use App\Actions\Billables\Charge\UI\ShowCharge;
 use App\Actions\Billables\Service\UI\IndexShopServices;
+use App\Actions\Billables\ShippingZone\UI\CreateShippingZone;
 use App\Actions\Billables\ShippingZone\UI\EditShippingZone;
 use App\Actions\Billables\ShippingZone\UI\ShowShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\UI\CreateShippingZoneSchema;
@@ -34,9 +35,12 @@ Route::name("shipping.")->prefix('shipping')
         Route::prefix('{shippingZoneSchema}')->group(function () {
             Route::get('', ShowShippingZoneSchema::class)->name('show');
             Route::get('edit', EditShippingZoneSchema::class)->name('edit');
-            Route::prefix('shipping-zone/{shippingZone}')->name('show.shipping-zone')->group(function () {
-                Route::get('', ShowShippingZone::class)->name('.show');
-                Route::get('/edit', EditShippingZone::class)->name('.edit');
+            Route::prefix('shipping-zone')->name('show.shipping-zone.')->group(function () {
+                Route::get('create', CreateShippingZone::class)->name('create');
+                Route::prefix('{shippingZone}')->group(function () {
+                    Route::get('', ShowShippingZone::class)->name('show');
+                    Route::get('edit', EditShippingZone::class)->name('edit');
+                });
             });
         });
     });

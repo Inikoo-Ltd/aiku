@@ -12,6 +12,7 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Navigation } from "swiper/modules"
+import { captureConsoleIntegration } from "@sentry/vue"
 
 
 interface FieldValue {
@@ -76,6 +77,8 @@ const titleContent = computed(() => props.fieldValue?.recommendation_settings?.t
 
 const prevEl = ref(null)
 const nextEl = ref(null)
+
+console.log('related product :', props)
 </script>
 
 <template>
@@ -116,7 +119,7 @@ const nextEl = ref(null)
           :loop="shouldShowNavigation"
           :auto-height="false"
           :modules="[Navigation]"
-          class="w-full px-[50px]"
+          class="w-full px-0 md:px-[50px]"
           :navigation="{ prevEl, nextEl }"
         >
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">
