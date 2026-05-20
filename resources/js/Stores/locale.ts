@@ -39,6 +39,7 @@ export const useLocaleStore = defineStore("locale", () => {
 			currency: currencyInertia.value?.code || currencyCode || '',
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
+			currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.
 		})
 
 		return formatter.format(num);
