@@ -256,7 +256,7 @@ class UpdateTradeUnit extends GrpAction
             'barcode'                      => ['sometimes', 'required'],
             'gross_weight'                 => ['sometimes', 'required', 'numeric'],
             'net_weight'                   => ['sometimes', 'required', 'numeric'],
-            'marketing_weight'             => ['sometimes', 'required', 'numeric'],
+            'marketing_weight'             => ['sometimes', 'required', 'numeric','min:1'],
             'marketing_dimensions'         => ['sometimes', 'required'],
             'type'                         => ['sometimes', 'required'],
             'image_id'                     => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
@@ -309,7 +309,7 @@ class UpdateTradeUnit extends GrpAction
         if (!$this->strict) {
             $rules['gross_weight']     = ['sometimes', 'nullable', 'numeric'];
             $rules['net_weight']       = ['sometimes', 'nullable', 'numeric'];
-            $rules['marketing_weight'] = ['sometimes', 'nullable', 'numeric'];
+            $rules['marketing_weight'] = ['sometimes', 'nullable', 'integer'];
             $rules['code']             = ['sometimes', 'string'];
 
             $rules = $this->noStrictUpdateRules($rules);
