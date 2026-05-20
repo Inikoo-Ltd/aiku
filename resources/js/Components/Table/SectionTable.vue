@@ -114,7 +114,7 @@ const filteredData = computed(() => {
 							</div>
 
 							<div class="text-right text-gray-700">
-								{{ locale.number(item.count) }}
+								{{ item.count !== null && item.count !== 0 ? locale.number(item.count) : '' }}
 							</div>
 						</div>
 					</div>
