@@ -357,7 +357,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
 
             $table
                 ->defaultSort('code')
-                ->withLabelRecord([__('sku'), __('skus')])
+                ->withLabelRecord([__('sku'), __('SKUs')])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
