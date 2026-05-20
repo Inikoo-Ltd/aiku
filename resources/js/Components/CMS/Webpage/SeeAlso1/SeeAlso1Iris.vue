@@ -5,6 +5,7 @@ import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/Produ
 
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
+import { get } from 'lodash-es'
 
 // Swiper
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -68,7 +69,7 @@ const compSwiperOptions = computed(() => {
   }
 })
 
-console.log('see also', props)
+console.log('see also', layout)
 </script>
 
 <template>
@@ -100,6 +101,7 @@ console.log('see also', props)
       <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0 top-1/2">
         <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg"/>
       </button>
+      
       <Swiper   
         :modules="[Navigation]"
         :slides-per-view="slidesPerView"
@@ -111,12 +113,10 @@ console.log('see also', props)
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" :hideLogin="true"/>
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
+          :buttonStyle="layout?.buttonBasket?.buttonStyle"
+          :product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
-            </div>
-
-            <div v-else class="flex-1 flex items-center justify-center text-gray-400">
-              No Product
             </div>
           </div>
         </SwiperSlide>
