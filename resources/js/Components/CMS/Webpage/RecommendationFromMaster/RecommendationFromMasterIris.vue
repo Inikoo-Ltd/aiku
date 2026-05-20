@@ -12,6 +12,7 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Navigation } from "swiper/modules"
+import { captureConsoleIntegration } from "@sentry/vue"
 
 
 interface FieldValue {
@@ -76,6 +77,8 @@ const titleContent = computed(() => props.fieldValue?.recommendation_settings?.t
 
 const prevEl = ref(null)
 const nextEl = ref(null)
+
+console.log(props)
 </script>
 
 <template>
