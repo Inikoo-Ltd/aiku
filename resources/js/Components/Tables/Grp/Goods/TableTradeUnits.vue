@@ -22,8 +22,12 @@ import PureInputDimension from "@/Components/Pure/PureInputDimension.vue"
 library.add(faCheckCircle, faSeedling, faSkull, faScarecrow, faTriangle, faEquals, faMinus, faPencil, faSave, faTimes, faSpinnerThird)
 
 const locale = inject("locale", aikuLocaleStructure)
-const showEditActions = computed(() =>
-    route().current('grp.trade_units.units.missing_weight') ||
+
+const canEditWeight = computed(() =>
+    route().current('grp.trade_units.units.missing_weight')
+)
+
+const canEditDimensions = computed(() =>
     route().current('grp.trade_units.units.missing_dimensions')
 )
 
@@ -162,8 +166,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </button>
                 </template>
                 <template v-else>
-                    <span>{{ (savedValues[tradeUnit.id]?.net_weight ?? tradeUnit["net_weight"]) != null ? (savedValues[tradeUnit.id]?.net_weight ?? tradeUnit["net_weight"]) + ' g' : showEditActions ? '' : '-' }}</span>
-                    <button v-if="showEditActions" @click="onEdit(tradeUnit, 'net_weight')" class="text-gray-400 hover:text-gray-600">
+                    <span>{{ (savedValues[tradeUnit.id]?.net_weight ?? tradeUnit["net_weight"]) != null ? (savedValues[tradeUnit.id]?.net_weight ?? tradeUnit["net_weight"]) + ' g' : canEditWeight ? '' : '-' }}</span>
+                    <button v-if="canEditWeight" @click="onEdit(tradeUnit, 'net_weight')" class="text-gray-400 hover:text-gray-600">
                         <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
                     </button>
                 </template>
@@ -188,8 +192,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </button>
                 </template>
                 <template v-else>
-                    <span>{{ (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) != null ? (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) + ' g' : showEditActions ? '' : '-' }}</span>
-                    <button v-if="showEditActions" @click="onEdit(tradeUnit, 'marketing_weight')" class="text-gray-400 hover:text-gray-600">
+                    <span>{{ (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) != null ? (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) + ' g' : canEditWeight ? '' : '-' }}</span>
+                    <button v-if="canEditWeight" @click="onEdit(tradeUnit, 'marketing_weight')" class="text-gray-400 hover:text-gray-600">
                         <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
                     </button>
                 </template>
@@ -212,7 +216,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 </template>
                 <template v-else>
                     <span>{{ formatDimensions(savedValues[tradeUnit.id]?.marketing_dimensions ?? tradeUnit["marketing_dimensions"]) }}</span>
-                    <button v-if="showEditActions" @click="onEdit(tradeUnit, 'marketing_dimensions')" class="text-gray-400 hover:text-gray-600">
+                    <button v-if="canEditDimensions" @click="onEdit(tradeUnit, 'marketing_dimensions')" class="text-gray-400 hover:text-gray-600">
                         <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
                     </button>
                 </template>

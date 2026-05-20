@@ -96,7 +96,7 @@ class CloseChatSession
 
         $chatSession = $this->handle($chatSession, $actorId, $actorType);
 
-        return $this->jsonResponse($chatSession);
+        return $this->buildSessionResponse($chatSession);
     }
 
     public function asController(ActionRequest $request, ?string $organisation, ChatSession $chatSession): RedirectResponse
@@ -161,7 +161,7 @@ class CloseChatSession
         );
     }
 
-    public function jsonResponse(ChatSession $chatSession): JsonResponse
+    public function buildSessionResponse(ChatSession $chatSession): JsonResponse
     {
         $sessionDuration = $chatSession->created_at->diffInMinutes($chatSession->closed_at);
 
