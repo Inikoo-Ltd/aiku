@@ -63,7 +63,7 @@ class ShowShippingZoneSchema extends OrgAction
                     ],
                     'title'         => $shippingZoneSchema->name,
                     'actions'       => [
-                        $this->canEdit && !app()->environment('production') ? [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => 'Create shipping zone',
