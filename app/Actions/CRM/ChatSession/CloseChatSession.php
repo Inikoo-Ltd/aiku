@@ -19,18 +19,30 @@ use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
+use Illuminate\Database\Eloquent\Collection;
 
 class CloseChatSession
 {
     use AsAction;
 
-    public function handle(ChatSession $chatSession, int $agentId, array $additionalData = []): ChatSession
-    {
-        return DB::transaction(function () use ($chatSession, $agentId, $additionalData) {
+    public function handle(
+        ChatSession $chatSession,
+        ?int $actorId = null,
+        ChatActorTypeEnum $actorType = ChatActorTypeEnum::AGENT,
+        array $additionalData = []
+    ): ChatSession {
+        return DB::transaction(function () use ($chatSession, $actorId, $actorType, $additionalData) {
+
+            $closedBy = match ($actorType) {
+                ChatActorTypeEnum::AGENT  => ChatSessionClosedByTypeEnum::AGENT,
+                ChatActorTypeEnum::USER,
+                ChatActorTypeEnum::GUEST  => ChatSessionClosedByTypeEnum::USER,
+                default                   => ChatSessionClosedByTypeEnum::SYSTEM,
+            };
 
             $chatSession->update([
-                'status' => ChatSessionStatusEnum::CLOSED->value,
-                'closed_by' => $agentId ? ChatSessionClosedByTypeEnum::AGENT->value : ChatSessionClosedByTypeEnum::USER->value,
+                'status'    => ChatSessionStatusEnum::CLOSED->value,
+                'closed_by' => $closedBy->value,
                 'closed_at' => now(),
             ]);
 
@@ -40,7 +52,7 @@ class CloseChatSession
 
             foreach ($activeAssignments as $assignment) {
                 $assignment->update([
-                    'status' => ChatAssignmentStatusEnum::RESOLVED->value,
+                    'status'      => ChatAssignmentStatusEnum::RESOLVED->value,
                     'resolved_at' => now(),
                 ]);
 
@@ -50,24 +62,42 @@ class CloseChatSession
                 }
             }
 
+            $closedByLabel = match ($actorType) {
+                ChatActorTypeEnum::AGENT => 'agent',
+                ChatActorTypeEnum::USER  => 'user',
+                ChatActorTypeEnum::GUEST => 'guest',
+                default                  => 'system',
+            };
+
             $systemMessage = $chatSession->messages()->create([
-                'message_text' => 'Chat session has been closed by agent',
+                'message_text' => "Chat session has been closed by {$closedByLabel}",
                 'message_type' => ChatMessageTypeEnum::TEXT->value,
-                'sender_type' => ChatSenderTypeEnum::SYSTEM->value,
-                'is_read' => true,
-                'read_at' => now(),
+                'sender_type'  => ChatSenderTypeEnum::SYSTEM->value,
+                'is_read'      => true,
+                'read_at'      => now(),
                 'delivered_at' => now(),
             ]);
 
             BroadcastRealtimeChat::dispatch($systemMessage);
 
-            $this->logCloseEvent($chatSession, $agentId, $activeAssignments, $additionalData);
+            $this->logCloseEvent($chatSession, $actorId, $actorType, $activeAssignments, $additionalData);
             SummarizeChatSession::dispatch($chatSession)->delay(now()->addSeconds(5));
 
             return $chatSession->fresh();
         });
     }
 
+
+    public function asApiController(ChatSession $chatSession): JsonResponse
+    {
+        [$actorType, $actorId] = $chatSession->web_user_id
+            ? [ChatActorTypeEnum::USER, $chatSession->web_user_id]
+            : [ChatActorTypeEnum::GUEST, null];
+
+        $chatSession = $this->handle($chatSession, $actorId, $actorType);
+
+        return $this->buildSessionResponse($chatSession);
+    }
 
     public function asController(ActionRequest $request, ?string $organisation, ChatSession $chatSession): RedirectResponse
     {
@@ -79,7 +109,7 @@ class CloseChatSession
         }
 
         try {
-            $this->handle($chatSession, $agent->id);
+            $this->handle($chatSession, $agent->id, ChatActorTypeEnum::AGENT);
         } catch (Exception $e) {
             throw ValidationException::withMessages([
                 'message' => $e->getMessage(),
@@ -101,16 +131,21 @@ class CloseChatSession
         return $user->chatAgent;
     }
 
-    protected function logCloseEvent(ChatSession $chatSession, int $agentId, $assignments, array $additionalData = []): void
-    {
-
+    protected function logCloseEvent(
+        ChatSession $chatSession,
+        ?int $actorId,
+        ChatActorTypeEnum $actorType,
+        Collection $assignments,
+        array $additionalData = []
+    ): void {
         $payload = [];
+
         if ($assignments->isNotEmpty()) {
             $payload['assignments'] = $assignments->map(function ($assignment) {
                 return [
-                    'assignment_id' => $assignment->id,
-                    'assigned_agent_id' => $assignment->chat_agent_id,
-                    'assigned_at' => $assignment->assigned_at->toISOString(),
+                    'assignment_id'       => $assignment->id,
+                    'assigned_agent_id'   => $assignment->chat_agent_id,
+                    'assigned_at'         => $assignment->assigned_at->toISOString(),
                     'assignment_duration' => $assignment->assigned_at->diffInMinutes(now()),
                 ];
             })->toArray();
@@ -120,13 +155,13 @@ class CloseChatSession
 
         StoreChatEvent::make()->closeSession(
             $chatSession,
-            ChatActorTypeEnum::AGENT,
-            $agentId,
+            $actorType,
+            $actorId,
             $payload,
         );
     }
 
-    public function jsonResponse(ChatSession $chatSession): JsonResponse
+    public function buildSessionResponse(ChatSession $chatSession): JsonResponse
     {
         $sessionDuration = $chatSession->created_at->diffInMinutes($chatSession->closed_at);
 
