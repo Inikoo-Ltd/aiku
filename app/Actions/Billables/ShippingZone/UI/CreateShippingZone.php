@@ -66,13 +66,13 @@ class CreateShippingZone extends OrgAction
                                     'label'    => __('Name'),
                                     'required' => true,
                                 ],
-                                'position' => [
+                                /* 'position' => [
                                     'type'     => 'input',
                                     'inputType' => 'number',
                                     'label'    => __('Position'),
                                     'required' => true,
                                     'value'    => null,
-                                ],
+                                ], */
                                 'status' => [
                                     'type'  => 'toggle',
                                     'label' => __('Status'),

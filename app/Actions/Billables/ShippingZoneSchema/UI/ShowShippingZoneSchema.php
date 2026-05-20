@@ -92,7 +92,7 @@ class ShowShippingZoneSchema extends OrgAction
                     fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema, ShippingZoneSchemaTabsEnum::ZONES->value))
                     : Inertia::lazy(fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema)))
             ]
-        )->table(IndexShippingZones::make()->tableStructure(parent: $shippingZoneSchema, prefix: ShippingZoneSchemaTabsEnum::ZONES->value));
+        );
     }
 
 
