@@ -82,7 +82,7 @@ class IndexWatiTemplates extends OrgAction
         $title = __('Wati Templates');
 
         return Inertia::render(
-            'Comms/Templates',
+            'Comms/WatiTemplates',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
