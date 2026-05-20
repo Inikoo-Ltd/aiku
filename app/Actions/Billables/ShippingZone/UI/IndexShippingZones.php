@@ -47,7 +47,7 @@ class IndexShippingZones extends OrgAction
         $queryBuilder->leftjoin('currencies', 'shipping_zones.currency_id', '=', 'currencies.id');
 
         $queryBuilder
-            ->defaultSort('shipping_zones.name')
+            ->defaultSort('shipping_zones.position')
             ->select([
                 'shipping_zones.id',
                 'shipping_zones.slug',

@@ -132,13 +132,13 @@ const handleDragChange = async (event: any) => {
 			),
 			{ positions: payload }
 		)
-		notify({
-			title: "Success",
-			text: "Shipping zones reordered successfully.",
-			type: "success",
-		})
 	} catch (error) {
 		console.error("Failed to reorder shipping zones:", error)
+		notify({
+			title: "Failed to Save",
+			text: "Shipping zones reordered failed.",
+			type: "error",
+		})
 	}
 }
 
