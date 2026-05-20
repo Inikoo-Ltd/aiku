@@ -137,4 +137,19 @@ class StoreShippingZone extends OrgAction
     {
         return new ShippingZoneResource($shippingZone);
     }
+
+    public function htmlResponse(ShippingZone $shippingZone)
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Shipping zone successfully created.'),
+        ]);
+
+        return redirect()->route('grp.org.shops.show.billables.shipping.show', [
+            'organisation'       => $shippingZone->organisation->slug,
+            'shop'               => $shippingZone->shop->slug,
+            'shippingZoneSchema' => $shippingZone->schema->slug,
+        ]);
+    }
 }
