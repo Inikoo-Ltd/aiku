@@ -28,13 +28,13 @@ trait WithPastpayConfiguration
     protected function getBaseUrl(): string
     {
         return app()->isProduction()
-            ? config('pastpay.base_url', 'https://api.pastpay.com')
-            : config('pastpay.sandbox_url', 'https://api.demo.pastpay.com');
+            ? config('services.pastpay.base_url', 'https://api.pastpay.com')
+            : config('services.pastpay.sandbox_url', 'https://api.demo.pastpay.com');
     }
 
     protected function getApiKey(): string
     {
-        return config('pastpay.api_key', Arr::get($this->paymentAccount->data, 'credentials.api_key'));
+        return config('services.pastpay.demo_api_key', Arr::get($this->paymentAccount->data, 'credentials.api_key'));
     }
 
     protected function getShopId(): string
