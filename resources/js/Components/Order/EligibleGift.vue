@@ -119,7 +119,7 @@ const convertToFloat2 = (val: any) => {
         <template v-if="localOptedOut">
             <div class="flex items-center gap-x-2 text-gray-500 text-sm">
                 <FontAwesomeIcon icon="fal fa-gift" class="opacity-40" fixed-width aria-hidden="true" />
-                <span>{{ trans("You've opted out of the free gift") }}</span>
+                <span>{{ ctrans("You've opted out of the free gift") }}</span>
                 <button
                     v-if="routeOptOut"
                     @click="onToggleOptOut(false)"
@@ -127,14 +127,14 @@ const convertToFloat2 = (val: any) => {
                     :disabled="isLoadingOptOut"
                 >
                     <LoadingIcon v-if="isLoadingOptOut" class="inline-block w-3 h-3 mr-1" />
-                    {{ trans("Opt back in") }}
+                    {{ ctrans("Opt back in") }}
                 </button>
             </div>
         </template>
 
         <!-- Section: Normal gift flow -->
         <template v-else>
-            <div>{{ trans("You are eligible to receive a gift") }}:</div>
+            <div>{{ ctrans("You are eligible to receive a gift") }}:</div>
 
             <!-- Section: meter -->
             <div v-if="!(convertToFloat2(props.meter?.[0]) >= convertToFloat2(props.meter?.[1]))"
@@ -154,7 +154,7 @@ const convertToFloat2 = (val: any) => {
             </div>
 
             <div v-else-if="!compSelectedGift" @click="_popover?.toggle" class="cursor-pointer text-blue-600 underline">
-                {{ trans("Select gift") }}
+                {{ ctrans("Select gift") }}
             </div>
             <div v-else class="relative text-right border-b border-gray-600">
                 <div @click="_popover?.toggle" class="relative cursor-pointer inline-block">
