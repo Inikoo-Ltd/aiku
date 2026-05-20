@@ -76,6 +76,8 @@ class SubDepartmentsResource extends JsonResource
             'updated_at'                    => $this->updated_at,
             'number_families'               => $this->number_families,
             'number_products'               => $this->number_products,
+            'number_current_families'       => $this->number_current_families ?? 0,
+            'number_current_collections'    => $this->number_current_collections ?? 0,
             'webpage_state'                 => $this->webpage_state,
             'is_name_reviewed'              => $this->is_name_reviewed,
             'is_description_title_reviewed' => $this->is_description_title_reviewed,
@@ -95,6 +97,7 @@ class SubDepartmentsResource extends JsonResource
             'listings'                      => $this->listings ?? 0,
             'sold'                          => $this->sold ?? 0,
             'health_rank'              => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'public_url'               => $this->canonical_url,
         ];
     }
 

@@ -189,7 +189,13 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
     }
 })
 
+const fallbackTheme = theme
 
+const safeTheme = computed(() => {
+    const t = layout?.app?.theme
+
+    return (t && t.length >= 8) ? t : fallbackTheme
+})
 </script>
 
 <template>
@@ -371,5 +377,28 @@ iframe#launcher {
 .text-primary {
     color: var(--theme-color-4) !important;
 }
+
+.primaryLink {
+    background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
+
+    &:hover,
+    &:focus {
+        color: #374151;
+    }
+
+    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
+}
+
+.secondaryLink {
+    background: v-bind('`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "AA"})`');
+
+    &:hover,
+    &:focus {
+        color: v-bind('`${safeTheme[7]}`');
+    }
+
+    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
+}
+
 
 </style>
