@@ -88,7 +88,7 @@ class EditShippingZone extends OrgAction
                                 ],
                                 'territories' => [
                                     'type'  => 'territory_zone',
-                                    'label' => __('territory'),
+                                    'label' => __('Territory'),
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),
                                 ],
