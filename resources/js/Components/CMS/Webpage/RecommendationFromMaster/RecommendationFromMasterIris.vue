@@ -119,7 +119,7 @@ console.log('related product :', props)
           :loop="shouldShowNavigation"
           :auto-height="false"
           :modules="[Navigation]"
-          class="w-full px-0 md:px-[50px]"
+          class="w-full"
           :navigation="{ prevEl, nextEl }"
         >
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">

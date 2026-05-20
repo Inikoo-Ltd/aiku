@@ -100,21 +100,6 @@ console.log('see also', props)
       <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0 top-1/2">
         <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg"/>
       </button>
-
-      <!-- Swiper -->
-      <!-- <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
-        :navigation="{ prevEl, nextEl }" class="w-full" :loop="true">
-        <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug"
-          class="cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded flex flex-col justify-between"
-          style="height: auto;">
-          <div class="flex flex-col h-full">
-            <div class="flex flex-col flex-1">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
-            </div>
-          </div>
-        </SwiperSlide>
-      </Swiper> -->
       <Swiper   
         :modules="[Navigation]"
         :slides-per-view="slidesPerView"
