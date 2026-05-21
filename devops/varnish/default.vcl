@@ -323,6 +323,15 @@ sub vcl_backend_response {
             set beresp.uncacheable = true;
             return (deliver);
         }
+
+        # Cache redirects if explicitly allowed by the app via X-Aiku-Cacheable-Redirect header
+        if (beresp.http.X-Aiku-Cacheable-Redirect == "1") {
+            set beresp.ttl = 10d;
+            set beresp.grace = 2m;
+            set beresp.keep = 10m;
+            unset beresp.http.X-Aiku-Cacheable-Redirect;
+            return (deliver);
+        }
     }
 
     # Cache 404s briefly to reduce repeated backend misses.
