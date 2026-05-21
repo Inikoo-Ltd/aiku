@@ -485,7 +485,7 @@ const processReturn = () => {
 				}"
 			>
 				<template #label>
-					<span class="whitespace-nowrap">{{ ctrans('Set return') }} || Local</span>
+					<span class="whitespace-nowrap">{{ ctrans('Set return') }}</span>
 				</template>
 			</ButtonWithLink>
 		</template>

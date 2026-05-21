@@ -122,17 +122,17 @@ class ShowReturnDeliveryNote extends OrgAction
                 ReturnDeliveryNoteStateEnum::RETURNED => [
                     [
                         'type'    => 'button',
-                        // 'style'   => 'save',
-                        // 'icon'    => 'fas fa-box-check',
-                        // 'label'   => __('Finish Return'),
+                        'style'   => 'save',
+                        'icon'    => 'fas fa-box-check',
+                        'label'   => __('Finish Return'),
                         'key'     => 'finish-processing',
-                        // 'route'   => [
-                        //     'method'        => 'patch',
-                        //     'name'          => 'grp.models.return_delivery_note.state.done',
-                        //     'parameters'    =>  [
-                        //         'returnDeliveryNote'    => $returnDeliveryNote->id
-                        //     ]
-                        // ],
+                        'route'   => [
+                            'method'        => 'patch',
+                            'name'          => 'grp.models.return_delivery_note.state.done',
+                            'parameters'    =>  [
+                                'returnDeliveryNote'    => $returnDeliveryNote->id
+                            ]
+                        ],
                     ]
                 ],
                 default => []
