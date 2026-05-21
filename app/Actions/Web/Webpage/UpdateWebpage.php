@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\Luigi\DeleteReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
@@ -88,6 +89,9 @@ class UpdateWebpage extends OrgAction
         }
 
         if (Arr::has($modelData, 'state_data')) {
+
+
+
             if (Arr::has($modelData, 'state_data.state')) {
                 data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
             }
@@ -97,6 +101,9 @@ class UpdateWebpage extends OrgAction
             }
 
             if (Arr::get($modelData, 'state_data.state') == 'closed') {
+
+
+
                 if ($redirect = $webpage->redirectedTo) {
                     $redirect->update([
                         'from_webpage_id'   => $webpage->id
@@ -111,6 +118,9 @@ class UpdateWebpage extends OrgAction
                         'to_webpage_id' => Arr::get($modelData, 'state_data.redirect_webpage_id')
                     ]);
                 }
+
+
+
             } else {
                 Redirect::where('from_path', $webpage->url)->where('website_id', $webpage->website->id)->delete();
             }
@@ -119,6 +129,8 @@ class UpdateWebpage extends OrgAction
                 ProductHydrateHasLiveWebpage::run($webpage->model);
             }
             data_forget($modelData, 'state_data');
+
+
         }
 
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
@@ -139,6 +151,8 @@ class UpdateWebpage extends OrgAction
             $this->dispatchWebpageHydrators($webpage);
         }
 
+        DeleteReindexWebpageLuigiData::dispatch($webpage)->delay(5);
+        BreakWebpageCache::run($webpage);
         BreakProductInWebpagesCache::make()->breakCache($webpage);
         return $webpage;
     }

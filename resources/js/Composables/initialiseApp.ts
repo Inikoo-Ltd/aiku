@@ -219,6 +219,11 @@ export const initialiseApp = () => {
             layout.crm_waiting_count = usePage().props.crm_waiting_count as number
         }
 
+        if (usePage().props.crm_return_count !== undefined) {
+            layout.crm_return_count = usePage().props.crm_return_count as number
+            console.log(layout);
+        }
+
         layout.app.name = "Aiku"
     })
 }
