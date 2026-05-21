@@ -59,6 +59,12 @@ class DashboardShopSalesResource extends JsonResource
         ] : [];
 
         $columns = [
+            'link' => [
+                'clickable_icon' => $data['website_url'] ? [
+                    'url'  => $data['website_url'],
+                    'icon' => ['icon' => 'fal fa-external-link'],
+                ] : null,
+            ],
             'label' => [
                 'formatted_value' => $data['name'] ?? 'Unknown',
                 'align'           => 'left',
