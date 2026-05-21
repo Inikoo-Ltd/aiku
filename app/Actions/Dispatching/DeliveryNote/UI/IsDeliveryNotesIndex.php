@@ -45,6 +45,25 @@ trait IsDeliveryNotesIndex
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $currentSort = request('sort');
+
+        // Ensure all / dispatched bucket order is not disturbed, otherwise would be hard to navigate
+        $forceSortByPremiumDispatch = !in_array($bucket, ['all', 'dispatched']);
+
+        if ($currentSort && $forceSortByPremiumDispatch) {
+            $modifiedSort = is_array($currentSort) ? [
+                '-is_premium_dispatch',
+                ...$currentSort,   
+            ] : [
+                '-is_premium_dispatch',
+                $currentSort,   
+            ];
+
+            request()->merge([
+                'sort'  => $modifiedSort
+            ]);
+        }
+
         $query = QueryBuilder::for(DeliveryNote::class);
 
         $query->leftjoin('customers', 'delivery_notes.customer_id', '=', 'customers.id');
@@ -207,7 +226,16 @@ trait IsDeliveryNotesIndex
             $selectColumns[] = 'countries.code as country_code';
         }
 
-        return $query->defaultSort('-delivery_notes.date')
+        return $query
+            ->defaultSort(
+                // Ensure all / dispatched bucket order is not disturbed, otherwise would be hard to navigate
+                $forceSortByPremiumDispatch ? [
+                    '-delivery_notes.is_premium_dispatch',
+                    'delivery_notes.date',
+                ] : [
+                    '-delivery_notes.date',
+                ]
+            )
             ->with('trolleys')
             ->select($selectColumns)
             ->selectRaw(
@@ -232,6 +260,7 @@ trait IsDeliveryNotesIndex
                 'sort_picker',
                 'sort_packer',
                 'sort_trolleys',
+                'is_premium_dispatch',
                 'sort_picked_bays'
 
             ])

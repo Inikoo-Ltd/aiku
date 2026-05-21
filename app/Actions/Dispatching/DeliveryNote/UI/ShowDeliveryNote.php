@@ -820,8 +820,8 @@ class ShowDeliveryNote extends OrgAction
             'warning'       => $warning,
             'is_editable'    => $isEditable,
             'tabs'          => [
-                'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
-                'navigation' => $deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED
+                'current'    => $this->tab,
+                'navigation' => in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, $deliveryNote->state == DeliveryNoteStateEnum::PACKED])
                     ?
                     DeliveryNoteTabsEnum::navigation($deliveryNote)
                     :

@@ -56,7 +56,7 @@ trait WithReturnDeliveryNotesSubNavigation
             ],
             [
                 'align' => 'right',
-                'label' => __('Processed'),
+                'label' => __('Done'),
                 'route' => [
                     'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.processed',
                     'parameters' => [

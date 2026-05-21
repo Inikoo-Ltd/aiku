@@ -6,6 +6,10 @@ import { Intervals } from "@/types/Components/Dashboard"
 import { getDashboardDateRange } from "@/Composables/useDashboard"
 import Icon from "@/Components/Icon.vue"
 import { Icon as IconTS } from "@/types/Utils/Icon"
+import { faExternalLink } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faExternalLink)
 
 interface RouteTarget {
     name?: string
