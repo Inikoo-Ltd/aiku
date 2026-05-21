@@ -73,7 +73,6 @@ interface DashboardData {
 }
 
 const props = defineProps<{
-    tab: string
     data: DashboardData
 }>()
 
@@ -116,9 +115,9 @@ const isWeakValue = (value: number | null | undefined) => {
                 </div>
 
                 <div v-for="row in rows" :key="row.key"
-                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-sm border-b border-gray-100 last:border-b-0 px-1 md:px-2">
                     <span class="md:hidden">{{ row.label?.charAt(0).toUpperCase() }}</span>
-                    <span class="hidden md:inline">{{ row.label }}</span>
+                    <span class="hidden md:inline text-center leading-tight">{{ row.label }}</span>
                 </div>
 
                 <div class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
@@ -132,8 +131,8 @@ const isWeakValue = (value: number | null | undefined) => {
                 class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
                 :style="{ flexGrow: 1 }">
 
-                <div class="h-14 md:h-20 flex flex-col items-center justify-center md:gap-1 border-b border-gray-200 px-1 md:px-4">
-                    <span class="hidden md:inline text-lg font-semibold">{{ metric.label }}</span>
+                <div class="h-14 md:h-20 flex flex-col items-center justify-center md:gap-1 border-b border-gray-200 px-1 md:px-2">
+                    <span class="hidden md:inline text-sm font-semibold text-center leading-tight">{{ metric.label }}</span>
                     <Icon v-if="metric.icon" :data="metric" class='text-xs md:text-xl' />
                 </div>
 
