@@ -88,7 +88,7 @@ trait WithTabsBox
 
         $return_stat = null;
         if ($parent instanceof Shop) {
-            $return_stat = $parent->number_return_delivery_notes_state_returned;
+            $return_stat = $parent->stats->number_return_delivery_notes_state_returned;
         } else {
             $return_stat = $parent->procurementStats->number_return_delivery_notes_state_returned;
         }
