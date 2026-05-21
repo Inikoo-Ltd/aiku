@@ -82,12 +82,12 @@ sub vcl_init {
 
 
     new logged_in_vdir = directors.random();
-    logged_in_vdir.add_backend(helio_in,10);
+    logged_in_vdir.add_backend(helio_in,20);
     logged_in_vdir.add_backend(boro_in,80);
 
     new logged_out_vdir = directors.random();
-    logged_out_vdir.add_backend(helio,35);
-    logged_out_vdir.add_backend(boro,65);
+    logged_out_vdir.add_backend(helio,20);
+    logged_out_vdir.add_backend(boro,80);
 
 }
 
@@ -199,12 +199,12 @@ sub vcl_recv {
         return (pass);
     }
 
-    # Aiku no cachable iris paths
+    # Aiku non-cacheable iris paths
     if (req.url ~ "^/(app|json|disclosure|unsubscribe|locale|models|catalogue|invoice|attachment)(/|$)") {
         return (pass);
     }
 
-    # Common no cachable paths
+    # Common non-cacheable paths
     if (req.url ~ "^/(admin|json|nova|api|horizon|telescope)(/|$)") {
         return (pass);
     }
@@ -302,31 +302,27 @@ sub vcl_backend_response {
         return (deliver);
     }
 
-    if ( beresp.status == 302 || beresp.status == 303 || beresp.status == 307 || beresp.status == 308) {
+    if (  beresp.status == 303 || beresp.status == 307 || beresp.status == 308) {
         set beresp.ttl = 0s;
         set beresp.uncacheable = true;
         return (deliver);
     }
 
- # A infinirt redirect loop was tetectred in the homepage of one websote
- #   if (
- #       beresp.status == 301 &&
- #       beresp.http.X-Aiku-Cacheable-Redirect == "1" &&
- #       beresp.http.Cache-Control ~ "(?i)public" &&
- #       beresp.http.Location &&
- #       beresp.http.Location != "https://" + bereq.http.host + bereq.url &&
- #       beresp.http.Location != "http://" + bereq.http.host + bereq.url
- #   ) {
- #       set beresp.ttl = 6h;
- #       set beresp.grace = 1m;
- #       unset beresp.http.X-Aiku-Cacheable-Redirect;
- #       return (deliver);
- #   }
+    # Handle self-redirects and potential loops
+    if (beresp.status == 301 || beresp.status == 302) {
+        if (bereq.retries == 0 && (
+            beresp.http.Location == bereq.url ||
+            beresp.http.Location == "https://" + bereq.http.host + bereq.url ||
+            beresp.http.Location == "http://" + bereq.http.host + bereq.url
+        )) {
+            return (retry);
+        }
 
-    if (beresp.status == 301) {
-        set beresp.ttl = 0s;
-        set beresp.uncacheable = true;
-        return (deliver);
+        if (bereq.retries > 0) {
+            set beresp.ttl = 0s;
+            set beresp.uncacheable = true;
+            return (deliver);
+        }
     }
 
     # Cache 404s briefly to reduce repeated backend misses.
