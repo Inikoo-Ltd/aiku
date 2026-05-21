@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -17,14 +17,13 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetWebBlockBlog
+class GetIrisWebBlockBlog
 {
     use AsObject;
 
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $permissions = ['edit'];
 
         $latestBlogs = [];
         foreach (
@@ -47,10 +46,16 @@ class GetWebBlockBlog
             ];
         }
 
-        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', $webpage->snapshots()->latest()->first()->published_at);
         data_set($webBlock, 'web_block.layout.data.fieldValue.latest_blogs', $latestBlogs);
 
-        return $webBlock;
+       return [
+            'type' => $webBlock['type'],
+            'structure' => Arr::get(
+                $webBlock,
+                'web_block.layout.data.fieldValue',
+                []
+            ),
+        ];
     }
 }
