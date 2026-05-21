@@ -211,16 +211,23 @@ class ShowIrisWebpage
                 'locale'
             ]);
 
+            $cacheRedirectInVarnish='1';
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
                 $webpageData = $webpageData.'?'.$queryString;
+                $cacheRedirectInVarnish='0';
             }
+
+            if(request()->url()==$webpageData){
+                $cacheRedirectInVarnish='0';
+            }
+
 
             return redirect()->to($webpageData, 301)
                 ->withHeaders([
                     'Cache-Control'             => 'public, s-maxage=300, max-age=0',
-                    'X-Aiku-Cacheable-Redirect' => '1',
+                    'X-Aiku-Cacheable-Redirect' => $cacheRedirectInVarnish,
                 ]);
         }
 
