@@ -55,7 +55,7 @@ class UndoPackingDeliveryNote extends OrgAction
         if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
             $order = $deliveryNote->orders->first();
 
-            UpdateOrderStateToPicked::make()->action($order,$deliveryNote);
+            UpdateOrderStateToPicked::make()->action($order, $deliveryNote);
         }
 
         $deliveryNote = $this->update($deliveryNote, $modelData);

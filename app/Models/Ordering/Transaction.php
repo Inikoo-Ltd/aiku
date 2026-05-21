@@ -113,6 +113,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Collection<int, Offer> $offers
  * @property-read \App\Models\Ordering\Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read Collection<int, ReturnDeliveryNoteItem> $returnDeliveryNoteItems
  * @property-read Shop|null $shop
  * @method static \Database\Factories\Ordering\TransactionFactory factory($count = null, $state = [])
  * @method static Builder<static>|Transaction newModelQuery()

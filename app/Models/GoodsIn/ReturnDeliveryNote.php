@@ -53,6 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $handler_id Main handler
  * @property int|null $handler_user_id
  * @property string|null $done_at
+ * @property int|null $refund_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read DeliveryNote|null $deliveryNote
@@ -61,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read User|null $handlerUser
  * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read Invoice|null $refund
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\ReturnDeliveryNoteItem> $returnDeliveryNoteItem
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Warehouse|null $warehouse

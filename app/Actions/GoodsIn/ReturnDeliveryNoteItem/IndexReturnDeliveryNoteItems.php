@@ -46,10 +46,10 @@ class IndexReturnDeliveryNoteItems extends OrgAction
         $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
 
-        if ($crmMode && in_array($parent->state,  [ReturnDeliveryNoteStateEnum::RETURNED,  ReturnDeliveryNoteStateEnum::DONE])) {
+        if ($crmMode && in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNED,  ReturnDeliveryNoteStateEnum::DONE])) {
             $query->with('transaction');
         }
-        
+
         $query->with('sowings.location');
 
         if ($stateFilter) {
@@ -133,7 +133,7 @@ class IndexReturnDeliveryNoteItems extends OrgAction
                 $table->column(key: 'total_item_returned', label: __('Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
-            if ($crmMode && in_array($parent->state,  [ReturnDeliveryNoteStateEnum::RETURNED])) {
+            if ($crmMode && in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNED])) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, align: 'left');
             }
 

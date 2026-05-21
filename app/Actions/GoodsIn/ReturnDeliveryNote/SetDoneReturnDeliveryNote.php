@@ -19,7 +19,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
-use App\Models\Catalogue\Product;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -54,18 +53,20 @@ class SetDoneReturnDeliveryNote extends OrgAction
 
         $returnDeliveryNote = DB::transaction(function () use ($returnDeliveryNote, $modelData, $originalInvoice) {
             $refundData = Arr::pull($modelData, 'refundedData', []);
-            
+
             $refund = StoreRefund::make()->action($originalInvoice, []);
             $refund->refresh();
 
             $lastRefundItem = null;
-            foreach($originalInvoice->invoiceTransactions as $invoiceTransaction) {
-                if (!$invoiceTransaction->transaction_id) continue;
+            foreach ($originalInvoice->invoiceTransactions as $invoiceTransaction) {
+                if (!$invoiceTransaction->transaction_id) {
+                    continue;
+                }
 
                 $refundedItem = data_get($refundData, $invoiceTransaction->transaction_id, null);
 
                 if ($refundedItem) {
-                    
+
                     StoreRefundInvoiceTransaction::make()->action($refund, $invoiceTransaction, [
                         'net_amount'    => data_get($refundedItem, 'refund_amount', 0),
                     ]);
@@ -91,7 +92,7 @@ class SetDoneReturnDeliveryNote extends OrgAction
                 if ($refundedItemData) {
                     data_set($updatedData, 'refund_transaction_id', $refundedItemData->id);
                 }
-                
+
                 UpdateReturnDeliveryNoteItem::make()->action($item, $updatedData);
 
             }

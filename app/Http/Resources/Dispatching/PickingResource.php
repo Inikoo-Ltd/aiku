@@ -29,7 +29,7 @@ class PickingResource extends JsonResource
 {
     public function toArray($request): array
     {
-         //todo: do this in a left join better
+        //todo: do this in a left join better
         $pickerName = __('Unknown');
         if ($this->picker) {
             $pickerName = $this->picker->contact_name;

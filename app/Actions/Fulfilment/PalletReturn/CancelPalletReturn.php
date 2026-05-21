@@ -48,7 +48,7 @@ class CancelPalletReturn extends OrgAction
                 'message'   => __('Unable to cancel this pallet return. Invalid current state [:_state]', ['_state' => $palletReturn->state->value])
             ]);
         }
-        
+
         $palletReturn = DB::transaction(function () use ($palletReturn, $modelData) {
 
             $modelData[PalletReturnStateEnum::CANCEL->value.'_at']    = now();

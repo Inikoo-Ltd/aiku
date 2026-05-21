@@ -49,7 +49,7 @@ class SetReturnedReturnDeliveryNote extends OrgAction
                 ]);
 
                 $deliveryNoteItem = $item->deliveryNoteItems;
-                
+
                 $deliveryNoteItem->update([
                     'quantity_returned' => ($deliveryNoteItem->returnDeliveryNoteItems()->sum('total_item_damaged') + $deliveryNoteItem->returnDeliveryNoteItems()->sum('total_item_returned')),
                 ]);

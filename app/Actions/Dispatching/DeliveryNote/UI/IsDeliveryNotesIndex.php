@@ -53,10 +53,10 @@ trait IsDeliveryNotesIndex
         if ($currentSort && $forceSortByPremiumDispatch) {
             $modifiedSort = is_array($currentSort) ? [
                 '-is_premium_dispatch',
-                ...$currentSort,   
+                ...$currentSort,
             ] : [
                 '-is_premium_dispatch',
-                $currentSort,   
+                $currentSort,
             ];
 
             request()->merge([

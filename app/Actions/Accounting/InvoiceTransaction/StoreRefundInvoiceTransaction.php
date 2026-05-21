@@ -103,7 +103,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
 
         data_set($modelData, 'in_process', true);
         // 4 months ago you added this field under invoice transactions and even a repair file, but didn't set it up under StoreRefundInvoiceTransaction Raul. I add this here to ensure it's working as intended
-        data_set($modelData, 'is_refund', true); 
+        data_set($modelData, 'is_refund', true);
 
         $invoiceTransaction = $invoiceTransaction->transactionRefunds()->create($modelData);
 

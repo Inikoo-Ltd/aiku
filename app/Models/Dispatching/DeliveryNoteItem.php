@@ -89,6 +89,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $has_waiting_warehouse
  * @property bool $has_waiting_crm
  * @property int|null $batch_code_id
+ * @property numeric $quantity_returned
  * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\SysAdmin\Group|null $group
@@ -96,6 +97,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Picking> $pickings
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ReturnDeliveryNoteItem> $returnDeliveryNoteItems
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Sowing> $sowings
  * @property-read Transaction|null $transaction
