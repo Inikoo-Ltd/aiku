@@ -13,7 +13,7 @@ import { Autoplay } from 'swiper/modules'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Button from '@/Components/Elements/Buttons/Button.vue'
+import Button from "@iris/Components/IrisButton.vue"
 // import { Carousel } from 'primevue'
 library.add(faCircle)
 
@@ -117,8 +117,7 @@ onMounted(() => {
 
 </script>
 
-<template>
-    sdfsdf
+<template>    
     <div class="py-4" :type="`recommenders-luigi-1-iris-${props.recommendation_type || 'test_reco'}`" :id="fieldValue?.id ? fieldValue?.id  : 'recommenders-luigi-1-iris'"  component="recommenders-luigi-1-iris">
         <Swiper :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
             :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]" class="w-full"

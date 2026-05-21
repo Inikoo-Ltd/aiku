@@ -51,8 +51,8 @@ class IndexStoredItems extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('slug', $value)
-                    ->orWhereWith('reference', $value);
+                $query->whereAnyWordStartWith('slug', $value)
+                    ->orWhereStartWith('reference', $value);
             });
         });
 

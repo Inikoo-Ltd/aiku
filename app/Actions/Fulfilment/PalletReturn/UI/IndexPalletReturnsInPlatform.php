@@ -58,16 +58,9 @@ class IndexPalletReturnsInPlatform extends OrgAction
 
         $queryBuilder = QueryBuilder::for(PalletReturn::class);
         $queryBuilder->where('pallet_returns.type', PalletReturnTypeEnum::STORED_ITEM);
-        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
-            $queryBuilder->where('pallet_returns.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
-        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
-                $join->on('shopify_user_has_fulfilments.model_id', '=', 'pallet_returns.id')
-                        ->where('shopify_user_has_fulfilments.model_type', '=', 'PalletReturn');
-            });
-        } else {
-            throw new UnexpectedValueException('To be implemented');
-        }
+
+        $queryBuilder->where('pallet_returns.customer_sales_channel_id', $customerSalesChannel->id);
+
         $queryBuilder->where('platform_id', $customerSalesChannel->platform_id);
         $queryBuilder->leftJoin('pallet_return_stats', 'pallet_return_stats.pallet_return_id', '=', 'pallet_returns.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'pallet_returns.currency_id');
