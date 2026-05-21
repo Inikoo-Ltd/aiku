@@ -22,5 +22,4 @@
         }
     },
     "include": ["resources/js/**/*.ts", "resources/js/**/*.d.ts", "resources/js/**/*.vue"],
-    "exclude": ["node_modules", "public", "app", "vendor", "maya", "han", "private"]
 }
