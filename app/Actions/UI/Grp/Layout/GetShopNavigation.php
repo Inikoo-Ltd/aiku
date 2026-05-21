@@ -293,7 +293,7 @@ class GetShopNavigation
                         [
                             "label"   => __("Wati"),
                             "tooltip" => __("Wati"),
-                            "icon"    => ["fal", "fa-whatsapp"],
+                            "icon"    => ["fal", "fa-comment-alt-smile"],
                             'root'    => 'grp.org.shops.show.marketing.wati.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.marketing.wati.dashboard",

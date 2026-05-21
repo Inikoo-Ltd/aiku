@@ -34,7 +34,7 @@ trait WithWatiSubNavigation
                     'parameters' => [$shop->organisation->slug, $shop->slug],
                 ],
                 'leftIcon' => [
-                    'icon'    => 'fal fa-address-book',
+                    'icon'    => 'fal fa-address-card',
                     'tooltip' => __('Contacts'),
                 ],
             ],
@@ -56,7 +56,7 @@ trait WithWatiSubNavigation
                     'parameters' => [$shop->organisation->slug, $shop->slug],
                 ],
                 'leftIcon' => [
-                    'icon'    => 'fal fa-inbox',
+                    'icon'    => 'fal fa-inbox-in',
                     'tooltip' => __('Live Inbox'),
                 ],
             ],
