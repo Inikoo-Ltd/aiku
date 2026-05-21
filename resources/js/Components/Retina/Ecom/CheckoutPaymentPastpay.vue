@@ -63,17 +63,18 @@ const onSubmitPlaceOrder = async () => {
 			}
 		)
 		isModalPastpayRedirected.value = true
-		// if (response.status !== 200) {
-			
-		// }
-		console.log('Response axios:', response.data.data)
 		setTimeout(() => {
 			window.location.href = response.data.data
 		}, 800);
 	} catch (error: any) {
+		
+		const errorMessage = error.response?.data?.message
+			|| error.response?.data?.errors
+			|| error.message
+			|| trans("Please try again or contact administrator")
 		notify({
 			title: trans("Something went wrong"),
-			text: error.message || trans("Please try again or contact administrator"),
+			text: errorMessage,
 			type: 'error'
 		})
 	} finally {
@@ -110,7 +111,7 @@ const isModalPastpayRedirected = ref(false)
 			<img src="/storage/payment-providers/pastpay.png" alt="Pastpay" />
 			<div class="mt-5 pt-4 border-t border-dashed">
 				<div>
-					{{ trans("Need to pay") }}:
+					{{ ctrans("Need to pay") }}:
 					<span class="font-bold">{{
 						locale.currencyFormat(currencyCode, Number(props.needToPay).toFixed(2))
 					}}</span>
