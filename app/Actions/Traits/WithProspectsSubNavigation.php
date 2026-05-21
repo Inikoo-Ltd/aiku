@@ -53,18 +53,7 @@ trait WithProspectsSubNavigation
             ];
         }
 
-        $meta[] = [
-            // 'route'     => [
-            //     'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
-            //     'parameters' => $request->route()->originalParameters()
-            // ],
-            'number'   => $shop->crmStats->number_prospect_queries,
-            'label'    => __('Lists'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-code-branch',
-                'tooltip' => __('lists')
-            ]
-        ];
+
 
 
 
