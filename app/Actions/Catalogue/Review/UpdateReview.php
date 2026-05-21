@@ -27,7 +27,7 @@ class UpdateReview
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $nullableKeys = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
+        $nullableKeys = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e', 'customer_id'];
 
         $updates = [];
         foreach ($nullableKeys as $key) {
