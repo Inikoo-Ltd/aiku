@@ -58,6 +58,12 @@ class IndexReviewProductsInOrder extends OrgAction
                     ->where('shop_reviews.order_id', $parent->id)
                     ->where('shop_reviews.customer_id', $customerId);
             })
+            ->leftJoin('media as product_media', 'product_media.id', '=', 'products.image_id')
+            ->leftJoin('media as product_review_media', function ($join) {
+                $join->on('product_review_media.model_id', '=', 'product_reviews.id')
+                    ->where('product_review_media.model_type', '=', 'App\Models\Reviews\ProductReview')
+                    ->where('product_review_media.collection_name', '=', 'review_images');
+            })
             ->defaultSort('products.code')
             ->select([
                 'products.id as id',
@@ -65,7 +71,7 @@ class IndexReviewProductsInOrder extends OrgAction
                 'products.slug as product_slug',
                 'products.code as product_code',
                 'products.name as product_name',
-                'products.image_id as product_image_id',
+                DB::raw("CASE WHEN product_media.id IS NOT NULL THEN json_build_object('id', product_media.id, 'uuid', product_media.uuid, 'disk', product_media.disk, 'conversions_disk', product_media.conversions_disk, 'file_name', product_media.file_name, 'mime_type', product_media.mime_type, 'is_animated', product_media.is_animated, 'slug', product_media.slug, 'name', product_media.name, 'size', product_media.size, 'generated_conversions', product_media.generated_conversions) END as product_image_data"),
                 'products.code as asset_code',
                 'products.name as asset_name',
                 'products.price as price',
@@ -105,6 +111,8 @@ class IndexReviewProductsInOrder extends OrgAction
                 DB::raw('MAX(shop_reviews.rating_d) as shop_review_rating_d'),
                 DB::raw('MAX(shop_reviews.rating_e) as shop_review_rating_e'),
                 DB::raw('MAX(shop_reviews.message) as shop_review_message'),
+
+                DB::raw("json_agg(json_build_object('id', product_review_media.id, 'uuid', product_review_media.uuid, 'disk', product_review_media.disk, 'conversions_disk', product_review_media.conversions_disk, 'file_name', product_review_media.file_name, 'mime_type', product_review_media.mime_type, 'is_animated', product_review_media.is_animated, 'slug', product_review_media.slug, 'name', product_review_media.name, 'size', product_review_media.size, 'generated_conversions', product_review_media.generated_conversions)) FILTER (WHERE product_review_media.id IS NOT NULL) as product_review_media_data"),
             ])
             ->groupBy([
                 'products.id',
@@ -115,10 +123,10 @@ class IndexReviewProductsInOrder extends OrgAction
                 'products.family_id',
                 'products.price',
                 'product_categories.name',
+                'product_media.id',
                 'transactions.order_id',
                 'transactions.shop_id',
-                'transactions.shop_id',
-                'transactions.net_amount'
+                'transactions.net_amount',
             ])
             ->allowedSorts(['asset_code', 'asset_name', 'product_review_rating'])
             ->allowedFilters([$globalSearch])

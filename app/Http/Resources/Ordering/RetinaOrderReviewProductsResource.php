@@ -15,36 +15,27 @@ class RetinaOrderReviewProductsResource extends JsonResource
         $productId = (int) ($this->product_id ?? $this->id ?? 0);
         $productCategoryId = (int) ($this->product_category_id ?? 0);
 
-        $storeRoute = [
-            'name' => 'retina.models.review.store',
-            'parameters' => [],
-            'method' => 'post',
-        ];
-
-        $buildUpdateRoute = fn (?int $reviewId): ?array => $reviewId
-            ? [
-                'name' => 'retina.models.review.update',
-                'parameters' => [
-                    'review' => $reviewId,
-                ],
-                'method' => 'patch',
-            ]
-            : null;
-
         $buildReviewPayload = fn (string $reviewableType, int $reviewableId): array => [
             'reviewable_type' => $reviewableType,
             'reviewable_id' => $reviewableId,
             'order_id' => $orderId,
         ];
 
-        $media = null;
-        if ($this->product_image_id) {
-            $media = Media::find($this->product_image_id);
-        }
+        $imageData = is_string($this->product_image_data)
+            ? json_decode($this->product_image_data, true)
+            : (array) ($this->product_image_data ?? []);
+        $productMedia = $imageData ? Media::hydrate([$imageData])->first() : null;
+
+        $reviewMediaData = is_string($this->product_review_media_data)
+            ? json_decode($this->product_review_media_data, true)
+            : ($this->product_review_media_data ?? []);
+        $reviewImages = $reviewMediaData
+            ? Media::hydrate($reviewMediaData)->map(fn ($m) => ImageResource::make($m)->getArray())->values()->all()
+            : [];
 
         return [
             'id' => $productId,
-            'image' => $media ? ImageResource::make($media)->getArray() : null,
+            'image' => $productMedia ? ImageResource::make($productMedia)->getArray() : null,
             'asset_code' => $this->asset_code ?? $this->product_code,
             'asset_name' => $this->asset_name ?? $this->product_name,
             'product_id' => $productId,
@@ -57,23 +48,7 @@ class RetinaOrderReviewProductsResource extends JsonResource
             'product_review_id' => $this->product_review_id ? (int) $this->product_review_id : null,
             'product_review_rating' => $this->product_review_rating !== null ? (float) $this->product_review_rating : null,
             'product_review_status' => $this->product_review_status,
-            'actions' => [
-                'product' => [
-                    'store_route' => $storeRoute,
-                    'update_route' => $buildUpdateRoute($this->product_review_id ? (int) $this->product_review_id : null),
-                    'payload' => $buildReviewPayload('Product', $productId),
-                ],
-                'product_category' => [
-                    'store_route' => $storeRoute,
-                    'update_route' => $buildUpdateRoute($this->product_category_review_id ? (int) $this->product_category_review_id : null),
-                    'payload' => $productCategoryId > 0 ? $buildReviewPayload('ProductCategory', $productCategoryId) : null,
-                ],
-                'shop' => [
-                    'store_route' => $storeRoute,
-                    'update_route' => $buildUpdateRoute($this->shop_review_id ? (int) $this->shop_review_id : null),
-                    'payload' => $shopId > 0 ? $buildReviewPayload('Shop', $shopId) : null,
-                ],
-            ],
+            'payload' => $buildReviewPayload('Product', $productId),
             'reviews' => [
                 'product' => [
                     'review_id' => $this->product_review_id ? (int) $this->product_review_id : null,
@@ -85,37 +60,7 @@ class RetinaOrderReviewProductsResource extends JsonResource
                     'rating_d' => $this->product_review_rating_d !== null ? (int) $this->product_review_rating_d : null,
                     'rating_e' => $this->product_review_rating_e !== null ? (int) $this->product_review_rating_e : null,
                     'message' => $this->product_review_message,
-                    'store_route' => $storeRoute,
-                    'update_route' => $buildUpdateRoute($this->product_review_id ? (int) $this->product_review_id : null),
-                    'payload' => $buildReviewPayload('Product', $productId),
-                ],
-                'product_category' => [
-                    'review_id' => $this->product_category_review_id ? (int) $this->product_category_review_id : null,
-                    'status' => $this->product_category_review_status,
-                    'rating' => $this->product_category_review_rating !== null ? (float) $this->product_category_review_rating : null,
-                    'rating_a' => $this->product_category_review_rating_a !== null ? (int) $this->product_category_review_rating_a : null,
-                    'rating_b' => $this->product_category_review_rating_b !== null ? (int) $this->product_category_review_rating_b : null,
-                    'rating_c' => $this->product_category_review_rating_c !== null ? (int) $this->product_category_review_rating_c : null,
-                    'rating_d' => $this->product_category_review_rating_d !== null ? (int) $this->product_category_review_rating_d : null,
-                    'rating_e' => $this->product_category_review_rating_e !== null ? (int) $this->product_category_review_rating_e : null,
-                    'message' => $this->product_category_review_message,
-                    'store_route' => $storeRoute,
-                    'update_route' => $buildUpdateRoute($this->product_category_review_id ? (int) $this->product_category_review_id : null),
-                    'payload' => $productCategoryId > 0 ? $buildReviewPayload('ProductCategory', $productCategoryId) : null,
-                ],
-                'shop' => [
-                    'review_id' => $this->shop_review_id ? (int) $this->shop_review_id : null,
-                    'status' => $this->shop_review_status,
-                    'rating' => $this->shop_review_rating !== null ? (float) $this->shop_review_rating : null,
-                    'rating_a' => $this->shop_review_rating_a !== null ? (int) $this->shop_review_rating_a : null,
-                    'rating_b' => $this->shop_review_rating_b !== null ? (int) $this->shop_review_rating_b : null,
-                    'rating_c' => $this->shop_review_rating_c !== null ? (int) $this->shop_review_rating_c : null,
-                    'rating_d' => $this->shop_review_rating_d !== null ? (int) $this->shop_review_rating_d : null,
-                    'rating_e' => $this->shop_review_rating_e !== null ? (int) $this->shop_review_rating_e : null,
-                    'message' => $this->shop_review_message,
-                    'store_route' => $storeRoute,
-                    'update_route' => $buildUpdateRoute($this->shop_review_id ? (int) $this->shop_review_id : null),
-                    'payload' => $shopId > 0 ? $buildReviewPayload('Shop', $shopId) : null,
+                    'review_images' => $reviewImages,
                 ],
             ],
         ];
