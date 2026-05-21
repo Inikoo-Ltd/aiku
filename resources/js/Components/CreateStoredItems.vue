@@ -233,7 +233,7 @@ const onSaveNameForNewStoredItem = async () => {
 					</template>
 
 					<template #option="{option, isSelected, isPointed, search, label}">
-						<div v-html="option[label]?.replace(search, `<span style='background: #eded02'>${search}</span>`)"></div>
+						<div v-html="search ? String(option[label] ?? '').replace(search, `<span style='background: #eded02'>${search}</span>`) : String(option[label] ?? '')"></div>
 					</template>
 
 					<template #noresults="{ search }: { search: string }">
