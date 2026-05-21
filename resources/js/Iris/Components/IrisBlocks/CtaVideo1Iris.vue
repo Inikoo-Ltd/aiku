@@ -6,9 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onBeforeUnmount, watch } from "vue"
 
 import { getStyles } from "@/Composables/styles"
-import { sendMessageToParent } from "@/Composables/Workshop"
-import Blueprint from "@/Components/CMS/Webpage/Cta1/Blueprint"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import Button from "@iris/Components/IrisButton.vue"
 import { get, isPlainObject } from 'lodash-es'
 
 library.add(faCube, faLink, faImage, faVideo)

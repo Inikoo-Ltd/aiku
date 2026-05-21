@@ -117,6 +117,20 @@ const showLeftBlock = computed(() => {
     return showMemberPrice.value || showDiscount.value
 })
 
+const bestOfferClass = computed(() => {
+  const type = bestOffer?.value?.type
+
+  if (type === 'Category Ordered' || type === 'Category Amount Ordered') {
+    return 'text-red-700'
+  }
+
+  if (type === 'First Order') {
+    return 'text-[#2a919e]'
+  }
+
+  return 'text-primary'
+})
+
 const _popoverQuestionCircle = ref(null)
 const _popoverProfit = ref(null)
 </script>
@@ -127,10 +141,9 @@ const _popoverProfit = ref(null)
 
         <!-- HEADER -->
         <div class="border-b pb-2 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 whitespace-nowrap text-[9px] sm:text-[10px] md:text-[11px]"
-            v-if="product?.rrp_per_unit ?? 0 > 0"
-        >
+            v-if="product?.rrp_per_unit ?? 0 > 0">
 
-            <div class="flex items-baseline gap-1 leading-none" >
+            <div class="flex items-baseline gap-1 leading-none">
                 <span class="text-xs">
                     {{ trans("RRP") }}:
                 </span>
@@ -221,9 +234,10 @@ const _popoverProfit = ref(null)
 
 
             <!-- GR PRICE -->
-           <div v-if="product.discounted_price" class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2">
+            <div v-if="product.discounted_price"
+                class="grid grid-cols-[1fr_minmax(0,140px)] items-center gap-x-2 w-full">
 
-                <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'"  class="whitespace-nowrap
+                <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'" class="whitespace-nowrap
             text-[9px]
             sm:text-[10px]
             md:text-[11px]
@@ -231,7 +245,7 @@ const _popoverProfit = ref(null)
             xl:text-[13px]
             2xl:text-[14px]">
 
-                    <span v-if="showMemberPrice" class="text-primary">
+                    <span v-if="showMemberPrice" class="text-primary text-xs">
                         {{ trans("GR Active") || "GR Active" }}
                     </span>
 
@@ -255,75 +269,80 @@ const _popoverProfit = ref(null)
 
                             <p class="popover-paragraph">
                                 {{ trans("Order the listed volume and the member price applies automatically at checkout") }}.
-                                {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
+                                {{ trans("The volume can be made up from the whole product family, not just the same  item") }}.
                             </p>
                         </div>
                     </Popover>
 
                 </div>
 
-                <DiscountByType v-if="bestOffer?.type == 'Category Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false"/>
-                <DiscountByType v-if="bestOffer?.type == 'Category Quantity Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false"/>
-                <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'" :offers_data="product?.product_offers_data" template="first-order" />
-                <DiscountByType v-if="bestOffer?.type == 'Category Amount Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'Department Quantity Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'Subdepartment Quantity Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'Department Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <div v-else class="w-full"> </div>
+
+                <DiscountByType v-if="bestOffer?.type == 'Category Ordered'" :offers_data="product?.product_offers_data"
+                    template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'Category Quantity Ordered'"
+                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'"
+                    :offers_data="product?.product_offers_data" template="first-order" />
+                <DiscountByType v-if="bestOffer?.type == 'Category Amount Ordered'"
+                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'Department Quantity Ordered'"
+                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'Subdepartment Quantity Ordered'"
+                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'Department Ordered'"
+                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'"
+                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
 
 
-                <div v-if="bestOffer" class="font-bold text-right min-w-0 text-xs" :class="bestOffer?.type === 'Category Ordered' ||  bestOffer?.type === 'Category Amount Ordered' || bestOffer?.type === 'Category Amount Ordered'
-                        ? 'text-red-700'
-                        : bestOffer?.type === 'First Order'
-                            ? 'text-[#2a919e]'
-                            : 'text-primary'
-                    ">
-                    <template v-if="product.units == 1">
+                <div v-if="bestOffer" class="font-bold text-right text-xs min-w-0" :class="bestOfferClass">
+                    <div class="flex items-baseline justify-end gap-1 min-w-0">
 
-                        <div class="flex justify-end items-center gap-1 min-w-0">
-
-                            <span class="whitespace-nowrap">
-                                {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/
-                            </span>
-
-                            <span class="truncate min-w-0" :title="product.unit">
-                                {{ product.unit }}
-                            </span>
-
-                        </div>
-                    </template>
-
-                    <template v-else>
-
-                        <div class="flex justify-end items-center gap-1 min-w-0">
-                            <span class="truncate min-w-0 font-normal  text-xs sm:text-[9px] md:text-xs">
-                                {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
-                            </span>
-                            
-                          <!--   <span class="truncate min-w-0 font-normal text-[8px] sm:text-[9px] md:text-[10px]" :title="product.unit">
-                                ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/{{ product.unit }})
-                            </span> -->
+                        <div class="min-w-0 flex-1 truncate">
+                            {{
+                                product.units == 1
+                                    ? locale.currencyFormat(currency?.code, product.discounted_price)
+                                    : locale.currencyFormat(currency?.code, product.discounted_price_per_unit)
+                            }}
+                            /{{ product.unit }}
                         </div>
 
-                    </template>
-
+                    </div>
                 </div>
+                <template v-else>
+                   <!--  <div class="flex items-baseline justify-end min-w-0 overflow-hidden text-end">
+                        <div v-if="product.units == 1" class="shrink-0 leading-none">
+                            {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/{{ product.unit }}
+                        </div>
 
-            
+                        <div v-else class="ml-0.5 truncate min-w-0 leading-none" :title="`${locale.currencyFormat(currency?.code, product.discounted_price_per_unit)}/${product.unit}`">
+                            ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/{{ product.unit }})
+                        </div>
+                    </div> -->
+                </template>
             </div>
 
-        </div>
 
-
-        <!-- MEMBER -->
-        <div v-if="showIntervalOffer" class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] discount">
-            <MemberPriceLabel v-if="showMemberPrice" :offer="bestOffer" />
-
-            <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
-                template="products_triggers_label" />
         </div>
 
     </div>
+
+
+    <!-- MEMBER -->
+    <div v-if="showIntervalOffer"
+        class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] discount">
+        <MemberPriceLabel v-if="showMemberPrice" :offer="bestOffer" />
+
+        <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
+            template="products_triggers_label" />
+    </div>
+
+    <!-- <div v-else class="h-[3rem]">
+
+    </div> -->
+
+
 </template>
 <style scoped>
 .discount :deep(.offer-trigger-label) {
@@ -338,7 +357,7 @@ const _popoverProfit = ref(null)
 }
 
 .question-trigger {
-    @apply cursor-pointer opacity-60 hover:opacity-100 ml-1 text-xs; 
+    @apply cursor-pointer opacity-60 hover:opacity-100 ml-1 text-xs;
 }
 
 .member-popover {

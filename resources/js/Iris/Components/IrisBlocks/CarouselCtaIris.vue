@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Carousel from 'primevue/carousel'
 import Image from "@common/Components/Image.vue"
-import Button from '@/Components/Elements/Buttons/Button.vue'
+import Button from "@iris/Components/IrisButton.vue"
 import { getStyles } from "@/Composables/styles"
 import LinkIris from '@/Iris/Components/LinkIris.vue';
 import { inject } from 'vue'

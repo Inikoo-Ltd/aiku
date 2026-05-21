@@ -73,7 +73,7 @@ class StoreShopOffer extends OrgAction
         );
 
         data_set($modelData, 'trigger_type', 'Customer');//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
-      //  data_set($modelData, 'trigger_id', $shop->id);
+        //  data_set($modelData, 'trigger_id', $shop->id);
 
         if ($type == 'quantity' || $type == 'any') {
             data_set(

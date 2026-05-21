@@ -378,6 +378,7 @@ $pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
 - Inside <template></template>, always translate the normal text using ctrans function (example: ctrans('hello :customerName', { customerName: customer.name })), to ensure that all text is translatable and consistent across the application. ctrans() is global import so no need to import if used inside <template></template> in .vue file
 - Inside <script setup lang="ts"></script>, need to import the ctrans function, example: `import { ctrans } from "@/Composables/useTrans"`
 - Always passing props to another components using CamelCase syntax, even if the prop name itself is in another case. For example, if you have a prop named `user-name`, you should pass it as `<MyComponent :userName="value" />` rather than `<MyComponent :user-name="value" />`. This is to recognize that CamelCase is props from Frontend.
+- Don't use dark mode styling (example: 'dark:' class from Tailwind).
 
 
 
