@@ -280,7 +280,7 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && app()->environment('local')) {
+        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && $deliveryNote->shop?->type != ShopTypeEnum::EXTERNAL) {
             $actions[] = [
                 'type'    => 'button',
                 'key'     => 'return',
