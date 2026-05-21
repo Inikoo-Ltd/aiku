@@ -8,6 +8,7 @@ import type { Image as ImageProxy } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
 import PureMultiselectInfiniteScroll from "../Pure/PureMultiselectInfiniteScroll.vue"
 import Organisation from "@/Pages/Grp/Organisations/Organisation.vue"
+import Image from "@/Common/Components/Image.vue"
 
 interface SchemaItem {
     dimension: string
@@ -40,6 +41,7 @@ const props = defineProps<{
         message?: string | null
         image_thumbnail?: ImageProxy | string | null
         images?: File[] | null
+        review_images? : any
     }
     | null
 }>()
@@ -415,6 +417,23 @@ watch(
                                 class="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-sm transition hover:bg-gray-100">
                                 <Icon :data="{ icon: 'fal fa-times', class: 'text-xs' }" />
                             </button>
+                        </div>
+                    </div>
+
+
+                     <div v-if="modelValue.review_images.length" class="grid gap-3 pt-4 sm:grid-cols-3">
+                        <div v-for="(item, index) in modelValue.review_images" :key="item.name + item.size"
+                            class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                            <Image :src="item.thumbnail" :alt="item.name" class="h-36 w-full object-cover" />
+
+                            <div class="space-y-1 p-3">
+                                <div class="truncate text-sm font-medium text-gray-800">
+                                    {{ item.name }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ item.size }}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

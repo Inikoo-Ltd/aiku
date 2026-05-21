@@ -48,7 +48,7 @@ class RetinaOrderReviewProductsResource extends JsonResource
             'product_review_id' => $this->product_review_id ? (int) $this->product_review_id : null,
             'product_review_rating' => $this->product_review_rating !== null ? (float) $this->product_review_rating : null,
             'product_review_status' => $this->product_review_status,
-            'payload' => $buildReviewPayload('Product', $productId),
+            /* 'payload' => $buildReviewPayload('Product', $productId), */
             'reviews' => [
                 'product' => [
                     'review_id' => $this->product_review_id ? (int) $this->product_review_id : null,
@@ -61,6 +61,7 @@ class RetinaOrderReviewProductsResource extends JsonResource
                     'rating_e' => $this->product_review_rating_e !== null ? (int) $this->product_review_rating_e : null,
                     'message' => $this->product_review_message,
                     'review_images' => $reviewImages,
+                    ...$buildReviewPayload('Product', $productId)
                 ],
             ],
         ];
