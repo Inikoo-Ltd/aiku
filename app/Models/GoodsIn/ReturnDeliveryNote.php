@@ -10,6 +10,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Warehouse;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
@@ -146,5 +148,10 @@ class ReturnDeliveryNote extends Model implements Auditable
     public function handlerUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'handler_user_id');
+    }
+
+    public function refund(): HasOne
+    {
+        return $this->hasOne(Invoice::class, 'id', 'refund_id');
     }
 }

@@ -171,7 +171,7 @@ const component = computed(() => {
 const isModalToQueue = ref(false);
 
 // Section: Picker
-const selectedPicker = ref(props.box_stats.picker);
+const selectedPicker = ref(props.picker);
 const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);

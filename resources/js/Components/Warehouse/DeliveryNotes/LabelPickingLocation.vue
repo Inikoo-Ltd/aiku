@@ -14,6 +14,7 @@ const props = defineProps<{
     locations: any[]
     selectedOrgStockId: string
     warehouseArea?: String
+    warehouse_slug?: string
 }>()
 
 const emit = defineEmits<{
@@ -31,7 +32,7 @@ const locationHref = computed(() => {
         return "#"
     }
     
-    const warehouseParam = currentLocation.value.warehouse_slug || currentLocation.value.warehouse_id || 'DEFAULT_WAREHOUSE'; 
+    const warehouseParam = currentLocation.value.warehouse_slug || currentLocation.value.warehouse_id || props.warehouse_slug ||'DEFAULT_WAREHOUSE'; 
 
     return route("grp.org.warehouses.show.infrastructure.locations.show", {
         organisation: route().params["organisation"],

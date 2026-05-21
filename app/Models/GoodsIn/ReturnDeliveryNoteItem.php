@@ -10,8 +10,10 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
+use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
+use App\Models\Ordering\Transaction;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -87,5 +89,15 @@ class ReturnDeliveryNoteItem extends Model
     public function sowings(): HasMany
     {
         return $this->hasMany(Sowing::class, 'return_item_id');
+    }
+
+    public function transaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class, 'original_transaction_id');
+    }
+    
+    public function refundTransaction(): BelongsTo
+    {
+        return $this->belongsTo(InvoiceTransaction::class, 'refund_transaction_id');
     }
 }
