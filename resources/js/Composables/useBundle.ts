@@ -62,23 +62,38 @@ export function useBundle(routes?: any) {
         return Array.from(map.values())
     }
 
-    const saveProductsToStorage = () => {
-        if (typeof localStorage === 'undefined') return
+    const getLocalStorage = () => {
+        if (typeof window === 'undefined') return null
+
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(products.value))
+            return window.localStorage
+        } catch (e) {
+            console.warn('[useBundle] localStorage unavailable', e)
+            return null
+        }
+    }
+
+    const saveProductsToStorage = () => {
+        const storage = getLocalStorage()
+        if (!storage) return
+
+        try {
+            storage.setItem(STORAGE_KEY, JSON.stringify(products.value))
         } catch (e) {
             console.warn('[useBundle] failed saving products to storage', e)
         }
     }
 
     const loadProductsFromStorage = () => {
-        if (typeof localStorage === 'undefined') return
+        const storage = getLocalStorage()
+        if (!storage) return
+
         try {
-            const raw = localStorage.getItem(STORAGE_KEY)
+            const raw = storage.getItem(STORAGE_KEY)
             if (!raw) return
             const parsed = JSON.parse(raw)
             if (Array.isArray(parsed)) {
-                products.value = parsed
+                products.value = dedupeProducts(parsed)
             }
         } catch (e) {
             console.warn('[useBundle] failed loading products from storage', e)
