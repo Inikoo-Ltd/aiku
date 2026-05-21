@@ -20,8 +20,11 @@ echo -e "✨ Resetting database ${ITALIC}${DB}${NONE}"
 dropdb --if-exists -p "${DB_PORT}" -U "${USER}" -h "${HOST}" -f -w ${DB}
 createdb -p "${DB_PORT}" -U "${USER}" -h "${HOST}"  --template=template0 --lc-collate="${DB_COLLATE}" --lc-ctype="${DB_COLLATE}" ${DB}
 echo "🌱 Migrating and seeding database"
+${PHP} artisan config:clear
+${PHP} artisan cache:clear
 ${PHP} artisan --env=testing migrate
 ${PHP} artisan --env=testing db:seed
 echo -e "💾 Saving ${PURPLE}fresh_with_assets.dump${NONE}"
 pg_dump -Fc -p "${DB_PORT}" -U "${USER}" -f "tests/datasets/db_dumps/aiku.dump" ${DB}
 echo "Test DB dumped 👍"
+${PHP} artisan config:cache
