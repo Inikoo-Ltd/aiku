@@ -171,7 +171,7 @@ const component = computed(() => {
 const isModalToQueue = ref(false);
 
 // Section: Picker
-const selectedPicker = ref(props.box_stats.picker);
+const selectedPicker = ref(props.picker);
 const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);
@@ -298,6 +298,48 @@ provide("listError", listError.value);
 const openModalAddShipment = ref(false);
 provide("openModalAddShipment", openModalAddShipment);
 
+// Method: display error depends on the response on button Finalise and Dispatch
+const handleFinaliseError = (e: unknown) => {
+    if (typeof e === 'string') {
+        notify({ title: trans('Something went wrong'), text: e, type: 'error' })
+        return
+    }
+
+    const errors = (e as Record<string, unknown>) || {}
+    const keys = Object.keys(errors)
+
+	if (keys.includes('shipment')) {
+		openModalAddShipment.value = true
+	}
+
+    if (keys.length === 0) {
+        notify({
+            title: trans('Something went wrong'),
+            text: (e as { message?: string })?.message || 'Please try again later or contact administrator.',
+            type: 'error',
+        })
+        return
+    }
+
+    if (keys.length === 1) {
+        const value = errors[keys[0]]
+        notify({
+            title: trans('Something went wrong'),
+            text: Array.isArray(value) ? (value as string[]).join(', ') : String(value),
+            type: 'error',
+        })
+        return
+    }
+
+    Object.entries(errors).forEach(([field, value]) => {
+        notify({
+            title: field,
+            text: Array.isArray(value) ? (value as string[]).join(', ') : String(value),
+            type: 'error',
+        })
+    })
+}
+
 // const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({...props.address.delivery})
 
@@ -409,14 +451,7 @@ const processReturn = () => {
 				:style="action.style"
 				v-tooltip="action.tooltip"
 				:routeTarget="action.route"
-				@error="(e) => {
-					notify({
-						title: ctrans('Something went wrong'),
-						text: e.message || 'Please try again later or contact administrator.',
-						type: 'error',
-					}),
-					openModalAddShipment = true
-				}"
+				@error="handleFinaliseError"
 			/>
 		</template>
 
@@ -450,7 +485,7 @@ const processReturn = () => {
 				}"
 			>
 				<template #label>
-					<span class="whitespace-nowrap">{{ ctrans('Set return') }} || Local</span>
+					<span class="whitespace-nowrap">{{ ctrans('Set return') }}</span>
 				</template>
 			</ButtonWithLink>
 		</template>

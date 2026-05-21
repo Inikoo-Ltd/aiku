@@ -39,6 +39,7 @@ const props = withDefaults(defineProps<{
     isLoadingFavourite?: boolean
     isLoadingRemindBackInStock?: boolean
     screenType?: string
+    hideLogin?:boolean
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -163,7 +164,7 @@ defineExpose({
 </script>
 
 <template>
-    <div class="text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
+    <div class="text-gray-800 isolate h-full min-h-0 min-w-0 flex flex-col flex-grow" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate h-full">
@@ -347,7 +348,7 @@ defineExpose({
             <Prices2 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton />
             <!-- <Prices :product="product" :currency="currency" /> -->
 
-            <div v-else class="mt-2">
+            <div v-else-if="!hideLogin"  class="mt-2">
                 <a :href="urlLoginWithRedirect()" class="w-full">
                     <Button :label="trans('Login or Register for Wholesale Prices')" class="rounded-none" full
                         :injectStyle="buttonStyleLogin" />

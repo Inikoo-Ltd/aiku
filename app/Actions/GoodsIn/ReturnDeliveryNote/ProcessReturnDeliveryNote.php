@@ -67,7 +67,7 @@ class ProcessReturnDeliveryNote extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request)
     {
-        if ($this->deliveryNote->state !== DeliveryNoteStateEnum::DISPATCHED || $this->deliveryNote->is_returned === true) {
+        if ($this->deliveryNote->state !== DeliveryNoteStateEnum::DISPATCHED) {
             $validator->errors()->add('delivery_note', 'Unable to create return for this instance. Selected delivery note is invalid');
         }
     }

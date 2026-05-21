@@ -10,8 +10,10 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
+use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
+use App\Models\Ordering\Transaction;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,13 +42,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $deleted_at
  * @property numeric $total_expected_qty
  * @property bool $is_handled
+ * @property int|null $original_transaction_id
+ * @property int|null $refund_transaction_id
  * @property-read DeliveryNoteItem $deliveryNoteItems
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read InvoiceTransaction|null $refundTransaction
  * @property-read \App\Models\GoodsIn\ReturnDeliveryNote|null $returnDeliveryNote
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\Sowing> $sowings
+ * @property-read Transaction|null $transaction
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnDeliveryNoteItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnDeliveryNoteItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnDeliveryNoteItem query()
@@ -87,5 +93,15 @@ class ReturnDeliveryNoteItem extends Model
     public function sowings(): HasMany
     {
         return $this->hasMany(Sowing::class, 'return_item_id');
+    }
+
+    public function transaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class, 'original_transaction_id');
+    }
+
+    public function refundTransaction(): BelongsTo
+    {
+        return $this->belongsTo(InvoiceTransaction::class, 'refund_transaction_id');
     }
 }

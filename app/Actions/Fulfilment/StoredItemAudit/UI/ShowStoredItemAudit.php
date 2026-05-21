@@ -100,7 +100,7 @@ class ShowStoredItemAudit extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("Customer's skus audits"),
+                'title'       => __("Customer's SKUs audits"),
                 'pageHead'    => [
                     'title'         => $title,
                     'afterTitle'    => $afterTitle,

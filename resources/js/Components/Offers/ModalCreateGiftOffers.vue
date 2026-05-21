@@ -22,6 +22,7 @@ const props = defineProps<{
     product_id?: number
 }>()
 
+const today = new Date(new Date().setHours(0, 0, 0, 0))
 const isOpenModal = ref(false)
 
 const offerLabel = ref('')
@@ -30,10 +31,9 @@ const quantity = ref<number | null>(1)
 const productId = ref<number | null>(0)
 const selectedProduct = ref<any | null>(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
-const startDate = ref<Date | null>(null)
+const startDate = ref<Date | null>(today)
 const endDate = ref<Date | null>(null)
 
-const today = new Date(new Date().setHours(0, 0, 0, 0))
 
 function formatDate(date: Date | null) {
     if (!date) return null
@@ -54,12 +54,12 @@ const submitCategoryOffer = () => {
         }),
         {
             name: offerLabel.value,
-            productId: productId.value || props.product_id,
+            product_id: productId.value || props.product_id,
             quantity: quantity.value,
-            offer_amount: offerAmount.value,
-            date_type: dateType.value,
-            start_date: formatDate(startDate.value),
-            end_date: formatDate(endDate.value)
+            min_order_amount: offerAmount.value,
+            duration: dateType.value,
+            start_at: formatDate(startDate.value),
+            end_at: formatDate(endDate.value)
         },
         {
             preserveScroll: true,
@@ -107,7 +107,7 @@ const resetForm = () => {
     selectedProduct.value = null
     quantity.value = 1
     dateType.value = 'permanent'
-    startDate.value = null
+    startDate.value = today
     endDate.value = null
 }
 

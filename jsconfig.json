@@ -7,5 +7,5 @@
             "@common/": ["resources/js/Common/"]
         }
     },
-    "exclude": ["node_modules", "public", "app", "config", "vendor", "maya", "han", "private"]
+    "include": ["resources/js/**/*.js"]
 }

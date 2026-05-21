@@ -77,11 +77,11 @@ import {
     faStar as faStarLight,
     faArrowUp as faArrowUpLight,
     faMinus as faMinusLight,
-    faTimesCircle as faTimesCircleLight,
+    faTimesCircle as faTimesCircleLight, faHammer, faPlaneArrival, faCheck as falCheck, faCheckCircle as falCheckCircle ,
     faUserAlien,
     faTombstone as faTombstoneLight,
     faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-    faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield
+    faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield, faCircle, faExchange
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -152,7 +152,7 @@ library.add(
     faSearch,
     faBell,
     faArrowRight,
-    faShippingFast, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield,
+    faShippingFast, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield, faCircle, faExchange,
     faTachometerAltFast,
     faGlobe,
     faParachuteBox,
@@ -182,7 +182,7 @@ library.add(
     faShare, faUndoAlt, faRobot, faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses,
     faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
     faBadgePercent, faUserHeadset,
-    faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
+    faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight, faHammer, faPlaneArrival, falCheck, falCheckCircle,
     faUserAlien,
     faTombstoneLight,
     faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,

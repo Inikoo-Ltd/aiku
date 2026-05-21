@@ -39,6 +39,7 @@ class CalculateOrderDiscounts
 
         $this->setEnabledOffers($order);
 
+
         if (!empty($this->enabledOffers) || !empty($order->discretionary_offers_data)) {
             $this->transactions = DB::table('transactions')
                 ->select([
@@ -141,7 +142,8 @@ class CalculateOrderDiscounts
             ->where('status', true)
             ->whereIn('trigger_type', [
                 'Customer',
-                'ProductCategory'
+                'ProductCategory',
+                'ShopAiku'//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
             ])->get();
         foreach ($offersData as $offerData) {
             if ($offerData->type == 'Amount AND Order Number') {
@@ -160,6 +162,11 @@ class CalculateOrderDiscounts
                         'metadata' => $metadata,
                     ];
                 }
+            } elseif ($offerData->type == 'Shop Ordered') {
+                $enabledOffers[$offerData->allowance_signature] = [
+                    'offer_id'    => $offerData->id,
+                    'offer_label' => $offerData->name
+                ];
             } elseif ($offerData->type == 'Department Ordered') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
                     $enabledOffers[$offerData->allowance_signature] = [
@@ -213,6 +220,15 @@ class CalculateOrderDiscounts
                             'offer_label' => $offerData->name,
                         ];
                     }
+                }
+            } elseif ($offerData->type == 'Shop Amount Ordered') {
+                $triggerData = json_decode($offerData->trigger_data, true);
+
+                if ($order->gross_amount >= Arr::get($triggerData, 'item_amount')) {
+                    $enabledOffers[$offerData->allowance_signature] = [
+                        'offer_id'    => $offerData->id,
+                        'offer_label' => $offerData->name,
+                    ];
                 }
             } elseif ($offerData->type == 'Department Amount Ordered') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {

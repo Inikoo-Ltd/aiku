@@ -83,7 +83,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 
 		<DashboardTable
 			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
-			class="border-t border-gray-200"
+			class="mx-4 !p-0 border-t border-gray-200"
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
@@ -94,6 +94,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 
 		<DashboardWidget
 			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
+			class="mt-12"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>

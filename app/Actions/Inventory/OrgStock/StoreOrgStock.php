@@ -8,7 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
-use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
+use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
@@ -95,7 +95,7 @@ class StoreOrgStock extends OrgAction
         $orgStock->tradeUnits()->sync($tradeUnits);
 
         foreach ($orgStock->tradeUnits as $tradeUnit) {
-            TradeUnitHydrateStatusFromOrgStocks::dispatch($tradeUnit);
+            SetTradeUnitStatus::dispatch($tradeUnit);
         }
 
         return $orgStock;

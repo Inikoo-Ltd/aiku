@@ -189,7 +189,13 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
     }
 })
 
+const fallbackTheme = theme
 
+const safeTheme = computed(() => {
+    const t = layout?.app?.theme
+
+    return (t && t.length >= 8) ? t : fallbackTheme
+})
 </script>
 
 <template>
@@ -279,9 +285,9 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
 
                 <!-- Layout: SideBasket (right) -->
                 <div
-                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile'"
+                    v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
                     class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
-                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-md' : 'border-transparent max-w-0'"
+                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent max-w-0'"
                 >
                     <IrisRightsideBasket
                         v-if="layout.iris_variables?.cart_count > 0"
@@ -358,6 +364,10 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
     }
 }
 
+.basket-drawer {
+  width: min(92vw, 37%);
+  box-sizing: border-box;
+}
 
 // INI-562: live chat
 iframe#launcher {
@@ -371,5 +381,28 @@ iframe#launcher {
 .text-primary {
     color: var(--theme-color-4) !important;
 }
+
+.primaryLink {
+    background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
+
+    &:hover,
+    &:focus {
+        color: #374151;
+    }
+
+    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
+}
+
+.secondaryLink {
+    background: v-bind('`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "AA"})`');
+
+    &:hover,
+    &:focus {
+        color: v-bind('`${safeTheme[7]}`');
+    }
+
+    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
+}
+
 
 </style>

@@ -190,6 +190,7 @@ const keepFlyout = () => {
 // Method: on click side popover (shops/fulfilments/warehouses)
 const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: string) => {
     console.log('topbar dropdown scope', sub)
+
     const visitNormally = () => {
         router.visit(route(sub.route?.name, sub.route?.parameters))
     }
@@ -199,31 +200,67 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
     if (layout.currentParams?.organisation && paramsLength === 1) { // ✅
         visitNormally()
     } else if (paramsLength === 2) {
-        if (layout.currentParams?.organisation && layout.currentParams?.shop && typeSub === 'shop') { // ✅
-            router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, shop: sub.slug }))
-        } else if (layout.currentParams?.organisation && layout.currentParams?.warehouse && typeSub === 'warehouse') { // ✅
-            router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, warehouse: sub.slug }))
-        } else if (layout.currentParams?.organisation && layout.currentParams?.fulfilment && typeSub === 'fulfilment') { // ✅
-            router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, fulfilment: sub.slug }))
+        if (layout.currentParams?.organisation && typeSub === 'fulfilment') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: sub.org_slug, fulfilment: sub.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && typeSub === 'warehouse') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: sub.org_slug, warehouse: sub.slug }))
+            } catch (e) {
+                console.log('cathch', e)
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && typeSub === 'shop') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: sub.org_slug, shop: sub.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else { // ✅
+            visitNormally()
+        }
+
+    } else if (paramsLength === 3 && layout.currentParams?.website) {
+        if (layout.currentParams?.organisation && typeSub === 'fulfilment') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: sub.org_slug, fulfilment: sub.slug, website: sub.website_slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && typeSub === 'warehouse') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: sub.org_slug, warehouse: sub.slug, website: sub.website_slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && typeSub === 'shop') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: sub.org_slug, shop: sub.slug, website: sub.website_slug }))
+            } catch {
+                visitNormally()
+            }
         } else { // ✅
             visitNormally()
         }
     } else if (paramsLength > 2) {
         if (layout.currentParams?.organisation && layout.currentParams?.shop && typeSub === 'shop') {
             try {
-                router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, shop: sub.slug }))
+                router.visit(route(layout.currentRoute, { organisation: sub.org_slug, shop: sub.slug }))
             } catch {
                 visitNormally()
             }
         } else if (layout.currentParams?.organisation && layout.currentParams?.warehouse && typeSub === 'warehouse') {
             try {
-                router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, warehouse: sub.slug }))
+                router.visit(route(layout.currentRoute, { organisation: sub.org_slug, warehouse: sub.slug }))
             } catch {
                 visitNormally()
             }
         } else if (layout.currentParams?.organisation && layout.currentParams?.fulfilment && typeSub === 'fulfilment') {
             try {
-                router.visit(route(layout.currentRoute, { organisation: hoveredOrgSlug.value, fulfilment: sub.slug }))
+                router.visit(route(layout.currentRoute, { organisation: sub.org_slug, fulfilment: sub.slug }))
             } catch {
                 visitNormally()
             }
@@ -265,6 +302,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                 <div
                     @mouseenter="(e) => showFlyout(item, e as MouseEvent)"
                     @mouseleave="hideFlyout"
+                    @click="() => onClickOrg(item.slug)"
                     :class="[
                         item.slug == layout.currentParams?.organisation
                             ? 'bg-slate-300 text-slate-600'
@@ -285,7 +323,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                                     }
                                 : {}"
                 >
-                    <div @click="() => onClickOrg(item.slug)" class="flex items-center gap-x-2 flex-1 min-w-0">
+                    <div class="flex items-center gap-x-2 flex-1 min-w-0">
                         <div class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-50 flex-shrink-0">
                             <Image v-show="!imageSkeleton[item.slug]" :src="item.logo"
                                 @onLoadImage="() => imageSkeleton[item.slug] = false" />

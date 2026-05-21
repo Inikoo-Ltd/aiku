@@ -416,6 +416,7 @@ use App\Actions\Web\Redirect\DeleteRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -460,8 +461,9 @@ Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine
     Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
 });
 
-Route::prefix('shipping-zone/{shippingZone:id}')->name('shipping_zone.')->group(function () {
-    Route::patch('', UpdateShippingZone::class)->name('update');
+Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
+    Route::post('{shippingZoneSchema:id}/create', StoreShippingZone::class)->name('create');
+    Route::patch('{shippingZone:id}', UpdateShippingZone::class)->name('update');
 });
 
 Route::patch('fulfilment/{fulfilment:id}', UpdateFulfilment::class)->name('fulfilment.update');

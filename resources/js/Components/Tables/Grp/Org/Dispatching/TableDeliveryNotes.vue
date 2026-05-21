@@ -20,9 +20,9 @@ import { notify } from "@kyvg/vue3-notification"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTruck } from "@fal"
+import { faTruck, faYinYang } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faTruck)
+library.add(faTruck, faYinYang)
 
 defineProps<{
 	data: TableTS
@@ -102,7 +102,15 @@ function returnNoteRoute(returnDeliveryNote) {
 				route().params["organisation"],
 				route().params["warehouse"],
 				returnDeliveryNote.slug,
-			]);
+			])
+		case "grp.org.shops.show.ordering.backlog":
+		case "grp.org.shops.show.ordering.return_delivery_notes.index":
+			return route("grp.org.shops.show.ordering.return_delivery_notes.show", [
+				route().params["organisation"],
+				route().params["shop"],
+				returnDeliveryNote.slug,
+
+			])
 		default:
 			return route("grp.helpers.redirect_return_notes", returnDeliveryNote.id)
 	}

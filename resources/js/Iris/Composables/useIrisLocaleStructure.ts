@@ -46,6 +46,7 @@ export const irisLocaleStructure = {
             return new Intl.NumberFormat(irisLocaleStructure.language.code, {
                 style: "currency",
                 currency: currencyCode,
+                currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.
             }).format(getAmount || 0)
         } catch (e) {
             return getAmount || 0

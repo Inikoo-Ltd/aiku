@@ -178,7 +178,7 @@ const submitClockOut = async (): Promise<void> => {
                         type="transparent"
                         size="xs"
                         :icon="faPlus"
-                        :label="trans('Add clockout')"
+                        :label="trans('Add clock out')"
                         class="whitespace-nowrap"
                         @click="openClockOutModal(clocking)"
                     />
@@ -192,7 +192,7 @@ const submitClockOut = async (): Promise<void> => {
             width="w-full max-w-md"
         >
             <h2 class="text-lg font-semibold text-gray-800 mb-4">
-                {{ trans('Add Clockout') }}
+                {{ trans('Add clock out') }}
             </h2>
 
             <form @submit.prevent="submitClockOut" class="space-y-4">

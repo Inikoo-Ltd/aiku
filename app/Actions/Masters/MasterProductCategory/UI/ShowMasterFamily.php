@@ -328,6 +328,7 @@ class ShowMasterFamily extends GrpAction
                             ? [
                             'type'    => 'button',
                             'style'   => 'create',
+                            'key'     => 'Master-Product',
                             'tooltip' => __('Add a master product to this family'),
                             'label'   => __('Master Product'),
                         ]

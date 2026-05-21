@@ -34,6 +34,7 @@ use App\Actions\Fulfilment\PalletReturnItem\UndoPickingPalletFromReturn;
 use App\Models\Fulfilment\PalletStoredItem;
 use App\Models\Fulfilment\StoredItemMovement;
 use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
+use Illuminate\Validation\ValidationException;
 
 class CancelPalletReturn extends OrgAction
 {
@@ -42,6 +43,12 @@ class CancelPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
+        if ($palletReturn->state == PalletReturnStateEnum::CANCEL) {
+            throw ValidationException::withMessages([
+                'message'   => __('Unable to cancel this pallet return. Invalid current state [:_state]', ['_state' => $palletReturn->state->value])
+            ]);
+        }
+
         $palletReturn = DB::transaction(function () use ($palletReturn, $modelData) {
 
             $modelData[PalletReturnStateEnum::CANCEL->value.'_at']    = now();

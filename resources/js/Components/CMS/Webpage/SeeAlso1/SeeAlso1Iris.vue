@@ -2,8 +2,10 @@
 import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
 import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
-import { sendMessageToParent } from "@/Composables/Workshop"
-import Blueprint from './Blueprint'
+
+import { faChevronCircleLeft, faChevronCircleRight } from '@far'
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
+import { get } from 'lodash-es'
 
 // Swiper
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -14,10 +16,7 @@ import { Navigation, Pagination } from 'swiper/modules'
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
-library.add(faChevronLeft, faChevronRight)
+
 
 
 const props = defineProps<{
@@ -44,7 +43,6 @@ const emits = defineEmits<{
 
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint(props.webpageData)?.blueprint?.map(b => b?.key?.join("-")) || []
 
 const slidesPerView = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -71,7 +69,7 @@ const compSwiperOptions = computed(() => {
   }
 })
 
-console.log('see also', props)
+console.log('see also', layout)
 </script>
 
 <template>
@@ -96,32 +94,17 @@ console.log('see also', props)
     <!-- Carousel with custom navigation -->
     <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" >
       <!-- Tombol Navigasi Custom -->
-      <button ref="prevEl" class="swiper-nav-button  left-0 top-1/2">
-        <FontAwesomeIcon :icon="faChevronLeft" />
+      <button ref="prevEl" class="swiper-nav-button hidden lg:block left-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg"/>
       </button>
 
-      <button ref="nextEl" class="swiper-nav-button  right-0 top-1/2">
-        <FontAwesomeIcon :icon="faChevronRight" />
+      <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg"/>
       </button>
-
-      <!-- Swiper -->
-      <!-- <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
-        :navigation="{ prevEl, nextEl }" class="w-full" :loop="true">
-        <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug"
-          class="cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded flex flex-col justify-between"
-          style="height: auto;">
-          <div class="flex flex-col h-full">
-            <div class="flex flex-col flex-1">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
-            </div>
-          </div>
-        </SwiperSlide>
-      </Swiper> -->
+      
       <Swiper   
         :modules="[Navigation]"
         :slides-per-view="slidesPerView"
-        :space-between="20"
         :navigation="{ prevEl, nextEl }"
         :autoHeight="false"
         pagination
@@ -129,13 +112,11 @@ console.log('see also', props)
       >
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
-            <div v-if="product" class="flex-1 flex flex-col">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
+            <div v-if="product" class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
+          :buttonStyle="layout?.buttonBasket?.buttonStyle"
+          :product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
-            </div>
-
-            <div v-else class="flex-1 flex items-center justify-center text-gray-400">
-              No Product
             </div>
           </div>
         </SwiperSlide>
@@ -147,7 +128,7 @@ console.log('see also', props)
 
 <style scoped>
 .swiper-nav-button {
-  @apply absolute top-1/2 transform -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full shadow-md p-2 hover:bg-gray-100 transition-all duration-300;
+  @apply absolute top-1/2 transform -translate-y-1/2 z-10;
 }
 
 .swiper-nav-button svg {

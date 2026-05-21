@@ -86,6 +86,13 @@ trait WithTabsBox
             $childCurrencySuffix = "";
         }
 
+        $return_stat = null;
+        if ($parent instanceof Shop) {
+            $return_stat = $parent->number_return_delivery_notes_state_returned;
+        } else {
+            $return_stat = $parent->procurementStats->number_return_delivery_notes_state_returned;
+        }
+
         return [
             [
                 'label'         => __('In Basket'),
@@ -385,6 +392,28 @@ trait WithTabsBox
                         ],
                     ]
                 ])->values()->toArray(),
+            ],
+            [
+                'label'         => __('Returns'),
+                'currency_code' => $currencyCode,
+                'tabs'          => [
+                    [
+                        'tab_slug'    => 'returned',
+                        'label'       => __('Returns'),
+                        'value'       => $return_stat ?? 0,
+                        'icon_data'   => [
+                            'tooltip' => __('Returned'),
+                            'icon'    => 'fal fa-exchange',
+                            'class'   => 'text-gray-500',
+                            'color'   => 'blue',
+                            'app'     => [
+                                'name' => 'exchange',
+                                'type' => 'font-awesome-5'
+                            ]
+                        ],
+                        'type'        => 'number',
+                    ],
+                ],
             ]
         ];
     }

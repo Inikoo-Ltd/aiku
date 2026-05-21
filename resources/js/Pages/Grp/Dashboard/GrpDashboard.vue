@@ -121,7 +121,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
 		</KeepAlive>
 
-		<div v-if="stockHistoryGroup" class="px-3 sm:px-6 mt-1">
+		<div v-if="stockHistoryGroup" class="px-3 sm:px-6 mt-1 mb-4">
 			<dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
 				<div class="px-5 py-4">
 					<dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
@@ -285,7 +285,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 
 		<DashboardTable
 			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
-			class="border-t border-gray-200"
+			class="mx-4 !px-0 border-t border-gray-200 mt-4"
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
@@ -311,6 +311,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 
 		<DashboardWidget
 			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
+			class="mt-12"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>

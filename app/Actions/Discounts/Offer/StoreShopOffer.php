@@ -12,7 +12,7 @@ use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithStoreOfferRules;
 use App\Actions\Traits\WithStoreOffer;
-use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
@@ -21,10 +21,10 @@ use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Helpers\Language;
-use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 
 class StoreShopOffer extends OrgAction
 {
@@ -37,54 +37,72 @@ class StoreShopOffer extends OrgAction
     public function handle(Shop $shop, array $modelData): ?Offer
     {
         $percentageOff = Arr::pull($modelData, 'percentage_off');
+        $itemQuantity  = (int)Arr::pull($modelData, 'trigger_data_item_quantity');
+        $itemAmount    = (float)Arr::pull($modelData, 'trigger_data_item_amount');
 
-        if (Arr::get($modelData, 'end_at')) {
-            data_set($modelData, 'duration', OfferDurationEnum::INTERVAL);
-        } else {
-            data_set($modelData, 'duration', OfferDurationEnum::PERMANENT);
-        }
-
-
-        $english = Language::where('code', 'en')->first();
-
-        $offerCampaign = OfferCampaign::where('shop_id', $shop->id)
-            ->where('type', OfferCampaignTypeEnum::SHOP_OFFERS)->first();
+        $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::SHOP_OFFERS)->first();
         if (!$offerCampaign) {
             return null;
         }
 
-        $code = Str::lower($offerCampaign->code.'-'.$shop->code);
 
-        data_set($modelData, 'type', 'Amount AND Order Number');
+        $type = Arr::pull($modelData, 'type');
+
+        if ($type == 'quantity') {
+            $type = 'any';
+        }
+        if ($type == 'amount' && $itemAmount <= 0) {
+            $type = 'any';
+        }
+
+        data_set(
+            $modelData,
+            'type',
+            $this->getShopOfferType($type)->value
+        );
+
+        $code = Str::lower($offerCampaign->code.'-'.$shop->code);
         data_set($modelData, 'code', $code, false);
+
+        $english = Language::where('code', 'en')->first();
         data_set(
             $modelData,
             'name',
-            Translate::run('First Order Bonus', $english, $shop->language),
+            Translate::run('Category Discount', $english, $shop->language).' '.$shop->code,
             false
         );
 
-        data_set($modelData, 'code', $code, false);
+        data_set($modelData, 'trigger_type', 'Customer');//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
+        //  data_set($modelData, 'trigger_id', $shop->id);
 
-        data_set($modelData, 'trigger_type', 'Customer');
+        if ($type == 'quantity' || $type == 'any') {
+            data_set(
+                $modelData,
+                'trigger_data',
+                [
+                    'item_quantity' => $itemQuantity
+                ]
+            );
+        } else {
+            data_set(
+                $modelData,
+                'trigger_data',
+                [
+                    'item_amount' => $itemAmount
+                ]
+            );
+        }
 
-        data_set(
-            $modelData,
-            'trigger_data',
-            [
-                'order_number' => 1,
-                'min_amount'   => Arr::pull($modelData, 'trigger_data_min_amount'),
-            ]
-        );
+        $targetType = OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER;
 
         data_set(
             $modelData,
             'allowances',
             [
                 [
-                    'class'       => OfferAllowanceClass::DISCOUNT,
-                    'type'        => OfferAllowanceType::PERCENTAGE_OFF,
-                    'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
+                    'class'       => OfferAllowanceClass::DISCOUNT->value,
+                    'target_type' => $targetType,
+                    'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
                     'data'        => [
                         'percentage_off' => $percentageOff,
                     ]
@@ -92,66 +110,61 @@ class StoreShopOffer extends OrgAction
             ]
         );
 
+
         $offer = StoreOffer::run($offerCampaign, $modelData);
-        ActivateOffer::run($offer);
+        ActivateOffer::run($offer, 30);
 
         return $offer;
+    }
+
+    private function getShopOfferType(bool $type): OfferTypeEnum
+    {
+        if ($type == 'amount') {
+            return OfferTypeEnum::SHOP_AMOUNT_ORDERED;
+        } else {
+            return OfferTypeEnum::SHOP_ORDERED;
+        }
     }
 
 
     public function rules(): array
     {
         return [
-            'end_at'                  => ['nullable', 'date', 'after:today'],
-            'trigger_data_min_amount' => ['required', 'numeric', 'min:0'],
-            'percentage_off'          => ['required', 'numeric', 'gt:0', 'lt:1'],
+            'name'                       => ['sometimes', 'string', 'max:255'],
+            'type'                       => ['required', 'string', 'in:quantity,amount'],
+            'duration'                   => ['required', 'string', 'in:interval,permanent'],
+            'trigger_data_item_quantity' => ['nullable', 'required_if:type,quantity', 'integer', 'min:1'],
+            'trigger_data_item_amount'   => ['nullable', 'required_if:type,amount', 'numeric', 'min:0'],
+            'start_at'                   => [
+                'required',
+                'date',
+                Rule::when(
+                    request('duration') === 'interval',
+                    ['before_or_equal:end_at']
+                )
+            ],
+            'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
+            'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:100'],
         ];
     }
 
-    public function getCommandSignature(): string
-    {
-        return 'offer:create_first_order_bonus {shop} {amount} {discount} {end_at?}';
-    }
 
     /**
      * @throws \Throwable
      */
-    public function asCommand(Command $command): int
+    public function asController(Shop $shop, ActionRequest $request): Offer
     {
-        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+        $this->initialisationFromShop($shop, $request);
 
+        return $this->handle($shop, $this->validatedData);
+    }
 
-        $modelData = [
-            'end_at'                  => $command->argument('end_at') ? Carbon::parse($command->argument('end_at')) : null,
-            'trigger_data_min_amount' => $command->argument('amount'),
-            'percentage_off'          => $command->argument('discount'),
-
+    public function jsonResponse(Offer $offer): array
+    {
+        return [
+            'slug' => $offer->slug,
         ];
-
-        $this->asAction = true;
-        $this->initialisationFromShop($shop, $modelData);
-
-
-        $offer = $this->handle($shop, $this->validatedData);
-
-        if ($offer) {
-            $command->info('FOB Offer created: '.$offer->name.' ('.$offer->code.')');
-        } else {
-            $command->error('FOB Offer could not be created');
-        }
-
-        return 0;
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function action(Shop $shop, array $modelData): ?Offer
-    {
-        $this->asAction = true;
-        $this->initialisationFromShop($shop, $modelData);
-
-        return $this->handle($this->shop, $modelData);
-    }
 
 }

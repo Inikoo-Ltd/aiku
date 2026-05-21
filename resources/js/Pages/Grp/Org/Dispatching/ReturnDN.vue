@@ -27,6 +27,7 @@ import BoxStatsInDNReturn from '@/Components/Warehouse/DeliveryNotes/BoxStatsInD
 import Modal from '@/Components/Utils/Modal.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { notify } from '@kyvg/vue3-notification'
+import { cloneDeep, set } from 'lodash'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -70,6 +71,7 @@ const props = defineProps<{
 	// is_faire_order: boolean
 	// allow_waiting: boolean
 	// allow_picker_set_not_picked: boolean
+	is_editable: boolean
 	quick_pickers: {
 		id: number,
 		contact_name: string
@@ -77,8 +79,12 @@ const props = defineProps<{
 	showChangePickerPacker: boolean
 	dn_return: {
 		id: number
+		slug: string
+		reference: string
+		date: string
+		state: string
+		updated_at: string
 	}
-
 	items: {}
 	pending_items?: {}
 	done_items?: {}
@@ -133,9 +139,15 @@ const onUpdateHandler = () => {
     );
 };
 
-
-
 const pickingView = ref(true);
+
+const refundedData = ref(props.items?.data ? cloneDeep(props.items?.data)
+	.filter((item) => item.to_refund.quantity > 0)
+	.reduce((acc, item) => {
+      acc[item.to_refund.original_transaction_id] = item.to_refund;
+      return acc;
+    }, {}) : {});
+
 
 const storedPickingView = localStorage.getItem('return-delivery-note:pickingView');
 if (storedPickingView !== null) {
@@ -152,6 +164,80 @@ library.add(
 	faExchangeAlt,
 	faBoxCheck
 )
+
+const setRefund = async (data: {}, fieldName: string) => {
+	// console.log(fieldName, refundedData.value, data);
+	set(refundedData.value, fieldName, data)
+}
+
+const isConfirmRefundModal = ref(false)
+const pendingRouteData = ref<any>(null)
+const isSubmittingRefund = ref(false)
+
+const refundSummary = computed(() => {
+	const itemsData = (props.items as any)?.data ?? []
+	const entries = Object.entries(refundedData.value as Record<string, any>)
+
+	const items = entries.map(([transactionId, refund]) => {
+		const originalItem = itemsData.find(
+			(i: any) => String(i.to_refund?.original_transaction_id) === String(transactionId)
+		)
+		return {
+			transactionId,
+			quantity: refund.quantity ?? 0,
+			netAmount: refund.net_amount ?? refund.refund_amount ?? 0,
+			maxRefundableAmount: refund.max_refundable_amount ?? 0,
+			currencyCode: refund.currency_code ?? '',
+			stockCode: originalItem?.org_stock_code ?? transactionId,
+			stockName: originalItem?.org_stock_name ?? '',
+		}
+	})
+
+	return {
+		items,
+		totalItems: items.length,
+		totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
+		totalAmount: items.reduce((sum, item) => sum + item.netAmount, 0),
+		currencyCode: items[0]?.currencyCode ?? '',
+	}
+})
+
+const finishProcessingRefund = (routeData: any) => {
+	pendingRouteData.value = routeData
+	isConfirmRefundModal.value = true
+}
+
+const confirmAndSubmitRefund = () => {
+	if (!pendingRouteData.value) {
+		return
+	}
+
+	router.patch(
+		route(pendingRouteData.value.name, pendingRouteData.value.parameters),
+		{
+			refundedData: refundedData.value
+		},
+		{
+			onSuccess: () => {
+				isConfirmRefundModal.value = false
+				notify({
+					title: trans("Success"),
+					text: trans("Successfully processed return with refunds"),
+					type: "success",
+				})
+			},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message,
+					type: "error",
+				})
+			},
+			onStart: () => isSubmittingRefund.value = true,
+			onFinish: () => isSubmittingRefund.value = false,
+		}
+	)
+}
 
 </script>
 
@@ -193,10 +279,20 @@ library.add(
 				class="border-transparent rounded-l-none" />
 		</template>
 
+		<template #button-finish-processing="{ action }">
+			<Button
+				@click="finishProcessingRefund(action.route)"
+				:label="action.label"
+				:icon="action.icon"
+				:type="action.type"
+				:style="action.style"
+			/>
+		</template>
+
 	</PageHeading>
 
 	<!-- Section: Box Note (TODO: update the routes ) -->
-	<div v-if="delivery_note.state === 'returned'" class="relative">
+	<!-- <div v-if="delivery_note.state === 'returned'" class="relative">
 		<div class="p-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
 			<BoxNote
 				v-for="(note, index) in notes.note_list"
@@ -209,7 +305,7 @@ library.add(
 					method: 'patch',
 				}" />
 		</div>
-	</div>
+	</div> -->
 
 	<!-- Section: Timeline -->
 	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
@@ -227,7 +323,7 @@ library.add(
 		:boxStats="box_stats"
 		:routes
 		:deliveryNote="delivery_note"
-		:updateRoute="routes.update"
+		:updateRoute="routes?.update"
 		:warehouse
 	/>
 
@@ -236,7 +332,81 @@ library.add(
 		:is="component"
 		:data="props[currentTab as keyof typeof props]"
 		:tab="currentTab"
+		:is_editable="is_editable"
+		@onChangeRefund="setRefund"
 	/>
+
+	<!-- Modal: Confirm Refund -->
+	<Modal :isOpen="isConfirmRefundModal" @close="isConfirmRefundModal = false" width="w-full max-w-2xl" :title="ctrans('Confirm Refund')">
+		<div class="mt-2 flex flex-col gap-y-4">
+			<div class="px-4">
+				<div class="text-2xl font-bold text-center">
+					{{ ctrans("Refund Summary") }}
+				</div>
+
+				<div class="text-center italic text-xs opacity-70 text-balance">
+					{{ ctrans("Check the summary of items to be refunded. You can go back and make changes if needed before confirming the refund.") }}
+				</div>
+			</div>
+
+			<div class="flex items-center gap-x-6 bg-gray-50 rounded px-4 py-3 text-sm">
+				<div class="flex flex-col items-center">
+					<span class="text-2xl font-bold">{{ refundSummary.totalItems }}</span>
+					<span class="text-xs text-gray-500">{{ ctrans('Items') }}</span>
+				</div>
+				<div class="flex flex-col items-center">
+					<span class="text-2xl font-bold">{{ refundSummary.totalQuantity }}</span>
+					<span class="text-xs text-gray-500">{{ ctrans('Total Qty') }}</span>
+				</div>
+				<div class="flex flex-col items-center ml-auto">
+					<span class="text-2xl font-bold text-emerald-600">
+						{{ refundSummary.currencyCode }} {{ refundSummary.totalAmount.toFixed(2) }}
+					</span>
+					<span class="text-xs text-gray-500">{{ ctrans('Total Refund') }}</span>
+				</div>
+			</div>
+
+			<div class="overflow-auto max-h-64 rounded-md border border-gray-200">
+				<table class="min-w-full divide-y divide-gray-200 text-sm">
+					<thead class="bg-gray-50 sticky top-0">
+						<tr>
+							<th class="px-3 py-2 text-left font-medium text-gray-600">{{ ctrans('Code') }}</th>
+							<th class="px-3 py-2 text-left font-medium text-gray-600">{{ ctrans('Item') }}</th>
+							<th class="px-3 py-2 text-right font-medium text-gray-600">{{ ctrans('Qty') }}</th>
+							<th class="px-3 py-2 text-right font-medium text-gray-600">{{ ctrans('Refund Amount') }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100 bg-white">
+						<tr v-for="item in refundSummary.items" :key="item.transactionId" class="hover:bg-gray-50">
+							<td class="px-3 py-2 text-gray-500 whitespace-nowrap">{{ item.stockCode }}</td>
+							<td class="px-3 py-2 text-gray-800">{{ item.stockName }}</td>
+							<td class="px-3 py-2 text-right text-gray-700">{{ item.quantity }}</td>
+							<td class="px-3 py-2 text-right font-medium text-emerald-600 whitespace-nowrap tabular-nums">
+								{{ item.currencyCode }} {{ item.netAmount.toFixed(2) }}
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="flex gap-x-3 justify-end pt-2">
+				<Button
+					@click="isConfirmRefundModal = false"
+					:label="ctrans('Cancel')"
+					type="tertiary"
+					:disabled="isSubmittingRefund"
+				/>
+				<Button
+					@click="confirmAndSubmitRefund"
+					:label="ctrans('Confirm Refund')"
+					icon="fas fa-box-check"
+					type="primary"
+					full
+					:loading="isSubmittingRefund"
+				/>
+			</div>
+		</div>
+	</Modal>
 
 	<!-- Modal: Select picker -->
 	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title="trans('Select Picker')">

@@ -13,6 +13,8 @@ use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\Shipper\UI\IndexCouriersInShop;
+use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
+use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Ordering\Order\PdfProformaInvoice;
 use App\Actions\Ordering\Order\UI\EditOrder;
@@ -65,4 +67,10 @@ Route::prefix('purges/{purge:id}')->group(function () {
     Route::get('', ShowPurge::class)->name('purges.show');
     Route::get('edit', EditPurge::class)->name('purges.edit');
     Route::get('order/{order}', [ShowOrder::class, 'inPurge'])->name('purges.order')->withoutScopedBindings();
+});
+
+Route::name('return_delivery_notes.')->prefix('returns-dn')->group(function () {
+    Route::get('/', [IndexReturnDeliveryNotes::class, 'inShop'])->name('index');
+
+    Route::get('/{returnDeliveryNote}', [ShowReturnDeliveryNote::class, 'inShop'])->name('show');
 });

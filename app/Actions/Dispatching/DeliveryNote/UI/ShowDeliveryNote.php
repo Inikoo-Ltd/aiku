@@ -26,7 +26,6 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
-use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
@@ -38,6 +37,7 @@ use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Ordering\PickersResource;
+use App\Http\Resources\Procurement\ReturnDeliveryNoteResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
@@ -226,6 +226,42 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
+        if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'icon'    => 'fal fa-tired',
+                'tooltip' => __('Go back to picked'),
+                'label' => __('Undo packing'),
+                'key'     => 'unpacking',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.undo_packing',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
+        if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'icon'    => 'fal fa-tired',
+                'tooltip' => __('Go back to picking'),
+                'label' => __('Undo set as picked'),
+                'key'     => 'unpicked',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.undo_set_as_picked',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
         if ($isEditable && in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
             $actions[] = [
                 'type'    => 'button',
@@ -244,7 +280,7 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && !$deliveryNote->is_returned && app()->environment('local')) {
+        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && $deliveryNote->shop?->type != ShopTypeEnum::EXTERNAL) {
             $actions[] = [
                 'type'    => 'button',
                 'key'     => 'return',
@@ -629,7 +665,7 @@ class ShowDeliveryNote extends OrgAction
                     'shipper_id'   => null
                 ]
             ],
-            'return_dn' => $this->return?->only(['id', 'reference', 'slug'])
+            'return_dn' => ReturnDeliveryNoteResource::collection($deliveryNote->returnedDeliveryNote)
         ];
     }
 
@@ -752,7 +788,9 @@ class ShowDeliveryNote extends OrgAction
         // Disable waiting on DS no?
         $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false) && $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
 
-        $this->return = $deliveryNote->returnedDeliveryNote()->whereNot('state', ReturnDeliveryNoteStateEnum::CANCELLED)->first();
+        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
+            $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
+        }
 
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
@@ -779,21 +817,10 @@ class ShowDeliveryNote extends OrgAction
                 'wrapped_actions' => $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
-            'hasReturn'     => $this->return ? [
-                'reference' => $this->return->reference,
-                'route'     => [
-                    'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.show',
-                    'parameters' => [
-                        'organisation'   => $this->return->organisation->slug,
-                        'warehouse'      => $this->return->warehouse->slug,
-                        'returnDeliveryNote' => $this->return->slug,
-                    ],
-                ]
-            ] : null,
             'is_editable'    => $isEditable,
             'tabs'          => [
-                'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
-                'navigation' => $deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED
+                'current'    => $this->tab,
+                'navigation' => in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, $deliveryNote->state == DeliveryNoteStateEnum::PACKED])
                     ?
                     DeliveryNoteTabsEnum::navigation($deliveryNote)
                     :

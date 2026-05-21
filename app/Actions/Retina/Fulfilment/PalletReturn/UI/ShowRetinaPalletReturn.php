@@ -65,7 +65,7 @@ class ShowRetinaPalletReturn extends RetinaAction
 
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $afterTitle = [
-                'label' => '('.__("Customer's sKUs").')'
+                'label' => '('.__("Customer's SKUs").')'
             ];
         } else {
             $afterTitle = [

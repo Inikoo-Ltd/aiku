@@ -113,7 +113,7 @@ class LeaveConcurrencyService
                     })
                     ->exists();
                 if ($hasApprovedLeave) {
-                    $partnerName = $partnerEmployee->contact_name ?? __('Employee #' . $partnerEmployee->id);
+                    $partnerName = $partnerEmployee->contact_name ?? __('Employee #').' '.$partnerEmployee->id;
                     return [
                         'rule_name' => $rule->name,
                         'type' => 'bidirectional_block',
@@ -208,7 +208,7 @@ class LeaveConcurrencyService
                 $overlapDays = $overlapStart->diffInDays($overlapEnd) + 1;
 
                 if ($overlapDays > $maxOverlapDays) {
-                    $otherEmployeeName = $existingLeave->employee->contact_name ?? __('Employee #' . $existingLeave->employee_id);
+                    $otherEmployeeName = $existingLeave->employee->contact_name ?? __('Employee #').' '.$existingLeave->employee_id;
 
                     return [
                         'rule_name' => $rule->name,
@@ -285,7 +285,7 @@ class LeaveConcurrencyService
                     ->exists();
 
                 if ($hasSubjectLeave) {
-                    $subjectName = $subjectEmployee->contact_name ?? __('Employee #' . $subjectEmployee->id);
+                    $subjectName = $subjectEmployee->contact_name ?? __('Employee #').' '.$subjectEmployee->id;
                     return [
                         'rule_name' => $rule->name,
                         'type' => 'dependency_block',

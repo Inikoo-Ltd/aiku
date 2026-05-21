@@ -10,6 +10,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Warehouse;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
@@ -50,6 +52,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property int|null $handler_id Main handler
  * @property int|null $handler_user_id
+ * @property string|null $done_at
+ * @property int|null $refund_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read DeliveryNote|null $deliveryNote
@@ -58,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read User|null $handlerUser
  * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read Invoice|null $refund
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\ReturnDeliveryNoteItem> $returnDeliveryNoteItem
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Warehouse|null $warehouse
@@ -145,5 +150,10 @@ class ReturnDeliveryNote extends Model implements Auditable
     public function handlerUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'handler_user_id');
+    }
+
+    public function refund(): HasOne
+    {
+        return $this->hasOne(Invoice::class, 'id', 'refund_id');
     }
 }

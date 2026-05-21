@@ -62,7 +62,7 @@ const showText = computed(() => {
 
 </script>
 <template>
-    <div class="absolute top-2 left-2 border border-black text-xs font-bold px-2 py-0.5 rounded z-10" :class="{
+    <div class="best-seller-badge-container " :class="{
         'best-seller-1-container': props.topSeller === 1,
         'best-seller-2-container': props.topSeller === 2,
         'best-seller-3-container': props.topSeller === 3
@@ -91,6 +91,10 @@ const showText = computed(() => {
 </template>
 
 <style scoped>
+.best-seller-badge-container {
+    @apply absolute top-2 left-2 border border-black text-xs font-bold px-2 py-0.5 rounded z-10;
+}
+
 .best-seller-1-icon {
     color: v-bind(bestSeller1Icon?.color || '#FFD700');
     font-family: v-bind(bestSeller1Icon?.fontFamily);

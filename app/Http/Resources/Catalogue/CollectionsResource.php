@@ -120,6 +120,8 @@ class CollectionsResource extends JsonResource
             'parents_data'            => $this->parseCollectionParentsData($this->parents_data),
             'image_thumbnail'         => Arr::get($this->web_images, 'main.thumbnail'),
             'currency_code'           => $this->currency_code ?? null,
+            'number_current_families'       => $this->number_current_families ?? 0,
+            'number_current_products'       => $this->number_current_products ?? 0,
             'sales_grp_currency_external' => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
@@ -128,6 +130,7 @@ class CollectionsResource extends JsonResource
             'invoices_delta'          => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
             'current_interval'        => $this->current_interval ?? 'ytd',
             'health_rank'             => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'public_url'              => $this->canonical_url ?? $this->webpage_url,
         ];
     }
 

@@ -30,6 +30,7 @@ enum OutboxMergeTagsEnum: string
     case PAYMENT_NOTE = 'Payment Note';
     case PAYMENT_REASON = 'Payment Reason';
     case PAYMENT_TYPE = 'Payment Type';
+    case PAY_INFO = 'Pay Info';
     case CHAT_LINK = 'Chat Link';
     case CHAT_MESSAGE = 'Chat Message';
     case RETINA_LOGIN_LINK = 'Retina Login Link';
@@ -87,6 +88,10 @@ enum OutboxMergeTagsEnum: string
             [
                 'name'  => __('Low Stock Items in Basket'),
                 'value' => '[Low Stock Items in Basket]'
+            ],
+            [
+                'name'  => __('Pay Info'),
+                'value' => '[Pay Info]'
             ],
             [
                 'name'  => __('Preview Amount'),

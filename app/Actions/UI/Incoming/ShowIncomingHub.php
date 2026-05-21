@@ -10,7 +10,6 @@ namespace App\Actions\UI\Incoming;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Enums\UI\Incoming\IncomingHubTabsEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -31,7 +30,7 @@ class ShowIncomingHub extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
     {
-        $this->initialisationFromWarehouse($warehouse, [])->withTab(IncomingHubTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, []);
 
         return $this->handle($warehouse);
     }
@@ -52,15 +51,83 @@ class ShowIncomingHub extends OrgAction
                     ],
                     'title' => __('Incoming Hub'),
                 ],
-                'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => IncomingHubTabsEnum::navigation()
-                ],
-                'stock_deliveries'      => GetIncomingHubStockDeliveryWidget::run($warehouse),
-                'pallet_deliveries'     => GetIncomingHubPalletDeliveryWidget::run($warehouse),
-                'return_delivery_notes' => GetIncomingHubReturnDeliveryNoteWidget::run($warehouse),
+                'dashboard' => $this->getIncomingDashboard($warehouse),
             ]
         );
+    }
+
+    private function getIncomingDashboard(Warehouse $warehouse): array
+    {
+        $parts = [
+            [
+                'key'    => 'stock_deliveries',
+                'label'  => __('Stock Deliveries'),
+                'widget' => GetIncomingHubStockDeliveryWidget::run($warehouse),
+            ],
+            [
+                'key'    => 'pallet_deliveries',
+                'label'  => __('Fulfilment Deliveries'),
+                'widget' => GetIncomingHubPalletDeliveryWidget::run($warehouse),
+            ],
+            [
+                'key'    => 'return_delivery_notes',
+                'label'  => __('Returns'),
+                'widget' => GetIncomingHubReturnDeliveryNoteWidget::run($warehouse),
+            ],
+        ];
+
+        $metrics       = [];
+        $metricKeys    = [];
+        $data          = [];
+        $rowTotals     = [];
+        $columnTotals  = [];
+        $grandTotal    = 0;
+
+        foreach ($parts as $part) {
+            foreach ($part['widget']['metrics'] as $metric) {
+                if (!in_array($metric['key'], $metricKeys, true)) {
+                    $metricKeys[] = $metric['key'];
+                    $metrics[]    = $metric;
+                }
+            }
+        }
+
+        foreach ($parts as $part) {
+            $rowKey          = $part['key'];
+            $widget          = $part['widget'];
+            $globalData      = $widget['data']['_global'] ?? [];
+            $data[$rowKey]   = [];
+
+            foreach ($metricKeys as $metricKey) {
+                if (array_key_exists($metricKey, $globalData)) {
+                    $entry = $globalData[$metricKey];
+                    $data[$rowKey][$metricKey]   = $entry;
+                    $columnTotals[$metricKey]    = ['value' => ($columnTotals[$metricKey]['value'] ?? 0) + ($entry['value'] ?? 0)];
+                } else {
+                    $data[$rowKey][$metricKey] = ['value' => null];
+                }
+            }
+
+            $rowTotals[$rowKey] = $widget['row_totals']['_global'] ?? ['value' => 0];
+            $grandTotal        += $rowTotals[$rowKey]['value'] ?? 0;
+        }
+
+        return [
+            'dimension' => [
+                'key'   => 'type',
+                'label' => __('Type'),
+                'items' => array_map(fn ($part) => ['key' => $part['key'], 'label' => $part['label']], $parts),
+            ],
+            'metrics'     => $metrics,
+            'data'        => $data,
+            'row_totals'  => $rowTotals,
+            'totals'      => $columnTotals,
+            'grand_total' => [
+                'value'   => $grandTotal,
+                'icon'    => ['fal', 'fa-arrow-to-bottom'],
+                'tooltip' => __('Total Incoming'),
+            ],
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters): array

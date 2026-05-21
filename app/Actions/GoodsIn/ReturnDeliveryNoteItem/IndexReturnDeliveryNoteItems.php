@@ -18,11 +18,12 @@ use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexReturnDeliveryNoteItems extends OrgAction
 {
-    public function handle(ReturnDeliveryNote $parent, $prefix = null, ReturnDeliveryNoteItemStateEnum|null $stateFilter = null): LengthAwarePaginator
+    public function handle(ReturnDeliveryNote $parent, $prefix = null, ReturnDeliveryNoteItemStateEnum|null $stateFilter = null, bool $crmMode = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -35,6 +36,8 @@ class IndexReturnDeliveryNoteItems extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $currency = $parent->order->invoices->first()->currency ?? $parent->shop->currency;
+
         $query = QueryBuilder::for(ReturnDeliveryNoteItem::class);
 
         $query->where('return_delivery_note_items.return_delivery_note_id', $parent->id);
@@ -42,6 +45,12 @@ class IndexReturnDeliveryNoteItems extends OrgAction
         $query->leftJoin('org_stocks', 'return_delivery_note_items.org_stock_id', '=', 'org_stocks.id');
         $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
+
+        if ($crmMode && in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNED,  ReturnDeliveryNoteStateEnum::DONE])) {
+            $query->with('transaction');
+        }
+
+        $query->with('sowings.location');
 
         if ($stateFilter) {
             switch ($stateFilter) {
@@ -59,9 +68,13 @@ class IndexReturnDeliveryNoteItems extends OrgAction
             }
         }
 
-        return $query->defaultSort('return_delivery_note_items.id')
+
+
+        return $query
+            ->defaultSort('return_delivery_note_items.id')
             ->select([
                 'return_delivery_note_items.id',
+                'return_delivery_note_items.original_transaction_id',
                 'return_delivery_note_items.state',
                 'return_delivery_note_items.total_item_damaged',
                 'return_delivery_note_items.total_item_not_returned',
@@ -75,15 +88,20 @@ class IndexReturnDeliveryNoteItems extends OrgAction
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
             ])
+            ->addSelect([
+                DB::raw("'{$parent->warehouse->slug}' as warehouse_slug"),
+                DB::raw("'{$parent->organisation->slug}' as organisation_slug"),
+                DB::raw("'{$currency->code}' as currency_code"),
+            ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'expected_quantity', 'total_item_returned', 'total_item_damaged', 'total_item_lost',  'total_item_not_returned'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(ReturnDeliveryNote $parent, $prefix = null, bool $isEditable = false): Closure
+    public function tableStructure(ReturnDeliveryNote $parent, $prefix = null, bool $isEditable = false, bool $crmMode = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix, $isEditable) {
+        return function (InertiaTable $table) use ($parent, $prefix, $isEditable, $crmMode) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -100,39 +118,25 @@ class IndexReturnDeliveryNoteItems extends OrgAction
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            // $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
-            // $allowAction = ($parent->packer_user_id && $parent->packer_user_id == request()->user()->id);
+            if ($parent->state != ReturnDeliveryNoteStateEnum::DONE && !$crmMode) {
+                $table->column(key: 'expected_quantity', label: __('Expected Qty'), canBeHidden: false, sortable: false, searchable: false);
+            }
 
-            // if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
-            //     $allowAction = $parent->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
-            // }
-            // if (app()->isLocal()) {
-            //     $allowAction = true;
-            // }
-
-
-            // if (!$parent || !$allowAction) {
-            //     $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false, sortable: false, searchable: false);
-            //     $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            //     $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            //     $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            // } else {
-            $table->column(key: 'expected_quantity', label: __('Expected Qty'), canBeHidden: false, sortable: false, searchable: false);
             if (in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNING])) {
                 $table->column(key: 'sowings', label: __('Sowings'), canBeHidden: false);
             }
 
-            if (in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNING, ReturnDeliveryNoteStateEnum::RETURNED])) {
-                $table->column(key: 'total_item_damaged', label: __('Damaged'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            if (in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNING, ReturnDeliveryNoteStateEnum::RETURNED, ReturnDeliveryNoteStateEnum::DONE])) {
                 $table->column(key: 'total_item_not_returned', label: __('Not Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'total_item_damaged', label: __('Damaged'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'total_item_returned', label: __('Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
+            if ($crmMode && in_array($parent->state, [ReturnDeliveryNoteStateEnum::RETURNED])) {
+                $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, align: 'left');
+            }
 
-            // if (!in_array($parent->state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
-            //     $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
-            // }
         };
     }
 
