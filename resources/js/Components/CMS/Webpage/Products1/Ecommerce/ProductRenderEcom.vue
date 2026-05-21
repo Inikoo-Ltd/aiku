@@ -164,7 +164,7 @@ defineExpose({
 </script>
 
 <template>
-    <div class="text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
+    <div class="text-gray-800 isolate h-full min-h-0 min-w-0 flex flex-col flex-grow" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate h-full">
