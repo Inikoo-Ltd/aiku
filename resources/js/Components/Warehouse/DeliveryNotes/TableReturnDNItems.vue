@@ -11,19 +11,19 @@ import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import Icon from "@/Components/Icon.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
-import { debounce, get, set } from 'lodash-es'
+import { cloneDeep, debounce, get, set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
-import { ref, onMounted, reactive, inject, computed, watch } from "vue"
+import { ref, onMounted, reactive, inject, computed, watch, proxyRefs } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faCheckCircle } from "@fal"
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faCheckCircle, faMinus, faPlus } from "@fal"
 import { faFragile, faGhost, faSkull, faWandMagic } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Modal from "@/Components/Utils/Modal.vue"
-import { RadioButton } from "primevue"
+import { InputNumber, RadioButton } from "primevue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -50,10 +50,11 @@ const props = defineProps<{
     shop_type: string
     allowWaiting: boolean
     allowPickerSetNotPicked: boolean
-    isEditable: boolean
+    is_editable: boolean
 }>()
 
-const emit = defineEmits<{
+const emits = defineEmits<{
+    'onChangeRefund': [data: {}, fieldName: string]
     'update:quantity-to-resend': [itemId: string | number, value: number]
     'validation-error': [itemId: string | number, hasError: boolean]
 }>()
@@ -63,7 +64,7 @@ const screenType = inject('screenType', ref('desktop'))
 const locale = inject("locale", aikuLocaleStructure)
 const layout = inject('layout', layoutStructure)
 
-function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
+function orgStockRoute(deliveryNoteItem: any) {
     if (!deliveryNoteItem.org_stock_id) {
         return ''
     }
@@ -80,32 +81,22 @@ onMounted(() => {
     isMounted.value = true
 })
 
-const generateLocationRoute = (location: any) => {
-    if (!location.location_slug || !(route().params["organisation"]) || !(route().params["warehouse"])) {
+const generateLocationRoute = (location: any, rdnItem?: any ) => {
+    let organisation = rdnItem?.organisation_slug;
+    let warehouse = rdnItem?.warehouse_slug;
+
+    if (!location.location_slug || !organisation || !warehouse) {
         return ""
     }
 
-    if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
-        return route(
+    return route(
             "grp.org.warehouses.show.infrastructure.locations.show",
             [
-                route().params["organisation"],
-                route().params["warehouse"],
+                organisation,
+                warehouse,
                 location.location_slug
             ]
-        )
-    } else if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
-        return route(
-            "grp.org.warehouses.show.infrastructure.locations.show",
-            [
-                route().params["organisation"],
-                route().params["warehouse"],
-                location.location_slug
-            ]
-        )
-    } else {
-        return ""
-    }
+        );
 
 }
 
@@ -135,8 +126,6 @@ const GetQuantityToPickFractional = (item) => {
         return item.quantity_to_sow_fractional_ds
     } else return item.quantity_to_sow_fractional
 }
-
-
 
 const routeItemsWaitingWarehouse = (item) => {
     if (!route().params.warehouse || !route().params.organisation) {
@@ -186,6 +175,7 @@ watch(isModalPickingBatchCode, (isOpen) => {
 const findLocation = (locationsList: { location_code: string }[], locationCode: string) => {
     return locationsList.find(x => x.location_code == locationCode) || locationsList[0]
 }
+
 
 </script>
 
@@ -269,10 +259,10 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                 <div v-for="sowing in itemValue.sowings" :key="sowing.id" class="flex gap-x-2 w-fit">
                     <!-- If sowing returned -->
                     <div v-if="sowing.type === 'sow'" class="flex gap-x-2 items-center flex-wrap">
-                        <!-- <Link v-if="!!(generateLocationRoute(sowing))" :href="generateLocationRoute(sowing)" class="secondaryLink">
+                        <Link v-if="!!(generateLocationRoute(sowing, itemValue))" :href="generateLocationRoute(sowing, itemValue)" class="secondaryLink">
                             {{ sowing.location_code }}
-                        </Link> -->
-                        <span>
+                        </Link>
+                        <span v-else>
                             {{ sowing.location_code }}
                         </span>
                         <div v-tooltip="trans('Total returned quantity in this location')" class="text-gray-500 whitespace-nowrap">
@@ -306,7 +296,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         </span>
                     </div>
                     <!-- Undo Button -->
-                    <div vxif="isEditable" class="">
+                    <div v-if="is_editable" class="">
                         <ButtonWithLink
                             v-if="sowing.quantity"
                             v-tooltip="ctrans('Undo sowing :qtyPicked items', { qtyPicked: Number(sowing.quantity).toString()})"
@@ -326,7 +316,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
 
         <!-- Column: Total Item Damaged -->
         <template #cell(total_item_damaged)="{ item: itemValue, proxyItem }">
-            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state != 'processed'">
+            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state != 'processed' && is_editable">
                 <NumberWithButtonSave
                     vxif="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                     noUndoButton
@@ -381,14 +371,14 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                     </template>
                 </NumberWithButtonSave>
             </div>
-            <FractionDisplay v-else-if="itemValue.total_item_damaged" :fractionData="itemValue.total_item_damaged_fractional" />
+            <FractionDisplay v-else-if="itemValue.total_item_damaged" :fractionData="itemValue.total_item_damaged_fractional" :class="'text-orange-500'"/>
             <span v-else>
             </span>
         </template>
         
         <!-- Column: item not returned -->
         <template #cell(total_item_not_returned)="{ item: itemValue, proxyItem }">
-            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state != 'processed'">
+            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state != 'processed' && is_editable">
                 <NumberWithButtonSave v-if="itemValue.has_available_qty"
                     vxif="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                     noUndoButton
@@ -450,7 +440,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
 
         <!-- Column: item returned -->
         <template #cell(total_item_returned)="{ item: itemValue, proxyItem }">
-            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state != 'processed'">
+            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state != 'processed' && is_editable">
                 <NumberWithButtonSave
                     vxif="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                     noUndoButton
@@ -508,51 +498,48 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                     :locations="itemValue.locations"
                     :selectedOrgStockId="get(selectedLocationCode, [itemValue.id], null)"
                     :warehouseArea="itemValue.warehouse_area"
+                    :warehouse_slug="itemValue.warehouse_slug"
                     @openLocationModal="() => { 
                         isModalLocation = true; selectedItemValue = itemValue; selectedItemProxy = proxyItem; 
                     }"
                 />
             </div>
-            <FractionDisplay v-else-if="itemValue.total_item_returned_fractional" :fractionData="itemValue.total_item_returned_fractional" />
+            <FractionDisplay v-else-if="itemValue.total_item_returned_fractional" :fractionData="itemValue.total_item_returned_fractional" :class="'text-green-500'"/>
             <span v-else>
             </span>
         </template>
 
-        <template #cell(action)="{ item: item }">
-            <!-- <template
-                v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0">
-
-                <div class="flex justify-start items-center">
-                    <ButtonWithLink v-if="!item.is_done_packing"
-                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_picked) })"
-                        type="secondary" xlabel="ctrans('Packing')" :size="screenType == 'desktop' ? 'xs' : 'lg'"
-                        :key="screenType" :bindToLink="{ preserveScroll: true }" :routeTarget="{
-                            name: 'grp.models.delivery_note_item.packing.store',
-                            method: 'patch',
-                            parameters: {
-                                deliveryNoteItem: item.id
-                            }
-                        }" />
-                    <ButtonWithLink v-else v-tooltip="ctrans('Undo packing')" type="negative"
-                        :size="screenType == 'desktop' ? 'xs' : 'lg'" :bindToLink="{ preserveScroll: true }" :routeTarget="{
-                            name: 'grp.models.delivery_note_item.packing.delete',
-                            method: 'delete',
-                            parameters: {
-                                deliveryNoteItem: item.id
-                            }
-                        }" :icon="faUndo" />
-                    <Button v-if="layout.app.environment === 'local' && !item.is_done_packing" type="negative"
-                        class="ml-4" icon="fal fa-debug" :size="screenType == 'desktop' ? 'xs' : 'lg'"
-                        v-tooltip="'Packing info'" @click="openPackingModal(item)" />
-                </div>
-            </template>
-
-            <div v-else-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && !(item.quantity_picked > 0)"
-                class="italic text-xs opacity-70">
-                {{ ctrans("Nothing to pack") }}
-            </div> -->
-
-            <div class="flex gap-2">
+        <template #cell(action)="{ item, proxyItem}">
+            <div v-if="item.to_refund.max_refundable_amount > 0" class="flex flex-col items-start gap-3 w-fit">
+                <InputNumber
+                    :modelValue="proxyItem.to_refund.net_amount"
+                    @input="(e) => (set(proxyItem.to_refund, 'net_amount', e.value))"
+                    @update:model-value="(e) => {
+                        set(proxyItem.to_refund, 'refund_amount', e);
+                        emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                    }"
+                    buttonLayout="horizontal"
+                    :showButtons="true"
+                    :min="0"
+                    :max="proxyItem.to_refund.max_refundable_amount"
+                    :currency="proxyItem.to_refund.currency_code"
+                    :maxFractionDigits="2"
+                    mode="currency"
+                    :input-style="{ width : '100px'}"
+                    :step="proxyItem.to_refund.original_item_net_price"
+                >
+                    <template #decrementicon>
+                        <FontAwesomeIcon :icon="faMinus" aria-hidden="true" />
+                    </template>
+                    <template #incrementicon>
+                        <FontAwesomeIcon :icon="faPlus" aria-hidden="true" />
+                    </template>
+                </InputNumber>
+                <button
+                    @click="()=> proxyItem.to_refund.net_amount = item.to_refund.max_refundable_amount"
+                    class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
+                    {{ trans("Refundable") }}: {{ locale.currencyFormat(item.to_refund.currency_code, item.to_refund.max_refundable_amount)}}
+                </button>
             </div>
         </template>
     </Table>

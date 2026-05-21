@@ -27,6 +27,7 @@ import BoxStatsInDNReturn from '@/Components/Warehouse/DeliveryNotes/BoxStatsInD
 import Modal from '@/Components/Utils/Modal.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { notify } from '@kyvg/vue3-notification'
+import { cloneDeep, set } from 'lodash'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -70,6 +71,7 @@ const props = defineProps<{
 	// is_faire_order: boolean
 	// allow_waiting: boolean
 	// allow_picker_set_not_picked: boolean
+	is_editable: boolean
 	quick_pickers: {
 		id: number,
 		contact_name: string
@@ -77,8 +79,12 @@ const props = defineProps<{
 	showChangePickerPacker: boolean
 	dn_return: {
 		id: number
+		slug: string
+		reference: string
+		date: string
+		state: string
+		updated_at: string
 	}
-
 	items: {}
 	pending_items?: {}
 	done_items?: {}
@@ -133,9 +139,15 @@ const onUpdateHandler = () => {
     );
 };
 
-
-
 const pickingView = ref(true);
+
+const refundedData = ref(props.items?.data ? cloneDeep(props.items?.data)
+	.filter((item) => item.to_refund.quantity > 0)
+	.reduce((acc, item) => {
+      acc[item.to_refund.original_transaction_id] = item.to_refund;
+      return acc;
+    }, {}) : {});
+
 
 const storedPickingView = localStorage.getItem('return-delivery-note:pickingView');
 if (storedPickingView !== null) {
@@ -152,6 +164,39 @@ library.add(
 	faExchangeAlt,
 	faBoxCheck
 )
+
+const setRefund = async (data: {}, fieldName: string) => {
+	console.log(fieldName, refundedData.value, data);
+	set(refundedData.value, fieldName, data)
+}
+
+const finishProcessingRefund = (routeData) => {
+	router.patch(
+		route(routeData.name, routeData.parameters), 
+		{
+			refundedData: refundedData.value
+		},
+		{
+			onSuccess: () => {
+				notify({
+					title: "Success",
+					text: "Successfully processed return with refunds",
+					type: "success",
+				})
+			},
+			onError: (error) => {
+				notify({
+					title: "Something went wrong",
+					text: error.message,
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				
+			}
+		}
+	);
+}
 
 </script>
 
@@ -191,6 +236,16 @@ library.add(
 				icon="fal fa-exchange-alt"
 				type="tertiary"
 				class="border-transparent rounded-l-none" />
+		</template>
+
+		<template #button-finish-processing="{ action }">
+			<Button
+				@click="finishProcessingRefund(action.route)"
+				:label="action.label"
+				:icon="action.icon"
+				:type="action.type"
+				:style="action.style"
+			/>
 		</template>
 
 	</PageHeading>
@@ -236,6 +291,8 @@ library.add(
 		:is="component"
 		:data="props[currentTab as keyof typeof props]"
 		:tab="currentTab"
+		:is_editable="is_editable"
+		@onChangeRefund="setRefund"
 	/>
 
 	<!-- Modal: Select picker -->

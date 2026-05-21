@@ -11,6 +11,7 @@ namespace App\Models\Dispatching;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\GoodsIn\Sowing;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Transaction;
@@ -176,5 +177,10 @@ class DeliveryNoteItem extends Model
     public function batchCode(): BelongsTo
     {
         return $this->belongsTo(BatchCode::class);
+    }
+
+    public function returnDeliveryNoteItems(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNoteItem::class, 'delivery_note_items_id');
     }
 }

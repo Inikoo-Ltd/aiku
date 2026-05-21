@@ -5,7 +5,7 @@ import { trans } from "laravel-vue-i18n"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt, faTruck } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt, faTruck, faExchange } from "@fal"
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link, router } from "@inertiajs/vue3"
@@ -152,6 +152,7 @@ const props = withDefaults(defineProps<{
     showChangePickerPacker: boolean
     isEditable: boolean
     isShowButtonReplaceAll?: boolean
+    return_dn?: {}
 }>(), {
     isEditable: true
 })
@@ -368,6 +369,26 @@ const showLockButton = () => {
 }
 
 console.log(layout)
+
+function returnNoteRoute(returnDeliveryNote) {
+	switch(route().current()) {
+		case "grp.org.warehouses.show.dispatching.delivery_notes.show":
+			return route('grp.org.warehouses.show.incoming.return_delivery_notes.show', [
+				route().params["organisation"],
+				route().params["warehouse"],
+				returnDeliveryNote.slug,
+			])
+		case "grp.org.shops.show.ordering.delivery-notes.show":
+			return route("grp.org.shops.show.ordering.return_delivery_notes.show", [
+				route().params["organisation"],
+				route().params["shop"],
+				returnDeliveryNote.slug,
+
+			])
+		default:
+			return route("grp.helpers.redirect_return_notes", returnDeliveryNote.id)
+	}
+}
 </script>
 
 <template>
@@ -505,6 +526,19 @@ console.log(layout)
                 <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-gray-800 bg-gray-200 border border-gray-300 rounded-md">
                     <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" />
                     {{ trans('Cash on Delivery') }}
+                </div>
+
+                
+                <div v-if="boxStats?.return_dn.data.length > 0" class="font-semibold mt-2 text-base">
+                    {{ trans("Returns") }}
+                </div>
+                <div v-if="boxStats?.return_dn.data.length > 0" class="flex flex-col pl-2">
+                    <span v-for="returnData in boxStats?.return_dn.data" v-tooltip="trans('Return Delivery Note')" class="w-max">
+                        <FontAwesomeIcon :icon="faExchange" class="pr-1"/>
+                        <Link class="primaryLink" :href="returnNoteRoute(returnData)">
+                            {{ returnData.reference }}
+                        </Link>
+                    </span>
                 </div>
 
             </div>

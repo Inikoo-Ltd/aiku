@@ -5,8 +5,8 @@ import { trans } from "laravel-vue-i18n"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt, faTruck } from "@fal"
-import { faCubes } from "@fas"
+import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt, faTruck, faFileInvoice, faCircle, faCheckCircle, faQuestionCircle } from "@fal"
+import { faCubes, faExclamationCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link, router } from "@inertiajs/vue3"
 import { inject, ref, toRaw } from "vue"
@@ -26,8 +26,9 @@ import Select from 'primevue/select';
 import { faExchangeAlt, faLock , faLockOpen} from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import { useFormatTime } from "@/Composables/useFormatTime"
+import Icon from "@/Components/Icon.vue"
 
-library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
+library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt, faCircle, faCheckCircle, faQuestionCircle, faExclamationCircle)
 
 const props = withDefaults(defineProps<{
     boxStats: {
@@ -320,6 +321,23 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
     if (preset.weight) {
         parcel.weight = preset.weight
     }
+
+}
+
+const refundRoute = (refund) => {
+	switch(route().current()) {
+		case "grp.org.shops.show.ordering.return_delivery_notes.show":
+			return route('grp.org.shops.show.dashboard.invoices.refunds.show', [
+				route().params["organisation"],
+				route().params["shop"],
+                refund.slug,
+			])
+		default:
+			return route("grp.org.accounting.refunds.show",[
+                route().params["organisation"],
+                refund.slug
+            ]);
+	}
 }
 
 </script>
@@ -412,7 +430,6 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
         <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
             <div class="text-xs md:text-sm">
 
-
                 <template v-if="!boxStats?.is_collection">
                     <div class="font-semibold xmb-2 text-base">
                         {{ trans("Shipping") }}
@@ -451,6 +468,23 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                 <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-gray-800 bg-gray-200 border border-gray-300 rounded-md">
                     <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" />
                     {{ trans('Cash on Delivery') }}
+                </div>
+
+                <div v-if="boxStats.refund" class="font-semibold mt-2 text-base">
+                    {{ trans("Refund") }}
+                </div>
+                <div v-if="boxStats.refund" class="pl-2 w-max">
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <Link class="primaryLink" :href="refundRoute(boxStats.refund)">
+                        {{ boxStats.refund.reference }}
+                    </Link>
+                    <Icon 
+                        :data="boxStats.refund.pay_status" 
+                        :class="boxStats.refund.pay_status.tooltip == 'Unpaid' ? 'animate-pulse' : ''"
+                    />
+                    <span v-if="boxStats.refund.pay_status.tooltip == 'Unpaid'" class="pl-1 text-xs italic text-gray-500">
+                        {{ trans('Refund has not been processed') }}
+                    </span>
                 </div>
 
             </div>

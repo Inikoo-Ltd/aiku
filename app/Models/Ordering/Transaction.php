@@ -17,6 +17,7 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Catalogue\Shop;
+use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\Helpers\Feedback;
 use App\Models\Traits\InCustomer;
 use Eloquent;
@@ -195,6 +196,11 @@ class Transaction extends Model
     public function invoiceTransaction(): HasOne
     {
         return $this->hasOne(InvoiceTransaction::class);
+    }
+
+    public function returnDeliveryNoteItems(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNoteItem::class, 'original_transaction_id');
     }
 
 }

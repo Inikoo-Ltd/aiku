@@ -103,6 +103,7 @@ function returnNoteRoute(returnDeliveryNote) {
 				route().params["warehouse"],
 				returnDeliveryNote.slug,
 			])
+		case "grp.org.shops.show.ordering.backlog":
 		case "grp.org.shops.show.ordering.return_delivery_notes.index":
 			return route("grp.org.shops.show.ordering.return_delivery_notes.show", [
 				route().params["organisation"],

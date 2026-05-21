@@ -22,6 +22,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
+use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -85,7 +86,8 @@ class ShowReturnDeliveryNote extends OrgAction
 
         if (in_array($returnDeliveryNote->state, [
             ReturnDeliveryNoteStateEnum::CANCELLED,
-            ReturnDeliveryNoteStateEnum::RETURNED
+            ReturnDeliveryNoteStateEnum::RETURNED,
+            ReturnDeliveryNoteStateEnum::DONE,
         ])) {
             $showCancel = false;
         }
@@ -122,7 +124,7 @@ class ShowReturnDeliveryNote extends OrgAction
                         'type'    => 'button',
                         'style'   => 'save',
                         'icon'    => 'fas fa-box-check',
-                        'label'   => __('Finished Processing'),
+                        'label'   => __('Finish Return'),
                         'key'     => 'finish-processing',
                         'route'   => [
                             'method'        => 'patch',
@@ -290,7 +292,8 @@ class ShowReturnDeliveryNote extends OrgAction
                 'reference' => $deliveryNote->reference,
                 'slug'      => $deliveryNote->slug,
                 'id'        => $deliveryNote->id,
-            ]
+            ],
+            'refund'        => $returnDeliveryNote->refund ? InvoicesResource::make($returnDeliveryNote->refund)->resolve() : null
         ];
     }
 
@@ -420,10 +423,10 @@ class ShowReturnDeliveryNote extends OrgAction
             $props
         );
 
-        $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value));
+        $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure(parent: $returnDeliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop)));
         if ($returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING) {
-            $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value));
-            $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value));
+            $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure(parent: $returnDeliveryNote, prefix: DeliveryNoteTabsEnum::PENDING_ITEMS->value));
+            $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure(parent: $returnDeliveryNote, prefix: DeliveryNoteTabsEnum::DONE_ITEMS->value));
         }
         $inertiaResponse->table(IndexHistory::make()->tableStructure(DeliveryNoteTabsEnum::HISTORY->value));
 
@@ -434,8 +437,8 @@ class ShowReturnDeliveryNote extends OrgAction
     {
         $initArr = [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+                fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop)))
+                : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop)))),
         ];
 
         if ($returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING) {

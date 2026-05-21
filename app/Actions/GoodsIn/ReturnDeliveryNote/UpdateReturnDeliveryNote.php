@@ -62,7 +62,8 @@ class UpdateReturnDeliveryNote extends OrgAction
             'handler_user_id'   => ['sometimes', 'nullable'],
             'reference'         => ['sometimes', 'string'],
             'returning_at'      => ['sometimes', 'nullable'],
-            'state'      => ['sometimes', Rule::enum(ReturnDeliveryNoteStateEnum::class)],
+            'refund_id'         => ['sometimes', 'nullable', 'exists:invoices,id'],
+            'state'             => ['sometimes', Rule::enum(ReturnDeliveryNoteStateEnum::class)],
         ];
     }
 
