@@ -25,6 +25,11 @@ const props = defineProps<{
         icon?: string
         icon_left?: IconTS
         icon_right?: IconTS
+        clickable_icon?: {
+            label?: string
+            icon?: IconTS
+            url: string
+        }
     }
     interval: Intervals
 }>()
@@ -80,43 +85,58 @@ const getIntervalStateColor = (state?: string) => {
 </script>
 
 <template>
-    <component v-if="cell"
-        class="flex gap-2 items-center tabular-nums text-xs md:text-base"
-        :class="[
-            cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
-        ]"
-        :is="cell?.route_target?.name ? Link : 'div'"
-        :href="cell?.route_target?.name ? route(cell?.route_target.name, cell?.route_target.key_date_filter ? {
-            ...cell?.route_target?.parameters,
-            [cell?.route_target?.key_date_filter]: getDashboardDateRange(props.interval.value, props.interval.range_interval)
-        } : cell?.route_target.parameters) : '#'"
-    >
-        <Icon
-            v-if="cell.icon_left"
-            :data="cell.icon_left"
-        />
-        <img
-            v-if="cell?.icon"
-            :src="`/assets/channel_logo/${cell.icon}.svg`"
-            class="w-4 h-4"
-            :alt="cell.icon"
-            v-tooltip="cell?.tooltip ?? cell.icon"
-        />
-        <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value === 'NA' ? '--' : cell?.formatted_value }}</span>
-        <Icon
-            v-if="cell.icon_right"
-            :data="cell.icon_right"
-        />
-        <FontAwesomeIcon
-            v-if="cell?.delta_icon?.change"
-            :icon="cell?.formatted_value === 'NA' ? faEquals : getIntervalChangesIcon(cell?.delta_icon?.change)?.icon"
-            class="text-xxs md:text-sm"
+    <div>
+        <a v-if="cell?.clickable_icon?.label || cell?.clickable_icon?.icon"
+            class="inline-flex gap-1 items-center text-xs text-blue-600 opacity-60 hover:opacity-100 xqwezxc py-1 pl-0.5 pr-1.5 underline mr-0.5"
+            :href="cell?.clickable_icon?.url ?? '#'"
+            target="_blank"
+            norel="noopener noreferrer"
+        >
+            {{ cell.clickable_icon.label }}
+            <Icon
+                v-if="cell.clickable_icon.icon"
+                :data="cell.clickable_icon.icon"
+            />
+        </a>
+
+        <component v-if="cell"
+            class="inline-flex gap-2 items-center tabular-nums text-xs md:text-base"
             :class="[
-                cell?.formatted_value === 'NA' ? '' : getIntervalChangesIcon(cell?.delta_icon?.change)?.class,
-                cell?.formatted_value === 'NA' ? 'text-gray-400' : getIntervalStateColor(cell?.delta_icon?.state),
+                cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
             ]"
-            fixed-width
-            aria-hidden="true"
-        />
-    </component>
+            :is="cell?.route_target?.name ? Link : 'div'"
+            :href="cell?.route_target?.name ? route(cell?.route_target.name, cell?.route_target.key_date_filter ? {
+                ...cell?.route_target?.parameters,
+                [cell?.route_target?.key_date_filter]: getDashboardDateRange(props.interval.value, props.interval.range_interval)
+            } : cell?.route_target.parameters) : '#'"
+        >
+            <Icon
+                v-if="cell.icon_left"
+                :data="cell.icon_left"
+            />
+            <img
+                v-if="cell?.icon"
+                :src="`/assets/channel_logo/${cell.icon}.svg`"
+                class="w-4 h-4"
+                :alt="cell.icon"
+                v-tooltip="cell?.tooltip ?? cell.icon"
+            />
+            <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value === 'NA' ? '--' : cell?.formatted_value }}</span>
+            <Icon
+                v-if="cell.icon_right"
+                :data="cell.icon_right"
+            />
+            <FontAwesomeIcon
+                v-if="cell?.delta_icon?.change"
+                :icon="cell?.formatted_value === 'NA' ? faEquals : getIntervalChangesIcon(cell?.delta_icon?.change)?.icon"
+                class="text-xxs md:text-sm"
+                :class="[
+                    cell?.formatted_value === 'NA' ? '' : getIntervalChangesIcon(cell?.delta_icon?.change)?.class,
+                    cell?.formatted_value === 'NA' ? 'text-gray-400' : getIntervalStateColor(cell?.delta_icon?.state),
+                ]"
+                fixed-width
+                aria-hidden="true"
+            />
+        </component>
+    </div>
 </template>
