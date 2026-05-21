@@ -536,7 +536,10 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                     </template>
                 </InputNumber>
                 <button
-                    @click="()=> proxyItem.to_refund.net_amount = item.to_refund.max_refundable_amount"
+                    @click="()=> {
+                        set(proxyItem.to_refund, 'refund_amount', item.to_refund.max_refundable_amount);
+                        emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                    }"
                     class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
                     {{ trans("Refundable") }}: {{ locale.currencyFormat(item.to_refund.currency_code, item.to_refund.max_refundable_amount)}}
                 </button>
