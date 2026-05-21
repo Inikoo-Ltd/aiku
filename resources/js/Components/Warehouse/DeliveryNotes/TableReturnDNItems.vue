@@ -537,6 +537,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                 </InputNumber>
                 <button
                     @click="()=> {
+                        proxyItem.to_refund.net_amount = item.to_refund.max_refundable_amount;
                         set(proxyItem.to_refund, 'refund_amount', item.to_refund.max_refundable_amount);
                         emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
                     }"
