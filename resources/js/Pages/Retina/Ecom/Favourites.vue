@@ -233,11 +233,11 @@ onMounted(() => {
         :resource="data"
         :basket-transactions="basketTransactions"
         :preserve-scroll="true"
-        class="mt-5 "
+         class="mt-5 "
 		:key="key"
     >
         <template #card="{ item }"> 
-            <div   class="offers">
+            <div class="offers h-full">
                 <ProductRenderEcom
                     :product="item"
                     :hasInBasket="item"
