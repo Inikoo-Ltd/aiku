@@ -76,7 +76,8 @@ class IndexStoredItemMovements extends OrgAction
         $query->leftJoin('pallet_deliveries', 'pallet_deliveries.id', 'stored_item_movements.pallet_delivery_id');
         $query->leftJoin('pallet_returns', 'pallet_returns.id', 'stored_item_movements.pallet_return_id');
 
-        $query->defaultSort('stored_item_movements.id')
+        $query
+            ->defaultSort(['-stored_item_movements.moved_at'])
             ->select(
                 'stored_item_movements.id',
                 'stored_item_movements.quantity as delta',
@@ -119,7 +120,6 @@ class IndexStoredItemMovements extends OrgAction
         }
 
         return $query
-            ->defaultSort('-pallets.id')
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

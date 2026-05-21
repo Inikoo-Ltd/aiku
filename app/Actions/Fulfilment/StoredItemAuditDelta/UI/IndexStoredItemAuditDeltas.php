@@ -68,7 +68,8 @@ class IndexStoredItemAuditDeltas extends OrgAction
             $query->where('stored_item_audit_deltas.stored_item_audit_id', $parent->id);
         }
 
-        $query->defaultSort('-stored_item_audit_deltas.audited_at')
+        $query
+            ->defaultSort('-stored_item_audit_deltas.audited_at')
             ->select(
                 'stored_item_audit_deltas.id',
                 'stored_item_audit_deltas.pallet_id as pallet_id',
@@ -99,7 +100,8 @@ class IndexStoredItemAuditDeltas extends OrgAction
                 'pallet_returns.slug as pallet_returns_slug'
             );
 
-        return $query->allowedSorts(['id', 'audited_at', 'original_quantity', 'audited_quantity', 'state', 'audit_type'])
+        return $query
+            ->allowedSorts(['id', 'audited_at', 'original_quantity', 'audited_quantity', 'state', 'audit_type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
