@@ -141,7 +141,7 @@ const debUpdateQuantity = debounce((newVal?: number) => {
             <FontAwesomeIcon icon="far fa-minus" class="" fixed-width aria-hidden="true" />
         </div>
 
-        <div class="max-w-full relative">
+        <div class="max-w-full relative ">
             <InputNumber
                 :modelValue="product.quantity_ordered_new"
                 @input="(e) => (
@@ -179,3 +179,6 @@ const debUpdateQuantity = debounce((newVal?: number) => {
         </div>
     </div>
 </template>
+
+<style scoped>
+</style>

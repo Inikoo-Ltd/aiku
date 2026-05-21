@@ -317,15 +317,15 @@ onUnmounted(() => {
          bg-[var(--theme-color-0)]" :class="layout.rightbasket?.show
             ? 'absolute -left-4'
             : 'fixed right-4'" :style="{
-        top: layout.rightbasket?.show ? '50%' : topPosition + 'px',
-        color: layout.app.theme[1]
-    }">
+                top: layout.rightbasket?.show ? '50%' : topPosition + 'px',
+                color: layout.app.theme[1]
+            }">
             <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" fixed-width />
 
             <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width class="cursor-grab"
                 @mousedown.stop="startDrag" />
         </div>
-        <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 ">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
                     {{ trans("Your Basket (:xxx items)", { xxx: layout.iris_variables?.cart_count ?? 0 }) }}
@@ -406,8 +406,8 @@ onUnmounted(() => {
             <div class="mt-8 flow-root">
                 <ul role="list" class="!mx-0 mt-6 mb-0">
                     <template v-if="!isLoadingProducts">
-                        <li v-for="(product, idxProd) in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-1 relative">
-                            <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
+                        <li v-for="(product, idxProd) in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-1 relative basket-item">
+                            <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10 basket-product-info" />
 
                             <!-- Product: Image -->
                             <div class="relative group">
@@ -427,7 +427,7 @@ onUnmounted(() => {
                                 </div>
                             </div>
                             
-                            <div class="ml-4 flex justify-between gap-x-4 w-full text-xs">
+                            <div class="ml-4 flex justify-between gap-x-4 w-full text-xs basket-product-title discount-badge ">
                                 <!-- Section: label Discount, product name, product price -->
                                 <div class="flex flex-1 flex-col">
                                     <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs" />
@@ -451,7 +451,7 @@ onUnmounted(() => {
                                 
                                 <!-- Section: input quantity -->
                                 <div class="flex flex-col justify-between items-end pt-7">
-                                    <div class="max-w-32 flex gap-x-2 h-fit items-center">
+                                    <div class="max-w-32 flex gap-x-2 h-fit items-center ">
                                         <InputQuantitySideBasket
                                             :product
                                             @productRemoved="() => onRemoveProductWhenQuantityZero(product)"
@@ -634,5 +634,30 @@ onUnmounted(() => {
         var(--f) var(--f),100% var(--f),
         calc(100% - var(--r)) calc(50% + var(--f)/2),100% 100%);
 }
+
+.basket-drawer {
+  width: min(92vw, 520px);
+  box-sizing: border-box;
+}
+
+
+.basket-item {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.basket-product-info {
+  min-width: 0;
+}
+.basket-product-title,
+.discount-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 </style>
