@@ -10,9 +10,9 @@ import ReviewReply from "@/Components/Reviews/ReviewReply.vue"
 import { trans } from "laravel-vue-i18n"
 import { faPencil, faReply, faEye } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed } from "vue"
 import Dialog from "primevue/dialog"
 import { ref } from "vue"
+import { Rating } from "primevue"
 
 
 library.add(
@@ -72,11 +72,6 @@ const closeModal = () => {
     selectedItem.value = null
 }
 
-const renderStars = (rating: number): string => {
-    const numericRating = Number(rating)
-    const value = Number.isFinite(numericRating) ? Math.max(0, Math.min(5, Math.round(numericRating))) : 0
-    return "★".repeat(value)
-}
 
 const aftreReply = () => {
     isDialogVisible.value = false
@@ -98,15 +93,14 @@ const aftreReply = () => {
                     <Image v-for="(thumbnail, index) in item.image_thumbnails.slice(0, 3)"
                         :key="`${item.id}-image-${index}`" :src="thumbnail"
                         class="h-8 w-8 overflow-hidden rounded object-cover" />
-                    <span v-if="item.image_thumbnails.length > 3" class="text-xs text-gray-500">
-                        +{{ item.image_thumbnails.length - 3 }}
-                    </span>
                 </template>
                 <div v-else class="h-8 w-8 rounded border border-gray-200" />
             </div>
         </template>
         <template #cell(rating)="{ item }">
-            <span class="text-amber-500">{{ renderStars(item.rating) }}</span>
+            <div class="rating">
+                <Rating :modelValue="item.rating" readonly />
+            </div>
         </template>
         <template #cell(reply_status)="{ item }">
             <Tag :theme="item.has_reply ? 3 : 99" :label="item.has_reply ? trans('Yes') : trans('No')" />
@@ -134,3 +128,10 @@ const aftreReply = () => {
     </Dialog>
 
 </template>
+
+
+<style scoped>
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+    color: #f59e0b !important;
+}
+</style>

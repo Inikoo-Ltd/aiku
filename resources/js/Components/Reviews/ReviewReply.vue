@@ -12,6 +12,7 @@ import { useFormatTime } from "@/Composables/useFormatTime";
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faPencil, faReply, faTrashAlt } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Image from "@/Common/Components/Image.vue"
 
 interface SchemaItem {
     dimension: string
@@ -229,6 +230,7 @@ const deleteReply = async () => {
         loadingDelete.value = false
     }
 }
+console.log(props.modelValue)
 </script>
 
 <template>
@@ -275,6 +277,31 @@ const deleteReply = async () => {
             </div>
         </div>
 
+        <div v-if="Array.isArray(modelValue.image_thumbnails) && modelValue.image_thumbnails.length" class="space-y-2">
+            <div class="flex items-center justify-between">
+                <div class="text-sm font-medium text-gray-800">
+                    {{ trans("Images") }}
+                </div>
+
+                <div class="text-xs text-gray-500">
+                    {{ modelValue.image_thumbnails.length }}
+                    {{ trans("Photos") }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+                <button v-for="(thumbnail, index) in modelValue.image_thumbnails"
+                    :key="`${modelValue.id}-image-${index}`" type="button"
+                    class="group relative aspect-square overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                    <Image :src="thumbnail" preview
+                        imageClass="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        />
+
+                    <div class="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
+                </button>
+            </div>
+        </div>
+
         <!-- Customer Comment -->
         <div class="space-y-3">
             <div class="rounded border border-gray-200 bg-white p-3 shadow-sm">
@@ -305,7 +332,8 @@ const deleteReply = async () => {
                 </div>
             </div>
 
-            <div v-if="props.modelValue.reply_status == 'Yes'" class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <div v-if="props.modelValue.reply_status == 'Yes'"
+                class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
                 <div v-if="!isEditMode" class="space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div class="flex items-center gap-3">

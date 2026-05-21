@@ -79,12 +79,9 @@ const saveProductReview = async () => {
 
     const payload = {
         ...selectedItem.value?.reviews?.product,
-        ...selectedItem.value?.reviews?.product?.payload,
+      /*   ...selectedItem.value?.reviews?.product?.payload, */
     }
 
-    /**
-     * BUILD FORM DATA (MULTIPART)
-     */
     const formData = new FormData()
 
     Object.entries(payload || {}).forEach(([key, value]) => {
@@ -159,6 +156,7 @@ const saveProductReview = async () => {
 
         <template #cell(product_review_rating)="{ item }">
             <div class="flex justify-end cursor-pointer rating" @click="openDialog(item)">
+                <pre>{{ item.reviews.product }}</pre>
                 <Rating v-model="item.product_review_rating" :disabled="true" />
             </div>
         </template>
@@ -169,6 +167,7 @@ const saveProductReview = async () => {
     </Table>
 
     <Dialog v-model:visible="isOpenDialog" modal header="Product Review" :style="{ width: '550px' }" :content-style="{ overflow: 'auto' }">
+       <pre>{{ selectedItem.reviews.product }}</pre> 
         <FormReview v-model="selectedItem.reviews.product" :schema="data.rating_labels.product_reviews" />
         <template #footer>
             <div class="flex justify-end gap-5">
