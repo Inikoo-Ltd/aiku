@@ -180,8 +180,8 @@ class MarketingHub extends InertiaAction
             'grp.org.shops.show.marketing.mailshots.index',
             'grp.org.shops.show.marketing.newsletters.index',
             'grp.org.shops.show.marketing.templates.index',
-            'grp.org.shops.show.marketing.wati-templates.index',
-            'grp.org.shops.show.marketing.wati-templates.show' =>
+            'grp.org.shops.show.marketing.wati.templates.index',
+            'grp.org.shops.show.marketing.wati.templates.show' =>
             array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [

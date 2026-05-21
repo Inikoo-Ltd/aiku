@@ -113,7 +113,7 @@ trait HasUIMailshots
                     ],
                 ]
             ),
-            'grp.org.shops.show.marketing.wati-templates.index' =>
+            'grp.org.shops.show.marketing.wati.templates.index' =>
             array_merge(
                 MarketingHub::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
@@ -121,7 +121,7 @@ trait HasUIMailshots
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.wati-templates.index',
+                                'name'       => 'grp.org.shops.show.marketing.wati.templates.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Wati Templates'),
@@ -130,7 +130,7 @@ trait HasUIMailshots
                     ],
                 ]
             ),
-            'grp.org.shops.show.marketing.wati-templates.show' =>
+            'grp.org.shops.show.marketing.wati.templates.show' =>
             array_merge(
                 $this->getBreadcrumbs(
                     'grp.org.shops.show.marketing.wati-templates.index',
@@ -142,7 +142,7 @@ trait HasUIMailshots
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.wati-templates.show',
+                                'name'       => 'grp.org.shops.show.marketing.wati.templates.show',
                                 'parameters' => $routeParameters
                             ],
                             'label' => $parent instanceof WatiTemplate ? $parent->element_name : __('Template'),

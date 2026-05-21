@@ -106,7 +106,7 @@ class ShowMarketingDashboard extends OrgAction
                         'value' => $this->shop->commsStats->number_wati_templates,
                         'icon'  => ['fal', 'fa-comment'],
                         'route' => [
-                            'name'       => 'grp.org.shops.show.marketing.wati-templates.index',
+                            'name'       => 'grp.org.shops.show.marketing.wati.templates.index',
                             'parameters' => $request->route()->originalParameters()
                         ]
                     ],

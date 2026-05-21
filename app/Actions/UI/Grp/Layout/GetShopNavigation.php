@@ -290,6 +290,16 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
+                        [
+                            "label"   => __("Wati"),
+                            "tooltip" => __("Wati"),
+                            "icon"    => ["fal", "fa-whatsapp"],
+                            'root'    => 'grp.org.shops.show.marketing.wati.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.wati.dashboard",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
 
 
                     ],

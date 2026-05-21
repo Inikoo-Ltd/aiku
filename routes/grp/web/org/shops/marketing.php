@@ -68,8 +68,29 @@ Route::name("templates.")->prefix('templates')
         Route::get('{emailTemplate}/edit', EditMailshotTemplate::class)->name('edit');
         Route::post('{emailTemplate}/send-test', [SendTestEmail::class, 'asControllerTemplate'])->name('send-test');
     });
-Route::name("wati-templates.")->prefix('wati-templates')
+Route::name("wati.")->prefix('wati')
     ->group(function () {
-        Route::get('', IndexWatiTemplates::class)->name('index');
-        Route::get('{watiTemplate}', ShowWatiTemplate::class)->name('show');
+        Route::get('', ShowDummy::class)->name('dashboard');
+        Route::name("contacts.")->prefix('contacts')
+            ->group(function () {
+                Route::get('', IndexDummies::class)->name('index');
+            });
+        Route::name("broadcast.")->prefix('broadcast')
+            ->group(function () {
+                Route::get('', IndexDummies::class)->name('index');
+            });
+        Route::name("live_inbox.")->prefix('live-inbox')
+            ->group(function () {
+                Route::get('', IndexDummies::class)->name('index');
+            });
+        Route::name("templates.")->prefix('templates')
+            ->group(function () {
+                Route::get('', IndexWatiTemplates::class)->name('index');
+                Route::get('{watiTemplate}', ShowWatiTemplate::class)->name('show');
+            });
+        Route::name("analytics.")->prefix('analytics')
+            ->group(function () {
+                Route::get('', IndexDummies::class)->name('index');
+            });
+        Route::get('settings', ShowDummy::class)->name('settings');
     });

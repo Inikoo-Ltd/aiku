@@ -22,10 +22,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Traits\WithWatiSubNavigation;
 
 class IndexWatiTemplates extends OrgAction
 {
     use HasUIMailshots;
+    use WithWatiSubNavigation;
 
     public Shop $parent;
 
@@ -91,9 +93,10 @@ class IndexWatiTemplates extends OrgAction
                 ),
                 'title'    => $title,
                 'pageHead' => [
-                    'title'   => $title,
-                    'icon'    => ['fal', 'fa-comment'],
-                    'actions' => [
+                    'title'         => $title,
+                    'icon'          => ['fal', 'fa-comment'],
+                    'subNavigation' => $this->getWatiSubNavigation($this->parent, $request),
+                    'actions'       => [
                         [
                             'type'  => 'button',
                             'style' => 'secondary',

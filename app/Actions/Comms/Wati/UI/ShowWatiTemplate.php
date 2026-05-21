@@ -18,11 +18,15 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\WithWatiSubNavigation;
 
 class ShowWatiTemplate extends OrgAction
 {
     use HasUIMailshots;
+    use WithWatiSubNavigation;
     use WithMarketingAuthorisation;
+
+    public Shop $parent;
 
     public function handle(WatiTemplate $watiTemplate): WatiTemplate
     {
@@ -35,6 +39,7 @@ class ShowWatiTemplate extends OrgAction
         WatiTemplate $watiTemplate,
         ActionRequest $request
     ): WatiTemplate {
+        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($watiTemplate);
@@ -53,6 +58,7 @@ class ShowWatiTemplate extends OrgAction
                 'title'    => $watiTemplate->element_name,
                 'pageHead' => [
                     'title' => $watiTemplate->element_name,
+                    'subNavigation' => $this->getWatiSubNavigation($this->parent, $request),
                     'icon'  => [
                         'icon'  => ['fal', 'fa-comment-alt-lines'],
                         'title' => __('Wati Template'),
