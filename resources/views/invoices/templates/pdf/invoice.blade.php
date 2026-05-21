@@ -411,9 +411,7 @@
 
     </tbody>
     <tbody class="totals">
-        @php($hasDiscounts = $order->goods_amount != $order->gross_amount)
-
-        @if ($order && $hasDiscounts)
+        @if ($order && ($order?->goods_amount != $order?->gross_amount))
 
             <tr>
                 <td style="border:none" colspan="4"></td>
