@@ -17,6 +17,7 @@ use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Rules\IUnique;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -34,6 +35,11 @@ class StoreShippingZone extends OrgAction
         data_set($modelData, 'organisation_id', $shippingZoneSchema->organisation_id);
         data_set($modelData, 'shop_id', $shippingZoneSchema->shop_id);
         data_set($modelData, 'currency_id', $shippingZoneSchema->shop->currency_id);
+        data_set(
+            $modelData,
+            'position',
+            (ShippingZone::where('shipping_zone_schema_id', $shippingZoneSchema->id)->max('position') ?? 0) + 1
+        );
 
 
         return DB::transaction(function () use ($shippingZoneSchema, $modelData) {
@@ -98,7 +104,6 @@ class StoreShippingZone extends OrgAction
             'status'      => ['required', 'boolean'],
             'price'       => ['required', 'array'],
             'territories' => ['sometimes', 'array'],
-            'position'    => ['required', 'integer'],
             'is_failover' => ['sometimes', 'boolean'],
 
         ];
@@ -115,6 +120,16 @@ class StoreShippingZone extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function asController(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZone
+    {
+        $this->initialisationFromShop($shippingZoneSchema->shop, $request);
+
+        return $this->handle($shippingZoneSchema, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
     public function action(ShippingZoneSchema $shippingZoneSchema, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): ShippingZone
     {
         if (!$audit) {
@@ -126,5 +141,20 @@ class StoreShippingZone extends OrgAction
         $this->initialisationFromShop($shippingZoneSchema->shop, $modelData);
 
         return $this->handle($shippingZoneSchema, $this->validatedData);
+    }
+
+    public function htmlResponse(ShippingZone $shippingZone)
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Shipping zone successfully created.'),
+        ]);
+
+        return redirect()->route('grp.org.shops.show.billables.shipping.show', [
+            'organisation'       => $shippingZone->organisation->slug,
+            'shop'               => $shippingZone->shop->slug,
+            'shippingZoneSchema' => $shippingZone->schema->slug,
+        ]);
     }
 }

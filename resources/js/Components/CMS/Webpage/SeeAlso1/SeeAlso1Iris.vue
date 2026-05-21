@@ -2,8 +2,10 @@
 import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
 import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
+import { get } from 'lodash-es'
 
 // Swiper
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -14,6 +16,7 @@ import { Navigation, Pagination } from 'swiper/modules'
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
 
 
 const props = defineProps<{
@@ -66,7 +69,7 @@ const compSwiperOptions = computed(() => {
   }
 })
 
-console.log('see also', props)
+console.log('see also', layout)
 </script>
 
 <template>
@@ -98,21 +101,7 @@ console.log('see also', props)
       <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0 top-1/2">
         <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg"/>
       </button>
-
-      <!-- Swiper -->
-      <!-- <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
-        :navigation="{ prevEl, nextEl }" class="w-full" :loop="true">
-        <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug"
-          class="cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded flex flex-col justify-between"
-          style="height: auto;">
-          <div class="flex flex-col h-full">
-            <div class="flex flex-col flex-1">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
-            </div>
-          </div>
-        </SwiperSlide>
-      </Swiper> -->
+      
       <Swiper   
         :modules="[Navigation]"
         :slides-per-view="slidesPerView"
@@ -124,12 +113,10 @@ console.log('see also', props)
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" :hideLogin="true"/>
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
+          :buttonStyle="layout?.buttonBasket?.buttonStyle"
+          :product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
-            </div>
-
-            <div v-else class="flex-1 flex items-center justify-center text-gray-400">
-              No Product
             </div>
           </div>
         </SwiperSlide>

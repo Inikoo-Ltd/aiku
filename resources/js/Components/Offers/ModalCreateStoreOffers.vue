@@ -129,8 +129,6 @@ watch(typeOffer, (val) => {
     offerQtyItems.value = 1
     if (val === 'quantity') {
         offerAmount.value = 0
-    } else if (val === 'amount') {
-        offerQtyItems.value = 0
     }
 })
 

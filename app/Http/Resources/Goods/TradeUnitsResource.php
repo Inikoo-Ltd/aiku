@@ -68,6 +68,7 @@ class TradeUnitsResource extends JsonResource
             'slug'                              => $tradeUnit->slug,
             'code'                              => $tradeUnit->code,
             'name'                              => $tradeUnit->name,
+            'marketing_weight'                  => $tradeUnit->marketing_weight !== null ? ($tradeUnit->marketing_weight).' g' : null,
             'type'                              => $tradeUnit->type,
             'number_current_stocks'             => $tradeUnit->number_current_stocks,
             'number_current_products'           => $tradeUnit->number_current_products,
@@ -83,8 +84,6 @@ class TradeUnitsResource extends JsonResource
             'invoices_ly'                       => $tradeUnit->invoices_ly ?? 0,
             'invoices_delta'                    => $this->calculateDelta($tradeUnit->invoices ?? 0, $tradeUnit->invoices_ly ?? 0),
             'health_rank'                       => $tradeUnit->health_rank ? $tradeUnit->health_rank->stateIcon()[$tradeUnit->health_rank->value] : null,
-            'marketing_weight'                  => $tradeUnit->marketing_weight,
-            'marketing_dimensions'              => $tradeUnit->marketing_dimensions,
             ...$additionalData
         ];
     }

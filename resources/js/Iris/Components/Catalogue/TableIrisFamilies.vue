@@ -6,18 +6,28 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { usePage } from "@inertiajs/vue3"
-import Table from "@/Components/Table/Table.vue"
-import Icon from "@/Components/Icon.vue"
-import Tag from "@/Components/Tag.vue"
-import { Link } from "@inertiajs/vue3";
+import { Link, usePage } from "@inertiajs/vue3"
+import Table from "../Tables/Table.vue"
+import { routeType } from "@/types/route"
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+import { faYinYang, faDotCircle, faCheck,} from "@fal";
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 
+
+library.add(faCheck,faYinYang, faDotCircle)
+
 const props = defineProps<{
     data: any
     tab?: string,
+    routes: {
+        dataList: routeType
+        submitAttach: routeType
+        detach: routeType
+    }
+    isCheckBox?: boolean
 }>()
 
 const page = usePage()
@@ -49,20 +59,27 @@ const parentInfo = computed(() => {
         <span class="text-sm font-medium text-gray-800" v-if="parentInfo.code">{{ parentInfo.code }}</span>
         <span class="text-sm text-gray-500" v-if="parentInfo.name">— {{ parentInfo.name }}</span>
     </div>
-    <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(image)="{ item: item }">
+    <Table :resource="data" :name="tab">
+        <template #cell(code)="{ item: department }">
+            <Link
+                :href="route('iris.catalogue.family.show', { family: department.slug })"
+                class="primaryLink"
+            >
+                {{ department.code }}
+            </Link>
+        </template>
+         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image
+                    :src="item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="w-6 aspect-square rounded-full overflow-hidden shadow"
+                />
             </div>
         </template>
-        <template #cell(state)="{ item: product }">  
-            <Tag :label="product.state.label" v-tooltip="product.state.label">
-                <template #label>
-                    <Icon :data="product.state" /> <span :class="product.state.class">{{ product.state.label }}</span>
-                </template>
-            </Tag>
+        <template #cell(current_products)="{ item: family }">
+            {{ family["current_products"] }}
         </template>
-
+        <!-- Column: Department name -->
         <template #cell(department_code)="{ item }">
             <span class="font-medium">
                 {{ item.department_name }}
@@ -75,22 +92,12 @@ const parentInfo = computed(() => {
             </span>
         </template>
 
-         <template #cell(family)="{ item }">
-            <span class="font-medium">
-                {{ item.family_name }}
-            </span>
-        </template>
-
-          <template #cell(url)="{ item }">
-           <a :href="item.canonical_url"> 
-                <FontAwesomeIcon :icon="faExternalLink" />
-           </a>
-        </template>
-
-        <template #cell(code)="{ item: department }">
-            <a :href="department.canonical_url" class="primaryLink" @click="$emit('select-family', department.id)">
-                {{ department.code }}
-            </a>
+        <template #cell(public_url)="{ item: item }">
+            <div class="flex justify-center">
+                <a v-if="item.public_url" :href="item.public_url" target="_blank">
+                    <FontAwesomeIcon :icon="faExternalLink" />
+                </a>
+            </div>
         </template>
     </Table>
 </template>

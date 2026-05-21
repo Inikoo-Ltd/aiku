@@ -530,7 +530,7 @@ const submitPortfolioAction = async (action: any) => {
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-const key = ulid()
+const key = ref(ulid())
 
 // ========= handle upload to R2 and get download link
 const codeString = ref<string | null>(null)

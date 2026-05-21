@@ -97,7 +97,7 @@ function getCountryLabel(code: string): string {
 </script>
 
 <template>
-  <div class="space-y-4 text-sm max-w-[450px] mx-auto">
+  <div class="space-y-4 text-sm  mx-auto">
     <!-- Add Button -->
     <div class="flex justify-end mb-2">
       <Button :icon="faPlus" label="Add Region" type="add" size="xs" @click="addNewItem" />
@@ -105,6 +105,7 @@ function getCountryLabel(code: string): string {
 
     <!-- List of Regions -->
     <div
+      v-if="items.length"
       v-for="(item, index) in items"
       :key="index"
       class="p-3 rounded border border-gray-300 bg-white shadow-sm space-y-2"
@@ -155,9 +156,19 @@ function getCountryLabel(code: string): string {
         </div>
       </div>
     </div>
+
+    <div v-else
+      class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center">
+      <p class="text-sm font-medium text-gray-700">
+        {{ ctrans("No countries available") }}
+      </p>
+
+      <p class="mt-1 text-sm text-gray-500">
+        {{ ctrans("Please add a country.") }}
+      </p>
+    </div>
   </div>
 
- <!-- Modal for Add/Edit -->
 <!-- Modal for Add/Edit -->
 <Dialog v-model:visible="showModal" modal header="Region Editor" :style="{ width: '450px' }">
   <div class="space-y-4 text-sm">

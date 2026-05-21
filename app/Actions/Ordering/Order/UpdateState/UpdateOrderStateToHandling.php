@@ -40,6 +40,7 @@ class UpdateOrderStateToHandling extends OrgAction
             OrderStateEnum::IN_WAREHOUSE,
             OrderStateEnum::HANDLING,
             OrderStateEnum::PACKED,
+            OrderStateEnum::PICKED,
             OrderStateEnum::FINALISED,
         ])) {
             if ($oldState == OrderStateEnum::PACKED || $oldState == OrderStateEnum::FINALISED) {

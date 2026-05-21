@@ -39,14 +39,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_master_assets_type_shipping_zone
  * @property int $number_current_master_assets_type_shipping_zone
  * @property int $number_trade_units
- * @property int $number_orphan_trade_units
  * @property int $number_trade_units_with_barcode
  * @property int $number_trade_units_with_net_weight
  * @property int $number_trade_units_with_gross_weight
  * @property int $number_trade_units_with_marketing_weight
- * @property int $number_trade_units_without_marketing_weight
  * @property int $number_trade_units_with_marketing_dimensions
- * @property int $number_trade_units_without_marketing_dimensions
  * @property int $number_trade_units_with_images
  * @property int $number_stock_families
  * @property int $number_current_stock_families active + discontinuing
@@ -75,6 +72,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_trade_units_anomality_status_discontinued
  * @property int $number_trade_unit_families
  * @property int $number_trade_units_status_discontinuing
+ * @property int $number_orphan_trade_units
+ * @property int $number_trade_units_without_marketing_weight
+ * @property int $number_trade_units_without_marketing_dimensions
+ * @property int $number_trade_units_without_weight
+ * @property int $number_trade_units_without_description
+ * @property int $number_trade_units_without_brand
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newQuery()

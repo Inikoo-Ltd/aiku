@@ -1443,7 +1443,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
                     <!-- Field: Phone -->
                     <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full gap-x-2">
-                        <dt v-tooltip="trans('Cuatomer phone')" class="flex-none">
+                        <dt v-tooltip="trans('Customer phone')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
                         <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"

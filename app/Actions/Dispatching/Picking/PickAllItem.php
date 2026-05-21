@@ -47,7 +47,7 @@ class PickAllItem extends OrgAction
             $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
 
 
-            data_set($modelData, 'quantity', min($toPickQuantity, $locationOrgStock->quantity));
+            data_set($modelData, 'quantity', $toPickQuantity);
 
             $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
 

@@ -8,7 +8,6 @@ import { getStyles } from "@/Composables/styles"
 
 import Image from "@common/Components/Image.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
-import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
@@ -163,18 +162,12 @@ console.log(props)
           />
 
           <div class="btn-wrapper">
-            <!--   <LinkIris 
-                :href="fieldValue?.button?.link?.href" 
-                :canonical_url="fieldValue?.button?.link?.canonical_url"
-                :target="fieldValue?.button?.link?.target" 
-                :type="fieldValue?.button?.link?.type"> -->
                 <a href="#family-extra-description">
                   <Button 
                     :label="fieldValue?.button?.text"
                     :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" 
                   />
                 </a>
-       <!--        </LinkIris> -->
             </div>
         </div>
 

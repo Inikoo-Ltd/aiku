@@ -34,8 +34,11 @@ const isLoadingVisit = ref(false)
         <!-- Section: Image -->
         <div class="mb-3 flex justify-center relative">
             <component :is="product.attributes.web_url[0] ? LinkIris : 'div'" :href="product.attributes.web_url[0]"
+
+
                 class="w-full max-w-[220px] aspect-square flex items-center justify-center"
                 @success="() => SelectItemCollector(product)" @start="() => isLoadingVisit = true"
+
                 @finish="() => isLoadingVisit = false">
                 <Image v-if="product.attributes.image_link || product.iris_attributes?.web_images?.main?.gallery"
                     :src="product.iris_attributes?.web_images?.main?.gallery" :alt="product.name"
@@ -46,10 +49,12 @@ const isLoadingVisit = ref(false)
 
             <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                 <NewAddToCartButton v-if="product.iris_attributes?.stock && layout.retina?.type === 'b2b'"
+
                     :hasInBasket="layout?.family_page?.productInBasket?.list?.[product.iris_attributes.id]"
                     :product="product.iris_attributes" :key="product.iris_attributes.id"
                     :addToBasketRoute="{ name: 'iris.models.transaction.store' }"
                     :updateBasketQuantityRoute="{ name: 'iris.models.transaction.update' }"
+
                     :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
                     :buttonStyle="layout?.buttonBasket?.buttonStyle" />
             </div>
@@ -74,8 +79,6 @@ const isLoadingVisit = ref(false)
             </div>
         </div>
 
-
-
         <!-- Section: Title -->
         <span class="mb-1 !text-sm font-semibold leading-snug line-clamp-2 min-h-[3em]"
             :title="product.attributes.title">
@@ -86,15 +89,11 @@ const isLoadingVisit = ref(false)
             </component>
         </span>
 
-
-
-
         <!-- LOADING -->
         <div v-if="isLoadingVisit"
             class="absolute inset-0 z-10 grid place-items-center bg-black/50 text-white text-4xl">
             <LoadingIcon />
         </div>
-
     </div>
 
     <!-- Section: Prices -->
