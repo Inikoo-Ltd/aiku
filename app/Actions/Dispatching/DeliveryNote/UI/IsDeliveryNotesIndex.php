@@ -259,8 +259,8 @@ trait IsDeliveryNotesIndex
                 'number_of_days_in_warehouse',
                 'sort_picker',
                 'sort_packer',
-                'sort_trolleys',,
-                'is_premium_dispatch'
+                'sort_trolleys',
+                'is_premium_dispatch',
                 'sort_picked_bays'
 
             ])
