@@ -40,6 +40,7 @@ class StoredItemMovement extends Model
     protected $guarded = [];
 
     protected $casts   = [
-        'type'    => StoredItemMovementTypeEnum::class,
+        'type'      => StoredItemMovementTypeEnum::class,
+        'moved_at'  => 'datetime',
     ];
 }

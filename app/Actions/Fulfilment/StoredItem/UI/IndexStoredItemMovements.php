@@ -72,6 +72,7 @@ class IndexStoredItemMovements extends OrgAction
         $query->leftJoin('pallets', 'pallets.id', 'stored_item_movements.pallet_id');
         $query->leftJoin('stored_item_audits', 'stored_item_audits.id', 'stored_item_movements.stored_item_audit_id');
         $query->leftJoin('stored_item_audit_deltas', 'stored_item_audit_deltas.id', 'stored_item_movements.stored_item_audit_delta_id');
+        
         $query->leftJoin('pallet_deliveries', 'pallet_deliveries.id', 'stored_item_movements.pallet_delivery_id');
         $query->leftJoin('pallet_returns', 'pallet_returns.id', 'stored_item_movements.pallet_return_id');
 
@@ -80,19 +81,34 @@ class IndexStoredItemMovements extends OrgAction
                 'stored_item_movements.id',
                 'stored_item_movements.quantity as delta',
                 'stored_item_movements.type',
+                'stored_item_movements.moved_at',
+                
                 'stored_items.id as stored_item_id',
+                'stored_items.slug as stored_item_slug',
                 'stored_items.reference as stored_item_reference',
+
                 'pallets.slug as pallet_slug',
                 'pallets.reference as pallet_reference',
+
                 'locations.slug as location_slug',
                 'locations.slug as location_code',
+                
+                'stored_item_audits.id as stored_item_audit_id',
                 'stored_item_audits.reference as stored_item_audit_reference',
+                'stored_item_audits.slug as stored_item_audit_slug',
+                
                 'stored_item_audit_deltas.id as stored_item_audit_delta_id',
+                
+                'pallet_deliveries.id as pallet_delivery_id',
                 'pallet_deliveries.reference as pallet_delivery_reference',
-                'pallet_returns.reference as pallet_returns_reference'
+                'pallet_deliveries.slug as pallet_delivery_slug',
+
+                'pallet_returns.id as pallet_returns_id',
+                'pallet_returns.reference as pallet_returns_reference',
+                'pallet_returns.slug as pallet_returns_slug'
             );
 
-        $allowedSort = ['id', 'description', 'delta'];
+        $allowedSort = ['id', 'description', 'delta', 'moved_at'];
 
         if ($parent instanceof Pallet) {
             $allowedSort = array_merge($allowedSort, ['stored_item_reference']);
@@ -102,7 +118,8 @@ class IndexStoredItemMovements extends OrgAction
             $query->where('stored_item_movements.stored_item_id', $parent->id);
         }
 
-        return $query->defaultSort('pallets.id')
+        return $query
+            ->defaultSort('-pallets.id')
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -138,11 +155,12 @@ class IndexStoredItemMovements extends OrgAction
             if ($parent instanceof Pallet) {
                 $table->column(key: 'stored_item_reference', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true)->defaultSort('pallet_reference');
             }
-
-
+            
+            
             $table->column(key: 'location_code', label: __('Location'), canBeHidden: false, searchable: true);
-
+            
             $table->column(key: 'delta', label: __('Delta'), canBeHidden: false, searchable: true, sortable: true);
+            $table->column(key: 'moved_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 }
