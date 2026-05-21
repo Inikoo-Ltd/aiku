@@ -180,7 +180,7 @@ const optionsJob = reactive<optionsJob>({
     },
     shk: {
         key: 'shk',
-        department: trans("Shopkeeping")+'/'+trans("Web"),
+        department: trans("Shopkeeping"),
         icon: 'fal fa-cash-register',
         departmentRightIcons: ['fal fa-cube', 'fal fa-globe'],
         scope: 'shop',

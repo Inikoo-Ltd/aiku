@@ -23,7 +23,6 @@ const props = defineProps<{
 }>()
 
 const today = new Date(new Date().setHours(0, 0, 0, 0))
-
 const isOpenModal = ref(false)
 
 const offerLabel = ref('')

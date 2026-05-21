@@ -7,7 +7,7 @@
  * copyright 2026
 */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Models\Web\Webpage;

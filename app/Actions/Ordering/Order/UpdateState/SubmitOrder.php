@@ -163,7 +163,7 @@ class SubmitOrder extends OrgAction
 
         if ($grGiftOffer && $eligible && !$isGiftOptedOut) {
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
-            if (!$selectedGrGift) {
+            if ($selectedGrGift === null) {
                 $grGiftsData = Arr::get($offersData, 'gr.gifts_products');
                 if ($grGiftsData) {
                     foreach ($grGiftsData as $gift) {
@@ -176,7 +176,7 @@ class SubmitOrder extends OrgAction
             }
 
 
-            if ($selectedGrGift) {
+            if ($selectedGrGift !== null) {
                 /** @var OfferAllowance $giftAllowance */
                 $giftAllowance = $grGiftOffer->offerAllowances()->first();
                 if ($giftAllowance) {

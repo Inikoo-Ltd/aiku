@@ -360,8 +360,7 @@ test("UI Show Trade Units Dashboard", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'Trade Units Dashboard')->etc()
-            )
-            ->has("flatTreeMaps");
+            );
     });
 });
 

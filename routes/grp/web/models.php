@@ -20,7 +20,6 @@ use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
-use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
@@ -411,6 +410,7 @@ use App\Actions\Web\Redirect\DeleteRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -456,7 +456,7 @@ Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine
 });
 
 Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
-    Route::get('create', StoreShippingZone::class)->name('create');
+    Route::post('{shippingZoneSchema:id}/create', StoreShippingZone::class)->name('create');
     Route::patch('{shippingZone:id}', UpdateShippingZone::class)->name('update');
 });
 

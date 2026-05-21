@@ -63,7 +63,7 @@ class ShowShippingZoneSchema extends OrgAction
                     ],
                     'title'         => $shippingZoneSchema->name,
                     'actions'       => [
-                        $this->canEdit && !app()->environment('production') ? [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => 'Create shipping zone',
@@ -72,7 +72,7 @@ class ShowShippingZoneSchema extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ] : false,
-                        $this->canEdit  ? [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
@@ -92,7 +92,7 @@ class ShowShippingZoneSchema extends OrgAction
                     fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema, ShippingZoneSchemaTabsEnum::ZONES->value))
                     : Inertia::lazy(fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema)))
             ]
-        )->table(IndexShippingZones::make()->tableStructure(parent: $shippingZoneSchema, prefix: ShippingZoneSchemaTabsEnum::ZONES->value));
+        );
     }
 
 

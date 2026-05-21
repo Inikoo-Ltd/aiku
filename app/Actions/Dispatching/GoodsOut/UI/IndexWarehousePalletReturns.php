@@ -472,8 +472,8 @@ class IndexWarehousePalletReturns extends OrgAction
 
 
         $title = match ($this->type) {
-            PalletReturnTypeEnum::PALLET->value => __('Fulfillement Pallet Returns'),
-            PalletReturnTypeEnum::STORED_ITEM->value => __('Fulfillement DS Returns'),
+            PalletReturnTypeEnum::PALLET->value => __('Fulfillment Pallet Returns'),
+            PalletReturnTypeEnum::STORED_ITEM->value => __('Fulfillment DS Returns'),
             default => __('Returns'),
         };
         $afterTitle = null;

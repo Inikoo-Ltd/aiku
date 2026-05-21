@@ -78,7 +78,7 @@ trait HasBasketDetails
                 $grGiftsData[$key]['id'] = $gift['id'];
                 $grGiftsData[$key]['name'] = $gift['name'];
 
-                if ($selectedGrGift) {
+                if ($selectedGrGift !== null) {
                     $grGiftsData[$key]['selected'] = $gift['id'] == $selectedGrGift;
                 } else {
                     $grGiftsData[$key]['selected'] = Arr::get($gift, 'default', false);

@@ -66,12 +66,17 @@ class CreateShippingZone extends OrgAction
                                     'label'    => __('Name'),
                                     'required' => true,
                                 ],
-                                'position' => [
+                                /* 'position' => [
                                     'type'     => 'input',
                                     'inputType' => 'number',
                                     'label'    => __('Position'),
                                     'required' => true,
                                     'value'    => null,
+                                ], */
+                                'status' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Status'),
+                                    'value' => true,
                                 ],
                                 'is_failover' => [
                                     'type'  => 'toggle',
@@ -93,6 +98,7 @@ class CreateShippingZone extends OrgAction
                                     'type'     => 'pricing_zone',
                                     'label'    => __('Price'),
                                     'required' => true,
+                                    'currency' => $shippingZoneSchema->shop->currency,
                                     'value'    => [
                                         'type'  => 'Step Order Items Net Amount',
                                         'steps' => [
@@ -108,8 +114,8 @@ class CreateShippingZone extends OrgAction
                         ],
                     ],
                     'route' => [
-                        'name'       => 'grp.org.shops.show.billables.shipping.show.shipping-zone.create',
-                        'parameters' =>  array_values($request->route()->originalParameters())
+                        'name'       => 'grp.models.shipping_zone.create',
+                        'parameters' => [$shippingZoneSchema->id],
                     ],
                 ],
             ]

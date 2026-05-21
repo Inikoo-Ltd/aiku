@@ -38,16 +38,16 @@ class RepairCancelledRefundPaymentTotals
             ->where('state', PaymentStateEnum::CANCELLED->value)
             ->whereNotNull('original_payment_id');
 
-        $total = (clone $query)->count();        
-            
+        $total = (clone $query)->count();
+
         $progressBar   = $command->getOutput()->createProgressBar($total);
         $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $progressBar->start();
 
         $query
             ->orderBy('id', 'asc')
-            ->chunkById(1000, function ($chunk)  use (&$progressBar) {
-                foreach($chunk as $payment) {
+            ->chunkById(1000, function ($chunk) use (&$progressBar) {
+                foreach ($chunk as $payment) {
                     $this->handle($payment);
                     $progressBar->advance();
                 }

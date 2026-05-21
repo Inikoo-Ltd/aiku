@@ -10,24 +10,24 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
+use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Goods\TradeUnitsTabsEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
-use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMissingWeightTradeUnits extends GrpAction
 {
     use WithGoodsAuthorisation;
+    use WithTradeUnitIndex;
 
     private Group $parent;
 
@@ -41,75 +41,94 @@ class IndexMissingWeightTradeUnits extends GrpAction
 
     public function handle(?string $prefix = null): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereStartWith('trade_units.code', $value)
-                    ->orWhereAnyWordStartWith('trade_units.name', $value);
-            });
-        });
+        $globalSearch = $this->tradeUnitGlobalSearch();
 
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
+        $this->updateQueryBuilderParametersIfPrefixed($prefix);
 
-        $queryBuilder = QueryBuilder::for(TradeUnit::class);
+        $queryBuilder = $this->baseTradeUnitIndexBuilder();
         $queryBuilder->where('trade_units.group_id', $this->group->id);
         $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
-        $queryBuilder->whereNull('trade_units.marketing_weight');
-        $queryBuilder->where('trade_units.status', '!=', TradeUnitStatusEnum::DISCONTINUED);
+        $queryBuilder->where(function ($q) {
+            $q->whereNull('trade_units.marketing_weight')->orWhereNull('trade_units.net_weight');
+        });
+        $queryBuilder->whereIn('trade_units.status', [TradeUnitStatusEnum::ACTIVE, TradeUnitStatusEnum::IN_PROCESS]);
+
+        $selects = [
+            'trade_units.code',
+            'trade_units.slug',
+            'trade_units.name',
+            'trade_units.description',
+            'trade_units.gross_weight',
+            'trade_units.net_weight',
+            'trade_units.marketing_weight',
+            'trade_units.marketing_dimensions',
+            'trade_units.volume',
+            'trade_units.type',
+            'trade_units.id',
+        ];
+
+        if ($prefix === TradeUnitsTabsEnum::SALES->value) {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'trade_unit_time_series',
+                timeSeriesRecordsTable: 'trade_unit_time_series_records',
+                foreignKey: 'trade_unit_id',
+                aggregateColumns: [
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices',
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
+
+        $allowedSorts = ['code', 'type', 'name'];
+
+        if ($prefix === TradeUnitsTabsEnum::SALES->value) {
+            $allowedSorts[] = 'sales_grp_currency_external';
+            $allowedSorts[] = 'invoices';
+        }
 
         $queryBuilder
             ->defaultSort('trade_units.code')
-            ->select([
-                'trade_units.code',
-                'trade_units.slug',
-                'trade_units.name',
-                'trade_units.description',
-                'trade_units.gross_weight',
-                'trade_units.marketing_weight',
-                'trade_units.marketing_dimensions',
-                'trade_units.volume',
-                'trade_units.type',
-                'trade_unit_stats.number_current_stocks',
-                'trade_unit_stats.number_current_products',
-                'trade_units.id'
-            ]);
+            ->select($selects);
 
-        return $queryBuilder->allowedSorts(['code', 'type', 'name', 'number_current_stocks', 'number_current_products'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return $this->finalizeTradeUnitIndex(
+            queryBuilder: $queryBuilder,
+            allowedSorts: $allowedSorts,
+            globalSearch: $globalSearch,
+            prefix: $prefix
+        );
     }
 
-    public function tableStructure(Group $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group $parent, ?array $modelOperations = null, $prefix = null, bool $sales = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $sales) {
+            $this->setupTradeUnitTable(
+                table: $table,
+                modelOperations: $modelOperations,
+                prefix: $prefix,
+                withLabelRecord: true,
+                emptyState: ['title' => __('No Trade Units found')]
+            );
 
-            $table
-                ->defaultSort('code')
-                ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
-                ->withEmptyState(
-                    match (class_basename($parent)) {
-                        'Group' => [
-                            'title' => __("No Trade Units found"),
-                        ],
-                        default => null
-                    }
-                )
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'marketing_weight', label: __('Marketing Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
+            if ($sales) {
+                $table->betweenDates(['date']);
+                $this->addColumnCodeAndName($table);
+                $this->addSalesColumns($table);
+            } else {
+                $this->addColumnCodeAndName($table);
+                $table->column(key: 'net_weight', label: __('Net Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'marketing_weight', label: __('Marketing Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'marketing_dimensions', label: __('Dimensions'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+            }
         };
     }
-
 
     public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
@@ -147,9 +166,8 @@ class IndexMissingWeightTradeUnits extends GrpAction
                     : Inertia::lazy(fn () => TradeUnitsResource::collection($this->handle(prefix: TradeUnitsTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::INDEX->value))
-         ->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::SALES->value));
+         ->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::SALES->value, sales: true));
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {

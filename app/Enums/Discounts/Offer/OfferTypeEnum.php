@@ -20,7 +20,7 @@ enum OfferTypeEnum: string
     case AMOUNT = "Amount";
     case CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED = "Category For Every Quantity Any Product Ordered";
 
-    case GIFT = "Gift";
+
     case VOL_GR_GIFT = "VolGr Gift";
     case VOUCHER = "Voucher";
     case GR_AMNESTY = "GR Amnesty";
@@ -110,7 +110,6 @@ enum OfferTypeEnum: string
             self::CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED
             => $this->catalogueIcon(),
 
-            self::GIFT,
             self::VOL_GR_GIFT
             => $this->giftIcon(),
 

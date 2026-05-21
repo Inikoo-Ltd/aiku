@@ -26,7 +26,7 @@ const props = defineProps<{
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
-    indexBlock: number
+    indexBlock:number
 }>()
 
 
@@ -155,14 +155,13 @@ onMounted(() => {
 </script>
 
 <template>
-
-    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4"
-        :id="fieldValue?.id ? fieldValue?.id : 'luigi-trends-1-iris' + indexBlock" component="luigi-trends-1-iris"
-        :style="{
-            ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-            ...getStyles(fieldValue.container?.properties, screenType),
-            width: 'auto'
-        }">
+    
+    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'+indexBlock"  component="luigi-trends-1-iris"
+    :style="{
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        ...getStyles(fieldValue.container?.properties, screenType),
+        width: 'auto'
+    }">
         <template v-if="!isFetched || listProductsFromLuigi?.length">
             <!-- Title -->
             <div class="px-3 pt-6 md:pb-6">
@@ -172,24 +171,30 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-
+            
             <div class="py-4 px-3 md:px-12" id="LuigiTrends1">
-                <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4" :pagination="{ clickable: true }"
-                   autoHeight    class="w-full px-0 md:px-[50px]">
+              <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
+                    :pagination="{ clickable: true }"
+                    class="w-full"
+                    spaceBetween="12"
+                    autoHeight
+                >
                     <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
                         <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
                         </div>
                     </div>
 
                     <template v-else>
-                        <SwiperSlide v-for="(product, index) in listProductsFromLuigi"
-                            :key="product.attributes.product_code[0]"
-                            class="w-full cursor-grab relative !grid h-full min-h-full">
-                            <div class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
-                                <RecommendationSlideIrisWithRealData :product :isProductLoading
-                                    :isLoadingProductRealData />
-                            </div>
-
+                        <SwiperSlide
+                            v-for="(product, index) in listProductsFromLuigi"
+                             :key="product.attributes.product_code[0]"
+                             class="w-full cursor-grab relative !grid h-full min-h-full"
+                        >
+                            <RecommendationSlideIrisWithRealData
+                                :product
+                                :isProductLoading
+                                :isLoadingProductRealData
+                            />
                         </SwiperSlide>
                     </template>
                 </Swiper>
@@ -199,7 +204,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
+
 :deep(#LuigiTrends1 .swiper-wrapper) {
-    height: 100% !important;
+  height: 100% !important;
 }
 </style>

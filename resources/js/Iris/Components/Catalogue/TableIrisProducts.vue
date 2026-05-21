@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { usePage } from "@inertiajs/vue3"
-import Table from "@/Components/Table/Table.vue"
+import Table from "../Tables/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3";
@@ -41,6 +41,7 @@ const parentInfo = computed(() => {
         name: params.get('parent_name') ?? '',
     }
 })
+console.log("products", props.data)
 </script>
 
 <template>
@@ -52,13 +53,11 @@ const parentInfo = computed(() => {
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image
+                    :src="item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="w-6 aspect-square rounded-full overflow-hidden shadow"
+                />
             </div>
-        </template>
-         <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="$emit('select-collection', department.id, department.code, department.name)">
-                {{ department.code }}
-            </span>
         </template>
         <template #cell(state)="{ item: product }">  
             <Tag :label="product.state.label" v-tooltip="product.state.label">
@@ -86,10 +85,18 @@ const parentInfo = computed(() => {
             </span>
         </template>
 
-          <template #cell(url)="{ item }">
-           <a :href="item.canonical_url"> 
-                <FontAwesomeIcon :icon="faExternalLink" />
-           </a>
+        <template #cell(public_url)="{ item: item }">
+            <div class="flex justify-center">
+                <a v-if="item.public_url" :href="item.public_url ?? item.iris_url" target="_blank">
+                    <FontAwesomeIcon :icon="faExternalLink" />
+                </a>
+            </div>
+        </template>
+
+        <template #cell(code)="{ item: item }">
+            <a :href="item.canonical_url ?? item.iris_url" class="primaryLink"> 
+                {{ item.code }}          
+            </a>
         </template>
     </Table>
 </template>

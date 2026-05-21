@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
 use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
+use App\Actions\Discounts\OfferCampaign\Json\CheckVoucherCodeExistence;
 use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
 use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOffer;
@@ -74,6 +75,11 @@ Route::name("campaigns.")->prefix('campaigns')
             '{offerCampaign}/voucher',
             StoreVoucherOffers::class
         )->name('store_voucher');
+
+        Route::get(
+            '{offerCampaign}/voucher/check',
+            CheckVoucherCodeExistence::class
+        )->name('check_voucher');
 
         Route::post(
             '{offerCampaign}/shipping',

@@ -40,12 +40,44 @@ class ShowTradeUnitsDashboard extends OrgAction
                     [
                         'label' => __('Trade Units'),
                         'route' => [
-                            'name'       => 'grp.trade_units.units.active',
+                            'name'       => 'grp.trade_units.units.index',
                             'parameters' => []
                         ],
                         'color' => '#35858E',
                         'icon'  => 'fal fa-atom',
-                        'value' => $this->group->goodsStats->number_trade_units_status_active,
+                        'value' => $this->group->goodsStats->number_trade_units_status_active + $this->group->goodsStats->number_trade_units_status_discontinuing,
+                        'metas' => [
+                            [
+                                'icon'    => ['icon' => 'fal fa-seedling', 'class' => 'text-indigo-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_in_process,
+                                'tooltip' => __('In Process'),
+                                'route'   => ['name' => 'grp.trade_units.units.in_process', 'parameters' => []],
+                            ],
+                            [
+                                'icon'    => ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_active,
+                                'tooltip' => __('Active'),
+                                'route'   => ['name' => 'grp.trade_units.units.active', 'parameters' => []],
+                            ],
+                            [
+                                'icon'    => ['icon' => 'fal fa-exclamation-triangle', 'class' => 'text-orange-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_discontinuing,
+                                'tooltip' => __('Discontinuing'),
+                                'route'   => ['name' => 'grp.trade_units.units.discontinuing', 'parameters' => []],
+                            ],
+                            [
+                                'icon'    => ['icon' => 'fas fa-skull', 'class' => 'text-yellow-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_discontinued,
+                                'tooltip' => __('Discontinued'),
+                                'route'   => ['name' => 'grp.trade_units.units.discontinued', 'parameters' => []],
+                            ],
+                            [
+                                'icon'    => ['icon' => 'fal fa-scarecrow', 'class' => 'text-slate-500'],
+                                'count'   => $this->group->goodsStats->number_trade_units_status_anomality,
+                                'tooltip' => __('Anomality'),
+                                'route'   => ['name' => 'grp.trade_units.units.anomality', 'parameters' => []],
+                            ],
+                        ],
                     ],
                     [
                         'label' => __('Trade Unit Families'),
@@ -57,41 +89,52 @@ class ShowTradeUnitsDashboard extends OrgAction
                         'icon'  => 'fal fa-atom',
                         'value' => $this->group->goodsStats->number_stock_families_state_active,
                     ],
+                ],
+                'statsBoxNegative' => [
                     [
-                        'is_negative'     => true,
-                        'label'           => __('Trade Units No family'),
-                        'route'           => [
+                        'label' => __('Trade Units No family'),
+                        'route' => [
                             'name'       => 'grp.trade_units.units.orphan',
                             'parameters' => []
                         ],
-                        'icon'            => 'fal fa-atom',
-                        'backgroundColor' => '#ff000011',
-                        'color'           => '#df1c1cff',
-                        'value'           => $this->group->goodsStats->number_orphan_trade_units,
+                        'icon'  => 'fal fa-atom',
+                        'value' => $this->group->goodsStats->number_orphan_trade_units,
                     ],
                     [
-                        'is_negative'     => true,
-                        'label'           => __('Without Marketing Weight'),
-                        'route'           => [
+                        'label' => __('Without Weight'),
+                        'route' => [
                             'name'       => 'grp.trade_units.units.missing_weight',
                             'parameters' => []
                         ],
-                        'icon'            => 'fal fa-weight',
-                        'backgroundColor' => '#ff000011',
-                        'color'           => '#df1c1cff',
-                        'value'           => $this->group->goodsStats->number_trade_units_without_marketing_weight,
+                        'icon'  => 'fal fa-weight',
+                        'value' => $this->group->goodsStats->number_trade_units_without_weight,
                     ],
                     [
-                        'is_negative'     => true,
-                        'label'           => __('Without Marketing Dimensions'),
-                        'route'           => [
+                        'label' => __('Without Marketing Dimensions'),
+                        'route' => [
                             'name'       => 'grp.trade_units.units.missing_dimensions',
                             'parameters' => []
                         ],
-                        'icon'            => 'fal fa-ruler-combined',
-                        'backgroundColor' => '#ff000011',
-                        'color'           => '#df1c1cff',
-                        'value'           => $this->group->goodsStats->number_trade_units_without_marketing_dimensions,
+                        'icon'  => 'fal fa-ruler-combined',
+                        'value' => $this->group->goodsStats->number_trade_units_without_marketing_dimensions,
+                    ],
+                    [
+                        'label' => __('Without Description'),
+                        'route' => [
+                            'name'       => 'grp.trade_units.units.missing_description',
+                            'parameters' => []
+                        ],
+                        'icon'  => 'fal fa-align-left',
+                        'value' => $this->group->goodsStats->number_trade_units_without_description,
+                    ],
+                    [
+                        'label' => __('Without Brand'),
+                        'route' => [
+                            'name'       => 'grp.trade_units.units.missing_brand',
+                            'parameters' => []
+                        ],
+                        'icon'  => 'fal fa-tag',
+                        'value' => $this->group->goodsStats->number_trade_units_without_brand,
                     ],
                 ],
             ]

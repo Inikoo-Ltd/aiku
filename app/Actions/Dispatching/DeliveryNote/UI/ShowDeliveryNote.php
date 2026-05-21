@@ -226,6 +226,42 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
+        if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'icon'    => 'fal fa-tired',
+                'tooltip' => __('Go back to picked'),
+                'label' => __('Undo packing'),
+                'key'     => 'unpacking',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.undo_packing',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
+        if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'icon'    => 'fal fa-tired',
+                'tooltip' => __('Go back to picking'),
+                'label' => __('Undo set as picked'),
+                'key'     => 'unpicked',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.undo_set_as_picked',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
         if ($isEditable && in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
             $actions[] = [
                 'type'    => 'button',
@@ -754,10 +790,6 @@ class ShowDeliveryNote extends OrgAction
 
         $this->return = $deliveryNote->returnedDeliveryNote()->whereNot('state', ReturnDeliveryNoteStateEnum::CANCELLED)->first();
 
-        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
-            $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
-        }
-
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -796,7 +828,7 @@ class ShowDeliveryNote extends OrgAction
             ] : null,
             'is_editable'    => $isEditable,
             'tabs'          => [
-                'current'    => $this->tab,
+                'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
                 'navigation' => $deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED
                     ?
                     DeliveryNoteTabsEnum::navigation($deliveryNote)
