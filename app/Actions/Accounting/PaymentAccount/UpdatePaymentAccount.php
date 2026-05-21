@@ -55,7 +55,7 @@ class UpdatePaymentAccount extends OrgAction
             $paymentAccount = $this->update($paymentAccount, $modelData, ['data']);
         }
 
-        if ($paymentAccount->wasChanged('data')) {
+        if ($paymentAccount->wasChanged('data') && $paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
             $clientId = Arr::get($paymentAccount->data, 'paypal_client_id');
             $secretKey = Arr::get($paymentAccount->data, 'paypal_client_secret');
 

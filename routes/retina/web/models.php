@@ -74,12 +74,14 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSal
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaEbayCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
+use App\Actions\Retina\Dropshipping\Orders\PayOrderWithPastpay;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalanceAfterSubmitted;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\SuccessOrderWithPastpay;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateOrderGrGift;
@@ -179,6 +181,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place_order_pay_by_bank');
 Route::post('place-order-pay-by-cash-on-delivery', PlaceOrderPayByCashOnDelivery::class)->name('place_order_pay_by_cash_on_delivery');
+Route::post('orders/{order}/pay-by-pastpay', PayOrderWithPastpay::class)->name('place_order_pay_by_pastpay');
+Route::post('orders/{order}/success-pay-by-pastpay', SuccessOrderWithPastpay::class)->name('success_order_pay_by_pastpay');
 
 Route::post('top-up-payment-api-point', StoreTopUpPaymentApiPoint::class)->name('top_up_payment_api_point.store');
 

@@ -94,5 +94,10 @@ return [
 
     'openai' => [
         'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY')
+    ],
+    'pastpay' => [
+        'demo_api_key' => env('PASTPAY_DEMO_API_KEY'),
+        'base_url' => env('PASTPAY_BASE_URL'),
+        'sandbox_url' => env('PASTPAY_SANDBOX_URL'),
     ]
 ];
