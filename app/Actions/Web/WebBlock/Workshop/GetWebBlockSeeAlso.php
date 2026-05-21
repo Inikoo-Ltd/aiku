@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Catalogue\Product\Json\GetTopProductsInProductCategory;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -146,6 +146,13 @@ class GetWebBlockSeeAlso
             $dataOtherFamilyToWorkshop
         );
 
-        return $webBlock;
+        return [
+            'type' => $webBlock['type'],
+            'structure' => Arr::get(
+                $webBlock,
+                'web_block.layout.data.fieldValue',
+                []
+            ),
+        ];
     }
 }

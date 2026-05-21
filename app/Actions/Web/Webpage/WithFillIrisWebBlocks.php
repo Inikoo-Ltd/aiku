@@ -15,12 +15,12 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCollection;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartments;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilies;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilyDescription;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\GetWebBlockRecommendationsCRB;
-use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
@@ -52,7 +52,7 @@ trait WithFillIrisWebBlocks
         } elseif (str_contains($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
         } elseif ($webBlockType == 'see-also-1') {
-            $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockSeeAlso::run($webpage, $webBlock);
         } elseif ($webBlockType == 'blog') {
             $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
