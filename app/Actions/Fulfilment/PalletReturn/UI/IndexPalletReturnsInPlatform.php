@@ -28,7 +28,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use UnexpectedValueException;
 
 class IndexPalletReturnsInPlatform extends OrgAction
 {

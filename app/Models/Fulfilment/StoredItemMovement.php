@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $location_id
  * @property StoredItemMovementTypeEnum $type
  * @property numeric $quantity
- * @property string $moved_at
+ * @property \Illuminate\Support\Carbon $moved_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $pallet_id
