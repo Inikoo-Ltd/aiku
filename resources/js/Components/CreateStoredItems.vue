@@ -175,7 +175,7 @@ const onSaveNameForNewStoredItem = async () => {
 	} catch (error: any) {
 		console.log(error)
 		errorNewStoredItemName.value = error?.response?.data?.message
-		
+
 		notify({
 			title: trans("Something went wrong."),
 			text: error.message ? error.message : trans('Failed to set name for new stored item'),
@@ -192,7 +192,7 @@ const onSaveNameForNewStoredItem = async () => {
 		</div>
 		<div class="grid grid-cols-3 gap-x-4">
 			<label class="mt-1 block text-sm font-medium text-gray-700">{{ trans("Reference") }}</label>
-			
+
 			<div class="mt-1 col-span-2">
 				<SelectQuery ref="_selectQuery"
 					:initOptions="props.storedItemToEdit ? [props.storedItemToEdit] : undefined"
@@ -206,7 +206,6 @@ const onSaveNameForNewStoredItem = async () => {
 					:valueProp="'id'"
 					:closeOnSelect="true"
 					:clearOnSearch="false"
-					:prefixQuery
 					:fieldName="'id'"
 					:createOption="false"
 					:onCreate="createStoredItems"
@@ -221,7 +220,7 @@ const onSaveNameForNewStoredItem = async () => {
 							{{ search !== "" || search ? `${trans(`Create`)} : ${search}` : trans("No Result") }}
 						</div>
 					</template>
-			
+
 					<template #afterlist="{ search, options }: { search: string, options: any[] }">
 						<!-- {{ options }} -->
 						<div v-if="search && options?.length" class="border-t border-gray-300">
@@ -232,18 +231,18 @@ const onSaveNameForNewStoredItem = async () => {
 							</div>
 						</div>
 					</template>
-			
+
 					<template #option="{option, isSelected, isPointed, search, label}">
 						<div v-html="option[label]?.replace(search, `<span style='background: #eded02'>${search}</span>`)"></div>
 					</template>
-			
+
 					<template #noresults="{ search }: { search: string }">
 						<div class="px-2 py-3" @click="() => createStoredItems({ id: search, reference: search }, [])">
 							<font-awesome-icon :icon="['fas', 'plus']" class="mr-3" />
 							{{ `${trans(`Create`)} : ${search}` }}
 						</div>
 					</template>
-					
+
 					<template v-if="!disabledSelect.edit" #caret="{ handleCaretClick, isOpen }">
 						<div class="px-2">
 							<LoadingIcon v-if="isDeleteStoredItem" class="text-red-500 text-sm mr-1" />
@@ -253,7 +252,7 @@ const onSaveNameForNewStoredItem = async () => {
 								@click="deleteStoredItems(false)" />
 						</div>
 					</template>
-			
+
 					<template #singlelabel="{ value }">
 						<div v-if="!loadingAddStoredItem" class="flex justify-start w-full px-2 gap-3">
 							{{ value["reference"] }}
@@ -283,7 +282,7 @@ const onSaveNameForNewStoredItem = async () => {
 						icon="fas fa-asterisk"
 						class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
 			</label>
-			
+
 			<PureInput
 				v-model="newStoredItemName"
 				@update:modelValue="() => errorNewStoredItemName = ''"
@@ -300,7 +299,7 @@ const onSaveNameForNewStoredItem = async () => {
 		<!-- Quantity: Input number -->
 		<div class="mt-4 grid grid-cols-3 gap-x-4">
 			<label class="mt-1 block text-sm font-medium text-gray-700">{{ trans("Quantity") }}</label>
-			<!-- 
+			<!--
 			<div class=" mt-1 flex items-center gap-2">
 				<input v-model="form.quantity" id="quantity" name="quantity" :autofocus="true" type="number"
 					autocomplete="quantity" :required="true" :min="1" @update:modelValue="form.errors.quantity = ''"
@@ -351,7 +350,7 @@ const onSaveNameForNewStoredItem = async () => {
 
 	<div v-else>
 		<div class="flex justify-center mb-6"><font-awesome-icon :icon="['far', 'exclamation-triangle']" class="text-8xl text-yellow-500"/></div>
-		
+
 		<div class="text-center font-semibold text-2xl mb-6">
 			{{ trans('Do you want to delete') }} {{ newStoredItem?.reference }} ?
 		</div>
