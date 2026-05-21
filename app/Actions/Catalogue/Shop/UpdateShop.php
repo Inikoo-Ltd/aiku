@@ -56,7 +56,7 @@ class UpdateShop extends OrgAction
     public function handle(Shop $shop, array $modelData): Shop
     {
         if (Arr::exists($modelData, 'review_rating_labels')) {
-            $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
+            $this->syncReviewRatingLabels($shop, Arr::pull($modelData, 'review_rating_labels'));
         }
 
         if (Arr::has($modelData, 'invoice_serial_references')) {
