@@ -316,7 +316,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
 
         <!-- Column: Total Item Damaged -->
         <template #cell(total_item_damaged)="{ item: itemValue, proxyItem }">
-            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state != 'processed' && is_editable">
+            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state == 'handling' && is_editable">
                 <NumberWithButtonSave
                     vxif="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                     noUndoButton
@@ -378,7 +378,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         
         <!-- Column: item not returned -->
         <template #cell(total_item_not_returned)="{ item: itemValue, proxyItem }">
-            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state != 'processed' && is_editable">
+            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state == 'handling' && is_editable">
                 <NumberWithButtonSave v-if="itemValue.has_available_qty"
                     vxif="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                     noUndoButton
@@ -440,7 +440,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
 
         <!-- Column: item returned -->
         <template #cell(total_item_returned)="{ item: itemValue, proxyItem }">
-            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state != 'processed' && is_editable">
+            <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state == 'handling' && is_editable">
                 <NumberWithButtonSave
                     vxif="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                     noUndoButton

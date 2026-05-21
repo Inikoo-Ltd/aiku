@@ -372,7 +372,7 @@ class ShowReturnDeliveryNote extends OrgAction
                 'actions'         => $actions,
                 'wrapped_actions' => $this->wrappedActions($returnDeliveryNote),
             ],
-            'isEditable'    => $isEditable,
+            'is_editable'    => $isEditable,
             'tabs'          => [
                 'current'    => $returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING
                     ? DeliveryNoteTabsEnum::PENDING_ITEMS->value
