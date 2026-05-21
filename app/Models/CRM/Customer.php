@@ -25,6 +25,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
+use App\Models\Comms\WatiContact;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\AmazonUser;
@@ -602,5 +603,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function dispatchedEmails(): BelongsToMany
     {
         return $this->belongsToMany(DispatchedEmail::class, 'customer_has_dispatched_emails');
+    }
+
+    public function watiContact(): HasOne
+    {
+        return $this->hasOne(WatiContact::class);
     }
 }

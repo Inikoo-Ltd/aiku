@@ -65,9 +65,10 @@ class WatiClient
 
     public function addContact(string $whatsappNumber, string $name, array $customParams = []): array
     {
-        return $this->post("{$this->apiBase}/contacts/{$whatsappNumber}", [
-            'name'         => $name,
-            'customParams' => $customParams,
+        return $this->post("{$this->apiBase}/contacts", [
+            'whatsapp_number' => $whatsappNumber,
+            'name'            => $name,
+            'customParams'    => $customParams,
         ]);
     }
 

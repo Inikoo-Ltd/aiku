@@ -22,6 +22,7 @@ use App\Actions\Comms\Mailshot\UI\ShowMailshotWorkshop;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotRecipients;
 use App\Actions\Comms\Mailshot\UI\EditMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
+use App\Actions\Comms\Wati\UI\IndexWatiContacts;
 use App\Actions\Comms\Wati\UI\IndexWatiTemplates;
 use App\Actions\Comms\Wati\UI\ShowWatiTemplate;
 use App\Actions\Comms\Mailshot\UI\IndexMarketingMailshots;
@@ -73,7 +74,7 @@ Route::name("wati.")->prefix('wati')
         Route::get('', ShowDummy::class)->name('dashboard');
         Route::name("contacts.")->prefix('contacts')
             ->group(function () {
-                Route::get('', IndexDummies::class)->name('index');
+                Route::get('', IndexWatiContacts::class)->name('index');
             });
         Route::name("broadcast.")->prefix('broadcast')
             ->group(function () {
