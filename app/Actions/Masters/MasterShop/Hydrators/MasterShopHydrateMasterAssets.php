@@ -61,7 +61,7 @@ class MasterShopHydrateMasterAssets implements ShouldBeUnique
         $stats = array_merge(
             $stats,
             [
-                'number_current_master_assets_missing_price_or_rrp'    => $masterShop->masterAssets()->where('status', true)->where(fn ($q) => $q->whereNull('price')->orWhereNull('rrp') )->count(),
+                'number_current_master_assets_missing_price_or_rrp'    => $masterShop->masterAssets()->where('status', true)->where(fn ($q) => $q->whereNull('price')->orWhereNull('rrp'))->count(),
             ]
         );
 

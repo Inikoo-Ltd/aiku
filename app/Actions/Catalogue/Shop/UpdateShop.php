@@ -52,7 +52,7 @@ class UpdateShop extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Shop
     {
-        $reHydrateChildPrices = false; 
+        $reHydrateChildPrices = false;
 
         if (Arr::has($modelData, 'invoice_serial_references')) {
             $shop = $this->updateInvoiceSerialReferences($shop, Arr::pull($modelData, 'invoice_serial_references'));

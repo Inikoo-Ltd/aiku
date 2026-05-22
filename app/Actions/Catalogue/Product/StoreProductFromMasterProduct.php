@@ -61,7 +61,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
                     // TODO MasterLevel Price RRP (Raul)
                     // TODO HydrateChildPriceRRP according MasterProduct using the Exchange Ratio
-                    
+
                     $data   = [
                         'code'              => $masterAsset->code,
                         'name'              => $masterAsset->name,

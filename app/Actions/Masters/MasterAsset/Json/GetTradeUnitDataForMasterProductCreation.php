@@ -69,7 +69,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         /** @var Shop $shop */
         foreach ($openShops as $shop) {
             $orgStocksData = $organisationsData[$shop->organisation_id]['org_stocks_data'];
-            
+
             // TODO MasterLevel Price RRP (Raul)
             // TODO Update logic to check for Shop settings (follow master price or not)
 

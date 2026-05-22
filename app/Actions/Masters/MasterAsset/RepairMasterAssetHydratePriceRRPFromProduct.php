@@ -26,8 +26,8 @@ class RepairMasterAssetHydratePriceRRPFromProduct
     public function handle(MasterAsset $masterAsset, Command $command): void
     {
         // TODO MasterLevel Price RRP (Raul)
-        // TODO CHECK Hydrate Up From Shop Logic 
-        
+        // TODO CHECK Hydrate Up From Shop Logic
+
         $childBase = $masterAsset->products()->where('shop_id', $this->shop->id)->first();
         $isFallback = false;
 
@@ -44,9 +44,9 @@ class RepairMasterAssetHydratePriceRRPFromProduct
         $sourceShop = $childBase->shop;
 
         $rate = GetCurrencyExchange::run($sourceShop->currency, $masterAsset->group->currency);
-        
+
         $newPrice = round($childBase->price * $rate, 2);
-        
+
         $sourceRrp = $childBase->rrp ?? ($childBase->price * 2.4);
         $newRrp = round($sourceRrp * $rate, 2);
 
@@ -99,7 +99,7 @@ class RepairMasterAssetHydratePriceRRPFromProduct
 
         $confirm = $command->ask("Are you sure you want to move Price & RRP from [Shop: {$this->shop->slug}] to [Master Shop: {$masterShop->slug}]? (y/n)", 'n');
 
-        if (strtoupper($confirm) === 'Y' ) {
+        if (strtoupper($confirm) === 'Y') {
             MasterAsset::where('master_shop_id', $masterShop->id)
                 ->where('status', true)
                 ->chunkById(500, function ($chunk) use (&$command) {
@@ -107,7 +107,7 @@ class RepairMasterAssetHydratePriceRRPFromProduct
                         $this->handle($masterAsset, $command);
                     });
                 });
-            
+
             $command->info('Repair process completed.');
             return;
         }
