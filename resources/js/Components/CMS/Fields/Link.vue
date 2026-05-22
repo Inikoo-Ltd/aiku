@@ -12,14 +12,14 @@ const props = withDefaults(defineProps<{
 		href: string | null,
 		target: string, // "_self"|"_blank",
 		id: string | number | null,
-		workshop_route: string
+
 	},
 	defaultValue?: {
 		type: string,  // external|internal
 		href: string | null,
 		target: string, // "_self"|"_blank",
 		id: string | number | null,
-		workshop_route: string
+
 	},
 	props_radio_type?: any,
 	props_radio_target?: any,
@@ -34,7 +34,7 @@ const localModel = computed({
 	get: () => {
 		return props.modelValue ?? (props.defaultValue
 			? { ...props.defaultValue, data: props.defaultValue }
-			: { type: 'internal', href: null, workshop: null, id: null, target: "_self", url: null, data: {} })
+			: { type: 'internal', href: null, id: null, target: "_self", url: null, data: {} })
 	},
 	set: (newValue) => {
 		emit('update:modelValue', newValue)
@@ -131,7 +131,7 @@ const cleanCanonicalPath = (url) => {
 					set(localModel, 'href', e?.href)
 					set(localModel, 'canonical_url', e?.canonical_url)
 					set(localModel, 'id', e?.id)
-					set(localModel, 'workshop', e?.workshop)
+
 					emit('update:modelValue', localModel)
 				}" :urlRoute="getRoute()" v-bind="props_selectquery">
 				<template #singlelabel="{ value }">
