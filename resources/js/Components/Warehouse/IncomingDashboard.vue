@@ -33,9 +33,17 @@ interface RouteTarget {
     parameters?: object | string[]
 }
 
+interface Affix {
+    value: number
+    tooltip?: string
+    route_target?: RouteTarget
+}
+
 interface MetricData {
     value: number | null
     route_target?: RouteTarget
+    prefix?: Affix
+    suffix?: Affix
 }
 
 interface Metric {
@@ -137,15 +145,41 @@ const isWeakValue = (value: number | null | undefined) => {
                 </div>
 
                 <template v-for="row in rows" :key="row.key">
-                    <component :is="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? Link : 'div'"
-                        :href="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ?? undefined"
-                        :class="[
-                            'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
-                            isWeakValue(data.data[row.key]?.[metric.key]?.value) ? 'opacity-40' : '',
-                            getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
-                        ]">
-                        {{ data.data[row.key]?.[metric.key]?.value ?? '-' }}
-                    </component>
+                    <div
+                        class="h-9 md:h-11 flex items-center justify-center gap-2 text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                        <template v-if="data.data[row.key]?.[metric.key]?.prefix?.value">
+                            <component
+                                :is="getSafeRoute(data.data[row.key]?.[metric.key]?.prefix?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.data[row.key]?.[metric.key]?.prefix?.route_target) ?? undefined"
+                                v-tooltip="data.data[row.key]?.[metric.key]?.prefix?.tooltip"
+                                :class="[
+                                    'opacity-60 tabular-nums',
+                                    getSafeRoute(data.data[row.key]?.[metric.key]?.prefix?.route_target) ? 'hover:opacity-100 hover:underline cursor-pointer' : ''
+                                ]"
+                            >{{ data.data[row.key]?.[metric.key]?.prefix?.value }}</component>
+                            <span class="opacity-60">+</span>
+                        </template>
+                        <component
+                            :is="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? Link : 'span'"
+                            :href="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ?? undefined"
+                            :class="[
+                                isWeakValue(data.data[row.key]?.[metric.key]?.value) ? 'opacity-40' : '',
+                                getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                            ]"
+                        >{{ data.data[row.key]?.[metric.key]?.value ?? '-' }}</component>
+                        <template v-if="data.data[row.key]?.[metric.key]?.suffix?.value">
+                            <span class="opacity-60">+</span>
+                            <component
+                                :is="getSafeRoute(data.data[row.key]?.[metric.key]?.suffix?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.data[row.key]?.[metric.key]?.suffix?.route_target) ?? undefined"
+                                v-tooltip="data.data[row.key]?.[metric.key]?.suffix?.tooltip"
+                                :class="[
+                                    'opacity-60 tabular-nums',
+                                    getSafeRoute(data.data[row.key]?.[metric.key]?.suffix?.route_target) ? 'hover:opacity-100 hover:underline cursor-pointer' : ''
+                                ]"
+                            >{{ data.data[row.key]?.[metric.key]?.suffix?.value }}</component>
+                        </template>
+                    </div>
                 </template>
 
                 <component v-if="data?.dimension"

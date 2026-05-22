@@ -9,9 +9,9 @@ import DepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/DepartmentDe
 import SubDepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/SubDepartmentDescriptionIris.vue"
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
-import ListProductsIris from "@/Components/CMS/Webpage/Products/Dropshipping/ListProductsIris.vue"
+import ListProductsIris from "@/Iris/Components/IrisBlocks/Products/ds/ListProductsIris.vue"
 import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue"
-import ListProductsEcomIris from "@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"
+import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/Dropshipping/ProductIris1.vue'
 import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue'
 import LuigiTrends1Iris from '@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue'

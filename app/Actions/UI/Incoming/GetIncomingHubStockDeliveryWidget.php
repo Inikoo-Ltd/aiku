@@ -21,14 +21,14 @@ class GetIncomingHubStockDeliveryWidget
         ];
 
         $stateConfig = [
-            StockDeliveryStateEnum::IN_PROCESS->value    => ['icon' => ['fal', 'fa-cog'],            'label' => __('In Process')],
-            StockDeliveryStateEnum::CONFIRMED->value     => ['icon' => ['fal', 'fa-check'],          'label' => __('Confirmed')],
-            StockDeliveryStateEnum::READY_TO_SHIP->value => ['icon' => ['fal', 'fa-box'],            'label' => __('Ready to Ship')],
-            StockDeliveryStateEnum::DISPATCHED->value    => ['icon' => ['fal', 'fa-truck'],          'label' => __('Dispatched')],
-            StockDeliveryStateEnum::RECEIVED->value      => ['icon' => ['fal', 'fa-truck-loading'],  'label' => __('Received')],
-            StockDeliveryStateEnum::CHECKED->value       => ['icon' => ['fal', 'fa-clipboard-check'],'label' => __('Checked')],
-            StockDeliveryStateEnum::PLACED->value        => ['icon' => ['fal', 'fa-pallet-alt'],     'label' => __('Placed')],
+            StockDeliveryStateEnum::RECEIVED->value   => ['icon' => ['fal', 'fa-chair'],            'label' => __('To do')],
+            StockDeliveryStateEnum::CHECKED->value    => ['icon' => ['fal', 'fa-clipboard-check'],  'label' => __('Checked')],
+            StockDeliveryStateEnum::BOOKING_IN->value => ['icon' => ['fal', 'fa-clipboard-list'],   'label' => __('Booking In')],
+            StockDeliveryStateEnum::BOOKED_IN->value  => ['icon' => ['fal', 'fa-pallet-alt'],       'label' => __('Booked In')],
+            StockDeliveryStateEnum::PLACED->value     => ['icon' => ['fal', 'fa-pallet-alt'],       'label' => __('Placed')],
         ];
+
+        $dispatched = $stats->{'number_stock_deliveries_state_'.StockDeliveryStateEnum::DISPATCHED->value} ?? 0;
 
         $metrics    = [];
         $dataGlobal = [];
@@ -46,13 +46,26 @@ class GetIncomingHubStockDeliveryWidget
                 'tooltip' => $config['label'],
             ];
 
-            $dataGlobal[$stateValue] = [
+            $entry = [
                 'value'        => $count,
                 'route_target' => [
                     'name'       => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
                     'parameters' => $routeParams,
                 ],
             ];
+
+            if ($stateValue === StockDeliveryStateEnum::RECEIVED->value && $dispatched > 0) {
+                $entry['prefix'] = [
+                    'value'   => $dispatched,
+                    'tooltip' => __('Dispatched'),
+                    'route_target' => [
+                        'name'       => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
+                        'parameters' => $routeParams,
+                    ],
+                ];
+            }
+
+            $dataGlobal[$stateValue] = $entry;
 
             $totals[$stateValue] = ['value' => $count];
             $total              += $count;
