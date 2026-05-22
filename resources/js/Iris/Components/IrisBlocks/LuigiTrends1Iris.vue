@@ -193,7 +193,8 @@ const fetchRecommenders = async () => {
             subType === 'department' ? luigiTrendsDepartment() :
             subType === 'product' ? luigiTrendsDepartment(dataWebpage?.product_page?.department?.name) :
             subType === 'sub_department' ? luigiTrendsSubDepartment() :
-            subType === 'family' ? luigiTrendsCategory() :
+            // subType === 'family' ? luigiTrendsCategory() :
+            subType === 'family' ? Promise.reject(new Error('Trends is not available in Family page')) :
             luigiTrendsGlobal()
         )
 

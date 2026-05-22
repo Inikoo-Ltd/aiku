@@ -52,6 +52,8 @@ class UpdateShop extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Shop
     {
+        $reHydrateChildPrices = false; 
+
         if (Arr::has($modelData, 'invoice_serial_references')) {
             $shop = $this->updateInvoiceSerialReferences($shop, Arr::pull($modelData, 'invoice_serial_references'));
         }
@@ -107,6 +109,11 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'related_product_follow_master')) {
             data_set($modelData, 'settings.catalog.related_product_follow_master', Arr::pull($modelData, 'related_product_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'follow_master_pricing')) {
+            $reHydrateChildPrices = true;
+            data_set($modelData, 'settings.catalog.follow_master_pricing', Arr::pull($modelData, 'follow_master_pricing'));
         }
 
         // Catalogue Indexing etc
@@ -276,6 +283,11 @@ class UpdateShop extends OrgAction
             }
         }
 
+        if ($reHydrateChildPrices) {
+            // TODO MasterLevel Price RRP (Raul)
+            // TODO Rehydrate Child Prices according to their master counterpart prices & rrp here
+        }
+
         return $shop;
     }
 
@@ -413,6 +425,7 @@ class UpdateShop extends OrgAction
             'reviews'                                                 => ['sometimes', 'nullable', 'array'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'follow_master_pricing'                                   => ['sometimes', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

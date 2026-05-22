@@ -51,7 +51,7 @@ class GetIncomingHubPalletDeliveryWidget
                 ],
             ];
 
-            if ($stateValue === PalletDeliveryStateEnum::RECEIVED->value && $submitted > 0) {
+            if ($stateValue === PalletDeliveryStateEnum::RECEIVED->value) {
                 $entry['suffix'] = [
                     'value'   => $submitted,
                     'tooltip' => __('Submitted'),

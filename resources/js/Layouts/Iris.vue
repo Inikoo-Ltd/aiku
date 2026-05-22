@@ -286,7 +286,7 @@ const safeTheme = computed(() => {
                 <!-- Layout: SideBasket (right) -->
                 <div
                     v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
-                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
+                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen transition-all"
                     :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent max-w-0'"
                 >
                     <IrisRightsideBasket
@@ -365,8 +365,14 @@ const safeTheme = computed(() => {
 }
 
 .basket-drawer {
-  width: min(92vw, 37%);
-  box-sizing: border-box;
+    width: min(92vw, 37%);
+    box-sizing: border-box;
+}
+
+@media (min-width: 1536px) {
+    .basket-drawer {
+        width: 25%;
+    }
 }
 
 // INI-562: live chat

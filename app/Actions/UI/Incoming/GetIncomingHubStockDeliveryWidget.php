@@ -25,10 +25,10 @@ class GetIncomingHubStockDeliveryWidget
             StockDeliveryStateEnum::CHECKED->value    => ['icon' => ['fal', 'fa-clipboard-check'],  'label' => __('Checked')],
             StockDeliveryStateEnum::BOOKING_IN->value => ['icon' => ['fal', 'fa-clipboard-list'],   'label' => __('Booking In')],
             StockDeliveryStateEnum::BOOKED_IN->value  => ['icon' => ['fal', 'fa-pallet-alt'],       'label' => __('Booked In')],
-            StockDeliveryStateEnum::PLACED->value     => ['icon' => ['fal', 'fa-pallet-alt'],       'label' => __('Placed')],
         ];
 
         $dispatched = $stats->{'number_stock_deliveries_state_'.StockDeliveryStateEnum::DISPATCHED->value} ?? 0;
+        $placed     = $stats->{'number_stock_deliveries_state_'.StockDeliveryStateEnum::PLACED->value} ?? 0;
 
         $metrics    = [];
         $dataGlobal = [];
@@ -54,10 +54,21 @@ class GetIncomingHubStockDeliveryWidget
                 ],
             ];
 
-            if ($stateValue === StockDeliveryStateEnum::RECEIVED->value && $dispatched > 0) {
+            if ($stateValue === StockDeliveryStateEnum::RECEIVED->value) {
                 $entry['prefix'] = [
                     'value'   => $dispatched,
                     'tooltip' => __('Dispatched'),
+                    'route_target' => [
+                        'name'       => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
+                        'parameters' => $routeParams,
+                    ],
+                ];
+            }
+
+            if ($stateValue === StockDeliveryStateEnum::BOOKED_IN->value) {
+                $entry['suffix'] = [
+                    'value'   => $placed,
+                    'tooltip' => __('Placed'),
                     'route_target' => [
                         'name'       => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
                         'parameters' => $routeParams,

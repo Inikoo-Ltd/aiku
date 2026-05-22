@@ -136,54 +136,55 @@ const convertToFloat2 = (val: any) => {
         <template v-else>
             <div>{{ ctrans("You are eligible to receive a gift") }}:</div>
 
-            <!-- Section: meter -->
-            <div v-if="!(convertToFloat2(props.meter?.[0]) >= convertToFloat2(props.meter?.[1]))"
-                v-tooltip="trans(`:xcurrent of :xtarget products amount. Add :amountLeft to get free gift`, {
-                    xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[0])),
-                    xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[1])),
-                    amountLeft: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[1]) - convertToFloat2(props.meter?.[0]))
-                })" class="w-64 flex items-center">
-                <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
-                    <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
-                        :class="convertToFloat2(props.meter?.[0]) < convertToFloat2(props.meter?.[1]) ? 'shimmer bg-green-400' : 'bg-green-500'"
-                        :style="{
-                            width: convertToFloat2(props.meter?.[1]) ? convertToFloat2(props.meter?.[0])/convertToFloat2(props.meter?.[1]) * 100 + '%' : '100%'
-                        }"
-                    />
-                </div>
-            </div>
-
-            <div v-else-if="!compSelectedGift" @click="_popover?.toggle" class="cursor-pointer text-blue-600 underline">
-                {{ ctrans("Select gift") }}
-            </div>
-            <div v-else class="relative text-right border-b border-gray-600">
-                <div @click="_popover?.toggle" class="relative cursor-pointer inline-block">
-                    <span class="font-bold">
-                        {{ compSelectedGift.code }}
-                    </span>
-                    {{ compSelectedGift.name }}
-                    <div v-if="isLoadingChanged" class="absolute w-full h-full top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                        <div class="skeleton w-full h-full">
-
-                        </div>
+            <div class="flex flex-wrap justify-end">
+                <!-- Section: meter -->
+                <div v-if="!(convertToFloat2(props.meter?.[0]) >= convertToFloat2(props.meter?.[1]))"
+                    v-tooltip="trans(`:xcurrent of :xtarget products amount. Add :amountLeft to get free gift`, {
+                        xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[0])),
+                        xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[1])),
+                        amountLeft: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[1]) - convertToFloat2(props.meter?.[0]))
+                    })" class="w-64 flex items-center">
+                    <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
+                        <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
+                            :class="convertToFloat2(props.meter?.[0]) < convertToFloat2(props.meter?.[1]) ? 'shimmer bg-green-400' : 'bg-green-500'"
+                            :style="{
+                                width: convertToFloat2(props.meter?.[1]) ? convertToFloat2(props.meter?.[0])/convertToFloat2(props.meter?.[1]) * 100 + '%' : '100%'
+                            }"
+                        />
                     </div>
                 </div>
-                <span @click="_popover?.toggle" class="ml-2 cursor-pointer text-blue-500">{{ trans("change") }}</span>
-                <span v-if="isLoadingChanged" class="absolute top-1/2 -translate-y-1/2 w-4 h-4 xtext-blue-600">
-                    <LoadingIcon />
-                </span>
-            </div>
 
-            <!-- Opt-out link (shown when eligible) -->
-            <button
-                v-if="routeOptOut && convertToFloat2(props.meter?.[0]) >= convertToFloat2(props.meter?.[1])"
-                @click="onToggleOptOut(true)"
-                class="text-red-400 hover:text-red-600 text-xs border-b border-gray-600 ml-1"
-                :disabled="isLoadingOptOut"
-            >
-                <LoadingIcon v-if="isLoadingOptOut" class="inline-block w-3 h-3 mr-1" />
-                {{ ctrans("Opt-out from free gift") }}
-            </button>
+                <div v-else-if="!compSelectedGift" @click="_popover?.toggle" class="cursor-pointer text-blue-600 underline">
+                    {{ ctrans("Select gift") }}
+                </div>
+                <div v-else class="relative text-right border-b border-gray-600">
+                    <div @click="_popover?.toggle" class="relative cursor-pointer inline-block">
+                        <span class="font-bold">
+                            {{ compSelectedGift.code }}
+                        </span>
+                        {{ compSelectedGift.name }}
+                        <div v-if="isLoadingChanged" class="absolute w-full h-full top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                            <div class="skeleton w-full h-full">
+                            </div>
+                        </div>
+                    </div>
+                    <span @click="_popover?.toggle" class="ml-2 cursor-pointer text-blue-500">{{ trans("change") }}</span>
+                    <span v-if="isLoadingChanged" class="absolute top-1/2 -translate-y-1/2 w-4 h-4 xtext-blue-600">
+                        <LoadingIcon />
+                    </span>
+                </div>
+
+                <!-- Opt-out link (shown when eligible) -->
+                <button
+                    v-if="routeOptOut && convertToFloat2(props.meter?.[0]) >= convertToFloat2(props.meter?.[1])"
+                    @click="onToggleOptOut(true)"
+                    class="text-red-400 hover:text-red-600 text-xs border-b border-gray-600 ml-1"
+                    :disabled="isLoadingOptOut"
+                >
+                    <LoadingIcon v-if="isLoadingOptOut" class="inline-block w-3 h-3 mr-1" />
+                    {{ ctrans("Opt-out from free gift") }}
+                </button>
+            </div>
 
             <Popover ref="_popover">
                 <div class="flex flex-col gap-2 w-96">
