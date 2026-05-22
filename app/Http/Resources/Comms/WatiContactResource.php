@@ -33,6 +33,10 @@ class WatiContactResource extends JsonResource
                 'slug' => $this->customer->slug,
                 'name' => $this->customer->name,
             ]),
+            'routes'          => [
+                'delete' => $this->isLinked() ? route('grp.models.wati-contacts.delete', $this->id) : null,
+                'relink' => route('grp.models.wati-contacts.relink', $this->id),
+            ],
         ];
     }
 }
