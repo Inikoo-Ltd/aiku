@@ -15,7 +15,6 @@ use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
@@ -84,7 +83,7 @@ class IndexMasterProductsWithNoPriceRRP extends GrpAction
                 'currencies.code as currency_code',
             ]
         );
-        
+
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_assets.master_shop_id', $parent->id);
             $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
@@ -155,7 +154,6 @@ class IndexMasterProductsWithNoPriceRRP extends GrpAction
         $subNavigation = null;
         $familyId      = null;
 
-        $routes = [];
         $shopsData = null;
         if ($this->parent instanceof MasterShop) {
             $masterShop    = $this->parent;
