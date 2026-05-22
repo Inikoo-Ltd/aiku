@@ -82,6 +82,8 @@ class StoreMasterAsset extends OrgAction
 
         data_set($modelData, 'bucket_images', $this->strict);
 
+        // TODO MasterLevel Price RRP (Raul)
+
         $masterAsset = DB::transaction(function () use ($masterFamily, $modelData, $tradeUnits, $shopProducts) {
             /** @var MasterAsset $masterAsset */
             $masterAsset = $masterFamily->masterAssets()->create($modelData);
