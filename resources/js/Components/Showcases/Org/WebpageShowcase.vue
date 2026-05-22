@@ -22,6 +22,7 @@ import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue
 import { Message } from 'primevue'
 import { router } from "@inertiajs/vue3"
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import LuigiAvailabilityChecklist from '@/Components/Utils/LuigiAvailabilityChecklist.vue'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -197,29 +198,7 @@ const visitRedirect = () => {
 
             <!-- Availability Checklist -->
             <div v-if="data.luigi_data.availability_checklist" class="mt-3 border-t border-gray-200 pt-3">
-                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    {{ ctrans('Search Availability') }}
-                    <InformationIcon :information="ctrans('Determines whether this webpage is displayed in the website search results. It will be shown only when all rules are met.')" />                </div>
-                <div class="space-y-1.5">
-                    <div
-                        v-for="(check, index) in data.luigi_data.availability_checklist"
-                        :key="index"
-                        class="flex items-start gap-2"
-                    >
-                        <FontAwesomeIcon
-                        :icon="check.passed ? 'fas fa-check-circle' : 'fal fa-times-circle'"
-                        :class="check.passed ? 'text-green-500' : 'text-red-500'"
-                        class="mt-0.5 shrink-0 text-sm"
-                        fixed-width
-                        />
-                        <div class="flex flex-col">
-                            <span class="text-xs text-gray-700 leading-tight">{{ check.label }}</span>
-                            <span v-if="!check.passed && check.detail" class="text-xs text-red-400 leading-tight">
-                                {{ check.detail }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                <LuigiAvailabilityChecklist :checklist="data.luigi_data.availability_checklist" />
             </div>
 
             <!-- <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id"
