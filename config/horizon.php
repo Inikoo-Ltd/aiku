@@ -385,8 +385,8 @@ return [
             'balanceCooldown'     => 3,
         ],
         'cache-warming'        => [
-            'connection'          => 'redis-long-running',
-            'queue'               => ['cache-warming', 'cache-warming-js'],
+            'connection' => 'redis-long-running',
+            'queue'               => ['cache-warming'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 5,
