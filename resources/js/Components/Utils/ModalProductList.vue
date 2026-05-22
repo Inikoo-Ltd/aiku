@@ -62,6 +62,21 @@ const onClickProduct = async (tabSlug: string) => {
 	closeModal()
 }
 
+const isRowUnavailable = (data: any): boolean => {
+	if (props.typeModel === "purchase_order") {
+		return false
+	}
+	return !data?.available_quantity || Number(data?.quantity_ordered) > Number(data?.available_quantity)
+}
+
+const rowClass = (data: any): string => {
+	return isRowUnavailable(data) ? "row-unavailable" : ""
+}
+
+const onQuantityChange = (slotProps: any) => {
+	debSubmitProducts(props.action, slotProps)
+}
+
 
 const closeModal = () => {
 	model.value = false
@@ -380,6 +395,7 @@ watch(() => model.value, async (newValue) => {
 						<div class="card w-full ">
 							<DataTable
 								:value="products"
+								:rowClass="rowClass"
 								scrollable
 								scrollHeight="400px"
 								:loading="isLoading === 'fetchProduct'">
@@ -448,7 +464,7 @@ watch(() => model.value, async (newValue) => {
 												:min="1"
 												:isLoading="isXxLoading === slotProps.data.id"
 												aonSave="(e)=> onSubmitAddProducts(action, slotProps)"
-												@update:modelValue="(e) => (debSubmitProducts(action, slotProps))"
+												@update:modelValue="(e) => onQuantityChange(slotProps)"
 												noUndoButton
 												noSaveButton
 												xbindToTarget="{
@@ -475,6 +491,11 @@ watch(() => model.value, async (newValue) => {
 </template>
 
 <style scoped>
+:deep(.p-datatable-tbody > tr.row-unavailable),
+:deep(.p-datatable-tbody > tr.row-unavailable > td) {
+	background-color: #fee2e2 !important;
+}
+
 .p-datatable .p-datatable-loading-overlay {
 	background: transparent !important;
 	box-shadow: none !important;
