@@ -74,7 +74,9 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                     }
 
                     $storedItem = StoredItem::where('fulfilment_customer_id', $tiktokUser->customer->fulfilmentCustomer->id)
-                        ->where('reference', $reference)->first();
+                        ->where('slug', $reference)
+                        ->orWhere('reference', $reference)
+                        ->first();
 
                     if ($shopType === ShopTypeEnum::FULFILMENT) {
                         if (!$storedItem) {
@@ -97,10 +99,11 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                         }
 
                         UpdateStoredItem::run($storedItem, [
+                            'platform_product_id' => Arr::get($product, 'id'),
+                            'platform_product_variant_id' => Arr::get($product, 'id'),
                             'state' => StoredItemStateEnum::ACTIVE,
                             'total_quantity' => Arr::get($product, 'skus.0.inventory.0.quantity', 0)
                         ]);
-
                     }
                     $numberSuccess++;
                 } catch (ValidationException $exception) {
