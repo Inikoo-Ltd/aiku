@@ -100,6 +100,13 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                         }
 
                         UpdatePortfolio::run($portfolio, [
+                            'item_id' => $storedItem->id,
+                            'item_type' => class_basename(StoredItem::class),
+                            'name' => $title,
+                            'item_code' => $storedItem->reference,
+                            'item_name' => $title,
+                            'customer_product_name' => $title,
+                            'customer_description' => Arr::get($product, 'description'),
                             'platform_product_id' => Arr::get($product, 'id'),
                             'platform_product_variant_id' => Arr::get($product, 'id'),
                         ]);
