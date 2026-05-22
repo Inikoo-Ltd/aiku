@@ -46,25 +46,59 @@ defineSlots<{
  * Normalize raw input
  */
 const computedHref = computed<string | null>(() => {
-  const raw = props.canonical_url ?? props.href
-  if (typeof raw !== "string" || !raw.trim()) return null
+  let raw = props.canonical_url ?? props.href
 
-  if (props.type !== "internal") return raw
+  if (typeof raw !== "string") return null
+
+  raw = raw
+    .trim()
+    .replace(/&quot;/gi, "")
+    .replace(/&#34;/gi, "")
+    .replace(/^"+|"+$/g, "")
+    .replace(/^'+|'+$/g, "")
+    .replace(/^\\+"/g, "")
+    .replace(/\\+"/g, "")
+    .trim()
+
+  if (!raw) return null
+
+  // prevent malformed encoded quote URLs
+  if (
+    raw.includes("&quot") ||
+    raw.includes("%26quot") ||
+    raw.includes("%5C")
+  ) {
+    console.warn("Blocked malformed URL:", raw)
+    return null
+  }
+
+  if (props.type !== "internal") {
+    return raw
+  }
 
   try {
-    // external → convert to relative
-    if (/^https?:\/\//.test(raw)) {
+    // absolute internal URL → relative
+    if (/^https?:\/\//i.test(raw)) {
       const parsed = new URL(raw)
-      return parsed.pathname + parsed.search + parsed.hash
+
+      return (
+        parsed.pathname +
+        parsed.search +
+        parsed.hash
+      )
     }
 
-    // ensure leading slash (except hash)
-    if (raw.startsWith("#")) return raw
+    // anchor
+    if (raw.startsWith("#")) {
+      return raw
+    }
 
+    // relative path
     return raw.startsWith("/")
       ? raw
       : `/${raw.replace(/^\/+/, "")}`
-  } catch {
+  } catch (error) {
+    console.warn("Invalid URL:", raw, error)
     return null
   }
 })

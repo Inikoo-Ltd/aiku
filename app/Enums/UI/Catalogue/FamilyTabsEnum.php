@@ -23,6 +23,7 @@ enum FamilyTabsEnum: string
     case VARIANTS = 'variants';
 
     case OFFERS = 'offers';
+    case REVIEWS = 'reviews';
     case HISTORY = 'history';
     case CUSTOMERS = 'customers';
     case RELATED_PRODUCTS    = 'related_products';
@@ -43,6 +44,10 @@ enum FamilyTabsEnum: string
             FamilyTabsEnum::OFFERS => [
                 'title' => __('Offers'),
                 'icon'  => 'fal fa-tags',
+            ],
+            FamilyTabsEnum::REVIEWS => [
+                'title' => __('Reviews'),
+                'icon'  => 'fal fa-star',
             ],
             FamilyTabsEnum::CONTENT => [
                 'title' => __('Content'),

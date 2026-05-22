@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\GetProductImages;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
+use App\Actions\Catalogue\Review\UI\IndexReviews;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Comms\BackInStockReminder\UI\ProductHasBackInStockReminders;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
@@ -29,6 +30,7 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Goods\AssetTimeSeriesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
@@ -41,8 +43,10 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Reviews\ReviewRatingLabel;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowProduct extends OrgAction
@@ -223,6 +227,31 @@ class ShowProduct extends OrgAction
 
         $actions = [];
 
+        if ($this->canEdit) {
+
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'create',
+                'key'   => 'create-review',
+                'label' => __('Review'),
+                'route' => [
+                    'name'       => 'grp.models.review.store',
+                    'parameters' => []
+                ]
+            ];
+
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('Edit'),
+                'route' => [
+                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ];
+        }
+
+
         $actions[] = [
             'type'    => 'button',
             'style'   => 'edit',
@@ -238,17 +267,7 @@ class ShowProduct extends OrgAction
             ]
         ];
 
-        if ($this->canEdit) {
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'edit',
-                'label' => __('Edit'),
-                'route' => [
-                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ];
-        }
+        
 
         if ($product->webpage) {
             $actions = array_merge($actions, [
@@ -337,6 +356,10 @@ class ShowProduct extends OrgAction
             ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run($product))
                 : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
+
+            ProductTabsEnum::REVIEWS->value => $this->tab == ProductTabsEnum::REVIEWS->value
+                ? fn () => $this->getReviewsTabData($product)
+                : Inertia::lazy(fn () => $this->getReviewsTabData($product)),
         ];
 
         if (!$isExternalShop) {
@@ -430,13 +453,15 @@ class ShowProduct extends OrgAction
                 ...$componentData,
                 'variant'       => $product->variant,
                 'is_variant_leader' => $product->is_variant_leader,
+                'rating_labels'     => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::ProductReviews),
             ]
         )
             ->table(IndexAssetTimeSeries::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
-            ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value));
+            ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value))
+            ->table(IndexReviews::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::REVIEWS->value));
 
         if (!$isExternalShop) {
             $productPage = $productPage
@@ -451,6 +476,43 @@ class ShowProduct extends OrgAction
     public function jsonResponse(Product $product): ProductsResource
     {
         return new ProductsResource($product);
+    }
+
+
+    private function getReviewsTabData(Product $product): array
+    {
+        return [
+            'data' => ReviewsResource::collectionWithTabMeta(
+                IndexReviews::make()->inProduct(
+                    parent: $product,
+                    prefix: ProductTabsEnum::REVIEWS->value
+                ),
+                $product
+            ),
+            'rating_labels' => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::ProductReviews),
+            'reviewable_type' => 'product_reviews',
+            'replier_type' => 'merchant'
+        ];
+    }
+
+    private function ratingLabelsForShop(int $shopId, ReviewContextEnum $context): array
+    {
+        return ReviewRatingLabel::query()
+            ->whereRaw('LOWER(model_type) = ?', ['shop'])
+            ->where('model_id', $shopId)
+            ->whereRaw('LOWER(review_context) = ?', [$context->value])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('dimension')
+            ->get(['dimension', 'label', 'is_required', 'weight'])
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
+                'dimension' => $reviewRatingLabel->dimension?->value ?? (string) $reviewRatingLabel->dimension,
+                'label' => (string) $reviewRatingLabel->label,
+                'is_required' => (bool) $reviewRatingLabel->is_required,
+                'weight' => (float) $reviewRatingLabel->weight,
+            ])
+            ->values()
+            ->all();
     }
 
     public function getBreadcrumbs(Organisation|Shop|Fulfilment|ProductCategory $parent, Product $product, string $routeName, array $routeParameters, $suffix = null): array

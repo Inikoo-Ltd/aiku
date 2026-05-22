@@ -44,7 +44,11 @@ import { faShapes, faStar } from '@fas'
 import { faHatCowboy } from "@far"
 import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
-import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
+import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
+import Dialog from "primevue/dialog"
+import FormReview from "@/Components/Retina/FormReview.vue"
+import { notify } from '@kyvg/vue3-notification'
+import axios from 'axios'
 
 library.add(
     faFolder,
@@ -79,12 +83,15 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
+    rating_labels : any
     translation?: {}
     orders?: {}
     customers?: {}
     mailshots?: {}
     showcase?: {}
     content?: {}
+    offers?: {}
+    reviews?: {}
     service: {}
     rental: {}
     trade_units?: {}
@@ -108,24 +115,6 @@ const props = defineProps<{
     is_dependent_trade_unit?: boolean
     variant?: {}
     is_variant_leader?: boolean
-   /*  taxonomy: {
-        department?: {
-            name: string
-            tooltip: string
-            route: {
-                name: string
-                parameters: Record<string, string>
-            }
-        }
-        family?: {
-            name: string
-            tooltip: string
-            route: {
-                name: string
-                parameters: Record<string, string>
-            }
-        }
-    } */
     webpage_canonical_url?: string
     sales?: {}
     salesData?: object
@@ -142,6 +131,11 @@ const props = defineProps<{
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const isOpenDialog = ref(false)
+const reviewPayload = ref(null)
+const openDialog = () => {
+    isOpenDialog.value = true
+}
 
 const component = computed(() => {
     const components: Record<string, any> = {
@@ -163,19 +157,12 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         content: ProductContent,
         offers: TableOffers,
+        reviews: TableReviews,
     }
     return components[currentTab.value]
 })
 
-// Warning flag
-/* const showMissingTaxonomyMessage = computed(() => {
-    if(props.is_external_shop) {
-        return false
-    }
-    return !props.taxonomy?.department && !props.taxonomy?.family
-})
- */
-const layout = inject("layout", {})
+
 const routeVariant = () => {
     return route(
         'grp.org.shops.show.catalogue.families.show.variants.show',
@@ -198,12 +185,64 @@ const goToEdit = () => {
         }));
     }
 }
+
+const loadingSave = ref(false)
+
+const saveProductReview = async () => {
+    const routeName = "grp.models.review.store"
+    const formData = new FormData()
+
+    const payload = {
+       ...reviewPayload.value,
+       reviewable_type : 'product_reviews',
+       reviewable_id : props.product_id
+    }
+
+    Object.entries(payload || {}).forEach(([key, value]) => {
+        if (key === "images" && Array.isArray(value)) {
+            value.forEach((file: File) => {
+                formData.append("images[]", file)
+            })
+        } else {
+            formData.append(key, value as any)
+        }
+    })
+
+    try {
+        loadingSave.value = true
+
+        await axios({
+            method: "post",
+            url: route(routeName,{}),
+            data: formData,
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        })
+
+        isOpenDialog.value = false
+
+        router.reload({only: ['pageHead', 'reviews']})
+        notify({
+            title: "Success",
+            text: "Review submitted successfully",
+            type: "success",
+        })
+    } catch (errors) {
+        console.error(errors)
+        notify({
+            title: "Error",
+            text: "Failed to submit review",
+            type: "error",
+        })
+    } finally {
+        loadingSave.value = false
+    }
+}
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
-
     <PageHeading :data="pageHead" >
         <template #afterTitle>
              <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="trans('Go to Master')">
@@ -229,6 +268,7 @@ const goToEdit = () => {
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
                 <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
             </Link>
+            
             
         </template>
 
@@ -263,24 +303,14 @@ const goToEdit = () => {
                 </ButtonReindexWebpage>
             </div>
         </template>
-        <template #other>
-        </template>
-        <template #otherBefore>
-            
-            <ModalCreateGiftOffers 
-                v-if="currentTab === 'offers' && layout.app.environment === 'local'"
-                v-tooltip="'Create New Offer'"
-                :shop_data="props.shop_data"
-                :product_id="props.product_id"
-                 />
+
+         <template #button-create-review="{ action }">
+            <div v-if="currentTab != 'reviews'"></div>
+            <div v-else> 
+                <Button :style="action.style" :label="action.label" @click="openDialog" />
+            </div>
         </template>
     </PageHeading>
-
-
-    <!-- <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">
-        {{trans('Both department and family data are missing in taxonomy.')}}
-    </Message> -->
-
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
@@ -299,8 +329,18 @@ const goToEdit = () => {
         </Breadcrumb>
     </div>
 
-
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
+
+
+     <Dialog v-model:visible="isOpenDialog" modal header="Product Review" :style="{ width: '550px' }" :content-style="{ overflow: 'auto' }">
+        <FormReview v-model="reviewPayload" :schema="props.rating_labels" :use_customer="true"/>
+        <template #footer>
+            <div class="flex justify-end gap-5">
+                <Button label="Close" type="secondary" @click="isOpenDialog = false" />
+                <Button label="Save" type="save" @click="saveProductReview"/>
+            </div>
+        </template>
+    </Dialog>
 </template>
 
 

@@ -23,6 +23,8 @@ use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
+use App\Models\Reviews\ProductReview;
+use App\Models\Reviews\ProductReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
@@ -378,6 +380,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->hasOne(ProductStats::class);
     }
 
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ProductReviewStat::class);
+    }
+
     public function contents(): MorphMany
     {
         return $this->morphMany(ModelHasContent::class, 'model');
@@ -462,6 +469,11 @@ class Product extends Model implements Auditable, HasMedia
     public function portfolios(): MorphMany
     {
         return $this->morphMany(Portfolio::class, 'item');
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class, 'product_id');
     }
 
     public function favourites(): HasMany

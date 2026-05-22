@@ -36,6 +36,8 @@ use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategor
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
+use App\Actions\Catalogue\Review\GetReviews;
+use App\Actions\Catalogue\Review\GetReviewableReviews;
 use App\Actions\Catalogue\Shop\Json\FetchProductReviewThirdParty;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
@@ -100,6 +102,10 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('banner/{banner:id}', GetBanner::class)->name('get_banner');
 
     // Reviews
+    Route::get('reviews', GetReviews::class)->name('reviews.index');
+    Route::get('shop/{shop:id}/reviews', [GetReviewableReviews::class, 'inShop'])->name('reviews.shop.show');
+    Route::get('product/{product:id}/reviews', [GetReviewableReviews::class, 'inProduct'])->name('reviews.product.show')->withoutScopedBindings();
+    Route::get('product-category/{productCategory:id}/reviews', [GetReviewableReviews::class, 'inProductCategory'])->name('reviews.product_category.show');
     Route::get('product/{product:slug}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review');
 
     // Families Custom Sort

@@ -17,7 +17,6 @@ const props = defineProps<{
     href: string
     type: "internal" | "external"
     id: string | null
-    workshop: string | null
     target: "_self" | "_blank"
     rel?: "follow" | "nofollow" | null
   }
@@ -33,7 +32,6 @@ watch(() => props.show, val => (visible.value = val))
 const form = useForm({
   href: props.attribut?.href ?? "",
   type: props.attribut?.type ?? "internal",
-  workshop: props.attribut?.workshop ?? null,
   id: props.attribut?.id ?? null,
   target: props.attribut?.target ?? "_self",
   rel: props.attribut?.rel ?? null, // ✅ DEFAULT NULL
@@ -46,7 +44,6 @@ watch(
 
     form.href = val.href ?? ""
     form.type = val.type ?? "internal"
-    form.workshop = val.workshop ?? null
     form.id = val.id ?? null
     form.target = val.target ?? "_self"
     form.rel = val.rel ?? null // ✅ KEEP NULL IF NOT SET
@@ -57,7 +54,6 @@ watch(
           id: val.id,
           href: val.href,
           path: val.href,
-          workshop: val.workshop,
         }
         : null
 
@@ -93,7 +89,6 @@ function handleSelect(e: any) {
   selectedOption.value = e
   set(form, "href", e?.href ?? null)
   set(form, "id", e?.id ?? null)
-  set(form, "workshop", e?.workshop ?? null)
 }
 
 function closeDialog() {

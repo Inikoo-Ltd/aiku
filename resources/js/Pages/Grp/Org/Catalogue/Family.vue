@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft } from "@fal"
+import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft} from "@fal"
 import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -26,8 +26,10 @@ import ProductCategoryContent from "@/Components/Showcases/Grp/ProductCategoryCo
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
+import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
+import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 
 library.add(
@@ -43,7 +45,7 @@ library.add(
     faExclamationTriangle,
     faFolderDownload,
     faQuoteLeft,
-    faThumbtack
+    faThumbtack,
 )
 
 
@@ -72,6 +74,7 @@ const props = defineProps<{
     salesData?: object
     variants?: {}
     offers?: {}
+    reviews?: {}
     shop_data: {
         id: number
         slug: string
@@ -90,7 +93,7 @@ const handleTabUpdate = (tabSlug: string) => {
 }
 
 const component = computed(() => {
-    const components = {
+    const components: Record<string, any> = {
         showcase: FamilyShowcase,
         mailshots: TableMailshots,
         customers: TableCustomers,
@@ -101,9 +104,32 @@ const component = computed(() => {
         content: ProductCategoryContent,
         variants: TableVariants,
         offers: TableOffers,
+        reviews: TableReviews,
         related_products: ProductCategoryRecomendation
     }
-    return components[currentTab.value] ?? ModelDetails
+    return components[currentTab.value as keyof typeof components] ?? ModelDetails
+})
+
+const currentTabData = computed(() => {
+    return (props as Record<string, any>)[currentTab.value]
+})
+
+const reviewCustomers = computed(() => {
+    const reviewsData = props.reviews as Record<string, any> | undefined
+    return reviewsData?.customers ?? {
+        data: [],
+        meta: {
+            current_page: 1,
+            per_page: 20,
+            next_page: null,
+            has_more: false,
+        },
+    }
+})
+
+const reviewRatingLabels = computed(() => {
+    const reviewsData = props.reviews as Record<string, any> | undefined
+    return Array.isArray(reviewsData?.rating_labels) ? reviewsData.rating_labels : []
 })
 
 const showDialog = ref(false)
@@ -148,10 +174,17 @@ const showDialog = ref(false)
         <template #otherBefore>
             <ModalCreateCategoryOffers
                 v-if="currentTab === 'offers'"
-                :shop_data="props.shop_data" 
+                :shop_data="props.shop_data"
                 :product_category_id="props.product_category_id"
                 v-tooltip="'Create New Offer'"
             />
+          <!--   <ModalCreateCategoryReviews
+                v-if="currentTab === 'reviews'"
+                :product_category_id="props.product_category_id"
+                :customers="reviewCustomers"
+                :rating_labels="reviewRatingLabels"
+                v-tooltip="'Create New Review'"
+            /> -->
         </template>
     </PageHeading>
 
@@ -161,7 +194,7 @@ const showDialog = ref(false)
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    
+
     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
@@ -180,7 +213,17 @@ const showDialog = ref(false)
         </Breadcrumb>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData" />
+    <component
+        v-if="currentTab === 'reviews'"
+        :is="component"
+        :data="currentTabData"
+        :tab="currentTab"
+        :salesData="salesData"
+        :product_category_id="props.product_category_id"
+        :customers="reviewCustomers"
+        :rating_labels="reviewRatingLabels"
+    />
+    <component v-else :is="component" :data="currentTabData" :tab="currentTab" :salesData="salesData" />
 
     <FormCreateMasterProduct
         :showDialog="showDialog"
