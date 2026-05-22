@@ -41,7 +41,7 @@ const productSearchResults = ref<Array<any>>([])
 const productSearchLoading = ref(false)
 const activeTab = ref(PRODUCT_TABS.PRODUCTS)
 const timeFilter = ref(TIME_FILTERS.WEEK)
-const selectedButtonColor = ref('#007bff')
+const selectedButtonColor = ref('#11161c')
 
 // Pagination state
 const currentPage = ref(1)
@@ -101,8 +101,6 @@ const searchProducts = async (page: number = 1) => {
                 response = await searchProductsAPI(page)
         }
 
-        console.log("result data")
-        console.log(response)
         productSearchResults.value = response.data.data || []
 
         // Extract pagination metadata
@@ -334,14 +332,14 @@ const generateProductHtmlValue = (product: any, shopSlug: string): string => {
                     <img src="${imageUrl}" alt="${title}" style="width: 100%; height: auto; border-radius: 8px;" />
                 </div>
             ` : ''}
-            <div style="margin-bottom: 12px;">
+            <div style="margin-bottom: 12px; text-align: center;">
                 <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #333;">${title}</h3>
                 ${truncatedDescription ? `
-                    <p style="margin: 0; font-size: 14px; color: #666; line-height: 1.4;">${truncatedDescription}</p>
+                    <p style=" margin: 0; color: #000; direction: ltr; font-family: Arial, Helvetica Neue, Helvetica, sans-serif; font-size: 14px; font-weight: 400; letter-spacing: 0; line-height: 1.2; text-align: center; mso-line-height-alt: 17px;">${truncatedDescription}</p>
                 ` : ''}
             </div>
             <div style="text-align: center;">
-                <a href="${productUrl}" style="display: inline-block; background-color: ${buttonColor}; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">${trans('Shop Now')}</a>
+                 <a href="${productUrl}" style="background-color: #1d252e; border: 0px solid transparent; border-radius: 4px; color: #ffffff; display: inline-block; font-family: Arial, Helvetica Neue, Helvetica, sans-serif; font-size: 17px; font-weight: 400; text-align: center; text-decoration: none; word-break: keep-all; letter-spacing: normal; padding-left: 30px; padding-right: 30px; padding-top: 5px; padding-bottom: 5px; line-height: 34px;">${trans('SHOP NOW')}</a>
             </div>
         </div>
     `.trim()
