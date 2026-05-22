@@ -418,7 +418,22 @@ return [
         ],
         'ses'             => [
             'connection'      => 'redis',
-            'queue'           => ['ses-analytics', 'ses-send', 'ses'],
+            'queue'           => ['ses-send', 'ses'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 2,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 1,
+            'timeout'         => 3600,
+            'retry_after'     => 2,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
+        'ses-analytics'             => [
+            'connection'      => 'redis',
+            'queue'           => ['ses-analytics'],
             'balance'         => 'auto',
             'maxProcesses'    => 2,
             'maxTime'         => 0,
@@ -496,6 +511,9 @@ return [
             'ses'             => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
+            'ses-analytics'             => [
+                'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
+            ],
             'stock-history'   => [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 12),
             ],
@@ -549,6 +567,9 @@ return [
             ],
             'ses'             => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
+            ],
+            'ses-analytics'             => [
+                'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
             ],
             'stock-history'   => [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 2),
@@ -607,6 +628,9 @@ return [
             ],
             'ses'             => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
+            ],
+            'ses-analytics'             => [
+                'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
             ],
             'stock-history'   => [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 4),

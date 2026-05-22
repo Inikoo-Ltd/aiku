@@ -20,6 +20,7 @@ trait WithEnumStats
         $where = false,
         $fieldStatsLabel = null,
         $modelCustomLabel = null,
+        $connection='aiku'
     ): array {
         $stats = [];
 
@@ -36,7 +37,8 @@ trait WithEnumStats
             $fieldStatsLabel = $field;
         }
 
-        $count = $models::selectRaw("$field, count(*) as total")
+        $count = $models::on($connection)
+            ->selectRaw("$field, count(*) as total")
             ->when(
                 $applyWhere,
                 $where

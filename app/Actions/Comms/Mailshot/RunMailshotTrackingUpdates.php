@@ -28,10 +28,9 @@ class RunMailshotTrackingUpdates
     public function handle(?string $organisationSlug = null, ?string $shopSlug = null): void
     {
 
-        $query = Shop::where('state', ShopStateEnum::OPEN->value)
+        $query = Shop::where('state', ShopStateEnum::OPEN->value)->where('is_aiku',true)
             ->whereIn('type', [ShopTypeEnum::DROPSHIPPING->value, ShopTypeEnum::B2B->value]);
 
-        // Filter by organisation if provided
         if ($organisationSlug) {
             $query->whereHas('organisation', function ($q) use ($organisationSlug) {
                 $q->where('slug', $organisationSlug);
@@ -45,6 +44,7 @@ class RunMailshotTrackingUpdates
 
         $shops = $query->cursor();
 
+        /** @var Shop $shop */
         foreach ($shops as $shop) {
             $marketingHours = $shop->settings['mailshot_tracking']['every_hours'] ?? 2; // default 2 hours
             $marketingDays = $shop->settings['mailshot_tracking']['after_days'] ?? 30; // default 30 days
@@ -65,6 +65,7 @@ class RunMailshotTrackingUpdates
                 ->whereNull('source_alt2_id') // to avoid resending newsletter that imported from Aurora
                 ->cursor();
 
+            /** @var Mailshot $mailshot */
             foreach ($mailshots as $mailshot) {
                 $data = $mailshot->data ?? [];
                 $lastHydrateAt = $data['last_tracking_update_at'] ?? null;
