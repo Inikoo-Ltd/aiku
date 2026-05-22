@@ -4,10 +4,8 @@ import { ref, computed, inject, watch } from "vue";
 import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import PureInput from "@/Components/Pure/PureInput.vue";
 import { getStyles } from "@/Composables/styles";
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -19,7 +17,7 @@ library.add(faFileDownload)
 const props = defineProps<{
   modelValue: any
   screenType: "mobile" | "tablet" | "desktop";
-  code : string
+  code: string
 }>();
 
 const layout: any = inject("layout", {});
@@ -62,6 +60,23 @@ const responsiveGridClass = computed(() => {
   return `grid-cols-${count}`;
 });
 
+const sortOptions = computed(() => {
+  const baseOptions = [
+    /* { label: "Latest Arrivals", value: "created_at" }, */
+    { label: trans("New arrivals"), value: "created_at" },
+    { label: trans("Product Code"), value: "code" },
+    { label: trans("Name"), value: "name" }
+  ]
+  if (layout?.iris?.is_logged_in) {
+    baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
+    baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
+  }
+  if (props.modelValue?.sub_type == 'family') {
+    baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+  }
+  return baseOptions
+})
+
 const search_sort_class = ref(getStyles(props.modelValue?.search_sort?.sort?.properties, props.screenType, false))
 const placeholder_class = ref(getStyles(props.modelValue?.search_sort?.search?.placeholder?.properties, props.screenType, false))
 const search_class = ref(getStyles(props.modelValue?.search_sort?.search?.input?.properties, props.screenType, false))
@@ -87,7 +102,7 @@ watch(
     }">
       <transition v-if="!props.modelValue?.settings?.is_hide_filter" name="slide-fade">
         <aside v-show="!isMobile && showAside" class="w-68 p-4">
-          <FilterProducts v-model="filter" :productCategory="props.modelValue.model_id"/>
+          <FilterProducts v-model="filter" :productCategory="props.modelValue.model_id" />
         </aside>
       </transition>
 
@@ -104,64 +119,54 @@ watch(
         </div> -->
         <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="flex items-center w-full md:w-1/3 gap-2">
-            
-            <template v-if="!props.modelValue?.settings?.is_hide_filter">
-              <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
-                aria-label="Open Filters"  :injectStyle="getStyles(modelValue?.filter?.button?.properties,screenType)"/>
-              <div v-else class="">
-                <Button :icon="faFilter" @click="showAside = !showAside" :injectStyle="getStyles(modelValue?.filter?.button?.properties,screenType)" class="!p-3 !w-auto" aria-label="Open Filters" />
+            <template v-if="props.modelValue?.settings?.is_hide_filter">
+              <Button v-if="isMobile" :icon="faFilter" class="!p-2 !w-auto" aria-label="Open Filters"
+                :injectStyle="getStyles(modelValue?.filter?.button?.properties, screenType)" />
+              <!-- Sidebar Toggle for Desktop -->
+              <div v-else class="py-3">
+                <Button :icon="faFilter" class="!p-2 !w-auto" aria-label="Open Filters"
+                  :injectStyle="getStyles(modelValue?.filter?.button?.properties, screenType)" />
               </div>
             </template>
-
-            <div class=" w-full" >
-               <PureInput 
-                  v-model="search" 
-                  type="text" 
-                  :placeholder="trans('Search products...')" 
-                  :clear="true" :isLoading="false"
-                  :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
-                  <template #prefix>
-                    <div class="pl-3 whitespace-nowrap text-gray-400">
-                      <FontAwesomeIcon  :icon='faSearch' class="icon-search" fixed-width aria-hidden='true' />
-                    </div>
-                  </template>
-                </PureInput>
+            <div
+              class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+              <span class="font-medium">
+                {{ trans("Showing") }}
+                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                  {{ dummyProducts.length }}
+                </span>
+                {{ trans("of") }}
+                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                  {{ dummyProducts.length }}
+                </span>
+                {{ dummyProducts.length === 1 ? trans("product") : trans("products") }}
+              </span>
             </div>
           </div>
 
-          <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300 ">
-            <button v-for="opt in ['Latest', 'Code', 'Name', 'Price']" :key="opt"
-              class="pb-2 text-sm font-medium whitespace-nowrap sort-button ">
-              {{ opt }}
+          <div class="flex space-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
+
+
+            <button v-for="option in sortOptions" :key="option.value"
+              class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
+              :class="[
+                `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
+              ]">
+              {{ option.label }}
             </button>
           </div>
         </div>
 
-        <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
-          <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
-            <span class="text-gray-700 font-medium">
-              Showing <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
-              of <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
-              products
-            </span>
-          </div>
-        </div>
 
         <div :class="responsiveGridClass" class="grid gap-6 p-4">
           <div v-for="product in dummyProducts" :key="product.id"
-            :style="getStyles(modelValue?.card_product?.properties, screenType)"
-            class="p-3 relative rounded  bg-white">
-            <component
-              :is="getProductsRenderB2bComponent(code)" 
-              :product="product" 
-              :buttonStyle="getStyles(modelValue?.button?.properties, screenType, false)"
-              :hasInBasket="[]" 
-              :bestSeller="modelValue.bestseller" 
+            :style="getStyles(modelValue?.card_product?.properties, screenType)" class="p-3 relative rounded  bg-white">
+            <component :is="getProductsRenderB2bComponent(code)" :product="product"
+              :buttonStyle="getStyles(modelValue?.button?.properties, screenType, false)" :hasInBasket="[]"
+              :bestSeller="modelValue.bestseller"
               :buttonStyleHover="getStyles(modelValue?.buttonHover?.properties, screenType)"
               :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
-              :button="modelValue?.button" 
-              :screenType
-             />
+              :button="modelValue?.button" :screenType />
           </div>
 
           <div v-if="modelValue?.cards" v-for="card in modelValue?.cards.filter((item) => item.visible)"
@@ -182,7 +187,7 @@ watch(
       <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true" :closeOnEscape="true"
         :showCloseIcon="false" class="w-80">
         <div class="p-4">
-          <FilterProducts v-model="filter" :productCategory="props.modelValue.model_id"/>
+          <FilterProducts v-model="filter" :productCategory="props.modelValue.model_id" />
         </div>
       </Drawer>
     </div>
@@ -205,35 +210,35 @@ aside {
   transition: all 0.3s ease;
 }
 
-.sort-button{
-   color: v-bind('search_sort_class?.color || null') !important;
-   font-family: v-bind('search_sort_class?.fontFamily || null') !important;
-   font-size: v-bind('search_sort_class?.fontSize || null') !important;
-   font-style: v-bind('search_sort_class?.fontStyle || null') !important;
+.sort-button {
+  color: v-bind('search_sort_class?.color || null') !important;
+  font-family: v-bind('search_sort_class?.fontFamily || null') !important;
+  font-size: v-bind('search_sort_class?.fontSize || null') !important;
+  font-style: v-bind('search_sort_class?.fontStyle || null') !important;
 }
 
-.icon-search{
-    color: v-bind('search_class?.color || null') !important;
-    font-family: v-bind('search_class?.fontFamily || null') !important;
-    font-size: v-bind('search_class?.fontSize || null') !important;
-    font-style: v-bind('search_class?.fontStyle || null') !important;
+.icon-search {
+  color: v-bind('search_class?.color || null') !important;
+  font-family: v-bind('search_class?.fontFamily || null') !important;
+  font-size: v-bind('search_class?.fontSize || null') !important;
+  font-style: v-bind('search_class?.fontStyle || null') !important;
 }
 
 .search-input {
-    color: v-bind('search_class?.color || null') !important;
-    font-family: v-bind('search_class?.fontFamily || null') !important;
-    font-size: v-bind('search_class?.fontSize || null') !important;
-    font-style: v-bind('search_class?.fontStyle || null') !important;
+  color: v-bind('search_class?.color || null') !important;
+  font-family: v-bind('search_class?.fontFamily || null') !important;
+  font-size: v-bind('search_class?.fontSize || null') !important;
+  font-style: v-bind('search_class?.fontStyle || null') !important;
 
-    border-top: v-bind('search_class?.borderTop || null') !important;
-    border-bottom: v-bind('search_class?.borderBottom || null') !important;
-    border-left: v-bind('search_class?.borderLeft || null') !important;
-    border-right: v-bind('search_class?.borderRight || null') !important;
+  border-top: v-bind('search_class?.borderTop || null') !important;
+  border-bottom: v-bind('search_class?.borderBottom || null') !important;
+  border-left: v-bind('search_class?.borderLeft || null') !important;
+  border-right: v-bind('search_class?.borderRight || null') !important;
 
-    border-top-left-radius: v-bind('search_class?.borderTopLeftRadius || null') !important;
-    border-top-right-radius: v-bind('search_class?.borderTopRightRadius || null') !important;
-    border-bottom-left-radius: v-bind('search_class?.borderBottomLeftRadius || null') !important;
-    border-bottom-right-radius: v-bind('search_class?.borderBottomRightRadius || null') !important;
+  border-top-left-radius: v-bind('search_class?.borderTopLeftRadius || null') !important;
+  border-top-right-radius: v-bind('search_class?.borderTopRightRadius || null') !important;
+  border-bottom-left-radius: v-bind('search_class?.borderBottomLeftRadius || null') !important;
+  border-bottom-right-radius: v-bind('search_class?.borderBottomRightRadius || null') !important;
 
   :deep(input) {
     color: v-bind('search_class?.color || null') !important;
@@ -249,6 +254,4 @@ aside {
     font-style: v-bind('placeholder_class?.fontStyle || null') !important;
   }
 }
-
-
 </style>
