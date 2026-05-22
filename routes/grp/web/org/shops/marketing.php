@@ -23,6 +23,7 @@ use App\Actions\Comms\Mailshot\UI\ShowMailshotRecipients;
 use App\Actions\Comms\Mailshot\UI\EditMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
 use App\Actions\Comms\Wati\UI\IndexWatiContacts;
+use App\Actions\Comms\Wati\UI\IndexWatiLiveInbox;
 use App\Actions\Comms\Wati\UI\IndexWatiTemplates;
 use App\Actions\Comms\Wati\UI\ShowWatiTemplate;
 use App\Actions\Comms\Mailshot\UI\IndexMarketingMailshots;
@@ -82,7 +83,7 @@ Route::name("wati.")->prefix('wati')
             });
         Route::name("live_inbox.")->prefix('live-inbox')
             ->group(function () {
-                Route::get('', IndexDummies::class)->name('index');
+                Route::get('', IndexWatiLiveInbox::class)->name('index');
             });
         Route::name("templates.")->prefix('templates')
             ->group(function () {
