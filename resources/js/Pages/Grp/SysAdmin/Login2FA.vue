@@ -4,11 +4,10 @@ import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
-import { inject, onMounted, ref } from 'vue'
+import { inject, onMounted, onBeforeUnmount, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import Layout from '@/Layouts/Grp2FA.vue'
-import { useLayoutStore } from '@/Stores/layout'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useLogoutAuth } from '@/Composables/useAppMethod'
 import { faSignOutAlt } from '@fal'
@@ -21,26 +20,27 @@ const form = useForm({
 })
 
 
-const isLoading = ref(false)
-
 const submit = () => {
-    isLoading.value = true
+    if (form.processing) {
+        return
+    }
+
     form.post(route('grp.login.auth2fa'), {
-        onError: () => (
-            isLoading.value = false
-        ),
-        onFinish: () => {
-            console.log('Org length', useLayoutStore().organisations.data.length)
-        },
         onSuccess: () => {
-            form.reset('password')
+            form.reset('one_time_password')
         }
     })
 }
 
-const _inputOneTimePassword = ref(null)
+const _inputOneTimePassword = ref<HTMLInputElement | null>(null)
 
 const hasFocused = ref(false)
+
+const focusOtpOnReturn = () => {
+    if (document.visibilityState === 'visible') {
+        _inputOneTimePassword.value?.focus()
+    }
+}
 
 onMounted(() => {
     if (!hasFocused.value && _inputOneTimePassword.value) {
@@ -48,11 +48,11 @@ onMounted(() => {
         hasFocused.value = true
     }
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            _inputOneTimePassword.value?.blur()
-        }
-    })
+    document.addEventListener('visibilitychange', focusOtpOnReturn)
+})
+
+onBeforeUnmount(() => {
+    document.removeEventListener('visibilitychange', focusOtpOnReturn)
 })
 
 const layout = inject("layout", layoutStructure)
@@ -80,7 +80,7 @@ const onLogoutAuth = () => {
         </div>
 
         <div class="flex space-x-2">
-            <Button full @click.prevent="submit"  label="Enter" type="indigo"/>
+            <Button full @click.prevent="submit" :loading="form.processing" :disabled="form.processing" label="Enter" type="indigo"/>
             <Button :type="'red-r-outline'" :injectStyle="['margin-top:unset', 'margin-left:8px']" @click="onLogoutAuth()">
                 <FontAwesomeIcon :icon="faSignOutAlt" />
                 <LoadingIcon v-if="isLoadingLogout"/>
