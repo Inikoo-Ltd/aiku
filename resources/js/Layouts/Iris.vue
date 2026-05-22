@@ -305,7 +305,7 @@ const safeTheme = computed(() => {
                 </div>
 
                 <div
-                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app.name === 'iris' && layout.retina.type === 'dropshipping'"
+                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app?.name === 'iris' && layout.retina?.type === 'dropshipping'"
                     @click="bundle.open.value = !bundle.open.value"
                     class="fixed z-[60] w-8 aspect-square rounded-full flex items-center justify-center cursor-pointer
                         bg-[var(--theme-color-0)]
