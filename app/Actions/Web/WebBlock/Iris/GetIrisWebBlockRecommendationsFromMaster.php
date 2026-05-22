@@ -7,25 +7,21 @@
  * copyright 2026
 */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInRecommendation;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
+use Illuminate\Support\Arr;
 
-class GetWebBlockRecommendationsFromMaster
+class GetIrisWebBlockRecommendationsFromMaster
 {
     use AsObject;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        data_set(
-            $webBlock,
-            'web_block.layout.data.permissions',
-            ['edit', 'hidden']
-        );
-
+       
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.recommendation_settings',
@@ -40,6 +36,13 @@ class GetWebBlockRecommendationsFromMaster
             )->resolve()
         );
 
-        return $webBlock;
+         return [
+           'type' => $webBlock['type'],
+           'structure' => Arr::get(
+               $webBlock,
+               'web_block.layout.data.fieldValue',
+               []
+           ),
+        ];
     }
 }

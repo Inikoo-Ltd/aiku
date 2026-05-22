@@ -17,11 +17,11 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilies;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
-use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsCRB;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;
-use App\Actions\Web\WebBlock\GetWebBlockRecommendationsCRB;
-use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
@@ -56,12 +56,12 @@ trait WithFillIrisWebBlocks
         } elseif ($webBlockType == 'blog') {
             $parsedWebBlocks[$key] = GetIrisWebBlockBlog::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
-            $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-from-master') {
-            $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
-            $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'images' && app()->environment('local')) {
+            $parsedWebBlocks[$key] = GetIrisWebBlockLuigiRecommendations::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'images') {
             $parsedWebBlocks[$key] = SanitiseImagesWebBlock::run($webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;

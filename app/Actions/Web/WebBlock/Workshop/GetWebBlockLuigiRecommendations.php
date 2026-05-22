@@ -7,7 +7,7 @@
  * Copyright: 2025
 */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
