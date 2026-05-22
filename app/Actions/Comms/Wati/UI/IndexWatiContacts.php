@@ -139,7 +139,7 @@ class IndexWatiContacts extends OrgAction
                     ->column(key: 'contact_status', label: __('Status'), canBeHidden: false)
                     ->column(key: 'opted_in', label: __('Opted In'), canBeHidden: false)
                     ->column(key: 'allow_broadcast', label: __('Broadcast'), canBeHidden: false)
-                    ->column(key: 'customer_id', label: __('Linked'), canBeHidden: false);
+                    ->column(key: 'actions', label: __('Action'), canBeHidden: false);
             }
         };
     }
@@ -174,8 +174,9 @@ class IndexWatiContacts extends OrgAction
                     'navigation' => WatiContactsTabsEnum::navigation(),
                 ],
                 'routes'                               => [
-                    'add'      => route('grp.models.shop.wati-contacts.add', ['shop' => $this->parent->id]),
-                    'bulk_add' => route('grp.models.shop.wati-contacts.bulk-add', ['shop' => $this->parent->id]),
+                    'add'          => route('grp.models.shop.wati-contacts.add', ['shop' => $this->parent->id]),
+                    'bulk_add'     => route('grp.models.shop.wati-contacts.bulk-add', ['shop' => $this->parent->id]),
+                    'bulk_add_all' => route('grp.models.shop.wati-contacts.bulk-add-all', ['shop' => $this->parent->id]),
                 ],
                 WatiContactsTabsEnum::ALL->value         => $this->tab == WatiContactsTabsEnum::ALL->value
                     ? fn () => WatiContactResource::collection($contacts)

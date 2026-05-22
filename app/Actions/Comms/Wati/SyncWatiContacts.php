@@ -31,7 +31,14 @@ class SyncWatiContacts extends OrgAction
             $contactList  = $response['contact_list'] ?? [];
 
             foreach ($contactList as $contact) {
+                $shopIdParam = collect($contact['custom_params'] ?? [])->firstWhere('name', 'shop_id');
+
+                if ($shopIdParam !== null && (int) $shopIdParam['value'] !== $shop->id) {
+                    continue;
+                }
+
                 $customerId = $this->findCustomerId($shop, $contact['wa_id'] ?? '');
+
                 $waId       = $contact['wa_id'] ?? null;
                 $watiId     = $contact['id'];
 
@@ -84,7 +91,7 @@ class SyncWatiContacts extends OrgAction
         $normalizedWaId = preg_replace('/\D/', '', $waId);
 
         $customer = Customer::where('shop_id', $shop->id)
-            ->whereRaw("REGEXP_REPLACE(phone, '[^0-9]', '') LIKE ?", ["%{$normalizedWaId}%"])
+            ->whereRaw("REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE ?", ["%{$normalizedWaId}%"])
             ->first();
 
         return $customer?->id;

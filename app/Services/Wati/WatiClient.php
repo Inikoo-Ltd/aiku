@@ -68,7 +68,14 @@ class WatiClient
         return $this->post("{$this->apiBase}/contacts", [
             'whatsapp_number' => $whatsappNumber,
             'name'            => $name,
-            'customParams'    => $customParams,
+            'custom_params'   => $customParams,
+        ]);
+    }
+
+    public function updateContacts(array $contacts): array
+    {
+        return $this->put("{$this->apiBase}/contacts", [
+            'contacts' => $contacts,
         ]);
     }
 

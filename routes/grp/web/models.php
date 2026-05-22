@@ -77,7 +77,10 @@ use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
 use App\Actions\Comms\Wati\AddCustomerToWati;
+use App\Actions\Comms\Wati\BulkAddAllCustomersToWati;
 use App\Actions\Comms\Wati\BulkAddCustomersToWati;
+use App\Actions\Comms\Wati\DeleteWatiContact;
+use App\Actions\Comms\Wati\RelinkWatiContact;
 use App\Actions\Comms\Wati\SyncWatiContacts;
 use App\Actions\Comms\Wati\SyncWatiTemplates;
 use App\Actions\Comms\Outbox\PublishOutbox;
@@ -819,11 +822,17 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
     Route::post('set-snapshot-to-banner/{snapshot:id}', SetSnapshotToBanner::class)->name('snapshot_to_banner.store')->withoutScopedBindings();
 });
 
+Route::name('wati-contacts.')->prefix('wati-contacts/{watiContact:id}')->group(function () {
+    Route::delete('', DeleteWatiContact::class)->name('delete')->withoutScopedBindings();
+    Route::post('relink', RelinkWatiContact::class)->name('relink')->withoutScopedBindings();
+});
+
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('wati-templates/sync', SyncWatiTemplates::class)->name('wati-templates.sync')->withoutScopedBindings();
     Route::post('wati-contacts/sync', SyncWatiContacts::class)->name('wati-contacts.sync')->withoutScopedBindings();
     Route::post('wati-contacts/add', AddCustomerToWati::class)->name('wati-contacts.add')->withoutScopedBindings();
     Route::post('wati-contacts/bulk-add', BulkAddCustomersToWati::class)->name('wati-contacts.bulk-add')->withoutScopedBindings();
+    Route::post('wati-contacts/bulk-add-all', BulkAddAllCustomersToWati::class)->name('wati-contacts.bulk-add-all')->withoutScopedBindings();
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
     Route::post('prospect/mailshot/{mailshot:id}/send', SendProspectMailShot::class)->name('prospect.mailshot.send')->withoutScopedBindings();

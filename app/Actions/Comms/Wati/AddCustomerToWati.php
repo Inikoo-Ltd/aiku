@@ -29,7 +29,9 @@ class AddCustomerToWati extends OrgAction
         }
 
         $client   = WatiClient::make();
-        $response = $client->addContact($phone, $customer->name);
+        $response = $client->addContact($phone, $customer->name, [
+            ['name' => 'shop_id', 'value' => (string) $shop->id],
+        ]);
 
         if (($response['result'] ?? true) === false) {
             throw new \RuntimeException($response['message'] ?? 'Wati API failed to add contact.');
