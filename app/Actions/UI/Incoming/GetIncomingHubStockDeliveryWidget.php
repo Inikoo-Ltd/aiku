@@ -21,13 +21,9 @@ class GetIncomingHubStockDeliveryWidget
         ];
 
         $stateConfig = [
-            StockDeliveryStateEnum::IN_PROCESS->value    => ['icon' => ['fal', 'fa-cog'],            'label' => __('In Process')],
-            StockDeliveryStateEnum::CONFIRMED->value     => ['icon' => ['fal', 'fa-check'],          'label' => __('Confirmed')],
-            StockDeliveryStateEnum::READY_TO_SHIP->value => ['icon' => ['fal', 'fa-box'],            'label' => __('Ready to Ship')],
-            StockDeliveryStateEnum::DISPATCHED->value    => ['icon' => ['fal', 'fa-truck'],          'label' => __('Dispatched')],
-            StockDeliveryStateEnum::RECEIVED->value      => ['icon' => ['fal', 'fa-truck-loading'],  'label' => __('Received')],
-            StockDeliveryStateEnum::CHECKED->value       => ['icon' => ['fal', 'fa-clipboard-check'],'label' => __('Checked')],
-            StockDeliveryStateEnum::PLACED->value        => ['icon' => ['fal', 'fa-pallet-alt'],     'label' => __('Placed')],
+            StockDeliveryStateEnum::RECEIVED->value => ['icon' => ['fal', 'fa-truck-loading'],   'label' => __('Received')],
+            StockDeliveryStateEnum::CHECKED->value  => ['icon' => ['fal', 'fa-clipboard-check'], 'label' => __('Checked')],
+            StockDeliveryStateEnum::PLACED->value   => ['icon' => ['fal', 'fa-pallet-alt'],      'label' => __('Placed')],
         ];
 
         $metrics    = [];

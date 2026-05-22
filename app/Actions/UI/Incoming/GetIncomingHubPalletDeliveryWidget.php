@@ -20,9 +20,7 @@ class GetIncomingHubPalletDeliveryWidget
         ];
 
         $stateConfig = [
-            PalletDeliveryStateEnum::IN_PROCESS->value => ['icon' => ['fal', 'fa-cog'],            'label' => __('In Process')],
             PalletDeliveryStateEnum::SUBMITTED->value  => ['icon' => ['fal', 'fa-paper-plane'],    'label' => __('Submitted')],
-            PalletDeliveryStateEnum::CONFIRMED->value  => ['icon' => ['fal', 'fa-check'],          'label' => __('Confirmed')],
             PalletDeliveryStateEnum::RECEIVED->value   => ['icon' => ['fal', 'fa-truck-loading'],  'label' => __('Received')],
             PalletDeliveryStateEnum::BOOKING_IN->value => ['icon' => ['fal', 'fa-clipboard-list'], 'label' => __('Booking In')],
             PalletDeliveryStateEnum::BOOKED_IN->value  => ['icon' => ['fal', 'fa-pallet-alt'],     'label' => __('Booked In')],
