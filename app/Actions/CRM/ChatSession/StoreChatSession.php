@@ -69,6 +69,8 @@ class StoreChatSession
                 'priority'         => $modelData['priority'],
                 'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
                 'shop_id'          => $modelData['shop_id'] ?? null,
+                'geo_country_code'    => $this->resolveCountryCode(request()->header('CF-IPCountry')),
+                'visitor_session_id' => request()->hasSession() ? request()->session()->getId() : null,
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ];
@@ -131,6 +133,15 @@ class StoreChatSession
             ]);
     }
 
+
+    private function resolveCountryCode(?string $cfCountry): ?string
+    {
+        if (blank($cfCountry) || $cfCountry === 'XX' || $cfCountry === 'T1') {
+            return null;
+        }
+
+        return strtoupper(substr($cfCountry, 0, 2));
+    }
 
     protected function logSessionOpen(ChatSession $chatSession, array $data, bool $isGuest, ?string $guestIdentifier): void
     {

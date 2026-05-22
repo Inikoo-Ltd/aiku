@@ -1,3 +1,7 @@
+<!--
+ * @Author: andiferdiawan (https://github.com/andiferdiawan)
+ * @Copyright: Copyright (c) 2026, andiferdiawan
+-->
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
@@ -5,6 +9,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
 import ChatDashboard from "@/Components/Chat/ChatDashboard.vue"
+import ChatVisitorsBubble from "@/Components/Chat/ChatVisitorsBubble.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentAlt, faPencil } from "@fortawesome/free-solid-svg-icons"
 library.add(faCommentAlt, faPencil)
@@ -12,6 +17,9 @@ library.add(faCommentAlt, faPencil)
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    visitorsByCountryRoute: string
+    activeSessionsRoute: string
+    dashboardVisitorsRoute: string
     stats: {
         chatEnabledShops: number
         chatAgents: number
@@ -52,5 +60,8 @@ const props = defineProps<{
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <ChatDashboard :stats="stats" :chat-enabled-shops="chatEnabledShops" :table="table" />
+    <div class="p-4 space-y-4">
+        <ChatVisitorsBubble :route="dashboardVisitorsRoute" :date="'2026-05-20'" />
+        <ChatDashboard :stats="stats" :chat-enabled-shops="chatEnabledShops" :table="table" />
+    </div>
 </template>
