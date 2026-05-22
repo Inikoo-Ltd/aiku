@@ -200,8 +200,8 @@ class UpdateMasterAsset extends OrgAction
 
         if ($masterAsset->wasChanged(['price', 'rrp', 'status'])) {
             MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
-            
-            if ($masterAsset->wasChanged(['price', 'rrp'])){
+
+            if ($masterAsset->wasChanged(['price', 'rrp'])) {
                 // TODO MasterLevel Price RRP (Raul)
                 // TODO HydrateChildPriceRRP according to Ratio
             }
