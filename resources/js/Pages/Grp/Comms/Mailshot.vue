@@ -220,7 +220,7 @@ const confirmSchedule = async () => {
                 notify({
                     type: 'success',
                     title: 'Success',
-                    text: `Mailshot scheduled for ${formattedDateTime}`,
+                    text: `Mailshot scheduled for ${formattedDateTime} UTC`,
                 })
                 showSchedulePicker.value = false;
                 schedulePicker.value?.hide();
