@@ -22,21 +22,17 @@ class GetIncomingHubReturnDeliveryNoteWidget
         $labels = ReturnDeliveryNoteStateEnum::labels();
 
         $stateConfig = [
-            ReturnDeliveryNoteStateEnum::RECEIVED->value  => [
+            'received' => [
+                'state' => ReturnDeliveryNoteStateEnum::RECEIVED->value,
                 'icon'  => ['fal', 'fa-chair'],
+                'label' => __('To do'),
                 'route' => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
             ],
-            ReturnDeliveryNoteStateEnum::RETURNING->value => [
-                'icon'  => ['fal', 'fa-hand-paper'],
+            'booking_in' => [
+                'state' => ReturnDeliveryNoteStateEnum::RETURNING->value,
+                'icon'  => ['fal', 'fa-clipboard-list'],
+                'label' => __('Booking In'),
                 'route' => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.returning',
-            ],
-            ReturnDeliveryNoteStateEnum::RETURNED->value  => [
-                'icon'  => ['fal', 'fa-check'],
-                'route' => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.returned',
-            ],
-            ReturnDeliveryNoteStateEnum::DONE->value      => [
-                'icon'  => ['fal', 'fa-check-double'],
-                'route' => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.processed',
             ],
         ];
 
@@ -45,19 +41,20 @@ class GetIncomingHubReturnDeliveryNoteWidget
         $totals     = [];
         $total      = 0;
 
-        foreach ($stateConfig as $stateValue => $config) {
-            $count = $stats->{'number_return_delivery_notes_state_'.$stateValue} ?? 0;
-            $label = $labels[$stateValue] ?? ucfirst($stateValue);
+        foreach ($stateConfig as $key => $config) {
+            $stateValue = $config['state'];
+            $count      = $stats->{'number_return_delivery_notes_state_'.$stateValue} ?? 0;
+            $label      = $config['label'] ?? $labels[$stateValue] ?? ucfirst($stateValue);
 
             $metrics[] = [
-                'key'     => $stateValue,
+                'key'     => $key,
                 'label'   => $label,
                 'type'    => 'stat',
                 'icon'    => $config['icon'],
                 'tooltip' => $label,
             ];
 
-            $dataGlobal[$stateValue] = [
+            $dataGlobal[$key] = [
                 'value'        => $count,
                 'route_target' => [
                     'name'       => $config['route'],
@@ -65,8 +62,8 @@ class GetIncomingHubReturnDeliveryNoteWidget
                 ],
             ];
 
-            $totals[$stateValue] = ['value' => $count];
-            $total              += $count;
+            $totals[$key] = ['value' => $count];
+            $total      += $count;
         }
 
         return [

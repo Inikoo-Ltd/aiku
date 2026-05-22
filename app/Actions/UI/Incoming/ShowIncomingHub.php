@@ -92,6 +92,25 @@ class ShowIncomingHub extends OrgAction
             }
         }
 
+        $metricOrder = [
+            'received',
+            'checked',
+            'booking_in',
+            'booked_in',
+            'placed',
+        ];
+
+        usort($metrics, function ($a, $b) use ($metricOrder) {
+            $posA = array_search($a['key'], $metricOrder, true);
+            $posB = array_search($b['key'], $metricOrder, true);
+            $posA = $posA === false ? PHP_INT_MAX : $posA;
+            $posB = $posB === false ? PHP_INT_MAX : $posB;
+
+            return $posA <=> $posB;
+        });
+
+        $metricKeys = array_map(fn ($metric) => $metric['key'], $metrics);
+
         foreach ($parts as $part) {
             $rowKey          = $part['key'];
             $widget          = $part['widget'];

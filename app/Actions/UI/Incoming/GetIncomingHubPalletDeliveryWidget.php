@@ -20,11 +20,12 @@ class GetIncomingHubPalletDeliveryWidget
         ];
 
         $stateConfig = [
-            PalletDeliveryStateEnum::SUBMITTED->value  => ['icon' => ['fal', 'fa-paper-plane'],    'label' => __('Submitted')],
-            PalletDeliveryStateEnum::RECEIVED->value   => ['icon' => ['fal', 'fa-truck-loading'],  'label' => __('Received')],
-            PalletDeliveryStateEnum::BOOKING_IN->value => ['icon' => ['fal', 'fa-clipboard-list'], 'label' => __('Booking In')],
-            PalletDeliveryStateEnum::BOOKED_IN->value  => ['icon' => ['fal', 'fa-pallet-alt'],     'label' => __('Booked In')],
+            PalletDeliveryStateEnum::RECEIVED->value   => ['icon' => ['fal', 'fa-chair'],           'label' => __('To do')],
+            PalletDeliveryStateEnum::BOOKING_IN->value => ['icon' => ['fal', 'fa-clipboard-list'],  'label' => __('Booking In')],
+            PalletDeliveryStateEnum::BOOKED_IN->value  => ['icon' => ['fal', 'fa-pallet-alt'],      'label' => __('Booked In')],
         ];
+
+        $submitted = $stats->{'number_pallet_deliveries_state_'.PalletDeliveryStateEnum::SUBMITTED->value} ?? 0;
 
         $metrics    = [];
         $dataGlobal = [];
@@ -42,13 +43,26 @@ class GetIncomingHubPalletDeliveryWidget
                 'tooltip' => $config['label'],
             ];
 
-            $dataGlobal[$stateValue] = [
+            $entry = [
                 'value'        => $count,
                 'route_target' => [
                     'name'       => 'grp.org.warehouses.show.incoming.pallet_deliveries.index',
                     'parameters' => $routeParams,
                 ],
             ];
+
+            if ($stateValue === PalletDeliveryStateEnum::RECEIVED->value && $submitted > 0) {
+                $entry['suffix'] = [
+                    'value'   => $submitted,
+                    'tooltip' => __('Submitted'),
+                    'route_target' => [
+                        'name'       => 'grp.org.warehouses.show.incoming.pallet_deliveries.index',
+                        'parameters' => $routeParams,
+                    ],
+                ];
+            }
+
+            $dataGlobal[$stateValue] = $entry;
 
             $totals[$stateValue] = ['value' => $count];
             $total              += $count;
