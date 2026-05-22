@@ -198,7 +198,7 @@ const visitRedirect = () => {
             <!-- Availability Checklist -->
             <div v-if="data.luigi_data.availability_checklist" class="mt-3 border-t border-gray-200 pt-3">
                 <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    {{ trans('Search Availability') }}
+                    {{ ctrans('Search Availability') }}
                     <InformationIcon :information="ctrans('Determines whether this webpage is displayed in the website search results. It will be shown only when all rules are met.')" />                </div>
                 <div class="space-y-1.5">
                     <div
