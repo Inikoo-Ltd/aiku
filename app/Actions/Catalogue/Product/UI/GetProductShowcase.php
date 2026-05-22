@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Traits\HasBucketImages;
-use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Actions\Traits\WithLuigiAvailabilityChecklist;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
@@ -26,6 +26,7 @@ class GetProductShowcase
     use AsObject;
     use HasBucketImages;
     use HasBucketAttachment;
+    use WithLuigiAvailabilityChecklist;
 
     public function handle(Product $product): array
     {
@@ -108,34 +109,5 @@ class GetProductShowcase
             'luigi_availability_checklist' => $product->webpage ? $this->getLuigiAvailabilityChecklist($product) : null,
         ];
     }
-
-    private function getLuigiAvailabilityChecklist(Product $product): array
-    {
-        $isActiveOrDiscontinuing = $product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING;
-
-        return [
-            [
-                'label'  => __('Product state is Active or Discontinuing'),
-                'passed' => $isActiveOrDiscontinuing,
-                'detail' => $isActiveOrDiscontinuing ? null : __('Current state: :state', ['state' => $product->state->value]),
-            ],
-            [
-                'label'  => __('Webpage is live'),
-                'passed' => (bool) $product->has_live_webpage,
-                'detail' => $product->has_live_webpage ? null : __('Webpage does not have a live state'),
-            ],
-            [
-                'label'  => __('Product is main variant'),
-                'passed' => (bool) $product->is_main,
-                'detail' => $product->is_main ? null : __('This product is not the main variant'),
-            ],
-            [
-                'label'  => __('Product is for sale'),
-                'passed' => (bool) $product->is_for_sale,
-                'detail' => $product->is_for_sale ? null : __('Product is not marked as for sale'),
-            ],
-        ];
-    }
-
 
 }
