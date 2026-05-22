@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 30-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -38,6 +38,9 @@ class RetinaDeleteBasketTransaction extends RetinaAction
 
     public function handle(Transaction $transaction): Transaction
     {
+        $transaction->order->update([
+            'updated_by_customer_at' => now()
+        ]);
         return DeleteTransaction::run($transaction);
     }
 
