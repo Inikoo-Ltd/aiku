@@ -27,7 +27,30 @@ class MasterShopResource extends JsonResource
         /** @var MasterShop $masterShop */
         $masterShop = $this;
 
-        $additionalStats = [];
+        $additionalStats = [
+            [
+                'label' => __('Pending Master Families'),
+                'route' => [
+                    'name'       => 'grp.masters.master_shops.show.master_collections.index',
+                    'parameters' => [$masterShop->slug]
+                ],
+                'icon'  => 'fal fa-exclamation-triangle',
+                "color" => "#df1c1cff",
+                'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
+            ],
+            [
+                'label'           => __('Orphan Master Products'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_products_orphan',
+                    'parameters' => [$masterShop->slug]
+                ],
+                'icon'            => 'fal fa-cube',
+                'backgroundColor' => '#ff000011',
+                'color'           => '#df1c1cff',
+                'value'           => $masterShop->stats->number_master_products_no_master_family,
+            ],
+        ];
 
         if ($masterShop->stats->number_mismatched_master_families) {
             $additionalStats[] = [
@@ -69,18 +92,23 @@ class MasterShopResource extends JsonResource
             ];
         }
 
-        if ($masterShop->gold_reward_eligible) {
+        if ($masterShop->stats->number_missing_price_master_asset || $masterShop->stats->number_missing_rrp_master_asset || true) {
             $additionalStats[] = [
-                'label' => __('Master Families Has GR/VOL Reward'),
-                'route' => [
-                    'name'       => 'grp.masters.master_shops.show.master_families.vol_gr_reward.index',
+                'label' => __('Master Products Missing Price/RRP'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_products_no_price_rrp',
                     'parameters' => [
                         'masterShop' => $masterShop->slug,
+                        '_query'     => [
+                            'index_elements[status]' => 'active'
+                        ]
                     ]
                 ],
-                'icon'  => 'fal fa-medal',
-                'color' => '#f59e0b',
-                'value' => (int) ($masterShop->stats->number_master_families_with_vol_gr_discount ?? 0),
+                'icon'            => 'fal fa-cube',
+                'backgroundColor' => "#fa582761",
+                "color"           => "#df1c1cff",
+                'value'           => $masterShop->stats->number_mismatched_master_products_active,
             ];
         }
 
@@ -88,7 +116,7 @@ class MasterShopResource extends JsonResource
             'slug'     => $this->slug,
             'code'     => $this->code,
             'name'     => $this->name,
-            'statsBox' => [
+            'statsBox' => array_filter([
                 [
                     'label' => __('Master Departments'),
                     'route' => [
@@ -149,30 +177,20 @@ class MasterShopResource extends JsonResource
                     "color" => "#4f46e5",
                     'value' => $masterShop->stats->number_current_master_collections,
                 ],
-                [
-                    'label' => __('Pending Master Families'),
+                $masterShop->gold_reward_eligible ? [
+                    'label' => __('Master Families Has GR/VOL Reward'),
                     'route' => [
-                        'name'       => 'grp.masters.master_shops.show.master_collections.index',
-                        'parameters' => [$masterShop->slug]
+                        'name'       => 'grp.masters.master_shops.show.master_families.vol_gr_reward.index',
+                        'parameters' => [
+                            'masterShop' => $masterShop->slug,
+                        ]
                     ],
-                    'icon'  => 'fal fa-exclamation-triangle',
-                    "color" => "#df1c1cff",
-                    'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
-                ],
-                [
-                    'label'           => __('Orphan Master Products'),
-                    'is_negative'     => true,
-                    'route'           => [
-                        'name'       => 'grp.masters.master_shops.show.master_products_orphan',
-                        'parameters' => [$masterShop->slug]
-                    ],
-                    'icon'            => 'fal fa-cube',
-                    'backgroundColor' => '#ff000011',
-                    'color'           => '#df1c1cff',
-                    'value'           => $masterShop->stats->number_master_products_no_master_family,
-                ],
-                ...$additionalStats
-            ]
+                    'icon'  => 'fal fa-medal',
+                    'color' => '#f59e0b',
+                    'value' => (int) ($masterShop->stats->number_master_families_with_vol_gr_discount ?? 0),
+                ] : null,
+                'additionalStatBox'   => $additionalStats
+            ])
         ];
     }
 }

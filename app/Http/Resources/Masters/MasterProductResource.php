@@ -32,6 +32,7 @@ class MasterProductResource extends JsonResource
             'code'                          => $masterProduct->code,
             'name'                          => $masterProduct->name,
             'price'                         => $masterProduct->price,
+            'rrp'                           => $masterProduct->rrp,
             'currency'                      => $masterProduct->group->currency->code,
             'description'                   => $masterProduct->description,
             'description_title'             => $masterProduct->description_title,

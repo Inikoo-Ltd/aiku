@@ -66,7 +66,10 @@ class ShowIrisWebpage
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
                 'sub_type'      => $webpage->sub_type,
-                'model_type'    => $webpage->model_type
+                'model_type'    => $webpage->model_type,
+                'product_page'  => $webpage->sub_type?->value === 'product' && $webpage->model_type === 'Product'
+                    ? ['department' => [ 'name' => $webpage->model?->department?->name]]
+                    : null,
             ],
             'webpage_img'                 => $webpageImg,
             'index_page'                  => $webpage->index_page,

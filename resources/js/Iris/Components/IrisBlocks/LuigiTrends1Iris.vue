@@ -18,6 +18,7 @@ import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { trans } from "laravel-vue-i18n"
 import RecommendationSlideIrisWithRealData from "@/Components/Iris/Recommendations/RecommendationSlideIrisWithRealData.vue"
+import { usePage } from "@inertiajs/vue3"
 library.add(faChevronLeft, faChevronRight)
 
 
@@ -29,8 +30,22 @@ const props = defineProps<{
     indexBlock:number
 }>()
 
+// const subType = computed(() => usePage().props.webpage_data?.sub_type) 
 
-
+const dataWebpage = usePage().props.webpage_data as {
+    seo_data: []
+    title: string
+    description: string
+    canonical_url: string
+    type: string
+    sub_type: string  // 'department' || 'sub_department' || 'family' || 'product' || 'content'
+    model_type: string  // 'ProductCategory'
+    product_page?: {
+        department?: {
+            name: string
+        }
+    }
+}
 
 const slidesPerView = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -53,34 +68,136 @@ const isProductLoading = (productId: string) => {
 
 const isFetched = ref(false)
 
-const fetchRecommenders = async () => {
+// if subType is 'department'
+const luigiTrendsDepartment = async (departmentName?: string) => {
     const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
 
+    const response = await axios.post(
+        `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+        [
+            {
+                size: 25,
+                widget_id: departmentName ? "product_recommendation" : "department_recommendation",
+                auth_user_id: userId,
+                recommendation_context: [{
+                    attribute: "department",
+                    values: [departmentName ?? usePage().props.webpage_data?.title],
+                    operator: "or"
+                }],
+                model: "department"
+            }
+        ],
+        {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }
+    )
+
+    return response
+}
+
+// If subType is 'sub_department'
+const luigiTrendsSubDepartment = async () => {
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+
+    const response = await axios.post(
+        `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+        [
+            {
+                size: 25,
+                widget_id: "sub_department_recommendation",
+                auth_user_id: userId,
+                recommendation_context: [{
+                    attribute: "sub_department",
+                    values: [usePage().props.webpage_data?.title],
+                    operator: "or"
+                }],
+                model: "department"  // this is correct, 'department'
+            }
+        ],
+        {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }
+    )
+
+    return response
+}
+
+// If subType is 'family'
+const luigiTrendsCategory = async () => {
+    const urlWithoutDomain = new URL(dataWebpage?.canonical_url ?? '').pathname
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+    
+    const response = await axios.post(
+        `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+        [
+            {
+                size: 25,
+                widget_id: "category_recommendation",
+                auth_user_id: userId,
+                identities: [urlWithoutDomain],
+                model: "category"
+            }
+        ],
+        {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }
+    )
+
+    return response
+}
+
+
+// global trends
+const luigiTrendsGlobal = async () => {
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+
+    const response = await axios.post(
+        `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+        [
+            {
+                "blacklisted_item_ids": [],
+                "item_ids": [],
+                "recommendation_type": "trends",
+                "recommender_client_identifier": "trends",
+                "size": 25,
+                "user_id": userId ?? null,
+                "category": undefined,
+                "brand": undefined,
+                "product_id": undefined,
+                "recommendation_context": {},
+                // "hit_fields": ["url", "title"]
+            }
+        ],
+        {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }
+    )
+
+    return response
+}
+
+const fetchRecommenders = async () => {
     try {
         isLoadingFetch.value = true
-        const response = await axios.post(
-            `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
-            [
-                {
-                    "blacklisted_item_ids": [],
-                    "item_ids": [],
-                    "recommendation_type": "trends",
-                    "recommender_client_identifier": "trends",
-                    "size": 25,
-                    "user_id": userId ?? null,
-                    "category": undefined,
-                    "brand": undefined,
-                    "product_id": undefined,
-                    "recommendation_context": {},
-                    // "hit_fields": ["url", "title"]
-                }
-            ],
-            {
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                }
-            }
+
+        const subType = dataWebpage?.sub_type
+        const response = await (
+            subType === 'department' ? luigiTrendsDepartment() :
+            subType === 'product' ? luigiTrendsDepartment(dataWebpage?.product_page?.department?.name) :
+            subType === 'sub_department' ? luigiTrendsSubDepartment() :
+            subType === 'family' ? luigiTrendsCategory() :
+            luigiTrendsGlobal()
         )
+
+
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
@@ -90,7 +207,7 @@ const fetchRecommenders = async () => {
             RecommendationCollector(response.data[0])
         }
 
-        console.log('LTrends1:', response.data)
+        console.log('LTrends1:', subType, response.data)
         listProductsFromLuigi.value = response.data[0].hits
         fetchProductData()  // Fetch real data from DB
     } catch (error: any) {
@@ -166,13 +283,16 @@ onMounted(() => {
             <div class="px-3 pt-6 md:pb-6">
                 <div class="text-2xl md:text-3xl font-semibold">
                     <div>
-                        <p style="text-align: center">{{ trans("Trending") }}</p>
+                        <p style="text-align: center">{{ ctrans("Trending") }}</p>
+                        <div class="hidden">
+                            subType: {{ dataWebpage?.sub_type }}
+                        </div>
                     </div>
                 </div>
             </div>
             
             <div class="py-4 px-3 md:px-12" id="LuigiTrends1">
-              <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
+                <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :pagination="{ clickable: true }"
                     class="w-full"
                     spaceBetween="12"
