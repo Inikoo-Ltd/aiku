@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheckCircle, faTimesCircle } from '@fas'
-import { library } from '@fortawesome/fontawesome-svg-core'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { ctrans } from '@/Composables/useTrans'
-
-library.add(faCheckCircle, faTimesCircle)
 
 defineProps<{
     checklist: {
@@ -29,7 +25,7 @@ defineProps<{
                 class="flex items-start gap-2"
             >
                 <FontAwesomeIcon
-                    :icon="check.passed ? faCheckCircle : faTimesCircle"
+                    :icon="check.passed ? 'fas fa-check-circle' : 'fal fa-times-circle'"
                     :class="check.passed ? 'text-green-500' : 'text-red-500'"
                     class="mt-0.5 shrink-0 text-sm"
                     fixed-width
