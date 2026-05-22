@@ -365,8 +365,14 @@ const safeTheme = computed(() => {
 }
 
 .basket-drawer {
-  width: min(92vw, 25%);
-  box-sizing: border-box;
+    width: min(92vw, 37%);
+    box-sizing: border-box;
+}
+
+@media (min-width: 1536px) {
+    .basket-drawer {
+        width: 25%;
+    }
 }
 
 // INI-562: live chat
