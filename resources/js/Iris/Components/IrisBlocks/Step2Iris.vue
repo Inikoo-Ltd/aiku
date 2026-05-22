@@ -30,7 +30,7 @@ import {
 	faClock
 } from "@far";
 import { faLambda } from "@fad";
-import TextRenderIris from "./TextRenderIris.vue";
+import TextRenderIris from "@/Components/CMS/Webpage/Step2/TextRenderIris.vue";
 
 library.add(
 	faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,

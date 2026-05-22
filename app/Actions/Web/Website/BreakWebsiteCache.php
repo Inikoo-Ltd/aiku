@@ -58,7 +58,7 @@ class BreakWebsiteCache extends OrgAction
             /** @var Crawl $crawl */
             $crawl = $website->crawls()->create(
                 [
-                    'depth'       => 10,
+                    'depth'       => 3,
                     'concurrency' => $concurrency,
                     'trigger'     => $crawlTrigger,
                     'type'        => CrawlTypeEnum::HTML

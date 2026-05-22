@@ -9,7 +9,7 @@ import { inject } from "vue"
 import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import Button from "@iris/Components/IrisButton.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 
 library.add(faCube, faLink)

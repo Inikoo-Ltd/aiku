@@ -62,8 +62,6 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
-        $sowings = Sowing::where('return_item_id', $this->id)->with('location')->get();
-
         $maxAvailableQty = $returnDeliveryNoteItem->total_expected_qty - (
             $returnDeliveryNoteItem->total_item_damaged +
             $returnDeliveryNoteItem->total_item_not_returned +
@@ -84,6 +82,29 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
         if (floor($maxAvailableQty) == $maxAvailableQtyFractional &&  $returnDeliveryNoteItem->packed_in > 1) {
             $maxAvailableQtyFractionalDS = [0, [$maxAvailableQtyFractional * $this->packed_in, $this->packed_in]];
         }
+
+        $toRefund = [];
+        if (
+            $returnDeliveryNoteItem->relationLoaded('transaction')
+            && ($returnDeliveryNoteItem->total_item_damaged > 0 || $returnDeliveryNoteItem->total_item_returned > 0)
+        ) {
+            $transaction        = $returnDeliveryNoteItem->transaction;
+            $originalItemPrice  = (float) $transaction->net_amount > 0 ? (float) $transaction->net_amount / $transaction->quantity_dispatched : 0;
+            $qtyAvailReturn     = $returnDeliveryNoteItem->total_item_damaged + $returnDeliveryNoteItem->total_item_returned;
+            $maxAmtReturn       = ($qtyAvailReturn * $originalItemPrice);
+
+            $toRefund = [
+                'original_transaction_id'   => $transaction->id,
+                'quantity'                  => $qtyAvailReturn,
+                'original_item_net_price'   => $originalItemPrice,
+                'net_amount'                => 0,
+                'refund_amount'             => 0,
+                'max_refundable_amount'     => $maxAmtReturn,
+                'currency_code'             => $returnDeliveryNoteItem->currency_code,
+            ];
+        }
+
+        $sowings = $returnDeliveryNoteItem->relationLoaded('sowings') ? SowingResource::collection($returnDeliveryNoteItem->sowings) : [];
 
         return [
             'id'                                    => $returnDeliveryNoteItem->id,
@@ -174,8 +195,13 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
             'locations'                             => $returnLocation,
             'warehouse_area'                        => $warehouseArea,
 
-            'sowings'                               => SowingResource::collection($sowings),
+            'sowings'                               => $sowings,
+            'warehouse_slug'                        => $returnDeliveryNoteItem->warehouse_slug, // For sowing click route
+            'organisation_slug'                     => $returnDeliveryNoteItem->organisation_slug, //  For sowing click route
+
             'has_available_qty'                     => (bool) $maxAvailableQty > 0,
+
+            'to_refund'                             => $toRefund,
         ];
     }
 }

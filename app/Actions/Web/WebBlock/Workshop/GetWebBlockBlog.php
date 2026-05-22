@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;

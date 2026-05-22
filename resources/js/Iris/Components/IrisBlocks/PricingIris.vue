@@ -29,7 +29,7 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 }
 </script>
 
-<template>
+<template>	
 	<div
 		class="flex justify-center"  :id="fieldValue?.id ? fieldValue?.id  : 'pricing'+indexBlock"  component="pricing"
 		:style="getStyles(fieldValue?.container?.properties, screenType)">

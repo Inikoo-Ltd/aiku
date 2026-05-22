@@ -9,7 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
 import { faCube, faLink, faImage } from "@fal"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import Button from "@iris/Components/IrisButton.vue"
 import { inject } from "vue"
 
 library.add(faCube, faLink, faImage)

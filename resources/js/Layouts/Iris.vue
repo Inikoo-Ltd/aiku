@@ -285,9 +285,9 @@ const safeTheme = computed(() => {
 
                 <!-- Layout: SideBasket (right) -->
                 <div
-                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile'"
+                    v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
                     class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
-                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-md' : 'border-transparent max-w-0'"
+                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent max-w-0'"
                 >
                     <IrisRightsideBasket
                         v-if="layout.iris_variables?.cart_count > 0"
@@ -364,6 +364,10 @@ const safeTheme = computed(() => {
     }
 }
 
+.basket-drawer {
+  width: min(92vw, 37%);
+  box-sizing: border-box;
+}
 
 // INI-562: live chat
 iframe#launcher {

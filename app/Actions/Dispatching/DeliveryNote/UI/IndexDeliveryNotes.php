@@ -82,6 +82,7 @@ class IndexDeliveryNotes extends OrgAction
             ];
 
         }
+
         return Inertia::render(
             'Org/Dispatching/DeliveryNotes',
             [

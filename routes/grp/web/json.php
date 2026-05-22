@@ -71,6 +71,7 @@ use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Trolley\Json\ListAvailableTrolleys;
 use App\Actions\Dispatching\Trolley\Json\ListUnavailableTrolleys;
+use App\Actions\Dispatching\WaitingItems\Json\GetCrmReturnedBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetCrmWaitingBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetDispatchingWaitingBadge;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
@@ -305,3 +306,4 @@ Route::get('{warehouse}/return/select-delivery-notes', GetDeliveryNoteValidForRe
 
 Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name('dispatching_waiting_badge');
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
+Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');

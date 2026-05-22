@@ -46,11 +46,12 @@ class UpdateReturnDeliveryNoteItem extends OrgAction
     public function rules(): array
     {
         return [
-            'state'              => ['sometimes', Rule::enum(ReturnDeliveryNoteItemStateEnum::class)],
+            'state'                     => ['sometimes', Rule::enum(ReturnDeliveryNoteItemStateEnum::class)],
             'handled_at'                => ['sometimes', 'nullable'],
             'total_item_damaged'        => ['sometimes', 'numeric', 'gte:0'],
             'total_item_not_returned'   => ['sometimes', 'numeric', 'gte:0'],
             'total_item_returned'       => ['sometimes', 'numeric', 'gte:0'],
+            'refund_transaction_id'     => ['sometimes', 'exists:invoice_transactions,id'],
         ];
     }
 

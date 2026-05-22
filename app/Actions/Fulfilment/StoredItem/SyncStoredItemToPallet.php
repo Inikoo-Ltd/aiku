@@ -21,6 +21,7 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Illuminate\Http\RedirectResponse;
 
 class SyncStoredItemToPallet extends OrgAction
 {
@@ -97,6 +98,11 @@ class SyncStoredItemToPallet extends OrgAction
         $this->initialisation($pallet->organisation, $modelData);
 
         $this->handle($pallet, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
     public function jsonResponse(Pallet $pallet): PalletResource
