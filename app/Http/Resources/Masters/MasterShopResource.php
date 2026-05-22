@@ -108,7 +108,7 @@ class MasterShopResource extends JsonResource
                 'icon'            => 'fal fa-cube',
                 'backgroundColor' => "#fa582761",
                 "color"           => "#df1c1cff",
-                'value'           => $masterShop->stats->number_mismatched_master_products_active,
+                'value'           => $masterShop->stats->number_current_master_assets_missing_price_or_rrp,
             ];
         }
 
