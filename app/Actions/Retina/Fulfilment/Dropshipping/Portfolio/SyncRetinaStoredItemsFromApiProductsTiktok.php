@@ -89,7 +89,7 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
 
                         $portfolio = $storedItem->portfolio;
                         if (!$portfolio) {
-                            StorePortfolio::make()->action(
+                            $portfolio = StorePortfolio::make()->action(
                                 $tiktokUser->customerSalesChannel,
                                 $storedItem,
                                 [
