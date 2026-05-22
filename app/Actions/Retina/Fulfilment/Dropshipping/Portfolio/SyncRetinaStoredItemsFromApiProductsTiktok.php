@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
@@ -98,9 +99,12 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                             );
                         }
 
-                        UpdateStoredItem::run($storedItem, [
+                        UpdatePortfolio::run($portfolio, [
                             'platform_product_id' => Arr::get($product, 'id'),
                             'platform_product_variant_id' => Arr::get($product, 'id'),
+                        ]);
+
+                        UpdateStoredItem::run($storedItem, [
                             'state' => StoredItemStateEnum::ACTIVE,
                             'total_quantity' => Arr::get($product, 'skus.0.inventory.0.quantity', 0)
                         ]);
