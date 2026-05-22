@@ -518,10 +518,10 @@ return [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 12),
             ],
             'cache-warming' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING', 3),
+                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 3),
             ],
             'cache-warming-js' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING_JS', 1),
+                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING_JS', 1),
             ],
 
         ],
@@ -575,10 +575,10 @@ return [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 2),
             ],
             'cache-warming' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING', 1),
+                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
             ],
             'cache-warming-js' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING_JS', 1),
+                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING_JS', 1),
             ],
 
 
@@ -636,10 +636,10 @@ return [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 4),
             ],
             'cache-warming' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING', 1),
+                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
             ],
             'cache-warming-js' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING_JS', 1),
+                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING_JS', 1),
             ],
 
         ],
