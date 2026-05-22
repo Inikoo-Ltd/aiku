@@ -43,7 +43,7 @@ class CancelPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
-        if ($palletReturn->state == PalletReturnStateEnum::CANCEL) {
+        if (in_array($palletReturn->state, [PalletReturnStateEnum::CANCEL, PalletReturnStateEnum::DISPATCHED])) {
             throw ValidationException::withMessages([
                 'message'   => __('Unable to cancel this pallet return. Invalid current state [:_state]', ['_state' => $palletReturn->state->value])
             ]);

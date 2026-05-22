@@ -35,5 +35,5 @@ class RedirectPalletDelivery extends GrpAction
 
         return $this->handle($palletDelivery);
     }
-    
+
 }

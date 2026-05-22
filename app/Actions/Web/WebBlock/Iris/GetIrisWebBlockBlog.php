@@ -49,13 +49,13 @@ class GetIrisWebBlockBlog
         data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', $webpage->snapshots()->latest()->first()->published_at);
         data_set($webBlock, 'web_block.layout.data.fieldValue.latest_blogs', $latestBlogs);
 
-       return [
-            'type' => $webBlock['type'],
-            'structure' => Arr::get(
-                $webBlock,
-                'web_block.layout.data.fieldValue',
-                []
-            ),
-        ];
+        return [
+             'type' => $webBlock['type'],
+             'structure' => Arr::get(
+                 $webBlock,
+                 'web_block.layout.data.fieldValue',
+                 []
+             ),
+         ];
     }
 }

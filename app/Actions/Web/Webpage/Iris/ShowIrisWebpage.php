@@ -211,16 +211,16 @@ class ShowIrisWebpage
                 'locale'
             ]);
 
-            $cacheRedirectInVarnish='1';
+            $cacheRedirectInVarnish = '1';
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
                 $webpageData = $webpageData.'?'.$queryString;
-                $cacheRedirectInVarnish='0';
+                $cacheRedirectInVarnish = '0';
             }
 
-            if(request()->url()==$webpageData){
-                $cacheRedirectInVarnish='0';
+            if (request()->url() == $webpageData) {
+                $cacheRedirectInVarnish = '0';
             }
 
 

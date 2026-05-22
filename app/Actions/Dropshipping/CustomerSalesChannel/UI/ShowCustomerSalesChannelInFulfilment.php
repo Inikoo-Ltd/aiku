@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;

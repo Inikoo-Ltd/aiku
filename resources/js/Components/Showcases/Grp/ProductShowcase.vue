@@ -82,6 +82,11 @@ const props = defineProps<{
 			product_state_icon: []
 			parentLink?: []
 		}
+		luigi_availability_checklist?: {
+			label: string
+			passed: boolean
+			detail: string | null
+		}[] | null
 		images: any
 		main_image: ImageTS
 	}
@@ -271,6 +276,34 @@ const getTooltips = () => {
 			<!-- Sales Analytics Compact -->
 			<div v-if="salesData && !(data?.product?.data?.state == 'in_process')">
 				<SalesAnalyticsCompact :salesData="salesData" />
+			</div>
+
+			<!-- Luigi Search Availability Checklist -->
+			<div v-if="data.luigi_availability_checklist" class="mt-4 border-t border-gray-200 pt-4 px-2">
+				<div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+					{{ ctrans('Search Availability') }}
+					<InformationIcon :information="ctrans('Determines whether this webpage is displayed in the website search results. It will be shown only when all rules are met.')" />
+				</div>
+				<div class="space-y-1.5">
+					<div
+						v-for="(check, index) in data.luigi_availability_checklist"
+						:key="index"
+						class="flex items-start gap-2"
+					>
+						<FontAwesomeIcon
+							:icon="check.passed ? falCheckCircle : falTimesCircle"
+							:class="check.passed ? 'text-green-500' : 'text-red-500'"
+							class="mt-0.5 shrink-0 text-sm"
+							fixed-width
+						/>
+						<div class="flex flex-col">
+							<span class="text-xs text-gray-700 leading-tight">{{ check.label }}</span>
+							<span v-if="!check.passed && check.detail" class="text-xs text-red-400 leading-tight">
+								{{ check.detail }}
+							</span>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 

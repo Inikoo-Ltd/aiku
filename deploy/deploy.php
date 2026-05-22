@@ -266,7 +266,8 @@ set('shared_files', [
     '.env',
     '.env.testing',
     '.user.ini',
-    'restart_varnish.sh'
+    'restart_varnish.sh',
+    '.pgpass'
 ]);
 
 task('debug:writable', function () {
