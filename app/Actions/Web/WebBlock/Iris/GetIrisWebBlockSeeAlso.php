@@ -146,6 +146,13 @@ class GetIrisWebBlockSeeAlso
             $dataOtherFamilyToWorkshop
         );
 
-        return $webBlock;
+         return [
+            'type' => $webBlock['type'],
+            'structure' => Arr::get(
+                $webBlock,
+                'web_block.layout.data.fieldValue',
+                []
+            ),
+        ];
     }
 }

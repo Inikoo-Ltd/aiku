@@ -303,6 +303,8 @@ const blockNotEditableVisible = [
 		"product-2",
 
 ]
+
+console.log(props)
 </script>
 
 <template>

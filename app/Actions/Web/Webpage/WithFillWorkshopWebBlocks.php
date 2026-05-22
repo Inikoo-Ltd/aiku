@@ -16,7 +16,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartments;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSeeAlso;
-use App\Actions\Web\WebBlock\GetWebBlockBlog;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;

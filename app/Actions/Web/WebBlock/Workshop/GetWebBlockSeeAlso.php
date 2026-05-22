@@ -146,13 +146,6 @@ class GetWebBlockSeeAlso
             $dataOtherFamilyToWorkshop
         );
 
-        return [
-            'type' => $webBlock['type'],
-            'structure' => Arr::get(
-                $webBlock,
-                'web_block.layout.data.fieldValue',
-                []
-            ),
-        ];
+       return $webBlock;
     }
 }
