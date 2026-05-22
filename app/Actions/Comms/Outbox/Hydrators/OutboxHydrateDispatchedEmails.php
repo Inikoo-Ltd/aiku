@@ -55,18 +55,18 @@ class OutboxHydrateDispatchedEmails implements ShouldBeUnique
                 where: function ($q) use ($outbox) {
                     $q->where('outbox_id', $outbox->id);
                 },
-                connection:'aiku_no_sticky'
+                connection: 'aiku_no_sticky'
             )
         );
 
-        $outboxStats = $outbox->stats;
+        $outboxStats               = $outbox->stats;
         $oldNumberDispatchedEmails = $outboxStats->number_dispatched_emails;
         $outboxStats->update($stats);
 
         if ($oldNumberDispatchedEmails != $stats['number_dispatched_emails']) {
-            GroupHydrateDispatchedEmails::dispatch($outbox->group_id)->delay('60');
-            OrganisationHydrateDispatchedEmails::dispatch($outbox->organisation_id)->delay('60');
-            ShopHydrateDispatchedEmails::dispatch($outbox->shop_id)->delay('60');
+            GroupHydrateDispatchedEmails::dispatch($outbox->group_id)->delay(60);
+            OrganisationHydrateDispatchedEmails::dispatch($outbox->organisation_id)->delay(60);
+            ShopHydrateDispatchedEmails::dispatch($outbox->shop_id)->delay(60);
         }
     }
 
