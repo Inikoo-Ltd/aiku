@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Actions\Web\Webpage\WithGetWebpageWebBlocks;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
@@ -32,7 +33,8 @@ class WebpageResource extends JsonResource
         $webPageLayout               = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
         $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
 
-        $productData = null;
+        $productData           = null;
+        $availabilityChecklist = null;
         if ($webpage->model_type == 'Product') {
             /** @var Product $product */
             $product     = $webpage->model;
@@ -43,6 +45,30 @@ class WebpageResource extends JsonResource
                 'code'           => $product->code,
                 'name'           => $product->name,
                 'luigi_identity' => $product->getLuigiIdentity(),
+            ];
+
+            $isActiveOrDiscontinuing = $product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING;
+            $availabilityChecklist = [
+                [
+                    'label'  => __('Product state is Active or Discontinuing'),
+                    'passed' => $isActiveOrDiscontinuing,
+                    'detail' => $isActiveOrDiscontinuing ? null : __('Current state: :state', ['state' => $product->state->value]),
+                ],
+                [
+                    'label'  => __('Webpage is live'),
+                    'passed' => (bool) $product->has_live_webpage,
+                    'detail' => $product->has_live_webpage ? null : __('Webpage does not have a live state'),
+                ],
+                [
+                    'label'  => __('Product is main variant'),
+                    'passed' => (bool) $product->is_main,
+                    'detail' => $product->is_main ? null : __('This product is not the main variant'),
+                ],
+                [
+                    'label'  => __('Product is for sale'),
+                    'passed' => (bool) $product->is_for_sale,
+                    'detail' => $product->is_for_sale ? null : __('Product is not marked as for sale'),
+                ],
             ];
         } else {
             $modelId = $webpage->model_id;
@@ -80,6 +106,7 @@ class WebpageResource extends JsonResource
                 'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
                 'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
                 'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
+                'availability_checklist' => $availabilityChecklist,
             ],
 
             'add_web_block_route'                    => [
