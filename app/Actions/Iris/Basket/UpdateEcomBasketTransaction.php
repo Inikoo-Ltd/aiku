@@ -19,6 +19,9 @@ class UpdateEcomBasketTransaction extends IrisAction
 {
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
+        $transaction->order->update([
+            'updated_by_customer_at' => now()
+        ]);
         return UpdateTransaction::make()->action($transaction, [
             'quantity_ordered' => Arr::get($modelData, 'quantity_ordered')
         ]);

@@ -46,6 +46,9 @@ class StoreEcomBasketTransaction extends IrisAction
             );
         }
 
+        $order->update([
+            'updated_by_customer_at' => now()
+        ]);
 
         return StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')

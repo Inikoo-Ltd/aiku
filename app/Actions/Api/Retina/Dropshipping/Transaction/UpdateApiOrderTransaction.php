@@ -47,6 +47,10 @@ class UpdateApiOrderTransaction extends RetinaApiAction
             ], 422);
         }
 
+        $transaction->order->update([
+            'updated_by_customer_at' => now()
+        ]);
+
         return UpdateTransaction::make()->action($transaction, $modelData);
     }
 

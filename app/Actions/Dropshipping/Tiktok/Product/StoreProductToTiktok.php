@@ -72,7 +72,7 @@ class StoreProductToTiktok extends RetinaAction
 
             $requiredPersonResponsible = [];
 
-            if(Arr::get($categoryRules, 'data.responsible_person.is_required')) {
+            if (Arr::get($categoryRules, 'data.responsible_person.is_required')) {
                 $personResponsible = $tiktokUser->getPersonResponsible();
                 /** @var array $personId */
                 $personId = collect(Arr::get($personResponsible, 'data.responsible_persons', []))->first();

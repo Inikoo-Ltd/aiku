@@ -21,7 +21,7 @@ class GetIrisWebBlockRecommendationsFromMaster
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-       
+
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.recommendation_settings',
@@ -36,13 +36,13 @@ class GetIrisWebBlockRecommendationsFromMaster
             )->resolve()
         );
 
-         return [
-           'type' => $webBlock['type'],
-           'structure' => Arr::get(
-               $webBlock,
-               'web_block.layout.data.fieldValue',
-               []
-           ),
+        return [
+          'type' => $webBlock['type'],
+          'structure' => Arr::get(
+              $webBlock,
+              'web_block.layout.data.fieldValue',
+              []
+          ),
         ];
     }
 }

@@ -15,7 +15,6 @@ use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-
 class GetIrisWebBlockRecommendationsCRB
 {
     use AsObject;

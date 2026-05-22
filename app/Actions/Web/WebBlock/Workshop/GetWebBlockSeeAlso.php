@@ -146,6 +146,6 @@ class GetWebBlockSeeAlso
             $dataOtherFamilyToWorkshop
         );
 
-       return $webBlock;
+        return $webBlock;
     }
 }

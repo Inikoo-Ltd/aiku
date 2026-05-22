@@ -38,16 +38,19 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
 
         $historicAsset = $product->currentHistoricProduct;
 
+        $order->update([
+            'updated_by_customer_at' => now()
+        ]);
+
         return StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
         ]);
-
     }
 
     public function rules(): array
     {
         return [
-            'quantity'          => ['required', 'numeric', 'min:0'],
+            'quantity' => ['required', 'numeric', 'min:0'],
         ];
     }
 
@@ -70,8 +73,8 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
     public function jsonResponse(Transaction $transaction): array
     {
         return [
-            'transaction_id'    => $transaction->id,
-            'quantity_ordered'  => (int) $transaction->quantity_ordered
+            'transaction_id'   => $transaction->id,
+            'quantity_ordered' => (int)$transaction->quantity_ordered
         ];
     }
 }
