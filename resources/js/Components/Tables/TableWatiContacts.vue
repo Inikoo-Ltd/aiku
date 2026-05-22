@@ -142,7 +142,7 @@ async function deleteContact(contact: any): Promise<void> {
                 <!-- Chat -->
                 <a v-if="contact.wa_id" :href="whatsappChatUrl(contact.wa_id) ?? '#'" target="_blank"
                     rel="noopener noreferrer" class="p-1.5 rounded text-green-600 bg-green-50 transition-colors"
-                    v-tooltip="'Live Chat'">
+                    v-tooltip="'Live Inbox'">
                     <FontAwesomeIcon :icon="faComments" class="text-sm" fixed-width />
                 </a>
 
