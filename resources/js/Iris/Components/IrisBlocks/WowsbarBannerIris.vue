@@ -120,7 +120,6 @@ onMounted(() => {
 </script>
 
 <template>
-
   <div :id="fieldValue?.id ? fieldValue?.id : 'banner'+indexBlock" component="banner">
     <div v-if="isLoading" class="flex justify-center h-36 items-center">
       <LoadingIcon class="text-4xl" />
