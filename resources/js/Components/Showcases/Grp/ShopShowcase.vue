@@ -6,30 +6,54 @@
 
 <script setup lang="ts">
 import StatsBox from '@/Components/Stats/StatsBox.vue'
+import { trans } from 'laravel-vue-i18n';
+import { clone } from 'lodash';
 
-defineProps<{
+const props = defineProps<{
     data: {
         dashboard_stats: {}
-        statsBox: {
+        statsBox: Record<string, {
             title: string
             value: string
             icon: string
             color: string
-        }[]
+        }>
     }
     tab: string
 }>()
 
+const statsWithoutAdditional = Object.fromEntries(
+  Object.entries(props.data.statsBox).filter(
+    ([key]) => key !== 'additionalStatBox'
+  )
+);
+
+const statsOnlyAdditional = Object.fromEntries(
+  Object.entries(props.data.statsBox).filter(
+    ([key]) => key === 'additionalStatBox'
+  )
+);
 
 </script>
 
 
 <template>
     <div>
-        <div class="p-6">
-            <dl class="grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="p-6 !pb-0">
+            <span class="font-semibold"> {{ trans('Catalogue') }} </span>
+            <dl class="pt-2 grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 <StatsBox
-                    v-for="(stat, idxStat) in data.statsBox"
+                    v-for="(stat, idxStat) in statsWithoutAdditional"
+                    :stat="stat"
+                    :key="idxStat"
+                />
+            </dl>
+        </div>
+        <div v-if="statsOnlyAdditional.additionalStatBox" class="p-6">
+            <span class="font-semibold"> {{ trans('Faulty Catalogue') }} </span>
+            <dl class="pt-2 grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <StatsBox
+                    v-for="(stat, idxStat) in statsOnlyAdditional.additionalStatBox"
                     :stat="stat"
                     :key="idxStat"
                 />
