@@ -74,7 +74,7 @@ const sendMessageToParent = (type: string, value: any) => {
         <div v-if="modelValue?.recommendation_settings.title" v-html="modelValue?.recommendation_settings.title">
         </div>
         <div v-else>
-          {{ ctrans("Recommendations") }}
+          {{ ctrans("Related Products") }}
         </div>
       </div>
     </div>
