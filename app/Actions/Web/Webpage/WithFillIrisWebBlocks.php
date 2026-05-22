@@ -16,7 +16,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartments;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilies;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSeeAlso;
-use App\Actions\Web\WebBlock\GetWebBlockBlog;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
 use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;
@@ -54,7 +54,7 @@ trait WithFillIrisWebBlocks
         } elseif ($webBlockType == 'see-also-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockSeeAlso::run($webpage, $webBlock);
         } elseif ($webBlockType == 'blog') {
-            $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockBlog::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-from-master') {

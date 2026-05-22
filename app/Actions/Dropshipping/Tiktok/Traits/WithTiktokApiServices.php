@@ -355,4 +355,17 @@ trait WithTiktokApiServices
             'content-type' => 'application/json'
         ]);
     }
+
+    public function getPersonResponsible()
+    {
+        $path = "/product/202501/compliance/responsible_persons/search";
+
+        return $this->makeApiRequest('POST', $path, [
+            'keyword' => '',
+        ], false, [
+            'content-type' => 'application/json'
+        ], true, [
+            'page_size' => 10
+        ]);
+    }
 }

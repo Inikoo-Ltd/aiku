@@ -63,6 +63,24 @@ const search_sort_class = ref(getStyles(props.modelValue?.search_sort?.sort?.pro
 const placeholder_class = ref(getStyles(props.modelValue?.search_sort?.search?.placeholder?.properties, props.screenType, false))
 const search_class = ref(getStyles(props.modelValue?.search_sort?.search?.input?.properties, props.screenType, false))
 
+
+const sortOptions = computed(() => {
+  const baseOptions = [
+    /* { label: "Latest Arrivals", value: "created_at" }, */
+    { label: trans("New arrivals"), value: "created_at" },
+    { label: trans("Product Code"), value: "code" },
+    { label: trans("Name"), value: "name" }
+  ]
+  if (layout?.iris?.is_logged_in) {
+    baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
+    baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
+  }
+  if (props.modelValue?.sub_type == 'family') {
+    baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+  }
+  return baseOptions
+})
+
 watch(
   () => props.modelValue?.search_sort,
   () => {
@@ -88,57 +106,59 @@ watch(
         </aside>
       </transition>
 
-      <main class="flex-1 mt-4">
+           <main class="flex-1 mt-4">
+        <!-- <div class="px-4 xpt-4 mb-2 text-base font-normal">
+            <div
+                v-tooltip="trans('This is not work in workshop, try in website.')"
+                xhref="route().has('iris.catalogue.feeds.product_category.download') ? route('iris.catalogue.feeds.product_category.download', { productCategory: props.modelValue.model_slug }) : '#'"
+                xtarget="_blank"
+                class="group hover:underline w-fit">
+                <FontAwesomeIcon icon="fas fa-file-download" class="text-sm opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                <span class="text-sm font-normal opacity-70 group-hover:opacity-100">Download products (csv)</span>
+            </div>
+        </div> -->
         <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="flex items-center w-full md:w-1/3 gap-2">
-            
+
             <template v-if="!props.modelValue?.settings?.is_hide_filter">
-              <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
-                aria-label="Open Filters"  :injectStyle="getStyles(modelValue?.filter?.button?.properties,screenType)"/>
-              <div v-else class="">
-                <Button :icon="faFilter" @click="showAside = !showAside" :injectStyle="getStyles(modelValue?.filter?.button?.properties,screenType)" class="!p-3 !w-auto" aria-label="Open Filters" />
+              <Button v-if="isMobile" :icon="faFilter" class="!p-2 !w-auto" aria-label="Open Filters"
+                :injectStyle="getStyles(modelValue?.filter?.button?.properties, screenType)" />
+              <!-- Sidebar Toggle for Desktop -->
+              <div v-else class="py-3">
+                <Button :icon="faFilter" class="!p-2 !w-auto" aria-label="Open Filters"
+                  :injectStyle="getStyles(modelValue?.filter?.button?.properties, screenType)" />
               </div>
             </template>
+            <div
+              class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+              <span class="font-medium">
+                {{ trans("Showing") }}
+                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                  {{ dummyProducts.length }}
+                </span>
+                {{ trans("of") }}
+                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                  {{ dummyProducts.length }}
+                </span>
+                {{ dummyProducts.length === 1 ? trans("product") : trans("products") }}
+              </span>
 
-            <div class=" w-full" >
-               <PureInput 
-                  v-model="search" 
-                  type="text" 
-                  :placeholder="trans('Search products...')" 
-                  :clear="true" :isLoading="false"
-                  :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
-                  <template #prefix>
-                    <div class="pl-3 whitespace-nowrap text-gray-400">
-                      <FontAwesomeIcon  :icon='faSearch' class="icon-search" fixed-width aria-hidden='true' />
-                    </div>
-                  </template>
-                </PureInput>
             </div>
           </div>
 
-          <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300 ">
-            <button v-for="opt in ['Latest', 'Code', 'Name', 'Price']" :key="opt"
-              class="pb-2 text-sm font-medium whitespace-nowrap sort-button ">
-              {{ opt }}
+          <div class="flex space-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
+
+
+            <button v-for="option in sortOptions" :key="option.value"
+              class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
+              :class="[
+                `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
+              ]">
+              {{ option.label }}
             </button>
           </div>
         </div>
-
-        <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
-          <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
-            <span class="text-gray-700 font-medium">
-              Showing <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
-              of <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
-              products
-            </span>
-          </div>
-          <div>
-            <Button v-if="layout?.iris?.is_logged_in" :icon="faLayerGroup" label="Set All Products to Portfolio"
-              class="!p-3 !w-auto"  type="secondary" />
-          </div>
-        </div>
-
-        <div :class="responsiveGridClass" class="grid gap-6 p-4">
+         <div :class="responsiveGridClass" class="grid gap-6 p-4">
           <div v-for="product in dummyProducts" :key="product.id"
             :style="getStyles(modelValue?.card_product?.properties, screenType)"
             class="border p-3 relative rounded  bg-white">
