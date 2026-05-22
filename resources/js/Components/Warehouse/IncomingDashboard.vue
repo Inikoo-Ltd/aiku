@@ -54,6 +54,13 @@ interface Metric {
     tooltip?: string
 }
 
+interface TotalData {
+    value: number | null
+    route_target?: RouteTarget
+    prefix?: Affix
+    suffix?: Affix
+}
+
 interface DashboardData {
     dimension?: {
         key: string
@@ -70,7 +77,7 @@ interface DashboardData {
         [rowKey: string]: { value: number; route_target?: RouteTarget }
     }
     totals: {
-        [metricKey: string]: { value: number; route_target?: RouteTarget }
+        [metricKey: string]: TotalData
     }
     grand_total: {
         value: number
@@ -123,7 +130,7 @@ const isWeakValue = (value: number | null | undefined) => {
                 </div>
 
                 <div v-for="row in rows" :key="row.key"
-                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-sm border-b border-gray-100 last:border-b-0 px-1 md:px-2">
+                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0 px-1 md:px-2">
                     <span class="md:hidden">{{ row.label?.charAt(0).toUpperCase() }}</span>
                     <span class="hidden md:inline text-center leading-tight">{{ row.label }}</span>
                 </div>
@@ -140,20 +147,21 @@ const isWeakValue = (value: number | null | undefined) => {
                 :style="{ flexGrow: 1 }">
 
                 <div class="h-14 md:h-20 flex flex-col items-center justify-center md:gap-1 border-b border-gray-200 px-1 md:px-2">
-                    <span class="hidden md:inline text-sm font-semibold text-center leading-tight">{{ metric.label }}</span>
+                    <span class="hidden md:inline text-lg font-semibold text-center leading-tight">{{ metric.label }}</span>
                     <Icon v-if="metric.icon" :data="metric" class='text-xs md:text-xl' />
                 </div>
 
                 <template v-for="row in rows" :key="row.key">
                     <div
                         class="h-9 md:h-11 flex items-center justify-center gap-2 text-xs md:text-lg border-b border-gray-100 last:border-b-0">
-                        <template v-if="data.data[row.key]?.[metric.key]?.prefix?.value">
+                        <template v-if="data.data[row.key]?.[metric.key]?.prefix">
                             <component
                                 :is="getSafeRoute(data.data[row.key]?.[metric.key]?.prefix?.route_target) ? Link : 'span'"
                                 :href="getSafeRoute(data.data[row.key]?.[metric.key]?.prefix?.route_target) ?? undefined"
                                 v-tooltip="data.data[row.key]?.[metric.key]?.prefix?.tooltip"
                                 :class="[
                                     'opacity-60 tabular-nums',
+                                    isWeakValue(data.data[row.key]?.[metric.key]?.prefix?.value) ? 'opacity-40' : '',
                                     getSafeRoute(data.data[row.key]?.[metric.key]?.prefix?.route_target) ? 'hover:opacity-100 hover:underline cursor-pointer' : ''
                                 ]"
                             >{{ data.data[row.key]?.[metric.key]?.prefix?.value }}</component>
@@ -167,7 +175,7 @@ const isWeakValue = (value: number | null | undefined) => {
                                 getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
                             ]"
                         >{{ data.data[row.key]?.[metric.key]?.value ?? '-' }}</component>
-                        <template v-if="data.data[row.key]?.[metric.key]?.suffix?.value">
+                        <template v-if="data.data[row.key]?.[metric.key]?.suffix">
                             <span class="opacity-60">+</span>
                             <component
                                 :is="getSafeRoute(data.data[row.key]?.[metric.key]?.suffix?.route_target) ? Link : 'span'"
@@ -175,6 +183,7 @@ const isWeakValue = (value: number | null | undefined) => {
                                 v-tooltip="data.data[row.key]?.[metric.key]?.suffix?.tooltip"
                                 :class="[
                                     'opacity-60 tabular-nums',
+                                    isWeakValue(data.data[row.key]?.[metric.key]?.suffix?.value) ? 'opacity-40' : '',
                                     getSafeRoute(data.data[row.key]?.[metric.key]?.suffix?.route_target) ? 'hover:opacity-100 hover:underline cursor-pointer' : ''
                                 ]"
                             >{{ data.data[row.key]?.[metric.key]?.suffix?.value }}</component>
@@ -182,15 +191,40 @@ const isWeakValue = (value: number | null | undefined) => {
                     </div>
                 </template>
 
-                <component v-if="data?.dimension"
-                    :is="getSafeRoute(data.totals[metric.key]?.route_target) ? Link : 'div'"
-                    :href="getSafeRoute(data.totals[metric.key]?.route_target) ?? undefined"
-                    :class="[
-                        'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
-                        getSafeRoute(data.totals[metric.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
-                    ]">
-                    {{ data.totals[metric.key]?.value ?? '-' }}
-                </component>
+                <div v-if="data?.dimension"
+                    class="h-10 md:h-12 flex items-center justify-center gap-2 text-xs md:text-lg border-t border-gray-200">
+                    <template v-if="data.totals[metric.key]?.prefix">
+                        <component
+                            :is="getSafeRoute(data.totals[metric.key]?.prefix?.route_target) ? Link : 'span'"
+                            :href="getSafeRoute(data.totals[metric.key]?.prefix?.route_target) ?? undefined"
+                            v-tooltip="data.totals[metric.key]?.prefix?.tooltip"
+                            :class="[
+                                'opacity-60 tabular-nums',
+                                isWeakValue(data.totals[metric.key]?.prefix?.value) ? 'opacity-40' : '',
+                                getSafeRoute(data.totals[metric.key]?.prefix?.route_target) ? 'hover:opacity-100 hover:underline cursor-pointer' : ''
+                            ]"
+                        >{{ data.totals[metric.key]?.prefix?.value }}</component>
+                        <span class="opacity-60">+</span>
+                    </template>
+                    <component
+                        :is="getSafeRoute(data.totals[metric.key]?.route_target) ? Link : 'span'"
+                        :href="getSafeRoute(data.totals[metric.key]?.route_target) ?? undefined"
+                        :class="getSafeRoute(data.totals[metric.key]?.route_target) ? 'hover:underline cursor-pointer' : ''"
+                    >{{ data.totals[metric.key]?.value ?? '-' }}</component>
+                    <template v-if="data.totals[metric.key]?.suffix">
+                        <span class="opacity-60">+</span>
+                        <component
+                            :is="getSafeRoute(data.totals[metric.key]?.suffix?.route_target) ? Link : 'span'"
+                            :href="getSafeRoute(data.totals[metric.key]?.suffix?.route_target) ?? undefined"
+                            v-tooltip="data.totals[metric.key]?.suffix?.tooltip"
+                            :class="[
+                                'opacity-60 tabular-nums',
+                                isWeakValue(data.totals[metric.key]?.suffix?.value) ? 'opacity-40' : '',
+                                getSafeRoute(data.totals[metric.key]?.suffix?.route_target) ? 'hover:opacity-100 hover:underline cursor-pointer' : ''
+                            ]"
+                        >{{ data.totals[metric.key]?.suffix?.value }}</component>
+                    </template>
+                </div>
             </div>
 
             <!-- ================= ROW TOTAL BOX ================= -->
