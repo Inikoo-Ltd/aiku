@@ -20,7 +20,7 @@ trait WithEnumStats
         $where = false,
         $fieldStatsLabel = null,
         $modelCustomLabel = null,
-        $connection='aiku'
+        $connection = 'aiku'
     ): array {
         $stats = [];
 

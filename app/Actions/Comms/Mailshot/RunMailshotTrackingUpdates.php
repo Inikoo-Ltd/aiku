@@ -28,7 +28,7 @@ class RunMailshotTrackingUpdates
     public function handle(?string $organisationSlug = null, ?string $shopSlug = null): void
     {
 
-        $query = Shop::where('state', ShopStateEnum::OPEN->value)->where('is_aiku',true)
+        $query = Shop::where('state', ShopStateEnum::OPEN->value)->where('is_aiku', true)
             ->whereIn('type', [ShopTypeEnum::DROPSHIPPING->value, ShopTypeEnum::B2B->value]);
 
         if ($organisationSlug) {

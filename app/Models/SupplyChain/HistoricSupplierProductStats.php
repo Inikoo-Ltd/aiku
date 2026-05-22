@@ -81,6 +81,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_stock_delivery_items_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_stock_deliveries_state_booking_in
+ * @property int $number_stock_deliveries_state_booked_in
  * @method static Builder<static>|HistoricSupplierProductStats newModelQuery()
  * @method static Builder<static>|HistoricSupplierProductStats newQuery()
  * @method static Builder<static>|HistoricSupplierProductStats query()
@@ -92,10 +94,4 @@ class HistoricSupplierProductStats extends Model
 
     protected $guarded = [];
 
-    /*
-    public function historicProduct(): BelongsTo
-    {
-        return $this->belongsTo(HistoricAsset::class);
-    }
-    */
 }
