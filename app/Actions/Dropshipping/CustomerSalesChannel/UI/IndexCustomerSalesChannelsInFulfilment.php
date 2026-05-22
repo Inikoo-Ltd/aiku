@@ -52,7 +52,7 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                 'customer_sales_channels.reference',
                 'customer_sales_channels.number_customer_clients',
                 'customer_sales_channels.number_portfolios',
-                'customer_sales_channels.number_orders',
+                'customer_sales_channels.number_fulfilment_orders',
                 'customer_sales_channels.platform_id',
             ])
             ->selectSub(function ($subquery) {
@@ -119,7 +119,7 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_fulfilment_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->defaultSort('reference');
         };
