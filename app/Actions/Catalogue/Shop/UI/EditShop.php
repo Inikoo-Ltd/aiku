@@ -292,6 +292,14 @@ class EditShop extends OrgAction
                             'value'       => $shop->price_rrp_ratio,
                             'min'         => 0
                         ],
+                        'follow_master_pricing' => [
+                            'label'         => 'Follow Master Pricing',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.follow_master_pricing', false),
+                            'information'   => 'Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio',
+                            'warningText'   => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio') . 
+                                '. ' . __(':__amountProducts Products would be updated', ['__amountProducts' => $shop->products()->count()]) . '. ' . __('Are you sure you want to do this?'),
+                        ],
                         'product_price_currency_exchange'  => [
                             'type'        => 'input_number',
                             'bind'        => [
