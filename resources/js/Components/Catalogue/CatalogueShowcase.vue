@@ -16,6 +16,7 @@ import Image from "@common/Components/Image.vue"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { Image as ImageProxy } from "@/types/Image"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 library.add(
     faCheckCircle,
@@ -64,10 +65,12 @@ const props = defineProps<{
     data: {
         stats: any
         top_selling: TopSelling
+        currency_code: string
     }
 }>()
 
 const layout = inject("layout", layoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
 
 const hasTopSelling = computed(() =>
     props.data.top_selling?.product?.value ||
@@ -103,7 +106,7 @@ const hasTopSelling = computed(() =>
                 >
                     <!-- Product Image -->
                     <div class="aspect-square h-1/2 w-fit flex-shrink-0 overflow-hidden rounded-md lg:h-full">
-                        <Image :src="data.top_selling.product.value?.images?.data?.[0]?.source" />
+                        <Image :src="data.top_selling.product.value?.web_images?.main.original" />
                     </div>
 
                     <!-- Product Info -->
@@ -122,13 +125,13 @@ const hasTopSelling = computed(() =>
 
                         <div>
                             <p class="text-gray-500">
-                                {{ trans("Sold this month") }}: {{ data.top_selling.product.value?.sold_on_month || "-" }}
+                                {{ ctrans("Sold this month") }}: {{ data.top_selling.product.value?.sold_on_month || "n/a" }}
                             </p>
                             <p class="text-gray-500">
-                                {{ trans("Stock") }}: {{ data.top_selling.product.value?.stock || "-" }}
+                                {{ ctrans("Available Quantity") }}: {{ data.top_selling.product.value?.available_quantity || "-" }}
                             </p>
                             <p class="text-gray-500">
-                                {{ trans("Price") }}: {{ data.top_selling.product.value?.price || "-" }}
+                                {{ ctrans("Price") }}: {{ locale.currencyFormat(props.data.currency_code, data.top_selling.product.value?.price || 0) }}
                             </p>
                         </div>
                     </div>
@@ -189,6 +192,7 @@ const hasTopSelling = computed(() =>
                 </div>
             </div>
         </dl>
+
     </div>
 </template>
 

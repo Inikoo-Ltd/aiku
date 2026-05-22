@@ -43,6 +43,7 @@ class GetCatalogueShowcase
         }
 
         return [
+            'currency_code' => $shop->currency->code,
             'top_selling' => [
                 'family'     => [
                     'label' => __('Top Family'),
