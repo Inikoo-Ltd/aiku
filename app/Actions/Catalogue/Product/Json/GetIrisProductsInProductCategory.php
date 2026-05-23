@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 04-06-2025-16h-03m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -23,13 +23,6 @@ class GetIrisProductsInProductCategory extends IrisAction
     public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
     {
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
-        $queryBuilder
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from('webpages')
-                    ->whereColumn('webpages.id', 'products.webpage_id')
-                    ->where('webpages.state', 'live');
-            });
 
         $queryBuilder
             ->where(function ($query) {
@@ -39,14 +32,7 @@ class GetIrisProductsInProductCategory extends IrisAction
             });
         $queryBuilder->select(
             $this->getSelect([
-                DB::raw('products.variant_id IS NOT NULL as is_variant'),
-                DB::raw('exists (
-                        select os.is_on_demand
-                        from org_stocks os
-                        join product_has_org_stocks phos on phos.org_stock_id = os.id
-                        where phos.product_id = products.id
-                        and os.is_on_demand = true
-                    ) as is_on_demand')
+                DB::raw('products.variant_id IS NOT NULL as is_variant')
             ])
         );
         $perPage = null;
