@@ -1,11 +1,9 @@
 <?php
-
 /*
- * author Arya Permana - Kirin
- * created on 08-05-2025-16h-49m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 23 May 2026 19:30:59 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Iris\Portfolio;
 
@@ -46,22 +44,26 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
             ->get();
 
         $existingPortfolios = Portfolio::whereIn('customer_sales_channel_id', $channels->keys())
-                ->whereIn('item_id', $items->pluck('id'))
-                ->where('item_type', 'Product')
-                ->get()
-                ->keyBy(fn ($p) => "{$p->customer_sales_channel_id}-{$p->item_id}");
+            ->whereIn('item_id', $items->pluck('id'))
+            ->where('item_type', 'Product')
+            ->get()
+            ->keyBy(fn($p) => "$p->customer_sales_channel_id-$p->item_id");
 
 
-        $channels->each(function ($custSalesChannel) use ($items, $existingPortfolios) {
-            $items->each(function ($item) use ($custSalesChannel, $existingPortfolios) {
-                $compositeKey = $custSalesChannel->id . '-' . $item->id;
+        $channels->each(function ($customerSalesChannel) use ($items, $existingPortfolios) {
+            $items->each(
+            /**
+             * @throws \Throwable
+             */ function ($item) use ($customerSalesChannel, $existingPortfolios) {
+                $compositeKey = $customerSalesChannel->id.'-'.$item->id;
                 if ($existingPortfolios->has($compositeKey)) {
+                    /** @var Portfolio $portfolio */
                     $portfolio = $existingPortfolios->get($compositeKey);
                     if (!$portfolio->status) {
                         UpdatePortfolio::make()->action($portfolio, ['status' => true]);
                     }
                 } else {
-                    StorePortfolio::make()->action($custSalesChannel, $item, []);
+                    StorePortfolio::make()->action($customerSalesChannel, $item, []);
                 }
             });
         });
@@ -70,10 +72,9 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
     public function rules(): array
     {
         return [
-            'customer_sales_channel_ids' => 'required|array|min:1',
+            'customer_sales_channel_ids'   => 'required|array|min:1',
             'customer_sales_channel_ids.*' => 'required|integer|exists:customer_sales_channels,id',
-            // 'item_id' => 'required|array|min:1',
-            'item_id.*' => 'required|integer|exists:products,id'
+            'item_id.*'                    => 'required|integer|exists:products,id'
         ];
     }
 
@@ -94,10 +95,14 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
 
     public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): void
     {
+        $user = $request->user();
+        if (!$user) {
+            abort(401);
+        }
+
         $this->productCategory = $productCategory;
-        $customer = $request->user()->customer;
         $this->initialisation($request);
 
-        $this->handle($customer, $this->validatedData);
+        $this->handle($user->customer, $this->validatedData);
     }
 }
