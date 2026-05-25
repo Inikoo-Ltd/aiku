@@ -9,7 +9,6 @@
 namespace App\Actions\Maintenance\CRM;
 
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Prospect;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -25,62 +24,27 @@ class RepairDuplicatedProspectPerShop
 
     public function handle(Shop $shop): void
     {
-        // Check if there are any duplicated records before running the main process
-        $totalDuplicatedRecords = $this->countDuplicatedRecords($shop);
-
-        // If no duplicated records found, skip the process
-        if ($totalDuplicatedRecords == 0) {
-            return;
-        }
-
-        $query = Prospect::query()
+        DB::table('prospects')
             ->where('shop_id', $shop->id)
             ->whereNotNull('email')
-            ->orderBy('id', 'desc');
-
-        $query->chunkById(1000, function ($prospects) {
-            foreach ($prospects as $prospect) {
-
-                $email = $prospect->email;
-                $shopId = $prospect->shop_id;
-
-                $numberProspectsSameEmail = Prospect::where('email', $email)
-                    ->where('shop_id', $shopId)
-                    ->count();
-
-                if ($numberProspectsSameEmail > 1) {
-                    // Keep the newest (first in desc order) and delete the rest
-                    $prospectsToKeep = Prospect::where('email', $email)
-                        ->where('shop_id', $shopId)
-                        ->orderBy('id', 'desc')
-                        ->take(1)
-                        ->get();
-
-                    Prospect::where('email', $email)
-                        ->where('shop_id', $shopId)
-                        ->whereNotIn('id', $prospectsToKeep->pluck('id'))
-                        ->delete();
-                }
-            }
-        });
-    }
-
-    private function countDuplicatedRecords(Shop $shop): int
-    {
-        $result = DB::selectOne(
-            'SELECT COUNT(*) as total_duplicated_records
-            FROM (
-                SELECT email
-                FROM prospects
-                WHERE shop_id = ?
-                    AND email IS NOT NULL
-                    AND deleted_at IS NULL
-                GROUP BY email
-                HAVING COUNT(*) > 1
-            ) as duplicates',
-            [$shop->id]
-        );
-
-        return $result->total_duplicated_records ?? 0;
+            ->orWhereNotNull('phone')
+            ->whereNull('deleted_at')
+            ->whereNotIn('id', function ($query) use ($shop) {
+                $query->selectRaw('DISTINCT ON (email) id')
+                    ->from('prospects')
+                    ->where('shop_id', $shop->id)
+                    ->whereNull('deleted_at')
+                    ->orderBy('email')
+                    ->orderByDesc('id')
+                    ->union(function ($query) use ($shop) {
+                        $query->selectRaw('DISTINCT ON (phone) id')
+                            ->from('prospects')
+                            ->where('shop_id', $shop->id)
+                            ->whereNull('deleted_at')
+                            ->orderBy('phone')
+                            ->orderByDesc('id');
+                    });
+            })
+            ->update(['deleted_at' => now()]);
     }
 }
