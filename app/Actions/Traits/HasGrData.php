@@ -19,7 +19,7 @@ trait HasGrData
         $grData = [
             'shop_has_gr'           => false,
             'shop_has_gr_armistice' => false,
-            'customer_is_gr'        => true,
+            'customer_is_gr'        => false,
         ];
 
         if (Arr::get($this->shop->offers_data, 'gr.active')) {
