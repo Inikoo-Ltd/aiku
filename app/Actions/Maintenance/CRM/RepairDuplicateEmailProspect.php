@@ -6,13 +6,11 @@
  * Copyright (c) 2026, eka yudinata
  */
 
-
-/** @noinspection DuplicatedCode */
-
 namespace App\Actions\Maintenance\CRM;
 
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Prospect;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -23,54 +21,16 @@ class RepairDuplicateEmailProspect
 
     public function handle(?Shop $shop = null): void
     {
-        $query = Prospect::query()
-            ->whereNotNull('email')
-            ->orderBy('id', 'desc');
-
-        // Filter by shop if provided
-        if ($shop !== null) {
-            $query->where('prospects.shop_id', $shop->id);
-        }
-
-        $query->chunkById(1000, function ($prospects) {
-            foreach ($prospects as $prospect) {
-
-                $email = $prospect->email;
-                $shopId = $prospect->shop_id;
-
-                $numberProspectsSameEmail = Prospect::where('email', $email)
-                    ->where('shop_id', $shopId)
-                    ->count();
-
-                if ($numberProspectsSameEmail > 1) {
-
-                    print "Email: $email (Shop ID: {$shopId})\n";
-                    Prospect::where('email', $email)
-                        ->where('shop_id', $shopId)
-                        ->get()
-                        ->each(function ($prospect) {
-                            print ">> " . $prospect->id . "  $prospect->slug  \n";
-                        });
-
-                    // Keep the newest (first in desc order) and delete the rest
-                    $prospectsToKeep = Prospect::where('email', $email)
-                        ->where('shop_id', $shopId)
-                        ->orderBy('id', 'desc')
-                        ->take(1)
-                        ->get();
-
-                    $prospectsToDelete = Prospect::where('email', $email)
-                        ->where('shop_id', $shopId)
-                        ->whereNotIn('id', $prospectsToKeep->pluck('id'))
-                        ->get();
-
-                    $prospectsToDelete->each(function ($prospect) {
-                        print "Soft-deleting duplicate prospect ID: {$prospect->id}\n";
-                        $prospect->delete(); // This will set deleted_at timestamp due to SoftDeletes trait
-                    });
-                }
+        if ($shop) {
+            RepairDuplicatedProspectPerShop::dispatch($shop);
+        } else {
+            $allShops = Shop::where('state', ShopStateEnum::OPEN)
+                ->whereIn('type', [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING])
+                ->get();
+            foreach ($allShops as $shopItem) {
+                RepairDuplicatedProspectPerShop::dispatch($shopItem);
             }
-        }, 'id');
+        }
     }
 
 
@@ -84,21 +44,26 @@ class RepairDuplicateEmailProspect
         $shopSlug = $command->argument('shop_slug');
         $shop = null;
 
+        $command->info('Starting repair of duplicated prospects...');
+
         // If shop_slug is provided, fetch the shop
         if ($shopSlug !== null) {
-            $shop = Shop::where('slug', $shopSlug)->first();
+            $shop = Shop::where('slug', $shopSlug)->where('state', ShopStateEnum::OPEN)->whereIn('type', [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING])->first();
 
             if ($shop === null) {
                 $command->error("Shop with slug '{$shopSlug}' not found.");
                 return 1;
             }
 
-            $command->line("Processing duplicated prospects for shop: {$shop->slug}");
+            $command->line("Processing duplicated prospects for shop: {$shop->name}");
         } else {
             $command->line("Processing duplicated prospects for all shops...");
         }
 
         try {
+            $command->info("This will running in background and take a while...");
+            $command->info("Run this command to check the progress: php artisan queue:work");
+
             $this->handle($shop);
             $command->info("Repair completed successfully!");
         } catch (Throwable $e) {
