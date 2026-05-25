@@ -167,7 +167,7 @@ const optionsJob = {
 // Temporary data
 const selectedBox: selectedJob = reactive({})
 
-// To preserved on first load (so the box is selected)
+// To preserve on first load (so the box is selected)
 for (const key in optionsJob) {
     for (const item of optionsJob[key]) {
         if ((props.form[props.fieldName].map((option: any) => option = option.code)).includes(item.code)) {

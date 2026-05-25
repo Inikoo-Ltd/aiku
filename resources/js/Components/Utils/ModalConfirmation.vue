@@ -31,6 +31,7 @@ const props = defineProps<{
     }
     iconClass?: string
     iconContainerClass?: string
+    hideCancel?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -168,7 +169,7 @@ const messageDelete = ref('')
                                             />
                                         </div>
                                         <div class="mt-5 sm:flex sm:flex-row-reverse gap-x-2">
-                                            <slot name="btn-yes" :isLoadingdelete :clickYes="onClickYesButton">
+                                            <slot name="btn-yes" :isLoadingdelete :clickYes="onClickYesButton" :closeModal="() => isOpenModal = !isOpenModal">
                                                 <Button
                                                     :loading="isLoadingdelete"
                                                     @click="() => (onClickYesButton(), emits('onYes'))"
@@ -181,6 +182,7 @@ const messageDelete = ref('')
                                                 class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-500 sm:ml-3 sm:w-auto"
                                                 @click="() => ">{{ trans("Yes, delete") }}</button> -->
                                             <Button
+                                                v-if="!hideCancel"
                                                 type="tertiary"
                                                 icccon="far fa-arrow-left"
                                                 :label="noLabel ?? trans('cancel')"

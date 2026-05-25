@@ -14,7 +14,7 @@ import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import { getProductsRenderB2bComponent } from "@/Iris/Composables/getIrisComponents"
 import axios from "axios"
-import VariantDialogContent from "./VariantDialogContent.vue"
+import VariantDialogContent from "@/Iris/Components/IrisBlocks/Products/Ecom/VariantDialogContent.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)

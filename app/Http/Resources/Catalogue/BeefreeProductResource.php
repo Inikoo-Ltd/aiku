@@ -99,7 +99,7 @@ class BeefreeProductResource extends JsonResource
 
     public function toArray($request): array
     {
-        $productImage = Arr::get(Product::find($this->id)?->imageSources(200, 200), 'png', '');
+        $productImage = Arr::get(Product::find($this->id)?->imageSources(1200, 1200), 'png', '');
         return [
             'id'            => $this->id,
             'slug'          => $this->slug,

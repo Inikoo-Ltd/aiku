@@ -92,6 +92,25 @@ class ShowIncomingHub extends OrgAction
             }
         }
 
+        $metricOrder = [
+            'received',
+            'checked',
+            'booking_in',
+            'booked_in',
+            'placed',
+        ];
+
+        usort($metrics, function ($a, $b) use ($metricOrder) {
+            $posA = array_search($a['key'], $metricOrder, true);
+            $posB = array_search($b['key'], $metricOrder, true);
+            $posA = $posA === false ? PHP_INT_MAX : $posA;
+            $posB = $posB === false ? PHP_INT_MAX : $posB;
+
+            return $posA <=> $posB;
+        });
+
+        $metricKeys = array_map(fn ($metric) => $metric['key'], $metrics);
+
         foreach ($parts as $part) {
             $rowKey          = $part['key'];
             $widget          = $part['widget'];
@@ -101,15 +120,33 @@ class ShowIncomingHub extends OrgAction
             foreach ($metricKeys as $metricKey) {
                 if (array_key_exists($metricKey, $globalData)) {
                     $entry = $globalData[$metricKey];
-                    $data[$rowKey][$metricKey]   = $entry;
-                    $columnTotals[$metricKey]    = ['value' => ($columnTotals[$metricKey]['value'] ?? 0) + ($entry['value'] ?? 0)];
+                    $data[$rowKey][$metricKey] = $entry;
+
+                    $columnTotals[$metricKey]['value'] = ($columnTotals[$metricKey]['value'] ?? 0) + ($entry['value'] ?? 0);
+
+                    if (isset($entry['prefix'])) {
+                        $columnTotals[$metricKey]['prefix']['value']        = ($columnTotals[$metricKey]['prefix']['value'] ?? 0) + ($entry['prefix']['value'] ?? 0);
+                        $columnTotals[$metricKey]['prefix']['tooltip']      = $entry['prefix']['tooltip'] ?? null;
+                        $columnTotals[$metricKey]['prefix']['route_target'] = $entry['prefix']['route_target'] ?? null;
+                    }
+
+                    if (isset($entry['suffix'])) {
+                        $columnTotals[$metricKey]['suffix']['value']        = ($columnTotals[$metricKey]['suffix']['value'] ?? 0) + ($entry['suffix']['value'] ?? 0);
+                        $columnTotals[$metricKey]['suffix']['tooltip']      = $entry['suffix']['tooltip'] ?? null;
+                        $columnTotals[$metricKey]['suffix']['route_target'] = $entry['suffix']['route_target'] ?? null;
+                    }
                 } else {
                     $data[$rowKey][$metricKey] = ['value' => null];
                 }
             }
 
-            $rowTotals[$rowKey] = $widget['row_totals']['_global'] ?? ['value' => 0];
-            $grandTotal        += $rowTotals[$rowKey]['value'] ?? 0;
+            $rowTotal           = $widget['row_totals']['_global']['value'] ?? 0;
+            $rowAffixTotal      = 0;
+            foreach ($globalData as $entry) {
+                $rowAffixTotal += ($entry['prefix']['value'] ?? 0) + ($entry['suffix']['value'] ?? 0);
+            }
+            $rowTotals[$rowKey] = ['value' => $rowTotal + $rowAffixTotal];
+            $grandTotal        += $rowTotals[$rowKey]['value'];
         }
 
         return [

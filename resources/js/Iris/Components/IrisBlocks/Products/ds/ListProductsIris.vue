@@ -12,15 +12,12 @@ import Skeleton from "primevue/skeleton";
 import { debounce, get } from "lodash-es";
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
-import PureInput from "@/Components/Pure/PureInput.vue";
-import { faSearch } from "@fal";
-import { trans } from "laravel-vue-i18n"
-import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
+
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import RenderProductDropshiping from "./RenderProductDropshiping.vue";
+import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/RenderProductDropshiping.vue";
 import Image from "@common/Components/Image.vue"
 
 library.add(faFileDownload)

@@ -10,18 +10,14 @@ import { routeType } from "@/types/route"
 import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue"
 import Drawer from "primevue/drawer"
 import Skeleton from "primevue/skeleton"
-import { debounce, get, set } from "lodash-es"
+import { debounce, get } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
-import PureInput from "@/Components/Pure/PureInput.vue"
-import { faSearch } from "@fal"
 import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
-import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
+import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
 import Image from "@common/Components/Image.vue"
-import ReviewFamily from "@/Components/CMS/Reviews/ReviewFamily.vue"
-import { useFormatTime } from "@/Composables/useFormatTime";
 
 
 const props = defineProps<{

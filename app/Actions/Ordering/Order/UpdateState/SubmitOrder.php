@@ -32,6 +32,7 @@ use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
@@ -150,16 +151,26 @@ class SubmitOrder extends OrgAction
             $grGiftOffer = Offer::find($grGiftOfferId);
         }
 
-        $eligible = false;
+        $eligible       = false;
+        $isGiftOptedOut = true;
 
         if ($grGiftOffer) {
             $minAmount = Arr::get($grGiftOffer->trigger_data, 'min_amount', 100000);
-            if ($order->gross_amount >= $minAmount) {
+
+            $lastInvoiced = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
+                return $order->customer->last_invoiced_at;
+            });
+
+
+            $daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
+
+
+            if ($order->gross_amount >= $minAmount && ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30))) {
                 $eligible = true;
             }
+            $isGiftOptedOut = (bool)Arr::get($order->customer->settings, 'is_gift_opted_out', false);
         }
 
-        $isGiftOptedOut = (bool) Arr::get($order->customer->settings, 'is_gift_opted_out', false);
 
         if ($grGiftOffer && $eligible && !$isGiftOptedOut) {
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');

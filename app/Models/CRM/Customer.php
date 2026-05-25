@@ -190,6 +190,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Tag> $tags
  * @property-read TaxNumber|null $taxNumber
  * @property-read Collection<int, TiktokUser> $tiktokUsers
+ * @property-read Collection<int, \App\Models\CRM\CustomerTimeSeries> $timeSeries
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read Collection<int, TopUpPaymentApiPoint> $topUpPaymentApiPoint
  * @property-read Collection<int, TopUp> $topUps
@@ -552,6 +553,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function backInStockReminder(): HasMany
     {
         return $this->hasMany(BackInStockReminder::class);
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(CustomerTimeSeries::class);
     }
 
     public function pollReplies(): HasMany

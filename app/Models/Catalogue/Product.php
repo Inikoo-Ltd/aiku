@@ -182,6 +182,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $mismatch_with_master_detected
  * @property bool $not_follow_master_trade_units
  * @property int|null $index_under_family
+ * @property bool $is_on_demand
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -289,6 +290,7 @@ class Product extends Model implements Auditable, HasMedia
         'is_for_sale'                   => 'boolean',
         'not_for_sale_from_master'      => 'boolean',
         'mismatch_with_master_detected' => 'boolean',
+        'is_on_demand'                  => 'boolean',
 
     ];
 
@@ -310,6 +312,7 @@ class Product extends Model implements Auditable, HasMedia
                 'description_extra',
                 'state',
                 'is_for_sale',
+                'is_on_demand',
                 'created_at'
             ]);
     }
@@ -326,6 +329,7 @@ class Product extends Model implements Auditable, HasMedia
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
             'is_for_sale'       => $this->is_for_sale,
+            'is_on_demand'      => $this->is_on_demand,
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
@@ -355,6 +359,7 @@ class Product extends Model implements Auditable, HasMedia
         'auto_assign_subject_type',
         'auto_assign_status',
         'is_main',
+        'is_on_demand',
     ];
 
     public function getRouteKeyName(): string
