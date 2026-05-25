@@ -9,18 +9,16 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
-import { Autoplay } from 'swiper/modules'
 import Cookies from 'js-cookie';
 
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
-import { trans } from "laravel-vue-i18n"
 import RecommendationSlideIrisWithRealData from "@/Components/Iris/Recommendations/RecommendationSlideIrisWithRealData.vue"
 import { usePage } from "@inertiajs/vue3"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faChevronLeft, faChevronRight)
-
 
 const props = defineProps<{
     fieldValue: {}
@@ -193,7 +191,8 @@ const fetchRecommenders = async () => {
             subType === 'department' ? luigiTrendsDepartment() :
             subType === 'product' ? luigiTrendsDepartment(dataWebpage?.product_page?.department?.name) :
             subType === 'sub_department' ? luigiTrendsSubDepartment() :
-            subType === 'family' ? luigiTrendsCategory() :
+            // subType === 'family' ? luigiTrendsCategory() :
+            subType === 'family' ? Promise.reject(new Error('Trends is not available in Family page')) :
             luigiTrendsGlobal()
         )
 

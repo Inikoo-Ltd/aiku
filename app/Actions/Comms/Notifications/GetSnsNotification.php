@@ -45,7 +45,7 @@ class GetSnsNotification
                             'event_type' => $eventType
                         ]
                     );
-                    ProcessSesNotification::dispatch($sesNotification);
+                    ProcessSesNotification::dispatch($sesNotification)->delay(2);
                 }
             }
         }

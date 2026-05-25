@@ -72,7 +72,7 @@ const shouldShowNavigation = computed(() => products.value.length > slidesPerVie
 
 const componentId = computed(() => props.fieldValue?.id ?? `recommended-master${props.indexBlock ?? ''}`)
 
-const titleContent = computed(() => props.fieldValue?.recommendation_settings?.title ?? ctrans('Recommendations'))
+const titleContent = computed(() => props.fieldValue?.recommendation_settings?.title ?? ctrans('Related Products'))
 
 
 const prevEl = ref(null)

@@ -13,14 +13,21 @@
 
 namespace App\Actions\Goods\TradeUnit\UI\Traits;
 
+use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Spatie\QueryBuilder\AllowedFilter;
 
 trait WithTradeUnitIndex
 {
+    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
+    {
+        return TradeUnitsResource::collection($tradeUnits);
+    }
+
     protected function tradeUnitGlobalSearch(): AllowedFilter
     {
         return AllowedFilter::callback('global', function ($query, $value) {
@@ -136,6 +143,11 @@ trait WithTradeUnitIndex
     protected function addColumnMarketingWeight(InertiaTable $table): void
     {
         $table->column(key: 'marketing_weight', label: __('Weight').' ('.__('Marketing').')', canBeHidden: false, sortable: true, searchable: true, align: 'right');
+    }
+
+    protected function addColumnHealthRank(InertiaTable $table): void
+    {
+        $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
     }
 
     protected function addSalesColumns(InertiaTable $table): void

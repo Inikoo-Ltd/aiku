@@ -260,7 +260,7 @@ class ProcessSesNotification
 
         $sesNotification->delete();
 
-        PostProcessingEmailTrackingEvent::dispatch($emailProcessingTrackingEvent->id);
+        PostProcessingEmailTrackingEvent::dispatch($emailProcessingTrackingEvent->id)->delay(1);
         OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(120);
 
         return null;
@@ -268,9 +268,9 @@ class ProcessSesNotification
 
     public function getDispatchedEmail(string $sesMessageID): ?DispatchedEmail
     {
-        $dispatchedEmailData = DB::table('ses_dispatched_emails')->select('dispatched_email_id')->where('ses_id', $sesMessageID)->first();
+        $dispatchedEmailData = DB::connection('aiku_no_sticky')->table('ses_dispatched_emails')->select('dispatched_email_id')->where('ses_id', $sesMessageID)->first();
         if ($dispatchedEmailData) {
-            $dispatchedEmail = DispatchedEmail::find($dispatchedEmailData->dispatched_email_id);
+            $dispatchedEmail = DispatchedEmail::on('aiku_no_sticky')->find($dispatchedEmailData->dispatched_email_id);
             if ($dispatchedEmail) {
                 return $dispatchedEmail;
             }

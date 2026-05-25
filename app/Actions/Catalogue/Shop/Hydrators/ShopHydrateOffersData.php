@@ -70,7 +70,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
         if ($fobCampaign && $shop->type == ShopTypeEnum::B2B) {
             $offer = Offer::where('offer_campaign_id', $fobCampaign->id)->where('status', true)->first();
             if ($offer) {
-                $minAmount = Arr::get($offer->trigger_data, 'min_amount');
+                $minAmount     = Arr::get($offer->trigger_data, 'min_amount');
                 $percentageOff = null;
                 foreach ($offer->offerAllowances as $allowance) {
                     if ($allowance->type == OfferAllowanceType::PERCENTAGE_OFF) {
@@ -83,7 +83,6 @@ class ShopHydrateOffersData implements ShouldBeUnique
                     data_set($offersData, 'fob.min_amount', $minAmount);
                     data_set($offersData, 'fob.percentage_off', percentage($percentageOff, 1));
                     data_set($offersData, 'fob.missined_offer_label', $offer->name.': '.__('Spend :amount more to qualify for :percentage_off off'));
-
                 }
             }
         }
@@ -111,7 +110,6 @@ class ShopHydrateOffersData implements ShouldBeUnique
             data_set($offersData, 'gr.active', true);
             data_set($offersData, 'gr.interval', Arr::get($volGrCampaign, 'settings.interval', 30));
 
-
             $amnestyOfferId = Arr::get($volGrCampaign->data, 'gr_amnesty_offer_id');
 
             if ($amnestyOfferId) {
@@ -123,7 +121,6 @@ class ShopHydrateOffersData implements ShouldBeUnique
                     data_set($offersData, 'gr.amnesty_until', $amnestyOffer->end_at);
                 }
             }
-
 
             $grGiftOfferId = Arr::get($volGrCampaign->data, 'vol_gr_gift_offer_id');
             if ($grGiftOfferId) {
@@ -149,7 +146,6 @@ class ShopHydrateOffersData implements ShouldBeUnique
                             ];
                         }
                     }
-
 
                     data_set($offersData, 'gr.gifts', true);
                     data_set($offersData, 'gr.gifts_offer_id', $grGiftOffer->id);

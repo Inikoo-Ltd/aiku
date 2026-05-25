@@ -314,6 +314,9 @@ const isModalProductForSale = ref(false)
 					</span>
 					<span>
 						{{ locale.currencyFormat(data.masterProduct.currency, data.masterProduct.rrp) }}
+						<span v-if="data.masterProduct.rrp" class="text-xs">
+							({{ locale.currencyFormat(data.masterProduct.currency, data.masterProduct.rrp_per_unit) }}/{{ data.masterProduct.unit }})
+						</span>
 					</span>
 					<FontAwesomeIcon v-if="!data.masterProduct.rrp" :icon="faWarning" class="my-auto ml-auto"/>
 				</div>

@@ -5,6 +5,10 @@ import { isNull, get as getLodash } from 'lodash-es'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes, faCheck } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
+import { trans } from 'laravel-vue-i18n'
+import { faWarning } from '@fortawesome/free-solid-svg-icons'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 library.add(faTimes, faCheck)
 
 const props = defineProps<{
@@ -20,6 +24,7 @@ const props = defineProps<{
         noIcon?: boolean
         suffixImage?: string
         warningText?: string
+        warnTitle?: string
     }
 }>()
 
@@ -68,32 +73,42 @@ watch(value, (newValue) => {
 
 const clearAndWarn = () => {
     props.form.errors[props.fieldName] = null;
-    if(!props.fieldData?.warningText) return;
-    if(!confirm(props.fieldData?.warningText)){
-        value.value = !value.value;
-    }
+    if(!props.fieldData?.warningText) return false;
+    return true;
 }
 
 </script>
 <template>
     <div>
-        <Switch
-            v-model="value"
-            @update:modelValue="clearAndWarn"
-            class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
-            :class="[
-                value ? 'bg-indigo-500' : 'bg-indigo-100',
-                form.errors[fieldName] ? 'errorShake' : ''
-            ]" 
-        >
-            <span aria-hidden="true" :class="value ? 'translate-x-6 bg-white ' : 'translate-x-0 bg-gray-50'"
-                class="flex items-center justify-center pointer-events-none h-full w-1/2 transform rounded-full shadow-lg ring-0 transition">
-                <template v-if="!fieldData.noIcon">
-                    <FontAwesomeIcon v-if="value" icon='fal fa-check' class='text-sm text-green-500' fixed-width aria-hidden='true' />
-                    <FontAwesomeIcon v-else icon='fal fa-times' class='text-sm text-red-500' fixed-width aria-hidden='true' />
-                </template>
-            </span>
-        </Switch>
+        <ModalConfirmation :title="fieldData?.warnTitle ?? trans('Are you sure you want to proceed?')" :description="fieldData?.warningText ?? trans('Enabling this would have direct consequences')" hideCancel>
+            <template #default="{ isOpenModal, changeModel }">
+                <Switch
+                    v-model="value"
+                    @update:modelValue="() => {
+                        if(clearAndWarn())  {
+                            value = !value;
+                            changeModel()
+                        }
+                    }"
+                    class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+                    :class="[
+                        value ? 'bg-indigo-500' : 'bg-indigo-100',
+                        form.errors[fieldName] ? 'errorShake' : ''
+                    ]" 
+                >
+                    <span aria-hidden="true" :class="value ? 'translate-x-6 bg-white ' : 'translate-x-0 bg-gray-50'"
+                        class="flex items-center justify-center pointer-events-none h-full w-1/2 transform rounded-full shadow-lg ring-0 transition">
+                        <template v-if="!fieldData.noIcon">
+                            <FontAwesomeIcon v-if="value" icon='fal fa-check' class='text-sm text-green-500' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-else icon='fal fa-times' class='text-sm text-red-500' fixed-width aria-hidden='true' />
+                        </template>
+                    </span>
+                </Switch>
+            </template>
+            <template #btn-yes="{ closeModal }">
+                <Button :label="trans('Confirm')" @click="() => {value = !value; closeModal()}" type="negative" :icon="faWarning" />
+            </template>
+        </ModalConfirmation>
 
         <slot v-if="fieldData.suffixImage" name="suffix-image">
             <img :src="fieldData.suffixImage" class="inline-block h-8 w-8 ml-2  object-cover" />

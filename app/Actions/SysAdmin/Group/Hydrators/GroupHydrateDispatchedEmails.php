@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 20-12-2024, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2024
  *
 */
@@ -19,6 +19,8 @@ class GroupHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'ses-analytics';
+
     public function getJobUniqueId(?int $groupID): string
     {
         return $groupID ?? 'empty';
@@ -29,12 +31,12 @@ class GroupHydrateDispatchedEmails implements ShouldBeUnique
         if (!$groupID) {
             return;
         }
-        $group = Group::find($groupID);
+        $group = Group::on('aiku_no_sticky')->find($groupID);
         if (!$group) {
             return;
         }
         $stats = [
-            'number_dispatched_emails' => DB::table('outboxes')->where('group_id', $group->id)
+            'number_dispatched_emails' => DB::connection('aiku_no_sticky')->table('outboxes')->where('group_id', $group->id)
                 ->leftJoin('outbox_stats', 'outboxes.id', '=', 'outbox_stats.outbox_id')
                 ->sum('number_dispatched_emails'),
         ];
