@@ -187,7 +187,20 @@ return [
                     PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
                 ]) : [],
         ],
-
+        'nightowl'           => [
+            'driver'         => 'pgsql',
+            'url'            => null,
+            'host'           => env('NIGHTOWL_DB_HOST', '127.0.0.1'),
+            'port'           => env('NIGHTOWL_DB_PORT', '5432'),
+            'database'       => env('NIGHTOWL_DB_DATABASE'),
+            'username'       => env('NIGHTOWL_DB_USERNAME'),
+            'password'       => env('NIGHTOWL_DB_PASSWORD'),
+            'charset'        => 'utf8',
+            'prefix'         => '',
+            'prefix_indexes' => true,
+            'search_path'    => env('NIGHTOWL_DB_SEARCH_PATH', 'public'),
+            'sslmode'        => 'prefer',
+        ],
 
         'wowsbar' => [
             'driver'         => 'pgsql',
