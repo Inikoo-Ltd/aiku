@@ -19,6 +19,8 @@ import {
 	faEquals,
 	faEnvelopeCircleCheck,
 	faHourglassHalf,
+	faTag,
+	faChartLine,
 } from "@fortawesome/free-solid-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
 import AlertMessage from "@/Components/Utils/AlertMessage.vue"
@@ -31,9 +33,27 @@ interface AlertType {
 	description?: string
 }
 
+interface CustomerTag {
+	id: number
+	name: string
+	slug: string
+}
+
+interface CustomerStats {
+	currency_symbol: string
+	number_orders: number
+	sales_all: number
+	average_order_value: number | null
+	last_invoiced_at: string | null
+	first_order_date: string | null
+	number_invoices: number
+	number_returns: number
+	number_orders_state_creating: number
+}
+
 const props = defineProps<{
 	session: SessionAPI | null
-	initialTab?: "history" | "profile" | "message-details"
+	initialTab?: "history" | "profile" | "message-details" | "statistics"
 }>()
 
 const selectedHistory = ref<SessionAPI | null>(null)
@@ -47,7 +67,7 @@ const emit = defineEmits<{
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
-const activeTab = ref<"history" | "profile" | "message-details">(props.initialTab ?? "history")
+const activeTab = ref<"history" | "profile" | "message-details" | "statistics">(props.initialTab ?? "history")
 const syncEmail = ref(props.session?.guest_profile?.email || "")
 const syncEmailAlert = ref<AlertType | null>(null)
 const priorityAlert = ref<AlertType | null>(null)
@@ -81,6 +101,10 @@ const agentAlert = ref<AlertType | null>(null)
 const isEditingAgent = ref(false)
 const isAssigningAgent = ref(false)
 
+const customerProfile = ref<{ tags: CustomerTag[]; stats: CustomerStats | null }>({ tags: [], stats: null })
+const isLoadingProfile = ref(false)
+const profileLoaded = ref(false)
+
 const loadUserSessions = async () => {
 	if (!props.session?.web_user?.id) return
 	try {
@@ -94,6 +118,29 @@ const loadUserSessions = async () => {
 		isLoadingHistory.value = false
 	}
 }
+
+const loadCustomerProfile = async () => {
+	if (!props.session?.web_user || !props.session?.ulid || profileLoaded.value) return
+	try {
+		isLoadingProfile.value = true
+		const res = await axios.get(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer-profile`)
+		customerProfile.value = res.data
+		profileLoaded.value = true
+	} finally {
+		isLoadingProfile.value = false
+	}
+}
+
+const formatCurrency = (amount: number | null | undefined, symbol: string): string => {
+	if (amount == null) return "-"
+	return `${symbol} ${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+}
+
+const formatStatDate = (date: string | null): string => {
+	if (!date) return "-"
+	return useFormatTime(date, { formatTime: "d MMM yyyy" }) as string
+}
+
 
 const priorityIcon = (p?: string) => {
 	const key = String(p || "").toLowerCase()
@@ -329,16 +376,14 @@ const statusClass = (p?: string) => {
 watch(
 	() => activeTab.value,
 	async (tab) => {
-		if (tab === "history") {
-			await loadUserSessions()
-		}
+		if (tab === "history") await loadUserSessions()
+		if (tab === "profile" || tab === "statistics") await loadCustomerProfile()
 	}
 )
 
 onMounted(async () => {
-	if (activeTab.value === "history") {
-		await loadUserSessions()
-	}
+	if (activeTab.value === "history") await loadUserSessions()
+	if (activeTab.value === "profile" || activeTab.value === "statistics") await loadCustomerProfile()
 })
 </script>
 
@@ -386,7 +431,12 @@ onMounted(async () => {
 
 				<button class="px-4 py-2" :class="activeTab === 'message-details' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'message-details'">
-					{{ trans("Message Details") }}
+					{{ trans("Details") }}
+				</button>
+
+				<button v-if="props.session?.web_user" class="px-4 py-2" :class="activeTab === 'statistics' ? 'tab-active' : 'tab-inactive'"
+					@click="activeTab = 'statistics'">
+					{{ trans("Statistics") }}
 				</button>
 			</div>
 
@@ -524,6 +574,23 @@ onMounted(async () => {
 						</div>
 					</div>
 
+					<!-- Tags -->
+					<div v-if="props.session?.web_user" class="pt-1">
+						<div class="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">{{ trans("Tags") }}</div>
+						<div v-if="isLoadingProfile" class="text-xs text-gray-400">{{ trans("Loading...") }}</div>
+						<div v-else-if="customerProfile.tags.length" class="flex flex-wrap gap-1.5">
+							<span
+								v-for="tag in customerProfile.tags"
+								:key="tag.id"
+								class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium bg-indigo-50 text-indigo-700 border-indigo-200"
+							>
+								<FontAwesomeIcon :icon="faTag" class="text-[9px] opacity-70" />
+								{{ tag.name }}
+							</span>
+						</div>
+						<div v-else class="text-xs text-gray-400 italic">{{ trans("No tags") }}</div>
+					</div>
+
 					<div v-if="!props.session?.web_user && props.session?.guest_identifier" class="pt-2 space-y-2">
 						<div class="text-xs text-gray-500">
 							{{ trans("Sync by email (optional)") }}
@@ -633,6 +700,68 @@ onMounted(async () => {
 					<AlertMessage v-if="agentAlert" :alert="agentAlert" />
 					<AlertMessage v-if="priorityAlert" :alert="priorityAlert" />
 					<ChatActivityTimeline :sessionUlid="session.ulid" :baseUrl="baseUrl" />
+				</div>
+
+				<!-- Statistics Tab -->
+				<div v-if="activeTab === 'statistics'" class="p-4">
+					<div v-if="isLoadingProfile" class="flex items-center justify-center py-10 text-gray-400 text-sm">
+						{{ trans("Loading...") }}
+					</div>
+					<div v-else-if="!customerProfile.stats" class="flex flex-col items-center justify-center py-10 text-gray-400">
+						<FontAwesomeIcon :icon="faChartLine" class="text-2xl mb-2 opacity-30" />
+						<p class="text-xs">{{ trans("No statistics available") }}</p>
+					</div>
+					<div v-else class="space-y-5">
+
+						<!-- Sales Attributes -->
+						<div>
+							<div class="flex items-center justify-between mb-3">
+								<span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+									{{ trans("Sales Attributes") }}
+								</span>
+							</div>
+							<div class="space-y-2.5">
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-gray-500">{{ trans("Last Invoice") }}</span>
+									<span class="text-sm font-medium text-gray-800">{{ formatStatDate(customerProfile.stats.last_invoiced_at) }}</span>
+								</div>
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-gray-500">{{ trans("First Order") }}</span>
+									<span class="text-sm font-medium text-gray-800">{{ formatStatDate(customerProfile.stats.first_order_date) }}</span>
+								</div>
+                                <div v-if="customerProfile.stats.number_returns > 0"
+                                    class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-500">{{ trans("Returns") }}</span>
+                                    <span class="text-sm font-medium text-gray-800">{{
+                                        customerProfile.stats.number_returns.toLocaleString() }}</span>
+                                </div>
+                                <div v-if="customerProfile.stats.number_invoices > 0"
+                                    class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-500">{{ trans("Invoices") }}</span>
+                                    <span class="text-sm font-medium text-gray-800">{{
+                                        customerProfile.stats.number_invoices.toLocaleString() }}</span>
+                                </div>
+
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-gray-500">{{ trans("Total Orders") }}</span>
+									<span class="text-sm font-semibold text-gray-800">{{ customerProfile.stats.number_orders.toLocaleString() }}</span>
+								</div>
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-gray-500">{{ trans("Total Spend") }}</span>
+									<span class="text-sm font-semibold text-gray-800">{{ formatCurrency(customerProfile.stats.sales_all, customerProfile.stats.currency_symbol) }}</span>
+								</div>
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-gray-500">{{ trans("Avg Order Value") }}</span>
+									<span class="text-sm font-medium text-gray-800">{{ formatCurrency(customerProfile.stats.average_order_value, customerProfile.stats.currency_symbol) }}</span>
+								</div>
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-gray-500">{{ trans("Orders in Basket") }}</span>
+									<span class="text-sm font-medium text-gray-800">{{ customerProfile.stats.number_orders_state_creating.toLocaleString() }}</span>
+								</div>
+							</div>
+						</div>
+
+					</div>
 				</div>
 			</div>
 		</div>
