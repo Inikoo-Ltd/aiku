@@ -5,15 +5,14 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductHit } from '@/types/Luigi/LuigiTypes'
 import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
 import { inject, ref } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import Prices2 from '@/Components/CMS/Webpage/Products3/Prices3.vue'
+import Prices3 from '@/Iris/Components/BlocksUtils/Prices3.vue'
 import Image from "@common/Components/Image.vue"
-import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
+import Prices from "@/Iris/Components/BlocksUtils/Prices.vue"
 import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
 
 const props = defineProps<{
     product: ProductHit
@@ -104,8 +103,7 @@ const isLoadingVisit = ref(false)
         </div>
         <div v-else>
             <template v-if="product.iris_attributes">
-                <Prices2 v-if="layout.retina?.type === 'b2b'" :product="product.iris_attributes" :currency="currency"
-                    :basketButton="true" />
+                <Prices3 v-if="layout.retina?.type === 'b2b'" :product="product.iris_attributes" :currency="currency" :basketButton="true" />
                 <Prices v-else :product="product.iris_attributes" :currency="currency" :basketButton="true" />
             </template>
         </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
-import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from './Blueprint'
 
@@ -17,7 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 import { trans } from "laravel-vue-i18n"
 library.add(faChevronLeft, faChevronRight)
 
