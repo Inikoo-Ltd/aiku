@@ -7,6 +7,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\CRM\Customer\GetTopCustomersStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Models\Catalogue\Shop;
@@ -17,37 +18,39 @@ class GetShopDashboardTimeSeriesData
 {
     use AsObject;
 
-    public function handle(Shop $shop, $fromDate = null, $toDate = null, ?bool $useCache = null): array
+    public function handle(Shop $shop, $fromDate = null, $toDate = null, ?bool $useCache = null, int $topCustomersLimit = 10): array
     {
         $useCache = $useCache ?? true;
 
         if (!$useCache) {
-            return $this->fetchData($shop, $fromDate, $toDate);
+            return $this->fetchData($shop, $fromDate, $toDate, $topCustomersLimit);
         }
 
-        $cacheKey = $this->getCacheKey($shop, $fromDate, $toDate);
+        $cacheKey = $this->getCacheKey($shop, $fromDate, $toDate, $topCustomersLimit);
 
         return Cache::tags(["dashboard-shop-{$shop->id}"])
-            ->remember($cacheKey, now()->addSeconds(300), function () use ($shop, $fromDate, $toDate) {
-                return $this->fetchData($shop, $fromDate, $toDate);
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($shop, $fromDate, $toDate, $topCustomersLimit) {
+                return $this->fetchData($shop, $fromDate, $toDate, $topCustomersLimit);
             });
     }
 
-    protected function getCacheKey(Shop $shop, $fromDate, $toDate): string
+    protected function getCacheKey(Shop $shop, $fromDate, $toDate, int $topCustomersLimit): string
     {
         return sprintf(
-            'dashboard:shop_data:%s:%s:%s',
+            'dashboard:shop_data:%s:%s:%s:top%d',
             $shop->id,
             $fromDate ?? 'null',
-            $toDate ?? 'null'
+            $toDate ?? 'null',
+            $topCustomersLimit
         );
     }
 
-    protected function fetchData(Shop $shop, $fromDate, $toDate): array
+    protected function fetchData(Shop $shop, $fromDate, $toDate, int $topCustomersLimit = 10): array
     {
         $data = [
-            'shops'  => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate),
-            'brands' => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'shops'        => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'brands'       => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'topCustomers' => GetTopCustomersStats::run($shop, $fromDate, $toDate, $topCustomersLimit),
         ];
 
         if ($shop->type->value === 'dropshipping') {

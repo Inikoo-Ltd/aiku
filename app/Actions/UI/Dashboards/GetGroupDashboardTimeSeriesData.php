@@ -9,6 +9,7 @@ namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
+use App\Actions\CRM\Customer\GetTopCustomersStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Actions\Ordering\SalesChannel\GetSalesChannelTimeSeriesStats;
@@ -23,31 +24,32 @@ class GetGroupDashboardTimeSeriesData
 {
     use AsObject;
 
-    public function handle(Group $group, $fromDate = null, $toDate = null, ?bool $useCache = null): array
+    public function handle(Group $group, $fromDate = null, $toDate = null, ?bool $useCache = null, int $topCustomersLimit = 10): array
     {
         $useCache = $useCache ?? true;
 
         if (!$useCache) {
-            return $this->fetchData($group, $fromDate, $toDate);
+            return $this->fetchData($group, $fromDate, $toDate, $topCustomersLimit);
         }
 
-        $cacheKey = $this->getCacheKey($group, $fromDate, $toDate);
+        $cacheKey = $this->getCacheKey($group, $fromDate, $toDate, $topCustomersLimit);
 
         return Cache::tags(["dashboard-group-{$group->id}"])
-            ->remember($cacheKey, now()->addSeconds(300), function () use ($group, $fromDate, $toDate) {
-                return $this->fetchData($group, $fromDate, $toDate);
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($group, $fromDate, $toDate, $topCustomersLimit) {
+                return $this->fetchData($group, $fromDate, $toDate, $topCustomersLimit);
             });
     }
 
-    protected function getCacheKey(Group $group, $fromDate, $toDate): string
+    protected function getCacheKey(Group $group, $fromDate, $toDate, int $topCustomersLimit): string
     {
         [$normalizedFromDate, $normalizedToDate] = $this->normalizeDateBounds($fromDate, $toDate);
 
         return sprintf(
-            'dashboard:group_timeseries:%s:%s:%s',
+            'dashboard:group_timeseries:%s:%s:%s:top%d',
             $group->id,
             $normalizedFromDate,
-            $normalizedToDate
+            $normalizedToDate,
+            $topCustomersLimit
         );
     }
 
@@ -76,7 +78,7 @@ class GetGroupDashboardTimeSeriesData
         return Carbon::parse((string) $date)->toDateString();
     }
 
-    protected function fetchData(Group $group, $fromDate, $toDate): array
+    protected function fetchData(Group $group, $fromDate, $toDate, int $topCustomersLimit = 10): array
     {
         $allShops = GetShopTimeSeriesStats::run($group, $fromDate, $toDate);
         $allInvoiceCategories = GetInvoiceCategoryTimeSeriesStats::run($group, $fromDate, $toDate);
@@ -115,6 +117,7 @@ class GetGroupDashboardTimeSeriesData
             'platforms' => GetPlatformTimeSeriesStats::run($group, $fromDate, $toDate),
             'salesChannels' => GetSalesChannelTimeSeriesStats::run($group, $fromDate, $toDate),
             'brands' => GetBrandTimeSeriesStats::run($group, $fromDate, $toDate),
+            'topCustomers' => GetTopCustomersStats::run($group, $fromDate, $toDate, $topCustomersLimit),
         ];
     }
 

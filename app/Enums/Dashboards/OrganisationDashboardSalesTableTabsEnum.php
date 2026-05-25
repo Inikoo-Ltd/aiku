@@ -15,13 +15,16 @@ use App\Http\Resources\Dashboards\DashboardHeaderBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesInOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderShopsSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderTopCustomersSalesResource;
 use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardShopSalesResource;
+use App\Http\Resources\Dashboards\DashboardTopCustomersSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalInvoiceCategoriesSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopsTimeSeriesSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalTopCustomersSalesResource;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -34,6 +37,7 @@ enum OrganisationDashboardSalesTableTabsEnum: string
     case BRANDS = 'brands';
     case INVOICE_CATEGORIES = 'invoice_categories';
     case DS_PLATFORMS = 'ds_platforms';
+    case TOP_CUSTOMERS = 'top_customers';
 
     public function blueprint(): array
     {
@@ -54,11 +58,25 @@ enum OrganisationDashboardSalesTableTabsEnum: string
                  'title' => __('DS Platforms'),
                  'icon'  => 'fal fa-code-branch',
              ],
+            OrganisationDashboardSalesTableTabsEnum::TOP_CUSTOMERS => [
+                'title' => __('Top Customers'),
+                'icon'  => 'fal fa-trophy',
+            ],
         };
     }
 
     public function table(Organisation $organisation, array $timeSeriesData = [], ?bool $bool = false): array
     {
+        if ($this === self::TOP_CUSTOMERS) {
+            $topCustomers = $timeSeriesData['topCustomers'] ?? [];
+
+            return [
+                'header' => self::resourceToArray(DashboardHeaderTopCustomersSalesResource::make($organisation)),
+                'body'   => self::resourceToArray(DashboardTopCustomersSalesResource::collection($topCustomers)),
+                'totals' => self::resourceToArray(DashboardTotalTopCustomersSalesResource::make($topCustomers)),
+            ];
+        }
+
         $shopTimeSeriesStats = $timeSeriesData['shops'];
         $brandTimeSeriesStats = $timeSeriesData['brands'];
         $invoiceCategoryTimeSeriesStats = $timeSeriesData['invoiceCategories'];
