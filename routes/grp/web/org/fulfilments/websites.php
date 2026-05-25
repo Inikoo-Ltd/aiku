@@ -12,6 +12,7 @@ use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
 use App\Actions\Web\Banner\UI\ShowBanner;
 use App\Actions\Web\Banner\UI\ShowBannerWorkshop;
+use App\Actions\Web\Redirect\ExportRedirects;
 use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
@@ -61,6 +62,7 @@ Route::name('websites.')->group(function () {
 
 Route::name('redirect')->prefix('{website}/redirect')->group(function () {
     Route::get('/', [IndexRedirects::class, 'inFulfilment'])->name('.index');
+    Route::get('/export', [ExportRedirects::class, 'inFulfilment'])->name('.export');
     Route::get('/{redirect}', [ShowRedirect::class, 'inWebsite'])->name('.show');
     Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebsiteInFulfilment'])->name('.edit');
 });
