@@ -15,7 +15,7 @@ use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class RepairDuplicateEmailProspect
+class RepairDuplicateProspect
 {
     use AsAction;
 
@@ -62,7 +62,7 @@ class RepairDuplicateEmailProspect
 
         try {
             $command->info("This will running in background and take a while...");
-            $command->info("Run this command to check the progress: php artisan queue:work");
+            $command->info("Run this command to check how many prospects are repaired: php artisan queue:work");
 
             $this->handle($shop);
             $command->info("Repair completed successfully!");
