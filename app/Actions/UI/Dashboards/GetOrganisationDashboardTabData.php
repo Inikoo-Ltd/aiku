@@ -4,6 +4,7 @@ namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Dashboard\GetOrganisationDashboardTimeSeriesData;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardTopCustomersLimitSettings;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 class GetOrganisationDashboardTabData extends OrgAction
 {
     use WithPerformanceDateResolution;
+    use WithDashboardTopCustomersLimitSettings;
 
     public function asController(Organisation $organisation, ActionRequest $request): JsonResponse
     {
@@ -28,10 +30,12 @@ class GetOrganisationDashboardTabData extends OrgAction
         }
 
         $userSettings = $request->user()->settings;
-        $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $intervalParam = $request->query('interval');
+        $savedInterval = DateIntervalEnum::tryFrom((string) ($intervalParam ?? Arr::get($userSettings, 'selected_interval', 'all'))) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($savedInterval, $userSettings);
+        $topCustomersLimit = $this->dashboardTopCustomersLimitSettings($userSettings)['value'];
 
-        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $performanceDates[0], $performanceDates[1], null, $topCustomersLimit);
 
         $table = $tab->table($organisation, $timeSeriesData);
 

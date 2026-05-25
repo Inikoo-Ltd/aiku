@@ -7,9 +7,12 @@ use App\Enums\HasTabs;
 use App\Http\Resources\Dashboards\DashboardBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderTopCustomersSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
+use App\Http\Resources\Dashboards\DashboardTopCustomersSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalTopCustomersSalesResource;
 use App\Models\Catalogue\Shop;
 
 enum ShopDashboardSalesTableTabsEnum: string
@@ -19,6 +22,7 @@ enum ShopDashboardSalesTableTabsEnum: string
 
     case BRANDS = 'brands';
     case DS_PLATFORMS = 'ds_platforms';
+    case TOP_CUSTOMERS = 'top_customers';
 
     public function blueprint(): array
     {
@@ -31,11 +35,25 @@ enum ShopDashboardSalesTableTabsEnum: string
                 'title' => __('DS Platforms'),
                 'icon'  => 'fal fa-code-branch',
             ],
+            ShopDashboardSalesTableTabsEnum::TOP_CUSTOMERS => [
+                'title' => __('Top Customers'),
+                'icon'  => 'fal fa-trophy',
+            ],
         };
     }
 
     public function table(Shop $shop, array $timeSeriesData = []): array
     {
+        if ($this === self::TOP_CUSTOMERS) {
+            $topCustomers = $timeSeriesData['topCustomers'] ?? [];
+
+            return [
+                'header' => json_decode(DashboardHeaderTopCustomersSalesResource::make($shop)->toJson(), true),
+                'body'   => json_decode(DashboardTopCustomersSalesResource::collection($topCustomers)->toJson(), true),
+                'totals' => json_decode(DashboardTotalTopCustomersSalesResource::make($topCustomers)->toJson(), true),
+            ];
+        }
+
         $brandTimeSeriesStats    = $timeSeriesData['brands'] ?? [];
         $platformTimeSeriesStats = $timeSeriesData['platforms'] ?? [];
 
