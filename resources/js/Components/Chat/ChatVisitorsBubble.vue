@@ -9,10 +9,10 @@ import { ref, computed, onMounted, onUnmounted } from "vue"
 import axios from "axios"
 import MultiSelect from "primevue/multiselect"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faSpinner, faGlobe } from "@fal"
+import { faSpinner, faGlobe, faHeadset, faHourglassHalf, faCommentAlt, faCheckCircle, faEye, faMoon } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faSpinner, faGlobe)
+library.add(faSpinner, faGlobe, faHeadset, faHourglassHalf, faCommentAlt, faCheckCircle, faEye, faMoon)
 
 type VisitorStatus = "browsing" | "idle" | "new_session" | "waiting_chat" | "active_chat" | "closed_chat"
 
@@ -37,40 +37,28 @@ interface WebsiteRow {
 
 const props = defineProps<{
     route: string
+    date?: string  // demo mode: "YYYY-MM-DD" for historical data, omit for live (last 24h)
 }>()
 
 const POLL_INTERVAL_MS = 15_000
-const BUBBLE_SIZE      = 26
 
 const loading     = ref(true)
 const websites    = ref<WebsiteRow[]>([])
 const selectedIds = ref<number[]>([])
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-const STATUS: Record<VisitorStatus, { bg: string; border: string; label: string; textColor: string }> = {
-    active_chat:  { bg: "bg-emerald-500", border: "border-emerald-600", label: "Active Chat",   textColor: "text-emerald-700" },
-    waiting_chat: { bg: "bg-amber-400",   border: "border-amber-500",   label: "Waiting",       textColor: "text-amber-700"   },
-    new_session:  { bg: "bg-sky-400",     border: "border-sky-500",     label: "New Session",   textColor: "text-sky-700"     },
-    browsing:     { bg: "bg-blue-300",    border: "border-blue-400",    label: "Browsing",      textColor: "text-blue-700"    },
-    idle:         { bg: "bg-gray-300",    border: "border-gray-400",    label: "Idle",          textColor: "text-gray-600"    },
-    closed_chat:  { bg: "bg-gray-400",    border: "border-gray-500",    label: "Closed",        textColor: "text-gray-600"    },
+const STATUS: Record<VisitorStatus, { icon: string; barBg: string; chipBg: string; iconColor: string; textColor: string; label: string }> = {
+    active_chat:  { icon: "fa-headset",        barBg: "bg-emerald-500", chipBg: "bg-emerald-50",  iconColor: "text-emerald-500", textColor: "text-emerald-700", label: "Active Chat"  },
+    waiting_chat: { icon: "fa-hourglass-half",  barBg: "bg-amber-400",   chipBg: "bg-amber-50",    iconColor: "text-amber-500",   textColor: "text-amber-700",   label: "Waiting"      },
+    new_session:  { icon: "fa-comment-alt",     barBg: "bg-sky-400",     chipBg: "bg-sky-50",      iconColor: "text-sky-500",     textColor: "text-sky-700",     label: "New Session"  },
+    browsing:     { icon: "fa-eye",             barBg: "bg-blue-300",    chipBg: "bg-blue-50",     iconColor: "text-blue-400",    textColor: "text-blue-600",    label: "Browsing"     },
+    idle:         { icon: "fa-moon",            barBg: "bg-gray-300",    chipBg: "bg-gray-50",     iconColor: "text-gray-400",    textColor: "text-gray-500",    label: "Idle"         },
+    closed_chat:  { icon: "fa-check-circle",    barBg: "bg-gray-400",    chipBg: "bg-gray-100",    iconColor: "text-gray-400",    textColor: "text-gray-500",    label: "Closed"       },
 }
 
 const STATUSES = Object.keys(STATUS) as VisitorStatus[]
 
-const countryNames: Record<string, string> = {
-    ID: "Indonesia",    US: "United States",  GB: "United Kingdom", DE: "Germany",
-    FR: "France",       NL: "Netherlands",    ES: "Spain",          AU: "Australia",
-    SG: "Singapore",    MY: "Malaysia",       TH: "Thailand",       JP: "Japan",
-    CN: "China",        IN: "India",          BR: "Brazil",         CA: "Canada",
-    IT: "Italy",        KR: "South Korea",    XX: "Unknown",        TR: "Turkey",
-    PH: "Philippines",  VN: "Vietnam",        PL: "Poland",         SE: "Sweden",
-    HK: "Hong Kong",    CZ: "Czech Rep.",     PT: "Portugal",       RO: "Romania",
-    HU: "Hungary",      SK: "Slovakia",       PK: "Pakistan",       MX: "Mexico",
-    BE: "Belgium",      AT: "Austria",        CH: "Switzerland",    AR: "Argentina",
-    CO: "Colombia",     ZA: "South Africa",   EG: "Egypt",          SA: "Saudi Arabia",
-    AE: "UAE",          BG: "Bulgaria",       HR: "Croatia",        RS: "Serbia",
-}
+const regionNames = new Intl.DisplayNames(["en"], { type: "region" })
 
 const websiteOptions = computed(() =>
     websites.value.map(w => ({
@@ -106,14 +94,19 @@ function formatCount(n: number): string {
 }
 
 function countryLabel(code: string): string {
-    return countryNames[code] ?? code
+    if (code === "XX") return "Unknown"
+    try {
+        return regionNames.of(code) ?? code
+    } catch {
+        return code
+    }
 }
 
 function flagUrl(code: string): string {
     return `/flags/${code.toLowerCase()}.png`
 }
 
-function statusBubbles(row: CountryRow): { status: VisitorStatus; count: number }[] {
+function statusChips(row: CountryRow): { status: VisitorStatus; count: number }[] {
     return STATUSES
         .map(s => ({ status: s, count: row[s] ?? 0 }))
         .filter(b => b.count > 0)
@@ -122,7 +115,8 @@ function statusBubbles(row: CountryRow): { status: VisitorStatus; count: number 
 
 async function fetchData(): Promise<void> {
     try {
-        const { data } = await axios.get(props.route)
+        const params = props.date ? { date: props.date } : {}
+        const { data } = await axios.get(props.route, { params })
         websites.value = data
         if (!selectedIds.value.length && data.length) {
             selectedIds.value = [data[0].website_id]
@@ -136,7 +130,9 @@ async function fetchData(): Promise<void> {
 
 onMounted(() => {
     fetchData()
-    pollTimer = setInterval(fetchData, POLL_INTERVAL_MS)
+    if (!props.date) {
+        pollTimer = setInterval(fetchData, POLL_INTERVAL_MS)
+    }
 })
 
 onUnmounted(() => {
@@ -155,12 +151,19 @@ onUnmounted(() => {
                 <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
                     {{ grandTotal.toLocaleString() }}
                 </span>
+                <span v-if="date" class="rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                    Demo · {{ date }}
+                </span>
             </div>
 
             <!-- Legend -->
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <div v-for="s in STATUSES" :key="s" class="flex items-center gap-1">
-                    <span class="w-2.5 h-2.5 rounded-full inline-block border" :class="[STATUS[s].bg, STATUS[s].border]" />
+                    <span v-if="s === 'browsing'" class="relative flex items-center justify-center w-3 h-3 shrink-0">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-60" />
+                        <FontAwesomeIcon :icon="['fal', 'fa-eye']" class="relative text-[10px] text-blue-400" />
+                    </span>
+                    <FontAwesomeIcon v-else :icon="['fal', STATUS[s].icon]" class="text-xs" :class="STATUS[s].iconColor" />
                     <span class="text-xs text-gray-500">
                         {{ STATUS[s].label }}
                         <b class="font-semibold" :class="STATUS[s].textColor">{{ totals[s].toLocaleString() }}</b>
@@ -215,8 +218,8 @@ onUnmounted(() => {
 
                 <!-- Website header row -->
                 <div class="flex items-center gap-2 px-5 py-2 bg-gray-50 border-b border-gray-100">
-                    <span class="text-xs font-bold text-gray-700">{{ site.domain }}</span>
-                    <span class="text-xs text-gray-400">{{ site.website_name }}</span>
+                    <!-- <span class="text-xs font-bold text-gray-700">www.{{ site.domain }}</span> -->
+                    <span class="text-xs font-bold text-gray-600">{{ site.website_name }}</span>
                     <span class="ml-auto rounded-full bg-white border border-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600">
                         {{ site.total.toLocaleString() }}
                     </span>
@@ -242,28 +245,29 @@ onUnmounted(() => {
                             <span class="ml-auto text-[11px] font-bold text-gray-400 shrink-0 tabular-nums">{{ row.total.toLocaleString() }}</span>
                         </div>
 
-                        <!-- Status bubbles — uniform size -->
+                        <!-- Status chips — icon + count -->
                         <div class="flex items-center gap-1 flex-wrap">
                             <div
-                                v-for="bubble in statusBubbles(row)"
-                                :key="bubble.status"
-                                class="rounded-full flex items-center justify-center font-semibold text-white cursor-default shrink-0 transition-opacity hover:opacity-80"
-                                :class="STATUS[bubble.status].bg"
-                                :style="{ width: BUBBLE_SIZE + 'px', height: BUBBLE_SIZE + 'px', fontSize: '9px' }"
-                                :title="`${STATUS[bubble.status].label}: ${bubble.count.toLocaleString()}`"
+                                v-for="chip in statusChips(row)"
+                                :key="chip.status"
+                                class="flex items-center gap-1 px-2 py-1.5 rounded"
+                                :class="STATUS[chip.status].chipBg"
+                                :title="`${STATUS[chip.status].label}: ${chip.count.toLocaleString()}`"
                             >
-                                {{ formatCount(bubble.count) }}
+                                <span v-if="chip.status === 'browsing'" class="relative flex items-center justify-center w-[10px] h-[10px] shrink-0">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-60" />
+                                    <FontAwesomeIcon :icon="['fal', 'fa-eye']" class="relative text-[9px] text-blue-400" />
+                                </span>
+                                <FontAwesomeIcon
+                                    v-else
+                                    :icon="['fal', STATUS[chip.status].icon]"
+                                    class="text-[12px]"
+                                    :class="STATUS[chip.status].iconColor"
+                                />
+                                <span class="text-[12px] font-semibold tabular-nums leading-none" :class="STATUS[chip.status].textColor">
+                                    {{ formatCount(chip.count) }}
+                                </span>
                             </div>
-                        </div>
-
-                        <!-- Mini bar -->
-                        <div class="flex h-[3px] rounded-full overflow-hidden w-full">
-                            <div
-                                v-for="s in STATUSES"
-                                :key="s"
-                                :class="STATUS[s].bg"
-                                :style="{ width: (row[s] / row.total * 100) + '%' }"
-                            />
                         </div>
                     </div>
                 </div>
@@ -280,7 +284,8 @@ onUnmounted(() => {
 
         <!-- Footer -->
         <div v-if="!loading && websites.length" class="px-5 py-2 border-t border-gray-100 text-xs text-gray-400 text-right">
-            Auto-refreshes every {{ POLL_INTERVAL_MS / 1000 }}s
+            <template v-if="date">Historical data for {{ date }}</template>
+            <template v-else>Auto-refreshes every {{ POLL_INTERVAL_MS / 1000 }}s</template>
         </div>
     </div>
 </template>

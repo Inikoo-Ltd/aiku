@@ -17,14 +17,28 @@ class GetChatDashboardVisitors
     public const WINDOW_HOURS            = 24;
     public const IDLE_THRESHOLD_MINUTES  = 10;
 
-    public function handle(Organisation $organisation): array
+    public function handle(Organisation $organisation, ?string $date = null): array
     {
-        $windowStart     = now()->subHours(self::WINDOW_HOURS);
-        $idleThreshold   = now()->subMinutes(self::IDLE_THRESHOLD_MINUTES);
+        if ($date) {
+            $dayStart      = Carbon::parse($date)->startOfDay();
+            $windowStart   = $dayStart;
+            $windowEnd     = $dayStart->copy()->endOfDay();
+            $idleThreshold = $windowEnd->copy()->subMinutes(self::IDLE_THRESHOLD_MINUTES);
+        } else {
+            $windowStart   = now()->subHours(self::WINDOW_HOURS);
+            $windowEnd     = null;
+            $idleThreshold = now()->subMinutes(self::IDLE_THRESHOLD_MINUTES);
+        }
 
-        $rows = WebsiteVisitor::query()
+        $query = WebsiteVisitor::query()
             ->where('website_visitors.organisation_id', $organisation->id)
-            ->where('website_visitors.last_seen_at', '>=', $windowStart)
+            ->where('website_visitors.last_seen_at', '>=', $windowStart);
+
+        if ($windowEnd) {
+            $query->where('website_visitors.last_seen_at', '<=', $windowEnd);
+        }
+
+        $rows = $query
             ->leftJoin('websites', 'websites.id', '=', 'website_visitors.website_id')
             ->leftJoin('chat_sessions', function ($join) {
                 $join->on('chat_sessions.website_visitor_id', '=', 'website_visitors.id')
@@ -108,9 +122,16 @@ class GetChatDashboardVisitors
         return $row->last_seen_at >= $idleThreshold ? 'browsing' : 'idle';
     }
 
+    public function rules(): array
+    {
+        return [
+            'date' => ['nullable', 'date_format:Y-m-d'],
+        ];
+    }
+
     public function asController(Organisation $organisation, ActionRequest $request): array
     {
-        return $this->handle($organisation);
+        return $this->handle($organisation, $request->validated('date'));
     }
 
     public function jsonResponse(array $data): JsonResponse

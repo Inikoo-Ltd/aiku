@@ -1,5 +1,10 @@
 <!--
  * @Author: andiferdiawan (https://github.com/andiferdiawan)
+ * @Created: YYYY-MM-DD HH:mm:ss
+ * @Copyright: Copyright (c) 2026, andiferdiawan
+-->
+<!--
+ * @Author: andiferdiawan (https://github.com/andiferdiawan)
  * @Copyright: Copyright (c) 2026, andiferdiawan
 -->
 <script setup lang="ts">
@@ -61,7 +66,7 @@ const props = defineProps<{
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-4 space-y-4">
-        <ChatVisitorsBubble :route="dashboardVisitorsRoute" :date="'2026-05-20'" />
+        <ChatVisitorsBubble :route="dashboardVisitorsRoute" />
         <ChatDashboard :stats="stats" :chat-enabled-shops="chatEnabledShops" :table="table" />
     </div>
 </template>
