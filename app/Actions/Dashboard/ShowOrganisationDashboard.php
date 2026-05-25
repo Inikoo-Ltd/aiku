@@ -56,7 +56,9 @@ class ShowOrganisationDashboard extends OrgAction
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $fromDate, $toDate);
+        $topCustomersLimitSetting = $this->dashboardTopCustomersLimitSettings($userSettings);
+
+        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $fromDate, $toDate, null, $topCustomersLimitSetting['value']);
 
         $currentTabEnum = OrganisationDashboardSalesTableTabsEnum::from($currentTab);
         $primaryTables = OrganisationDashboardSalesTableTabsEnum::tablesForTabs($organisation, $timeSeriesData, [$currentTabEnum]);
@@ -73,9 +75,10 @@ class ShowOrganisationDashboard extends OrgAction
                         'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings)
                     ],
                     'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
+                        'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'       => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
+                        'top_customers_limit' => $topCustomersLimitSetting,
                     ],
                     'blocks'    => [
                         [
