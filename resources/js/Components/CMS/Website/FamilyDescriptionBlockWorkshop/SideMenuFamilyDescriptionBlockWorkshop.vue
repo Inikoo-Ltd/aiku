@@ -128,7 +128,7 @@ function onUpdateFieldValue(e: any) {
   <div class="h-full flex flex-col">
     <TabGroup as="div" :selectedIndex="selectedTab" @change="changeTab" class="flex flex-col h-full">
 
-      <div class="flex border-b bg-gray-50">
+      <div class="flex border-b">
         <Tab v-for="(tab, index) in tabsWithPanels" :key="index"
           class="flex w-fit items-center gap-2 px-4 py-2 font-medium text-gray-600 hover:bg-gray-100 focus:outline-none"
           :class="{
@@ -152,7 +152,7 @@ function onUpdateFieldValue(e: any) {
           <!-- SETTINGS -->
           <template v-else-if="tab.type === 'settings'">
             <div v-for="(block, key) in data" :key="key" @click="onSelectBlock(block, key)"
-              class="p-2 text-xs mb-2 mt-1 cursor-pointer rounded transition-all duration-150" :class="[
+              class="p-2 text-xs mb-2 mt-1 m-3 cursor-pointer rounded transition-all duration-150" :class="[
                 key === selectedBlock?.code
                   ? 'card-active '
                   : 'border border-gray-200 bg-white hover:border-gray-400'
