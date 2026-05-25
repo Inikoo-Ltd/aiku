@@ -26,7 +26,7 @@ import Image from "@common/Components/Image.vue"
 // Product Components
 import RecordCounter from './RecordCounter.vue'
 import EmptyState from './EmptyState.vue'
-import ProductRenderEcom from '@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue'
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 
 
 import { clone } from 'lodash-es'

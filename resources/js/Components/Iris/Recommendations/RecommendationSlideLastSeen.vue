@@ -10,9 +10,9 @@ import { trans } from 'laravel-vue-i18n'
 import { inject, ref } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import Prices2 from '@/Components/CMS/Webpage/Products3/Prices3.vue'
+import Prices3 from '@/Iris/Components/BlocksUtils/Prices3.vue'
 import Image from "@common/Components/Image.vue"
-import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
+import Prices from '@/Iris/Components/BlocksUtils/Prices.vue'
 import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
 
 const props = defineProps<{
@@ -85,7 +85,7 @@ const isLoadingVisit = ref(false)
 
   <!-- PRICES (KEEP COMPONENTS) -->
   <div v-if="layout?.iris?.is_logged_in">
-    <Prices2 v-if="layout.retina?.type === 'b2b'" :product="product" :currency="currency" :basketButton="true" />
+    <Prices3 v-if="layout.retina?.type === 'b2b'" :product="product" :currency="currency" :basketButton="true" />
     <Prices v-else :product="product" :currency="currency" :basketButton="true" />
   </div>
 </template>

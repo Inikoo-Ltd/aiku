@@ -4,8 +4,8 @@ import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { ctrans } from "@/Composables/useTrans"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
-import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
+import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 

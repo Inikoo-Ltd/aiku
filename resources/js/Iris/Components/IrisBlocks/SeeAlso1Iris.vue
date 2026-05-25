@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
-import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
 import { get } from 'lodash-es'
 
 // Swiper
