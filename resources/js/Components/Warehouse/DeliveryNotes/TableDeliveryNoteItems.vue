@@ -409,24 +409,34 @@ const modalResource = computed(() => {
 
 
 const routeItemsWaitingWarehouse = (item) => {
-    if (!route().params.warehouse || !route().params.organisation) {
+    if (!route().params.warehouse || !route().params.organisation || !props.shop_type) {
         return '#'
     }
 
-    return route('grp.org.warehouses.show.dispatching.waiting_items', {
+    const routeName = props.state === 'handling'
+        ? 'grp.org.warehouses.show.dispatching.waiting_items_still_picking.shop'
+        : 'grp.org.warehouses.show.dispatching.waiting_items.shop'
+
+    return route(routeName, {
         organisation: route().params.organisation,
         warehouse: route().params.warehouse,
+        shopType: props.shop_type,
     })
 }
 
 const routeItemsWaitingCrm = (item) => {
-    if (!item.shop_slug || !route().params.organisation) {
+    if (!route().params.warehouse || !route().params.organisation || !props.shop_type) {
         return '#'
     }
 
-    return route('grp.org.shops.show.ordering.backlog.waiting_items', {
+    const routeName = props.state === 'handling'
+        ? 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking.shop'
+        : 'grp.org.warehouses.show.dispatching.waiting_crm_items.shop'
+
+    return route(routeName, {
         organisation: route().params.organisation,
-        shop: item.shop_slug
+        warehouse: route().params.warehouse,
+        shopType: props.shop_type,
     })
 }
 
@@ -530,13 +540,20 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <template #cell(quantity_picked_readonly)="{ item }">
             <FractionDisplay v-if="item.quantity_to_pick && item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
             <span v-else-if="Number(item.quantity_picked)">{{ locale.number(item.quantity_picked ?? 0) }}</span>
-            <span v-else class="opacity-60 italic">{{ ctrans("No item picked yet") }}</span>
+            <span v-else class="opacity-60 italic text-sm">{{ ctrans("No item picked yet") }}</span>
 
             <!-- Label: warehouse waiting -->
             <div v-if="Number(item.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
                 <Link :href="routeItemsWaitingWarehouse(item)" class="hover:underline">
                     <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)">
                     </LabelItemsWaitingForWarehouse>
+                </Link>
+            </div>
+
+            <!-- Section: items are waiting for CRM -->
+            <div v-if="Number(item.quantity_waiting_crm) > 0" class="mx-auto w-fit">
+                <Link :href="routeItemsWaitingCrm(item)" class="hover:underline">
+                    <LabelItemsWaitingForCrm v-if="Number(item.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
                 </Link>
             </div>
         </template>
@@ -1027,7 +1044,6 @@ const onSetItemToUndoWaitingWarehouse = () => {
             </div>
 
             <!-- Section: items are waiting for CRM -->
-            
             <div v-if="Number(itemValue.quantity_waiting_crm) > 0" class="mx-auto w-fit">
                 <Link :href="routeItemsWaitingCrm(itemValue)" class="hover:underline">
                     <LabelItemsWaitingForCrm v-if="Number(itemValue.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(itemValue.quantity_waiting_crm)" />
