@@ -91,7 +91,10 @@ class GetChatDashboardVisitors
                             $breakdown
                         );
                     })
-                    ->sortByDesc('total')
+                    ->sortBy([
+                        fn ($a, $b) => $b['total'] <=> $a['total'],
+                        fn ($a, $b) => $a['country_code'] <=> $b['country_code'],
+                    ])
                     ->values()
                     ->all();
 
