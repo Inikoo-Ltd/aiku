@@ -51,9 +51,6 @@ class CrawlWebsites
 
             $index++;
             $jobQueue = 'cache-warming';
-            if ($crawl->type == CrawlTypeEnum::INERTIA) {
-                $jobQueue = 'cache-warming-js';
-            }
             CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
         }
     }

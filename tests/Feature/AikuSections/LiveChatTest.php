@@ -50,7 +50,7 @@ beforeEach(function () {
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+            ) = createShop();
         $web = createWebsite($this->shop);
     } else {
         $this->organisation = $web->organisation;
@@ -417,7 +417,7 @@ test('authenticated agent can assign chat session to self', function () {
     ]);
 
     $response = app(AssignChatToAgent::class)
-        ->assignToSelf('aw', $chatSession->ulid);
+        ->assignToSelf($this->organisation, $chatSession->ulid);
 
     expect($response)->toBeInstanceOf(JsonResponse::class);
 

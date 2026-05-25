@@ -121,14 +121,7 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            $this->logSchedule(
-                $schedule->job(RunMailshotTrackingUpdates::makeJob())->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunMailshotTrackingUpdates',
-                ),
-                name: 'RunMailshotTrackingUpdates',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
+
 
             $this->logSchedule(
                 $schedule->job(RunOutOfStockInOrderEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
@@ -495,6 +488,15 @@ class Kernel extends ConsoleKernel
         }
 
         if (config('app.slave')) {
+
+            $this->logSchedule(
+                $schedule->job(RunMailshotTrackingUpdates::makeJob())->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunMailshotTrackingUpdates',
+                ),
+                name: 'RunMailshotTrackingUpdates',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
 
             $this->logSchedule(
                 $schedule->job(PurgeStaleCrawls::makeJob())->everyTenMinutes()->timezone('UTC')->withoutOverlapping()->sentryMonitor(

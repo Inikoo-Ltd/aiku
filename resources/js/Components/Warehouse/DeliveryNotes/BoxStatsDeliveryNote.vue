@@ -229,6 +229,7 @@ const onUpdatePicker = () => {
     });
 };
 
+const isLoadingSelfTemporarily = ref(false)
 const assignSelfTemporarily = () => {
     
     const routeName = props.routes.assignSelfTemporarily.name;
@@ -251,8 +252,8 @@ const assignSelfTemporarily = () => {
             onSuccess: () => {
                 isModalToQueue.value = false;
             },
-            onStart: () => isLoadingToQueue.value = true,
-            onFinish: () => isLoadingToQueue.value = false,
+            onStart: () => isLoadingSelfTemporarily.value = true,
+            onFinish: () => isLoadingSelfTemporarily.value = false,
             preserveScroll: true
         }
     );
@@ -582,13 +583,16 @@ function returnNoteRoute(returnDeliveryNote) {
                             </dl>
                         </div>
 
-                        <FontAwesomeIcon
-                            v-if="showLockButton()"
-                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker/packer can process this delivery note')"
-                            class="cursor-pointer focus:outline-none"
-                            :icon="allowActions ? faLockOpen : faLock"
-                            @click="assignSelfTemporarily()"
-                        />
+                        <div v-if="showLockButton()" @click="assignSelfTemporarily()">
+                            <LoadingIcon v-if="isLoadingSelfTemporarily" />
+                            <FontAwesomeIcon
+                                v-else
+                                v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
+                                class="cursor-pointer focus:outline-none"
+                                :icon="allowActions ? faLockOpen : faLock"
+                                fixed-width aria-hidden="true"
+                            />
+                        </div>
 
                         <Button
                             v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker"

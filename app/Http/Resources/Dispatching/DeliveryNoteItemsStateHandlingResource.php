@@ -154,7 +154,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_to_pick'               => $quantityToPick,
             'quantity_to_pick_fractional'    => $quantityToPickFractional,
             'quantity_to_pick_fractional_ds' => $quantityToPickFractionalDS,
-            'quantity_picked_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->quantity_picked),
+            'quantity_picked_fractional'     => $this->quantity_picked > 0 ? riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->quantity_picked) : null,
             'quantity_picked'                => $this->quantity_picked,
             'quantity_not_picked'            => $this->quantity_not_picked,
             'quantity_packed'                => $this->quantity_packed,

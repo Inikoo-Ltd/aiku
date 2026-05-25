@@ -174,6 +174,74 @@ window.addEventListener("pageshow", (event) => {
   }
 });
 
+// 30 second
+const staleHiddenThreshold = 30 * 1000;
+// 10 second
+const stuckVisitThreshold = 10 * 1000;
+let hiddenAt = null;
+let visitStartedAt = null;
+let stuckVisitTimer = null;
+
+const clearStuckVisitTimer = () => {
+  if (stuckVisitTimer !== null) {
+    clearTimeout(stuckVisitTimer);
+    stuckVisitTimer = null;
+  }
+};
+
+const recoverCurrentPage = () => {
+  let recovered = false;
+  const hardReloadFallback = setTimeout(() => {
+    if (!recovered) {
+      window.location.reload();
+    }
+  }, 5000);
+
+  router.reload({
+    onFinish: () => {
+      recovered = true;
+      clearTimeout(hardReloadFallback);
+    },
+  });
+};
+
+const startStuckVisitWatchdog = () => {
+  clearStuckVisitTimer();
+
+  stuckVisitTimer = setTimeout(() => {
+    const hasStuckVisit = visitStartedAt !== null && Date.now() - visitStartedAt >= stuckVisitThreshold;
+
+    if (hasStuckVisit) {
+      recoverCurrentPage();
+    }
+  }, stuckVisitThreshold);
+};
+
+router.on("start", () => {
+  visitStartedAt = Date.now();
+  startStuckVisitWatchdog();
+});
+
+router.on("finish", () => {
+  visitStartedAt = null;
+  clearStuckVisitTimer();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    hiddenAt = Date.now();
+    return;
+  }
+
+  const hiddenDuration = hiddenAt ? Date.now() - hiddenAt : 0;
+  const hasStuckVisit = visitStartedAt !== null && Date.now() - visitStartedAt > stuckVisitThreshold;
+  hiddenAt = null;
+
+  if (hasStuckVisit || hiddenDuration > staleHiddenThreshold) {
+    recoverCurrentPage();
+  }
+});
+
 //https://github.com/getsentry/sentry-javascript/issues/11362
 function inertiaRoutingInstrumentation(
   customStartTransaction,
@@ -226,5 +294,3 @@ function inertiaRoutingInstrumentation(
   }
   console.info("inertiaRoutingInstrumentation Finished");
 }
-
-

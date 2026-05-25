@@ -20,7 +20,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
 import { useBundle } from "@/Composables/useBundle"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import Button from "@/Iris/Components/IrisButton.vue"
 
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
@@ -220,9 +220,6 @@ const openBundlePanel = (product:any) => {
                             fixed-width
                         />
                     </Button>
-                    <!-- <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
-                        <div class="h-full w-full skeleton rounded" />
-                    </div> -->
                 </div>
 
                 <div class="text-xs font-medium text-gray-800"

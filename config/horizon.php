@@ -172,7 +172,7 @@ return [
 
     'defaults' => [
 
-        'normal'          => [
+        'normal'               => [
             'connection'      => 'redis',
             'queue'           => ['default'],
             'balance'         => 'auto',
@@ -187,7 +187,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'common'          => [
+        'common'               => [
             'connection'      => 'redis',
             'queue'           => ['common'],
             'balance'         => 'auto',
@@ -202,7 +202,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'hydrators-slave' => [
+        'hydrators-slave'      => [
             'connection'      => 'redis',
             'queue'           => ['hydrators-slave'],
             'balance'         => 'auto',
@@ -217,7 +217,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'aurora'          => [
+        'aurora'               => [
             'connection'      => 'redis',
             'queue'           => ['aurora'],
             'balance'         => 'auto',
@@ -232,7 +232,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'sales'           => [
+        'sales'                => [
             'connection'      => 'redis',
             'queue'           => ['sales'],
             'balance'         => 'auto',
@@ -247,7 +247,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'sales_slave'     => [
+        'sales_slave'          => [
             'connection'      => 'redis',
             'queue'           => ['sales_slave'],
             'balance'         => 'auto',
@@ -262,7 +262,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'sales_slave_historic'     => [
+        'sales_slave_historic' => [
             'connection'      => 'redis',
             'queue'           => ['sales_slave_historic'],
             'balance'         => 'auto',
@@ -277,7 +277,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'search'          => [
+        'search'               => [
             'connection'      => 'redis',
             'queue'           => ['search'],
             'balance'         => 'auto',
@@ -292,7 +292,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'urgent'          => [
+        'urgent'               => [
             'connection'      => 'redis',
             'queue'           => ['urgent'],
             'balance'         => 'auto',
@@ -306,7 +306,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'analytics'       => [
+        'analytics'            => [
             'connection'      => 'redis',
             'queue'           => ['analytics'],
             'balance'         => 'auto',
@@ -320,7 +320,7 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'low-priority'    => [
+        'low-priority'         => [
             'connection'          => 'redis',
             'queue'               => ['low-priority'],
             'balance'             => 'auto',
@@ -336,7 +336,7 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
-        'dropshipping'    => [
+        'dropshipping'         => [
             'connection'          => 'redis',
             'queue'               => ['ds', 'shopify', 'ebay', 'woo'],
             'balance'             => 'auto',
@@ -352,7 +352,7 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
-        'long-running'    => [
+        'long-running'         => [
             'connection'          => 'redis-long-running',
             'queue'               => ['default-long'],
             'balance'             => 'auto',
@@ -368,7 +368,7 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
-        'long-running-slave'    => [
+        'long-running-slave'   => [
             'connection'          => 'redis-long-running',
             'queue'               => ['default-long-slave'],
             'balance'             => 'auto',
@@ -384,8 +384,8 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
-        'cache-warming'    => [
-            'connection'          => 'redis-long-running',
+        'cache-warming'        => [
+            'connection' => 'redis-long-running',
             'queue'               => ['cache-warming'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
@@ -400,25 +400,9 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
-        'cache-warming-js'    => [
-            'connection'          => 'redis-long-running',
-            'queue'               => ['cache-warming-js'],
-            'balance'             => 'auto',
-            'autoScalingStrategy' => 'time',
-            'maxProcesses'        => 5,
-            'maxTime'             => 0,
-            'maxJobs'             => 0,
-            'memory'              => 1280,
-            'tries'               => 1,
-            'timeout'             => 10800,
-            'retry_after'         => 600,
-            'nice'                => 0,
-            'balanceMaxShift'     => 1,
-            'balanceCooldown'     => 3,
-        ],
-        'ses'             => [
+        'ses'                  => [
             'connection'      => 'redis',
-            'queue'           => ['ses-analytics', 'ses-send', 'ses'],
+            'queue'           => ['ses-send', 'ses'],
             'balance'         => 'auto',
             'maxProcesses'    => 2,
             'maxTime'         => 0,
@@ -431,7 +415,22 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'stock-history'   => [
+        'ses-analytics'        => [
+            'connection'      => 'redis',
+            'queue'           => ['ses-analytics'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 2,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 1,
+            'timeout'         => 3600,
+            'retry_after'     => 2,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
+        'stock-history'        => [
             'connection'      => 'redis-long-running',
             'queue'           => ['stock-history', 'stock-history-urgent'],
             'balance'         => 'auto',
@@ -451,171 +450,169 @@ return [
 
     'environments' => [
         'production' => [
-            'normal'          => [
+            'normal'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 6),
             ],
-            'common'          => [
+            'common'               => [
                 'maxProcesses' => env('HORIZON_COMMON_WORKERS', 2),
             ],
-            'hydrators-slave' => [
+            'hydrators-slave'      => [
                 'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 6),
             ],
-            'aurora'          => [
+            'aurora'               => [
                 'maxProcesses' => env('HORIZON_AURORA_WORKERS', 12),
             ],
-            'analytics'       => [
+            'analytics'            => [
                 'maxProcesses' => env('HORIZON_ANALYTICS_WORKERS', 12),
             ],
-            'sales'           => [
+            'sales'                => [
                 'maxProcesses' => env('HORIZON_SALES_WORKERS', 4),
             ],
-            'sales_slave'     => [
+            'sales_slave'          => [
                 'maxProcesses' => env('HORIZON_SALES_SLAVE_WORKERS', 8),
             ],
             'sales_slave_historic' => [
                 'maxProcesses' => env('HORIZON_SALES_SLAVE_HISTORIC_WORKERS', 2),
             ],
-            'search'          => [
+            'search'               => [
                 'maxProcesses' => env('HORIZON_SEARCH_WORKERS', 4),
             ],
-            'urgent'          => [
+            'urgent'               => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 16),
             ],
-            'low-priority'    => [
+            'low-priority'         => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 24),
             ],
-            'dropshipping'    => [
+            'dropshipping'         => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 16),
             ],
-            'long-running'    => [
+            'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
             ],
-            'long-running-slave'    => [
+            'long-running-slave'   => [
                 'maxProcesses' => env('HORIZON_LONG_SLAVE_WORKERS', 1),
             ],
-            'ses'             => [
+            'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
-            'stock-history'   => [
+            'ses-analytics'        => [
+                'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
+            ],
+            'stock-history'        => [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 12),
             ],
-            'cache-warming' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING', 3),
-            ],
-            'cache-warming-js' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING_JS', 1),
+            'cache-warming'        => [
+                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 3),
             ],
 
         ],
         'staging'    => [
-            'normal'          => [
+            'normal'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 1),
             ],
-            'common'          => [
+            'common'               => [
                 'maxProcesses' => env('HORIZON_COMMON_WORKERS', 1),
             ],
-            'hydrators-slave' => [
+            'hydrators-slave'      => [
                 'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 1),
             ],
-            'aurora'          => [
+            'aurora'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_AURORA', 2),
             ],
-            'sales'           => [
+            'sales'                => [
                 'maxProcesses' => env('HORIZON_SALES_WORKERS', 1),
             ],
-            'sales_slave'     => [
+            'sales_slave'          => [
                 'maxProcesses' => env('HORIZON_SALES_SLAVE_WORKERS', 1),
             ],
             'sales_slave_historic' => [
                 'maxProcesses' => env('HORIZON_SALES_SLAVE_HISTORIC_WORKERS', 1),
             ],
-            'search'          => [
+            'search'               => [
                 'maxProcesses' => env('HORIZON_SEARCH_WORKERS', 1),
             ],
-            'urgent'          => [
+            'urgent'               => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 2),
             ],
-            'low-priority'    => [
+            'low-priority'         => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
             ],
-            'dropshipping'    => [
+            'dropshipping'         => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
             ],
-            'long-running'    => [
+            'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
             ],
-            'long-running-slave'    => [
+            'long-running-slave'   => [
                 'maxProcesses' => env('HORIZON_LONG_SLAVE_WORKERS', 2),
             ],
-            'ses'             => [
+            'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
-            'stock-history'   => [
+            'ses-analytics'        => [
+                'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
+            ],
+            'stock-history'        => [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 2),
             ],
-            'cache-warming' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING', 1),
+            'cache-warming'        => [
+                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
             ],
-            'cache-warming-js' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING_JS', 1),
-            ],
-
-
         ],
         'local'      => [
-            'normal'          => [
+            'normal'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 3),
             ],
-            'common'          => [
+            'common'               => [
                 'maxProcesses' => env('HORIZON_COMMON_WORKERS', 1),
             ],
-            'hydrators-slave' => [
+            'hydrators-slave'      => [
                 'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 2),
             ],
-            'aurora'          => [
+            'aurora'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_AURORA', 2),
             ],
-            'analytics'       => [
+            'analytics'            => [
                 'maxProcesses' => env('HORIZON_ANALYTICS_WORKERS', 4),
             ],
-            'sales'           => [
+            'sales'                => [
                 'maxProcesses' => env('HORIZON_SALES_WORKERS', 2),
             ],
-            'sales_slave'     => [
+            'sales_slave'          => [
                 'maxProcesses' => env('HORIZON_SALES_SLAVE_WORKERS', 3),
             ],
             'sales_slave_historic' => [
                 'maxProcesses' => env('HORIZON_SALES_SLAVE_HISTORIC_WORKERS', 1),
             ],
-            'search'          => [
+            'search'               => [
                 'maxProcesses' => env('HORIZON_SEARCH_WORKERS', 5),
             ],
-            'urgent'          => [
+            'urgent'               => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 5),
             ],
-            'low-priority'    => [
+            'low-priority'         => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
             ],
-            'dropshipping'    => [
+            'dropshipping'         => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
             ],
-            'long-running'    => [
+            'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
             ],
-            'long-running-slave'    => [
+            'long-running-slave'   => [
                 'maxProcesses' => env('HORIZON_LONG_SLAVE_WORKERS', 1),
             ],
-            'ses'             => [
+            'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
-            'stock-history'   => [
+            'ses-analytics'        => [
+                'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
+            ],
+            'stock-history'        => [
                 'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 4),
             ],
-            'cache-warming' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING', 1),
-            ],
-            'cache-warming-js' => [
-                'maxProcesses' => env('HORIZON_STOCK_CACHE_WARMING_JS', 1),
+            'cache-warming'        => [
+                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
             ],
 
         ],
