@@ -159,7 +159,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         isLoadingMore.value = true;
     } else {
         if(firstLoad.value == 1)
-        isLoadingInitial.value = true;
+        isLoadingInitial.value = false;
     }
 
     const filters = buildFilters();
