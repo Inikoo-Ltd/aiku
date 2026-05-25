@@ -36,7 +36,7 @@ use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
  * @property int|null $agent_language_id
  * @property array<array-key, mixed>|null $metadata
  * @property string|null $geo_country_code
- * @property string|null $visitor_session_id
+ * @property int|null $website_visitor_id
  * @property-read Language|null $activeUserLanguage
  * @property-read Language|null $agentLanguage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatAssignment> $assignments

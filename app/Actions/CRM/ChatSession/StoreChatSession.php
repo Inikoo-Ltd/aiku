@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatSession;
+use App\Models\Web\WebsiteVisitor;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
@@ -69,8 +70,8 @@ class StoreChatSession
                 'priority'         => $modelData['priority'],
                 'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
                 'shop_id'          => $modelData['shop_id'] ?? null,
-                'geo_country_code'    => $this->resolveCountryCode(request()->header('CF-IPCountry')),
-                'visitor_session_id' => request()->hasSession() ? request()->session()->getId() : null,
+                'geo_country_code'      => $this->resolveCountryCode(request()->header('CF-IPCountry')),
+                'website_visitor_id'   => $this->resolveWebsiteVisitorId($modelData['shop_id'] ?? null),
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ];
@@ -133,6 +134,20 @@ class StoreChatSession
             ]);
     }
 
+
+    private function resolveWebsiteVisitorId(?int $shopId): ?int
+    {
+        if (!$shopId || !request()->hasSession()) {
+            return null;
+        }
+
+        $sessionId = request()->session()->getId();
+
+        return WebsiteVisitor::where('session_id', $sessionId)
+            ->where('shop_id', $shopId)
+            ->latest('id')
+            ->value('id');
+    }
 
     private function resolveCountryCode(?string $cfCountry): ?string
     {

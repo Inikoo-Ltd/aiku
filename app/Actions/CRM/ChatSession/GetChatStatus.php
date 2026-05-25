@@ -4,6 +4,7 @@ namespace App\Actions\CRM\ChatSession;
 
 use App\Actions\HumanResources\WorkSchedule\GetChatConfig;
 use App\Models\Catalogue\Shop;
+use App\Models\Web\WebsiteVisitor;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -48,14 +49,32 @@ class GetChatStatus
 
     public function asController(ActionRequest $request): JsonResponse
     {
-        $shop = Shop::findOrFail($request->validated('shop_id'));
-        $chatSession = ChatSession::where('ulid', $request->validated('ulid'))->get()->first();
+        $shop        = Shop::findOrFail($request->validated('shop_id'));
+        $chatSession = ChatSession::where('ulid', $request->validated('ulid'))->first();
+
+        $this->refreshWebsiteVisitor($chatSession, $shop->id);
 
         $config = $this->handle($shop, $chatSession);
 
         return response()->json([
             'chat_config' => $config
         ]);
+    }
+
+    private function refreshWebsiteVisitor(ChatSession $chatSession, int $shopId): void
+    {
+        if (!request()->hasSession()) {
+            return;
+        }
+
+        $currentVisitorId = WebsiteVisitor::where('session_id', request()->session()->getId())
+            ->where('shop_id', $shopId)
+            ->latest('id')
+            ->value('id');
+
+        if ($currentVisitorId && $chatSession->website_visitor_id !== $currentVisitorId) {
+            $chatSession->update(['website_visitor_id' => $currentVisitorId]);
+        }
     }
 
     public function rules(): array

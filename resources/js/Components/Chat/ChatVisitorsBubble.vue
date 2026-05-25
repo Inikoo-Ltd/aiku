@@ -37,7 +37,6 @@ interface WebsiteRow {
 
 const props = defineProps<{
     route: string
-    date?: string
 }>()
 
 const POLL_INTERVAL_MS = 15_000
@@ -123,9 +122,7 @@ function statusBubbles(row: CountryRow): { status: VisitorStatus; count: number 
 
 async function fetchData(): Promise<void> {
     try {
-        const params: Record<string, string> = {}
-        if (props.date) params.date = props.date
-        const { data } = await axios.get(props.route, { params })
+        const { data } = await axios.get(props.route)
         websites.value = data
         if (!selectedIds.value.length && data.length) {
             selectedIds.value = [data[0].website_id]
@@ -139,9 +136,7 @@ async function fetchData(): Promise<void> {
 
 onMounted(() => {
     fetchData()
-    if (!props.date) {
-        pollTimer = setInterval(fetchData, POLL_INTERVAL_MS)
-    }
+    pollTimer = setInterval(fetchData, POLL_INTERVAL_MS)
 })
 
 onUnmounted(() => {
@@ -156,7 +151,7 @@ onUnmounted(() => {
         <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-gray-100">
             <div class="flex items-center gap-2">
                 <FontAwesomeIcon :icon="['fal', 'fa-globe']" class="text-gray-400" />
-                <h3 class="text-sm font-semibold text-gray-700">Live Visitors by Website</h3>
+                <h3 class="text-sm font-semibold text-gray-700">Live Visitors</h3>
                 <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
                     {{ grandTotal.toLocaleString() }}
                 </span>
@@ -284,7 +279,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer -->
-        <div v-if="!loading && websites.length && !date" class="px-5 py-2 border-t border-gray-100 text-xs text-gray-400 text-right">
+        <div v-if="!loading && websites.length" class="px-5 py-2 border-t border-gray-100 text-xs text-gray-400 text-right">
             Auto-refreshes every {{ POLL_INTERVAL_MS / 1000 }}s
         </div>
     </div>
