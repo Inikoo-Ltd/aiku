@@ -5,6 +5,7 @@ import { Link } from "@inertiajs/vue3"
 import axios from "axios"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
 import ChatActivityTimeline from "@/Components/Chat/ChatActivityTimeline.vue"
+import CustomerTimeline from "@/Components/Showcases/Grp/CustomerTimeline.vue"
 import Button from "../Elements/Buttons/Button.vue"
 import type { SessionAPI } from "@/types/Chat/chat"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -53,7 +54,7 @@ interface CustomerStats {
 
 const props = defineProps<{
 	session: SessionAPI | null
-	initialTab?: "history" | "profile" | "message-details" | "statistics"
+	initialTab?: "history" | "profile" | "message-details" | "statistics" | "timeline"
 }>()
 
 const selectedHistory = ref<SessionAPI | null>(null)
@@ -67,7 +68,7 @@ const emit = defineEmits<{
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
-const activeTab = ref<"history" | "profile" | "message-details" | "statistics">(props.initialTab ?? "history")
+const activeTab = ref<"history" | "profile" | "message-details" | "statistics" | "timeline">(props.initialTab ?? "history")
 const syncEmail = ref(props.session?.guest_profile?.email || "")
 const syncEmailAlert = ref<AlertType | null>(null)
 const priorityAlert = ref<AlertType | null>(null)
@@ -105,6 +106,11 @@ const customerProfile = ref<{ tags: CustomerTag[]; stats: CustomerStats | null }
 const isLoadingProfile = ref(false)
 const profileLoaded = ref(false)
 
+const timelineData = ref<any>({ events: [] })
+const isLoadingTimeline = ref(false)
+const timelineLoaded = ref(false)
+const timelineError = ref<string | null>(null)
+
 const loadUserSessions = async () => {
 	if (!props.session?.web_user?.id) return
 	try {
@@ -128,6 +134,21 @@ const loadCustomerProfile = async () => {
 		profileLoaded.value = true
 	} finally {
 		isLoadingProfile.value = false
+	}
+}
+
+const loadTimeline = async () => {
+	if (!props.session?.web_user || !props.session?.ulid || timelineLoaded.value) return
+	try {
+		isLoadingTimeline.value = true
+		timelineError.value = null
+		const res = await axios.get(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer-timeline`)
+		timelineData.value = res.data
+		timelineLoaded.value = true
+	} catch (e: any) {
+		timelineError.value = e.response?.data?.message ?? e.message ?? 'Failed to load timeline'
+	} finally {
+		isLoadingTimeline.value = false
 	}
 }
 
@@ -378,12 +399,14 @@ watch(
 	async (tab) => {
 		if (tab === "history") await loadUserSessions()
 		if (tab === "profile" || tab === "statistics") await loadCustomerProfile()
+		if (tab === "timeline") await loadTimeline()
 	}
 )
 
 onMounted(async () => {
 	if (activeTab.value === "history") await loadUserSessions()
 	if (activeTab.value === "profile" || activeTab.value === "statistics") await loadCustomerProfile()
+	if (activeTab.value === "timeline") await loadTimeline()
 })
 </script>
 
@@ -392,7 +415,7 @@ onMounted(async () => {
 		<div class="fixed inset-0" @click="emit('close')" />
 
 		<div
-			class="fixed right-[25rem] top-[120px] z-[9999] w-[380px] h-[calc(100vh-180px)] bg-white flex flex-col rounded-xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
+			class="fixed right-[25rem] top-[120px] z-[9999] w-[450px] h-[calc(100vh-180px)] bg-white flex flex-col rounded-xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
 			<div class="px-4 py-3 border-b relative">
 				<button class="absolute right-4 top-3 p-1 rounded hover:bg-gray-100" @click="emit('close')">
 					<FontAwesomeIcon :icon="faClose" class="text-base text-gray-400" />
@@ -437,6 +460,11 @@ onMounted(async () => {
 				<button v-if="props.session?.web_user" class="px-4 py-2" :class="activeTab === 'statistics' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'statistics'">
 					{{ trans("Statistics") }}
+				</button>
+
+				<button v-if="props.session?.web_user" class="px-4 py-2" :class="activeTab === 'timeline' ? 'tab-active' : 'tab-inactive'"
+					@click="activeTab = 'timeline'">
+					{{ trans("Timeline") }}
 				</button>
 			</div>
 
@@ -763,6 +791,23 @@ onMounted(async () => {
 
 					</div>
 				</div>
+
+				<!-- Timeline Tab -->
+				<div v-if="activeTab === 'timeline'">
+					<div v-if="isLoadingTimeline">
+						<div class="h-4 bg-gray-100 rounded animate-pulse w-3/4" />
+						<div class="h-4 bg-gray-100 rounded animate-pulse w-1/2" />
+						<div class="h-4 bg-gray-100 rounded animate-pulse w-2/3" />
+						<div class="h-4 bg-gray-100 rounded animate-pulse w-3/5" />
+						<div class="h-4 bg-gray-100 rounded animate-pulse w-1/2" />
+					</div>
+					<div v-else-if="timelineError" class="flex flex-col items-center justify-center py-10 gap-2 text-center px-4">
+						<FontAwesomeIcon :icon="faClose" class="text-2xl text-red-300" />
+						<p class="text-sm text-red-500">{{ timelineError }}</p>
+					</div>
+					<CustomerTimeline v-else :data="timelineData" />
+				</div>
+
 			</div>
 		</div>
 	</Teleport>
