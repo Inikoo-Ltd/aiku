@@ -584,7 +584,7 @@ function returnNoteRoute(returnDeliveryNote) {
 
                         <FontAwesomeIcon
                             v-if="showLockButton()"
-                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker/packer can process this delivery note')"
+                            v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
                             class="cursor-pointer focus:outline-none"
                             :icon="allowActions ? faLockOpen : faLock"
                             @click="assignSelfTemporarily()"

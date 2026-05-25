@@ -518,6 +518,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <span v-else>{{ item.quantity_packed }}</span>
             </span>
         </template>
+
         <template #cell(quantity_required_readonly)="{ item }">
             <span v-tooltip="item.quantity_required">
                 <FractionDisplay v-if="item.quantity_required_fractional"
@@ -525,10 +526,21 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 <span v-else>{{ item.quantity_required }}</span>
             </span>
         </template>
+
         <template #cell(quantity_picked_readonly)="{ item }">
-            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
-            <span v-else>{{ item.quantity_picked }}</span>
+            <FractionDisplay v-if="item.quantity_to_pick && item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+            <span v-else-if="Number(item.quantity_picked)">{{ locale.number(item.quantity_picked ?? 0) }}</span>
+            <span v-else class="opacity-60 italic">{{ ctrans("No item picked yet") }}</span>
+
+            <!-- Label: warehouse waiting -->
+            <div v-if="Number(item.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
+                <Link :href="routeItemsWaitingWarehouse(item)" class="hover:underline">
+                    <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)">
+                    </LabelItemsWaitingForWarehouse>
+                </Link>
+            </div>
         </template>
+
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
