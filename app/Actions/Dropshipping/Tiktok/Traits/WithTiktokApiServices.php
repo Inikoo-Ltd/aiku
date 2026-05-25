@@ -84,7 +84,7 @@ trait WithTiktokApiServices
     public function makeApiRequest(string $method, string $path, array $productData = [], bool $requireShopCipher = true, array $headers = [], bool $requireSign = true, array $params = [])
     {
         try {
-            if($this->access_token_expire_in) {
+            if ($this->access_token_expire_in) {
                 $expiredTokenAt = now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($this->access_token_expire_in));
 
                 if ($expiredTokenAt) {
