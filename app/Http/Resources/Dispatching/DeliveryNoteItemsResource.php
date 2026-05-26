@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Models\Dispatching\DeliveryNoteItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -62,6 +63,19 @@ class DeliveryNoteItemsResource extends JsonResource
         } elseif ($packedIn > 1) {
             $packedInMessage = '('.__('Pack of').": $packedIn".")";
         }
+
+        /** @var DeliveryNoteItem $resource */
+        $resource = $this->resource;
+        $unNumbers = [];
+
+        if ($resource->relationLoaded('orgStock')) {
+            $orgStock = $resource->orgStock;
+
+            if ($orgStock->relationLoaded('tradeUnits')) {
+                $unNumbers = $orgStock->tradeUnits->whereNotNull('un_number')->where('un_number', '!=', 'None')->pluck('un_number', 'proper_shipping_name')->toArray();
+            }
+        }
+
 
         return [
             'id'                             => $this->id,
@@ -136,6 +150,7 @@ class DeliveryNoteItemsResource extends JsonResource
                 ],
                 'method'     => 'post'
             ],
+            'un_numbers'                     => $unNumbers,
         ];
     }
 }

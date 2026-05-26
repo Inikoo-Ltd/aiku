@@ -522,6 +522,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
             <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
@@ -566,8 +567,11 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Column: Reference -->
         <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
             <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
-            {{ deliveryNoteItem.org_stock_code }}
+                {{ deliveryNoteItem.org_stock_code }}
             </Link>
+            <span v-for="(un_number, packing_name) in deliveryNoteItem.un_numbers" v-tooltip="packing_name ? packing_name : ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="packing_name ? 'cursor-pointer' : ''">
+                {{ un_number }}
+            </span>
         </template>
 
         <!-- Column: Name -->
