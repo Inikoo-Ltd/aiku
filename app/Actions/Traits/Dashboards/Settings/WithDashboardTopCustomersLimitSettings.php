@@ -17,7 +17,7 @@ trait WithDashboardTopCustomersLimitSettings
 
         $value = (int) Arr::get($settings, $id, 10);
 
-        if (!in_array($value, [3, 10, 50], true)) {
+        if (!in_array($value, [3, 10, 50, 100], true)) {
             $value = 10;
         }
 
@@ -42,6 +42,11 @@ trait WithDashboardTopCustomersLimitSettings
                     'value'   => 50,
                     'label'   => '50',
                     'tooltip' => __('Show top 50 customers'),
+                ],
+                [
+                    'value'   => 100,
+                    'label'   => '100',
+                    'tooltip' => __('Show top 100 customers'),
                 ],
             ],
         ];
