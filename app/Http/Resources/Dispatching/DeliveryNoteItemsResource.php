@@ -134,6 +134,11 @@ class DeliveryNoteItemsResource extends JsonResource
                             'parameters' => ['picking' => $picking->id],
                             'method'     => 'patch',
                         ],
+                        'split_route'              => [
+                            'name'       => 'grp.models.picking.split',
+                            'parameters' => ['picking' => $picking->id],
+                            'method'     => 'post',
+                        ],
                         'batch_codes_fetch_route'  => [
                             'name'       => 'grp.json.org_stock.batch_codes.index',
                             'parameters' => [

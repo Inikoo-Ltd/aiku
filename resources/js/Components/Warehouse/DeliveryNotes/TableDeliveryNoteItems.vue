@@ -493,6 +493,51 @@ const onSubmitPickingBatchCode = () => {
     )
 }
 
+const isModalSplitPicking = ref(false)
+const selectedPickingForSplit = ref(null)
+const splitQuantity = ref(1)
+const isLoadingSubmitSplitPicking = ref(false)
+
+const onCloseModalSplitPicking = () => {
+    isModalSplitPicking.value = false
+    setTimeout(() => {
+        selectedPickingForSplit.value = null
+        splitQuantity.value = 1
+    }, 300)
+}
+
+const onSubmitSplitPicking = () => {
+    if (!selectedPickingForSplit.value) {
+        return
+    }
+
+    const qty = Number(splitQuantity.value)
+    const maxQty = Number(selectedPickingForSplit.value.quantity_picked)
+    if (isNaN(qty) || qty <= 0 || qty >= maxQty) {
+        notify({ title: trans("Invalid quantity"), text: trans("Quantity to split must be greater than 0 and less than :max", { max: maxQty }), type: "error" })
+        return
+    }
+
+    router.post(
+        route(selectedPickingForSplit.value.split_route.name, selectedPickingForSplit.value.split_route.parameters),
+        { split_quantity: qty },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { isLoadingSubmitSplitPicking.value = true },
+            onSuccess: () => {
+                notify({ title: trans("Success"), text: trans("Successfully split picking"), type: "success" })
+                onCloseModalSplitPicking()
+            },
+            onError: (errors) => {
+                const errorMsg = get(errors, 'message') || trans("Failed to split picking. Try again")
+                notify({ title: trans("Something went wrong"), text: errorMsg, type: "error" })
+            },
+            onFinish: () => { isLoadingSubmitSplitPicking.value = false },
+        }
+    )
+}
+
 // Section: Undo Quantity Waiting Warehouse
 const isOpenModalUndoWaitingWarehouse = ref(false)
 const selectedItemToUndoWaitingWarehouse = ref(null)
@@ -634,6 +679,17 @@ const onSetItemToUndoWaitingWarehouse = () => {
                         <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
                         {{ picking.batch_code ?? ctrans('Batch code') }}
                     </button>
+
+                    <!-- Split picking button -->
+                    <button
+                        v-if="picking.show_batch_code_ui && Number(picking.quantity_picked) > 1"
+                        @click="() => (isModalSplitPicking = true, selectedPickingForSplit = picking)"
+                        v-tooltip="ctrans('Split picking')"
+                        class="text-xs px-1.5 py-0.5 rounded border transition-colors border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 bg-white"
+                    >
+                        <FontAwesomeIcon icon="fal fa-scissors" class="mr-1" fixed-width aria-hidden="true" />
+                        {{ ctrans('Split') }}
+                    </button>
                 </div>
             </div>
             <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
@@ -754,6 +810,17 @@ const onSetItemToUndoWaitingWarehouse = () => {
                         >
                             <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
                             {{ picking.batch_code ?? ctrans('Batch code') }}
+                        </button>
+
+                        <!-- Split picking button -->
+                        <button
+                            v-if="picking.show_batch_code_ui && Number(picking.quantity_picked) > 1"
+                            @click="() => (isModalSplitPicking = true, selectedPickingForSplit = picking)"
+                            v-tooltip="ctrans('Split picking')"
+                            class="text-xs px-1.5 py-0.5 rounded border transition-colors border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 bg-white ml-2"
+                        >
+                            <FontAwesomeIcon icon="fal fa-scissors" class="mr-1" fixed-width aria-hidden="true" />
+                            {{ ctrans('Split') }}
                         </button>
 
                     </div>
@@ -1482,6 +1549,54 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     @click="onSubmitPickingBatchCode"
                     full
                     :label="trans('Save')"
+                />
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalSplitPicking" @onClose="onCloseModalSplitPicking" width="w-full max-w-lg">
+        <div class="text-center mb-4">
+            <div class="font-semibold text-2xl">{{ trans('Split Picking') }}</div>
+            <div class="opacity-80 italic text-sm">
+                <span v-if="selectedPickingForSplit?.location_code">{{ ctrans('Location: :loc', { loc: selectedPickingForSplit.location_code }) }} || </span>
+                <span>{{ ctrans("Total Quantity") }}: {{ selectedPickingForSplit?.quantity_picked }}</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-4">
+            <div class="w-full">
+                <label class="block text-sm font-medium mb-2">{{ trans("Quantity to split off") }}:</label>
+                <PureInput
+                    type="number"
+                    v-model="splitQuantity"
+                    :min="0.001"
+                    :max="selectedPickingForSplit ? selectedPickingForSplit.quantity_picked - 0.001 : 1"
+                    step="0.001"
+                    :disabled="isLoadingSubmitSplitPicking"
+                    required
+                />
+                <span class="text-xs text-slate-400 mt-1 block">
+                    {{ ctrans("Enter a quantity greater than 0 and less than :max", { max: selectedPickingForSplit?.quantity_picked }) }}
+                </span>
+            </div>
+
+            <div class="w-full flex gap-4 mt-4">
+                <Button
+                    type="negative"
+                    size="md"
+                    :disabled="isLoadingSubmitSplitPicking"
+                    icon="far fa-arrow-left"
+                    @click="onCloseModalSplitPicking"
+                    :label="trans('Cancel')"
+                />
+                <Button
+                    type="primary"
+                    size="md"
+                    :loading="isLoadingSubmitSplitPicking"
+                    icon="fad fa-scissors"
+                    @click="onSubmitSplitPicking"
+                    full
+                    :label="trans('Split')"
                 />
             </div>
         </div>
