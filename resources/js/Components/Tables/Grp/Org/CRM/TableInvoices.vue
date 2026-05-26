@@ -4,6 +4,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckCircle, faCircle } from "@fal";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { useLocaleStore } from "@/Stores/locale";
+import { Link } from '@inertiajs/vue3'
 
 library.add(faCircle, faCheckCircle);
 
@@ -13,10 +14,23 @@ defineProps<{
 }>();
 
 const locale = useLocaleStore();
+
+const redirectInvoiceAccounting = (invoice: any) => {
+    return route('grp.helpers.redirect_invoice_in_accounting', {
+        invoice: invoice.id
+    });
+}
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(reference)="{ item }">
+            <Link :href="redirectInvoiceAccounting(item)" class="primaryLink">
+                {{ item.reference }}
+            </Link>
+        </template>
+
         <template #cell(date)="{ item }">
             <div class="text-gray-500 text-right">
                 {{ useFormatTime(item.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}

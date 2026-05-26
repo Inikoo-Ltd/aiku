@@ -84,18 +84,27 @@ const cleanedDescription = computed(() => {
          
         <!-- Offer: list offers -->
         <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
-            class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
+            class="offers mt-4 mb-3 min-h-[2.25rem]"
         >
-                <DiscountByType 
-                    :offers_data="fieldValue?.family?.offers_data"
-                    :template="bestOffer?.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr' : 'max_discount'"
-                />
-                <DiscountByType
-                   v-if="!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) && bestOffer?.type == 'Category Quantity Ordered Order Interval'"
-                   :offers_data="fieldValue?.family?.offers_data"
-                   :template="'triggers_labels'"
-                />
-            
+            <Suspense>
+                <template #default>
+                    <div class="flex flex-col md:flex-row gap-x-4 gap-y-1 md:gap-y-2">
+                        <DiscountByType
+                            :offers_data="fieldValue?.family?.offers_data"
+                            :template="bestOffer?.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr' : 'max_discount'"
+                        />
+                        <DiscountByType
+                           v-if="!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) && bestOffer?.type == 'Category Quantity Ordered Order Interval'"
+                           :offers_data="fieldValue?.family?.offers_data"
+                           :template="'triggers_labels'"
+                        />
+                    </div>
+                </template>
+
+                <template #fallback>
+                    <div class="h-9 w-80 rounded-sm bg-gray-200 animate-pulse" aria-hidden="true"></div>
+                </template>
+            </Suspense>
         </div>
 
         <!-- Description Title (SEO: Heading) -->

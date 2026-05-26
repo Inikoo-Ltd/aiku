@@ -17,6 +17,13 @@ const props = defineProps<{
 
 const isLoading = ref(false)
 
+const handleLinkClick = (event: MouseEvent, action: Action) => {
+    if (!action.target) {
+        event.preventDefault()
+        handleClick(action)
+    }
+}
+
 const handleClick = (action: Action|any) => {
     if(action.route?.url){
         window.open(action.route?.url, action.route?.openBlank ? "_blank" : "_self")
@@ -85,34 +92,27 @@ const handleClick = (action: Action|any) => {
 
     <!-- Button -->
     <template v-else-if="action.route">
-        <!-- Button: to download PDF (open in new tab) -->
-        <a v-if="action.target" :href="route(action.route?.name, action.route?.parameters)" :target="action.target">
+        <a
+            :href="action.route?.url || (action.route?.name ? route(action.route?.name, action.route?.parameters) : '#')"
+            :target="action.target"
+            @click="handleLinkClick($event, action)"
+        >
             <Button
                 :style="action.style"
+                :type="action.type"
                 :label="action.label"
                 :icon="action.icon"
+                :size="action.size"
+                :disabled="action.disabled"
                 :iconRight="action.iconRight"
                 :key="`ActionButton${action?.key}${action.style}`"
                 :tooltip="action.tooltip"
                 :loading="isLoading"
+                :full="action.full"
+                :injectStyle="action.class"
+                class="text-nowrap"
             />
         </a>
-        <Button v-else
-            @click="handleClick(action)"
-            :style="action.style"
-            :type="action.type"
-            :label="action.label"
-            :icon="action.icon"
-            :size="action.size"
-            :disabled="action.disabled"
-            :iconRight="action.iconRight"
-            :key="`ActionButton${action?.key}${action.style}`"
-            :tooltip="action.tooltip"
-            :loading="isLoading"
-            :full="action.full"
-            :injectStyle="action.class"
-            class="text-nowrap"
-        />
     </template>
 
     <Button v-else

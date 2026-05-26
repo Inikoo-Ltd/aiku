@@ -540,10 +540,10 @@ function returnNoteRoute(returnDeliveryNote) {
                 </div>
 
                 
-                <div v-if="boxStats?.return_dn.data.length > 0" class="font-semibold mt-2 text-base">
+                <div v-if="boxStats?.return_dn?.data?.length > 0" class="font-semibold mt-2 text-base">
                     {{ trans("Returns") }}
                 </div>
-                <div v-if="boxStats?.return_dn.data.length > 0" class="flex flex-col pl-2">
+                <div v-if="boxStats?.return_dn?.data?.length > 0" class="flex flex-col pl-2">
                     <span v-for="returnData in boxStats?.return_dn.data" v-tooltip="trans('Return Delivery Note')" class="w-max">
                         <FontAwesomeIcon :icon="faExchange" class="pr-1"/>
                         <Link class="primaryLink" :href="returnNoteRoute(returnData)">

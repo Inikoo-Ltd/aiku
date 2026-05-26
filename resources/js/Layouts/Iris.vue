@@ -80,6 +80,14 @@ const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
 
+const fallbackTheme = theme
+
+const safeTheme = computed(() => {
+    const t = layout?.app?.theme
+
+    return (t && t.length >= 8) ? t : fallbackTheme
+})
+
 /* if(layout?.rightbasket?.show) set(layout, ['rightbasket', 'show'], false) */
 
 const isFirstVisit = () => {
@@ -187,14 +195,6 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
     if (newVal <= 0) {
         set(layout, 'rightbasket.show', false)
     }
-})
-
-const fallbackTheme = theme
-
-const safeTheme = computed(() => {
-    const t = layout?.app?.theme
-
-    return (t && t.length >= 8) ? t : fallbackTheme
 })
 </script>
 

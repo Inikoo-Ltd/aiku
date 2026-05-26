@@ -121,6 +121,7 @@ export const initialiseApp = () => {
                 ...usePage().props.auth.user,
                 last_active: new Date(),
                 action: 'navigate',
+                avatar_thumbnail: usePage().props.avatar_thumbnail,
                 current_page: {
                     route_name: layout.currentRoute,
                     route_params: layout.currentParams,

@@ -70,6 +70,13 @@ class PickingResource extends JsonResource
                 ],
                 'method'     => 'patch'
             ],
+            'split_route'        => [
+                'name'       => 'grp.models.picking.split',
+                'parameters' => [
+                    'picking' => $this->id
+                ],
+                'method'     => 'post'
+            ],
             'undo_picking_route' => [
                 'name'       => 'grp.models.picking.delete',
                 'parameters' => [
