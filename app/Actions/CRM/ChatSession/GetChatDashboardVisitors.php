@@ -46,14 +46,7 @@ class GetChatDashboardVisitors
 
         $rows = $query
             ->leftJoin('websites', 'websites.id', '=', 'website_visitors.website_id')
-            ->leftJoin('chat_sessions', function ($join) {
-                $join->on('chat_sessions.website_visitor_id', '=', 'website_visitors.id')
-                     ->orOn(function ($q) {
-                         $q->whereColumn('website_visitors.web_user_id', 'chat_sessions.web_user_id')
-                           ->whereNotNull('website_visitors.web_user_id')
-                           ->whereNull('chat_sessions.website_visitor_id');
-                     });
-            })
+            ->leftJoin('chat_sessions', 'chat_sessions.website_visitor_id', '=', 'website_visitors.id')
             ->leftJoin(
                 DB::raw('(SELECT chat_session_id, COUNT(*) as msg_count FROM chat_messages GROUP BY chat_session_id) as msg_counts'),
                 'msg_counts.chat_session_id',
