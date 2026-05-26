@@ -16,6 +16,7 @@ use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
 
 class GetRedirectUrl extends IrisAction
 {
@@ -24,21 +25,40 @@ class GetRedirectUrl extends IrisAction
 
     public function handle($modelData): array
     {
-
         $retinaHome = '';
         $ref_page   = null;
+
         if (Arr::has($modelData, 'ref')) {
             $ref_page = Arr::get($modelData, 'ref');
 
             if ($ref_page && is_numeric($ref_page)) {
-                $webpage = Webpage::where('id', $ref_page)->where('website_id', $this->website->id)
-                    ->where('state', WebpageStateEnum::LIVE)->first();
+                $webpage = Webpage::where('id', $ref_page)
+                    ->where('website_id', $this->website->id)
+                    ->where('state', WebpageStateEnum::LIVE)
+                    ->first();
+
                 if ($webpage) {
-                    $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
+                    $retinaHome = ShowIrisWebpage::make()
+                        ->getEnvironmentUrl($webpage->canonical_url);
                 }
             }
         }
 
+        // fallback ke landing page if not found the redirect
+        if (
+            $retinaHome === '' &&
+            auth()->check()
+        ) {
+            $landingPage = Webpage::where('type', WebpageTypeEnum::LANDING_PAGE)
+                ->where('state', WebpageStateEnum::LIVE)
+                ->where('website_id', $this->website->id)
+                ->first();
+
+            if ($landingPage) {
+                $retinaHome = ShowIrisWebpage::make()
+                    ->getEnvironmentUrl($landingPage->canonical_url);
+            }
+        }
 
         return [
             'ref_page'     => $ref_page,
@@ -60,5 +80,4 @@ class GetRedirectUrl extends IrisAction
 
         return $this->handle($this->validatedData);
     }
-
 }
