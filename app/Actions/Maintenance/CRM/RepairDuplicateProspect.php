@@ -62,7 +62,7 @@ class RepairDuplicateProspect
 
         try {
             $command->info("This will running in background and take a while...");
-            $command->info("Run this command to check how many prospects are repaired: php artisan queue:work");
+            $command->info("Run this command to check how many prospects still duplicated: php artisan prospect:check-duplicates");
 
             $this->handle($shop);
             $command->info("Repair completed successfully!");

@@ -10,6 +10,7 @@ namespace App\Actions\CRM\Prospect;
 
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -19,53 +20,55 @@ class CheckDuplicatedProspect
 
     public function getCommandSignature(): string
     {
-        return 'crm:prospect:check-duplicates {shop_slug?}';
+        return 'prospect:check-duplicates {shop_slug?}';
     }
 
-    public function handle(?Shop $shop = null): array
+    public function handle(?Shop $shop = null): Collection
     {
-        $query = "
-            SELECT 
-                shop_id,
-                SUM(duplicate_count) as number_of_duplicated_data
-            FROM (
-                SELECT 
-                    shop_id,
-                    email,
-                    COUNT(*) as duplicate_count
-                FROM prospects
-                WHERE email IS NOT null 
-                and deleted_at is null
-                GROUP BY shop_id, email
-                HAVING COUNT(*) > 1
-            ) as duplicates
-            GROUP BY shop_id
-            ORDER BY shop_id
-        ";
 
-        if ($shop) {
-            $query = "
-                SELECT 
-                    shop_id,
-                    SUM(duplicate_count) as number_of_duplicated_data
-                FROM (
-                    SELECT 
-                        shop_id,
-                        email,
-                        COUNT(*) as duplicate_count
-                    FROM prospects
-                    WHERE shop_id = {$shop->id}
-                    AND email IS NOT null 
-                    and deleted_at is null
-                    GROUP BY shop_id, email
-                    HAVING COUNT(*) > 1
-                ) as duplicates
-                GROUP BY shop_id
-                ORDER BY shop_id
-            ";
-        }
+        $emailDuplicates = DB::table('prospects')
+            ->selectRaw("shop_id, 'Emails' as duplicate_type, SUM(duplicate_count) as number_of_duplicated_data")
+            ->fromSub(function ($query) use ($shop) {
+                $query->select('shop_id', 'email')
+                    ->selectRaw('COUNT(*) as duplicate_count')
+                    ->from('prospects');
 
-        return DB::select($query);
+                if ($shop) {
+                    $query->where('shop_id', $shop->id);
+                }
+
+                $query->whereNotNull('email')
+                    ->whereNull('deleted_at')
+                    ->groupBy('shop_id', 'email')
+                    ->havingRaw('COUNT(*) > 1');
+            }, 'duplicates')
+            ->groupBy('shop_id');
+
+        $phoneDuplicates = DB::table('prospects')
+            ->selectRaw("shop_id, 'Phone Numbers' as duplicate_type, SUM(duplicate_count) as number_of_duplicated_data")
+            ->fromSub(function ($query) use ($shop) {
+                $query->select('shop_id', 'phone')
+                    ->selectRaw('COUNT(*) as duplicate_count')
+                    ->from('prospects');
+
+                if ($shop) {
+                    $query->where('shop_id', $shop->id);
+                }
+
+                $query->whereNotNull('phone')
+                    ->whereNull('deleted_at')
+                    ->groupBy('shop_id', 'phone')
+                    ->havingRaw('COUNT(*) > 1');
+            }, 'duplicates')
+            ->groupBy('shop_id');
+
+        $results = $emailDuplicates
+            ->union($phoneDuplicates)
+            ->orderBy('shop_id')
+            ->orderBy('duplicate_type')
+            ->get();
+
+        return $results;
     }
 
     public function asCommand(Command $command): int
@@ -90,21 +93,15 @@ class CheckDuplicatedProspect
 
         try {
             $results = $this->handle($shop);
-
-            if (empty($results)) {
-                $command->info('No duplicated prospects found.');
+            if ($results->isEmpty()) {
+                $command->line('No duplicated prospects found.');
                 return 0;
             }
-            $command->info(json_encode($results, JSON_PRETTY_PRINT));
-
-            // $command->table(
-            //     ['Shop ID', 'Number of Duplicated Data'],
-            //     $results
-            // );
-
-            // $totalDuplicates = array_sum(array_column($results, 'number_of_duplicated_data'));
-            // $command->info("Total duplicated prospects across all shops: {$totalDuplicates}");
-
+            foreach ($results as $result) {
+                $shop = Shop::find($result->shop_id);
+                // Shop ID: 18 — AWGifts Europe has 10 prospects with duplicated phone numbers
+                $command->line("Shop {$result->shop_id}, {$shop?->name} has {$result->number_of_duplicated_data} prospects with duplicated {$result->duplicate_type}");
+            }
             return 0;
         } catch (\Exception $e) {
             $command->error("Error checking duplicated prospects: {$e->getMessage()}");
