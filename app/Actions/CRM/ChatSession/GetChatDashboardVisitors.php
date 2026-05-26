@@ -17,7 +17,7 @@ class GetChatDashboardVisitors
     public const WINDOW_HOURS            = 24;
     public const IDLE_THRESHOLD_MINUTES  = 10;
 
-    public function handle(Organisation $organisation, ?string $date = null): array
+    public function handle(Organisation $organisation, ?string $date = null, array $shopIds = []): array
     {
         if ($date) {
             $dayStart      = Carbon::parse($date)->startOfDay();
@@ -36,6 +36,12 @@ class GetChatDashboardVisitors
 
         if ($windowEnd) {
             $query->where('website_visitors.last_seen_at', '<=', $windowEnd);
+        }
+
+        if (!empty($shopIds)) {
+            $query->whereIn('website_visitors.website_id', function ($sub) use ($shopIds) {
+                $sub->select('id')->from('websites')->whereIn('shop_id', $shopIds);
+            });
         }
 
         $rows = $query
@@ -128,13 +134,19 @@ class GetChatDashboardVisitors
     public function rules(): array
     {
         return [
-            'date' => ['nullable', 'date_format:Y-m-d'],
+            'date'      => ['nullable', 'date_format:Y-m-d'],
+            'shop_ids'   => ['nullable', 'array'],
+            'shop_ids.*' => ['integer'],
         ];
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): array
     {
-        return $this->handle($organisation, $request->validated('date'));
+        return $this->handle(
+            $organisation,
+            $request->validated('date'),
+            $request->validated('shop_ids', [])
+        );
     }
 
     public function jsonResponse(array $data): JsonResponse
