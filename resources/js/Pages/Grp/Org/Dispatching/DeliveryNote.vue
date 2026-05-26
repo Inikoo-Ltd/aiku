@@ -457,7 +457,6 @@ const processReturn = () => {
 
 		<template #wrapped-return="{ action }">
 			<ButtonWithLink
-				xclick="processReturn()"
 				type="red"
 				v-tooltip="ctrans('Process the return if the product is sent back to the warehouse due to failed delivery or other reasons')"
 				icon="fal fa-exchange"
@@ -472,7 +471,7 @@ const processReturn = () => {
 					console.log('eeee', e)
 					notify({
 						title: ctrans('Failed to set return'),
-						text: e.message || 'Please try again later or contact administrator.',
+						text: e.message || ctrans('Please try again later or contact administrator'),
 						type: 'error',
 					})
 				}"

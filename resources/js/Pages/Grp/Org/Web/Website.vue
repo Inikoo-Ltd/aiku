@@ -76,6 +76,7 @@ const props = defineProps<{
     external_links?: {},
     crawls?: {},
     analytics: object
+    route_welcome :routeType
     route_storefront: routeType
     route_landing_page?: routeType
     route_redirects: {
@@ -156,6 +157,7 @@ const submitForm = () => {
         :route_storefront
         :route_landing_page
         :luigi_data
+        :route_welcome
     />
 
     <Modal :isOpen="openModal" width="w-full max-w-md" closeButton @onClose="openModal = false">

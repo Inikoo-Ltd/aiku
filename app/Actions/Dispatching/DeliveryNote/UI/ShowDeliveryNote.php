@@ -63,6 +63,7 @@ class ShowDeliveryNote extends OrgAction
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
+
     private bool $allowAction = true;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
@@ -247,7 +248,7 @@ class ShowDeliveryNote extends OrgAction
         if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
             $actions[] = [
                 'type'    => 'button',
-                'style'   => 'save',
+                'style'   => 'negative',
                 'icon'    => 'fal fa-tired',
                 'tooltip' => __('Go back to picking'),
                 'label' => __('Undo set as picked'),
@@ -265,9 +266,9 @@ class ShowDeliveryNote extends OrgAction
         if ($isEditable && in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
             $actions[] = [
                 'type'    => 'button',
-                'style'   => 'save',
+                'style'   => 'negative',
                 'icon'    => 'fal fa-tired',
-                'tooltip' => __('Unpack the parcels'),
+                'tooltip' => __('Unpack the parcels') . '. ' . __('This will set the state to Packing'),
                 'label'   => __('Unpack'),
                 'key'     => 'unpack',
                 'route'   => [
