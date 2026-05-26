@@ -130,7 +130,7 @@ class EditInvoice extends OrgAction
                             'fields'  => [
                                 'identity_document_number' => [
                                     'type'  => 'input',
-                                    'label' => __('Identity document number'),
+                                    'label' => __('Identity document number').'/'.__('Registration number'),
                                     'value' => $invoice->identity_document_number
                                 ],
                             ],

@@ -38,7 +38,6 @@ trait WithEnumStats
         }
 
         $count = $models::on($connection)
-            ->toBase()
             ->selectRaw("$field, count(*) as total")
             ->when(
                 $applyWhere,

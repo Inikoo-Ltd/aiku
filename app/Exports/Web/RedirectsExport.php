@@ -21,7 +21,9 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class RedirectsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
 {
-    public function __construct(protected Website $website) {}
+    public function __construct(protected Website $website)
+    {
+    }
 
     public function query(): Relation|Builder|QueryBuilder
     {
