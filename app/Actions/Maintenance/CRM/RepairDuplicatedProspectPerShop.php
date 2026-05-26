@@ -26,13 +26,12 @@ class RepairDuplicatedProspectPerShop
     {
         DB::table('prospects')
             ->where('shop_id', $shop->id)
-            ->whereNotNull('email')
-            ->orWhereNotNull('phone')
             ->whereNull('deleted_at')
             ->whereNotIn('id', function ($query) use ($shop) {
                 $query->selectRaw('DISTINCT ON (email) id')
                     ->from('prospects')
                     ->where('shop_id', $shop->id)
+                    ->whereNotNull('email')
                     ->whereNull('deleted_at')
                     ->orderBy('email')
                     ->orderByDesc('id')
@@ -40,6 +39,7 @@ class RepairDuplicatedProspectPerShop
                         $query->selectRaw('DISTINCT ON (phone) id')
                             ->from('prospects')
                             ->where('shop_id', $shop->id)
+                            ->whereNotNull('phone')
                             ->whereNull('deleted_at')
                             ->orderBy('phone')
                             ->orderByDesc('id');
