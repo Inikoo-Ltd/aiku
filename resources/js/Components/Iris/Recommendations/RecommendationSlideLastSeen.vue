@@ -40,7 +40,7 @@ const isLoadingVisit = ref(false)
         <Image :src="product?.web_images?.main?.original" :alt="product.name" class="object-contain w-full h-full" />
       </component>
 
-      <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
+     <!--  <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
         <NewAddToCartButton 
           v-if="product.stock && layout.retina?.type === 'b2b'" 
           :hasInBasket="layout?.family_page?.productInBasket?.[product.id]"
@@ -50,7 +50,7 @@ const isLoadingVisit = ref(false)
           :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
           :buttonStyle="layout?.buttonBasket?.buttonStyle"
         />
-      </div>
+      </div> -->
     </div>
 
     <!-- TITLE -->
@@ -63,18 +63,24 @@ const isLoadingVisit = ref(false)
     </span>
 
     <!-- CODE -->
-    <div class="text-xs text-gray-400 mb-2">
-      {{ product.code }}
+    <div class="flex justify-between">
+      <div class="text-xs text-gray-400 mb-2">
+        {{ product.code }}
+      </div>
+      <div class="font-semibold underline text-xs">
+        {{ ctrans('See Details') }}
+      </div>
     </div>
+    
 
     <!-- STOCK -->
-    <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1 text-xs mb-3"
+    <!-- <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1 text-xs mb-3"
       :class="Number(product.stock) > 0 ? 'text-green-600' : 'text-red-600'">
       <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
       <span>
         {{ locale.number(Number(product.stock)) }} {{ trans('available') }}
       </span>
-    </div>
+    </div> -->
 
     <!-- LOADING -->
     <div v-if="isLoadingVisit" class="absolute inset-0 z-10 grid place-items-center bg-black/50 text-white text-4xl">
@@ -84,8 +90,8 @@ const isLoadingVisit = ref(false)
   </div>
 
   <!-- PRICES (KEEP COMPONENTS) -->
-  <div v-if="layout?.iris?.is_logged_in">
+<!--   <div v-if="layout?.iris?.is_logged_in">
     <Prices3 v-if="layout.retina?.type === 'b2b'" :product="product" :currency="currency" :basketButton="true" />
     <Prices v-else :product="product" :currency="currency" :basketButton="true" />
-  </div>
+  </div> -->
 </template>
