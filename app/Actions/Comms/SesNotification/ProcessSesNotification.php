@@ -261,7 +261,7 @@ class ProcessSesNotification
         $sesNotification->delete();
 
         PostProcessingEmailTrackingEvent::dispatch($emailProcessingTrackingEvent->id)->delay(1);
-        OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(120);
+        OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(900);
 
         return null;
     }

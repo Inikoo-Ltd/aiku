@@ -10,7 +10,7 @@ import { Image as ImageTS } from "@/types/Image"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import BestsellerBadge from "@/Components/CMS/Webpage/Products/BestsellerBadge.vue"
-import Prices from "@/Components/CMS/Webpage/Products1/Prices.vue"
+import Prices from "@/Iris/Components/BlocksUtils/Prices.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faEnvelope } from '@far'

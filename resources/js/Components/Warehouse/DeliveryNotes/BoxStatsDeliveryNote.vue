@@ -25,6 +25,7 @@ import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolle
 import Select from 'primevue/select';
 import { faExchangeAlt, faLock , faLockOpen} from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -229,6 +230,7 @@ const onUpdatePicker = () => {
     });
 };
 
+const isLoadingSelfTemporarily = ref(false)
 const assignSelfTemporarily = () => {
     
     const routeName = props.routes.assignSelfTemporarily.name;
@@ -251,8 +253,8 @@ const assignSelfTemporarily = () => {
             onSuccess: () => {
                 isModalToQueue.value = false;
             },
-            onStart: () => isLoadingToQueue.value = true,
-            onFinish: () => isLoadingToQueue.value = false,
+            onStart: () => isLoadingSelfTemporarily.value = true,
+            onFinish: () => isLoadingSelfTemporarily.value = false,
             preserveScroll: true
         }
     );
@@ -402,62 +404,71 @@ function returnNoteRoute(returnDeliveryNote) {
 
                 <div class="space-y-0.5 pl-1">
                     <!-- Field: Order reference -->
-                    <Link v-if="boxStats?.order"
-                        :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
-                        class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true'
-                            class="text-gray-500" />
-                    </dt>
-                    <dd class="text-gray-500 " v-tooltip="trans('Order')">
-                        {{ boxStats?.order?.reference }}
-                    </dd>
-                    </Link>
-                    <!-- Field: Reference Number -->
-                    <Link as="a" v-if="boxStats?.customer.reference"
-                        :href="route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)"
-                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-                    <dt v-tooltip="'Company name'" class="flex-none">
-                        <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
-                            aria-hidden="true" />
-                    </dt>
-                    <dd class="text-gray-500" v-tooltip="trans('Customer')">
-                         {{ boxStats?.customer.name }} ({{ boxStats?.customer.reference }})
-                    </dd>
-                    </Link>
-                    <!-- Field: Contact name -->
-                    <div v-if="boxStats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
-                        v-tooltip="trans('Contact name')">
+                    <div v-if="boxStats?.order" class="flex items-center gap-x-1">
+                        <Link
+                            :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
+                            class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
                         <dt class="flex-none">
+                            <FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true'
+                                class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500 " v-tooltip="trans('Order')">
+                            {{ boxStats?.order?.reference }}
+                        </dd>
+                        </Link>
+                        <CopyButton :text="boxStats?.order?.reference" />
+                    </div>
+                    <!-- Field: Reference Number -->
+                    <div v-if="boxStats?.customer.reference" class="flex items-center gap-x-1">
+                        <Link as="a"
+                            :href="route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)"
+                            class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
+                        <dt v-tooltip="'Company name'" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
+                                aria-hidden="true" />
+                        </dt>
+                        <dd class="text-gray-500" v-tooltip="trans('Customer')">
+                             {{ boxStats?.customer.name }} ({{ boxStats?.customer.reference }})
+                        </dd>
+                        </Link>
+                        <CopyButton :text="`${boxStats?.customer.name} (${boxStats?.customer.reference})`" />
+                    </div>
+                    <!-- Field: Contact name -->
+                    <div v-if="boxStats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                        <dt v-tooltip="trans('Contact name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
                         <dd class="text-gray-500">{{ boxStats?.customer.contact_name }}</dd>
+                        <CopyButton :text="boxStats?.customer.contact_name" />
                     </div>
                     <!-- Field: Company name -->
                     <div v-if="boxStats?.customer.company_name && boxStats?.customer.company_name!=boxStats?.customer.name " class="pl-1 flex items-center w-full flex-none gap-x-2"
-                        v-tooltip="trans('Company name')">
+                        v-tooltip="ctrans('Company name')">
                         <dt class="flex-none">
                             <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
                         <dd class="text-gray-500">{{ boxStats?.customer.company_name }}</dd>
+                        <CopyButton :text="boxStats?.customer.company_name" />
                     </div>
                     <!-- Field: Email -->
                     <div v-if="boxStats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                        <dt v-tooltip="'Email'" class="flex-none">
+                        <dt v-tooltip="ctrans('Email')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
-                        <a :href="`mailto:${boxStats?.customer.email}`" v-tooltip="'Click to send email'"
+                        <a :href="`mailto:${boxStats?.customer.email}`" v-tooltip="ctrans('Click to send email')"
                             class="text-gray-500 hover:text-gray-700 truncate">{{ boxStats?.customer.email }}</a>
+                        <CopyButton :text="boxStats?.customer.email" />
                     </div>
                     <!-- Field: Phone -->
                     <div v-if="boxStats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                        <dt v-tooltip="'Phone'" class="flex-none">
+                        <dt v-tooltip="ctrans('Phone')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
-                        <a :href="`tel:${boxStats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
+                        <a :href="`tel:${boxStats?.customer.phone}`" v-tooltip="ctrans('Click to make a phone call')"
                             class="text-gray-500 hover:text-gray-700">{{ boxStats?.customer.phone }}</a>
+                        <CopyButton :text="boxStats?.customer.phone" />
                     </div>
                     <!-- Field: Channel -->
                     <dl v-if="boxStats?.platform?.name" class="pl-1 flex items-center w-full gap-x-2">
@@ -523,8 +534,8 @@ function returnNoteRoute(returnDeliveryNote) {
                 </template>
                 <div v-else class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
 
-                <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-gray-800 bg-gray-200 border border-gray-300 rounded-md">
-                    <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" />
+                <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold bg-gray-200 border border-gray-300 rounded-md">
+                    <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" fixed-width />
                     {{ trans('Cash on Delivery') }}
                 </div>
 
@@ -582,13 +593,16 @@ function returnNoteRoute(returnDeliveryNote) {
                             </dl>
                         </div>
 
-                        <FontAwesomeIcon
-                            v-if="showLockButton()"
-                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker/packer can process this delivery note')"
-                            class="cursor-pointer focus:outline-none"
-                            :icon="allowActions ? faLockOpen : faLock"
-                            @click="assignSelfTemporarily()"
-                        />
+                        <div v-if="showLockButton()" @click="assignSelfTemporarily()">
+                            <LoadingIcon v-if="isLoadingSelfTemporarily" />
+                            <FontAwesomeIcon
+                                v-else
+                                v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
+                                class="cursor-pointer focus:outline-none"
+                                :icon="allowActions ? faLockOpen : faLock"
+                                fixed-width aria-hidden="true"
+                            />
+                        </div>
 
                         <Button
                             v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker"

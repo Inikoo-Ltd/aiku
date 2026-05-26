@@ -19,7 +19,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessWebsiteVisitorTracking implements ShouldBeUnique
+class ProcessWebsiteVisitorTracking
 {
     use AsAction;
 
@@ -27,10 +27,6 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
     public int $jobTimeout = 120;
     public int $jobTries = 1;
 
-    public function getJobUniqueId(string $sessionId, Website $website): string
-    {
-        return "$sessionId:$website->id";
-    }
 
     public function handle(
         string $sessionId,

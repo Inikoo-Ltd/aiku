@@ -46,7 +46,7 @@ const props = defineProps<{
 const { modelValue, webpageData, blockData } = toRefs(props)
 
 const departmentEdit = ref(false)
-const name = ref(modelValue.value.family.description_title || modelValue.value.family.name  )
+const name = ref(modelValue?.value?.family?.description_title || modelValue?.value?.family?.name  )
 const showExtra = ref(false)
 const layout: any = inject("layout", {})
 
@@ -92,7 +92,7 @@ watch(name, (val) => {
 
 
       <!-- Main Description Editor -->
-      <EditorV2 v-model="modelValue.family.description" placeholder="Family Description"
+      <EditorV2 :modelValue="modelValue?.family?.description" placeholder="Family Description"
         @update:model-value="(e) => saveDescription('description', e)" :uploadImageRoute="{
           name: webpageData?.images_upload_route?.name,
           parameters: { modelHasWebBlocks: blockData?.id }

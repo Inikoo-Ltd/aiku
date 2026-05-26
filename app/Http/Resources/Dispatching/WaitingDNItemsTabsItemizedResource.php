@@ -137,6 +137,7 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
 
             'shop_name' => $this->shop_name,
             'shop_code' => $this->shop_code,
+            'shop_slug' => $this->shop_slug,
 
             'org_stock_id'              => $this->org_stock_id,
             'org_stock_code'            => $this->org_stock_code,

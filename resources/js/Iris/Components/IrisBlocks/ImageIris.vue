@@ -108,6 +108,14 @@ const resolvedGap = computed(() => {
 })
 
 const idxSlideLoading = ref<number | null>(null)
+
+const isLcpCandidate = (index: number) => props.indexBlock === 0 && index === 0
+
+const imgAttrsFor = (image: any, index: number) => {
+  return isLcpCandidate(index)
+    ? { ...image?.attributes, loading: 'eager', fetchpriority: 'high', decoding: 'async' }
+    : { ...image?.attributes, loading: 'lazy', decoding: 'async' }
+}
 </script>
 
 <template>
@@ -148,7 +156,7 @@ const idxSlideLoading = ref<number | null>(null)
                         ...getStyles(fieldValue?.value?.layout?.properties, screenType),
                         ...getStyles(image?.properties, screenType)
                     }"
-                    :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
+                    :imgAttributes="imgAttrsFor(image, index)"
                 />
                 
               <div v-if="idxSlideLoading == index" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
@@ -163,8 +171,8 @@ const idxSlideLoading = ref<number | null>(null)
               :imageCover="true" :style="{
               ...getStyles(fieldValue?.value?.layout?.properties, screenType),
               ...getStyles(image?.properties, screenType)
-              }" 
-              :imgAttributes="{ ...image?.attributes, loading: 'lazy' }" 
+              }"
+              :imgAttributes="imgAttrsFor(image, index)"
               :height="getStyles(image.properties, screenType, false)?.height"
 						  :width="getStyles(image.properties, screenType, false)?.width" 
               />
@@ -242,7 +250,7 @@ const idxSlideLoading = ref<number | null>(null)
               :style="{
                 ...getStyles(fieldValue.value.layout?.properties, screenType),
                 ...getStyles(image.properties, screenType)
-              }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }"
+              }" :imgAttributes="imgAttrsFor(image, index)"
             />
             <div v-else
               class="flex items-center justify-center w-full h-32 bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">

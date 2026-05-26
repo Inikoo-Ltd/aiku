@@ -10,9 +10,9 @@ import SubDepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/SubDepart
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import ListProductsIris from "@/Iris/Components/IrisBlocks/Products/ds/ListProductsIris.vue"
-import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue"
+import ProductRender from "@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue"
 import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"
-import ProductIris1 from '@/Components/CMS/Webpage/Product1/Dropshipping/ProductIris1.vue'
+import ProductIris1 from '@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue'
 import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue'
 import LuigiTrends1Iris from '@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue'
 import LuigiLastSeen1Iris from '@/Iris/Components/IrisBlocks/LuigiLastSeen1Iris.vue'
@@ -29,7 +29,7 @@ import RecommendationCRB1Iris from '@/Iris/Components/IrisBlocks/RecommendationC
 import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
 
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
-import Products2Render from "@/Components/CMS/Webpage/Products2/Products2Render.vue"
+import Products2Render from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"
 
 import Header2Iris from "@/Components/CMS/Website/Headers/Header2/Header2Iris.vue"
 import Header1Iris from "@/Components/CMS/Website/Headers/Header1/Header1Iris.vue"
@@ -91,7 +91,7 @@ import Step2Iris from "@/Iris/Components/IrisBlocks/Step2Iris.vue"
 import Step1Iris from "@/Iris/Components/IrisBlocks/Step1Iris.vue"
 import Slider1Iris from "@/Iris/Components/IrisBlocks/Slider1Iris.vue"
 import CollectionDescriptionIris from "@/Iris/Components/IrisBlocks/CollectionDescriptionIris.vue"
-import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
+import ProductRenderEcom3 from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
 import Family2ExtraDescriptionIris from '@/Iris/Components/IrisBlocks/Family2ExtraDescriptionIris.vue'
 import Families1Overview from '@/Iris/Components/IrisBlocks/FamiliesOverviewIris1.vue'
 import RecommendationFromMasterIris from '@/Iris/Components/IrisBlocks/RecommendationFromMasterIris.vue';

@@ -198,6 +198,13 @@ const submitReplaceProduct = () => {
                 </Link>
                 <span v-else>{{ item.order_reference }}</span>
             </div>
+
+            <div
+                v-if="item.delivery_note_state === 'handling'"
+                class="mt-1 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 ring-1 ring-inset ring-amber-400"
+            >
+                {{ ctrans('Still on picking') }}
+            </div>
         </template>
 
         <template #cell(items)="{ item: deliveryNoteRow }">

@@ -41,6 +41,16 @@ const routeToDeliveryNote = (slug: string) => {
     ])
 }
 
+const routeItemsWaitingCrm = (item: any): string => {
+    if (!item.shop_slug || !(route().params as RouteParams).organisation) {
+        return '#'
+    }
+    return route('grp.org.shops.show.ordering.backlog.waiting_items', {
+        organisation: (route().params as RouteParams).organisation,
+        shop: item.shop_slug,
+    })
+}
+
 const generateLocationRoute = (location: any) => {
     if (!location.location_slug) return "#"
     return route("grp.org.warehouses.show.infrastructure.locations.show", [
@@ -139,16 +149,9 @@ const generateLocationRoute = (location: any) => {
 
             <!-- Section: items are waiting for CRM -->
             <div v-if="Number(item.quantity_waiting_crm) > 0" class="mt-2 xmx-auto w-fit">
-                <LabelItemsWaitingForCrm v-if="Number(item.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
-                <!-- <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-purple-400 relative bg-purple-500/20 py-1 pr-2 pl-1 text-purple-700 whitespace-nowrap w-fit">
-                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
-                    <span>
-                        {{ trans(":quantityWaitingCRM items are waiting for CRM", { quantityWaitingCRM: Number(item.quantity_waiting_crm) }) }}
-                    </span>
-
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
-                </div> -->
+                <Link :href="routeItemsWaitingCrm(item)" class="hover:underline">
+                    <LabelItemsWaitingForCrm :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
+                </Link>
             </div>
         </template>
 

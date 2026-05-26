@@ -43,7 +43,9 @@ class ShowGroupDashboard extends OrgAction
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
-        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $topCustomersLimitSetting = $this->dashboardTopCustomersLimitSettings($userSettings);
+
+        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1], null, $topCustomersLimitSetting['value']);
         $tabNavigation = GroupDashboardSalesTableTabsEnum::navigation();
         $primaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
         $secondaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum], true);
@@ -60,9 +62,10 @@ class ShowGroupDashboard extends OrgAction
                         'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
                     ],
                     'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($group, $userSettings),
+                        'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'       => $this->dashboardCurrencyTypeSettings($group, $userSettings),
+                        'top_customers_limit' => $topCustomersLimitSetting,
                     ],
                     'blocks'    => [
                         [
