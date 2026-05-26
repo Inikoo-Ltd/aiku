@@ -68,7 +68,12 @@ const isLoadingVisit = ref(false)
         {{ product.code }}
       </div>
       <div class="font-semibold underline text-xs">
-        {{ ctrans('See Details') }}
+        <component :is="product.url ? LinkIris : 'div'"  :href="product.url" class="hover:underline"
+        @start="() => (SelectItemCollector(product), isLoadingVisit = true)"
+        @finish="() => isLoadingVisit = false">
+          {{ ctrans('See Details') }}
+      </component>
+      
       </div>
     </div>
     

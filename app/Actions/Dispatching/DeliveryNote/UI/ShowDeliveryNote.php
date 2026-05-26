@@ -63,6 +63,7 @@ class ShowDeliveryNote extends OrgAction
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
+
     private bool $allowAction = true;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
