@@ -24,6 +24,24 @@ class RepairDuplicatedProspectPerShop
 
     public function handle(Shop $shop): void
     {
+
+        // TODO: Make sure order By
+        // remove duplicated for phone
+        DB::table('prospects')
+            ->where('shop_id', $shop->id)
+            ->whereNull('deleted_at')
+            ->whereNotIn('id', function ($query) use ($shop) {
+                $query->selectRaw('DISTINCT ON (phone) id')
+                    ->from('prospects')
+                    ->where('shop_id', $shop->id)
+                    ->whereNotNull('phone')
+                    ->whereNull('deleted_at')
+                    ->orderBy('phone')
+                    ->orderByDesc('id');
+            })
+            ->update(['deleted_at' => now()]);
+
+        // remove duplicated for email
         DB::table('prospects')
             ->where('shop_id', $shop->id)
             ->whereNull('deleted_at')
@@ -34,16 +52,7 @@ class RepairDuplicatedProspectPerShop
                     ->whereNotNull('email')
                     ->whereNull('deleted_at')
                     ->orderBy('email')
-                    ->orderByDesc('id')
-                    ->union(function ($query) use ($shop) {
-                        $query->selectRaw('DISTINCT ON (phone) id')
-                            ->from('prospects')
-                            ->where('shop_id', $shop->id)
-                            ->whereNotNull('phone')
-                            ->whereNull('deleted_at')
-                            ->orderBy('phone')
-                            ->orderByDesc('id');
-                    });
+                    ->orderByDesc('id');
             })
             ->update(['deleted_at' => now()]);
     }
