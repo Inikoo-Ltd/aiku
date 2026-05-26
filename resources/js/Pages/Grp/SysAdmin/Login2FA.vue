@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3'
-import LoginPassword from '@/Components/Auth/LoginPassword.vue'
-import Checkbox from '@/Components/Checkbox.vue'
+import { Head, router, useForm } from '@inertiajs/vue3'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
 import { inject, onMounted, onBeforeUnmount, ref } from 'vue'
@@ -32,27 +30,37 @@ const submit = () => {
     })
 }
 
-const _inputOneTimePassword = ref<HTMLInputElement | null>(null)
+const inputOneTimePassword = ref<HTMLInputElement | null>(null)
+const hiddenAt = ref<number | null>(null)
+const staleHiddenThreshold = 30_000
 
-const hasFocused = ref(false)
+const recoverFromBackground = () => {
+    if (document.visibilityState === 'hidden') {
+        hiddenAt.value = Date.now()
+        return
+    }
 
-const focusOtpOnReturn = () => {
-    if (document.visibilityState === 'visible') {
-        _inputOneTimePassword.value?.focus()
+    const hiddenDuration = hiddenAt.value ? Date.now() - hiddenAt.value : 0
+    hiddenAt.value = null
+
+    if (form.processing) {
+        form.processing = false
+    }
+
+    inputOneTimePassword.value?.focus()
+
+    if (hiddenDuration > staleHiddenThreshold) {
+        router.reload()
     }
 }
 
 onMounted(() => {
-    if (!hasFocused.value && _inputOneTimePassword.value) {
-        _inputOneTimePassword.value.focus()
-        hasFocused.value = true
-    }
-
-    document.addEventListener('visibilitychange', focusOtpOnReturn)
+    inputOneTimePassword.value?.focus()
+    document.addEventListener('visibilitychange', recoverFromBackground)
 })
 
 onBeforeUnmount(() => {
-    document.removeEventListener('visibilitychange', focusOtpOnReturn)
+    document.removeEventListener('visibilitychange', recoverFromBackground)
 })
 
 const layout = inject("layout", layoutStructure)
@@ -71,16 +79,17 @@ const onLogoutAuth = () => {
     <Head title="Two Factor Authentication" />
     <form class="relative z-10 space-y-6" @submit.prevent="submit">
         <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label for="one_time_password" class="block text-sm font-medium text-gray-700">
                 {{ trans('Enter OTP from your Authenticator App') }}
             </label>
 
-            <input v-model="form.one_time_password" ref="_inputOneTimePassword" id="one_time_password" required
-                class="mt-1 block w-full px-3 py-2 border rounded-md"   :type="'text'" />
+            <input v-model="form.one_time_password" ref="inputOneTimePassword" id="one_time_password" required
+                type="text" inputmode="numeric" autocomplete="one-time-code"
+                class="mt-1 block w-full px-3 py-2 border rounded-md" />
         </div>
 
         <div class="flex space-x-2">
-            <Button full @click.prevent="submit" :loading="form.processing" :disabled="form.processing" label="Enter" type="indigo"/>
+            <Button full native-type="submit" :loading="form.processing" :disabled="form.processing" label="Enter" type="indigo"/>
             <Button :type="'red-r-outline'" :injectStyle="['margin-top:unset', 'margin-left:8px']" @click="onLogoutAuth()">
                 <FontAwesomeIcon :icon="faSignOutAlt" />
                 <LoadingIcon v-if="isLoadingLogout"/>

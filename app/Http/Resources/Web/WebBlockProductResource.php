@@ -48,10 +48,7 @@ class WebBlockProductResource extends JsonResource
             'unit'              => $product->unit,
         ];
 
-        $isOnDemand = $product->orgStocks()->where('is_on_demand', true)->exists();
-
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
-
 
         if (is_array($product->offers_data)) {
             $productOffersData = $product->offers_data;
@@ -63,7 +60,7 @@ class WebBlockProductResource extends JsonResource
         $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
         $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
 
-        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
+        [$marginDiscounted, , $profitDiscounted, $profitPerUnitDiscounted, , $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
 
 
         $back_in_stock = false;
@@ -92,7 +89,6 @@ class WebBlockProductResource extends JsonResource
             'description_title' => $product->description_title,
             'description_extra' => $product->description_extra,
             'stock'             => $product->available_quantity,
-            // Old logic (4 months ago) checked for is_single_trade_unit since they got their spec data from TradeUnits. Right now it fetches directly from product, so not needed anymore. This is correct
             'specifications'    => $specifications,
             'contents'          => ModelHasContentsResource::collection($product->contents)->toArray($request),
             'id'                => $product->id,
@@ -116,7 +112,7 @@ class WebBlockProductResource extends JsonResource
             'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
-            'is_on_demand'      => $isOnDemand,
+            'is_on_demand'      => $product->is_on_demand,
             'is_back_in_stock'  => $product->backInStockReminders,
             'back_in_stock'     => $back_in_stock,
 

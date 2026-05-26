@@ -91,7 +91,7 @@ trait WithIrisProductsInWebpage
         $customer     = request()->user()?->customer;
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
-        $queryBuilder->where('webpages.state','live');
+        $queryBuilder->where('webpages.state', 'live');
 
         $queryBuilder
             ->where(function ($query) {

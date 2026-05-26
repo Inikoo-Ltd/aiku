@@ -52,6 +52,7 @@ return new class () extends Migration {
             $table->index(['provider','provider_dispatch_id']);
             $table->index(['parent_type','parent_id']);
             $table->index(['recipient_type','recipient_id']);
+            $table->index(['outbox_id','state']);
 
         });
     }

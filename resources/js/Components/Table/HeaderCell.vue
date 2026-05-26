@@ -44,6 +44,8 @@ const isCellNumber = () => {
     
     return false
 }
+
+const isDebug = false   //  True will show the column key in the header
 </script>
 
 <template>
@@ -97,8 +99,15 @@ const isCellNumber = () => {
                             aria-hidden="true"
                             fixed-width
                             class="text-gray-500 mr-2"/>
-                        <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
-                        <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
+
+                        <span v-if="isDebug">
+                            {{ cell.key }}
+                        </span>
+                        
+                        <template v-else>
+                            <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
+                            <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
+                        </template>
                         
                     </div>
 

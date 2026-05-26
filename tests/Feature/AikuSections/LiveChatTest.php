@@ -50,7 +50,7 @@ beforeEach(function () {
             $this->organisation,
             $this->user,
             $this->shop
-            ) = createShop();
+        ) = createShop();
         $web = createWebsite($this->shop);
     } else {
         $this->organisation = $web->organisation;

@@ -17,7 +17,7 @@ import { trans } from "laravel-vue-i18n"
 
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/RenderProductDropshiping.vue";
+import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/RenderProductDropshiping.vue";
 import Image from "@common/Components/Image.vue"
 
 library.add(faFileDownload)

@@ -55,7 +55,9 @@ class ShowShop extends OrgAction
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate);
+        $topCustomersLimitSetting = $this->dashboardTopCustomersLimitSettings($userSettings);
+
+        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate, null, $topCustomersLimitSetting['value']);
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
         $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
@@ -71,9 +73,10 @@ class ShowShop extends OrgAction
                         'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings)
                     ],
                     'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings)
+                        'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'       => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
+                        'top_customers_limit' => $topCustomersLimitSetting,
                     ],
                     'shop_blocks' => [
                         'interval_data'        => $shopTimeSeriesStats,

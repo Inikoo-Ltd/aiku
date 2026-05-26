@@ -9,7 +9,6 @@ import { faPlusCircle, faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Popover } from "primevue"
 import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabelDesain2.vue"
-import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
@@ -120,7 +119,7 @@ const showLeftBlock = computed(() => {
 const bestOfferClass = computed(() => {
   const type = bestOffer?.value?.type
 
-  if (type === 'Category Ordered' || type === 'Category Amount Ordered') {
+  if (type === 'Category Ordered' || type === 'Category Amount Ordered' || type == 'Department Ordered'  || type == 'Subdepartment Ordered' ) {
     return 'text-red-700'
   }
 
@@ -235,7 +234,7 @@ const _popoverProfit = ref(null)
 
             <!-- GR PRICE -->
             <div v-if="product.discounted_price"
-                class="grid grid-cols-[1fr_minmax(0,140px)] items-center gap-x-2 w-full">
+                class="grid grid-cols-[1fr_minmax(0,98px)] items-center gap-x-2 w-full">
 
                 <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'" class="whitespace-nowrap
             text-[9px]
@@ -276,24 +275,27 @@ const _popoverProfit = ref(null)
 
                 </div>
 
-                <div v-else class="w-full"> </div>
-
-                <DiscountByType v-if="bestOffer?.type == 'Category Ordered'" :offers_data="product?.product_offers_data"
-                    template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'Category Quantity Ordered'"
-                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'"
-                    :offers_data="product?.product_offers_data" template="first-order" />
-                <DiscountByType v-if="bestOffer?.type == 'Category Amount Ordered'"
-                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'Department Quantity Ordered'"
-                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'Subdepartment Quantity Ordered'"
-                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'Department Ordered'"
-                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
-                <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'"
-                    :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                
+                <div v-else class="offer">
+                    <DiscountByType v-if="bestOffer?.type == 'Category Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Category Quantity Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'"
+                        :offers_data="product?.product_offers_data" template="first-order" />
+                    <DiscountByType v-if="bestOffer?.type == 'Category Amount Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Department Quantity Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Subdepartment Quantity Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Department Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                    <div v-else class="w-full"></div>
+                </div>
+              
 
 
                 <div v-if="bestOffer" class="font-bold text-right text-xs min-w-0" :class="bestOfferClass">
@@ -375,5 +377,22 @@ const _popoverProfit = ref(null)
 
 .popover-paragraph {
     @apply mb-2 text-justify;
+}
+
+.offer :deep(.offer-max-discount) {
+  @apply bg-[#A80000] border border-red-900 text-gray-100 
+         flex items-center rounded-sm px-1 py-0.5 text-[10px] 
+         sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1
+         min-w-0
+         max-w-[6rem]
+         2xl:max-w-[12rem];
+}
+
+.offer :deep(.offer-label) {
+    @apply flex items-center gap-1 min-w-0 max-w-full;
+}
+
+.offer :deep(.label-text) {
+    @apply leading-none truncate min-w-0;
 }
 </style>
