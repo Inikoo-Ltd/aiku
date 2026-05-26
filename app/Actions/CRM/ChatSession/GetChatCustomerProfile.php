@@ -1,17 +1,5 @@
 <?php
 
-/*
- * @Author: andiferdiawan (https://github.com/andiferdiawan)
- * @Created: YYYY-MM-DD HH:mm:ss
- * @Copyright: Copyright (c) 2026, andiferdiawan
- */
-
-/*
- * @Author: andiferdiawan (https://github.com/andiferdiawan)
- * @Created: YYYY-MM-DD HH:mm:ss
- * @Copyright: Copyright (c) 2026, andiferdiawan
- */
-
 namespace App\Actions\CRM\ChatSession;
 
 use App\Models\CRM\Livechat\ChatSession;
