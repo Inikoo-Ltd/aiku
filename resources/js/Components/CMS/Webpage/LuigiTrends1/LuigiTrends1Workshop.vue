@@ -17,9 +17,9 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import axios from "axios"
-import { Link } from "@inertiajs/vue3"
+/* import { Link } from "@inertiajs/vue3" */
 import { trans } from "laravel-vue-i18n"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+/* import Button from "@/Components/Elements/Buttons/Button.vue" */
 import RecommendationSlideWorkshop from "@/Components/Iris/Recommendations/RecommendationSlideWorkshop.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 library.add(faChevronLeft, faChevronRight)

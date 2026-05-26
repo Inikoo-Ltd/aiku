@@ -4,16 +4,16 @@ import { SelectItemCollector } from '@/Composables/Unique/LuigiDataCollector'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductHit } from '@/types/Luigi/LuigiTypes'
-import { faCircle } from '@fas'
+/* import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
+import { trans } from 'laravel-vue-i18n' */
 import { inject, ref } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import Prices3 from '@/Iris/Components/BlocksUtils/Prices3.vue'
+/* import Prices3 from '@/Iris/Components/BlocksUtils/Prices3.vue' */
 import Image from "@common/Components/Image.vue"
-import Prices from '@/Iris/Components/BlocksUtils/Prices.vue'
-import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
+/* import Prices from '@/Iris/Components/BlocksUtils/Prices.vue'
+import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue' */
 
 const props = defineProps<{
   product: ProductHit
