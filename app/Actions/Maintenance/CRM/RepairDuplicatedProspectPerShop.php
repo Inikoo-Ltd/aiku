@@ -36,24 +36,41 @@ class RepairDuplicatedProspectPerShop
                     ->where('shop_id', $shop->id)
                     ->whereNotNull('phone')
                     ->whereNull('deleted_at')
-                    ->orderBy('phone')
-                    ->orderByDesc('id');
+                    ->orderByDesc('phone')
+                    ->orderByDesc('id')
+                    ->unionAll(function ($query) use ($shop) {
+                        $query->selectRaw('id')
+                            ->from('prospects')
+                            ->where('shop_id', $shop->id)
+                            ->whereNull('phone')
+                            ->whereNull('email')
+                            ->whereNull('deleted_at');
+                    });
+
             })
             ->update(['deleted_at' => now()]);
 
         // remove duplicated for email
         DB::table('prospects')
-            ->where('shop_id', $shop->id)
-            ->whereNull('deleted_at')
-            ->whereNotIn('id', function ($query) use ($shop) {
-                $query->selectRaw('DISTINCT ON (email) id')
-                    ->from('prospects')
-                    ->where('shop_id', $shop->id)
-                    ->whereNotNull('email')
-                    ->whereNull('deleted_at')
-                    ->orderBy('email')
-                    ->orderByDesc('id');
-            })
-            ->update(['deleted_at' => now()]);
+               ->where('shop_id', $shop->id)
+               ->whereNull('deleted_at')
+               ->whereNotIn('id', function ($query) use ($shop) {
+                   $query->selectRaw('DISTINCT ON (email) id')
+                       ->from('prospects')
+                       ->where('shop_id', $shop->id)
+                       ->whereNotNull('email')
+                       ->whereNull('deleted_at')
+                       ->orderByDesc('email')
+                       ->orderByDesc('id')
+                       ->unionAll(function ($query) use ($shop) {
+                           $query->selectRaw('id')
+                               ->from('prospects')
+                               ->where('shop_id', $shop->id)
+                               ->whereNull('phone')
+                               ->whereNull('email')
+                               ->whereNull('deleted_at');
+                       });
+               })
+               ->update(['deleted_at' => now()]);
     }
 }
