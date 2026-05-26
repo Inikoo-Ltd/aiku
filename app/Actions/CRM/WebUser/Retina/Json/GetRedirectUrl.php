@@ -25,9 +25,19 @@ class GetRedirectUrl extends IrisAction
 
     public function handle($modelData): array
     {
-        $retinaHome = '';
-        $ref_page   = null;
+        $ref_page = null;
 
+        // default = storefront
+        $storefront = Webpage::where('type', WebpageTypeEnum::STOREFRONT)
+            ->where('state', WebpageStateEnum::LIVE)
+            ->where('website_id', $this->website->id)
+            ->first();
+
+        $retinaHome = $storefront
+            ? ShowIrisWebpage::make()->getEnvironmentUrl($storefront->canonical_url)
+            : '';
+
+        // ref page always wins
         if (Arr::has($modelData, 'ref')) {
             $ref_page = Arr::get($modelData, 'ref');
 
@@ -44,10 +54,12 @@ class GetRedirectUrl extends IrisAction
             }
         }
 
-        // fallback ke landing page if not found the redirect
+        // landing page only used if:
+        // - user logged in
+        // - no valid ref page found
         if (
-            $retinaHome === '' &&
-            auth()->check()
+            auth()->check() &&
+            !$ref_page
         ) {
             $landingPage = Webpage::where('type', WebpageTypeEnum::LANDING_PAGE)
                 ->where('state', WebpageStateEnum::LIVE)
@@ -63,7 +75,7 @@ class GetRedirectUrl extends IrisAction
         return [
             'ref_page'     => $ref_page,
             'redirect_url' => $retinaHome,
-            'redirected'   => !($retinaHome == ''),
+            'redirected'   => $retinaHome !== '',
         ];
     }
 
