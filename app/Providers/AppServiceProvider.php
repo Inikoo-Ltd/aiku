@@ -22,6 +22,8 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Facades\Actions;
 use Illuminate\Support\Facades\Event;
+use Laravel\Nightwatch\Records\QueuedJob;
+
 use Vemcogroup\Translation\Translation as BaseTranslation;
 
 /**
@@ -78,6 +80,10 @@ class AppServiceProvider extends ServiceProvider
             ])) {
                 Nightwatch::dontSample();
             }
+        });
+
+        Nightwatch::rejectQueuedJobs(function (QueuedJob $job) {
+            return $job->name === 'App\Actions\Transfers\Aurora\FetchAuroraStocks';
         });
 
         ParallelTesting::setUpTestCase(function ($token, $testCase) {
