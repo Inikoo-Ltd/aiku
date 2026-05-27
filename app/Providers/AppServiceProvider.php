@@ -13,12 +13,15 @@ use App\Services\GeocoderService;
 use App\Services\Translation;
 use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
 use Gnikyt\BasicShopifyAPI\Options;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Facades\Actions;
+use Illuminate\Support\Facades\Event;
 use Vemcogroup\Translation\Translation as BaseTranslation;
 
 /**
@@ -68,6 +71,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Event::listen(function (CommandStarting $event) {
+            if (in_array($event->command, [
+                'fetch:',
+                'clone:aurora'
+            ])) {
+                Nightwatch::dontSample();
+            }
+        });
+
         ParallelTesting::setUpTestCase(function ($token, $testCase) {
             $databaseName = env('DB_DATABASE_TEST', 'aiku_test')."_".$token;
 
