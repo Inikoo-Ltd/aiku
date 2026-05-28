@@ -22,7 +22,7 @@ trait WithTabsBox
 {
     public function buildWaitingItemsData(Group|Organisation|Shop $parent, ActionRequest $request): array
     {
-        $query = DeliveryNote::where('state', DeliveryNoteStateEnum::HANDLING_BLOCKED)->where('number_items_waiting_crm', '>', 0);
+        $query = DeliveryNote::where('number_items_waiting_crm', '>', 0);
         if ($parent instanceof Shop) {
             $query->where('shop_id', $parent->id);
         } elseif ($parent instanceof Organisation) {
@@ -30,7 +30,9 @@ trait WithTabsBox
         } else {
             $query->where('group_id', $parent->id);
         }
-        $count = $query->count();
+
+        $count          = (clone $query)->where('state', DeliveryNoteStateEnum::HANDLING_BLOCKED)->count();
+        $handling_count = (clone $query)->where('state', DeliveryNoteStateEnum::HANDLING)->count();
 
         $route = null;
 
@@ -41,7 +43,7 @@ trait WithTabsBox
             ];
         }
 
-        return compact('count', 'route');
+        return compact('count', 'handling_count', 'route');
     }
 
     private function getChildRoute(Group|Organisation $parent, mixed $child, string $tabSlug): array
@@ -88,7 +90,7 @@ trait WithTabsBox
 
         $return_stat = null;
         if ($parent instanceof Shop) {
-            $return_stat = $parent->number_return_delivery_notes_state_returned;
+            $return_stat = $parent->stats->number_return_delivery_notes_state_returned;
         } else {
             $return_stat = $parent->procurementStats->number_return_delivery_notes_state_returned;
         }
@@ -233,7 +235,13 @@ trait WithTabsBox
                         'information' => [
                             'label' => $parent->orderHandlingStats?->{"orders_state_handling_amount$currency"} ?? 0,
                             'type'  => 'currency',
-                        ]
+                        ],
+                        'warning'     => ($waitingItemsData && ($waitingItemsData['handling_count'] ?? 0) > 0) ? [
+                            'route_target' => $waitingItemsData['route'] ?? null,
+                            'tooltip'      => __('Orders waiting for items'),
+                            'value'        => $waitingItemsData['handling_count'],
+                            'indicator'    => true,
+                        ] : null,
                     ],
                     [
                         'tab_slug'    => 'handling_blocked',
@@ -394,12 +402,12 @@ trait WithTabsBox
                 ])->values()->toArray(),
             ],
             [
-                'label'         => __('Is Returned'),
+                'label'         => __('Returns'),
                 'currency_code' => $currencyCode,
                 'tabs'          => [
                     [
                         'tab_slug'    => 'returned',
-                        'label'       => __('Is Returned'),
+                        'label'       => __('Returns'),
                         'value'       => $return_stat ?? 0,
                         'icon_data'   => [
                             'tooltip' => __('Returned'),

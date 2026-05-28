@@ -302,6 +302,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                 <div
                     @mouseenter="(e) => showFlyout(item, e as MouseEvent)"
                     @mouseleave="hideFlyout"
+                    @click="() => onClickOrg(item.slug)"
                     :class="[
                         item.slug == layout.currentParams?.organisation
                             ? 'bg-slate-300 text-slate-600'
@@ -322,7 +323,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                                     }
                                 : {}"
                 >
-                    <div @click="() => onClickOrg(item.slug)" class="flex items-center gap-x-2 flex-1 min-w-0">
+                    <div class="flex items-center gap-x-2 flex-1 min-w-0">
                         <div class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-50 flex-shrink-0">
                             <Image v-show="!imageSkeleton[item.slug]" :src="item.logo"
                                 @onLoadImage="() => imageSkeleton[item.slug] = false" />

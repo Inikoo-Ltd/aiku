@@ -81,7 +81,8 @@ import {
     faUserAlien,
     faTombstone as faTombstoneLight,
     faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-    faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield
+    faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield, faCircle, faExchange,
+    faTrophy,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -152,7 +153,7 @@ library.add(
     faSearch,
     faBell,
     faArrowRight,
-    faShippingFast, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield,
+    faShippingFast, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield, faCircle, faExchange,
     faTachometerAltFast,
     faGlobe,
     faParachuteBox,
@@ -186,7 +187,8 @@ library.add(
     faUserAlien,
     faTombstoneLight,
     faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-    faBarcode
+    faBarcode,
+    faTrophy,
 )
 
 provide("layout", useLayoutStore())

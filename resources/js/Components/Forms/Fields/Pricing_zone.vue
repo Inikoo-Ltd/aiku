@@ -24,6 +24,9 @@ const props = defineProps<{
         readonly?: boolean
         copyButton: boolean
         maxLength?: number
+        currency?: {
+            code : string
+        }
     }
 }>()
 
@@ -65,7 +68,7 @@ const updateFormValue = (newValue) => {
 <template>
     <div class="relative">
         <div class="relative">
-            <PurePricingZone v-model="value" />
+            <PurePricingZone v-model="value" :currency="fieldData.currency"/>
         </div>
     </div>
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">

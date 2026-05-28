@@ -26,7 +26,7 @@ import Image from "@common/Components/Image.vue"
 // Product Components
 import RecordCounter from './RecordCounter.vue'
 import EmptyState from './EmptyState.vue'
-import ProductRenderEcom from '@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue'
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 
 
 import { clone } from 'lodash-es'
@@ -485,9 +485,9 @@ watch(queryBuilderData, async () => {
 
         <!-- Products Grid -->
         <TableWrapper :result="compResourceMeta?.total === 0" class="mt-2">
-            <div v-if="compResourceData.length > 0" class="auto-rows-auto gap-4 p-4" :class="gridClass">
+            <div v-if="compResourceData.length > 0" class="auto-rows-fr gap-4 p-4" :class="gridClass">
                 <!-- Product Cards -->
-                <div v-for="(item, index) in compResourceData" :key="`product-${index}`">
+                <div v-for="(item, index) in compResourceData" :key="`product-${index}`" class="h-full min-h-0">
                     <slot name="card" :item="item">
                         <ProductRenderEcom :product="item" :key="index" :hasInBasket="item"
                             :detach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"

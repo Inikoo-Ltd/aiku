@@ -30,7 +30,6 @@ class MasterShopHydrateMasterAssets implements ShouldBeUnique
         $stats = [
             'number_master_assets' => $masterShop->masterAssets()->where('is_main', true)->count(),
             'number_current_master_assets' => $masterShop->masterAssets()->where('is_main', true)->where('status', true)->count(),
-
         ];
 
         $stats = array_merge(
@@ -59,6 +58,12 @@ class MasterShopHydrateMasterAssets implements ShouldBeUnique
             )
         );
 
+        $stats = array_merge(
+            $stats,
+            [
+                'number_current_master_assets_missing_price_or_rrp'    => $masterShop->masterAssets()->where('status', true)->where(fn ($q) => $q->whereNull('price')->orWhereNull('rrp'))->count(),
+            ]
+        );
 
         $masterShop->stats()->update($stats);
     }

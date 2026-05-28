@@ -17,6 +17,7 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Catalogue\Shop;
+use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\Helpers\Feedback;
 use App\Models\Traits\InCustomer;
 use Eloquent;
@@ -112,6 +113,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Collection<int, Offer> $offers
  * @property-read \App\Models\Ordering\Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read Collection<int, ReturnDeliveryNoteItem> $returnDeliveryNoteItems
  * @property-read Shop|null $shop
  * @method static \Database\Factories\Ordering\TransactionFactory factory($count = null, $state = [])
  * @method static Builder<static>|Transaction newModelQuery()
@@ -195,6 +197,11 @@ class Transaction extends Model
     public function invoiceTransaction(): HasOne
     {
         return $this->hasOne(InvoiceTransaction::class);
+    }
+
+    public function returnDeliveryNoteItems(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNoteItem::class, 'original_transaction_id');
     }
 
 }

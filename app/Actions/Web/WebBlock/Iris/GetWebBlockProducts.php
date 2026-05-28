@@ -1,0 +1,53 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 02 Jun 2025 14:22:15 Central Indonesia Time, Sanur, Shanghai, China
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Web\WebBlock\Iris;
+
+use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
+use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
+use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
+use App\Models\Web\Webpage;
+use Lorisleiva\Actions\Concerns\AsObject;
+
+class GetWebBlockProducts
+{
+    use AsObject;
+
+    public function handle(Webpage $webpage, array $webBlock): array
+    {
+        /** @var Collection|ProductCategory $model */
+        $model = $webpage->model;
+
+        if ($webpage->model_type == 'Collection') {
+            $products           = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'in_stock'));
+            $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'out_of_stock'));
+        } else {
+            $products           = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'in_stock'));
+            $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'out_of_stock'));
+        }
+
+        data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.sub_type', $webpage->sub_type);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.model_id', $webpage->model_id);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.model_slug', $model?->slug);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.products_out_of_stock', $productsOutOfStock);
+
+        return [
+           'type' => data_get($webBlock, 'type'),
+           'structure' => data_get(
+               $webBlock,
+               'web_block.layout.data.fieldValue',
+               []
+           ),
+        ];
+    }
+
+}

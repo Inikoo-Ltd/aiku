@@ -12,14 +12,14 @@ const props = withDefaults(defineProps<{
 		href: string | null,
 		target: string, // "_self"|"_blank",
 		id: string | number | null,
-		workshop_route: string
+
 	},
 	defaultValue?: {
 		type: string,  // external|internal
 		href: string | null,
 		target: string, // "_self"|"_blank",
 		id: string | number | null,
-		workshop_route: string
+
 	},
 	props_radio_type?: any,
 	props_radio_target?: any,
@@ -34,7 +34,7 @@ const localModel = computed({
 	get: () => {
 		return props.modelValue ?? (props.defaultValue
 			? { ...props.defaultValue, data: props.defaultValue }
-			: { type: 'internal', href: null, workshop: null, id: null, target: "_self", url: null, data: {} })
+			: { type: 'internal', href: null, id: null, target: "_self", url: null, data: {} })
 	},
 	set: (newValue) => {
 		emit('update:modelValue', newValue)
@@ -90,7 +90,7 @@ const cleanCanonicalPath = (url) => {
 					<div v-for="(option, indexOption) in targets" class="flex items-center gap-2">
 						<RadioButton :modelValue="localModel.target" v-bind="props_radio_target" @update:modelValue="(e: string) => {
 							set(localModel, 'target', e)
-							emit('update:modelValue', localModel) // 🔥 Emit setiap perubahan
+							emit('update:modelValue', localModel) // Emit setiap perubahan
 						}" :inputId="`${option.value}${indexOption}`" name="target" size="small" :value="option.value" />
 						<label :for="`${option.value}${indexOption}`" class="cursor-pointer">{{ option.label }}</label>
 					</div>
@@ -106,10 +106,9 @@ const cleanCanonicalPath = (url) => {
 					<div v-for="(option, indexOption) in options" class="flex items-center gap-2">
 						<RadioButton :modelValue="localModel.type" v-bind="props_radio_type" @update:modelValue="(e: string) => {
 							set(localModel, 'type', e)
-							emit('update:modelValue', localModel) // 🔥 Emit setiap perubahan
+							emit('update:modelValue', localModel) // Emit setiap perubahan
 						}" :inputId="`${option.value}${indexOption}`" name="type" size="small" :value="option.value" />
-						<label @click="() => set(localModel, 'type', option.value)" class="cursor-pointer">{{
-							option.label }}</label>
+						<label @click="() => set(localModel, 'type', option.value)" class="cursor-pointer">{{option.label }}</label>
 					</div>
 				</div>
 			</div>
@@ -118,20 +117,17 @@ const cleanCanonicalPath = (url) => {
 		<!-- Destination Input -->
 		<div v-if="localModel?.type">
 			<div class="my-2 text-gray-500 text-xs tracking-wide mb-2">{{ trans("Destination") }}</div>
-
 			<PureInput v-if="localModel?.type == 'external'" v-model="localModel.href"
 				placeholder="https://www.anotherwebsite.com/page" v-bind="props_input" @update:modelValue="(e) => {
 					set(localModel, 'href', e)
 					emit('update:modelValue', localModel)
 				}" />
-
 			<SelectQuery v-if="localModel?.type == 'internal'" :object="true" fieldName="data" :value="localModel"
 				:closeOnSelect="true" :searchable="true" label="path" :canClear="true" :clearOnSearch="true" :onChange="(e) => {
 					set(localModel, 'url', e?.url)
 					set(localModel, 'href', e?.href)
 					set(localModel, 'canonical_url', e?.canonical_url)
 					set(localModel, 'id', e?.id)
-					set(localModel, 'workshop', e?.workshop)
 					emit('update:modelValue', localModel)
 				}" :urlRoute="getRoute()" v-bind="props_selectquery">
 				<template #singlelabel="{ value }">

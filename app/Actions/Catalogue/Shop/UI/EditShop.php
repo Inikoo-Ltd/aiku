@@ -292,6 +292,14 @@ class EditShop extends OrgAction
                             'value'       => $shop->price_rrp_ratio,
                             'min'         => 0
                         ],
+                        'follow_master_pricing' => [
+                            'label'         => 'Follow Master Pricing',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.follow_master_pricing', false),
+                            'information'   => 'Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio',
+                            'warningText'   => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio') .
+                                '. ' . __(':__amountProducts Products would be updated', ['__amountProducts' => $shop->products()->count()]) . '. ' . __('Are you sure you want to do this?'),
+                        ],
                         'product_price_currency_exchange'  => [
                             'type'        => 'input_number',
                             'bind'        => [
@@ -401,7 +409,7 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
-                                [
+                [
                     'label'  => __('Invoices footer'),
                     'icon'   => 'fa-light fa-shoe-prints',
                     'fields' => [
@@ -410,6 +418,19 @@ class EditShop extends OrgAction
                             'label' => __('Invoice footer'),
                             'full'  => true,
                             'value' => $shop->invoice_footer
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Bank Transfer Instructions for Email'),
+                    'icon'   => 'fa-light fa-envelope',
+                    'information' => __('This information will be appended to the order confirmation email when the customer selects bank transfer as the payment method'),
+                    'fields' => [
+                        'bank_transfer_instructions_for_email' => [
+                            'type'  => 'textEditor',
+                            'label' => __('Bank Transfer Instructions for Email'),
+                            'full'  => true,
+                            'value' => $shop->settings['bank_transfer_instructions_for_email'] ?? ''
                         ],
                     ],
                 ],

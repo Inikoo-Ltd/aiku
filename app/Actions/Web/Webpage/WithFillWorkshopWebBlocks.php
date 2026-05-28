@@ -14,14 +14,14 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockCollection;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartments;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilies;
-use App\Actions\Web\WebBlock\GetWebBlockBlog;
-use App\Actions\Web\WebBlock\GetWebBlockFamilyDescription;
-use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
-use App\Actions\Web\WebBlock\GetWebBlockProduct;
-use App\Actions\Web\WebBlock\GetWebBlockProducts;
-use App\Actions\Web\WebBlock\GetWebBlockRecommendationsCRB;
-use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
-use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilyDescription;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockSeeAlso;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsCRB;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks

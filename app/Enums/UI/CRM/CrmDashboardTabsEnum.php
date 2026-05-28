@@ -21,6 +21,7 @@ enum CrmDashboardTabsEnum: string
     case PROSPECTS = 'prospects';
     case COUNTRIES = 'countries';
     case CHATS = 'chats';
+    case TOP_CUSTOMERS = 'top_customers';
 
     public function blueprint(): array
     {
@@ -40,6 +41,10 @@ enum CrmDashboardTabsEnum: string
             CrmDashboardTabsEnum::CHATS => [
                 'title' => __('Chats'),
                 'icon'  => 'fal fa-comments',
+            ],
+            CrmDashboardTabsEnum::TOP_CUSTOMERS => [
+                'title' => __('Top Customers'),
+                'icon'  => 'fal fa-trophy',
             ],
         };
     }

@@ -472,6 +472,8 @@ trait WithLuigis
                 "availability"    => intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale),
                 "stock_qty"       => $product->available_quantity ?? 0,
                 "price"           => (float)$product->price ?? 0,
+                "price_rrp"       => (float)$product->rrp ?? 0,
+                "unit"            => $product->unit,
                 "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
                 "image_link"      => Arr::get($product->imageSources(200, 200), 'original'),
                 "product_code"    => $product->code,

@@ -6,7 +6,7 @@ NONE='\033[00m'
 DB=aiku_test
 DB_PORT=5432
 DB_COLLATE=C.UTF-8
-PHP=php8.3
+PHP=php8.4
 USER=aiku
 HOST=localhost
 

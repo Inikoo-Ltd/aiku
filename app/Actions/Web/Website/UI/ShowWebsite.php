@@ -206,6 +206,14 @@ class ShowWebsite extends OrgAction
             ];
         }
 
+        $routeParamWelcome         = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+            'website'      => $website->slug,
+            'webpage'      => 'welcome-'.$shop->slug,
+        ];
+
+
         return Inertia::render(
             'Org/Web/Website',
             [
@@ -255,6 +263,7 @@ class ShowWebsite extends OrgAction
 
                 'route_storefront'      => $route_storefront,
                 'route_landing_page'    => $route_landing_page,
+                'route_welcome'    => $route_landing_page,
                 'migrated'        => $website->migrated,
                 'luigi_data'      => [
                     'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),

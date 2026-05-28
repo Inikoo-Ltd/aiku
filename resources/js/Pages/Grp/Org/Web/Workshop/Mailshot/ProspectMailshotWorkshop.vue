@@ -89,21 +89,21 @@ const onSendPublish = async (data) => {
         });
 
         if (response && response.status === 200) {
-            if (response.data.has_unsubscribelink === false) {
-                visibleUnsubscribeWarningModal.value = true
+            // if (response.data.has_unsubscribelink === false) {
+            //     visibleUnsubscribeWarningModal.value = true
 
-                notify({
-                    title: "Warning",
-                    text: "Saved successfully, but no unsubscribe link was found.",
-                    type: "warning",
-                });
-            } else {
-                notify({
-                    title: "Success",
-                    text: "Saved successfully",
-                    type: "success",
-                });
-            }
+            //     notify({
+            //         title: "Warning",
+            //         text: "Saved successfully, but no unsubscribe link was found.",
+            //         type: "warning",
+            //     });
+            // } else {
+            notify({
+                title: "Success",
+                text: "Saved successfully",
+                type: "success",
+            });
+            // }
         }
     } catch (error) {
         console.log(error)
@@ -293,6 +293,7 @@ const handleTabUpdate = (tabSlug: string) =>
 const component = computed(() => {
     const components: Component = {
         templates: TableEmailTemplate,
+        other_store_templates: TableEmailTemplate,
         previous_mailshots: TablePreviousMailshots,
         other_store_mailshots: TableOtherStoreMailshots,
     };

@@ -3,9 +3,12 @@ import { ref, inject, onMounted, onBeforeUnmount, watch, computed } from "vue"
 import MessageArea from "@/Components/Chat/Customer/MessageArea.vue"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMessage, faXmark } from "@fortawesome/free-solid-svg-icons"
+import { faMessage, faXmark, faEllipsisVertical, faTimesCircle } from "@fortawesome/free-solid-svg-icons"
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
 import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 import OfflineChatForm from "../OfflineChatForm.vue"
@@ -108,8 +111,12 @@ if (isClient) {
 }
 
 const syncLoginState = () => {
-    const iris = JSON.parse(localStorage.getItem("iris") || "{}")
-    isLoggedIn.value = iris?.is_logged_in === true
+    try {
+        const iris = JSON.parse(window?.localStorage?.getItem("iris") ?? "{}")
+        isLoggedIn.value = iris?.is_logged_in === true
+    } catch {
+        isLoggedIn.value = false
+    }
 }
 
 const saveChatSession = (sessionData: ChatSessionData) => {
@@ -389,6 +396,47 @@ const chatOfflineInfo = ref<ChatOfflineInfo | null>(null)
 
 const isUser = ref<boolean>(false)
 const isCheckingStatus = ref(false)
+
+const isMenuOpen = ref(false)
+const menuRef = ref<HTMLElement | null>(null)
+const showCloseConfirm = ref(false)
+const isClosingSession = ref(false)
+
+const closeSession = async () => {
+    if (!chatSession.value?.ulid) return
+
+    isClosingSession.value = true
+    try {
+        const res = await axios.put(
+            `${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/close`
+        )
+
+        if (!res.data?.success) {
+            throw new Error(res.data?.message ?? "Failed to close chat session")
+        }
+
+        isRating.value = true
+        showCloseConfirm.value = false
+        isMenuOpen.value = false
+
+        notify({
+            title: trans("Success"),
+            text: res.data?.message ?? trans("Chat session closed successfully"),
+            type: "success",
+        })
+    } catch (e: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text:
+                e?.response?.data?.message ??
+                e?.message ??
+                trans("Failed to close chat session"),
+            type: "error",
+        })
+    } finally {
+        isClosingSession.value = false
+    }
+}
 const toggle = async () => {
     open.value = !open.value
     if (open.value) {
@@ -538,6 +586,14 @@ onMounted(() => {
 
     document.addEventListener("mousedown", (e) => {
         if (
+            isMenuOpen.value &&
+            menuRef.value &&
+            !menuRef.value.contains(e.target as Node)
+        ) {
+            isMenuOpen.value = false
+        }
+
+        if (
             open.value &&
             panelRef.value &&
             !panelRef.value.contains(e.target as Node) &&
@@ -647,6 +703,23 @@ if (isClient) {
                             </button>
                         </template>
 
+                        <div v-if="activeMenu === 'chat' && statusChat && chatSession?.ulid && !isRating"
+                            class="relative" ref="menuRef">
+                            <button @click.stop="isMenuOpen = !isMenuOpen"
+                                class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
+                                <FontAwesomeIcon :icon="faEllipsisVertical" class="w-4 h-4" />
+                            </button>
+
+                            <div v-if="isMenuOpen"
+                                class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
+                                <button @click="isMenuOpen = false; showCloseConfirm = true"
+                                    class="menu-item text-red-600">
+                                    <FontAwesomeIcon :icon="faTimesCircle" />
+                                    {{ trans("Close Chat Session") }}
+                                </button>
+                            </div>
+                        </div>
+
                         <button v-if="isMobile" @click="open = false"
                             class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
                             <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" />
@@ -685,10 +758,70 @@ if (isClient) {
                 </div>
             </div>
         </transition>
+
+        <TransitionRoot as="template" :show="showCloseConfirm">
+            <Dialog class="relative z-[80]" @close="showCloseConfirm = false">
+                <TransitionChild as="template" enter="ease-out duration-150" enter-from="opacity-0"
+                    enter-to="opacity-100" leave="ease-in duration-100" leave-from="opacity-100" leave-to="opacity-0">
+                    <div class="fixed inset-0 bg-gray-500/75 transition-opacity" />
+                </TransitionChild>
+
+                <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                        <TransitionChild as="template" enter="ease-out duration-150"
+                            enter-from="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                            enter-to="opacity-100 translate-y-0 sm:scale-100" leave="ease-in duration-100"
+                            leave-from="opacity-100 translate-y-0 sm:scale-100"
+                            leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+                            <DialogPanel
+                                class="relative transform rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md sm:p-6">
+                                <div class="sm:flex sm:items-start">
+                                    <div
+                                        class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
+                                        <FontAwesomeIcon :icon="faTimesCircle" class="text-red-600" />
+                                    </div>
+
+                                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                        <DialogTitle as="h3" class="text-base font-semibold">
+                                            {{ trans("Close Chat Session") }}
+                                        </DialogTitle>
+                                        <div class="mt-2">
+                                            <p class="text-sm text-gray-500">
+                                                {{ trans("Are you sure you want to close this chat session?") }}
+                                            </p>
+                                        </div>
+
+                                        <div class="mt-5 flex flex-row-reverse gap-2">
+                                            <Button type="red" :loading="isClosingSession"
+                                                :label="trans('Close Session')" @click="closeSession" />
+                                            <Button type="tertiary" :label="trans('Cancel')"
+                                                @click="showCloseConfirm = false" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </DialogPanel>
+                        </TransitionChild>
+                    </div>
+                </div>
+            </Dialog>
+        </TransitionRoot>
     </div>
 </template>
 
 <style scoped>
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    width: 100%;
+    font-size: 14px;
+}
+
+.menu-item:hover {
+    background: #f3f4f6;
+}
+
 .buttonPrimary {
     background-color: v-bind("layout?.app?.theme[4]") !important;
     color: v-bind("layout?.app?.theme[5]") !important;

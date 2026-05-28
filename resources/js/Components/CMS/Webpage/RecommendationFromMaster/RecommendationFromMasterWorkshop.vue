@@ -5,8 +5,8 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
-import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
+import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation } from 'swiper/modules'
@@ -74,7 +74,7 @@ const sendMessageToParent = (type: string, value: any) => {
         <div v-if="modelValue?.recommendation_settings.title" v-html="modelValue?.recommendation_settings.title">
         </div>
         <div v-else>
-          {{ ctrans("Recommendations") }}
+          {{ ctrans("Related Products") }}
         </div>
       </div>
     </div>

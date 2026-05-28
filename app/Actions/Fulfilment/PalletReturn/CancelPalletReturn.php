@@ -10,6 +10,7 @@ namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -34,6 +35,7 @@ use App\Actions\Fulfilment\PalletReturnItem\UndoPickingPalletFromReturn;
 use App\Models\Fulfilment\PalletStoredItem;
 use App\Models\Fulfilment\StoredItemMovement;
 use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
+use Illuminate\Validation\ValidationException;
 
 class CancelPalletReturn extends OrgAction
 {
@@ -42,6 +44,12 @@ class CancelPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
+        if (in_array($palletReturn->state, [PalletReturnStateEnum::CANCEL, PalletReturnStateEnum::DISPATCHED])) {
+            throw ValidationException::withMessages([
+                'message'   => __('Unable to cancel this pallet return. Invalid current state [:_state]', ['_state' => $palletReturn->state->value])
+            ]);
+        }
+
         $palletReturn = DB::transaction(function () use ($palletReturn, $modelData) {
 
             $modelData[PalletReturnStateEnum::CANCEL->value.'_at']    = now();
@@ -95,6 +103,9 @@ class CancelPalletReturn extends OrgAction
             FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
             FulfilmentCustomerHydratePallets::dispatch($palletReturn->fulfilmentCustomer);
             FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+            if ($palletReturn->customerSalesChannel) {
+                CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+            }
             SendPalletReturnNotification::run($palletReturn);
             return $palletReturn;
 

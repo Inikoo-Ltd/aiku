@@ -91,13 +91,14 @@ trait WithIrisProductsInWebpage
         $customer     = request()->user()?->customer;
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
+        $queryBuilder->where('webpages.state', 'live');
 
         $queryBuilder
             ->where(function ($query) {
                 $query
                     ->where('products.is_minion_variant', false)
                     ->where('products.is_for_sale', true)
-                    ->orWhere('products.is_variant_leader', true); // If is_variant_leader is true, ignore is_for_sale. Otherwise can't display the item at all
+                    ->orWhere('products.is_variant_leader', true); // If is_variant_leader is true, ignore is_for_sale. Otherwise, can't display the item at all
             });
 
         if ($stockMode == 'in_stock') {
@@ -166,6 +167,7 @@ trait WithIrisProductsInWebpage
             'products.variant_id',
             'products.top_seller',
             'products.web_images',
+            'products.is_on_demand',
             'webpages.url',
             'webpages.canonical_url',
             'webpages.website_id',

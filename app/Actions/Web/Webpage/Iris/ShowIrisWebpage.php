@@ -66,7 +66,10 @@ class ShowIrisWebpage
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
                 'sub_type'      => $webpage->sub_type,
-                'model_type'    => $webpage->model_type
+                'model_type'    => $webpage->model_type,
+                'product_page'  => $webpage->sub_type?->value === 'product' && $webpage->model_type === 'Product'
+                    ? ['department' => [ 'name' => $webpage->model?->department?->name]]
+                    : null,
             ],
             'webpage_img'                 => $webpageImg,
             'index_page'                  => $webpage->index_page,
@@ -211,16 +214,23 @@ class ShowIrisWebpage
                 'locale'
             ]);
 
+            $cacheRedirectInVarnish = '1';
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
                 $webpageData = $webpageData.'?'.$queryString;
+                $cacheRedirectInVarnish = '0';
             }
+
+            if (request()->url() == $webpageData) {
+                $cacheRedirectInVarnish = '0';
+            }
+
 
             return redirect()->to($webpageData, 301)
                 ->withHeaders([
                     'Cache-Control'             => 'public, s-maxage=300, max-age=0',
-                    'X-Aiku-Cacheable-Redirect' => '1',
+                    'X-Aiku-Cacheable-Redirect' => $cacheRedirectInVarnish,
                 ]);
         }
 

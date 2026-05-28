@@ -58,7 +58,7 @@ class BreakWebsiteCache extends OrgAction
             /** @var Crawl $crawl */
             $crawl = $website->crawls()->create(
                 [
-                    'depth'       => 10,
+                    'depth'       => 3,
                     'concurrency' => $concurrency,
                     'trigger'     => $crawlTrigger,
                     'type'        => CrawlTypeEnum::HTML
@@ -66,9 +66,6 @@ class BreakWebsiteCache extends OrgAction
             );
 
             $jobQueue = 'cache-warming';
-            if ($crawl->type == CrawlTypeEnum::INERTIA) {
-                $jobQueue = 'cache-warming-js';
-            }
             CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
         }
 

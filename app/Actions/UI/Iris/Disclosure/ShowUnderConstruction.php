@@ -21,9 +21,10 @@ class ShowUnderConstruction
 
     public function handle(ActionRequest $request): Response|RedirectResponse
     {
-        if ($request->input('website')->status) {
-            return Redirect::route('iris.home');
-        }
+        // Commented out due to AIKU-18G8 (Sentry)
+        // if ($request->input('website')->status) {
+        //     return Redirect::route('iris.home');
+        // }
 
         return Inertia::render('Disclosure/UnderConstruction', []);
     }

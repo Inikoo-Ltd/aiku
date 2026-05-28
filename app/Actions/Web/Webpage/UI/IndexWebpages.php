@@ -225,8 +225,8 @@ class IndexWebpages extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('webpages.code', $value)
-                    ->orWhereStartWith('webpages.url', $value);
+                $query->whereWith('webpages.code', $value)
+                    ->orWhereWith('webpages.url', $value);
             });
         });
 
@@ -370,7 +370,7 @@ class IndexWebpages extends OrgAction
             }
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'title', label: __('Title'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'url', label: __('Url'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'url', label: 'Url', canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);

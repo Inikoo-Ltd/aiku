@@ -15,7 +15,7 @@ import { get, set  } from "lodash-es"
 import axios from "axios"
 
 import { GridProducts } from "@/Components/Product"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 
 library.add(faHeart, faBoxOpen, faImage)
 
@@ -233,11 +233,11 @@ onMounted(() => {
         :resource="data"
         :basket-transactions="basketTransactions"
         :preserve-scroll="true"
-        class="mt-5 "
+         class="mt-5 "
 		:key="key"
     >
         <template #card="{ item }"> 
-            <div   class="offers">
+            <div class="offers h-full">
                 <ProductRenderEcom
                     :product="item"
                     :hasInBasket="item"

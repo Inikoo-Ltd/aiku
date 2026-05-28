@@ -60,6 +60,7 @@ class StoreProductToTiktok extends RetinaAction
             $leafCategoryId = $this->resolveSafeCategoryId($tiktokUser, $leafCategoryId);
 
             $categoryRules = $tiktokUser->getCategoryRules($leafCategoryId);
+
             $requiredCertifications = collect(Arr::get($categoryRules, 'data.product_certifications', []))
                 ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
                 ->map(fn ($cert) => [
@@ -69,13 +70,25 @@ class StoreProductToTiktok extends RetinaAction
                 ->values()
                 ->toArray();
 
+            $requiredPersonResponsible = [];
+
+            if (Arr::get($categoryRules, 'data.responsible_person.is_required')) {
+                $personResponsible = $tiktokUser->getPersonResponsible();
+                /** @var array $personId */
+                $personId = collect(Arr::get($personResponsible, 'data.responsible_persons', []))->first();
+                $requiredPersonResponsible = [
+                    'responsible_person_ids' => [Arr::get($personId, 'id')]
+                ];
+            }
+
             $categoryAttributes = $tiktokUser->getCategoryAttributes($leafCategoryId);
             $attributes = Arr::get($categoryAttributes, 'data.attributes', []);
 
             $productAttributes = collect($attributes)
-                ->filter(fn ($attribute) => Arr::get($attribute, 'is_requried') === true)
+                ->filter(fn ($attribute) => in_array(true, [Arr::get($attribute, 'is_requried'), Arr::get($attribute, 'is_required')]))
                 ->map(function ($attribute) {
-                    $firstValue = Arr::first(Arr::get($attribute, 'values', []));
+                    $attributeValues = Arr::get($attribute, 'values', []);
+                    $firstValue = collect($attributeValues)->firstWhere('name', 'No') ?? Arr::first($attributeValues);
 
                     if ($firstValue) {
                         return [
@@ -129,6 +142,7 @@ class StoreProductToTiktok extends RetinaAction
                     'unit' => "CENTIMETER",
                 ],
                 'product_certifications' => $requiredCertifications,
+                ...$requiredPersonResponsible,
                 'external_product_id' => (string) $portfolio->id,
                 'identifier_code' => [
                     'code' => (string) $product->barcode,

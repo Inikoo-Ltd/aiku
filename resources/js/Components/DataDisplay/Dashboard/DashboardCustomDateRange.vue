@@ -127,7 +127,9 @@ const setQuarterFilter = (quarter: number, year: number) => {
             },
             onFinish: () => {
                 isLoadingReload.value = false
-            }
+            },
+            preserveScroll: true,
+            only: ['dashboard', 'top_customers'],
         }
     );
 };
@@ -172,7 +174,9 @@ const onUpdateDatePicker = (newValue) => {
             },
             onFinish: () => {
                 isLoadingReload.value = false
-            }
+            },
+            preserveScroll: true,
+            only: ['dashboard', 'top_customers'],
         }
     );
 }
@@ -193,7 +197,9 @@ const resetDatePicker = () => {
             onFinish: () => {
                 isLoadingReload.value = false
                 dateFilterValue.value = [new Date(), new Date()]
-            }
+            },
+            preserveScroll: true,
+            only: ['dashboard', 'top_customers'],
         }
     );
 }

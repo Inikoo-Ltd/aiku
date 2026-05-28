@@ -31,18 +31,21 @@ class GetCatalogueShowcase
                     $this->buildDepartmentsStat($shop, $orgSlug, $shopSlug),
                     $this->buildSubDepartmentsStat($shop, $orgSlug, $shopSlug),
                     $this->buildFamiliesStat($shop, $orgSlug, $shopSlug),
+                    $this->buildCollectionsStat($shop, $orgSlug, $shopSlug),
                 ],
                 $stats,
-                [
-                    $this->buildCollectionsStat($shop, $orgSlug, $shopSlug),
-                    $this->buildStrayFamiliesStat($orgSlug, $shopSlug),
-                    $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
-                    $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug)
-                ]
             );
+
+            $stats['additionalStatBox'] = [
+                $this->buildStrayFamiliesStat($orgSlug, $shopSlug),
+                $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
+                $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug),
+                $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
+            ];
         }
 
         return [
+            'currency_code' => $shop->currency->code,
             'top_selling' => [
                 'family'     => [
                     'label' => __('Top Family'),
@@ -60,9 +63,7 @@ class GetCatalogueShowcase
                     'value' => $topProduct,
                 ],
             ],
-            'stats' => array_merge($stats, [
-                $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
-            ]),
+            'stats' => $stats,
         ];
     }
 

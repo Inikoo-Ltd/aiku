@@ -17,6 +17,7 @@ class OrganisationHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'ses-analytics';
 
     public function getJobUniqueId(?int $organisationId): string
     {
@@ -28,13 +29,13 @@ class OrganisationHydrateDispatchedEmails implements ShouldBeUnique
         if (!$organisationId) {
             return;
         }
-        $organisation = Organisation::find($organisationId);
+        $organisation = Organisation::on('aiku_no_sticky')->find($organisationId);
         if (!$organisation) {
             return;
         }
 
         $stats = [
-            'number_dispatched_emails' => DB::table('outboxes')->where('organisation_id', $organisation->id)
+            'number_dispatched_emails' => DB::connection('aiku_no_sticky')->table('outboxes')->where('organisation_id', $organisation->id)
                 ->leftJoin('outbox_stats', 'outboxes.id', '=', 'outbox_stats.outbox_id')
                 ->sum('number_dispatched_emails'),
         ];

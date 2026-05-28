@@ -1443,7 +1443,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
                     <!-- Field: Phone -->
                     <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full gap-x-2">
-                        <dt v-tooltip="trans('Cuatomer phone')" class="flex-none">
+                        <dt v-tooltip="trans('Customer phone')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
                         <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
@@ -1678,7 +1678,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
                                         :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
                                         :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
-                                        size="xs" type="primary" full />
+                                        size="xs" type="primary" full
+                                        @error="(e) => {
+                                            notify({
+                                                title: ctrans('Something went wrong'),
+                                                text: e.message || ctrans('Please try again later or contact administrator.'),
+                                                type: 'error',
+                                            })
+                                        }"
+                                    />
                                 </div>
                             </div>
                         </div>

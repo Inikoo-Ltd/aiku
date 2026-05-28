@@ -9,14 +9,14 @@ import DepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/DepartmentDe
 import SubDepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/SubDepartmentDescriptionIris.vue"
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
-import ListProductsIris from "@/Components/CMS/Webpage/Products/Dropshipping/ListProductsIris.vue"
-import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue"
-import ListProductsEcomIris from "@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"
-import ProductIris1 from '@/Components/CMS/Webpage/Product1/Dropshipping/ProductIris1.vue'
+import ListProductsIris from "@/Iris/Components/IrisBlocks/Products/ds/ListProductsIris.vue"
+import ProductRender from "@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue"
+import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"
+import ProductIris1 from '@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue'
 import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue'
-import LuigiTrends1Iris from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Iris.vue'
-import LuigiLastSeen1Iris from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Iris.vue'
-import LuigiItemAlternatives1Iris from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Iris.vue'
+import LuigiTrends1Iris from '@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue'
+import LuigiLastSeen1Iris from '@/Iris/Components/IrisBlocks/LuigiLastSeen1Iris.vue'
+import LuigiItemAlternatives1Iris from '@/Iris/Components/IrisBlocks/LuigiItemAlternatives1Iris.vue'
 import AnnouncementInformation1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation1.vue'
 import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo1.vue'
 import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
@@ -25,11 +25,11 @@ import AnnouncementPromo3 from '@/Components/Websites/Announcement/Templates/Pro
 import RenderDropshippingProduct from "@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"
 import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"
 
-import RecommendationCRB1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCRB1Iris.vue'
+import RecommendationCRB1Iris from '@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue'
 import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
 
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
-import Products2Render from "@/Components/CMS/Webpage/Products2/Products2Render.vue"
+import Products2Render from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"
 
 import Header2Iris from "@/Components/CMS/Website/Headers/Header2/Header2Iris.vue"
 import Header1Iris from "@/Components/CMS/Website/Headers/Header1/Header1Iris.vue"
@@ -45,10 +45,10 @@ import Topbar3Iris from "@/Components/CMS/Website/TopBars/Template/Topbar3/Topba
 
 import Menu1Workshop from "@/Components/CMS/Website/Menus/Menu1Workshop.vue"
 import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
-import SeeAlso1Iris from "@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue"
-import family1Iris from "@/Components/CMS/Webpage/Family-1/family1Iris.vue"
-import family2Iris from "@/Components/CMS/Webpage/Family2/family2Iris.vue"
-import family3Iris from "@/Components/CMS/Webpage/Family3/family3Iris.vue"
+import SeeAlso1Iris from "@/Iris/Components/IrisBlocks/SeeAlso1Iris.vue"
+import family1Iris from "@/Iris/Components/IrisBlocks/family1Iris.vue"
+import family2Iris from "@/Iris/Components/IrisBlocks/family2Iris.vue"
+import family3Iris from "@/Iris/Components/IrisBlocks/family3Iris.vue"
 import FamiliesIris1 from "@/Iris/Components/IrisBlocks/FamiliesIris1.vue"
 import FamiliesIris2 from "@/Iris/Components/IrisBlocks/FamiliesIris2.vue"
 import FamiliesIris3 from "@/Iris/Components/IrisBlocks/FamiliesIris3.vue"
@@ -56,45 +56,45 @@ import FamiliesIris3 from "@/Iris/Components/IrisBlocks/FamiliesIris3.vue"
 import SubDepartment1Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris.vue"
 import SubDepartment2Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris2.vue"
 
-import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue"
-import WowsbarBannerIris from "@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerIris.vue"
-import BentoGridIris from "@/Components/CMS/Webpage/BentoGrid/BentoGridIris.vue"
-import GalleryIris from "@/Components/CMS/Webpage/Gallery/GalleryIris.vue"
-import Cta1Iris from "@/Components/CMS/Webpage/Cta1/Cta1Iris.vue"
-import Cta2Iris from "@/Components/CMS/Webpage/Cta2/Cta2Iris.vue"
-import Cta3Iris from "@/Components/CMS/Webpage/Cta3/Cta3Iris.vue"
-import IframeIris from "@/Components/CMS/Webpage/Iframe/IframeIris.vue"
-import ImageIris from "@/Components/CMS/Webpage/Image/ImageIris.vue"
-import OverviewIris from "@/Components/CMS/Webpage/Overview/OverviewIris.vue"
-import Overview2Iris from "@/Components/CMS/Webpage/Overview2/Overview2Iris.vue"
-import ScriptIris from "@/Components/CMS/Webpage/Script/ScriptIris.vue"
-import TextContentIris from "@/Components/CMS/Webpage/Text/TextContentIris.vue"
-import CtaAurora1Iris from "@/Components/CMS/Webpage/CtaAurora1/CtaAurora1Iris.vue"
-import TextColumnIris from "@/Components/CMS/Webpage/TextColumn/TextColumnIris.vue"
-import PricingIris from "@/Components/CMS/Webpage/Pricing/PricingIris.vue"
-import ButtonIris from "@/Components/CMS/Webpage/Button/ButtonIris.vue"
-import ColumnIris from "@/Components/CMS/Webpage/Column/ColumnIris.vue"
-import Column3Iris from "@/Components/CMS/Webpage/Column3/Column3Iris.vue"
-import Column4Iris from "@/Components/CMS/Webpage/Column4/Column4Iris.vue"
-import DisclosureIris from "@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue"
-import TimelineIris from "@/Components/CMS/Webpage/Timeline/TimelineIris.vue"
+import CtaImageBackroundIris from "@/Iris/Components/IrisBlocks/CtaImageBackroundIris.vue"
+import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"
+import BentoGridIris from "@/Iris/Components/IrisBlocks/BentoGridIris.vue"
+import GalleryIris from "@/Iris/Components/IrisBlocks/GalleryIris.vue"
+import Cta1Iris from "@/Iris/Components/IrisBlocks/Cta1Iris.vue"
+import Cta2Iris from "@/Iris/Components/IrisBlocks/Cta2Iris.vue"
+import Cta3Iris from "@/Iris/Components/IrisBlocks/Cta3Iris.vue"
+import IframeIris from "@/Iris/Components/IrisBlocks/IframeIris.vue"
+import ImageIris from "@/Iris/Components/IrisBlocks/ImageIris.vue"
+import OverviewIris from "@/Iris/Components/IrisBlocks/OverviewIris.vue"
+import Overview2Iris from "@/Iris/Components/IrisBlocks/Overview2Iris.vue"
+import ScriptIris from "@/Iris/Components/IrisBlocks/ScriptIris.vue"
+import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
+import CtaAurora1Iris from "@/Iris/Components/IrisBlocks/CtaAurora1Iris.vue"
+import TextColumnIris from "@/Iris/Components/IrisBlocks/TextColumnIris.vue"
+import PricingIris from "@/Iris/Components/IrisBlocks/PricingIris.vue"
+import ButtonIris from "@/Iris/Components/IrisBlocks/ButtonIris.vue"
+import ColumnIris from "@/Iris/Components/IrisBlocks/ColumnIris.vue"
+import Column3Iris from "@/Iris/Components/IrisBlocks/Column3Iris.vue"
+import Column4Iris from "@/Iris/Components/IrisBlocks/Column4Iris.vue"
+import DisclosureIris from "@/Iris/Components/IrisBlocks/DisclosureIris.vue"
+import TimelineIris from "@/Iris/Components/IrisBlocks/TimelineIris.vue"
 
-import Carousel1Iris from "@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue"
-import CarouselCtaIris from "@/Components/CMS/Webpage/CarouselCta/CarouselCtaIris.vue"
-import CarouselImageBackgroundIris from "@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundIris.vue"
-import CtaVideo1Iris from "@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue"
-import Video1Iris from "@/Components/CMS/Webpage/Video/Video1Iris.vue"
-import UserSubscribeIris from "@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue"
-import Cta4Iris from "@/Components/CMS/Webpage/Cta4/Cta4Iris.vue"
-import BlogIris from "@/Components/CMS/Webpage/Blog/BlogIris.vue"
-import Step2Iris from "@/Components/CMS/Webpage/Step2/Step2Iris.vue"
-import Step1Iris from "@/Components/CMS/Webpage/Step1/Step1Iris.vue"
-import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
+import Carousel1Iris from "@/Iris/Components/IrisBlocks/Carousel1Iris.vue"
+import CarouselCtaIris from "@/Iris/Components/IrisBlocks/CarouselCtaIris.vue"
+import CarouselImageBackgroundIris from "@/Iris/Components/IrisBlocks/CarouselImageBackgroundIris.vue"
+import CtaVideo1Iris from "@/Iris/Components/IrisBlocks/CtaVideo1Iris.vue"
+import Video1Iris from "@/Iris/Components/IrisBlocks/Video1Iris.vue"
+import UserSubscribeIris from "@/Iris/Components/IrisBlocks/UserSubscribeIris.vue"
+import Cta4Iris from "@/Iris/Components/IrisBlocks/Cta4Iris.vue"
+import BlogIris from "@/Iris/Components/IrisBlocks/BlogIris.vue"
+import Step2Iris from "@/Iris/Components/IrisBlocks/Step2Iris.vue"
+import Step1Iris from "@/Iris/Components/IrisBlocks/Step1Iris.vue"
+import Slider1Iris from "@/Iris/Components/IrisBlocks/Slider1Iris.vue"
 import CollectionDescriptionIris from "@/Iris/Components/IrisBlocks/CollectionDescriptionIris.vue"
-import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
-import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
+import ProductRenderEcom3 from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
+import Family2ExtraDescriptionIris from '@/Iris/Components/IrisBlocks/Family2ExtraDescriptionIris.vue'
 import Families1Overview from '@/Iris/Components/IrisBlocks/FamiliesOverviewIris1.vue'
-import RecommendationFromMasterIris from '@/Components/CMS/Webpage/RecommendationFromMaster/RecommendationFromMasterIris.vue';
+import RecommendationFromMasterIris from '@/Iris/Components/IrisBlocks/RecommendationFromMasterIris.vue';
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({

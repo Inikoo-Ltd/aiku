@@ -121,6 +121,7 @@ export const initialiseApp = () => {
                 ...usePage().props.auth.user,
                 last_active: new Date(),
                 action: 'navigate',
+                avatar_thumbnail: usePage().props.avatar_thumbnail,
                 current_page: {
                     route_name: layout.currentRoute,
                     route_params: layout.currentParams,
@@ -217,6 +218,11 @@ export const initialiseApp = () => {
 
         if (usePage().props.crm_waiting_count !== undefined) {
             layout.crm_waiting_count = usePage().props.crm_waiting_count as number
+        }
+
+        if (usePage().props.crm_return_count !== undefined) {
+            layout.crm_return_count = usePage().props.crm_return_count as number
+            console.log(layout);
         }
 
         layout.app.name = "Aiku"

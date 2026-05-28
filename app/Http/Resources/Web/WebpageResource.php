@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Traits\WithLuigiAvailabilityChecklist;
 use App\Actions\Web\Webpage\WithGetWebpageWebBlocks;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\HasSelfCall;
@@ -23,6 +24,7 @@ class WebpageResource extends JsonResource
 {
     use HasSelfCall;
     use WithGetWebpageWebBlocks;
+    use WithLuigiAvailabilityChecklist;
 
     public function toArray($request): array
     {
@@ -32,7 +34,8 @@ class WebpageResource extends JsonResource
         $webPageLayout               = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
         $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
 
-        $productData = null;
+        $productData           = null;
+        $availabilityChecklist = null;
         if ($webpage->model_type == 'Product') {
             /** @var Product $product */
             $product     = $webpage->model;
@@ -44,6 +47,8 @@ class WebpageResource extends JsonResource
                 'name'           => $product->name,
                 'luigi_identity' => $product->getLuigiIdentity(),
             ];
+
+            $availabilityChecklist = $this->getLuigiAvailabilityChecklist($product);
         } else {
             $modelId = $webpage->model_id;
         }
@@ -80,6 +85,7 @@ class WebpageResource extends JsonResource
                 'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
                 'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
                 'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
+                'availability_checklist' => $availabilityChecklist,
             ],
 
             'add_web_block_route'                    => [

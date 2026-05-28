@@ -14,17 +14,16 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCollection;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartments;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilies;
-use App\Actions\Web\WebBlock\GetWebBlockBlog;
-use App\Actions\Web\WebBlock\GetWebBlockFamilyDescription;
-use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
-use App\Actions\Web\WebBlock\GetWebBlockProduct;
-use App\Actions\Web\WebBlock\GetWebBlockProducts;
-use App\Actions\Web\WebBlock\GetWebBlockRecommendationsCRB;
-use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
-use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilyDescription;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSeeAlso;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsCRB;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLuigiRecommendations;
+use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
+use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
-
 
 trait WithFillIrisWebBlocks
 {
@@ -47,22 +46,22 @@ trait WithFillIrisWebBlocks
         } elseif (str_contains($webBlockType, 'products-')) {
             $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock);
         } elseif ($webBlockType == 'family-1') {
-            $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['family-2', 'family-2-extra-description', 'family-3', 'family-3-extra-description'])) {
-            $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
         } elseif ($webBlockType == 'see-also-1') {
-            $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockSeeAlso::run($webpage, $webBlock);
         } elseif ($webBlockType == 'blog') {
-            $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockBlog::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
-            $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-from-master') {
-            $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
-            $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'images' && app()->environment('local')) {
+            $parsedWebBlocks[$key] = GetIrisWebBlockLuigiRecommendations::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'images') {
             $parsedWebBlocks[$key] = SanitiseImagesWebBlock::run($webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;

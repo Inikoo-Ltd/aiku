@@ -101,12 +101,35 @@ const shouldShowCancelScheduleButton = computed(() => {
 
 // Schedule datetime picker state
 const showSchedulePicker = ref(false);
-const scheduleDateTime = ref(new Date());
-const minDateTime = ref(new Date());
+const scheduleDateTime = ref<string>(new Date().toISOString());
+const minDateTime = ref<string>(new Date().toISOString());
 const schedulePicker = ref();
+const nowUtc = ref(new Date());
 
 const inProgress = ref(false);
 const scheduleInProgress = ref(false);
+
+const minTime = computed(() => {
+    const selected = new Date(scheduleDateTime.value);
+    const now = nowUtc.value;
+
+    const sameUTCDate =
+        selected.getUTCFullYear() === now.getUTCFullYear() &&
+        selected.getUTCMonth() === now.getUTCMonth() &&
+        selected.getUTCDate() === now.getUTCDate();
+
+    if (sameUTCDate) {
+        // Today (UTC) → block past minutes/seconds
+        return {
+            hours: now.getUTCHours(),
+            minutes: now.getUTCMinutes(),
+            seconds: now.getUTCSeconds(),
+        };
+    }
+
+    // Future date → no time restriction
+    return { hours: 0, minutes: 0, seconds: 0 };
+});
 
 const handleSendNow = async () => {
     // Prevent multiple simultaneous requests
@@ -168,6 +191,10 @@ const handleSchedule = async (event: Event) => {
         return;
     }
 
+    // Refresh both "now" and min-date together
+    nowUtc.value = new Date();
+    minDateTime.value = nowUtc.value.toISOString();
+
     // Show the datetime picker using the ref
     if (schedulePicker.value) {
         schedulePicker.value.show(event);
@@ -180,7 +207,7 @@ const confirmSchedule = async () => {
     if (!props.scheduleMailshotRoute) return;
 
     scheduleInProgress.value = true;
-    const formattedDateTime = useFormatTime(scheduleDateTime.value, { formatTime: 'yyyy-MM-dd HH:mm:ss' })
+    const formattedDateTime = scheduleDateTime.value.slice(0, 19).replace('T', ' ')
 
     showSchedulePicker.value = false;
     schedulePicker.value?.hide();
@@ -193,7 +220,7 @@ const confirmSchedule = async () => {
                 notify({
                     type: 'success',
                     title: 'Success',
-                    text: `Mailshot scheduled for ${formattedDateTime}`,
+                    text: `Mailshot scheduled for ${formattedDateTime} UTC`,
                 })
                 showSchedulePicker.value = false;
                 schedulePicker.value?.hide();
@@ -229,7 +256,7 @@ const cancelSchedule = () => {
         schedulePicker.value.hide();
     }
     showSchedulePicker.value = false;
-    scheduleDateTime.value = new Date();
+    scheduleDateTime.value = new Date().toISOString();
 };
 
 const formatNumber = (num: number | null | undefined) => {
@@ -636,10 +663,10 @@ watch(
             <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
                     class="text-red-600">(Europe/London)</span> </h3>
             <div class="mb-4 flex justify-center">
-                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :text-input="true" :inline="true"
-                    :enable-time-picker="true" :is-24="true" :minutes-increment="1" :seconds-increment="1"
-                    :auto-apply="true" :open-on-focus="true" :time-picker-inline="true" class="w-full" placeholder=""
-                    :teleport="true" />
+                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="minTime" :text-input="true"
+                    :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
+                    :seconds-increment="1" model-type="iso" :auto-apply="true" :open-on-focus="true"
+                    :time-picker-inline="true" class="w-full" placeholder="" :teleport="true" timezone="UTC" />
             </div>
             <div class="flex gap-2 justify-end w-full">
                 <Button :label="trans('Cancel')" @click="cancelSchedule"

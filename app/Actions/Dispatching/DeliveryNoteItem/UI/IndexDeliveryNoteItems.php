@@ -62,6 +62,9 @@ class IndexDeliveryNoteItems extends OrgAction
             }
         }
 
+        $query->with('orgStock.tradeUnits');
+
+
         return $query->defaultSort('delivery_note_items.id')
             ->select([
                 'delivery_note_items.id',

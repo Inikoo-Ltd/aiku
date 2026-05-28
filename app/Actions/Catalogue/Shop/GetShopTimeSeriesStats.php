@@ -27,6 +27,7 @@ class GetShopTimeSeriesStats
                 'group.currency'            => fn ($q) => $q->select(['id', 'code']),
                 'timeSeries'                => fn ($q) => $q->select(['id', 'shop_id', 'frequency'])
                     ->where('frequency', TimeSeriesFrequencyEnum::DAILY->value),
+                'website'                   => fn ($q) => $q->select(['id', 'shop_id', 'domain']),
             ]);
 
         if ($filterType) {
@@ -114,6 +115,7 @@ class GetShopTimeSeriesStats
                 'organisation_currency_code'  => $shop->organisation?->currency?->code ?? 'GBP',
                 'group_currency_code'         => $shop->group?->currency?->code ?? 'GBP',
                 'parent_type'                 => $parentType,
+                'website_url'                 => $shop->website?->domain ? 'https://'.$shop->website->domain : null,
             ]);
         }
 

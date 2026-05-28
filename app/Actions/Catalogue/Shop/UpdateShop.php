@@ -52,6 +52,8 @@ class UpdateShop extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Shop
     {
+        $reHydrateChildPrices = false;
+
         if (Arr::has($modelData, 'invoice_serial_references')) {
             $shop = $this->updateInvoiceSerialReferences($shop, Arr::pull($modelData, 'invoice_serial_references'));
         }
@@ -109,6 +111,11 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.related_product_follow_master', Arr::pull($modelData, 'related_product_follow_master'));
         }
 
+        if (Arr::has($modelData, 'follow_master_pricing')) {
+            $reHydrateChildPrices = true;
+            data_set($modelData, 'settings.catalog.follow_master_pricing', Arr::pull($modelData, 'follow_master_pricing'));
+        }
+
         // Catalogue Indexing etc
 
         if (Arr::has($modelData, 'family_indexing_follow_master')) {
@@ -145,6 +152,7 @@ class UpdateShop extends OrgAction
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'reviews' => 'settings.reviews',
+                    'bank_transfer_instructions_for_email' => 'settings.bank_transfer_instructions_for_email',
                     default => $key
                 },
                 $value
@@ -170,6 +178,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'reviews');
+        data_forget($modelData, 'bank_transfer_instructions_for_email');
 
         if (Arr::exists($modelData, 'enable_chat')) {
             $enableChat = Arr::pull($modelData, 'enable_chat');
@@ -272,6 +281,11 @@ class UpdateShop extends OrgAction
             if ($oldMasterShop) {
                 MasterShopHydrateShops::dispatch($oldMasterShop)->delay($this->hydratorsDelay);
             }
+        }
+
+        if ($reHydrateChildPrices) {
+            // TODO MasterLevel Price RRP (Raul)
+            // TODO Rehydrate Child Prices according to their master counterpart prices & rrp here
         }
 
         return $shop;
@@ -410,6 +424,8 @@ class UpdateShop extends OrgAction
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
             'reviews'                                                 => ['sometimes', 'nullable', 'array'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
+            'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'follow_master_pricing'                                   => ['sometimes', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

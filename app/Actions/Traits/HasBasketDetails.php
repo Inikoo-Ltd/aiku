@@ -14,6 +14,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
 
@@ -30,7 +31,7 @@ trait HasBasketDetails
 
     protected function getMissedOffers(Order $order): array
     {
-        $missedOffers = [];
+        $missedOffers   = [];
         $shopOffersData = $order->shop->offers_data;
 
         if (Arr::get($shopOffersData, 'fob.active')) {
@@ -40,7 +41,7 @@ trait HasBasketDetails
                     OrderStateEnum::CREATING->value,
                 ])->count();
 
-            $amountNeededToGetFob = (float) Arr::get($shopOffersData, 'fob.min_amount') - $order->gross_amount;
+            $amountNeededToGetFob = (float)Arr::get($shopOffersData, 'fob.min_amount') - $order->gross_amount;
 
             if ($numberOrders === 0 && $order->gross_amount < Arr::get($shopOffersData, 'fob.min_amount')) {
                 $label = __(Arr::get($shopOffersData, 'fob.missined_offer_label'), [
@@ -66,6 +67,20 @@ trait HasBasketDetails
 
         $offersData = $order->shop->offers_data;
 
+        $eligible     = false;
+        $lastInvoiced = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
+            return $order->customer->last_invoiced_at;
+        });
+
+        $daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
+        if ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30)) {
+            $eligible = true;
+        }
+
+        if (!$eligible) {
+            return $grGifts;
+        }
+
         $grGiftsData = Arr::get($offersData, 'gr.gifts_products');
         if ($grGiftsData) {
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
@@ -75,10 +90,10 @@ trait HasBasketDetails
                     $grGiftsData[$key]['web_images_main'] = $product->web_images['main'];
                 }
 
-                $grGiftsData[$key]['id'] = $gift['id'];
+                $grGiftsData[$key]['id']   = $gift['id'];
                 $grGiftsData[$key]['name'] = $gift['name'];
 
-                if ($selectedGrGift) {
+                if ($selectedGrGift !== null) {
                     $grGiftsData[$key]['selected'] = $gift['id'] == $selectedGrGift;
                 } else {
                     $grGiftsData[$key]['selected'] = Arr::get($gift, 'default', false);
@@ -86,11 +101,11 @@ trait HasBasketDetails
             }
 
             $grGifts = [
-                'status'      => true,
-                'is_eligible' => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
-                'meter'       => [$order->gross_amount, Arr::get($offersData, 'gr.gifts_min_amount', 0)],
-                'gifts'       => $grGiftsData,
-                'is_gift_opted_out'     => (bool) Arr::get($order->customer->settings, 'is_gift_opted_out', false),
+                'status'                => true,
+                'is_eligible'           => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
+                'meter'                 => [$order->gross_amount, Arr::get($offersData, 'gr.gifts_min_amount', 0)],
+                'gifts'                 => $grGiftsData,
+                'is_gift_opted_out'     => (bool)Arr::get($order->customer->settings, 'is_gift_opted_out', false),
                 'route_customer_update' => [
                     'name'       => 'retina.models.customer.update',
                     'parameters' => ['customer' => $order->customer->id],

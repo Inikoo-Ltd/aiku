@@ -235,7 +235,7 @@ class UpdateWebsite extends OrgAction
                 'sometimes',
                 'string',
                 'nullable',
-                'regex:/^\d{6}-\d{6}$/'
+                'regex:/^\d{6}-\d{6,8}$/'
             ],
             'luigisbox_script_lbx'     => [
                 'sometimes',
@@ -246,7 +246,7 @@ class UpdateWebsite extends OrgAction
                 'sometimes',
                 'nullable',
                 'string',
-                'regex:/^LBX-\d{6}$/',
+                'regex:/^LBX-\d{6,8}$/',
             ],
             'luigisbox_private_key'    => ['sometimes', 'nullable', 'string'],
             'last_reindex_at'          => ['sometimes', 'nullable', 'string'],

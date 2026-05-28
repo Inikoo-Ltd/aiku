@@ -73,9 +73,9 @@ class ShowOrganisationDashboard extends OrgAction
                         'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings)
                     ],
                     'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
+                        'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'       => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
                     ],
                     'blocks'    => [
                         [

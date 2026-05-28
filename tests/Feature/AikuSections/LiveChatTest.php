@@ -417,7 +417,7 @@ test('authenticated agent can assign chat session to self', function () {
     ]);
 
     $response = app(AssignChatToAgent::class)
-        ->assignToSelf('aw', $chatSession->ulid);
+        ->assignToSelf($this->organisation, $chatSession->ulid);
 
     expect($response)->toBeInstanceOf(JsonResponse::class);
 

@@ -53,14 +53,14 @@ class RecordWebsiteHit
 
         if ($this->shouldTrackVisitor($request)) {
             ProcessWebsiteVisitorTracking::dispatch(
-                $request->session()->getId(),
-                $request->input('website'),
-                $request->user('retina'),
-                $request->userAgent(),
-                request()->ip(),
-                request()->header('referer'),
-                $request->input('original_referer'),
-                $geoLocation
+                sessionId:$request->session()->getId(),
+                website:$request->input('website'),
+                webUser:$request->user('retina'),
+                userAgent:$request->userAgent(),
+                ip:request()->ip(),
+                currentUrl:request()->header('referer'),
+                referrer:$request->input('original_referer'),
+                geoLocation:$geoLocation
             )->delay(now()->addSeconds(5));
         }
 
@@ -95,6 +95,11 @@ class RecordWebsiteHit
         if (!$country || $country === 'XX' || $country === 'T1') {
             return false;
         }
+
+        if ($request->header('referer') == null) {
+            return false;
+        }
+
 
         return true;
     }

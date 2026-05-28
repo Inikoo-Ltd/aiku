@@ -66,7 +66,6 @@ use Illuminate\Routing\Middleware\ValidateSignature;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Inspector\Laravel\Middleware\InspectorOctaneMiddleware;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
@@ -83,7 +82,7 @@ class Kernel extends HttpKernel
         ValidatePostSize::class,
         TrimStrings::class,
         ConvertEmptyStringsToNull::class,
-        //AddFrameOptionsHeader::class, // add individually to retina, iris ..etc except pupil
+        //AddFrameOptionsHeader::class, // add individually to retina, iris. etc. except pupil
         AddSentryBrowserProfilingHeader::class,
         AcceptClientHintsMiddleware::class,
         NewRelicTransactionMiddleware::class,
@@ -110,7 +109,7 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            InspectorOctaneMiddleware::class,
+            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
 
@@ -120,7 +119,7 @@ class Kernel extends HttpKernel
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
             ApiBindGroupInstance::class,
-            InspectorOctaneMiddleware::class,
+            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
 
@@ -158,10 +157,10 @@ class Kernel extends HttpKernel
             LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class,
+            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
-        'two_fa'    => [
+        'two_fa'      => [
             \App\Http\Middleware\EnforcesTwoFAMiddleware::class,
             \App\Http\Middleware\TwoFAMiddleware::class,
             AddFrameOptionsHeader::class
@@ -203,7 +202,7 @@ class Kernel extends HttpKernel
             SetWebsiteLocale::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class,
+            //InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
             AddFrameOptionsHeader::class
         ],
@@ -221,7 +220,7 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class,
+            //InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
             AddFrameOptionsHeader::class
         ],
@@ -249,7 +248,7 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandleCorneaInertiaRequests::class,
             //AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class,
+            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
 

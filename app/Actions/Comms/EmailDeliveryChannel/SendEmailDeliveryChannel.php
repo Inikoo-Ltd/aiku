@@ -21,6 +21,7 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
@@ -68,7 +69,7 @@ class SendEmailDeliveryChannel
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
         ];
 
-        if ($model instanceof Mailshot) {
+        if ($model instanceof Mailshot && $model->type !== MailshotTypeEnum::INVITE) {
             $emailHtmlBody = EnsureEmailHasUnsubscribeLink::run($emailHtmlBody);
         } elseif ($model instanceof EmailBulkRun && in_array($model->outbox->code, $emailBulkRunHasUnsubscribeLink)) {
             $emailHtmlBody = EnsureEmailHasUnsubscribeLink::run($emailHtmlBody);

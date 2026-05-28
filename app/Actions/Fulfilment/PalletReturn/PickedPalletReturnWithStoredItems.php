@@ -10,6 +10,7 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovementFromPicking;
@@ -69,6 +70,10 @@ class PickedPalletReturnWithStoredItems extends OrgAction
             WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
             FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
             FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+
+            if ($palletReturn->customerSalesChannel) {
+                CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+            }
 
             SendPalletReturnNotification::run($palletReturn);
 

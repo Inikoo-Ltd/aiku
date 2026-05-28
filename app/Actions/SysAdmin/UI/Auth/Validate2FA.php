@@ -10,14 +10,13 @@
 namespace App\Actions\SysAdmin\UI\Auth;
 
 use Illuminate\Support\Arr;
-use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use PragmaRX\Google2FAQRCode\Google2FA;
 use PragmaRX\Google2FALaravel\Support\Authenticator;
-use Inertia\Inertia;
 
 class Validate2FA
 {
@@ -28,7 +27,7 @@ class Validate2FA
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(ActionRequest $request): RedirectResponse|Response
+    public function handle(ActionRequest $request): RedirectResponse
     {
         $authenticator = new Authenticator(request());
         $google2fa = new Google2FA();
@@ -44,7 +43,9 @@ class Validate2FA
 
         $authenticator->login();
 
-        return Inertia::location(route('grp.dashboard.show'));
+        Session::put('reloadLayout', '1');
+
+        return redirect()->route('grp.dashboard.show');
     }
 
     public function rules(): array
@@ -57,7 +58,7 @@ class Validate2FA
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function asController(ActionRequest $request): RedirectResponse|Response
+    public function asController(ActionRequest $request): RedirectResponse
     {
         return $this->handle($request);
     }

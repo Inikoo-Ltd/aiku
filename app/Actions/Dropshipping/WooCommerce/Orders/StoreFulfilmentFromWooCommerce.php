@@ -9,7 +9,7 @@
 namespace App\Actions\Dropshipping\WooCommerce\Orders;
 
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
-use App\Actions\Fulfilment\PalletReturn\SubmitPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedWooCommerceAddress;
@@ -64,7 +64,7 @@ class StoreFulfilmentFromWooCommerce extends OrgAction
             ]
         );
 
-        SubmitPalletReturn::run($palletReturn, []);
+        SubmitAndConfirmPalletReturn::run($palletReturn, []);
     }
 
 

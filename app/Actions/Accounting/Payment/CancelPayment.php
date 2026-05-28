@@ -24,6 +24,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePayments;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\SysAdmin\Organisation;
@@ -46,6 +47,16 @@ class CancelPayment extends OrgAction
         $payment->update([
             'state' => PaymentStateEnum::CANCELLED,
         ]);
+
+        $originalPayment = $payment->originalPayment;
+
+        if ($payment->type == PaymentTypeEnum::REFUND && $originalPayment) {
+            // If refund is cancelled. Original payment total refund will be updated
+            $totalRefund = abs($originalPayment->refunds()->whereNot('state', PaymentStateEnum::CANCELLED->value)->sum('amount'));
+            $originalPayment?->update([
+                'total_refund' => $totalRefund,
+            ]);
+        };
 
         if ($payment->paymentAccount->type === PaymentAccountTypeEnum::ACCOUNT) {
             // if cancel refund, should still return minus no? so this is correct. No need to modify amount as it is already negative when it is a refund

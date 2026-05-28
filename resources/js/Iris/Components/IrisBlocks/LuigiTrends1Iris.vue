@@ -1,0 +1,329 @@
+<script setup lang="ts">
+import { ref, computed, inject, onMounted, nextTick } from "vue"
+import { getStyles } from "@/Composables/styles"
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import axios from 'axios'
+
+// Swiper
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import 'swiper/css'
+import 'swiper/css/navigation'
+import 'swiper/css/pagination'
+import Cookies from 'js-cookie';
+
+import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { ProductHit } from "@/types/Luigi/LuigiTypes"
+import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
+import RecommendationSlideIrisWithRealData from "@/Components/Iris/Recommendations/RecommendationSlideIrisWithRealData.vue"
+import { usePage } from "@inertiajs/vue3"
+import { ctrans } from "@/Composables/useTrans"
+library.add(faChevronLeft, faChevronRight)
+
+const props = defineProps<{
+    fieldValue: {}
+    webpageData?: any
+    blockData?: Object,
+    screenType: 'mobile' | 'tablet' | 'desktop'
+    indexBlock:number
+}>()
+
+// const subType = computed(() => usePage().props.webpage_data?.sub_type) 
+
+const dataWebpage = usePage().props.webpage_data as {
+    seo_data: []
+    title: string
+    description: string
+    canonical_url: string
+    type: string
+    sub_type: string  // 'department' || 'sub_department' || 'family' || 'product' || 'content'
+    model_type: string  // 'ProductCategory'
+    product_page?: {
+        department?: {
+            name: string
+        }
+    }
+}
+
+const slidesPerView = computed(() => {
+    const perRow = props.fieldValue?.settings?.per_row ?? {}
+    return {
+        desktop: perRow.desktop ?? 5,
+        tablet: perRow.tablet ?? 4,
+        mobile: perRow.mobile ?? 2,
+    }[props.screenType] ?? 5
+})
+
+const layout = inject('layout', retinaLayoutStructure)
+
+const listProductsFromLuigi = ref<ProductHit[]>([])
+const isLoadingFetch = ref(false)
+
+const listLoadingProducts = ref<Record<string, string>>({})
+const isProductLoading = (productId: string) => {
+    return listLoadingProducts.value?.[`recommender-${productId}`] === 'loading'
+}
+
+const isFetched = ref(false)
+
+// if subType is 'department'
+const luigiTrendsDepartment = async (departmentName?: string) => {
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+
+    const response = await axios.post(
+        `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+        [
+            {
+                size: 25,
+                widget_id: departmentName ? "product_recommendation" : "department_recommendation",
+                auth_user_id: userId,
+                recommendation_context: [{
+                    attribute: "department",
+                    values: [departmentName ?? usePage().props.webpage_data?.title],
+                    operator: "or"
+                }],
+                model: "department"
+            }
+        ],
+        {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }
+    )
+
+    return response
+}
+
+// If subType is 'sub_department'
+const luigiTrendsSubDepartment = async () => {
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+
+    const response = await axios.post(
+        `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+        [
+            {
+                size: 25,
+                widget_id: "sub_department_recommendation",
+                auth_user_id: userId,
+                recommendation_context: [{
+                    attribute: "sub_department",
+                    values: [usePage().props.webpage_data?.title],
+                    operator: "or"
+                }],
+                model: "department"  // this is correct, 'department'
+            }
+        ],
+        {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }
+    )
+
+    return response
+}
+
+// If subType is 'family'
+const luigiTrendsCategory = async () => {
+    const urlWithoutDomain = new URL(dataWebpage?.canonical_url ?? '').pathname
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+    
+    const response = await axios.post(
+        `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+        [
+            {
+                size: 25,
+                widget_id: "category_recommendation",
+                auth_user_id: userId,
+                identities: [urlWithoutDomain],
+                model: "category"
+            }
+        ],
+        {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }
+    )
+
+    return response
+}
+
+
+// global trends
+const luigiTrendsGlobal = async () => {
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+
+    const response = await axios.post(
+        `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+        [
+            {
+                "blacklisted_item_ids": [],
+                "item_ids": [],
+                "recommendation_type": "trends",
+                "recommender_client_identifier": "trends",
+                "size": 25,
+                "user_id": userId ?? null,
+                "category": undefined,
+                "brand": undefined,
+                "product_id": undefined,
+                "recommendation_context": {},
+                // "hit_fields": ["url", "title"]
+            }
+        ],
+        {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }
+    )
+
+    return response
+}
+
+const fetchRecommenders = async () => {
+    try {
+        isLoadingFetch.value = true
+
+        const subType = dataWebpage?.sub_type
+        const response = await (
+            subType === 'department' ? luigiTrendsDepartment() :
+            subType === 'product' ? luigiTrendsDepartment(dataWebpage?.product_page?.department?.name) :
+            subType === 'sub_department' ? luigiTrendsSubDepartment() :
+            // subType === 'family' ? luigiTrendsCategory() :
+            subType === 'family' ? Promise.reject(new Error('Trends is not available in Family page')) :
+            luigiTrendsGlobal()
+        )
+
+
+        if (response.status !== 200) {
+            console.error('Error fetching recommenders:', response.statusText)
+        }
+
+        // Send Analytics
+        if (layout.app.environment === 'production') {
+            RecommendationCollector(response.data[0])
+        }
+
+        console.log('LTrends1:', subType, response.data)
+        listProductsFromLuigi.value = response.data[0].hits
+        fetchProductData()  // Fetch real data from DB
+    } catch (error: any) {
+        console.error('Error on fetching recommendations:', error)
+    } finally {
+        isFetched.value = true
+        isLoadingFetch.value = false
+    }
+}
+
+const isLoadingProductRealData = ref(false)
+const fetchProductData = async () => {
+    const productListid = listProductsFromLuigi.value?.map((item) => item.attributes.product_id[0])
+    if (productListid?.length) {
+        try {
+            isLoadingProductRealData.value = true
+
+            const response = await axios.get(
+                route('iris.json.luigi.product_details'),
+                {
+                    params: {
+                        product_ids: productListid?.join(',')
+                    }
+                }
+            )
+
+            listProductsFromLuigi.value.forEach((item, index) => {
+                // Find the matching product_code[0] in response data
+                const relatedProduct = response.data.data.find(product => item.attributes.product_code[0] === product.code);
+
+                // const listKeys = Object.keys(relatedProduct?.web_images || {})
+                // const isIncludeMainImage = listKeys.includes('main')
+
+                // console.log('relatedProduct', item.attributes.product_code[0], isIncludeMainImage)
+
+                // If a match is found and the stock is greater than 0, set the iris_attributes
+                if (relatedProduct) {
+                    item.iris_attributes = relatedProduct;
+                }
+            })
+
+            // Filter only available stock
+            listProductsFromLuigi.value = listProductsFromLuigi.value?.filter(prod => prod.iris_attributes?.stock > 0)
+            nextTick()
+
+
+            // console.log('wwwwwwwww', listProductsFromLuigi.value)
+            // listProducts.value = response.data.data
+        } catch (error: any) {
+            console.error('Error on fetching recommendations:', error)
+        } finally {
+            isFetched.value = true
+            isLoadingProductRealData.value = false
+        }
+    }
+}
+
+onMounted(() => {
+    fetchRecommenders()
+    window.luigiTrends = fetchRecommenders
+})
+</script>
+
+<template>
+    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'+indexBlock"  component="luigi-trends-1-iris"
+    :style="{
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        ...getStyles(fieldValue.container?.properties, screenType),
+        width: 'auto'
+    }">
+        <template v-if="!isFetched || listProductsFromLuigi?.length">
+            <!-- Title -->
+            <div class="px-3 pt-6 md:pb-6">
+                <div class="text-2xl md:text-3xl font-semibold">
+                    <div>
+                        <p style="text-align: center">{{ ctrans("Trending") }}</p>
+                        <div class="hidden">
+                            subType: {{ dataWebpage?.sub_type }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="py-4 px-3 md:px-12" id="LuigiTrends1">
+                <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
+                    :pagination="{ clickable: true }"
+                    class="w-full"
+                    spaceBetween="12"
+                    autoHeight
+                >
+                    <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
+                        <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
+                        </div>
+                    </div>
+
+                    <template v-else>
+                        <SwiperSlide
+                            v-for="(product, index) in listProductsFromLuigi"
+                             :key="product.attributes.product_code[0]"
+                             class="w-full cursor-grab relative !grid h-full min-h-full"
+                        >
+                            <RecommendationSlideIrisWithRealData
+                                :product
+                                :isProductLoading
+                                :isLoadingProductRealData
+                            />
+                        </SwiperSlide>
+                    </template>
+                </Swiper>
+            </div>
+        </template>
+    </div>
+</template>
+
+<style scoped>
+
+:deep(#LuigiTrends1 .swiper-wrapper) {
+  height: 100% !important;
+}
+</style>

@@ -24,7 +24,7 @@ class OutboxHydrateDispatchedEmails implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public string $jobQueue = 'hydrators-slave';
+    public string $jobQueue = 'ses-analytics';
 
     public function getJobUniqueId(?int $outboxID): string
     {
@@ -36,13 +36,13 @@ class OutboxHydrateDispatchedEmails implements ShouldBeUnique
         if (!$outboxID) {
             return;
         }
-        $outbox = Outbox::find($outboxID);
+        $outbox = Outbox::on('aiku_no_sticky')->find($outboxID);
         if (!$outbox) {
             return;
         }
 
         $stats = [
-            'number_dispatched_emails' => DB::table('dispatched_emails')->where('outbox_id', $outbox->id)->count(),
+            'number_dispatched_emails' => DB::connection('aiku_no_sticky')->table('dispatched_emails')->where('outbox_id', $outbox->id)->count(),
         ];
 
         $stats = array_merge(
@@ -54,18 +54,19 @@ class OutboxHydrateDispatchedEmails implements ShouldBeUnique
                 models: DispatchedEmail::class,
                 where: function ($q) use ($outbox) {
                     $q->where('outbox_id', $outbox->id);
-                }
+                },
+                connection: 'aiku_no_sticky'
             )
         );
 
-        $outboxStats = $outbox->stats;
+        $outboxStats               = $outbox->stats;
         $oldNumberDispatchedEmails = $outboxStats->number_dispatched_emails;
         $outboxStats->update($stats);
 
         if ($oldNumberDispatchedEmails != $stats['number_dispatched_emails']) {
-            GroupHydrateDispatchedEmails::dispatch($outbox->group_id);
-            OrganisationHydrateDispatchedEmails::dispatch($outbox->organisation_id);
-            ShopHydrateDispatchedEmails::dispatch($outbox->shop_id);
+            GroupHydrateDispatchedEmails::dispatch($outbox->group_id)->delay(60);
+            OrganisationHydrateDispatchedEmails::dispatch($outbox->organisation_id)->delay(60);
+            ShopHydrateDispatchedEmails::dispatch($outbox->shop_id)->delay(60);
         }
     }
 

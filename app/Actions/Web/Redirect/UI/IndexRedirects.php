@@ -75,6 +75,10 @@ class IndexRedirects extends OrgAction
                     ]
                 ],
             ],
+            'download_route' => [
+                'name'       => str_replace('.index', '.export', $request->route()->getName()),
+                'parameters' => $request->route()->originalParameters(),
+            ],
             RedirectTabsEnum::REDIRECTS->value => $this->tab == RedirectTabsEnum::REDIRECTS->value ?
                 RedirectsResource::collection($this->handle(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value))
                 : Inertia::lazy(fn () => RedirectsResource::collection($this->handle(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value))),

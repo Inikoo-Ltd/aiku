@@ -25,6 +25,7 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import LuigiAvailabilityChecklist from '@/Components/Utils/LuigiAvailabilityChecklist.vue'
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -82,6 +83,11 @@ const props = defineProps<{
 			product_state_icon: []
 			parentLink?: []
 		}
+		luigi_availability_checklist?: {
+			label: string
+			passed: boolean
+			detail: string | null
+		}[] | null
 		images: any
 		main_image: ImageTS
 	}
@@ -271,6 +277,11 @@ const getTooltips = () => {
 			<!-- Sales Analytics Compact -->
 			<div v-if="salesData && !(data?.product?.data?.state == 'in_process')">
 				<SalesAnalyticsCompact :salesData="salesData" />
+			</div>
+
+			<!-- Luigi Search Availability Checklist -->
+			<div v-if="data.luigi_availability_checklist" class="mt-4 border-t border-gray-200 pt-4 px-2">
+				<LuigiAvailabilityChecklist :checklist="data.luigi_availability_checklist" />
 			</div>
 		</div>
 

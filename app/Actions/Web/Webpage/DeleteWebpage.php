@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 20-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -38,6 +38,9 @@ class DeleteWebpage extends OrgAction
      */
     public function handle(Webpage $webpage, bool $forceDelete = false, array $modelData = []): Webpage
     {
+        DeleteReindexWebpageLuigiData::dispatch($webpage)->delay(5);
+
+        BreakWebpageCache::run($webpage);
         if ($forceDelete) {
             $webpage = DB::transaction(function () use ($webpage) {
                 DB::table('web_block_histories')->where('webpage_id', $webpage->id)->delete();
@@ -94,12 +97,12 @@ class DeleteWebpage extends OrgAction
                 }
             }
         }
-        DeleteReindexWebpageLuigiData::dispatch($webpage)->delay(5);
 
+        BreakWebpageCache::run($webpage);
         return $webpage;
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
             'redirects' => [

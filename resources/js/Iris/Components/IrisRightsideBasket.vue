@@ -10,7 +10,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import {ToggleSwitch } from 'primevue'
+import { ToggleSwitch } from 'primevue'
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { ProductResource } from '@/types/Iris/Products'
@@ -43,12 +43,12 @@ interface Product {
     transaction_id: number
     quantity_ordered: number
     offers_data: {
-        
+
     }
 }
 
 const props = defineProps<{
-    isOpen: boolean|undefined
+    isOpen: boolean | undefined
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -82,16 +82,16 @@ const fetchDataSideBasket = async (isWithoutSkeleton?: boolean) => {
             route('iris.json.fetch_basket')
         )
         if (response.status !== 200) {
-            
+
         }
-        
+
 
         // if (isWithoutSkeleton) {
-            // } else {
-                //     set(dataSideBasket.value, 'order_summary', response.data.order_summary)
-                //     set(dataSideBasket.value, 'order_data', response.data.order_data)
-            dataSideBasket.value = response.data
-            set(layout, 'rightbasket.products', response.data?.products || [])
+        // } else {
+        //     set(dataSideBasket.value, 'order_summary', response.data.order_summary)
+        //     set(dataSideBasket.value, 'order_data', response.data.order_data)
+        dataSideBasket.value = response.data
+        set(layout, 'rightbasket.products', response.data?.products || [])
         // }
     } catch (error: any) {
         console.log('errorzzzzz', error)
@@ -160,7 +160,7 @@ const onRemoveFromBasket = (product) => {
 
         return
     }
-    
+
     router.post(
         route('iris.models.transaction.update', {
             transaction: product.transaction_id
@@ -182,7 +182,7 @@ const onRemoveFromBasket = (product) => {
                 product.isLoadingRemove = false
             },
             onSuccess: () => {
-                
+
                 layout.reload_handle()
 
                 if (layout?.rightbasket?.products) {
@@ -237,7 +237,7 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
         if (response.status === 200) {
             debFetchDataSideBasket(true)
         }
-        
+
     } catch (error: any) {
         console.log('eerr charge', error)
         notify({
@@ -260,24 +260,24 @@ const dragging = ref(false)
 const offsetY = ref(0)
 
 const startDrag = (e: MouseEvent) => {
-  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-  offsetY.value = e.clientY - rect.top
-  dragging.value = true
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    offsetY.value = e.clientY - rect.top
+    dragging.value = true
 }
 
 const onDrag = (e: MouseEvent) => {
-  if (!dragging.value) return
+    if (!dragging.value) return
 
-  const newTop = e.clientY - offsetY.value
+    const newTop = e.clientY - offsetY.value
 
-  const min = 0
-  const max = window.innerHeight - 40 // tinggi tombol ±40px
+    const min = 0
+    const max = window.innerHeight - 40 // tinggi tombol ±40px
 
-  topPosition.value = Math.min(Math.max(newTop, min), max)
+    topPosition.value = Math.min(Math.max(newTop, min), max)
 }
 
 const stopDrag = () => {
-  dragging.value = false
+    dragging.value = false
 }
 
 const basketRef = ref<HTMLElement | null>(null)
@@ -294,15 +294,15 @@ const basketRef = ref<HTMLElement | null>(null)
  */
 
 onMounted(() => {
-  window.addEventListener('mousemove', onDrag)
-  window.addEventListener('mouseup', stopDrag)
-/*   document.addEventListener('mousedown', handleClickOutside) */
+    window.addEventListener('mousemove', onDrag)
+    window.addEventListener('mouseup', stopDrag)
+    /*   document.addEventListener('mousedown', handleClickOutside) */
 })
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', onDrag)
-  window.removeEventListener('mouseup', stopDrag)
-  /* document.removeEventListener('mousedown', handleClickOutside) */
+    window.removeEventListener('mousemove', onDrag)
+    window.removeEventListener('mouseup', stopDrag)
+    /* document.removeEventListener('mousedown', handleClickOutside) */
 })
 
 
@@ -317,20 +317,20 @@ onUnmounted(() => {
          bg-[var(--theme-color-0)]" :class="layout.rightbasket?.show
             ? 'absolute -left-4'
             : 'fixed right-4'" :style="{
-        top: layout.rightbasket?.show ? '50%' : topPosition + 'px',
-        color: layout.app.theme[1]
-    }">
+                top: layout.rightbasket?.show ? '50%' : topPosition + 'px',
+                color: layout.app.theme[1]
+            }">
             <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" fixed-width />
 
             <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width class="cursor-grab"
                 @mousedown.stop="startDrag" />
         </div>
-        <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 ">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
                     {{ trans("Your Basket (:xxx items)", { xxx: layout.iris_variables?.cart_count ?? 0 }) }}
                 </div>
-                
+
                 <div class="relative overflow-hidden">
                     <Transition name="spin-to-down">
                         <div :key="layout.iris_variables?.cart_amount">
@@ -349,28 +349,30 @@ onUnmounted(() => {
                     </button>
                 </div> -->
             </div>
-            
+
             <!-- Section: Bonus list (meter) -->
             <div class="text-xs">
                 <div v-if="dataSideBasket?.order_data?.reference" class="-ml-2 bg-gray-200 px-2 mb-3">
                     {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
                 </div>
-                
+
                 <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3 gap-x-3">
                     <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
-                    >
-                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-ellipsis truncate text-base">
+                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full">
+                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)"
+                            v-tooltip="offer.label" class="text-ellipsis truncate text-base">
                             {{ offer.label }}
                         </div>
                         <div v-else class="text-ellipsis truncate text-base text-green-600">
-                            {{ offer.label_got ?? offer.label}}
+                            {{ offer.label_got ?? offer.label }}
                         </div>
 
                         <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
-                        <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon
+                            v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))"
+                            icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" />
                     </div>
-                    
+
                     <!-- Section: meter -->
                     <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
                         ? trans(`:xcurrent of :xtarget products amount`, { xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
@@ -379,9 +381,8 @@ onUnmounted(() => {
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
                                 :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
                                 :style="{
-                                    width: convertToFloat2(offer.metadata?.target) ? convertToFloat2(offer.metadata?.current)/convertToFloat2(offer.metadata?.target) * 100 + '%' : '100%'
-                                }"
-                            />
+                                    width: convertToFloat2(offer.metadata?.target) ? convertToFloat2(offer.metadata?.current) / convertToFloat2(offer.metadata?.target) * 100 + '%' : '100%'
+                                }" />
                         </div>
                     </div>
                 </div>
@@ -406,67 +407,93 @@ onUnmounted(() => {
             <div class="mt-8 flow-root">
                 <ul role="list" class="!mx-0 mt-6 mb-0">
                     <template v-if="!isLoadingProducts">
-                        <li v-for="(product, idxProd) in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-1 relative">
-                            <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
+                        <li v-for="(product, idxProd) in get(layout, 'rightbasket.products', [])"
+                            :key="product.transaction_id" class="flex py-1 relative basket-item">
+                            <div v-if="product?.isLoadingRemove"
+                                class="inset-0 bg-gray-500/20 absolute z-10 basket-product-info" />
 
                             <!-- Product: Image -->
                             <div class="relative group">
-                                <LinkIris :href="product.canonical_url" class="flex justify-center items-center font-medium hover:underline min-w-14 min-h-14 size-14 shrink-0 overflow-hidden rounded-md border border-gray-200"
+                                <LinkIris :href="product.canonical_url"
+                                    class="flex justify-center items-center font-medium hover:underline min-w-14 min-h-14 size-14 shrink-0 overflow-hidden rounded-md border border-gray-200"
                                     @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
-                                    <Image
-                                        v-if="product?.web_image_thumbnail"
-                                        :src="product?.web_image_thumbnail"
-                                        class="size-14 flex justify-center items-center group-hover:scale-110 transition-all"
-                                    />
-                                    <FontAwesomeIcon v-else icon="fal fa-image" class="text-xl opacity-40 group-hover:opacity-70" fixed-width aria-hidden="true" />
+                                    <Image v-if="product?.web_image_thumbnail" :src="product?.web_image_thumbnail"
+                                        class="size-14 flex justify-center items-center group-hover:scale-110 transition-all" />
+                                    <FontAwesomeIcon v-else icon="fal fa-image"
+                                        class="text-xl opacity-40 group-hover:opacity-70" fixed-width
+                                        aria-hidden="true" />
                                 </LinkIris>
-                                
+
                                 <div v-if="idxProductLoading === idxProd"
                                     class="absolute inset-0 grid justify-center rounded items-center bg-black/50 text-white text-2xl">
                                     <LoadingIcon />
                                 </div>
                             </div>
-                            
-                            <div class="ml-4 flex justify-between gap-x-4 w-full text-xs">
-                                <!-- Section: label Discount, product name, product price -->
-                                <div class="flex flex-1 flex-col">
-                                    <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs" />
-                        
+
+                            <div>
+                                 <Discount v-if="Object.keys(product.offers_data || {})?.length"
+                                        :offers_data="product.offers_data" class="text-xxs" />
+
+                                         <div class=" min-w-0 flex justify-between gap-x-3 w-full text-xs">
+
+                                <!-- LEFT -->
+                                <div class="flex flex-1 flex-col min-w-0">
+                                   
+
                                     <div class="flex justify-between font-medium">
-                                        <div v-tooltip="product.code" class="">
-                                            <LinkIris :href="product.canonical_url" class="font-medium hover:underline truncate block w-52" @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
-                                                <span v-if="product.units > 1" class="mr-1">{{ product.units }}x</span>{{ product.name }}
+                                        <div v-tooltip="product.code" class="min-w-0 w-full">
+                                            <LinkIris :href="product.canonical_url"
+                                                class="font-medium hover:underline block truncate"
+                                                @start="() => idxProductLoading = idxProd"
+                                                @finish="() => idxProductLoading = null">
+                                                <span v-if="product.units > 1" class="mr-1">
+                                                    {{ product.units }}x
+                                                </span>
+
+                                                {{ product.name }}
                                             </LinkIris>
-                                            <div class="text-xxs text-gray-400">{{ product.code }}</div>
+
+                                            <div class="text-xxs text-gray-400 truncate">
+                                                {{ product.code }}
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div class="flex flex-1 items-end justify-between">
-                                        <p class="" :class="product.gross_amount != product?.net_amount ? 'text-green-500' : ''">
-                                            <span v-if="product.gross_amount != product?.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(layout.iris?.currency?.code, product.gross_amount) }}</span>
-                                            <span>{{ locale.currencyFormat(layout.iris?.currency?.code || '', product.net_amount) }}</span>
+                                        <p :class="product.gross_amount != product?.net_amount ? 'text-green-500' : ''">
+                                            <span v-if="product.gross_amount != product?.net_amount"
+                                                class="text-gray-500 line-through mr-1 opacity-70">
+                                                {{ locale.currencyFormat(layout.iris?.currency?.code,
+                                                product.gross_amount) }}
+                                            </span>
+
+                                            <span>
+                                                {{ locale.currencyFormat(layout.iris?.currency?.code || '',
+                                                product.net_amount) }}
+                                            </span>
                                         </p>
                                     </div>
                                 </div>
-                                
-                                <!-- Section: input quantity -->
-                                <div class="flex flex-col justify-between items-end pt-7">
+
+                                <!-- RIGHT -->
+                                <div class="flex flex-col justify-between items-end pt-7 shrink-0">
                                     <div class="max-w-32 flex gap-x-2 h-fit items-center">
-                                        <InputQuantitySideBasket
-                                            :product
-                                            @productRemoved="() => onRemoveProductWhenQuantityZero(product)"
-                                        />
-                        
+                                        <InputQuantitySideBasket :product
+                                            @productRemoved="() => onRemoveProductWhenQuantityZero(product)" />
+
                                         <div @click="() => onRemoveFromBasket(product)">
                                             <LoadingIcon v-if="product?.isLoadingRemove" />
-                                            <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
+
+                                            <FontAwesomeIcon v-else icon="fal fa-trash-alt"
+                                                class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width
+                                                aria-hidden="true" />
                                         </div>
                                     </div>
-                                    <!-- <div class="text-xs underline">
-                                        Save for later
-                                    </div> -->
                                 </div>
                             </div>
+
+                            </div>
+                           
                         </li>
                     </template>
 
@@ -488,13 +515,8 @@ onUnmounted(() => {
             <div>
                 <div class="text-gray-500 text-sm">Voucher Code:</div>
                 <div class="flex gap-x-4">
-                    <PureInput
-                        :modelValue="''"
-                        placeholder="Enter voucher code"
-                    />
-                    <Button
-                        label="Apply"
-                    />
+                    <PureInput :modelValue="''" placeholder="Enter voucher code" />
+                    <Button label="Apply" />
                 </div>
             </div>
         </div>
@@ -503,13 +525,17 @@ onUnmounted(() => {
         <Transition name="slide-to-right">
             <div v-if="Object.values(dataSideBasket?.missed_offers || {})?.length" class="px-4 pb-6 sm:px-6">
                 <div class="text-xs text-red-500 font-bold">
-                    {{ ctrans('You missed ( :number_missed_offer ) offers', { number_missed_offer: Object.values(dataSideBasket?.missed_offers || {})?.length || 0 }) }}
+                    {{ ctrans('You missed ( :number_missed_offer ) offers', {
+                        number_missed_offer:
+                            Object.values(dataSideBasket?.missed_offers || {})?.length || 0 }) }}
                 </div>
                 <div class="flex flex-col gap-y-2">
                     <TransitionGroup name="list" tag="ul" class="!m-0">
-                        <li v-for="(missed_offer, misOfferKey) in dataSideBasket?.missed_offers" :key="missed_offer.id" class="list-none">
+                        <li v-for="(missed_offer, misOfferKey) in dataSideBasket?.missed_offers" :key="missed_offer.id"
+                            class="list-none">
                             <MissedOfferFOB v-if="misOfferKey == 'fob'" :data="missed_offer" />
-                            <div v-else class="bg-[#2a919e] text-white px-2 py-2 rounded-md mt-2 text-sm flex items-center justify-between gap-x-2">
+                            <div v-else
+                                class="bg-[#2a919e] text-white px-2 py-2 rounded-md mt-2 text-sm flex items-center justify-between gap-x-2">
                                 <InformationIcon :information="missed_offer.information" class="text-2xl" />
                                 <div>
                                     {{ missed_offer.description }}
@@ -520,53 +546,48 @@ onUnmounted(() => {
                 </div>
             </div>
         </Transition>
-        
+
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 pt-3 pb-6 sm:px-6">
             <div class="relative isolate">
-                <OrderSummary
-                    :order_summary="dataSideBasket?.order_summary"
-                    :currency_code="layout.iris?.currency?.code"
-                    size="sm"
-                />
+                <OrderSummary :order_summary="dataSideBasket?.order_summary"
+                    :currency_code="layout.iris?.currency?.code" size="sm" />
 
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
                     <!-- Section: Eligible Gift -->
                     <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
-                        <EligibleGift
-                            :routeUpdate="{
-                                name: 'iris.models.order.update_gr_gift',
-                                parameters: dataSideBasket?.order_data?.id
-                            }"
-                            :giftOptions="dataSideBasket?.gr_gifts?.gifts"
-                            :meter="dataSideBasket?.gr_gifts?.meter"
+                        <EligibleGift :routeUpdate="{
+                            name: 'iris.models.order.update_gr_gift',
+                            parameters: dataSideBasket?.order_data?.id
+                        }" :giftOptions="dataSideBasket?.gr_gifts?.gifts" :meter="dataSideBasket?.gr_gifts?.meter"
                             :isOptedOut="dataSideBasket?.gr_gifts?.is_gift_opted_out"
                             :routeOptOut="dataSideBasket?.gr_gifts?.route_gift_opt_out"
-                            class="justify-between w-full"
-                        />
+                            class="justify-between w-full" />
                     </div>
 
                     <!-- Section: Charges (Premium Dispatch, Insurance) -->
                     <template v-for="charge in dataSideBasket?.charges">
                         <div v-if="charge?.id" class="flex gap-4 justify-between">
-                            <div class="text-xs flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                            <div class="text-xs flex justify-end items-center gap-x-1 relative"
+                                xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                                 <InformationIcon :information="charge?.description" />
                                 {{ charge?.label ?? charge?.name }}
-                                <span class="text-gray-400">({{ locale.currencyFormat(layout.iris?.currency?.code, charge?.amount) }})</span>
+                                <span class="text-gray-400">({{ locale.currencyFormat(layout.iris?.currency?.code,
+                                    charge?.amount) }})</span>
                             </div>
 
                             <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                                <ToggleSwitch
-                                    :modelValue="dataSideBasket?.order_data?.[charge.key_db]"
+                                <ToggleSwitch :modelValue="dataSideBasket?.order_data?.[charge.key_db]"
                                     @update:modelValue="(e) => onChangeCharge(charge.key_db, e, charge.route_update)"
-                                    xdisabled="isLoadingPriorityDispatch"
-                                    size="small"
-                                >
+                                    xdisabled="isLoadingPriorityDispatch" size="small">
                                     <template #handle="{ checked }">
-                                        <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)" xclass="text-xs text-gray-500" />
+                                        <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)"
+                                            xclass="text-xs text-gray-500" />
                                         <template v-else>
-                                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-xs text-green-500" fixed-width aria-hidden="true" />
-                                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-xs text-red-500" fixed-width aria-hidden="true" />
+                                            <FontAwesomeIcon v-if="checked" icon="far fa-check"
+                                                class="text-xs text-green-500" fixed-width aria-hidden="true" />
+                                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-xs text-red-500"
+                                                fixed-width aria-hidden="true" />
                                         </template>
                                     </template>
                                 </ToggleSwitch>
@@ -583,21 +604,14 @@ onUnmounted(() => {
 
             <div class="mt-4">
                 <LinkIris href="/app/checkout">
-                    <Button
-                        full
-                        :label="trans('Checkout')"
-                        iconRight="far fa-arrow-right"
-                        key="1"
-                    />
+                    <Button full :label="trans('Checkout')" iconRight="far fa-arrow-right" key="1" />
                 </LinkIris>
             </div>
-            
+
             <div class="mt-2 flex justify-start text-center text-sm text-gray-500">
                 <p>
                     {{ 'or' }}
-                    <LinkIris
-                        href="/app/basket"
-                        class="font-medium text-indigo-600 hover:text-indigo-500"
+                    <LinkIris href="/app/basket" class="font-medium text-indigo-600 hover:text-indigo-500"
                         @click="open = false">
                         {{ trans("Open basket") }}
                         <span aria-hidden="true"> &rarr;</span>
@@ -613,13 +627,16 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .ribbon {
     font-size: 0.6rem;
-//   font-weight: bold;
+    font-weight: bold;
     color: #fff;
 }
+
 .ribbon {
-    --f: .5em; /* control the folded part*/
-    --r: .8em; /* control the ribbon shape */
-    
+    --f: .5em;
+    /* control the folded part*/
+    --r: .8em;
+    /* control the ribbon shape */
+
     position: absolute;
     bottom: 22px;
     left: calc(-1*var(--f));
@@ -629,10 +646,34 @@ onUnmounted(() => {
     background: rgb(236 72 153);
     border-top: var(--f) solid #0005;
     border-right: var(--r) solid #0000;
-    clip-path: 
-        polygon(0 100%,0 var(--f),var(--f) 0,
-        var(--f) var(--f),100% var(--f),
-        calc(100% - var(--r)) calc(50% + var(--f)/2),100% 100%);
+    clip-path:
+        polygon(0 100%, 0 var(--f), var(--f) 0,
+            var(--f) var(--f), 100% var(--f),
+            calc(100% - var(--r)) calc(50% + var(--f)/2), 100% 100%);
 }
 
+.basket-drawer {
+    width: min(92vw, 520px);
+    box-sizing: border-box;
+}
+
+
+.basket-item {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.basket-product-info {
+    min-width: 0;
+}
+
+.basket-product-title,
+.discount-badge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 </style>

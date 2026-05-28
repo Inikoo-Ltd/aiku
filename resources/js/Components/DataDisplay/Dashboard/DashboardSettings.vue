@@ -21,6 +21,10 @@ const props = defineProps<{
     currentTab: string
 }>()
 
+const emit = defineEmits<{
+    (e: 'intervalChanged', value: string): void
+}>()
+
 const layout = inject("layout", layoutStructure)
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 const isSectionVisible = ref(false)
@@ -66,7 +70,30 @@ const isLoadingInterval = ref<string | null>(null)
 
 const updateInterval = (interval_code: string) => {
     props.intervals.value = interval_code
-    storeIntervalCode(interval_code)
+
+    if (props.currentTab === 'top_customers') {
+        isLoadingOnTable.value = true
+        router.patch(
+            route("grp.models.profile.update"),
+            {
+                settings: {
+                    selected_interval: interval_code,
+                },
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['dashboard', 'top_customers'],
+                onFinish: () => {
+                    isLoadingOnTable.value = false
+                },
+            }
+        )
+    } else {
+        storeIntervalCode(interval_code)
+    }
+
+    emit('intervalChanged', interval_code)
 }
 
 const isLoadingToggle = ref<string | null>(null)
@@ -136,6 +163,29 @@ const debStoreDataDisplayType = debounce((value: string) => {
 const updateDataDisplayType = (value: string) => {
     props.settings.data_display_type.value = value
     debStoreDataDisplayType(value)
+}
+
+// Section: update top_customers_limit
+const updateTopCustomersLimit = (value: number) => {
+    props.settings.top_customers_limit.value = value
+    isLoadingToggle.value = 'top_customers_limit'
+    isLoadingOnTable.value = true
+    router.patch(
+        route("grp.models.profile.update"),
+        {
+            settings: {
+                top_customers_limit: value,
+            },
+        },
+        {
+            onFinish: () => {
+                isLoadingToggle.value = null
+                isLoadingOnTable.value = false
+            },
+            preserveScroll: true,
+            only: ['dashboard', 'top_customers'],
+        }
+    )
 }
 
 onMounted(() => {
@@ -255,6 +305,37 @@ onMounted(() => {
                         <p v-tooltip="settings.data_display_type.options[1]?.tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[1]?.value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
                             {{ settings.data_display_type.options[1]?.label }}
                         </p>
+                    </div>
+
+                    <!-- Selector: top_customers_limit (only on top_customers tab) -->
+                    <div v-if="settings.top_customers_limit && currentTab === 'top_customers'" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
+                        <p class="whitespace-nowrap leading-none">{{ trans('Show top') }}</p>
+                        <RadioGroup class="relative"
+                                    :modelValue="settings.top_customers_limit.value"
+                                    @update:modelValue="(value: any) => updateTopCustomersLimit(Number(value))"
+                        >
+                            <div v-if="`top_customers_limit` === isLoadingToggle" class="absolute inset-0 bg-black/50 rounded-md flex items-center justify-center z-10">
+                                <LoadingIcon class="text-white text-xl m-auto" />
+                            </div>
+                            <RadioGroupLabel class="sr-only">{{ trans('Top customers limit') }}</RadioGroupLabel>
+                            <div class="flex border border-gray-300 rounded-md overflow-hidden w-fit">
+                                <RadioGroupOption
+                                    as="template" v-for="option in settings.top_customers_limit.options"
+                                    :key="option.value"
+                                    :value="option.value"
+                                    v-slot="{ checked }"
+                                >
+                                    <div :class="[
+                                            'cursor-pointer focus:outline-none flex items-center justify-center py-1 sm:py-2 md:py-3 px-2 sm:px-3 text-xs sm:text-sm font-medium whitespace-nowrap',
+                                            checked ? 'bg-indigo-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-200',
+                                        ]"
+                                         v-tooltip="option.tooltip"
+                                    >
+                                        <RadioGroupLabel as="span">{{ option.label }}</RadioGroupLabel>
+                                    </div>
+                                </RadioGroupOption>
+                            </div>
+                        </RadioGroup>
                     </div>
 
                     <!-- Toggle: currency_type -->

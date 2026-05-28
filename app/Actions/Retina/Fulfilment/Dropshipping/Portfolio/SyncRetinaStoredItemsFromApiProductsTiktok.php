@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
@@ -74,7 +75,11 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                     }
 
                     $storedItem = StoredItem::where('fulfilment_customer_id', $tiktokUser->customer->fulfilmentCustomer->id)
-                        ->where('reference', $reference)->first();
+                        ->where(function ($query) use ($reference) {
+                            $query->where('slug', $reference)
+                                ->orWhere('reference', $reference);
+                        })
+                        ->first();
 
                     if ($shopType === ShopTypeEnum::FULFILMENT) {
                         if (!$storedItem) {
@@ -86,7 +91,7 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
 
                         $portfolio = $storedItem->portfolio;
                         if (!$portfolio) {
-                            StorePortfolio::make()->action(
+                            $portfolio = StorePortfolio::make()->action(
                                 $tiktokUser->customerSalesChannel,
                                 $storedItem,
                                 [
@@ -96,11 +101,21 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                             );
                         }
 
+                        UpdatePortfolio::run($portfolio, [
+                            'item_id' => $storedItem->id,
+                            'item_type' => class_basename(StoredItem::class),
+                            'item_code' => $storedItem->reference,
+                            'item_name' => $title,
+                            'customer_product_name' => $title,
+                            'customer_description' => Arr::get($product, 'description'),
+                            'platform_product_id' => Arr::get($product, 'id'),
+                            'platform_product_variant_id' => Arr::get($product, 'id'),
+                        ]);
+
                         UpdateStoredItem::run($storedItem, [
                             'state' => StoredItemStateEnum::ACTIVE,
                             'total_quantity' => Arr::get($product, 'skus.0.inventory.0.quantity', 0)
                         ]);
-
                     }
                     $numberSuccess++;
                 } catch (ValidationException $exception) {
