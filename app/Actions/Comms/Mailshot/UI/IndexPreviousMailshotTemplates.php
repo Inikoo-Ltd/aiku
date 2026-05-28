@@ -71,7 +71,7 @@ class IndexPreviousMailshotTemplates extends OrgAction
                     ->pageName($prefix . 'Page');
             }
             $table->withGlobalSearch();
-            $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true);
+            $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: false);
             $table->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true);
             $table->column(key: 'sent_at', label: __('Sent At'), canBeHidden: false, sortable: true);
             $table->column(key: 'actions', label: __('Action'));
