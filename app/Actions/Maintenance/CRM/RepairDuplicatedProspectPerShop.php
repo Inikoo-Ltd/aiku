@@ -25,7 +25,6 @@ class RepairDuplicatedProspectPerShop
     public function handle(Shop $shop): void
     {
 
-        // TODO: Make sure order By
         // remove duplicated for phone
         DB::table('prospects')
             ->where('shop_id', $shop->id)
