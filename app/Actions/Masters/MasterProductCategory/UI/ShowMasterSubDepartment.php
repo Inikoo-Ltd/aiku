@@ -202,7 +202,7 @@ class ShowMasterSubDepartment extends GrpAction
 
                 MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value =>
                 $this->tab === MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value
-                    ? fn() => [
+                    ? fn () => [
                         'id'       => $masterSubDepartment->id,
                         'data'     => [],
                         'editable' => false,
@@ -216,7 +216,7 @@ class ShowMasterSubDepartment extends GrpAction
                         ]
                     ]
                     : Inertia::lazy(
-                        fn() => [
+                        fn () => [
                             'id'       => $masterSubDepartment->id,
                             'data'     => [],
                             'editable' => false,

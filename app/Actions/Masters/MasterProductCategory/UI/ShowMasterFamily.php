@@ -153,7 +153,7 @@ class ShowMasterFamily extends GrpAction
 
             MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value =>
             $this->tab === MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value
-                ? fn() => [
+                ? fn () => [
                     'id'       => $masterFamily->id,
                     'data'     => [],
                     'editable' => false,
@@ -167,7 +167,7 @@ class ShowMasterFamily extends GrpAction
                     ]
                 ]
                 : Inertia::lazy(
-                    fn() => [
+                    fn () => [
                         'id'       => $masterFamily->id,
                         'data'     => [],
                         'editable' => false,

@@ -49,15 +49,15 @@ enum MasterSubDepartmentTabsEnum: string
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
             ],
-             MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY => [
-                'title' => __('Related product category'),
-                'icon'  => 'fal fa-folder-tree',
+            MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY => [
+               'title' => __('Related product category'),
+               'icon'  => 'fal fa-folder-tree',
             ],
             MasterSubDepartmentTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
-            
+
         };
     }
 }

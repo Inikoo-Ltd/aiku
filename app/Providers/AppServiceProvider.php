@@ -23,7 +23,6 @@ use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Facades\Actions;
 use Illuminate\Support\Facades\Event;
 use Laravel\Nightwatch\Records\QueuedJob;
-
 use Vemcogroup\Translation\Translation as BaseTranslation;
 
 /**

@@ -61,9 +61,9 @@ enum MasterFamilyTabsEnum: string
                 'title' => __('Related Products'),
                 'icon'  => 'fal fa-repeat',
             ],
-              MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY => [
-                'title' => __('Related product category'),
-                'icon'  => 'fal fa-folder-tree',
+            MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY => [
+              'title' => __('Related product category'),
+              'icon'  => 'fal fa-folder-tree',
             ],
         };
     }

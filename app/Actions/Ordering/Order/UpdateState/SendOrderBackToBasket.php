@@ -48,8 +48,8 @@ class SendOrderBackToBasket extends OrgAction
                 'current_order_in_basket_id' => $order->id
             ]);
         }
-        
-        
+
+
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::CREATING);
