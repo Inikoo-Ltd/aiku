@@ -11,7 +11,7 @@ namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
-use App\Http\Resources\Web\WebBlockProductResource;
+use App\Http\Resources\Web\WebBlockProductForWorkshopResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Variant;
 use App\Models\Web\Webpage;
@@ -44,10 +44,10 @@ class GetWebBlockProduct
                 TradeAttachmentScopeEnum::TEST_REPORTS,
             ])
             ->get();
-        
+
         $variant     = $product->is_variant_leader ? Variant::where('leader_id', $product->id)->first() : null;
 
-        $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
+        $resourceWebBlockProduct = WebBlockProductForWorkshopResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'show', true);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);

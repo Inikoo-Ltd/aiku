@@ -33,8 +33,6 @@ class GetWebBlockProducts
             $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'out_of_stock'));
         }
 
-        $permissions = ['edit'];
-        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_type', $webpage->sub_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);
@@ -42,7 +40,14 @@ class GetWebBlockProducts
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_slug', $model?->slug);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_out_of_stock', $productsOutOfStock);
 
-        return $webBlock;
+        return [
+           'type' => data_get($webBlock, 'type'),
+           'structure' => data_get(
+               $webBlock,
+               'web_block.layout.data.fieldValue',
+               []
+           ),
+        ];
     }
 
 }

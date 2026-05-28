@@ -11,7 +11,7 @@ namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
-use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
+use App\Http\Resources\Catalogue\IrisProductsInWebpageForWorkshopResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -27,11 +27,11 @@ class GetWebBlockProducts
         $model = $webpage->model;
 
         if ($webpage->model_type == 'Collection') {
-            $products           = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'in_stock'));
-            $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'out_of_stock'));
+            $products           = IrisProductsInWebpageForWorkshopResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'in_stock'));
+            $productsOutOfStock = IrisProductsInWebpageForWorkshopResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'out_of_stock'));
         } else {
-            $products           = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'in_stock'));
-            $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'out_of_stock'));
+            $products           = IrisProductsInWebpageForWorkshopResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'in_stock'));
+            $productsOutOfStock = IrisProductsInWebpageForWorkshopResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'out_of_stock'));
         }
 
         $permissions = ['edit'];
