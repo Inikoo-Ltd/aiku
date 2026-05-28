@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order\UI;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -28,7 +29,7 @@ class GetEcomOrderActions
         if ($order->is_shipping_by_external && $order->state == OrderStateEnum::PACKED) {
             $hasShipment = false;
 
-            /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
+            /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
             if ($deliveryNote) {
                 $hasShipment = $deliveryNote->shipments()->count() > 0;
@@ -117,7 +118,7 @@ class GetEcomOrderActions
 
                 OrderStateEnum::PACKED => [
 
-                    ($order->is_shipping_by_external && $hasShipment) ?
+                    ($order->is_shipping_by_external && $hasShipment && $order->invoices()->count() == 0) ?
                         [
                             'type'    => 'button',
                             'style'   => '',

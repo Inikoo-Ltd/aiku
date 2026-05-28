@@ -96,7 +96,7 @@ class RecordWebsiteHit
             return false;
         }
 
-        if($request->header('referer')==null){
+        if ($request->header('referer') == null) {
             return false;
         }
 

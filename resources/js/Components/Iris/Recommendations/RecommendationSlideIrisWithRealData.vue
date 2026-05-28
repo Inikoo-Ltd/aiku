@@ -3,16 +3,16 @@ import { SelectItemCollector } from '@/Composables/Unique/LuigiDataCollector'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductHit } from '@/types/Luigi/LuigiTypes'
-import { faCircle } from '@fas'
+/* import { faCircle } from '@fas' */
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject, ref } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import Prices3 from '@/Iris/Components/BlocksUtils/Prices3.vue'
+/* import Prices3 from '@/Iris/Components/BlocksUtils/Prices3.vue' */
 import Image from "@common/Components/Image.vue"
-import Prices from "@/Iris/Components/BlocksUtils/Prices.vue"
+/* import Prices from "@/Iris/Components/BlocksUtils/Prices.vue"
 import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
-import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue" */
 
 const props = defineProps<{
     product: ProductHit
@@ -46,7 +46,7 @@ const isLoadingVisit = ref(false)
                     aria-hidden="true" />
             </component>
 
-            <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
+           <!--  <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                 <NewAddToCartButton v-if="product.iris_attributes?.stock && layout.retina?.type === 'b2b'"
 
                     :hasInBasket="layout?.family_page?.productInBasket?.list?.[product.iris_attributes.id]"
@@ -56,16 +56,14 @@ const isLoadingVisit = ref(false)
 
                     :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
                     :buttonStyle="layout?.buttonBasket?.buttonStyle" />
-            </div>
+            </div> -->
         </div>
 
-        <div class="mb-3 flex items-center gap-3">
-            <!-- Section: Code -->
+        <!-- <div class="mb-3 flex items-center gap-3">
             <div class="text-xs text-gray-400">
                 {{ product.attributes.product_code[0] }}
             </div>
 
-            <!-- Section: Stock -->
             <div v-if="isLoadingProductRealData">
                 <div class="skeleton h-4 w-20" />
             </div>
@@ -76,7 +74,7 @@ const isLoadingVisit = ref(false)
                 ">
                 <FontAwesomeIcon :icon="faCircle" />
             </div>
-        </div>
+        </div> -->
 
         <!-- Section: Title -->
         <span class="mb-1 !text-sm font-semibold leading-snug line-clamp-2 min-h-[3em]"
@@ -88,6 +86,20 @@ const isLoadingVisit = ref(false)
             </component>
         </span>
 
+        <div class="flex justify-between">
+            <div class="text-xs text-gray-400 mb-2">
+               {{ product.attributes.product_code[0] }}
+            </div>
+            <div class="font-semibold underline text-xs">
+                <component :is="product.attributes.web_url[0] ? LinkIris : 'div'" :href="product.iris_attributes?.url"
+               @success="() => SelectItemCollector(product)"
+                @start="() => isLoadingVisit = true" @finish="() => isLoadingVisit = false">
+                 {{ ctrans('See Details') }}
+            </component>
+               
+            </div>
+        </div>
+
         <!-- LOADING -->
         <div v-if="isLoadingVisit"
             class="absolute inset-0 z-10 grid place-items-center bg-black/50 text-white text-4xl">
@@ -96,7 +108,7 @@ const isLoadingVisit = ref(false)
     </div>
 
     <!-- Section: Prices -->
-    <template v-if="layout?.iris?.is_logged_in">
+   <!--  <template v-if="layout?.iris?.is_logged_in">
         <div v-if="isLoadingProductRealData">
             <div class="h-40 md:h-32 w-full skeleton">
             </div>
@@ -107,5 +119,5 @@ const isLoadingVisit = ref(false)
                 <Prices v-else :product="product.iris_attributes" :currency="currency" :basketButton="true" />
             </template>
         </div>
-    </template>
+    </template> -->
 </template>

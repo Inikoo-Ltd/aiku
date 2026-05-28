@@ -26,6 +26,7 @@ import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
+import error from "@iris/Pages/Errors/Error.vue"
 
 library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode)
 
@@ -426,7 +427,6 @@ const isOffersData = (offersData: any): boolean => {
 
                         <!-- Toggle: is_cut_view -->
                         <span
-                            v-if="layout.app.environment == 'local'"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
                             v-tooltip="trans('Cut view')"
                             class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"

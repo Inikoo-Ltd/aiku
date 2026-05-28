@@ -8,15 +8,22 @@
 
 namespace App\Actions\Billables\ShippingZoneSchema\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Billables\ShippingZoneSchema;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShippingZoneSchemaHydrateUsageInOrders implements ShouldBeUnique
 {
-    use AsAction;
+    use WithHydrateCommand;
 
+    public string $commandSignature = 'hydrate:shipping_zone_schema_stats {organisations?*} {--S|shop=} {--s|slug=}';
+
+    public function __construct()
+    {
+        $this->model = ShippingZoneSchema::class;
+        $this->modelAsHandleArg = false;
+    }
 
     public function getJobUniqueId(int $shippingZoneSchemaID): string
     {
@@ -46,5 +53,4 @@ class ShippingZoneSchemaHydrateUsageInOrders implements ShouldBeUnique
 
         $shippingZoneSchema->stats()->update($stats);
     }
-
 }

@@ -13,6 +13,8 @@ import Image from "@common/Components/Image.vue";
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import SwitchLanguage from '@/Components/Iris/SwitchLanguage.vue'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
+import LinkIris from "@/Iris/Components/LinkIris.vue"
+import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 

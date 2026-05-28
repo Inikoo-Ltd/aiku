@@ -83,7 +83,7 @@ if (props.dataToSubmit && props.data.actionActualMethod) {
 	props.dataToSubmit["_method"] = props.data.actionActualMethod
 }
 
-const originUrl = location.origin
+const originUrl = typeof window !== "undefined" ? window.location.origin : ""
 const layout = inject("layout", layoutStructure)
 
 const isShowDummySlotName = false

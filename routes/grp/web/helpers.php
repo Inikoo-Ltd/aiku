@@ -12,6 +12,7 @@ use App\Actions\Helpers\Redirects\RedirectCollectionsInProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectCustomersInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectDeletedInvoicesInShopLink;
 use App\Actions\Helpers\Redirects\RedirectDeliveryNotesLink;
+use App\Actions\Helpers\Redirects\RedirectInvoiceInAccounting;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopLink;
@@ -43,6 +44,8 @@ Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustom
 
 Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
 Route::get('redirect-return-note/{returnDeliveryNote:id}', RedirectReturnDeliveryNotesLink::class)->name('redirect_return_notes');
+
+Route::get('redirect-invoice-in-accounting/{invoice:id}', RedirectInvoiceInAccounting::class)->name('redirect_invoice_in_accounting');
 
 
 Route::get('redirect-org-stock/{orgStock:id}', RedirectOrgStockLink::class)->name('redirect_org_stock');

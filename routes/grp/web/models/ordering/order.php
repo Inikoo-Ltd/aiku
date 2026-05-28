@@ -14,6 +14,7 @@ use App\Actions\Dispatching\Picking\AssignPackerToPicking;
 use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
+use App\Actions\Dispatching\Picking\SplitPicking;
 use App\Actions\GoodsIn\Return\StoreReturn;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
@@ -108,6 +109,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
     Route::patch('update', UpdatePicking::class)->name('update');
     Route::delete('delete', DeletePicking::class)->name('delete');
+    Route::post('split', SplitPicking::class)->name('split');
 
     Route::name('assign.')->prefix('assign')->group(function () {
         Route::patch('picker', AssignPickerToPicking::class)->name('picker');
