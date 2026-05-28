@@ -22,6 +22,7 @@ enum MasterFamilyTabsEnum: string
     case SALES     = 'sales';
     case RELATED_PRODUCTS    = 'related_products';
 
+    case RELATED_PRODUCT_CATEGORY = 'related_product_category';
     case HISTORY   = 'history';
     case VARIANTS   = 'variants';
 
@@ -59,6 +60,10 @@ enum MasterFamilyTabsEnum: string
             MasterFamilyTabsEnum::RELATED_PRODUCTS => [
                 'title' => __('Related Products'),
                 'icon'  => 'fal fa-repeat',
+            ],
+              MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY => [
+                'title' => __('Related product category'),
+                'icon'  => 'fal fa-folder-tree',
             ],
         };
     }
