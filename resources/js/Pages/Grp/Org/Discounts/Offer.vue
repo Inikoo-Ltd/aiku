@@ -26,6 +26,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faFlagCheckered } from "@fortawesome/free-solid-svg-icons"
 import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
+import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 
 library.add(faFlagCheckered)
 
@@ -138,6 +139,22 @@ const hasTrigger = computed(() => {
 
 const state = props.data.offer_allowances[0]?.state
 const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
+
+const irisOffersData = computed(() => {
+    const bestPercentageOff = props.data.offer_allowances?.reduce((best, oa) => {
+        const po = oa.data?.percentage_off ?? 0
+        return po > best ? po : best
+    }, 0) ?? 0
+
+    return {
+        number_offers: props.data.offer_allowances?.length ? 1 : 0,
+        offers: [{ ...props.data.offer, id: props.data.offer.id ?? 0 }],
+        best_percentage_off: props.data.offer.id ? {
+            offer_id: props.data.offer.id,
+            percentage_off: (bestPercentageOff * 100).toFixed(1) + '%'
+        } : undefined
+    }
+})
 </script>
 
 <template>
@@ -178,6 +195,7 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
                 <div class="text-sm text-gray-600 gap-2">
                     {{ ctrans("Type") }}: <span class="font-bold">{{ data.offer.type }}</span>
                 </div>
+                
                 <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" :offer_allowances="data.offer_allowances" />
                 <BasicDiscount v-else-if="data.offer.type == 'GR Amnesty'"
                     :offers_data="{
@@ -197,6 +215,13 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
                     }
                 }"
                 class="!text-3xl"
+                />
+                <!-- This should use component for GRP, not use Iris -->
+                <DiscountByType
+                    v-else-if="data.offer.type == 'Department Quantity Ordered'"
+                    :offers_data="irisOffersData"
+                    template="max_discount"
+                    class="scale-[200%] mt-6"
                 />
                 <Coupon v-else :offer="data.offer" :currency_code="currency_code" />    
             </div>
