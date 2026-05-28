@@ -136,7 +136,7 @@ class GetTopCustomersStats
 
     protected function normaliseLimit(int $limit): int
     {
-        if (!in_array($limit, [3, 10, 50], true)) {
+        if (!in_array($limit, [3, 10, 50, 100], true)) {
             return 10;
         }
 
