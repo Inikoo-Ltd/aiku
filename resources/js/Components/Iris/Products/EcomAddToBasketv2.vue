@@ -70,16 +70,19 @@ const showWarning = () => {
 const fetchCustomerOrderingProduct = async () => {
 
     try {
-        const response = await axios.get(
-            route("iris.json.product.ecom_ordering_data", {
-                product: product.value.id,
-            })
-        )
+        if (product.value.id) {
+            const response = await axios.get(
+                route("iris.json.product.ecom_ordering_data", {
+                    product: product.value.id,
+                })
+            )
 
-        console.log('sdfsdf',response.data)
-        Object.keys(response.data).forEach(key => {
-            props.customerData[key] = response.data[key]
-        })
+            console.log('sdfsdf', response.data)
+            Object.keys(response.data).forEach(key => {
+                props.customerData[key] = response.data[key]
+            })
+        } else throw new Error("Product ID is required")
+
 
     } catch (error: any) {
         console.log('error', error)

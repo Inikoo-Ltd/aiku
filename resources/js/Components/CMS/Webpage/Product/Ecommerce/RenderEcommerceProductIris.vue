@@ -78,18 +78,20 @@ const getOrderingProduct = async (productId: number) => {
   }
 
   try {
-    const response = await axios.get(
-      route("iris.json.product.ecom_ordering_data", {
-        product: productId,
-      })
-    )
+    if(productId){
+      const response = await axios.get(
+        route("iris.json.product.ecom_ordering_data", {
+          product: productId,
+        })
+      )
 
-    customerData.value = {
-      ...customerData.value,
-      [productId]: response.data,
-    }
+      customerData.value = {
+        ...customerData.value,
+        [productId]: response.data,
+      }
 
-    keyCustomer.value = ulid()
+      keyCustomer.value = ulid()
+    } else throw new Error("Product ID is required")
   } catch (error) {
     notify({
       title: trans("Something went wrong"),
