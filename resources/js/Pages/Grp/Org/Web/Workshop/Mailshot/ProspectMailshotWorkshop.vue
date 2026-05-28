@@ -293,6 +293,7 @@ const handleTabUpdate = (tabSlug: string) =>
 const component = computed(() => {
     const components: Component = {
         templates: TableEmailTemplate,
+        other_store_templates: TableEmailTemplate,
         previous_mailshots: TablePreviousMailshots,
         other_store_mailshots: TableOtherStoreMailshots,
     };
@@ -387,7 +388,7 @@ watch(
 
     <Dialog v-model:visible="visibleUnsubscribeWarningModal" modal :closable="false" :showHeader="false"
         :style="{ width: '30rem' }">
-        <div class="pt-4"> 
+        <div class="pt-4">
             <div class="text-center mb-4">
                 <div class="text-amber-500 text-4xl mb-3">⚠️</div>
                 <div class="font-semibold text-lg mb-2">Missing Unsubscribe Link</div>
