@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
@@ -21,12 +21,12 @@ class GetWebBlockProduct
 {
     use AsObject;
 
-    public function handle(Webpage $webpage, array $webBlock, bool $isIris = true): array
+    public function handle(Webpage $webpage, array $webBlock): array
     {
         /** @var Product $product */
         $product = $webpage->model;
 
-        if ($isIris && !$product->is_for_sale && !($product->is_variant_leader)) {
+        if (!$product->is_for_sale && !($product->is_variant_leader)) {
             abort(404);
         }
 
@@ -47,7 +47,8 @@ class GetWebBlockProduct
                 TradeAttachmentScopeEnum::TEST_REPORTS,
             ])
             ->get();
-        $variant     = Variant::where('leader_id', $product->id)->first();
+    
+        $variant     = $product->is_variant_leader ? Variant::where('leader_id', $product->id)->first() : null;
 
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);

@@ -1,12 +1,13 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 02 Jun 2025 14:22:15 Central Indonesia Time, Sanur, Shanghai, China
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * author Louis Perez
+ * created on 28-05-2026-14h-27m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
-namespace App\Actions\Web\WebBlock;
+namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
@@ -44,5 +45,4 @@ class GetWebBlockProducts
 
         return $webBlock;
     }
-
 }

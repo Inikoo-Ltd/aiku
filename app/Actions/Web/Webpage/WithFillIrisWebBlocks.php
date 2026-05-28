@@ -20,8 +20,8 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsFromMaster;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLuigiRecommendations;
-use App\Actions\Web\WebBlock\GetWebBlockProduct;
-use App\Actions\Web\WebBlock\GetWebBlockProducts;
+use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
+use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 

@@ -20,8 +20,8 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
-use App\Actions\Web\WebBlock\GetWebBlockProduct;
-use App\Actions\Web\WebBlock\GetWebBlockProducts;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks
