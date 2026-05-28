@@ -29,6 +29,8 @@ const props = defineProps<{
             sales: number;
             invoices: number;
             shop_currency_code: string;
+            shop_slug?: string;
+            organisation_slug?: string;
         }>;
     };
     tab?: string;
@@ -37,11 +39,11 @@ const props = defineProps<{
 const isLoading = ref(false)
 provide("isLoadingOnTable", isLoading)
 
-function customerUrl(slug: string): string {
+function customerUrl(customer: any): string {
     return route('grp.org.shops.show.crm.customers.show', {
-        organisation: (route().params as RouteParams).organisation,
-        shop: (route().params as RouteParams).shop,
-        customer: slug,
+        organisation: customer.organisation_slug || (route().params as RouteParams).organisation,
+        shop: customer.shop_slug || (route().params as RouteParams).shop,
+        customer: customer.slug,
     })
 }
 
@@ -99,7 +101,7 @@ function formatCurrency(value: number, currencyCode: string): string {
                                 {{ index + 1 }}
                             </td>
                             <td class="px-4 py-3 font-semibold text-gray-900">
-                                <Link :href="customerUrl(customer.slug)" class="text-indigo-600 hover:text-indigo-900 hover:underline">
+                                <Link :href="customerUrl(customer)" class="text-indigo-600 hover:text-indigo-900 hover:underline">
                                     {{ customer.name }}
                                 </Link>
                             </td>

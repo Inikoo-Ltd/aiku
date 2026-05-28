@@ -183,7 +183,19 @@ class GetOrganisationNavigation
                 'parameters' => [$organisation->slug],
             ],
 
-            'topMenu' => []
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Top Customers'),
+                        'icon'    => ['fal', 'fa-trophy'],
+                        'root'    => 'grp.org.overview.customers.top_customers',
+                        'route'   => [
+                            'name'       => 'grp.org.overview.customers.top_customers',
+                            'parameters' => [$organisation->slug]
+                        ]
+                    ],
+                ]
+            ]
         ];
 
         $navigation = $this->getReportsNavs($user, $organisation, $navigation);
