@@ -119,7 +119,7 @@ const showLeftBlock = computed(() => {
 const bestOfferClass = computed(() => {
   const type = bestOffer?.value?.type
 
-  if (type === 'Category Ordered' || type === 'Category Amount Ordered' || type == 'Department Ordered'  || type == 'Subdepartment Ordered' ) {
+  if (type === 'Category Ordered' || type === 'Category Amount Ordered' || type == 'Department Ordered'  || type == 'Subdepartment Ordered' || type == 'Department Quantity Ordered' || type == 'Subdepartment Quantity Ordered' ) {
     return 'text-red-700'
   }
 

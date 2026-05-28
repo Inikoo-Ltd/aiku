@@ -15,11 +15,18 @@ use App\Actions\CRM\Customer\UI\IndexCustomerCountries;
 use App\Actions\CRM\Prospect\UI\GetProspectsDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardTopCustomersLimitSettings;
+use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
+use App\Actions\CRM\Customer\GetTopCustomersStats;
+use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Enums\UI\CRM\CrmDashboardTabsEnum;
 use App\Http\Resources\CRM\CustomerCountriesResource;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,6 +34,9 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowCrmDashboard extends OrgAction
 {
     use WithHumanResourcesAuthorisation;
+    use WithDashboardTopCustomersLimitSettings;
+    use WithDashboardIntervalOption;
+    use WithPerformanceDateResolution;
 
     public function asController(Organisation $organisation, Shop  $shop, ActionRequest $request): ActionRequest
     {
@@ -38,6 +48,36 @@ class ShowCrmDashboard extends OrgAction
     public function htmlResponse(ActionRequest $request): Response
     {
         $title = __('CRM Dashboard');
+        $userSettings = $request->user()->settings;
+
+        $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $intervalQuery = $request->query('interval');
+        $interval = DateIntervalEnum::tryFrom((string) $intervalQuery) ?? $savedInterval;
+
+        $limitSetting = $this->dashboardTopCustomersLimitSettings($userSettings);
+        $limitQuery = $request->query('limit');
+        $limit = in_array((int) $limitQuery, [3, 10, 50, 100], true) ? (int) $limitQuery : (int) $limitSetting['value'];
+
+        $performanceDates = $this->resolvePerformanceDates($interval, $userSettings);
+
+        $getTopCustomersData = function () use ($interval, $limit, $performanceDates, $userSettings) {
+            $topCustomers = GetTopCustomersStats::run($this->shop, $performanceDates[0], $performanceDates[1], $limit);
+
+            $topCustomersLimit = $this->dashboardTopCustomersLimitSettings($userSettings);
+            $topCustomersLimit['value'] = $limit;
+
+            return [
+                'intervals' => [
+                    'options'        => $this->dashboardIntervalOption(),
+                    'value'          => $interval->value,
+                    'range_interval' => DashboardIntervalFilters::run($interval, $userSettings)
+                ],
+                'settings' => [
+                    'top_customers_limit' => $topCustomersLimit,
+                ],
+                'topCustomers' => $topCustomers,
+            ];
+        };
 
         $inertiaResponse = Inertia::render(
             'Org/Shop/CRM/CRMDashboard',
@@ -71,6 +111,10 @@ class ShowCrmDashboard extends OrgAction
                 CrmDashboardTabsEnum::CHATS->value => $this->tab == CrmDashboardTabsEnum::CHATS->value ?
                     fn () => ChatSessionResource::collection(IndexChatSessions::run($this->shop, CrmDashboardTabsEnum::CHATS->value))
                     : Inertia::lazy(fn () => ChatSessionResource::collection(IndexChatSessions::run($this->shop, CrmDashboardTabsEnum::CHATS->value))),
+
+                CrmDashboardTabsEnum::TOP_CUSTOMERS->value => $this->tab == CrmDashboardTabsEnum::TOP_CUSTOMERS->value ?
+                    $getTopCustomersData
+                    : Inertia::lazy($getTopCustomersData),
             ]
         );
 

@@ -38,7 +38,8 @@ import {
     faFileMinus,
     faEraser,
     faShoppingBasket,
-    faProjectDiagram
+    faProjectDiagram,
+    faTrophy
 } from "@fal";
 import { faAngleDown, faAngleUp } from "@far";
 import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue";
@@ -87,7 +88,8 @@ library.add(
     faFileMinus,
     faEraser,
     faShoppingBasket,
-    faProjectDiagram
+    faProjectDiagram,
+    faTrophy
 );
 
 
@@ -123,5 +125,3 @@ onUnmounted(() => {
 
     </div>
 </template>
-
-

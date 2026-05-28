@@ -83,7 +83,7 @@ const updateInterval = (interval_code: string) => {
             {
                 preserveScroll: true,
                 preserveState: true,
-                only: ['dashboard'],
+                only: ['dashboard', 'top_customers'],
                 onFinish: () => {
                     isLoadingOnTable.value = false
                 },
@@ -183,6 +183,7 @@ const updateTopCustomersLimit = (value: number) => {
                 isLoadingOnTable.value = false
             },
             preserveScroll: true,
+            only: ['dashboard', 'top_customers'],
         }
     )
 }
