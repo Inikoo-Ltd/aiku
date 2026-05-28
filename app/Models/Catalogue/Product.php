@@ -265,6 +265,7 @@ class Product extends Model implements Auditable, HasMedia
 
 
     protected $casts = [
+        'units'                         => 'decimal:3',
         'variant_ratio'                 => 'decimal:3',
         'price'                         => 'decimal:2',
         'rrp'                           => 'decimal:2',

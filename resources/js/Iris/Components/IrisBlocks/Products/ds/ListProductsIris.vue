@@ -425,7 +425,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
             <main class="flex-1 mt-4" >
 
                 <!-- Search & Sort -->
-                <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4"   :style="getStyles(fieldValue?.container?.properties, screenType)">
+                <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4"   :style="{...getStyles(fieldValue?.container?.properties, screenType), paddingTop : '10px', paddingBottom : '0px'}">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
 
                         <template v-if="!props.fieldValue?.settings?.is_hide_filter">

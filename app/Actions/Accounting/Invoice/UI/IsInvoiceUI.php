@@ -22,9 +22,9 @@ use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
-use Arr;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 trait IsInvoiceUI

@@ -107,8 +107,6 @@ class UpdateMasterProductCategory extends OrgAction
 
                 data_set($modelData, 'gr_vol_discount_percentage', $volGR['percentage_off']);
                 data_set($modelData, 'gr_vol_discount_quantity', $volGR['item_quantity']);
-
-                UpsertGoldRewardFromMasterProductCategory::dispatch($masterProductCategory);
             } else {
                 data_set($modelData, 'has_gr_vol_discount', false);
                 // TODO: Delete GR Reward from Master Product Category to Children
@@ -119,54 +117,25 @@ class UpdateMasterProductCategory extends OrgAction
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::has($changed, 'offers_data')) {
-            $offersData = $masterProductCategory->offers_data;
+        if (Arr::hasAny($changed, ['gr_vol_discount_percentage', 'gr_vol_discount_quantity'])) {
+            $result = UpdateVolumeGrOfferFromMaster::make()->action($masterProductCategory);
 
-            if (isset($offersData['volume_discount'])) {
-                $volumeDiscount = $offersData['volume_discount'];
+            if (data_get($result, 'updated_offers', 0) == 0) {
 
-                // Convert percentage_off from integer % to decimal (10 -> 0.1)
-                if (isset($volumeDiscount['percentage_off'])) {
-                    $volumeDiscount['percentage_off'] = ((float) $volumeDiscount['percentage_off']) / 100;
-                }
-
-                $result = UpdateVolumeGrOfferFromMaster::make()->action(
-                    $masterProductCategory,
-                    $volumeDiscount
-                );
-
-                if ($result['updated_offers'] === 0) {
-                    session()->flash('notification', [
-                        'status'      => 'warning',
-                        'title'       => __('Warning'),
-                        'description' => __('No offers found to update for this master family.'),
-                    ]);
-                } else {
-                    session()->flash('notification', [
-                        'status'      => 'success',
-                        'title'       => __('Success'),
-                        'description' => __('Updated :offers offers and :allowances allowances.', [
-                            'offers' => $result['updated_offers'],
-                            'allowances' => $result['updated_allowances']
-                        ]),
-                    ]);
-                }
+                session()->flash('notification', [
+                    'status'      => 'warning',
+                    'title'       => __('Warning'),
+                    'description' => data_get($result, 'error_message', __('No offers found to update for this master family.')),
+                ]);
             } else {
-                $result = UpdateVolumeGrOfferFromMaster::make()->action(
-                    $masterProductCategory,
-                    null
-                );
-
-                if ($result['updated_offers'] > 0) {
-                    session()->flash('notification', [
-                        'status'      => 'success',
-                        'title'       => __('Success'),
-                        'description' => __('Volume discount removed from :offers offers and :allowances allowances.', [
-                            'offers' => $result['updated_offers'],
-                            'allowances' => $result['updated_allowances']
-                        ]),
-                    ]);
-                }
+                session()->flash('notification', [
+                    'status'      => 'success',
+                    'title'       => __('Success'),
+                    'description' => __('Updated :__offerCount offers and :__allowanceCount allowances.', [
+                        '__offerCount' => data_get($result, 'updated_offers', 0),
+                        '__allowanceCount' => data_get($result, 'updated_allowances', 0),
+                    ]),
+                ]);
             }
         }
 

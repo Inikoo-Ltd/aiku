@@ -89,21 +89,21 @@ const onSendPublish = async (data) => {
         });
 
         if (response && response.status === 200) {
-            if (response.data.has_unsubscribelink === false) {
-                visibleUnsubscribeWarningModal.value = true
+            // if (response.data.has_unsubscribelink === false) {
+            //     visibleUnsubscribeWarningModal.value = true
 
-                notify({
-                    title: "Warning",
-                    text: "Saved successfully, but no unsubscribe link was found.",
-                    type: "warning",
-                });
-            } else {
-                notify({
-                    title: "Success",
-                    text: "Saved successfully",
-                    type: "success",
-                });
-            }
+            //     notify({
+            //         title: "Warning",
+            //         text: "Saved successfully, but no unsubscribe link was found.",
+            //         type: "warning",
+            //     });
+            // } else {
+            notify({
+                title: "Success",
+                text: "Saved successfully",
+                type: "success",
+            });
+            // }
         }
     } catch (error) {
         console.log(error)
@@ -387,7 +387,7 @@ watch(
 
     <Dialog v-model:visible="visibleUnsubscribeWarningModal" modal :closable="false" :showHeader="false"
         :style="{ width: '30rem' }">
-        <div class="pt-4">
+        <div class="pt-4"> 
             <div class="text-center mb-4">
                 <div class="text-amber-500 text-4xl mb-3">⚠️</div>
                 <div class="font-semibold text-lg mb-2">Missing Unsubscribe Link</div>

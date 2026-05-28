@@ -1678,7 +1678,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
                                         :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
                                         :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
-                                        size="xs" type="primary" full />
+                                        size="xs" type="primary" full
+                                        @error="(e) => {
+                                            notify({
+                                                title: ctrans('Something went wrong'),
+                                                text: e.message || ctrans('Please try again later or contact administrator.'),
+                                                type: 'error',
+                                            })
+                                        }"
+                                    />
                                 </div>
                             </div>
                         </div>

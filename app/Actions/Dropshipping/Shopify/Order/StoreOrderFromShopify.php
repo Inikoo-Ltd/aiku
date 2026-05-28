@@ -43,7 +43,7 @@ class StoreOrderFromShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-        $deliveryAddress = Arr::get($modelData, 'shipping_address');
+        $deliveryAddress = Arr::get($modelData, 'shipping_address', []); // AIKU-Z20: fallback empty array
 
         $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
         $shopifyProducts = collect($modelData['line_items']);

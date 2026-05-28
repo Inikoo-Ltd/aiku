@@ -36,6 +36,8 @@ const props = withDefaults(defineProps<{
         routes: {
             detach_family: routeType
         }
+        is_shop_gr_active?: boolean
+        gr_offer_data?: any
     },
     master_vol_gr_reward?: {
         show_gr_vol: boolean
@@ -231,7 +233,7 @@ const saveGROffer = () => {
                     </Dialog>
                 </template>
 
-                <template v-if="data.gr_offer_data">
+                <template v-if="data.is_shop_gr_active && data.gr_offer_data">
                     <div class="mb-1">
                         {{ trans("Active Gold Reward offer") }}:
                         <Link :href="offerRoute(data.gr_offer_data)" class="secondaryLink">

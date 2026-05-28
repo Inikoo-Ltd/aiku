@@ -50,6 +50,8 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query->leftJoin('batch_codes', 'delivery_note_items.batch_code_id', '=', 'batch_codes.id');
         $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
+        $query->with('orgStock.tradeUnits');
+
         $query->leftjoin('shops', 'shops.id', '=', 'delivery_note_items.shop_id');
         return $query
             ->defaultSort('locations.sort_code', 'org_stocks.code')
