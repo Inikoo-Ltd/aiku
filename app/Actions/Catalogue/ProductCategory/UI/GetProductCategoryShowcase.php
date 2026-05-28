@@ -186,6 +186,7 @@ class GetProductCategoryShowcase
         $offer = IndexOffers::make()->getFirstInProductCategory($productCategory, 'Category Quantity Ordered Order Interval');
 
         $data['has_webpage'] = (bool)$productCategory->webpage;
+        $data['is_shop_gr_active'] = (bool) data_get($productCategory->shop->offers_data, 'gr.active', false);
         $data['gr_offer_data'] = $offer ? OfferResource::make($offer) : null;
         return $data;
     }
