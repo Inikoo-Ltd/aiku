@@ -10,7 +10,7 @@ import { faRobot, faPlus, faMinus, faUndoAlt } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import InputNumber from "primevue/inputnumber"
-import { ref, watch } from "vue"
+import { inject, ref, watch } from "vue"
 import { faSave as fadSave } from "@fad"
 import { faSave as falSave, faInfoCircle } from "@fal"
 import { faAsterisk, faQuestion, faSpinner, faMinus as fasMinus, faPlus as fasPlus } from "@fas"
@@ -171,7 +171,8 @@ const onClickMinusButton = () => {
 		return false // Prevent decreasing when the quantity is at or below the min value
 	} else {
 		if (props.denominator) {
-			form.quantity = Number(form.quantity) - Number((1 / props.denominator).toPrecision(25)) // Increase quantity if it's less than the max
+			// Changed to precision 5 (6 num behind comma)
+			form.quantity = Number(form.quantity) - Number((1 / props.denominator).toPrecision(5)) // Increase quantity if it's less than the max
 		} else {
 			form.quantity--
 		}
@@ -186,12 +187,16 @@ const onClickPlusButton = () => {
 		return false // Prevent increase if quantity is at or exceeds max value
 	} else {
 		if (props.denominator) {
-			form.quantity = Number(form.quantity) + Number((1 / props.denominator).toPrecision(25)) // Increase quantity if it's less than the max
+			// Changed to precision 5 (6 num behind comma)
+			form.quantity += Number((1 / props.denominator).toPrecision(5)) // Increase quantity if it's less than the max
 		} else {
 			form.quantity++
 		}
 	}
 }
+
+const layout = inject("layout", {})
+
 </script>
 
 <template>
@@ -253,6 +258,11 @@ const onClickPlusButton = () => {
 					:style="{
 						border: `1px dashed ${(colorTheme ? colorTheme : null) || '#374151'}55`,
 					}">
+					<span v-if="layout.app.environment == 'local'">
+						Would only show in local <br>
+						{{ form.quantity }}
+						{{ form.quantity / (props.denominator ?? 1) }}
+					</span>
 					<InputNumber
 						vxmodel="form.quantity"
 						:modelValue="props.denominator ? Math.floor(form.quantity * props.denominator) : form.quantity"
