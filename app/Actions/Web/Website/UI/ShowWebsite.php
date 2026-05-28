@@ -213,10 +213,6 @@ class ShowWebsite extends OrgAction
             'webpage'      => 'welcome-'.$shop->slug,
         ];
 
-        $route_welcome =  [
-           'name'       => $routeShowWebpage,
-           'parameters' => $routeParamWelcome,
-        ];
 
         return Inertia::render(
             'Org/Web/Website',
