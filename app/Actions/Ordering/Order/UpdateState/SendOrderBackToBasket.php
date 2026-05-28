@@ -12,6 +12,7 @@ use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -40,6 +41,15 @@ class SendOrderBackToBasket extends OrgAction
             'state'  => OrderStateEnum::CREATING,
             'status' => OrderStatusEnum::CREATING
         ]);
+
+        if ($order->shop?->type == ShopTypeEnum::B2B) {
+            // Patch for sending order back to basket. You did not update the customer current_order_in_basket_id previously Raul.
+            $order->customer?->update([
+                'current_order_in_basket_id' => $order->id
+            ]);
+        }
+        
+        
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::CREATING);
