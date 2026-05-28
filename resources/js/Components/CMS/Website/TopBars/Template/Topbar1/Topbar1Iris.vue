@@ -146,14 +146,14 @@ const goToBundle = () => {
 
         <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full ">
             <!-- Section: Main title -->
-            <div v-if="layout.offer_data && isLoggedIn" class="text-center md:text-left">
+            <div v-if="layout.offer_data && isLoggedIn" class="text-center md:text-left md:flex md:gap-4">
                 <span>
                     {{ trans("Hello") }}, <LinkIris href="/app/dashboard" :type="'internal'" class="inline-flex items-center justify-center hover:underline">
                         <span class="font-bold">{{ layout.iris_variables?.name }}</span>
                     </LinkIris>!
                 </span>
 
-                <div  v-if="layout.retina?.type !== 'b2b'">
+                <div  v-if="layout.retina?.type == 'b2b'">
                     <!-- Section: GR Amnesty (all users have GR) -->
                     <span v-if="layout.offer_data.amnesty"
                         class="text-yellow-300 text-xs inline-flex items-center gap-x-1">
