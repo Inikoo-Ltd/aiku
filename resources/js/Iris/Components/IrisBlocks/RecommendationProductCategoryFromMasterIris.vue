@@ -9,6 +9,8 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Common/Components/Image.vue"
+import { getStyles } from "@/Composables/styles"
+
 
 import { faChevronLeft, faChevronRight, faImage } from "@far"
 
@@ -33,21 +35,19 @@ const refreshTrigger = ref(0)
 const containerRef = ref<HTMLElement | null>(null)
 
 const allItems = computed(() => [
-  ...(props.fieldValue?.settings?.product_category || [])
+  ...(props.fieldValue?.product_category_recommended || [])
 ])
 
 const perRow = computed(() => {
-  const cfg = props.fieldValue?.settings?.per_row
-
   if (props.screenType === 'mobile') {
-    return cfg?.mobile ?? 2.2
+    return  2
   }
 
   if (props.screenType === 'tablet') {
-    return cfg?.tablet ?? 4
+    return 4
   }
 
-  return cfg?.desktop ?? 6.5
+  return  5
 })
 
 const spaceBetween = computed(() => {
@@ -137,7 +137,24 @@ console.log(props)
 </script>
 
 <template>
-  <div ref="containerRef" class="w-full overflow-hidden " :class="wrapperSpacingClass">
+  <div v-if="allItems.length >= (fieldValue?.recommendation_settings?.min_amt_shown || 5)"
+    :id="fieldValue?.id ? fieldValue?.id : 'recommended-productCategory-from-master' + indexBlock" class="w-full pb-6 md:px-[50px]"
+    :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(fieldValue.container?.properties, screenType),
+      width: 'auto'
+    }" :dropdown-type="props.fieldValue?.settings?.products_data?.type">
+
+    <div class="px-4 py-6  flex items-center justify-center">
+      <div class="text-3xl font-semibold text-gray-800">
+        <div v-if="fieldValue?.recommendation_settings.title" v-html="fieldValue?.recommendation_settings.title">
+        </div>
+        <div v-else>
+          {{ ctrans("Related Categories") }}
+        </div>
+      </div>
+    </div>
+
     <div class="relative w-full">
       <button v-if="showNavigation" ref="prevEl" type="button"
         class="absolute left-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full  transition  hover:text-gray-950 md:flex"
@@ -151,7 +168,7 @@ console.log(props)
           <a :href="data?.url || '#'" class="group flex h-full flex-col">
             <!-- Image -->
             <div class="aspect-square overflow-hidden bg-gray-100">
-              <Image v-if="data?.image" :src="data.image" :alt="data.name"
+              <Image v-if="data?.web_images?.main?.original" :src="data?.web_images?.main?.original" :alt="data.name"
                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 
               <div v-else class="flex h-full items-center justify-center">

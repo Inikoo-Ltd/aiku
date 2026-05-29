@@ -20,10 +20,12 @@ class GetWebBlockRecommendationsProductCategoriesFromMaster
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
+        $permissions =  [];
+
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.recommendation_settings',
-            data_get($webpage, 'website.settings.recommender_web_block', [])
+            data_get($webpage, 'website.settings.recommender_product_category_web_block', [])
         );
 
         data_set(
@@ -33,6 +35,8 @@ class GetWebBlockRecommendationsProductCategoriesFromMaster
                 GetIrisProductCategoriesInRecommendation::run($webpage->model)
             )->resolve()
         );
+
+         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
 
         return $webBlock;
     }
