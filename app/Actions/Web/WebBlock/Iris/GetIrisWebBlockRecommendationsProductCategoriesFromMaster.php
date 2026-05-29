@@ -24,7 +24,7 @@ class GetIrisWebBlockRecommendationsProductCategoriesFromMaster
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.recommendation_settings',
-            data_get($webpage, 'website.settings.recommender_web_block', [])
+            data_get($webpage, 'website.settings.recommender_product_category_web_block', [])
         );
 
         data_set(

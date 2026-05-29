@@ -50,7 +50,7 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['family-2', 'family-2-extra-description', 'family-3', 'family-3-extra-description'])) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamilyDescription::run($webpage, $webBlock);
-        } elseif (str_contains($webBlockType, 'product-')) {
+        } elseif (str_starts_with($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
         } elseif ($webBlockType == 'see-also-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockSeeAlso::run($webpage, $webBlock);

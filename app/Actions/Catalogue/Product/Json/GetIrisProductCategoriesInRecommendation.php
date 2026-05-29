@@ -26,7 +26,7 @@ class GetIrisProductCategoriesInRecommendation extends IrisAction
     {
         $relatedProductCategoriesId = $productCategory->relatedProductCategories->pluck('id');
 
-        $relatedProductCategories = QueryBuilder::for('product_categories')
+        $relatedProductCategories = QueryBuilder::for(ProductCategory::class)
             ->whereIn('product_categories.id', $relatedProductCategoriesId)
             ->leftJoin('webpages', function ($join) {
                 $join->on('product_categories.id', '=', 'webpages.model_id')
