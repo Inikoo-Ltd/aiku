@@ -36,6 +36,8 @@ class ShowTradeUnitsDashboard extends OrgAction
                     ],
                     'title' => __('Trade Units Dashboard'),
                 ],
+                'statsBoxTitle'         => __('Trade Units'),
+                'statsBoxNegativeTitle' => __('Faulty Trade Units'),
                 'statsBox' => [
                     [
                         'label' => __('Trade Units'),

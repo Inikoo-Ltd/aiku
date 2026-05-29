@@ -177,6 +177,64 @@ class ShowDepartment extends OrgAction
                         )
                     )),
 
+                DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
+                fn() => [
+                    'id' => $department->id,
+                    'data' => [],
+                    'editable' => true,
+                    'route_sync_related_products' => [],
+                    'sync_payload_key' => 'id',
+                    'route_get_department' => [
+                        'name' => 'grp.org.shops.show.catalogue.departments.index',
+                        'parameters' => [
+                            'shop' => $department->shop->slug,
+                            'organisation' => $department->organisation->slug
+                        ]
+                    ],
+                    'route_get_sub_department' => [
+                        'name' => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => [
+                            'shop' => $department->shop->slug,
+                            'organisation' => $department->organisation->slug
+                        ]
+                    ],
+                    'route_get_family' => [
+                        'name' => 'grp.org.shops.show.catalogue.families.index',
+                        'parameters' => [
+                            'shop' => $department->shop->slug,
+                            'organisation' => $department->organisation->slug
+                        ]
+                    ]
+                ]
+                : Inertia::lazy(fn() => [
+                    'id' => $department->id,
+                    'data' => [],
+                    'editable' => true,
+                    'route_sync_related_products' => [],
+                    'sync_payload_key' => 'id',
+                    'route_get_department' => [
+                        'name' => 'grp.org.shops.show.catalogue.departments.index',
+                        'parameters' => [
+                            'shop' => $department->shop->slug,
+                            'organisation' => $department->organisation->slug
+                        ]
+                    ],
+                    'route_get_sub_department' => [
+                        'name' => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => [
+                            'shop' => $department->shop->slug,
+                            'organisation' => $department->organisation->slug
+                        ]
+                    ],
+                    'route_get_family' => [
+                        'name' => 'grp.org.shops.show.catalogue.families.index',
+                        'parameters' => [
+                            'shop' => $department->shop->slug,
+                            'organisation' => $department->organisation->slug
+                        ]
+                    ]
+                ]),
+
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
                     fn () =>  GetProductCategoryImages::run($department)
                     : Inertia::lazy(fn () => GetProductCategoryImages::run($department)),
