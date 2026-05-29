@@ -41,6 +41,7 @@ const dataWebpage = usePage().props.webpage_data as {
     product_page?: {
         department?: {
             name: string
+            webpage_title: string
         }
     }
 }
@@ -67,7 +68,7 @@ const isProductLoading = (productId: string) => {
 const isFetched = ref(false)
 
 // if subType is 'department'
-const luigiTrendsDepartment = async (departmentName?: string) => {
+const luigiTrendsDepartment = async (departmentWebpageTitle?: string) => {
     const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
 
     const response = await axios.post(
@@ -75,11 +76,11 @@ const luigiTrendsDepartment = async (departmentName?: string) => {
         [
             {
                 size: 25,
-                widget_id: departmentName ? "product_recommendation" : "department_recommendation",
+                widget_id: departmentWebpageTitle ? "product_recommendation" : "department_recommendation",
                 auth_user_id: userId,
                 recommendation_context: [{
                     attribute: "department",
-                    values: [departmentName ?? usePage().props.webpage_data?.title],
+                    values: [departmentWebpageTitle ?? usePage().props.webpage_data?.title],
                     operator: "or"
                 }],
                 model: "department"
@@ -189,7 +190,7 @@ const fetchRecommenders = async () => {
         const subType = dataWebpage?.sub_type
         const response = await (
             subType === 'department' ? luigiTrendsDepartment() :
-            subType === 'product' ? luigiTrendsDepartment(dataWebpage?.product_page?.department?.name) :
+            subType === 'product' ? luigiTrendsDepartment(dataWebpage?.product_page?.department?.webpage_title) :
             subType === 'sub_department' ? luigiTrendsSubDepartment() :
             // subType === 'family' ? luigiTrendsCategory() :
             subType === 'family' ? Promise.reject(new Error('Trends is not available in Family page')) :
