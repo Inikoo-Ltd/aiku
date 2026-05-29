@@ -19,6 +19,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsProductCategoriesFromMaster;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
@@ -57,6 +58,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockBlog::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsCRB::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'recommendation-product-category-from-master') {
+            $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-from-master') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {

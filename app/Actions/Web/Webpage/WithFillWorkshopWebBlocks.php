@@ -19,6 +19,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategoriesFromMaster;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
@@ -58,6 +59,8 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-from-master') {
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'recommendation-product-category-from-master') {
+            $parsedWebBlocks[$key] = GetWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } else {
