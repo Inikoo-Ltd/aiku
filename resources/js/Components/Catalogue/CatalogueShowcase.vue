@@ -14,6 +14,7 @@ import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle, faExclamationTriangle, faHatCowboy } from "@fas"
 import Image from "@common/Components/Image.vue"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
+import StatsBoxNegativeList from "@/Components/Stats/StatsBoxNegativeList.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { Image as ImageProxy } from "@/types/Image"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -107,13 +108,9 @@ const statsOnlyAdditional = Object.fromEntries(
 
     <div v-if="statsOnlyAdditional.additionalStatBox" class="p-6">
         <span class="font-semibold"> {{ trans('Faulty Catalogue') }} </span>
-        <dl class="pt-2 grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsBox
-                v-for="(stat, idxStat) in statsOnlyAdditional.additionalStatBox"
-                :stat="stat"
-                :key="idxStat"
-            />
-        </dl>
+        <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5 gap-2">
+            <StatsBoxNegativeList :stats="statsOnlyAdditional.additionalStatBox" />
+        </div>
     </div>
 
     <!-- Top of the Month -->
