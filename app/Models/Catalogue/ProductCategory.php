@@ -418,4 +418,12 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsToMany(Product::class, 'product_category_has_related_products')
             ->withTimestamps();
     }
+    
+    public function relatedProductCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductCategory::class, 'product_category_has_related_product_categories')
+            ->orderByPivot('position')
+            ->withPivot('id', 'position')
+            ->withTimestamps();
+    }
 }

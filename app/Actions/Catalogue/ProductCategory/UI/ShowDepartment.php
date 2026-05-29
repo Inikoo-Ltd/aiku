@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProductCategories\GetRelatedProductCategories;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
@@ -162,78 +163,13 @@ class ShowDepartment extends OrgAction
                     fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))),
 
-                DepartmentTabsEnum::CUSTOMERS->value => $this->tab == DepartmentTabsEnum::CUSTOMERS->value
-                    ?
-                    fn () => CustomersResource::collection(
-                        IndexCustomers::run(
-                            parent: $department->shop,
-                            prefix: 'customers'
-                        )
-                    )
-                    : Inertia::lazy(fn () => CustomersResource::collection(
-                        IndexCustomers::run(
-                            parent: $department->shop,
-                            prefix: 'customers'
-                        )
-                    )),
+                DepartmentTabsEnum::CUSTOMERS->value => $this->tab == DepartmentTabsEnum::CUSTOMERS->value ?
+                    fn () => CustomersResource::collection(IndexCustomers::run(parent: $department->shop, prefix: 'customers'))
+                    : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $department->shop, prefix: 'customers'))),
 
                 DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
-                fn() => [
-                    'id' => $department->id,
-                    'data' => [],
-                    'editable' => true,
-                    'route_sync_related_products' => [],
-                    'sync_payload_key' => 'id',
-                    'route_get_department' => [
-                        'name' => 'grp.org.shops.show.catalogue.departments.index',
-                        'parameters' => [
-                            'shop' => $department->shop->slug,
-                            'organisation' => $department->organisation->slug
-                        ]
-                    ],
-                    'route_get_sub_department' => [
-                        'name' => 'grp.org.shops.show.catalogue.sub_departments.index',
-                        'parameters' => [
-                            'shop' => $department->shop->slug,
-                            'organisation' => $department->organisation->slug
-                        ]
-                    ],
-                    'route_get_family' => [
-                        'name' => 'grp.org.shops.show.catalogue.families.index',
-                        'parameters' => [
-                            'shop' => $department->shop->slug,
-                            'organisation' => $department->organisation->slug
-                        ]
-                    ]
-                ]
-                : Inertia::lazy(fn() => [
-                    'id' => $department->id,
-                    'data' => [],
-                    'editable' => true,
-                    'route_sync_related_products' => [],
-                    'sync_payload_key' => 'id',
-                    'route_get_department' => [
-                        'name' => 'grp.org.shops.show.catalogue.departments.index',
-                        'parameters' => [
-                            'shop' => $department->shop->slug,
-                            'organisation' => $department->organisation->slug
-                        ]
-                    ],
-                    'route_get_sub_department' => [
-                        'name' => 'grp.org.shops.show.catalogue.sub_departments.index',
-                        'parameters' => [
-                            'shop' => $department->shop->slug,
-                            'organisation' => $department->organisation->slug
-                        ]
-                    ],
-                    'route_get_family' => [
-                        'name' => 'grp.org.shops.show.catalogue.families.index',
-                        'parameters' => [
-                            'shop' => $department->shop->slug,
-                            'organisation' => $department->organisation->slug
-                        ]
-                    ]
-                ]),
+                    fn() => GetRelatedProductCategories::run($department)
+                    : Inertia::lazy(fn() => GetRelatedProductCategories::run($department)),
 
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
                     fn () =>  GetProductCategoryImages::run($department)
@@ -244,19 +180,15 @@ class ShowDepartment extends OrgAction
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($department))),
 
                 DepartmentTabsEnum::OFFERS->value => $this->tab == DepartmentTabsEnum::OFFERS->value ?
-                fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))
-                : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))),
+                    fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))
+                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))),
 
             ]
-        )->table(
-            IndexCustomers::make()->tableStructure(
-                parent: $department->shop,
-                prefix: 'customers'
-            )
         )
-            ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value))
-            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(DepartmentTabsEnum::SALES->value))
-            ->table(IndexOffers::make()->tableStructure(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value));
+        ->table(IndexCustomers::make()->tableStructure(parent: $department->shop, prefix: 'customers'))
+        ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value))
+        ->table(IndexProductCategoryTimeSeries::make()->tableStructure(DepartmentTabsEnum::SALES->value))
+        ->table(IndexOffers::make()->tableStructure(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value));
     }
 
 

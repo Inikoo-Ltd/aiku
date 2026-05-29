@@ -264,6 +264,13 @@ class EditShop extends OrgAction
                             'information'   => __('This would force related products under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
+                        'related_product_categories_follow_master' => [
+                            'label'         => 'Related Product Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.related_product_categories_follow_master', false),
+                            'information'   => __('This would force related product categories under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
                     ]
                 ] : [],
                 [

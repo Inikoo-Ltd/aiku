@@ -52,7 +52,6 @@ use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\RehydrateChildProductImages;
-use App\Actions\Catalogue\ProductCategory\SyncProductCategoryRelatedProducts;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -294,7 +293,6 @@ use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
-use App\Actions\Masters\MasterProductCategory\SyncMasterProductCategoryRelatedMasterAssets;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryImages;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryTranslations;
@@ -410,6 +408,10 @@ use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProductCategories\SyncProductCategoryRelatedProductCategories;
+use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProducts\SyncProductCategoryRelatedProducts;
+use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\SyncMasterProductCategoryRelatedMasterProductCategories;
+use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\SyncMasterProductCategoryRelatedMasterAssets;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -472,9 +474,10 @@ Route::patch('master-product-category/{masterProductCategory:id}/translations', 
 Route::patch('master-product-category/{masterProductCategory:id}/master-sub-department/parent', UpdateMasterSubDepartmentsMasterDepartment::class)->name('master_product_category.master_sub_department.parent.update');
 
 Route::patch('master-product-category/{masterProductCategory:id}/related-assets', SyncMasterProductCategoryRelatedMasterAssets::class)->name('master_product_category.related_assets.sync')->withoutScopedBindings();
+Route::patch('master-product-category/{masterProductCategory:id}/related-master-product-categories', SyncMasterProductCategoryRelatedMasterProductCategories::class)->name('master_product_category.related_master_product_categories.sync')->withoutScopedBindings();
+
 Route::patch('product-category/{productCategory:id}/related-products', SyncProductCategoryRelatedProducts::class)->name('product_category.related_products.sync')->withoutScopedBindings();
-
-
+Route::patch('product-category/{productCategory:id}/related-product-categories', SyncProductCategoryRelatedProductCategories::class)->name('product_category.related_product_categories.sync')->withoutScopedBindings();
 
 Route::patch('master-product-category/{masterProductCategory:id}/reorder-index', UpdateMasterAssetIndex::class)->name('master_product_category.reorder_index');
 Route::patch('product-category/{productCategory:id}/reorder-index', UpdateProductIndex::class)->name('product_category.reorder_index');
