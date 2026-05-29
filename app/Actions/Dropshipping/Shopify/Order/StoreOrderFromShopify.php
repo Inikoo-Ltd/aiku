@@ -66,7 +66,13 @@ class StoreOrderFromShopify extends OrgAction
                     'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
                     'date'                      => $modelData['created_at'],
                     'delivery_address'          => new Address($deliveryAddress),
-                    'data'                      => ['shopify_data' => $modelData],
+                    'data'                      => [
+                        'shopify_data' => $modelData,
+                        'platform_milestones' => [
+                            'draft_created_at' => Arr::get($modelData, 'created_at'),
+                            'placed_at'        => Arr::get($modelData, 'placed_at'),
+                        ]
+                    ],
                     'platform_order_id'         => Arr::get($modelData, 'id'),
 
                 ]);
