@@ -33,7 +33,7 @@ class SyncShopRelatedProductCategoriesFromMasterProductCategory
                 }
             }
             SyncProductCategoryRelatedProductCategories::make()->action($productCategory, [
-                'product_categories_id' => $productCategoriesId
+                'related_product_categories_id' => $productCategoriesId
             ]);
         }
     }

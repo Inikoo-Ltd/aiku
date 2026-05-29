@@ -34,14 +34,13 @@ class SyncMasterProductCategoryRelatedMasterProductCategories extends OrgAction
 
         $masterProductCategory->relatedMasterProductCategories()->sync($relatedMasterProductCategories);
 
-        SyncShopRelatedProductCategoriesFromMasterProductCategory::dispatch($masterProductCategory);
+        SyncShopRelatedProductCategoriesFromMasterProductCategory::run($masterProductCategory);
 
         return $masterProductCategory;
     }
 
     public function rules(): array
     {
-
         return [
             'related_master_product_category_id' => ['sometimes', 'array'],
             'related_master_product_category_id.*' => ['integer', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->masterShopId)],

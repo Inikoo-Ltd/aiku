@@ -9,6 +9,8 @@
 
 namespace App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProductCategories;
 
+use App\Actions\Catalogue\ProductCategory\UI\GetProductCategorySiblingRecommendation;
+use App\Http\Resources\Masters\RelatedMasterProductsCategoriesResource;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -24,8 +26,8 @@ class GetRelatedProductCategories
 
         return [
             'id'               => $productCategory->id,
-            'data'             => [],
-            'editable'         => $isRelatedProductCategoryFollowMaster,
+            'data'             => RelatedMasterProductsCategoriesResource::collection(GetProductCategorySiblingRecommendation::run($productCategory)),
+            'editable'         => !$isRelatedProductCategoryFollowMaster,
             'sync_payload_key' => 'related_product_categories_id',
             'route_sync_related_products' => [
                 'name'       => 'grp.models.product_category.related_product_categories.sync',
