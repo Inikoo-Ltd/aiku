@@ -200,8 +200,8 @@ class ShowFamily extends OrgAction
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
 
             FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
-                fn() => GetRelatedProductCategories::run($family)
-                : Inertia::lazy(fn() => GetRelatedProductCategories::run($family)),
+                    fn() => GetRelatedProductCategories::run($family)
+                    : Inertia::lazy(fn() => GetRelatedProductCategories::run($family)),
 
             FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
                 fn () => GetRelatedProducts::run($family)

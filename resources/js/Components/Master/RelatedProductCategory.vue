@@ -6,6 +6,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import SelectorProductCategory from "@/Components/SelectorProductCategory.vue"
 import Image from "@common/Components/Image.vue";
 import { routeType } from "@/types/route";
+import axios from "axios";
+import { notify } from "@kyvg/vue3-notification";
 
 const props = defineProps<{
     data: {
@@ -37,7 +39,62 @@ const openAddProduct = () => {
     productDialog.value?.open()
 }
 
-const SaveOrder = async () => {}
+const SaveOrder = async () => {
+    if (!props.data?.editable) return
+    if (!props.data?.route_sync_related_products?.name) return
+
+    loadingOrder.value = true
+
+    console.log(
+        'Saving order with the following products:',
+        listProducts.value.data
+    )
+
+    const payloadKey = props.data?.sync_payload_key || 'product_category_ids'
+    const payloadValues = listProducts.value.data.data.map((product: any) => product.id)
+    const payloadOrderedMap = Object.fromEntries(
+        listProducts.value.data.data.map((product: any, index: number) => [
+            product.order != null
+                ? product.order - 1
+                : index,
+            product.id
+        ])
+    )
+    const payload = payloadKey === 'product_category_ids'
+        ? { [payloadKey]: payloadValues }
+        : { [payloadKey]: payloadOrderedMap }
+
+    try {
+        await axios.patch(
+            route(
+                props.data.route_sync_related_products.name,
+                props.data.route_sync_related_products.parameters
+            ),
+            payload
+        )
+
+        notify({
+            title: trans("Success!"),
+            text: trans("Successfully reordered the products"),
+            type: "success"
+        })
+
+    } catch (error: any) {
+        console.error(error)
+
+        notify({
+            title: trans("Something went wrong"),
+            text:
+                error?.response?.data?.message ||
+                trans("Failed to reorder products"),
+            type: "error"
+        })
+
+    } finally {
+        loadingOrder.value = false
+    }
+}
+
 </script>
 
 <template>
