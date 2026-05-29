@@ -33,17 +33,16 @@ class ShowCharge extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Charge $charge, ActionRequest $request): Charge
     {
-        $this->initialisationFromShop($shop, $request)->withTab(ShippingZoneSchemaTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(ChargeTabsEnum::values());
         return $this->handle($charge);
     }
 
     public function htmlResponse(Charge $charge, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Org/Catalogue/Charge',
             [
-                    'title'       => __('Charge'),
+                    'title'       => __('Charge') . ' - ' . $charge->name,
                     'breadcrumbs' => $this->getBreadcrumbs(
                         $charge,
                         $request->route()->getName(),
@@ -58,6 +57,7 @@ class ShowCharge extends OrgAction
                             'title' => __('Charge'),
                             'icon'  => 'fal fa-charging-station'
                         ],
+                        'model'  => __('Charge'),
                         'title'   => $charge->name,
                         'actions' => [
                             $this->canEdit ? [

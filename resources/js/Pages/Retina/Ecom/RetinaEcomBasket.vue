@@ -607,7 +607,7 @@ const onChangeInsurance = async (val: boolean) => {
             <!-- Section: Charge Premium Dispatch -->
             <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
-                    <InformationIcon :information="charges.premium_dispatch?.description" />
+                    <InformationIcon v-if="charges.premium_dispatch?.description" :information="charges.premium_dispatch.description ?? ''" />
                     {{ charges.premium_dispatch?.label ? ctrans(charges.premium_dispatch.label) : ctrans(charges.premium_dispatch?.name ?? '') }}
                     <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
                 </div>
@@ -631,7 +631,7 @@ const onChangeInsurance = async (val: boolean) => {
             <!-- Section: Charge Extra Packing -->
             <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
-                    <InformationIcon :information="charges.extra_packing?.description" />
+                    <InformationIcon v-if="charges.extra_packing?.description" :information="charges.extra_packing.description ?? ''" />
                     {{ charges.extra_packing?.label ? trans(charges.extra_packing.label) : trans(charges.extra_packing?.name ?? '') }}
                     <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
                 </div>
@@ -654,7 +654,7 @@ const onChangeInsurance = async (val: boolean) => {
             <!-- Section: Charge Insurance -->
             <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative">
-                    <InformationIcon :information="charges.insurance?.description" />
+                    <InformationIcon v-if="charges.insurance?.description" :information="charges.insurance.description ?? ''" />
                     {{ charges.insurance?.label ? trans(charges.insurance.label) : trans(charges.insurance?.name ?? '') }}
                     <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
                 </div>
