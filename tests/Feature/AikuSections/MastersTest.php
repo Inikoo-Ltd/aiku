@@ -206,7 +206,7 @@ test('UI Edit Master Shop', function (MasterShop $masterShop) {
             ->has(
                 'formData',
                 fn (AssertableInertia $form) => $form
-                    ->has('blueprint', 2)
+                    ->has('blueprint', 3)
                     ->has('blueprint.0.fields.code')
                     ->where('blueprint.0.fields.code.type', 'input')
                     ->where('blueprint.0.fields.code.value', $masterShop->code)

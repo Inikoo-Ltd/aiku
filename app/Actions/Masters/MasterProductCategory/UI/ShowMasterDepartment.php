@@ -151,6 +151,37 @@ class ShowMasterDepartment extends GrpAction
                     fn () => GetMasterProductCategoryContent::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryContent::run($masterDepartment)),
 
+                MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value =>
+                $this->tab === MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value
+                    ? fn () => [
+                        'id'       => $masterDepartment->id,
+                        'data'     => [],
+                        'editable' => false,
+                        'route_sync_related_products' => [],
+                        'sync_payload_key' => 'master_asset_ids',
+                        'route_get_products' => [
+                            'name' => 'grp.masters.master_shops.show.master_products.index',
+                            'parameters' => [
+                                'masterShop' => $masterDepartment->masterShop->slug,
+                            ]
+                        ]
+                    ]
+                    : Inertia::lazy(
+                        fn () => [
+                            'id'       => $masterDepartment->id,
+                            'data'     => [],
+                            'editable' => false,
+                            'route_sync_related_products' => [],
+                            'sync_payload_key' => 'master_asset_ids',
+                            'route_get_products' => [
+                                'name' => 'grp.masters.master_shops.show.master_products.index',
+                                'parameters' => [
+                                    'masterShop' => $masterDepartment->masterShop->slug,
+                                ]
+                            ]
+                        ]
+                    ),
+
                 // MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
                 //     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
                 //     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),

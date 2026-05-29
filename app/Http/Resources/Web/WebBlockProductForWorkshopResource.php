@@ -15,10 +15,8 @@ use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property mixed $units

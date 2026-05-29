@@ -200,6 +200,37 @@ class ShowMasterSubDepartment extends GrpAction
                     fn () => GetMasterProductCategoryTimeSeriesData::run($masterSubDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryTimeSeriesData::run($masterSubDepartment)),
 
+                MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value =>
+                $this->tab === MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value
+                    ? fn () => [
+                        'id'       => $masterSubDepartment->id,
+                        'data'     => [],
+                        'editable' => false,
+                        'route_sync_related_products' => [],
+                        'sync_payload_key' => 'master_asset_ids',
+                        'route_get_products' => [
+                            'name' => 'grp.masters.master_shops.show.master_products.index',
+                            'parameters' => [
+                                'masterShop' => $masterSubDepartment->masterShop->slug,
+                            ]
+                        ]
+                    ]
+                    : Inertia::lazy(
+                        fn () => [
+                            'id'       => $masterSubDepartment->id,
+                            'data'     => [],
+                            'editable' => false,
+                            'route_sync_related_products' => [],
+                            'sync_payload_key' => 'master_asset_ids',
+                            'route_get_products' => [
+                                'name' => 'grp.masters.master_shops.show.master_products.index',
+                                'parameters' => [
+                                    'masterShop' => $masterSubDepartment->masterShop->slug,
+                                ]
+                            ]
+                        ]
+                    ),
+
                 MasterSubDepartmentTabsEnum::SALES->value => $this->tab == MasterSubDepartmentTabsEnum::SALES->value ?
                     fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterSubDepartment, MasterSubDepartmentTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterSubDepartment, MasterSubDepartmentTabsEnum::SALES->value))),

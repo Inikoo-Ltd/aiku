@@ -151,6 +151,37 @@ class ShowMasterFamily extends GrpAction
                         fn () => GetMasterProductCategoryImages::run($masterFamily)
                     ),
 
+            MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value =>
+            $this->tab === MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value
+                ? fn () => [
+                    'id'       => $masterFamily->id,
+                    'data'     => [],
+                    'editable' => false,
+                    'route_sync_related_products' => [],
+                    'sync_payload_key' => 'master_asset_ids',
+                    'route_get_products' => [
+                        'name' => 'grp.masters.master_shops.show.master_products.index',
+                        'parameters' => [
+                            'masterShop' => $masterFamily->masterShop->slug,
+                        ]
+                    ]
+                ]
+                : Inertia::lazy(
+                    fn () => [
+                        'id'       => $masterFamily->id,
+                        'data'     => [],
+                        'editable' => false,
+                        'route_sync_related_products' => [],
+                        'sync_payload_key' => 'master_asset_ids',
+                        'route_get_products' => [
+                            'name' => 'grp.masters.master_shops.show.master_products.index',
+                            'parameters' => [
+                                'masterShop' => $masterFamily->masterShop->slug,
+                            ]
+                        ]
+                    ]
+                ),
+
             MasterFamilyTabsEnum::RELATED_PRODUCTS->value =>
                 $this->tab === MasterFamilyTabsEnum::RELATED_PRODUCTS->value
                     ? fn () => [

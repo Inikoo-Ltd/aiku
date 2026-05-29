@@ -427,6 +427,7 @@ const isOffersData = (offersData: any): boolean => {
 
                         <!-- Toggle: is_cut_view -->
                         <span
+                            v-if="layout.app.environment == 'local'"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
                             v-tooltip="trans('Cut view')"
                             class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
