@@ -111,6 +111,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.related_product_follow_master', Arr::pull($modelData, 'related_product_follow_master'));
         }
 
+        if (Arr::has($modelData, 'related_product_categories_follow_master')) {
+            data_set($modelData, 'settings.catalog.related_product_categories_follow_master', Arr::pull($modelData, 'related_product_categories_follow_master'));
+        }
+
         if (Arr::has($modelData, 'follow_master_pricing')) {
             $reHydrateChildPrices = true;
             data_set($modelData, 'settings.catalog.follow_master_pricing', Arr::pull($modelData, 'follow_master_pricing'));
@@ -418,6 +422,7 @@ class UpdateShop extends OrgAction
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'related_product_follow_master'                           => ['sometimes', 'boolean'],
+            'related_product_categories_follow_master'                => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],

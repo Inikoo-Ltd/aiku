@@ -6,9 +6,9 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterProductCategory;
+namespace App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts;
 
-use App\Actions\Catalogue\ProductCategory\SyncProductCategoryRelatedProducts;
+use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProducts\SyncProductCategoryRelatedProducts;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsAction;

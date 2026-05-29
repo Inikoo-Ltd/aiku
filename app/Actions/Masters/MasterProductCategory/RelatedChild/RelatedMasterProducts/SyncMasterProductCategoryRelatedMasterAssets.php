@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterProductCategory;
+namespace App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts;
 
 use App\Actions\OrgAction;
 use App\Models\Masters\MasterProductCategory;
@@ -34,7 +34,6 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
         $masterProductCategory->relatedMasterAssets()->sync($relatedMasterAssets);
 
         SyncShopRelatedProductsFromMasterCategory::dispatch($masterProductCategory);
-
 
         return $masterProductCategory;
     }

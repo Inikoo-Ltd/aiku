@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\ProductCategory;
+namespace App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProducts;
 
 use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;

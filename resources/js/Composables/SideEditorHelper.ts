@@ -49,6 +49,7 @@ import ShowBlockInResponsive from '@/Components/CMS/Fields/ShowBlockInResponsive
 import ResponsiveText from '@/Components/CMS/Fields/ResponsiveText.vue'
 import { SelectButton } from 'primevue'
 import SelectBanner from '@/Components/CMS/Fields/SelectBanner.vue'
+import SelectProductCategory from '@/Components/Workshop/Properties/SelectProductCategory.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -99,7 +100,8 @@ export const getComponent = (componentName: string) => {
         'visibility' : ShowBlockInResponsive,
         'text-responsive': ResponsiveText,
         'select-button' : SelectButton,
-        'select_banner' : SelectBanner
+        'select_banner' : SelectBanner,
+        'select_product_category' : SelectProductCategory
     }
     return components[componentName] ?? NotFoundComponents
 }

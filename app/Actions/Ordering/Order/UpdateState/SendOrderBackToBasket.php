@@ -64,13 +64,22 @@ class SendOrderBackToBasket extends OrgAction
             $validator->errors()->add('state', 'You only can return to basket if current status is submitted');
         }
 
-        $count = Order::where('customer_id', $this->order->customer_id)
-            ->where('state', OrderStateEnum::CREATING)
-            ->count();
+        $shop = $this->shop ?? $this->order->shop;
 
-        if ($count > 0) {
-            $validator->errors()->add('message', 'Customer already has an order in basket');
+        if ($shop->type == ShopTypeEnum::EXTERNAL) {
+            $validator->errors()->add('message', 'Unable to send external shop order back to basket');
         }
+        
+        if (!in_array($shop->type, [ShopTypeEnum::DROPSHIPPING])) {
+            $count = Order::where('customer_id', $this->order->customer_id)
+                ->where('state', OrderStateEnum::CREATING)
+                ->count();
+    
+            if ($count > 0) {
+                $validator->errors()->add('message', 'Customer already has an order in basket');
+            }
+        }
+
     }
 
     public function action(Order $order): Order

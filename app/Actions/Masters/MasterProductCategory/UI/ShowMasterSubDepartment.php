@@ -26,6 +26,8 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
+use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
+use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedProductCategories\GetRelatedProductCategories;
 use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\Http\Resources\Masters\MasterProductCategoryTimeSeriesResource;
 
@@ -200,60 +202,9 @@ class ShowMasterSubDepartment extends GrpAction
                     fn () => GetMasterProductCategoryTimeSeriesData::run($masterSubDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryTimeSeriesData::run($masterSubDepartment)),
 
-                MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value =>
-                $this->tab === MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value
-                    ? fn() => [
-                        'id'       => $masterSubDepartment->id,
-                        'data'     => [],
-                        'editable' => false,
-                        'route_sync_related_products' => [],
-                        'sync_payload_key' => 'id',
-                        'route_get_department' => [
-                            'name' => 'grp.masters.master_shops.show.master_departments.index',
-                            'parameters' => [
-                                'masterShop' => $masterSubDepartment->masterShop->slug,
-                            ]
-                        ],
-                        'route_get_sub_department' => [
-                            'name' => 'grp.masters.master_shops.show.master_sub_departments.index',
-                            'parameters' => [
-                                'masterShop' => $masterSubDepartment->masterShop->slug,
-                            ]
-                        ],
-                        'route_get_family' => [
-                            'name' => 'grp.masters.master_shops.show.master_families.index',
-                            'parameters' => [
-                                'masterShop' => $masterSubDepartment->masterShop->slug,
-                            ]
-                        ]
-                    ]
-                    : Inertia::lazy(
-                        fn() => [
-                            'id'       => $masterSubDepartment->id,
-                            'data'     => [],
-                            'editable' => false,
-                            'route_sync_related_products' => [],
-                            'sync_payload_key' => 'master_asset_ids',
-                            'route_get_department' => [
-                                'name' => 'grp.masters.master_shops.show.master_departments.index',
-                                'parameters' => [
-                                    'masterShop' => $masterSubDepartment->masterShop->slug,
-                                ]
-                            ],
-                            'route_get_sub_department' => [
-                                'name' => 'grp.masters.master_shops.show.master_sub_departments.index',
-                                'parameters' => [
-                                    'masterShop' => $masterSubDepartment->masterShop->slug,
-                                ]
-                            ],
-                            'route_get_family' => [
-                                'name' => 'grp.masters.master_shops.show.master_families.index',
-                                'parameters' => [
-                                    'masterShop' => $masterSubDepartment->masterShop->slug,
-                                ]
-                            ]
-                        ]
-                    ),
+                MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab === MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ? 
+                    fn() => GetRelatedMasterProductCategories::run($masterSubDepartment)
+                    : Inertia::lazy(fn() => GetRelatedMasterProductCategories::run($masterSubDepartment)),
 
                 MasterSubDepartmentTabsEnum::SALES->value => $this->tab == MasterSubDepartmentTabsEnum::SALES->value ?
                     fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterSubDepartment, MasterSubDepartmentTabsEnum::SALES->value))
