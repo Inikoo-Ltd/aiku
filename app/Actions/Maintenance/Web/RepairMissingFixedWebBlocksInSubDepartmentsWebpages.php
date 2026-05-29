@@ -67,6 +67,11 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
             $this->createWebBlock($webpage, 'sub-department-description-1');
         }
 
+        $countRelatedProductCategoryBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master');
+        if (count($countRelatedProductCategoryBlock) == 0) {
+            $this->createWebBlock($webpage,'recommendation-product-category-from-master');
+        }
+
         $webpage->refresh();
         if ($command->option('set-description-top')) {
             $this->setDescriptionWebBlockOnTop($webpage);

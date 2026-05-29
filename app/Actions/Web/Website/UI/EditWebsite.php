@@ -211,6 +211,31 @@ class EditWebsite extends OrgAction
                     ]
                 ]
             ];
+             $blueprints[] = [
+                'label'  => __('Related Products Category Web Block'),
+                'icon'   => 'fad fa-folder-tree',
+                'fields' => [
+                    'title_product_category_recommender'  => [
+                        'type'          => 'textEditor',
+                        'label'         => __('Title'),
+                        'value'         => data_get($website->settings, 'recommender_product_category_web_block.title', null),
+                    ],
+                    'min_amt_shown_recommender_product_category'  => [
+                        'type'          => 'input_number',
+                        'label'         => __('Min Amount'),
+                        'min'           => 1,
+                        'information'   => __('If product count is less than min amount, then that web block will not be shown'),
+                        'value'         => data_get($website->settings, 'recommender_product_category_web_block.min_amt_shown', 5),
+                    ],
+                    'max_amt_shown_recommender_product_category'  => [
+                        'type'          => 'input_number',
+                        'label'         => __('Max Amount'),
+                        'min'           => 1,
+                        'information'   => __('If product count is more than max amount, then the exceeding products will not be shown'),
+                        'value'         => data_get($website->settings, 'recommender_product_category_web_block.description_has_overview', 100),
+                    ]
+                ]
+            ];
             $blueprints[] = [
                 'label'  => __('Registration'),
                 'icon'   => 'fa-light fa-id-card',

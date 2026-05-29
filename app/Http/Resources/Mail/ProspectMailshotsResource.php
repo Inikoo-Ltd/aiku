@@ -1,0 +1,62 @@
+<?php
+
+/*
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: Thursday, 29 May 2026 14:23:32 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
+ */
+
+namespace App\Http\Resources\Mail;
+
+use App\Models\Comms\Mailshot;
+use Carbon\Carbon;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * @property string $slug
+ * @property string $subject
+ * @property mixed $number_dispatched_emails
+ * @property mixed $number_estimated_dispatched_emails
+ * @property mixed $number_dispatched_emails_state_delivered
+ * @property mixed $number_dispatched_emails_state_opened
+ * @property mixed $number_dispatched_emails_state_hard_bounce
+ * @property mixed $number_dispatched_emails_state_soft_bounce
+ * @property mixed $number_dispatched_emails_state_clicked
+ * @property mixed $number_dispatched_emails_state_unsubscribed
+ * @property mixed $number_dispatched_emails_state_spam
+ * @property mixed $number_dispatched_emails_state_error
+ * @property mixed $number_delivered_emails
+ * @property mixed $number_spam_emails
+ * @property mixed $number_opened_emails
+ * @property mixed $number_clicked_emails
+ * @property mixed $number_unsubscribed_emails
+ */
+class ProspectMailshotsResource extends JsonResource
+{
+    public function toArray($request): array
+    {
+        /** @var Mailshot $mailshot */
+        $mailshot = $this;
+
+        return [
+            'id'                        => $mailshot->id,
+            'slug'                      => $mailshot->slug,
+            'name'                      => $mailshot->name,
+            'date'                      => Carbon::parse($mailshot->date)->format('d F Y, H:i'),
+            'subject'                   => $mailshot->subject,
+            'state'                     => $mailshot->state,
+            'state_label'               => $mailshot->state->labels()[$mailshot->state->value],
+            'state_icon'                => $mailshot->state->stateIcon()[$mailshot->state->value],
+            'number_deliveries_success' => $this->number_deliveries_success,
+            'number_try_send_success'   => $this->number_try_send_success,
+            'sent'                      => $mailshot->sent,
+            'delivered'                 => percentage($mailshot->delivered, $mailshot->dispatched_emails),
+            'hard_bounce'               => percentage($mailshot->hard_bounce, $mailshot->dispatched_emails),
+            'soft_bounce'               => percentage($mailshot->soft_bounce, $mailshot->dispatched_emails),
+            'opened'                    => percentage($mailshot->opened, $mailshot->delivered),
+            'clicked'                   => percentage($mailshot->clicked, $mailshot->delivered),
+            'spam'                      => percentage($mailshot->spam, $mailshot->delivered),
+            'unsubscribed'              => percentage($this->unsubscribed, $this->number_delivered_open_success),
+        ];
+    }
+}

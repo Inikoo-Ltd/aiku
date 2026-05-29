@@ -92,6 +92,7 @@ class DepartmentsResource extends JsonResource
             'image_thumbnail'                => Arr::get($this->web_images, 'main.thumbnail'),
             'health_rank'                    => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
             'public_url'                     => $this->canonical_url,
+            'image'                         => Arr::get($this->web_images, 'main.gallery'),
         ];
     }
 
