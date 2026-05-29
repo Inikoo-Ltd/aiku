@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 17-01-2025-10h-33m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -111,7 +111,7 @@ beforeEach(function () {
     list(
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+        ) = createProduct($this->shop);
 
     $rental = Rental::first();
     if (!$rental) {
@@ -176,10 +176,9 @@ beforeEach(function () {
 
     $this->webUser = createWebUser($this->customer);
 
-    $palletRental =  Rental::where('auto_assign_asset_type', PalletTypeEnum::PALLET)->first();
+    $palletRental = Rental::where('auto_assign_asset_type', PalletTypeEnum::PALLET)->first();
     if (!$palletRental) {
-
-        $palletRental         = StoreRental::make()->action(
+        $palletRental = StoreRental::make()->action(
             $this->fulfilment->shop,
             [
                 'price'                  => 100,
@@ -191,7 +190,7 @@ beforeEach(function () {
             ]
         );
     }
-    $this->palletRental   = $palletRental;
+    $this->palletRental = $palletRental;
 
     $oversizeRental = Rental::where('auto_assign_asset_type', PalletTypeEnum::OVERSIZE)->first();
 
@@ -209,9 +208,9 @@ beforeEach(function () {
         );
     }
     $this->oversizeRental = $oversizeRental;
-    $boxRental = Rental::where('auto_assign_asset_type', PalletTypeEnum::BOX)->first();
+    $boxRental            = Rental::where('auto_assign_asset_type', PalletTypeEnum::BOX)->first();
     if (!$boxRental) {
-        $boxRental            = StoreRental::make()->action(
+        $boxRental = StoreRental::make()->action(
             $this->fulfilment->shop,
             [
                 'price'                  => 100,
@@ -225,7 +224,7 @@ beforeEach(function () {
     }
 
 
-    $this->boxRental      = $boxRental;
+    $this->boxRental = $boxRental;
 
     Config::set(
         'inertia.testing.page_paths',
@@ -238,12 +237,12 @@ beforeEach(function () {
 
 test('Update Retina Profile', function () {
     $webUser = UpdateRetinaProfile::make()->action($this->webUser, [
-        'username' => 'joko',
+        'username' => 'john',
         'about'    => 'decent human being'
     ]);
 
     expect($webUser)->toBeInstanceOf(WebUser::class)
-        ->and($webUser->username)->toBe('joko')
+        ->and($webUser->username)->toBe('john')
         ->and($webUser->about)->toBe('decent human being');
 });
 
@@ -916,7 +915,7 @@ test('Delete retina customer delivery address', function () {
 test('Store retina customer client', function () {
     $customer = $this->fulfilmentCustomer->customer;
 
-    $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+    $platform             = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
     $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, []);
 
 
@@ -951,7 +950,7 @@ test('Store retina web user', function () {
             'contact_name' => 'Sunshine',
             'username'     => 'camel',
             'email'        => 'acme@acme.com',
-            'password'     => 'joko'
+            'password'     => 'john'
         ]
     );
 
@@ -969,14 +968,14 @@ test('update retina web user', function (WebUser $webUser) {
     $webUser = UpdateRetinaWebUser::make()->action(
         $webUser,
         [
-            'username' => 'amelia',
+            'username' => 'Amelia',
         ]
     );
 
     $webUser->refresh();
 
     expect($webUser)->toBeInstanceOf(WebUser::class)
-        ->and($webUser->username)->toBe('amelia');
+        ->and($webUser->username)->toBe('Amelia');
 
     return $webUser;
 })->depends('Store retina web user');
