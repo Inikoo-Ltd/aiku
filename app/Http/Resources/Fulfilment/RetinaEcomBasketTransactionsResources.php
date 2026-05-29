@@ -53,11 +53,17 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
         }
 
         $webpageUrl = null;
+        $luigiIdentity = null;
         if ($transaction->model_type === class_basename(Product::class)) {
             $webpage = Webpage::where('model_id', $transaction->product_id)
             ->where('model_type', class_basename(Product::class))->first();
 
             $webpageUrl = $webpage?->getCanonicalUrl();
+
+            if ($transaction->product_id) {
+                $product = Product::with('webpage.website')->find($transaction->product_id);
+                $luigiIdentity = $product?->getLuigiIdentity();
+            }
         }
 
         return [
@@ -82,6 +88,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'available_quantity'    => $transaction->available_quantity,
             'currency_code'       => $transaction->currency_code,
             'webpage_url'         => $webpageUrl,
+            'luigi_identity'      => $luigiIdentity,
             'offers_data'         => $transaction->offers_data,
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
