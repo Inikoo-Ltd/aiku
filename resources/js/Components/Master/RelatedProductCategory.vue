@@ -3,10 +3,9 @@ import { ref } from "vue"
 import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import ListSelector from "@/Components/Selector.vue"
-import { notify } from "@kyvg/vue3-notification";
-import axios from "axios";
+import SelectorProductCategory from "@/Components/SelectorProductCategory.vue"
 import Image from "@common/Components/Image.vue";
+import { routeType } from "@/types/route";
 
 const props = defineProps<{
     data: {
@@ -17,10 +16,9 @@ const props = defineProps<{
             parameters: Record<string, any>
         }
         sync_payload_key?: string
-        route_get_products : {
-            name: string,
-            parameters: Record<string, any>
-        }
+        route_get_department : routeType
+        route_get_sub_department : routeType
+        route_get_family : routeType
     }
     product_category_id?: number
 }>()
@@ -103,11 +101,13 @@ const SaveOrder = async () => {}
         </div>
 
         <!-- SELECTOR -->
-        <ListSelector
+        <SelectorProductCategory
             v-if="props.data?.editable" ref="productDialog"
             v-model="listProducts.data.data"
             @update:model-value="saveActive = true"
-            :routeFetch="props.data?.route_get_products"
+            :routeFetchDepartment="props.data?.route_get_department"
+            :routeFetchSubDepartment="props.data?.route_get_sub_department"
+            :routeFetchFamily="props.data?.route_get_family"
         />
 
     </div>

@@ -158,23 +158,47 @@ class ShowMasterDepartment extends GrpAction
                         'data'     => [],
                         'editable' => false,
                         'route_sync_related_products' => [],
-                        'sync_payload_key' => 'master_asset_ids',
-                        'route_get_products' => [
-                            'name' => 'grp.masters.master_shops.show.master_products.index',
+                        'sync_payload_key' => 'id',
+                        'route_get_department' => [
+                            'name' => 'grp.masters.master_shops.show.master_departments.index',
+                            'parameters' => [
+                                'masterShop' => $masterDepartment->masterShop->slug,
+                            ]
+                        ],
+                        'route_get_sub_department' => [
+                            'name' => 'grp.masters.master_shops.show.master_sub_departments.index',
+                            'parameters' => [
+                                'masterShop' => $masterDepartment->masterShop->slug,
+                            ]
+                        ],
+                        'route_get_family' => [
+                            'name' => 'grp.masters.master_shops.show.master_families.index',
                             'parameters' => [
                                 'masterShop' => $masterDepartment->masterShop->slug,
                             ]
                         ]
                     ]
                     : Inertia::lazy(
-                        fn () => [
+                        fn() => [
                             'id'       => $masterDepartment->id,
                             'data'     => [],
                             'editable' => false,
                             'route_sync_related_products' => [],
-                            'sync_payload_key' => 'master_asset_ids',
-                            'route_get_products' => [
-                                'name' => 'grp.masters.master_shops.show.master_products.index',
+                            'sync_payload_key' => 'id',
+                            'route_get_department' => [
+                                'name' => 'grp.masters.master_shops.show.master_departments.index',
+                                'parameters' => [
+                                    'masterShop' => $masterDepartment->masterShop->slug,
+                                ]
+                            ],
+                            'route_get_sub_department' => [
+                                'name' => 'grp.masters.master_shops.show.master_sub_departments.index',
+                                'parameters' => [
+                                    'masterShop' => $masterDepartment->masterShop->slug,
+                                ]
+                            ],
+                            'route_get_family' => [
+                                'name' => 'grp.masters.master_shops.show.master_families.index',
                                 'parameters' => [
                                     'masterShop' => $masterDepartment->masterShop->slug,
                                 ]
