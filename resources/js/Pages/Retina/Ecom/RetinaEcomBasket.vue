@@ -608,7 +608,7 @@ const onChangeInsurance = async (val: boolean) => {
             <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.premium_dispatch?.description" />
-                    {{ charges.premium_dispatch?.label ? trans(charges.premium_dispatch.label) : trans(charges.premium_dispatch?.name ?? '') }}
+                    {{ charges.premium_dispatch?.label ? ctrans(charges.premium_dispatch.label) : ctrans(charges.premium_dispatch?.name ?? '') }}
                     <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
                 </div>
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
