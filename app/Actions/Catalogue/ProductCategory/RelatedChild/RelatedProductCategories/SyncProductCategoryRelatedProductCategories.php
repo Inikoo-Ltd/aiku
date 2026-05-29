@@ -19,7 +19,7 @@ class SyncProductCategoryRelatedProductCategories extends OrgAction
 {
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
-        $productCategoriesId = array_unique(Arr::get($modelData, 'product_categories_id', []));
+        $productCategoriesId = array_unique(Arr::get($modelData, 'related_product_categories_id', []));
 
         $relatedProductCategories = [];
         $position        = 0;
@@ -39,8 +39,8 @@ class SyncProductCategoryRelatedProductCategories extends OrgAction
     public function rules(): array
     {
         return [
-            'product_categories_id'   => ['sometimes', 'array'],
-            'product_categories_id.*' => [
+            'related_product_categories_id'   => ['sometimes', 'array'],
+            'related_product_categories_id.*' => [
                 'integer',
                 Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)
             ],

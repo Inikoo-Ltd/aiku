@@ -24,7 +24,7 @@ class GetRelatedMasterProductCategories
             'id'               => $masterProductCategory->id,
             'data'             => [],
             'editable'         => true,
-            'sync_payload_key' => 'master_product_categories_id',
+            'sync_payload_key' => 'related_master_product_category_id',
             'route_sync_related_products' => [
                 'name'       => 'grp.models.master_product_category.related_master_product_categories.sync',
                 'parameters' => [

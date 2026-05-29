@@ -21,7 +21,7 @@ class SyncMasterProductCategoryRelatedMasterProductCategories extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
-        $masterProductCategoryIds = array_unique(Arr::get($modelData, 'master_product_categories_id', []));
+        $masterProductCategoryIds = array_unique(Arr::get($modelData, 'related_master_product_category_id', []));
 
         $relatedMasterProductCategories = [];
         $position = 0;
@@ -43,8 +43,8 @@ class SyncMasterProductCategoryRelatedMasterProductCategories extends OrgAction
     {
 
         return [
-            'master_product_categories_id' => ['sometimes', 'array'],
-            'master_product_categories_id.*' => ['integer', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->masterShopId)],
+            'related_master_product_category_id' => ['sometimes', 'array'],
+            'related_master_product_category_id.*' => ['integer', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->masterShopId)],
         ];
     }
 

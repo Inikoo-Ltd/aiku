@@ -26,7 +26,7 @@ class GetRelatedProductCategories
             'id'               => $productCategory->id,
             'data'             => [],
             'editable'         => $isRelatedProductCategoryFollowMaster,
-            'sync_payload_key' => 'product_categories_id',
+            'sync_payload_key' => 'related_product_categories_id',
             'route_sync_related_products' => [
                 'name'       => 'grp.models.product_category.related_product_categories.sync',
                 'parameters' => [
