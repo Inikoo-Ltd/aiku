@@ -28,10 +28,10 @@ class GetTiktokOrdersApi extends RetinaAction
         $tiktokOrders = $tiktokUser->getOrders([
             'page_size' => 100
         ], [
-            'status' => 'AWAITING_SHIPMENT'
+            'order_status' => 'AWAITING_SHIPMENT'
         ]);
 
-        foreach (Arr::get($tiktokOrders, 'data.orders') as $order) {
+        foreach (Arr::get($tiktokOrders, 'data.orders', []) as $order) {
             ValidateIncomingTiktokOrder::run($tiktokUser, $order);
         }
     }
@@ -49,7 +49,9 @@ class GetTiktokOrdersApi extends RetinaAction
         }
 
         foreach ($customerSalesChannels as $customerSalesChannel) {
-            $this->handle($customerSalesChannel->user);
+            if($customerSalesChannel->user) {
+                $this->handle($customerSalesChannel->user);
+            }
         }
     }
 }
