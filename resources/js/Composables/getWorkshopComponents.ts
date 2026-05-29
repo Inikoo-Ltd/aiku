@@ -76,6 +76,7 @@ import Family2ExtraDescriptionWorkshop from '@/Components/CMS/Webpage/Family2Ext
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Families1OverviewWorkshop.vue'
 import RecommendationFromMasterWorkshop from '../Components/CMS/Webpage/RecommendationFromMaster/RecommendationFromMasterWorkshop.vue'
 import RelatedProductCategoryWorkshop from '@/Components/CMS/Webpage/RelatedProductCategory/RealatedProductCategoryWorkshop.vue'
+import RecommendationProductCategoryFromMasterWorkshop from '@/Components/CMS/Webpage/RecommendationProductCategoryFromMaster/RecommendationProductCategoryFromMasterWorkshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -175,7 +176,8 @@ const components = (shop_type?: string): Record<string, Component> => {
         'step-2' : TimelineWorkshop2,
         'slider-1' : Slider1Workshop,
         'recommendation-from-master' : RecommendationFromMasterWorkshop,
-        'relatedProductCategory' : RelatedProductCategoryWorkshop
+        'relatedProductCategory' : RelatedProductCategoryWorkshop,
+        'recommendation-product-category-from-master' : RecommendationProductCategoryFromMasterWorkshop
     }
 }
 

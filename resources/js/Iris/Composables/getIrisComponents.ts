@@ -207,7 +207,8 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'video-1': Video1Iris,
 		'slider-1' : Slider1Iris,
 		'recommendation-from-master' : RecommendationFromMasterIris,
-	    'relatedProductCategory' : RealatedProductCategoryIris
+	    'relatedProductCategory' : RealatedProductCategoryIris,
+		'recommendation-product-category-from-master' : RealatedProductCategoryIris
 	}
 }
 
