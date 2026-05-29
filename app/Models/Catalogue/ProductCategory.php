@@ -421,7 +421,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
     
     public function relatedProductCategories(): BelongsToMany
     {
-        return $this->belongsToMany(ProductCategory::class, 'product_category_has_related_product_categories')
+        return $this->belongsToMany(ProductCategory::class, 'product_category_has_related_product_categories', 'product_category_id', 'related_product_category_id')
             ->orderByPivot('position')
             ->withPivot('id', 'position')
             ->withTimestamps();

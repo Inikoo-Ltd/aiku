@@ -132,8 +132,7 @@ const toggleSelect = (item: any) => {
 const isSelected = (id: number) => {
   return selected.value.some(
     item =>
-      item.id === id &&
-      item.type === currentType.value
+      item.id === id
   )
 }
 

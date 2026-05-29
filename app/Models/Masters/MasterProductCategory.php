@@ -315,7 +315,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     public function relatedMasterProductCategories(): BelongsToMany
     {
-        return $this->belongsToMany(MasterProductCategory::class, 'master_product_category_has_related_product_categories')
+        return $this->belongsToMany(MasterProductCategory::class, 'master_product_category_has_related_product_categories', 'master_product_category_id', 'related_master_product_category_id')
             ->orderByPivot('position')
             ->withPivot('id', 'position')
             ->withTimestamps();

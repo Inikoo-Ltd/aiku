@@ -9,6 +9,8 @@
 
 namespace App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories;
 
+use App\Actions\Masters\MasterProductCategory\UI\GetMasterProductCategoryRelatedCategories;
+use App\Http\Resources\Masters\RelatedMasterProductsCategoriesResource;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -22,7 +24,7 @@ class GetRelatedMasterProductCategories
 
         return [
             'id'               => $masterProductCategory->id,
-            'data'             => [],
+            'data'             => RelatedMasterProductsCategoriesResource::collection(GetMasterProductCategoryRelatedCategories::run($masterProductCategory)),
             'editable'         => true,
             'sync_payload_key' => 'related_master_product_category_id',
             'route_sync_related_products' => [

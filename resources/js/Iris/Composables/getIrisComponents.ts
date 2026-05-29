@@ -95,7 +95,8 @@ import ProductRenderEcom3 from "@/Iris/Components/IrisBlocks/Products/Ecom/Produ
 import Family2ExtraDescriptionIris from '@/Iris/Components/IrisBlocks/Family2ExtraDescriptionIris.vue'
 import Families1Overview from '@/Iris/Components/IrisBlocks/FamiliesOverviewIris1.vue'
 import RecommendationFromMasterIris from '@/Iris/Components/IrisBlocks/RecommendationFromMasterIris.vue'
-import RealatedProductCategoryIris from "../Components/IrisBlocks/RealatedProductCategoryIris.vue"
+import RealatedProductCategoryIris from "@/Iris/Components/IrisBlocks/RealatedProductCategoryIris.vue"
+import RelatedProductcategoryFormMaster from '@/Iris/Components/IrisBlocks/RecommendationProductCategoryFromMasterIris.vue'
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({
@@ -207,7 +208,8 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'video-1': Video1Iris,
 		'slider-1' : Slider1Iris,
 		'recommendation-from-master' : RecommendationFromMasterIris,
-	    'relatedProductCategory' : RealatedProductCategoryIris
+	    'relatedProductCategory' : RealatedProductCategoryIris,
+		'recommendation-product-category-from-master' : RelatedProductcategoryFormMaster
 	}
 }
 
