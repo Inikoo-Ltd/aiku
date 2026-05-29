@@ -71,9 +71,12 @@ class StoreTiktokOrder extends RetinaAction
             );
         }
 
+        $handOverMethod = null;
         $packageId = Arr::get($order, 'packages.0.id');
-        $package = $tiktokUser->getPackageDetail($packageId);
-        $handOverMethod = Arr::get($package, 'data.handover_method');
+        if($packageId) {
+            $package = $tiktokUser->getPackageDetail($packageId);
+            $handOverMethod = Arr::get($package, 'data.handover_method');
+        }
 
         if ($handOverMethod && $handOverMethod !== 'PICKUP') {
             UpdateOrder::run($order, [

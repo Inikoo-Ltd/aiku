@@ -68,7 +68,10 @@ class ShowIrisWebpage
                 'sub_type'      => $webpage->sub_type,
                 'model_type'    => $webpage->model_type,
                 'product_page'  => $webpage->sub_type?->value === 'product' && $webpage->model_type === 'Product'
-                    ? ['department' => [ 'name' => $webpage->model?->department?->name]]
+                    ? ['department' => [
+                        'name'          => $webpage->model?->department?->name,
+                        'webpage_title' => $webpage->model?->department?->webpage?->title,
+                    ]]
                     : null,
             ],
             'webpage_img'                 => $webpageImg,

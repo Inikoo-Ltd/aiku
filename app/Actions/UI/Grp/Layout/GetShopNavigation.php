@@ -297,7 +297,8 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->authTo([
+        if ($user->hasAnyPermission([
+            "websites-view.{$shop->organisation_id}",
             "web.$shop->id.view",
             "group-webmaster.view"
         ])) {

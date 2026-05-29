@@ -151,6 +151,61 @@ class ShowMasterFamily extends GrpAction
                         fn () => GetMasterProductCategoryImages::run($masterFamily)
                     ),
 
+            MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value =>
+            $this->tab === MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value
+                ? fn() => [
+                    'id'       => $masterFamily->id,
+                    'data'     => [],
+                    'editable' => false,
+                    'route_sync_related_products' => [],
+                    'sync_payload_key' => 'id',
+                    'route_get_department' => [
+                        'name' => 'grp.masters.master_shops.show.master_departments.index',
+                        'parameters' => [
+                            'masterShop' => $masterFamily->masterShop->slug,
+                        ]
+                    ],
+                    'route_get_sub_department' => [
+                        'name' => 'grp.masters.master_shops.show.master_sub_departments.index',
+                        'parameters' => [
+                            'masterShop' => $masterFamily->masterShop->slug,
+                        ]
+                    ],
+                    'route_get_family' => [
+                        'name' => 'grp.masters.master_shops.show.master_families.index',
+                        'parameters' => [
+                            'masterShop' => $masterFamily->masterShop->slug,
+                        ]
+                    ]
+                ]
+                : Inertia::lazy(
+                    fn() => [
+                        'id'       => $masterFamily->id,
+                        'data'     => [],
+                        'editable' => false,
+                        'route_sync_related_products' => [],
+                        'sync_payload_key' => 'id',
+                        'route_get_department' => [
+                            'name' => 'grp.masters.master_shops.show.master_departments.index',
+                            'parameters' => [
+                                'masterShop' => $masterFamily->masterShop->slug,
+                            ]
+                        ],
+                        'route_get_sub_department' => [
+                            'name' => 'grp.masters.master_shops.show.master_sub_departments.index',
+                            'parameters' => [
+                                'masterShop' => $masterFamily->masterShop->slug,
+                            ]
+                        ],
+                        'route_get_family' => [
+                            'name' => 'grp.masters.master_shops.show.master_families.index',
+                            'parameters' => [
+                                'masterShop' => $masterFamily->masterShop->slug,
+                            ]
+                        ]
+                    ]
+                ),
+
             MasterFamilyTabsEnum::RELATED_PRODUCTS->value =>
                 $this->tab === MasterFamilyTabsEnum::RELATED_PRODUCTS->value
                     ? fn () => [

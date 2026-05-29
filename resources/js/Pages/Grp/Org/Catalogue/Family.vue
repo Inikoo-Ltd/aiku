@@ -29,6 +29,7 @@ import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
+import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 
 library.add(
     faFolder,
@@ -79,6 +80,8 @@ const props = defineProps<{
     }
     product_category_id: number
     related_products : object
+    related_product_category: object,
+
 }>()
 
 const layout = inject("layout", {})
@@ -101,7 +104,8 @@ const component = computed(() => {
         content: ProductCategoryContent,
         variants: TableVariants,
         offers: TableOffers,
-        related_products: ProductCategoryRecomendation
+        related_products: ProductCategoryRecomendation,
+        related_product_category: RelatedProductCategory,
     }
     return components[currentTab.value] ?? ModelDetails
 })

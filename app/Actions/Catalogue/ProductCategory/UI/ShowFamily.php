@@ -197,6 +197,64 @@ class ShowFamily extends OrgAction
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
 
+            FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
+                fn() => [
+                    'id' => $family->id,
+                    'data' => [],
+                    'editable' => false,
+                    'route_sync_related_products' => [],
+                    'sync_payload_key' => 'id',
+                    'route_get_department' => [
+                        'name' => 'grp.org.shops.show.catalogue.departments.index',
+                        'parameters' => [
+                            'shop' => $family->shop->slug,
+                            'organisation' => $family->organisation->slug
+                        ]
+                    ],
+                    'route_get_sub_department' => [
+                        'name' => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => [
+                            'shop' => $family->shop->slug,
+                            'organisation' => $family->organisation->slug
+                        ]
+                    ],
+                    'route_get_family' => [
+                        'name' => 'grp.org.shops.show.catalogue.families.index',
+                        'parameters' => [
+                            'shop' => $family->shop->slug,
+                            'organisation' => $family->organisation->slug
+                        ]
+                    ]
+                ]
+                : Inertia::lazy(fn() => [
+                    'id' => $family->id,
+                    'data' => [],
+                    'editable' => false,
+                    'route_sync_related_products' => [],
+                    'sync_payload_key' => 'id',
+                    'route_get_department' => [
+                        'name' => 'grp.org.shops.show.catalogue.departments.index',
+                        'parameters' => [
+                            'shop' => $family->shop->slug,
+                            'organisation' => $family->organisation->slug
+                        ]
+                    ],
+                    'route_get_sub_department' => [
+                        'name' => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => [
+                            'shop' => $family->shop->slug,
+                            'organisation' => $family->organisation->slug
+                        ]
+                    ],
+                    'route_get_family' => [
+                        'name' => 'grp.org.shops.show.catalogue.families.index',
+                        'parameters' => [
+                            'shop' => $family->shop->slug,
+                            'organisation' => $family->organisation->slug
+                        ]
+                    ]
+                ]),
+
             FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
                 fn () => [
                     'id' => $family->id,

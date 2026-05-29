@@ -29,12 +29,17 @@ class RetinaEcomUpdateTransaction extends RetinaAction
         $transaction->order->update([
             'updated_by_customer_at' => now()
         ]);
+
         return UpdateTransaction::run($transaction, $modelData);
     }
 
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         /** @var Transaction $transaction */
         $transaction = $request->route('transaction');
         if ($transaction->customer_id != $request->user()->customer_id) {
@@ -46,11 +51,9 @@ class RetinaEcomUpdateTransaction extends RetinaAction
 
     public function rules(): array
     {
-
         return [
-                'quantity_ordered'    => ['sometimes', 'numeric', 'min:0'],
-            ];
-
+            'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
+        ];
     }
 
     /**
@@ -71,6 +74,7 @@ class RetinaEcomUpdateTransaction extends RetinaAction
 
     public function action(Transaction $transaction, Customer $customer, array $modelData): Transaction
     {
+        $this->asAction    = true;
         $this->transaction = $transaction;
         $this->order       = $transaction->order;
         $this->initialisationActions($customer, $modelData);
