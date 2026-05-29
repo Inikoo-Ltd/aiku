@@ -119,3 +119,4 @@ laradumps.yaml
 /restart_varnish.sh
 /storage/aiku_media.tar
 /.junie/*
+/nightowl/*
