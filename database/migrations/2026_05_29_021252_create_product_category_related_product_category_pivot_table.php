@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreign('related_product_category_id', 'pc_hrpc_related_product_category_fk')->references('id')->on('product_categories')->cascadeOnDelete();
             $table->unsignedSmallInteger('position')->index()->default(0);
             $table->timestampsTz();
-            $table->unique(['product_category_id', 'related_product_category_id'], 'pc_hrpc_product_category_product_category_unique');
+            $table->unique(['product_category_id', 'related_product_category_id'], 'pc_hrpc_product_category_product_category_related_unique');
         });
 
         Schema::create('master_product_category_has_related_product_categories', function (Blueprint $table) {
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->foreign('related_master_product_category_id', 'mpc_hrpc_related_product_category_fk')->references('id')->on('master_product_categories')->cascadeOnDelete();
             $table->unsignedSmallInteger('position')->index()->default(0);
             $table->timestampsTz();
-            $table->unique(['master_product_category_id', 'related_master_product_category_id'], 'mpc_hrpc_master_product_category_product_category_unique');
+            $table->unique(['master_product_category_id', 'related_master_product_category_id'], 'mpc_hrpc_master_product_category_product_category_related_unique');
         });
     }
 
