@@ -20,7 +20,7 @@ use App\Actions\Api\Retina\Dropshipping\Order\SubmitApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\UpdateApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\DeleteApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Image\GetImages;
-use App\Actions\Api\Retina\Dropshipping\Portfolio\GetPortfolios;
+use App\Actions\Api\Retina\Dropshipping\Portfolio\GetApiDropshippingPortfolios;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\ShowApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\StoreApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\UpdateApiPortfolio;
@@ -54,7 +54,7 @@ Route::prefix('transaction')->as('transaction.')->group(function () {
 
 Route::prefix('products')->as('products.')->group(function () {
     Route::get('', GetProducts::class)->name('index');
-    Route::get('my-products', GetPortfolios::class)->name('my_product.index');
+    Route::get('my-products', GetApiDropshippingPortfolios::class)->name('my_product.index');
     Route::post('my-products/{product:id}/store', StoreApiPortfolio::class)->name('my_product.store')->whereNumber('product')->withoutScopedBindings();
     Route::get('my-products/{portfolio:id}', ShowApiPortfolio::class)->name('my_product.show')->whereNumber('portfolio');
     Route::patch('my-products/{portfolio:id}/update', UpdateApiPortfolio::class)->name('my_product.update')->whereNumber('portfolio');

@@ -18,7 +18,7 @@ use App\Actions\Api\Retina\Fulfilment\Order\StoreApiOrder;
 use App\Actions\Api\Retina\Fulfilment\Order\SubmitApiPalletReturn;
 use App\Actions\Api\Retina\Fulfilment\Order\UpdateApiOrder;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\DeleteApiPortfolio;
-use App\Actions\Api\Retina\Fulfilment\Portfolio\GetPortfolios;
+use App\Actions\Api\Retina\Fulfilment\Portfolio\GetApiFulfilmentStoredItems;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\ShowApiPortfolio;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\StoreApiPortfolio;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\UpdateApiPortfolio;
@@ -38,7 +38,7 @@ Route::prefix('order')->as('order.')->group(function () {
 });
 
 Route::prefix('portfolios')->as('portfolios.')->group(function () {
-    Route::get('', GetPortfolios::class)->name('index');
+    Route::get('', GetApiFulfilmentStoredItems::class)->name('index');
     Route::post('product/{product:id}/store', StoreApiPortfolio::class)->name('store')->withoutScopedBindings();
     Route::get('{portfolio:id}', ShowApiPortfolio::class)->name('show');
     Route::patch('{portfolio:id}/update', UpdateApiPortfolio::class)->name('update');
