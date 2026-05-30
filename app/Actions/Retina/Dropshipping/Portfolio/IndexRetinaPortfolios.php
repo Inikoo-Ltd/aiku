@@ -325,7 +325,6 @@ class IndexRetinaPortfolios extends RetinaAction
             [
                 'breadcrumbs'        => $this->getBreadcrumbs($this->customerSalesChannel),
                 'title'              => $title,
-                'is_manual'          => $manual,
                 'pageHead'           => [
                     'title'      => $title,
                     'afterTitle' => [
@@ -435,10 +434,6 @@ class IndexRetinaPortfolios extends RetinaAction
                     ],
                     'updatePortfolioRoute'        => [
                         'name'       => 'retina.models.portfolio.update',
-                        'parameters' => []
-                    ],
-                    'deletePortfolioRoute'        => [
-                        'name'       => 'retina.models.portfolio.delete',
                         'parameters' => []
                     ],
                     'clonePortfolioRoute'         => [
@@ -560,13 +555,6 @@ class IndexRetinaPortfolios extends RetinaAction
                     'currency_code'   => $shop->currency->code,
                 ],
 
-                'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
-                    'name'       => 'retina.models.customer.order.platform.store',
-                    'parameters' => [
-                        'customer' => $this->customer->id,
-                        'platform' => $this->platform->id
-                    ]
-                ] : [],
                 'content'     => [
                     'portfolio_empty' => [
                         'title'       => __("You don't have any items in your portfolio"),

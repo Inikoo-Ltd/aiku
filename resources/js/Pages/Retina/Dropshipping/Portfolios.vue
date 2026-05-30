@@ -18,13 +18,11 @@ import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue"
 import AddBundles from "@/Components/Dropshipping/AddBundles.vue"
 import { Message, Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSyncAlt, faHandPointer } from "@fas"
+import { faSyncAlt } from "@fas"
 import { useTimeCountdown } from "@/Composables/useFormatTime"
 import { addDays } from "date-fns"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import {
-	faBracketsCurly,
-	faPawClaws,
 	faFileExcel,
 	faImage,
 	faArrowLeft,
@@ -72,10 +70,7 @@ interface UploadSection {
 library.add(
 	faFileExcel,
 	faCheck,
-	faBracketsCurly,
 	faSyncAlt,
-	faHandPointer,
-	faPawClaws,
 	faImage,
 	faSyncAlt,
 	faBox,
@@ -105,12 +100,8 @@ const props = defineProps<{
 	bundles: TableTS
 	logs: {}
 	routes: {
-		batch_upload: routeType
 		batch_all: routeType
-		match_match: routeType
 		syncAllRoute: routeType
-		batch_sync: routeType
-		duplicate: routeType
 		addPortfolioRoute: routeType
 		bulk_upload: routeType
 		bulk_unlink: routeType
@@ -119,6 +110,9 @@ const props = defineProps<{
 		updatePortfolioRoute: routeType
 		batchDeletePortfolioRoute: routeType
 		clonePortfolioRoute: routeType
+		single_match: routeType
+		single_create_new: routeType
+		fetch_products: routeType
 	}
 	platform_user_id: number
 	step: {
@@ -1393,32 +1387,6 @@ const layout = inject("layout", layoutStructure)
 			</div>
 
 			<div class="w-full sm:w-fit h-fit space-x-2 flex justify-end">
-				<ButtonWithLink
-					v-if="routes.duplicate?.name"
-					:routeTarget="routes.duplicate"
-					v-tooltip="
-						trans(
-							'This will only create new products to the :platform that not exist in :platform',
-							{ platform: props.platform_data.name }
-						)
-					"
-					aclick="() => onClickReconnect(customer_sales_channel)"
-					icon="far fa-plus"
-					:label="trans('Create new')"
-					type="tertiary" />
-
-				<ButtonWithLink
-					v-if="routes.batch_sync?.name"
-					:routeTarget="routes.batch_sync"
-					v-tooltip="
-						trans(
-							'This will only sync existing products to the :platform (will not create new)',
-							{ platform: props.platform_data.name }
-						)
-					"
-					icon="fas fa-sync-alt"
-					:label="trans('Use existing')"
-					type="tertiary" />
 
 				<div>
 					<ButtonWithLink
@@ -1448,7 +1416,6 @@ const layout = inject("layout", layoutStructure)
 			</div>
 		</div>
 	</Message>
-	<!-- retina.models.dropshipping.ebay.batch_upload -->
 	<div v-if="(is_platform_connected || isPlatformManual) && currentTab === 'products'">
 		<div
 			v-if="props.product_count < 1"
