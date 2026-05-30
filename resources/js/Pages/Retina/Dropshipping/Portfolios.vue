@@ -90,7 +90,6 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	tabs: TSTabs
 	download_route: any
-	grouped_portfolios: any
 	is_closed: boolean
 	content?: {
 		portfolio_empty?: {
