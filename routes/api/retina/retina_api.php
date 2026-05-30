@@ -18,7 +18,6 @@ Route::middleware(
     [
         'auth:sanctum',
         'ability:retina',
-        'treblle',
         Sample::always()
     ]
 )->group(function () {

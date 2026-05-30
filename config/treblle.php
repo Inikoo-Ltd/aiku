@@ -7,7 +7,7 @@ return [
      * An override while debugging.
      */
     'url' => null,
-
+    'enable' => env('TREBLLE_ENABLE', false),
 
     'grp' => [
         'enable' => env('TREBLLE_GRP_ENABLE', false),
@@ -22,7 +22,7 @@ return [
 
 
     /*
-     * Define which environments should Treblle ignore and not monitor
+     * Define which environments Treblle should ignore and not monitor
      */
     'ignored_environments' => env('TREBLLE_IGNORED_ENV', 'local,dev,test,testing'),
 
