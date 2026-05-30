@@ -53,14 +53,14 @@ class RecordWebsiteHit
 
         if ($this->shouldTrackVisitor($request)) {
             ProcessWebsiteVisitorTracking::dispatch(
-                sessionId:$request->session()->getId(),
-                website:$request->input('website'),
-                webUser:$request->user('retina'),
-                userAgent:$request->userAgent(),
-                ip:request()->ip(),
-                currentUrl:request()->header('referer'),
-                referrer:$request->input('original_referer'),
-                geoLocation:$geoLocation
+                sessionId: $request->session()->getId(),
+                website: $request->input('website'),
+                webUser: $request->user('retina'),
+                userAgent: $request->userAgent(),
+                ip: request()->ip(),
+                currentUrl: request()->header('referer'),
+                referrer: $request->input('original_referer'),
+                geoLocation: $geoLocation
             )->delay(now()->addSeconds(5));
         }
 

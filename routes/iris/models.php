@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 05-06-2025-14h-26m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -32,10 +32,8 @@ use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\UnsubscribeAurora;
-use App\Actions\Web\Website\Analytics\RecordWebsiteHit;
 use Illuminate\Support\Facades\Route;
 
-Route::post('record-hit', RecordWebsiteHit::class)->name('hit');
 Route::post('unsubscribe-aurora', UnsubscribeAurora::class)->name('unsubscribe_aurora');
 
 Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');

@@ -188,6 +188,14 @@ class Kernel extends HttpKernel
             AddFrameOptionsHeader::class
 
         ],
+        'analytics'        => [
+            DetectIrisWebsite::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            VerifyCsrfToken::class,
+        ],
         'iris'        => [
             DetectIrisWebsite::class,
             CheckWebsiteState::class,
