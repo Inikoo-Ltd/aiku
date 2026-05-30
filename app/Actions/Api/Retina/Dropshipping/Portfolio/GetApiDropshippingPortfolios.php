@@ -13,7 +13,7 @@ namespace App\Actions\Api\Retina\Dropshipping\Portfolio;
 use App\Actions\RetinaApiAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
-use App\Http\Resources\Api\PortfoliosResource;
+use App\Http\Resources\Api\DropshippingApiPortfoliosResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Services\QueryBuilder;
@@ -48,11 +48,23 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
 
         $query->leftJoin('products', 'products.id', 'portfolios.item_id')
             ->select(
-                'portfolios.*',
+                'portfolios.id',
+                'portfolios.item_id',
+                'portfolios.item_type',
+                'portfolios.created_at',
+                'portfolios.updated_at',
+                'products.slug as product_slug',
+                'products.code as product_code',
+                'products.name as product_name',
+                'products.available_quantity as available_quantity',
+                'products.gross_weight as gross_weight',
+                'products.price as price',
+                'products.barcode as barcode',
+                'products.web_images',
                 'products.state as product_state',
                 'products.is_for_sale',
             );
-
+        $query->selectRaw("'{$customerSalesChannel->shop->currency->code}'  as currency_code");
         $query->where('products.status', ProductStatusEnum::FOR_SALE);
         $query->where('products.state', ProductStateEnum::ACTIVE);
 
@@ -70,7 +82,7 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
 
     public function jsonResponse(LengthAwarePaginator $portfolio): AnonymousResourceCollection
     {
-        return PortfoliosResource::collection($portfolio);
+        return DropshippingApiPortfoliosResource::collection($portfolio);
     }
 
     public function rules(): array

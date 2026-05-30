@@ -11,7 +11,7 @@
 namespace App\Actions\Api\Retina\Fulfilment\Portfolio;
 
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\PortfoliosResource;
+use App\Http\Resources\Api\FulfilmentApiStoredItemsResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
@@ -43,7 +43,19 @@ class GetApiFulfilmentStoredItems extends RetinaApiAction
             $query->whereAnyWordStartWith('name', $modelData['search']);
         }
         $query->where('item_type', class_basename(StoredItem::class));
+        $query->leftJoin('stored_items', 'stored_items.id', 'portfolios.item_id');
 
+        $query->select(
+            'portfolios.id',
+            'portfolios.item_id',
+            'portfolios.item_type',
+            'portfolios.created_at',
+            'portfolios.updated_at',
+            'stored_items.reference as stored_items_reference',
+            'stored_items.slug as stored_item_slug',
+            'stored_items.name as stored_items_name',
+            'stored_items.total_quantity',
+        );
 
         return $query->withPaginator(null, queryName: 'per_page')
             ->withQueryString();
@@ -59,7 +71,7 @@ class GetApiFulfilmentStoredItems extends RetinaApiAction
 
     public function jsonResponse(LengthAwarePaginator $portfolio): AnonymousResourceCollection
     {
-        return PortfoliosResource::collection($portfolio);
+        return FulfilmentApiStoredItemsResource::collection($portfolio);
     }
 
     public function rules(): array
