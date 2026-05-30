@@ -69,7 +69,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
         $countRelatedProductCategoryBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master');
         if (count($countRelatedProductCategoryBlock) == 0) {
-            $this->createWebBlock($webpage,'recommendation-product-category-from-master');
+            $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
         }
 
         $webpage->refresh();

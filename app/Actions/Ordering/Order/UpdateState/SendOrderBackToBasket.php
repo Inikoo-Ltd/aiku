@@ -69,12 +69,12 @@ class SendOrderBackToBasket extends OrgAction
         if ($shop->type == ShopTypeEnum::EXTERNAL) {
             $validator->errors()->add('message', 'Unable to send external shop order back to basket');
         }
-        
+
         if (!in_array($shop->type, [ShopTypeEnum::DROPSHIPPING])) {
             $count = Order::where('customer_id', $this->order->customer_id)
                 ->where('state', OrderStateEnum::CREATING)
                 ->count();
-    
+
             if ($count > 0) {
                 $validator->errors()->add('message', 'Customer already has an order in basket');
             }

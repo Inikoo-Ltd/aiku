@@ -111,7 +111,7 @@ beforeEach(function () {
     list(
         $this->tradeUnit,
         $this->product
-        ) = createProduct($this->shop);
+    ) = createProduct($this->shop);
 
     $rental = Rental::first();
     if (!$rental) {

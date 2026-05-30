@@ -150,7 +150,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $countRelatedProductCategoryBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master');
         if (count($countRelatedProductCategoryBlock) == 0) {
-            $this->createWebBlock($webpage,'recommendation-product-category-from-master');
+            $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
         }
 
         $webpage->refresh();
@@ -227,7 +227,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
         $count = $webpage->webBlocks()->count();
-        
+
         $trendsWebBlockPosition     = $count + 101;
         $lastBoughtWebBlockPosition = $count + 102;
         $lastSeenWebBlockPosition   = $count + 103;

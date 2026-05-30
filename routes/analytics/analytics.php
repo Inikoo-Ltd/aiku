@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 30 May 2026 17:14:04 Indochina Time, Kuala Lumpur, Malaysia
@@ -15,5 +16,3 @@ Route::post('analytics/hit', RecordWebsiteHit::class)->name('hit')->middleware(
         Sample::always()
     ]
 );
-
-

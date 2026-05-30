@@ -235,8 +235,8 @@ class ShowSubDepartment extends OrgAction
                     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $subDepartment->shop, prefix: 'customers'))),
 
                 DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
-                    fn() => GetRelatedProductCategories::run($subDepartment)
-                    : Inertia::lazy(fn() => GetRelatedProductCategories::run($subDepartment)),
+                    fn () => GetRelatedProductCategories::run($subDepartment)
+                    : Inertia::lazy(fn () => GetRelatedProductCategories::run($subDepartment)),
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($subDepartment))

@@ -30,7 +30,6 @@ use Illuminate\Support\Arr;
  */
 class ProductsApiResource extends JsonResource
 {
-
     public function toArray($request): array
     {
         $product_details = [

@@ -111,6 +111,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read MasterProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $relatedMasterAssets
+ * @property-read LaravelCollection<int, MasterProductCategory> $relatedMasterProductCategories
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries

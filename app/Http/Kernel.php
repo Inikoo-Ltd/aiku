@@ -42,8 +42,6 @@ use App\Http\Middleware\HandleInertiaGrpRequests;
 use App\Http\Middleware\IrisRelaxAuthenticate;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
-use App\Http\Middleware\SetGrpApiTreblle;
-use App\Http\Middleware\SetRetinaApiTreblle;
 use App\Http\Middleware\SetWebUserLocale;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
@@ -70,7 +68,6 @@ use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Osiset\ShopifyApp\Http\Middleware\VerifyShopify;
-use Treblle\Laravel\Middlewares\TreblleMiddleware;
 
 class Kernel extends HttpKernel
 {
@@ -105,7 +102,6 @@ class Kernel extends HttpKernel
         ],
 
         'retina-api' => [
-            SetRetinaApiTreblle::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
@@ -114,7 +110,6 @@ class Kernel extends HttpKernel
         ],
 
         'grp-api' => [
-            SetGrpApiTreblle::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
@@ -308,6 +303,5 @@ class Kernel extends HttpKernel
         'abilities'              => CheckAbilities::class,
         'ability'                => CheckForAnyAbility::class,
         'verify.shopify.webhook' => VerifyShopifyWebhook::class,
-        'treblle'                => TreblleMiddleware::class,
     ];
 }
