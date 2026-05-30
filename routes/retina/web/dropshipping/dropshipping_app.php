@@ -70,7 +70,7 @@ use App\Actions\Accounting\Invoice\ExportDropshippingInvoicesByDate;
 use App\Actions\Retina\Dropshipping\DeliveryNotes\UI\PdfRetinaDropshippingPackingList;
 
 Route::get('select-products-for-empty-basket', IndexRetinaProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
-Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket::class)->name('select_products_for_basket');
+Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket::class)->name('select_products_for_basket')->whereNumber('order');
 
 Route::get('bulk-products-images', IndexRetinaBulkProductImages::class)->name('products.images.index');
 
@@ -83,7 +83,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
     Route::get('/', IndexRetinaDropshippingCustomerSalesChannels::class)->name('index');
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
 
-    Route::get('/{customerSalesChannel:id}/redirect', RedirectRetinaCustomerSalesChannel::class)->name('redirect');
+    Route::get('/{customerSalesChannel:id}/redirect', RedirectRetinaCustomerSalesChannel::class)->name('redirect')->whereNumber('customerSalesChannel');
 
     Route::post('ebay-user', StoreRetinaEbayUser::class)->name('ebay.store');
     Route::patch('ebay-user/{ebayUser}', UpdateRetinaEbayUser::class)->name('ebay.update')->withoutScopedBindings();
@@ -95,7 +95,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
-    Route::patch('shopify-user/{order:id}/sync-cancelled-status', SyncOrderCancellationToShopify::class)->name('shopify_user.order.sync-cancellation');
+    Route::patch('shopify-user/{order:id}/sync-cancelled-status', SyncOrderCancellationToShopify::class)->name('shopify_user.order.sync-cancellation')->whereNumber('order');
 
 
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
@@ -121,7 +121,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
     Route::get('filtered-products', IndexRetinaFilteredProducts::class)->name('filtered_products.index');
 
-    Route::get('bundles/{bundle:id}', ShowRetinaBundle::class)->name('bundles.show')->withoutScopedBindings();
+    Route::get('bundles/{bundle:id}', ShowRetinaBundle::class)->name('bundles.show')->withoutScopedBindings()->whereNumber('bundle');
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');

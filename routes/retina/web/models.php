@@ -185,29 +185,29 @@ Route::post('top-up-payment-api-point', StoreTopUpPaymentApiPoint::class)->name(
 Route::patch('/profile', UpdateRetinaProfile::class)->name('profile.update');
 Route::patch('/settings', UpdateRetinaCustomerSettings::class)->name('settings.update');
 
-Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {
+Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->whereNumber('fulfilmentTransaction')->group(function () {
     Route::patch('', UpdateRetinaFulfilmentTransaction::class)->name('update');
     Route::delete('', DeleteRetinaFulfilmentTransaction::class)->name('delete');
 });
 
-Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->group(function () {
+Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->whereNumber('customerComms')->group(function () {
     Route::patch('update', UpdateRetinaCustomerComms::class)->name('update');
 });
 
 
-Route::post('favourite/{product:id}', StoreRetinaFavourite::class)->name('favourites.store');
-Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('favourites.delete');
+Route::post('favourite/{product:id}', StoreRetinaFavourite::class)->name('favourites.store')->whereNumber('product');
+Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('favourites.delete')->whereNumber('product');
 
-Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
-Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
+Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings()->whereNumber('product');
+Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings()->whereNumber('product');
 
 
 
 Route::post('pallet-return', StoreRetinaPalletReturn::class)->name('pallet-return.store');
 Route::post('pallet-return/stored-items', [StoreRetinaPalletReturn::class, 'withStoredItems'])->name('pallet-return-stored-items.store');
-Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(function () {
+Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->whereNumber('palletReturn')->group(function () {
     Route::post('attachment/attach', [AttachRetinaAttachmentToModel::class, 'inPalletReturn'])->name('attachment.attach');
-    Route::delete('attachment/{attachment:id}/detach', [DetachRetinaAttachmentFromModel::class, 'inPalletReturn'])->name('attachment.detach')->withoutScopedBindings();
+    Route::delete('attachment/{attachment:id}/detach', [DetachRetinaAttachmentFromModel::class, 'inPalletReturn'])->name('attachment.detach')->withoutScopedBindings()->whereNumber('attachment');
 
     Route::post('address', AddRetinaAddressToPalletReturn::class)->name('address.store');
     Route::patch('address/switch', SwitchRetinaPalletReturnDeliveryAddress::class)->name('address.switch');
@@ -220,18 +220,18 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::patch('update', UpdateRetinaPalletReturn::class)->name('update');
     Route::post('submit', SubmitRetinaPalletReturn::class)->name('submit');
     Route::post('cancel', CancelRetinaPalletReturn::class)->name('cancel');
-    Route::post('pallet-stored-item/{palletStoredItem:id}/attach', AttachRetinaStoredItemToReturn::class)->name('stored_item.attach')->withoutScopedBindings();
+    Route::post('pallet-stored-item/{palletStoredItem:id}/attach', AttachRetinaStoredItemToReturn::class)->name('stored_item.attach')->withoutScopedBindings()->whereNumber('palletStoredItem');
     Route::post('pallet', AttachRetinaPalletsToReturn::class)->name('pallet.store');
-    Route::post('pallet/{pallet:id}/attach', AttachRetinaPalletToReturn::class)->name('pallet.attach')->withoutScopedBindings();
-    Route::delete('pallet/{pallet:id}/detach', DetachRetinaPalletFromReturn::class)->name('pallet.delete')->withoutScopedBindings();
+    Route::post('pallet/{pallet:id}/attach', AttachRetinaPalletToReturn::class)->name('pallet.attach')->withoutScopedBindings()->whereNumber('pallet');
+    Route::delete('pallet/{pallet:id}/detach', DetachRetinaPalletFromReturn::class)->name('pallet.delete')->withoutScopedBindings()->whereNumber('pallet');
     Route::post('transaction', [StoreRetinaFulfilmentTransaction::class, 'fromRetinaInPalletReturn'])->name('transaction.store');
     Route::patch('/', DeleteRetinaPalletReturn::class)->name('delete');
 });
 
 Route::post('pallet-delivery', StoreRetinaPalletDelivery::class)->name('pallet-delivery.store');
-Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->group(function () {
+Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->whereNumber('palletDelivery')->group(function () {
     Route::post('attachment/attach', [AttachRetinaAttachmentToModel::class, 'inPalletDelivery'])->name('attachment.attach');
-    Route::delete('attachment/{attachment:id}/detach', [DetachRetinaAttachmentFromModel::class, 'inPalletDelivery'])->name('attachment.detach')->withoutScopedBindings();
+    Route::delete('attachment/{attachment:id}/detach', [DetachRetinaAttachmentFromModel::class, 'inPalletDelivery'])->name('attachment.detach')->withoutScopedBindings()->whereNumber('attachment');
 
     Route::post('pallet-upload', ImportRetinaPallet::class)->name('pallet.upload');
     Route::post('pallet-upload-with-stored-items', ImportRetinaPalletsInPalletDeliveryWithStoredItems::class)->name('pallet.upload.with-stored-items');
@@ -244,33 +244,33 @@ Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->
     Route::patch('/', DeleteRetinaPalletDelivery::class)->name('delete');
 });
 
-Route::name('pallet.')->prefix('pallet/{pallet:id}')->group(function () {
+Route::name('pallet.')->prefix('pallet/{pallet:id}')->whereNumber('pallet')->group(function () {
     Route::post('stored-items', SyncRetinaStoredItemToPallet::class)->name('stored-items.update');
     Route::delete('', DeleteRetinaPallet::class)->name('delete');
     Route::patch('', UpdateRetinaPallet::class)->name('update');
 });
 
 Route::post('stored-items', StoreRetinaStoredItem::class)->name('stored-items.store');
-Route::patch('stored-items/{storedItem:id}', UpdateRetinaStoredItem::class)->name('stored-items.update');
+Route::patch('stored-items/{storedItem:id}', UpdateRetinaStoredItem::class)->name('stored-items.update')->whereNumber('storedItem');
 Route::post('stored-items/bulk-edit/import', ImportRetinaStoredItem::class)->name('stored-items.bulk_edit.import');
 
-Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
+Route::name('customer.')->prefix('customer/{customer:id}')->whereNumber('customer')->group(function () {
     Route::patch('update', UpdateRetinaCustomer::class)->name('update');
 
     Route::patch('address/update', UpdateRetinaCustomerAddress::class)->name('address.update');
     Route::post('delivery-address/store', AddRetinaDeliveryAddressToCustomer::class)->name('delivery-address.store');
     Route::patch('delivery-address/update', UpdateRetinaCustomerDeliveryAddress::class)->name('delivery-address.update');
-    Route::delete('delivery-address/{address:id}/delete', DeleteRetinaCustomerDeliveryAddress::class)->name('delivery-address.delete');
+    Route::delete('delivery-address/{address:id}/delete', DeleteRetinaCustomerDeliveryAddress::class)->name('delivery-address.delete')->whereNumber('address');
 
     Route::name('order.')->prefix('order')->group(function () {
-        Route::post('{platform:id}', StoreRetinaPlatformOrder::class)->name('platform.store');
+        Route::post('{platform:id}', StoreRetinaPlatformOrder::class)->name('platform.store')->whereNumber('platform');
     });
 
     Route::post('tags/attach', [AttachTagsToModel::class, 'inRetina'])->name('tags.attach');
-    Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inRetina'])->name('tags.detach');
+    Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inRetina'])->name('tags.detach')->whereNumber('tag');
 });
 
-Route::name('order.')->prefix('order/{order:id}')->group(function () {
+Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(function () {
     Route::patch('/', UpdateRetinaOrder::class)->name('update');
     Route::patch('update-gr-gift', UpdateOrderGrGift::class)->name('update_gr_gift');
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
@@ -293,27 +293,27 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 });
 
-Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
+Route::name('transaction.')->prefix('transaction/{transaction:id}')->whereNumber('transaction')->group(function () {
     Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
     Route::patch('', UpdateRetinaTransaction::class)->name('update')->withoutScopedBindings();
 });
 
-Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCustomer:id}')->group(function () {
+Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCustomer:id}')->whereNumber('fulfilmentCustomer')->group(function () {
     Route::post('delivery-address/store', AddRetinaDeliveryAddressToFulfilmentCustomer::class)->name('delivery_address.store');
 });
 
 Route::name('customer-client.')->prefix('customer-client')->group(function () {
-    Route::patch('{customerClient:id}/update', UpdateRetinaCustomerClient::class)->name('update')->withoutScopedBindings();
-    Route::post('{customerClient:id}/order', StoreRetinaOrder::class)->name('order.store')->withoutScopedBindings();
-    Route::post('{customerClient:id}/dashboard/order', StoreRetinaOrder::class)->name('dashboard-order.store')->withoutScopedBindings();
-    Route::post('{customerClient:id}/fulfilment/order', StoreRetinaPlatformPalletReturn::class)->name('fulfilment_order.store')->withoutScopedBindings();
+    Route::patch('{customerClient:id}/update', UpdateRetinaCustomerClient::class)->name('update')->withoutScopedBindings()->whereNumber('customerClient');
+    Route::post('{customerClient:id}/order', StoreRetinaOrder::class)->name('order.store')->withoutScopedBindings()->whereNumber('customerClient');
+    Route::post('{customerClient:id}/dashboard/order', StoreRetinaOrder::class)->name('dashboard-order.store')->withoutScopedBindings()->whereNumber('customerClient');
+    Route::post('{customerClient:id}/fulfilment/order', StoreRetinaPlatformPalletReturn::class)->name('fulfilment_order.store')->withoutScopedBindings()->whereNumber('customerClient');
 });
 
 Route::post('fulfilment-customer-sales-channel-manual', StoreRetinaFulfilmentManualPlatform::class)->name('fulfilment.customer_sales_channel.manual.store')->withoutScopedBindings();
 Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->name('customer_sales_channel.manual.store')->withoutScopedBindings();
 
 
-Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
+Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->whereNumber('customerSalesChannel')->group(function () {
     Route::post('portfolios-bulk-import', ImportBulkCustomerSalesChannelPortfolios::class)->name('portfolios.bulk_import');
 
     Route::patch('unsuspend', UnSuspendRetinaCustomerSalesChannel::class)->name('unsuspend');
@@ -333,10 +333,10 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('shopify-sync-all-stored-items', SyncRetinaStoredItemsFromApiProductsShopify::class)->name('shopify_sync_all_stored_items');
     Route::post('upload', ImportRetinaClients::class)->name('clients.upload');
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
-    Route::post('portfolio-clone-manual/{targetCustomerSalesChannel:id}', CloneMultipleManualPortfolios::class)->name('portfolio.clone_manual')->withoutScopedBindings();
-    Route::post('product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategory::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
+    Route::post('portfolio-clone-manual/{targetCustomerSalesChannel:id}', CloneMultipleManualPortfolios::class)->name('portfolio.clone_manual')->withoutScopedBindings()->whereNumber('targetCustomerSalesChannel');
+    Route::post('product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategory::class)->name('portfolio.store_from_product_category')->withoutScopedBindings()->whereNumber('productCategory');
     Route::delete('delete', RetinaDeleteCustomerSalesChannel::class)->name('delete');
-    Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings();
+    Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings()->whereNumber('portfolio');
     Route::post('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
     Route::post('access-token', StoreCustomerToken::class)->name('access_token.create');
 });
@@ -351,119 +351,119 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
         Route::post('description-generator', GenerateRetinaProductBundleDescription::class)->name('description.generate');
     });
 
-    Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
+    Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->whereNumber('customerSalesChannel')->group(function () {
         Route::post('/', StoreRetinaBundle::class)->name('store');
         Route::post('store-or-update', StoreOrUpdateRetinaBundle::class)->name('store_or_update');
-        Route::patch('{bundle:id}', UpdateRetinaBundle::class)->name('update')->withoutScopedBindings();
-        Route::delete('{bundle:id}', DeleteRetinaBundle::class)->name('delete')->withoutScopedBindings();
-        Route::post('products/{product:id}/images-generator', GenerateRetinaProductImages::class)->name('products.images.generate')->withoutScopedBindings();
-        Route::post('products/{product:id}/images', UploadRetinaBundleProductImages::class)->name('products.images.store')->withoutScopedBindings();
+        Route::patch('{bundle:id}', UpdateRetinaBundle::class)->name('update')->withoutScopedBindings()->whereNumber('bundle');
+        Route::delete('{bundle:id}', DeleteRetinaBundle::class)->name('delete')->withoutScopedBindings()->whereNumber('bundle');
+        Route::post('products/{product:id}/images-generator', GenerateRetinaProductImages::class)->name('products.images.generate')->withoutScopedBindings()->whereNumber('product');
+        Route::post('products/{product:id}/images', UploadRetinaBundleProductImages::class)->name('products.images.store')->withoutScopedBindings()->whereNumber('product');
         Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
     });
 
-    Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink');
+    Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink')->whereNumber('customerSalesChannel');
 
-    Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
+    Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings()->whereNumber('shopifyUser');
 
-    Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateRetinaNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchRetinaBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/shopify-batch-all', CreateRetinaNewAllPortfoliosToShopify::class)->name('shopify.batch_all')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/shopify-dimensions-all', UpdateRetinaAllPortfoliosDimensionsToShopify::class)->name('shopify.batch_all_dimensions_update')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateRetinaNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchRetinaBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/shopify-batch-all', CreateRetinaNewAllPortfoliosToShopify::class)->name('shopify.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/shopify-dimensions-all', UpdateRetinaAllPortfoliosDimensionsToShopify::class)->name('shopify.batch_all_dimensions_update')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
-    Route::post('{customerSalesChannel:id}/woo-batch-upload', CreateRetinaNewBulkPortfoliosToWoo::class)->name('woo.batch_upload')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/woo-batch-match', MatchRetinaBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/woo-batch-all', CreateRetinaNewAllPortfoliosToWoo::class)->name('woo.batch_all')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/woo-batch-upload', CreateRetinaNewBulkPortfoliosToWoo::class)->name('woo.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/woo-batch-match', MatchRetinaBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/woo-batch-all', CreateRetinaNewAllPortfoliosToWoo::class)->name('woo.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
-    Route::post('{customerSalesChannel:id}/ebay-batch-upload', CreateRetinaNewBulkPortfoliosToEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchRetinaBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/ebay-batch-all', CreateRetinaNewAllPortfoliosToEbay::class)->name('ebay.batch_all')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/ebay-batch-upload', CreateRetinaNewBulkPortfoliosToEbay::class)->name('ebay.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchRetinaBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/ebay-batch-all', CreateRetinaNewAllPortfoliosToEbay::class)->name('ebay.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
-    Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload_legacy')->withoutScopedBindings();
-    Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings();
-    Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings();
-    Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', StoreNewProductToCurrentEbay::class)->name('woo.single_upload')->withoutScopedBindings();
+    Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload_legacy')->withoutScopedBindings()->whereNumber('wooCommerceUser');
+    Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings()->whereNumber('wooCommerceUser');
+    Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings()->whereNumber('wooCommerceUser');
+    Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', StoreNewProductToCurrentEbay::class)->name('woo.single_upload')->withoutScopedBindings()->whereNumber(['wooCommerceUser', 'portfolio']);
 
-    Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/tiktok-batch-all', CreateRetinaNewAllPortfoliosToTiktok::class)->name('tiktok.batch_all')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/tiktok-batch-all', CreateRetinaNewAllPortfoliosToTiktok::class)->name('tiktok.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
-    Route::post('{customerSalesChannel:id}/allegro-batch-upload', CreateRetinaNewBulkPortfoliosToAllegro::class)->name('allegro.batch_upload')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/allegro-batch-all', CreateRetinaNewAllPortfoliosToAllegro::class)->name('allegro.batch_all')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/allegro-batch-upload', CreateRetinaNewBulkPortfoliosToAllegro::class)->name('allegro.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/allegro-batch-all', CreateRetinaNewAllPortfoliosToAllegro::class)->name('allegro.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
-    Route::post('{amazonUser:id}/amazon-batch-upload', SyncronisePortfoliosToAmazon::class)->name('amazon.batch_upload')->withoutScopedBindings();
-    Route::post('{amazonUser:id}/amazon-single-upload/{portfolio:id}', SyncronisePortfolioToAmazon::class)->name('amazon.single_upload')->withoutScopedBindings();
+    Route::post('{amazonUser:id}/amazon-batch-upload', SyncronisePortfoliosToAmazon::class)->name('amazon.batch_upload')->withoutScopedBindings()->whereNumber('amazonUser');
+    Route::post('{amazonUser:id}/amazon-single-upload/{portfolio:id}', SyncronisePortfolioToAmazon::class)->name('amazon.single_upload')->withoutScopedBindings()->whereNumber(['amazonUser', 'portfolio']);
 
-    Route::post('{magentoUser:id}/magento-batch-upload', SyncronisePortfoliosToMagento::class)->name('magento.batch_upload')->withoutScopedBindings();
-    Route::post('{magentoUser:id}/magento-single-upload/{portfolio:id}', SyncronisePortfolioToMagento::class)->name('magento.single_upload')->withoutScopedBindings();
+    Route::post('{magentoUser:id}/magento-batch-upload', SyncronisePortfoliosToMagento::class)->name('magento.batch_upload')->withoutScopedBindings()->whereNumber('magentoUser');
+    Route::post('{magentoUser:id}/magento-single-upload/{portfolio:id}', SyncronisePortfolioToMagento::class)->name('magento.single_upload')->withoutScopedBindings()->whereNumber(['magentoUser', 'portfolio']);
 
     Route::get('tiktok/create-new-check', AuthCheckCreateTiktokChannel::class)->name('tiktok.auth_new_check')->withoutScopedBindings();
-    Route::get('tiktok/{tiktokUser:id}/check', CheckTiktokChannel::class)->name('tiktok.check')->withoutScopedBindings();
-    Route::patch('tiktok/{tiktokUser:id}', UpdateTiktokUser::class)->name('tiktok.update')->withoutScopedBindings();
-    Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
-    Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
+    Route::get('tiktok/{tiktokUser:id}/check', CheckTiktokChannel::class)->name('tiktok.check')->withoutScopedBindings()->whereNumber('tiktokUser');
+    Route::patch('tiktok/{tiktokUser:id}', UpdateTiktokUser::class)->name('tiktok.update')->withoutScopedBindings()->whereNumber('tiktokUser');
+    Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings()->whereNumber('tiktokUser');
+    Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings()->whereNumber('tiktokUser');
 
     Route::post('woocommerce/tmp-user', StoreTemporaryWooUser::class)->name('woocommerce.tmp_user.store')->withoutScopedBindings();
     Route::get('woocommerce/tmp-user-keys', CheckTemporaryWooUserApiKeys::class)->name('woocommerce.tmp_user_keys_check')->withoutScopedBindings();
 
-    Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', CallbackFetchWooUserOrders::class)->name('woocommerce.orders.catch')->withoutScopedBindings();
-    Route::get('ebay/{ebayUser:id}/catch-orders', FetchEbayUserOrders::class)->name('ebay.orders.catch')->withoutScopedBindings();
-    Route::get('amazon/{amazonUser:id}/catch-orders', GetRetinaOrdersFromAmazon::class)->name('amazon.orders.catch')->withoutScopedBindings();
-    Route::get('magento/{magentoUser:id}/catch-orders', GetRetinaOrdersFromMagento::class)->name('magento.orders.catch')->withoutScopedBindings();
+    Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', CallbackFetchWooUserOrders::class)->name('woocommerce.orders.catch')->withoutScopedBindings()->whereNumber('wooCommerceUser');
+    Route::get('ebay/{ebayUser:id}/catch-orders', FetchEbayUserOrders::class)->name('ebay.orders.catch')->withoutScopedBindings()->whereNumber('ebayUser');
+    Route::get('amazon/{amazonUser:id}/catch-orders', GetRetinaOrdersFromAmazon::class)->name('amazon.orders.catch')->withoutScopedBindings()->whereNumber('amazonUser');
+    Route::get('magento/{magentoUser:id}/catch-orders', GetRetinaOrdersFromMagento::class)->name('magento.orders.catch')->withoutScopedBindings()->whereNumber('magentoUser');
 });
 
 Route::name('web-users.')->prefix('web-users')->group(function () {
     Route::post('', StoreRetinaWebUser::class)->name('store');
-    Route::patch('{webUser:id}/update', UpdateRetinaWebUser::class)->name('update');
-    Route::delete('{webUser:id}/delete', DeleteRetinaWebUser::class)->name('delete');
+    Route::patch('{webUser:id}/update', UpdateRetinaWebUser::class)->name('update')->whereNumber('webUser');
+    Route::delete('{webUser:id}/delete', DeleteRetinaWebUser::class)->name('delete')->whereNumber('webUser');
 });
 
 Route::get('attachment/{media:ulid}', DownloadRetinaAttachment::class)->name('attachment.download');
 
 
 Route::name('transaction.')->prefix('transaction')->group(function () {
-    Route::delete('{transaction:id}', RetinaDeleteBasketTransaction::class)->name('delete');
-    Route::patch('{transaction:id}', RetinaEcomUpdateTransaction::class)->name('update');
+    Route::delete('{transaction:id}', RetinaDeleteBasketTransaction::class)->name('delete')->whereNumber('transaction');
+    Route::patch('{transaction:id}', RetinaEcomUpdateTransaction::class)->name('update')->whereNumber('transaction');
 });
 
 Route::name('top-up.')->prefix('top-up')->group(function () {
-    Route::post('{paymentAccount:id}', StoreRetinaTopUp::class)->name('store')->withoutScopedBindings();
+    Route::post('{paymentAccount:id}', StoreRetinaTopUp::class)->name('store')->withoutScopedBindings()->whereNumber('paymentAccount');
 });
 
-Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
-Route::delete('portfolio/{portfolio:id}/unlink', UnlinkRetinaPortfolio::class)->name('portfolio.unlink');
-Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update');
+Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete')->whereNumber('portfolio');
+Route::delete('portfolio/{portfolio:id}/unlink', UnlinkRetinaPortfolio::class)->name('portfolio.unlink')->whereNumber('portfolio');
+Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update')->whereNumber('portfolio');
 
-Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchRetinaPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
-Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreRetinaNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
+Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchRetinaPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product')->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreRetinaNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product')->whereNumber('portfolio');
 
-Route::post('portfolio/{portfolio:id}/match-to-existing-woo-product', MatchRetinaPortfolioToCurrentWooProduct::class)->name('portfolio.match_to_existing_woo_product');
-Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProductToCurrentWoo::class)->name('portfolio.store_new_woo_product');
+Route::post('portfolio/{portfolio:id}/match-to-existing-woo-product', MatchRetinaPortfolioToCurrentWooProduct::class)->name('portfolio.match_to_existing_woo_product')->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProductToCurrentWoo::class)->name('portfolio.store_new_woo_product')->whereNumber('portfolio');
 
-Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchRetinaPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
-Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreRetinaNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
-Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetinaPortfolioToCurrentChannel::class)->name('portfolio.update_new_product.publish');
-Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentChannel::class, 'asDraft'])->name('portfolio.update_new_product.draft');
+Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchRetinaPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product')->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreRetinaNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product')->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetinaPortfolioToCurrentChannel::class)->name('portfolio.update_new_product.publish')->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentChannel::class, 'asDraft'])->name('portfolio.update_new_product.draft')->whereNumber('portfolio');
 
-Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreRetinaNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product')->withoutScopedBindings();
-Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchRetinaPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product');
+Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreRetinaNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product')->withoutScopedBindings()->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchRetinaPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product')->whereNumber('portfolio');
 
-Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreRetinaNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product')->withoutScopedBindings();
+Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreRetinaNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product')->withoutScopedBindings()->whereNumber('portfolio');
 
 Route::post('portfolios/update-new-product-price/publish', UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class)->name('portfolios.update_new_product_price.publish');
 Route::post('portfolios/update-new-product-price/draft', [UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class, 'asDraft'])->name('portfolios.update_new_product_price.draft');
 
-Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
+Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings()->whereNumber('productCategory');
 Route::post('portfolio/all-channels/store', StoreRetinaPortfolioToAllChannels::class)->name('portfolio.store_to_all_channels');
-Route::post('portfolio/product-category/{productCategory:id}/multi-channels/store', [StoreRetinaPortfolioToMultiChannels::class, 'inProductCategory'])->name('portfolio.store_to_multi_channels');
+Route::post('portfolio/product-category/{productCategory:id}/multi-channels/store', [StoreRetinaPortfolioToMultiChannels::class, 'inProductCategory'])->name('portfolio.store_to_multi_channels')->whereNumber('productCategory');
 
 Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
-    Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');
-    Route::patch('{mitSavedCard:id}/set-to-default', SetAsDefaultRetinaMitSavedCard::class)->name('set_to_default');
+    Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete')->whereNumber('mitSavedCard');
+    Route::patch('{mitSavedCard:id}/set-to-default', SetAsDefaultRetinaMitSavedCard::class)->name('set_to_default')->whereNumber('mitSavedCard');
 });
 
 Route::name('product.')->prefix('product')->group(function () {
-    Route::post('{product:id}/favourite', StoreRetinaFavourite::class)->name('favourite');
-    Route::delete('{product:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite');
-    Route::post('{product:id}/add-to-basket', StoreRetinaEcomBasketTransaction::class)->name('add-to-basket');
+    Route::post('{product:id}/favourite', StoreRetinaFavourite::class)->name('favourite')->whereNumber('product');
+    Route::delete('{product:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite')->whereNumber('product');
+    Route::post('{product:id}/add-to-basket', StoreRetinaEcomBasketTransaction::class)->name('add-to-basket')->whereNumber('product');
 
 });
 

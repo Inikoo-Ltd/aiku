@@ -67,8 +67,8 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
             ->group(__DIR__."/customer_account/profile.php");
     });
 
-    Route::post('redirect-success-paid-order/{order:id}', RedirectSuccessPaymentOrder::class)->name('redirect_success_paid_order');
-    Route::post('redirect-success-paid-top-up/{creditTransaction:id}', RedirectSuccessPaymentTopUp::class)->name('redirect_success_paid_top_up');
+    Route::post('redirect-success-paid-order/{order:id}', RedirectSuccessPaymentOrder::class)->name('redirect_success_paid_order')->whereNumber('order');
+    Route::post('redirect-success-paid-top-up/{creditTransaction:id}', RedirectSuccessPaymentTopUp::class)->name('redirect_success_paid_top_up')->whereNumber('creditTransaction');
 
 
 });

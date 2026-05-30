@@ -35,27 +35,27 @@ Route::get('fulfilment/{fulfilment}/return/{scope}/physical-goods', [GetRetinaFu
 Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWholePallets::class)->name('pallet-return.pallets.index');
 Route::get('/{order}/recent-uploads', \App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads::class)->name('recent_uploads');
 
-Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order');
+Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order')->whereNumber('order');
 
-Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', DownloadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.portfolio_images_zip');
-Route::get('dropshipping/{customerSalesChannel:id}/upload-portfolio-zip-images', UploadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.upload_portfolio_zip_images');
+Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', DownloadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.portfolio_images_zip')->whereNumber('customerSalesChannel');
+Route::get('dropshipping/{customerSalesChannel:id}/upload-portfolio-zip-images', UploadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.upload_portfolio_zip_images')->whereNumber('customerSalesChannel');
 
-Route::get('dropshipping/{tiktokUser:id}/tiktok-user', ShowTiktokUser::class)->name('dropshipping.customer_sales_channel.tiktok_user.show');
+Route::get('dropshipping/{tiktokUser:id}/tiktok-user', ShowTiktokUser::class)->name('dropshipping.customer_sales_channel.tiktok_user.show')->whereNumber('tiktokUser');
 
-Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProduct::class)->name('dropshipping.product.channels_list');
-Route::get('dropshipping/{productCategory:id}/pc-channels-list', GetRetinaSalesChannelInProductCategory::class)->name('dropshipping.product.channels_list_product_category')->withoutScopedBindings();
+Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProduct::class)->name('dropshipping.product.channels_list')->whereNumber('product');
+Route::get('dropshipping/{productCategory:id}/pc-channels-list', GetRetinaSalesChannelInProductCategory::class)->name('dropshipping.product.channels_list_product_category')->withoutScopedBindings()->whereNumber('productCategory');
 
-Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerProductCategorySalesChannelIds::class)->name('product_category.channel_ids.index');
-Route::get('collection/{collection:id}/channels', GetRetinaCustomerCollectionSalesChannelIds::class)->name('collection.channel_ids.index');
+Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerProductCategorySalesChannelIds::class)->name('product_category.channel_ids.index')->whereNumber('productCategory');
+Route::get('collection/{collection:id}/channels', GetRetinaCustomerCollectionSalesChannelIds::class)->name('collection.channel_ids.index')->whereNumber('collection');
 
-Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
-Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
-Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
-Route::get('customer-sales-channel/{customerSalesChannel:id}/tiktok-products', GetTiktokProducts::class)->name('dropshipping.customer_sales_channel.tiktok_products');
-Route::get('customer-sales-channel/{customerSalesChannel:id}/allegro-products', GetAllegroProducts::class)->name('dropshipping.customer_sales_channel.allegro_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products')->whereNumber('customerSalesChannel');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products')->whereNumber('customerSalesChannel');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products')->whereNumber('customerSalesChannel');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/tiktok-products', GetTiktokProducts::class)->name('dropshipping.customer_sales_channel.tiktok_products')->whereNumber('customerSalesChannel');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/allegro-products', GetAllegroProducts::class)->name('dropshipping.customer_sales_channel.allegro_products')->whereNumber('customerSalesChannel');
 
 Route::get('first-hit', GetRetinaFirstHitData::class)->name('first_hit');
 Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
 
-Route::get('customer/{customer:id}/tags', [IndexTags::class, 'inRetina'])->name('customer.tags.index');
-Route::get('basket-transaction-product-data/{transaction:id}', GetRetinaBasketTransactionProductData::class)->name('basket_transaction_product_data');
+Route::get('customer/{customer:id}/tags', [IndexTags::class, 'inRetina'])->name('customer.tags.index')->whereNumber('customer');
+Route::get('basket-transaction-product-data/{transaction:id}', GetRetinaBasketTransactionProductData::class)->name('basket_transaction_product_data')->whereNumber('transaction');

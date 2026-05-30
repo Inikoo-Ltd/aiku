@@ -46,7 +46,7 @@ Route::prefix('order')->as('order.')->group(function () {
         ->withoutScopedBindings();
 });
 
-Route::prefix('transaction')->as('transaction.')->group(function () {
+Route::prefix('transaction')->as('transaction.')->whereNumber('transaction')->group(function () {
     Route::patch('{transaction:id}/update', UpdateApiOrderTransaction::class)->name('update');
     Route::delete('{transaction:id}/delete', DeleteApiOrderTransaction::class)->name('delete');
 });
