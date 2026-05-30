@@ -3,15 +3,15 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 02-07-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
 
 namespace App\Actions\Api\Retina\Dropshipping\Resource;
 
-use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -20,24 +20,29 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $media
  * @property mixed $price
  * @property mixed $id
+ * @property mixed $current_stock
+ * @property mixed $barcode
+ * @property mixed $description
+ * @property mixed $gross_weight
+ * @property mixed $currency_code
+ * @property mixed $currency_id
+ * @property mixed $web_images
  */
 class ProductsApiResource extends JsonResource
 {
+
     public function toArray($request): array
     {
-        $product = Product::find($this->id);
-
-
         $product_details = [
-            'id'    => $this->id,
-            'slug'  => $this->slug,
-            'code'  => $this->code,
-            'image' => $product->imageSources(64, 64),
-            'price' => $this->price,
+            'id'            => $this->id,
+            'slug'          => $this->slug,
+            'code'          => $this->code,
+            'image'         => Arr::get($this->web_images, 'main.gallery'),
+            'price'         => $this->price,
             'current_stock' => $this->current_stock,
-            'name'  => $this->name,
-            'ean_barcode' => $this->barcode,
-            'description' => $this->description,
+            'name'          => $this->name,
+            'ean_barcode'   => $this->barcode,
+            'description'   => $this->description,
         ];
 
         if (isset($this->department_name)) {
@@ -52,9 +57,9 @@ class ProductsApiResource extends JsonResource
 
         return [
             ...$product_details,
-            'gross_weight' => $this->gross_weight,
+            'gross_weight'  => $this->gross_weight,
             'currency_code' => $this->currency_code,
-            'currency_id' => $this->currency_id,
+            'currency_id'   => $this->currency_id,
         ];
     }
 }

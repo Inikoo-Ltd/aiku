@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 02-07-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -22,47 +22,32 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetProducts extends RetinaApiAction
+class GetDropshippingApiProducts extends RetinaApiAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Product::class);
 
         // Filter by type and value directly, not via global search
-        $type = Arr::get($modelData, 'type', 'all');
+        $type   = Arr::get($modelData, 'type', 'all');
         $search = Arr::get($modelData, 'search');
 
-        switch (strtolower($type)) {
-            case 'department':
-                if ($search) {
-                    $query->whereHas('department', function ($q) use ($search) {
-                        $q->whereAnyWordStartWith('product_categories.name', $search);
-                    });
-                }
-                break;
-            case 'family':
-                if ($search) {
-                    $query->whereHas('family', function ($q) use ($search) {
-                        $q->whereAnyWordStartWith('product_categories.name', $search);
-                    });
-                }
-                break;
-            case 'sub_department':
-                if ($search) {
-                    $query->whereHas('subDepartment', function ($q) use ($search) {
-                        $q->whereAnyWordStartWith('product_categories.name', $search);
-                    });
-                }
-                break;
-            case 'all':
-            default:
-                if ($search) {
-                    $query->where(function ($q) use ($search) {
-                        $q->whereAnyWordStartWith('products.name', $search)
+        if ($search) {
+            switch (strtolower($type)) {
+                case 'family':
+                case 'sub_department':
+                case 'department':
+                    $query->whereAnyWordStartWith('product_categories.name', $search);
+                    break;
+                case 'all':
+                default:
+
+                    $query->whereAnyWordStartWith('products.name', $search)
                         ->orWhereStartWith('products.code', $search);
-                    });
-                }
-                break;
+
+
+                    break;
+            }
         }
 
         $query->where('products.is_for_sale', true);
@@ -85,7 +70,6 @@ class GetProducts extends RetinaApiAction
         $query->leftJoin('shops', 'products.shop_id', 'shops.id');
         $query->leftJoin('currencies', 'currencies.id', 'products.currency_id');
         $query->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
-        $query->leftJoin('media', 'products.image_id', '=', 'media.id');
 
         $selects = [
             'products.id',
@@ -100,6 +84,7 @@ class GetProducts extends RetinaApiAction
             'products.gross_weight',
             'products.slug',
             'products.barcode',
+            'products.web_images',
             'currencies.code as currency_code',
             'currencies.id as currency_id',
             'department.slug as department_slug',
@@ -110,30 +95,18 @@ class GetProducts extends RetinaApiAction
         $include = explode(',', Arr::get($modelData, 'include', ''));
 
 
-        $isAll = in_array('all', $include);
+        $isAll           = in_array('all', $include);
         $allowedIncludes = [
-                'department'        => 'department.name as department_name',
-                'sub_department'    => 'sub_department.name as sub_department_name',
-                'family'            => 'family.name as family_name'
-            ];
+            'department'     => 'department.name as department_name',
+            'sub_department' => 'sub_department.name as sub_department_name',
+            'family'         => 'family.name as family_name'
+        ];
 
         foreach ($allowedIncludes as $key => $includeField) {
             if ($isAll || in_array($key, $include)) {
                 $selects[] = $includeField;
             }
         }
-
-        // if(in_array('department', $include)) {
-        //     $selects[] = 'department.name as department_name';
-        // }
-
-        // if(in_array('sub_department', $include)) {
-        //     $selects[] = 'sub_department.name as sub_department_name';
-        // }
-
-        // if(in_array('family', $include)) {
-        //     $selects[] = 'family.name as family_name';
-        // }
 
         $query->addSelect($selects);
 
@@ -151,30 +124,31 @@ class GetProducts extends RetinaApiAction
     public function rules(): array
     {
         return [
-            'type' => ['nullable', 'string'],
-            'search' => ['nullable', 'string'],
-            'include' => ['nullable', 'string'],
-            'page' => ['nullable', 'integer'],
+            'type'     => ['nullable', 'string'],
+            'search'   => ['nullable', 'string'],
+            'include'  => ['nullable', 'string'],
+            'page'     => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer'],
-            'sort' => ['nullable', 'string'],
+            'sort'     => ['nullable', 'string'],
         ];
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
         $request->merge([
-            'type' => $request->query('type', 'all'),
-            'search' => $request->query('search', null),
-            'include' => $request->query('include', ''),
-            'page' => $request->query('page', 1),
+            'type'     => $request->query('type', 'all'),
+            'search'   => $request->query('search'),
+            'include'  => $request->query('include', ''),
+            'page'     => $request->query('page', 1),
             'per_page' => $request->query('per_page', 50),
-            'sort' => $request->query('sort', 'products.code'),
+            'sort'     => $request->query('sort', 'products.code'),
         ]);
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromDropshipping($request);
+
         return $this->handle($this->customerSalesChannel, $this->validateAttributes());
     }
 

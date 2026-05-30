@@ -26,7 +26,7 @@ use App\Actions\Api\Retina\Dropshipping\Portfolio\StoreApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\UpdateApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Product\GetDataFeedsCsv;
 use App\Actions\Api\Retina\Dropshipping\Product\GetDataFeedsJson;
-use App\Actions\Api\Retina\Dropshipping\Product\GetProducts;
+use App\Actions\Api\Retina\Dropshipping\Product\GetDropshippingApiProducts;
 use App\Actions\Api\Retina\Dropshipping\Transaction\DeleteApiOrderTransaction;
 use App\Actions\Api\Retina\Dropshipping\Transaction\GetTransactions;
 use App\Actions\Api\Retina\Dropshipping\Transaction\StoreApiOrderTransaction;
@@ -53,7 +53,7 @@ Route::prefix('transaction')->as('transaction.')->whereNumber('transaction')->gr
 
 
 Route::prefix('products')->as('products.')->group(function () {
-    Route::get('', GetProducts::class)->name('index');
+    Route::get('', GetDropshippingApiProducts::class)->name('index');
     Route::get('my-products', GetApiDropshippingPortfolios::class)->name('my_product.index');
     Route::post('my-products/{product:id}/store', StoreApiPortfolio::class)->name('my_product.store')->whereNumber('product')->withoutScopedBindings();
     Route::get('my-products/{portfolio:id}', ShowApiPortfolio::class)->name('my_product.show')->whereNumber('portfolio');
