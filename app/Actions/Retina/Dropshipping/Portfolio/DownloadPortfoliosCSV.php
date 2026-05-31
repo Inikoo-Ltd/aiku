@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 08-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -15,6 +15,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Exports\Marketing\DataFeedsMapping;
 use App\Helpers\NaturalLanguage;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,13 +30,12 @@ class DownloadPortfoliosCSV extends RetinaAction
         string $exportType = 'portfolio_csv',
         mixed $columns = null,
         mixed $productStates = null,
-        array $productAvailibility = []
+        array $productAvailability = []
     ): BinaryFileResponse|Response|string {
-
-        $filename = 'portfolio_data_feed_' . $customerSalesChannel->customer->slug . '_' . now()->format('Ymd') . '.csv';
+        $filename = 'portfolio_data_feed_'.$customerSalesChannel->customer->slug.'_'.now()->format('Ymd').'.csv';
 
         $isExtendedProperties = $exportType === 'portfolio_csv_extended_properties';
-        $headers = $isExtendedProperties ? $this->headingsExtendedProperties($columns) : $this->headings();
+        $headers              = $isExtendedProperties ? $this->headingsExtendedProperties($columns) : $this->headings();
         if (!$isExtendedProperties) {
             $referenceHeader = 'Product user reference';
             array_splice($headers, 2, 0, [$referenceHeader]);
@@ -46,24 +46,33 @@ class DownloadPortfoliosCSV extends RetinaAction
         $normalizedProductStates = $this->normalizeProductStates($productStates);
 
         $portfolios = DB::table('portfolios')
-            ->select('products.*', 'family.code as family_code', 'family.name as family_name', 'dept.code as department_code', 'dept.name as department_name', 'subdept.code as subdepartment_code', 'subdept.name as subdepartment_name', 'portfolios.reference')
+            ->select(
+                'products.*',
+                'family.code as family_code',
+                'family.name as family_name',
+                'department.code as department_code',
+                'department.name as department_name',
+                'sub_department.code as subdepartment_code',
+                'sub_department.name as subdepartment_name',
+                'portfolios.reference'
+            )
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
-            ->leftJoin('product_categories as dept', 'products.department_id', '=', 'dept.id')
-            ->leftJoin('product_categories as subdept', 'products.sub_department_id', '=', 'subdept.id')
+            ->leftJoin('product_categories as department', 'products.department_id', '=', 'department.id')
+            ->leftJoin('product_categories as sub_department', 'products.sub_department_id', '=', 'sub_department.id')
             ->leftJoin('product_categories as family', 'products.family_id', '=', 'family.id')
             ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('portfolios.status', true)
-            ->when(count($normalizedProductStates) > 0, function ($query) use ($normalizedProductStates) {
-                $query->whereIn('products.state', $normalizedProductStates);
+            ->when(count($normalizedProductStates) > 0, function (Builder $query) use ($normalizedProductStates) {
+                return $query->whereIn('products.state', $normalizedProductStates);
             });
 
-        if (in_array('exclude_not_for_sale', $productAvailibility)) {
-            $portfolios
+        if (in_array('exclude_not_for_sale', $productAvailability)) {
+            $portfolios = $portfolios
                 ->where('products.is_for_sale', true);
         }
 
-        if (in_array('exclude_out_of_stocks', $productAvailibility)) {
-            $portfolios
+        if (in_array('exclude_out_of_stocks', $productAvailability)) {
+            $portfolios = $portfolios
                 ->where('products.available_quantity', '>', 0);
         }
 
@@ -96,6 +105,7 @@ class DownloadPortfoliosCSV extends RetinaAction
         if ($exportType === 'csv_content') {
             $content = file_get_contents($tempFile);
             unlink($tempFile);
+
             return $content;
         }
 
@@ -108,7 +118,7 @@ class DownloadPortfoliosCSV extends RetinaAction
     public function headingsExtendedProperties(mixed $columns = null): array
     {
         $headings = $this->extendedPropertiesHeadingMap();
-        $keys = $this->filterExtendedColumns($columns, array_keys($headings));
+        $keys     = $this->filterExtendedColumns($columns, array_keys($headings));
 
         return array_map(fn ($key) => $headings[$key], $keys);
     }
@@ -116,7 +126,7 @@ class DownloadPortfoliosCSV extends RetinaAction
     public function mapExtendedProperties($row, mixed $columns = null): array
     {
         $values = $this->extendedPropertiesValueMap($row);
-        $keys = $this->filterExtendedColumns($columns, array_keys($values));
+        $keys   = $this->filterExtendedColumns($columns, array_keys($values));
 
         return array_map(fn ($key) => $values[$key], $keys);
     }
@@ -135,36 +145,36 @@ class DownloadPortfoliosCSV extends RetinaAction
     {
         $this->initialisation($request);
 
-        $exportType = (string)$request->get('type', 'portfolio_csv');
+        $exportType = (string)$request->input('type', 'portfolio_csv');
 
-        $columns = $request->get('columns');
-        $productStates = $request->get('product_states');
-        $productAvailibility = $request->get('product_availibility') ?? [];
+        $columns             = $request->input('columns');
+        $productStates       = $request->input('product_states');
+        $productAvailability = $request->input('product_availability') ?? [];
 
-        return $this->handle($customerSalesChannel, $exportType, $columns, $productStates, $productAvailibility);
+        return $this->handle($customerSalesChannel, $exportType, $columns, $productStates, $productAvailability);
     }
 
     private function extendedPropertiesHeadingMap(): array
     {
         return [
-            'product_code' => 'Product code',
-            'product_user_reference' => 'Product user reference',
-            'department_code' => 'Department code',
-            'department_name' => 'Department name',
-            'subdepartment_code' => 'Sub Department code',
-            'subdepartment_name' => 'Sub Department name',
-            'family_code' => 'Family code',
-            'family_name' => 'Family name',
-            'product_name' => 'Product name',
-            'materials_ingredients' => 'Materials/Ingredients',
-            'unit_dimensions' => 'Unit dimensions',
-            'unit_net_weight' => 'Unit net weight (kg)',
+            'product_code'            => 'Product code',
+            'product_user_reference'  => 'Product user reference',
+            'department_code'         => 'Department code',
+            'department_name'         => 'Department name',
+            'subdepartment_code'      => 'Sub Department code',
+            'subdepartment_name'      => 'Sub Department name',
+            'family_code'             => 'Family code',
+            'family_name'             => 'Family name',
+            'product_name'            => 'Product name',
+            'materials_ingredients'   => 'Materials/Ingredients',
+            'unit_dimensions'         => 'Unit dimensions',
+            'unit_net_weight'         => 'Unit net weight (kg)',
             'package_weight_shipping' => 'Package weight (shipping)',
-            'country_of_origin' => 'Country of origin',
-            'tariff_code' => 'Tariff code',
-            'duty_rate' => 'Duty rate',
-            'hts_us' => 'HTS US',
-            'data_updated' => 'Data updated',
+            'country_of_origin'       => 'Country of origin',
+            'tariff_code'             => 'Tariff code',
+            'duty_rate'               => 'Duty rate',
+            'hts_us'                  => 'HTS US',
+            'data_updated'            => 'Data updated',
         ];
     }
 
@@ -173,24 +183,24 @@ class DownloadPortfoliosCSV extends RetinaAction
         $dimensions = NaturalLanguage::make()->dimensions($row->marketing_dimensions);
 
         return [
-            'product_code' => $row->code,
-            'product_user_reference' => $row->reference ?? '',
-            'department_code' => $row->department_code ?? '',
-            'department_name' => $row->department_name ?? '',
-            'subdepartment_code' => $row->subdepartment_code ?? '',
-            'subdepartment_name' => $row->subdepartment_name ?? '',
-            'family_code' => $row->family_code ?? '',
-            'family_name' => $row->family_name ?? '',
-            'product_name' => $row->name,
-            'materials_ingredients' => $row->marketing_ingredients ?? '',
-            'unit_dimensions' => $dimensions,
-            'unit_net_weight' => $row->marketing_weight / 1000,
+            'product_code'            => $row->code,
+            'product_user_reference'  => $row->reference ?? '',
+            'department_code'         => $row->department_code ?? '',
+            'department_name'         => $row->department_name ?? '',
+            'subdepartment_code'      => $row->subdepartment_code ?? '',
+            'subdepartment_name'      => $row->subdepartment_name ?? '',
+            'family_code'             => $row->family_code ?? '',
+            'family_name'             => $row->family_name ?? '',
+            'product_name'            => $row->name,
+            'materials_ingredients'   => $row->marketing_ingredients ?? '',
+            'unit_dimensions'         => $dimensions,
+            'unit_net_weight'         => $row->marketing_weight / 1000,
             'package_weight_shipping' => $row->gross_weight / 1000,
-            'country_of_origin' => $row->country_of_origin ?? '',
-            'tariff_code' => $row->tariff_code ?? '',
-            'duty_rate' => $row->duty_rate ?? '',
-            'hts_us' => $row->hts_us ?? '',
-            'data_updated' => $row->updated_at,
+            'country_of_origin'       => $row->country_of_origin ?? '',
+            'tariff_code'             => $row->tariff_code ?? '',
+            'duty_rate'               => $row->duty_rate ?? '',
+            'hts_us'                  => $row->hts_us ?? '',
+            'data_updated'            => $row->updated_at,
         ];
     }
 

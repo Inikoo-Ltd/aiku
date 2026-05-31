@@ -882,7 +882,7 @@ const onDownloadExtendedProperties = () => {
 	const url = downloadUrl("extended_properties", {
 		columns: selectedExtendedColumns.value,
 		product_states: selectedProductStates.value,
-		product_availibility: selectedProductAvailibility.value,
+		product_availability: selectedProductAvailibility.value,
 	})
 
 	if (!url) {
