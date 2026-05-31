@@ -87,7 +87,6 @@ class PortfoliosJsonExport
                 'products.updated_at',
                 'products.available_quantity_updated_at',
                 'products.price_updated_at',
-                'products.available_quantity_updated_at',
                 'products.images_updated_at',
                 'products.web_images',
                 'products.marketing_dimensions',
@@ -98,7 +97,7 @@ class PortfoliosJsonExport
             ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
             ->where('portfolios.item_type', 'Product')
             ->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id)
-            ->get();
+            ->cursor();
 
         return $portfolios->map(function ($row) {
             if ($row->units != 0) {
