@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faReceipt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Invoice } from "@/types/invoice"
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faReceipt)
 
@@ -110,7 +111,7 @@ const onExportPdf = () => {
             class="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
         >
             <FontAwesomeIcon icon="fal fa-file-pdf" />
-            Export Pdf
+            {{ trans("Export Pdf") }}
         </Button>
 
     </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { trans } from 'laravel-vue-i18n'
 import { ref, inject } from 'vue'
 import { getStyles } from "@/Composables/styles";
 import MobileHeader from '@/Components/CMS/Website/Headers/MobileHeader.vue';
@@ -78,7 +79,7 @@ const layout = inject('layout', {})
 
                 <!-- Search Bar -->
                 <div @click="()=> emits('setPanelActive', 'search')" class="relative justify-self-center w-full max-w-md hover-dashed">
-                    <input type="text" placeholder="Search Products"
+                    <input type="text" :placeholder="trans('Search Products')"
                         class="border border-gray-300 py-2 px-4 rounded-md text-sm w-full shadow-inner focus:outline-none focus:border-gray-500">
                     
                     <FontAwesomeIcon icon="fas fa-search"

@@ -23,6 +23,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsProductCategorie
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
+use App\Actions\Web\WebBlock\Iris\GetIrisRelatedProductCategory;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
@@ -66,6 +67,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } elseif ($webBlockType == 'images') {
             $parsedWebBlocks[$key] = SanitiseImagesWebBlock::run($webBlock);
+        } elseif ($webBlockType == 'relatedProductCategory') {
+            $parsedWebBlocks[$key] = GetIrisRelatedProductCategory::run($webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

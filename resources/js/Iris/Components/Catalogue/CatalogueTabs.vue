@@ -19,16 +19,19 @@ library.add(faFolderTree, faFolder, faCube, faAlbumCollection, faDotCircle, faBo
 type ScopeTab = {
     key: string
     label: string
-    icon: any
 }
 
-const tabs: ScopeTab[] = [
-    { key: 'department', label: 'Departments', icon: faFolderTree },
-    { key: 'sub_department', label: 'Sub Departments', icon: faDotCircle },
-    { key: 'collection', label: 'Collections', icon: faAlbumCollection },
-    { key: 'family', label: 'Families', icon: faFolder },
-    { key: 'product', label: 'Products', icon: faCube },
-]
+const props = defineProps<{
+    navigation: ScopeTab[]
+}>()
+
+const iconMap: Record<string, any> = {
+    department: faFolderTree,
+    sub_department: faDotCircle,
+    collection: faAlbumCollection,
+    family: faFolder,
+    product: faCube,
+}
 
 const page = usePage()
 const layoutStore = inject('layout', layoutStructure)
@@ -44,7 +47,7 @@ const activeScope = computed<string>(() => {
     <div class="border-b border-gray-200">
         <nav class="-mb-px flex w-full gap-x-6 overflow-x-auto px-4" aria-label="Catalogue Tabs">
             <Link
-                v-for="tab in tabs"
+                v-for="tab in props.navigation"
                 :key="tab.key"
                 :href="route('iris.catalogue_iris', { scope: tab.key })"
                 :class="[tab.key === activeScope ? 'tabNavigationActive' : 'tabNavigation']"
@@ -53,7 +56,7 @@ const activeScope = computed<string>(() => {
                 @finish="() => (isLoading = false)"
             >
                 <LoadingIcon v-if="isLoading === tab.key" class="h-5 w-5" />
-                <FontAwesomeIcon v-else :icon="tab.icon" fixed-width class="h-5 w-5" />
+                <FontAwesomeIcon v-else :icon="iconMap[tab.key]" fixed-width class="h-5 w-5" />
                 <span>{{ tab.label }}</span>
             </Link>
         </nav>

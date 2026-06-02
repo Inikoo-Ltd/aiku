@@ -3,7 +3,7 @@
 /*
  * Author: Vika Aqordi
  * Created on 23-04-2026-15h-33m
- * Github: https://github.com/aqordeon
+ * GitHub: https://github.com/aqordeon
  * Copyright: 2026
 */
 
@@ -20,12 +20,13 @@ class SendWaitingCountUpdateToWarehouseUsers
 
     public function handle(Warehouse $warehouse): void
     {
+        /** @var User $users */
         $users = User::whereHas('authorisedWarehouses', function ($query) use ($warehouse) {
             $query->where('model_id', $warehouse->id);
         })->get();
 
         foreach ($users as $user) {
-            if (!$user->authTo("dispatching.{$warehouse->id}.view")) {
+            if (!$user->authTo("dispatching.$warehouse->id.view")) {
                 continue;
             }
 

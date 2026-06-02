@@ -41,6 +41,7 @@ const props = defineProps<{
         updateRoute?: routeType
         isWithRefreshFieldForm?: boolean
         revisit_after_save?: boolean
+        information_warning?: { description: string }[]
         saveConfirmation?: {   // On click save will show modal confirmation
             title?: string
             description?: string
@@ -167,6 +168,18 @@ const isModalConfirmation = ref(false)
                         @submit="submit"
                     >
                     </component>
+
+                    <!-- Information Warning -->
+                    <div v-if="fieldData.information_warning?.length" class="mt-4 flex flex-col gap-1">
+                        <div
+                            v-for="(warning, index) in fieldData.information_warning"
+                            :key="index"
+                            class="text-xs border border-amber-400 rounded-sm bg-amber-50 py-1 px-2 text-amber-700"
+                        >
+                            <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500 mr-1" fixed-width aria-hidden="true" />
+                            {{ warning.description }}
+                        </div>
+                    </div>
 
                     <!-- Verification: Label -->
                     <div v-if="labelVerification" class="mt-1" :class="classVerification">

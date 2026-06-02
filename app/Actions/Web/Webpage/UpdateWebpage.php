@@ -114,7 +114,7 @@ class UpdateWebpage extends OrgAction
                     ]);
                 } else {
                     StoreRedirect::make()->action($webpage, [
-                        'type'          => RedirectTypeEnum::TEMPORAL,
+                        'type'          => RedirectTypeEnum::PERMANENT,
                         'to_webpage_id' => Arr::get($modelData, 'state_data.redirect_webpage_id')
                     ]);
                 }

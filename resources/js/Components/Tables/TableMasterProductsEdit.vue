@@ -268,7 +268,7 @@ const toggleDescription = (event) => {
                                 <InputIcon>
                                     <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
                                 </InputIcon>
-                                <InputText v-model="filters['global'].value" placeholder="Search..." />
+                                <InputText v-model="filters['global'].value" :placeholder="trans('Search...')" />
                             </IconField>
                         </div>
 
