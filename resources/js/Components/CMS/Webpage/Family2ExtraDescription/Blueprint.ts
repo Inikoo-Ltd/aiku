@@ -1,26 +1,10 @@
 export default {
 	blueprint: [
 		{
-			label: "# Id ",
-			key: ["id"],
-			type: "text",
-			information : 'id selector is used to select one unique element!'
-		},
-		{
 			label: "Responsive Visibility",
 			key: ["container", "properties", "visibility"],
 			type: "visibility",
 			useIn: ["desktop", "tablet", "mobile"],
-		},
-		{
-			label: "Column position",
-			key: ["column_position"],
-			type: "select-button",
-			useIn: ["desktop", "tablet", "mobile"],
-			defaultValue : 'Image-left',
-			props_data:{
-				options : [ "Image-left", "Image-right" ],
-			}
 		},
 		{
 			name: "Button",
@@ -28,14 +12,38 @@ export default {
 			editGlobalStyle: "button",
 			replaceForm: [
 				{
-					key: ["link"],
-					label: "Link",
-					type: "link",
-				},
-				{
 					key: ["text"],
 					label: "Text",
 					type: "text",
+				},
+				{
+					key: ["container", "properties", "text"],
+					type: "textProperty",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "background"],
+					label: "Background",
+					type: "background",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "margin"],
+					label: "Margin",
+					type: "margin",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "padding"],
+					label: "Padding",
+					type: "padding",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "border"],
+					label: "Border",
+					type: "border",
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 			],
 		},

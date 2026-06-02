@@ -1,17 +1,12 @@
 <script setup lang="ts">
+import { computed, inject, ref } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed, inject, ref, watch, onMounted, nextTick  } from "vue"
-import { get, isPlainObject, debounce } from "lodash-es"
-
-import Image from "@common/Components/Image.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Iris/Components/LinkIris.vue"
-import { getStyles } from "@/Composables/styles"
-
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { getStyles } from "@/Composables/styles"
+import About from "@/Components/CMS/Webpage/Family2ExtraDescription/AboutWorkshop.vue"
 
 library.add(
   faCube,
@@ -29,250 +24,122 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
-  indexBlock:number
+  indexBlock: number
 }>()
 
-const layout: any = inject("layout", {})
+const layout = inject("layout", {}) as any
+const activeTab = ref("about")
 
-const expanded = ref(false)
-const showReadMore = ref(false)
+const tabs = [
+  { key: "about", label: ctrans("About the Range") },
+  { key: "retailers", label: ctrans("Notes For Retailers") },
+  { key: "marketing", label: ctrans("Marketing Materials") },
+  { key: "faq", label: ctrans("FAQ") },
+]
 
-const descriptionRef = ref<HTMLElement | null>(null)
-
-const MAX_HEIGHT = 420
-
-const columnPosition = computed(() => {
-  const raw = get(props.modelValue, ["column_position"])
-
-  if (!isPlainObject(raw)) return raw
-
-  return (
-    raw?.[props.screenType] ??
-    raw?.desktop ??
-    "Image-right"
-  )
-})
-
-const isImageLeft = computed(
-  () => columnPosition.value === "Image-right"
+const sectionId = computed(
+  () => props.modelValue?.id ?? `family-1-iris-${props.indexBlock}`
 )
 
-const imageOrder = computed(() =>
-  isImageLeft.value ? "lg:order-1" : "lg:order-2"
-)
+const containerStyle = computed(() => ({
+  ...getStyles(
+    layout?.app?.webpage_layout?.container?.properties,
+    props.screenType
+  ),
+  ...getStyles(props.modelValue?.container?.properties),
+  width: "auto",
+}))
 
-const textOrder = computed(() =>
-  isImageLeft.value ? "lg:order-2" : "lg:order-1"
-)
-const images = computed(() => {
-  return props.fieldValue?.family?.extra_description_image || {}
-})
-
-const displayImages = computed(() => {
-  const data = []
-
-  for (const key in images.value) {
-    data.push(get(images.value, key))
+const component = (tab: string) => {
+  switch (tab) {
+    case "about":
+      return About
+    default:
+      return null
   }
-
-  while (data.length < 4) {
-    data.push(null)
-  }
-
-  return data.slice(0, 4)
-})
-
-const cleanedDescription = computed(() => {
-  const html =
-    props.modelValue?.family?.description_extra || ""
-
-  return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
-})
-
-const checkOverflow = async () => {
-  await nextTick()
-
-  if (!descriptionRef.value) return
-
-  showReadMore.value =
-    descriptionRef.value.scrollHeight > MAX_HEIGHT
 }
 
-watch(cleanedDescription, checkOverflow)
+/* Responsive Classes */
 
-onMounted(checkOverflow)
+const containerClass = computed(() => {
+  switch (props.screenType) {
+    case "mobile":
+      return "px-4 py-4"
 
-console.log("modelValue", props.modelValue)
+    case "tablet":
+      return "px-8 py-4"
+
+    default:
+      return "px-6 py-4"
+  }
+})
+
+const tabsWrapperClass = computed(() => {
+  switch (props.screenType) {
+    case "mobile":
+      return "justify-center gap-3"
+
+    case "tablet":
+      return "justify-center gap-6"
+
+    default:
+      return "justify-end gap-14"
+  }
+})
+
+const tabButtonClass = computed(() => {
+  switch (props.screenType) {
+    case "mobile":
+      return "px-1 py-3 text-[10px]"
+
+    case "tablet":
+      return "px-2 py-4 text-[12px]"
+
+    default:
+      return "px-2 py-4 text-[12px]"
+  }
+})
 </script>
 
 <template>
- <div
-    :id="
-      modelValue?.id
-        ? modelValue?.id
-        : 'family-3' + indexBlock
-    "
-    :style="{
-      ...getStyles(
-        layout?.app?.webpage_layout?.container
-          ?.properties,
-        screenType
-      ),
-      ...getStyles(
-        modelValue?.container?.properties,
-        screenType
-      )
-    }"
+  <section
+    class="w-full bg-[#D8D9DB] "
+    :id="sectionId"
   >
-    <div class="w-full px-4 py-8 lg:py-4">
-      <div
-        class="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center"
-      >
-        <!-- IMAGE -->
+    <div
+      class="mx-auto w-full  bg-white editor-class"
+      :class="containerClass"
+      :style="containerStyle"
+    >
+      <!-- TOP NAV -->
+      <div class="border-b border-[#9a9a9a]">
         <div
-          class="w-full flex justify-center lg:justify-end"
-          :class="imageOrder"
+          class="flex flex-wrap items-center"
+          :class="tabsWrapperClass"
         >
-          <div
-            class="grid grid-cols-2 gap-4 w-full max-w-[560px]"
-          >
-            <div
-              v-for="(img, index) in displayImages"
-              :key="index"
-              class="aspect-square overflow-hidden rounded-3xl bg-white border border-gray-200"
-            >
-              <template v-if="img">
-                <Image
-                  :src="img"
-                  :alt="modelValue?.family?.name"
-                  class="w-full h-full"
-                  imgClass="w-full h-full object-cover transition duration-500 hover:scale-105"
-                />
-              </template>
-            </div>
-          </div>
-        </div>
-
-        <!-- CONTENT -->
-        <div
-          class="flex flex-col min-w-0 max-w-[720px]"
-          :class="textOrder"
-        >
-          <!-- DESCRIPTION -->
-          <div class="relative ">
-            <div
-              ref="descriptionRef"
-              v-html="cleanedDescription"
-              class="description-content"
-              :class="{
-                'description-collapsed': !expanded
-              }"
-            />
-          </div>
-
-          <!-- READ MORE -->
           <button
-            v-if="showReadMore"
-            type="button"
-            class="read-more-btn"
-            @click="expanded = !expanded"
+            v-for="tab in tabs"
+            :key="tab.key"
+            @click="activeTab = tab.key"
+            class="relative -mb-px border-b transition-all duration-200"
+            :class="[
+              tabButtonClass,
+              activeTab === tab.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-[#9a9a9a]'
+            ]"
           >
-            {{
-              expanded
-                ? trans("Read less")
-                : trans("Read more")
-            }}
+            {{ tab.label }}
           </button>
-
-          <!-- BUTTON -->
-          <div class="mt-7 text-center md:text-right">
-            <button id="family-3-button" :label="modelValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
-             text-sm md:text-base font-medium
-             hover:underline underline-offset-4 mr-5 italic
-             transition-all duration-200" >{{ modelValue?.button?.text }}</button>
-          </div>
         </div>
       </div>
+
+      <!-- CONTENT -->
+      <component
+        :is="component(activeTab)"
+        :field-value="modelValue"
+        :screen-type="screenType"
+      />
     </div>
-  </div>
+  </section>
 </template>
-
-<style scoped>
-
-.description-content {
-  @apply text-sm
-  md:text-[15px]
-  lg:text-base
-  text-gray-600
-  leading-7
-  lg:leading-8
-  text-center
-  md:text-left
-  transition-all
-  duration-300;
-}
-
-
-.description-content :deep(p) {
-  @apply mb-0;
-}
-
-.description-content :deep(h2),
-.description-content :deep(h3),
-.description-content :deep(h4) {
-  @apply text-gray-900 font-semibold mt-6 mb-3;
-}
-
-.description-content :deep(ul) {
-  @apply list-disc pl-5 space-y-2;
-}
-
-.description-content :deep(ol) {
-  @apply list-decimal pl-5 space-y-2;
-}
-
-
-.description-content :deep(ul) {
-  @apply list-disc pl-5 ml-0 mt-2 space-y-2 list-outside;
-}
-
-
-.description-collapsed {
-  max-height: 390px;
-  overflow: hidden;
-
-  mask-image: linear-gradient(
-    to bottom,
-    black 75%,
-    transparent 100%
-  );
-
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    black 75%,
-    transparent 100%
-  );
-
-  transition:
-    max-height 0.35s ease,
-    mask-image 0.35s ease;
-}
-
-
-.description-content :deep(img) {
-  @apply rounded-2xl
-  overflow-hidden
-  my-6;
-}
-
-.read-more-btn {
-  @apply mt-5
-  text-sm
-  font-medium
-  text-gray-900
-  underline
-  w-fit
-  self-center
-  md:self-start;
-}
-</style>

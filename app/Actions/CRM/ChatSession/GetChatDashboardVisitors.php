@@ -82,7 +82,9 @@ class GetChatDashboardVisitors
                         ];
 
                         foreach ($countryRows as $row) {
-                            $breakdown[$this->resolveStatus($row, $idleThreshold)]++;
+                            foreach ($this->resolveStatuses($row, $idleThreshold) as $status) {
+                                $breakdown[$status]++;
+                            }
                         }
 
                         return array_merge(
@@ -110,18 +112,26 @@ class GetChatDashboardVisitors
             ->all();
     }
 
-    private function resolveStatus(object $row, Carbon $idleThreshold): string
+    private function resolveStatuses(object $row, Carbon $idleThreshold): array
     {
+        $statuses = [];
+
         if ($row->chat_session_id) {
-            return match ($row->chat_status) {
+            $chatStatus = match ($row->chat_status) {
                 'active'             => 'active_chat',
                 'waiting'            => $row->messages_count > 0 ? 'waiting_chat' : 'new_session',
                 'closed', 'resolved' => 'closed_chat',
-                default              => 'browsing',
+                default              => null,
             };
+
+            if ($chatStatus) {
+                $statuses[] = $chatStatus;
+            }
         }
 
-        return $row->last_seen_at >= $idleThreshold ? 'browsing' : 'idle';
+        $statuses[] = $row->last_seen_at >= $idleThreshold ? 'browsing' : 'idle';
+
+        return $statuses;
     }
 
     public function rules(): array

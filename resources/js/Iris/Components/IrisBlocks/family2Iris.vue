@@ -56,7 +56,7 @@ const hasImage = (index: number) => {
 </script>
 
 <template>
-  <section :id="fieldValue?.id ? fieldValue.id : `family-2-iris-${indexBlock}`" component="family-2-iris">
+  <section :id="`family-2`" component="family-2-iris">
     <div class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue?.container?.properties),
@@ -204,8 +204,9 @@ const hasImage = (index: number) => {
               xl:justify-start
               2xl:mt-8
             ">
-            <button class="
-                h-[38px]
+
+            <a href="#family-2-extra-description">
+              <button class="h-[38px]
                 rounded-xl
                 border
                 border-[#333]
@@ -214,10 +215,13 @@ const hasImage = (index: number) => {
                 font-medium
                 2xl:h-[48px]
                 2xl:px-12
-                2xl:text-base
-              ">
-              Learn more
-            </button>
+                2xl:text-base" :style="{
+                  ...getStyles(fieldValue?.button?.container?.properties)
+                }">
+                <span v-if="fieldValue?.button?.text">{{ fieldValue?.button?.text }}</span>
+                <span v-else>{{ ctrans('Learn more') }}</span>
+              </button>
+            </a>
           </div>
         </div>
       </div>

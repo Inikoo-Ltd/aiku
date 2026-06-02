@@ -382,6 +382,10 @@ iframe#launcher {
     background-color: var(--theme-color-4);
 }
 
+.border-primary {
+    border-color: var(--theme-color-4);
+}
+
 .text-primary {
     color: var(--theme-color-4) !important;
 }

@@ -1,259 +1,323 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject, ref, watch, toRefs, nextTick, onMounted } from "vue"
-import { get, isPlainObject, debounce } from "lodash-es"
+import { computed, inject } from "vue"
 
 import Image from "@common/Components/Image.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Iris/Components/LinkIris.vue"
-
 import { getStyles } from "@/Composables/styles"
-import { getBestOffer } from "@/Composables/useOffers"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faImage } from "@far"
 
-import { faCube, faLink, faInfoCircle } from "@fal"
-import { faStar, faCircle, faBadgePercent } from "@fas"
-import { faChevronCircleLeft, faChevronCircleRight } from "@far"
+interface FamilyImage {
+  original: string
+  alt?: string
+}
 
-import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+interface FamilyData {
+  name?: string
+  description?: string
+  description_image?: Record<string, FamilyImage>
+}
 
-import { Swiper, SwiperSlide } from "swiper/vue"
-import { Navigation } from "swiper/modules"
+interface FieldValue {
+  id?: string | number
+  family?: FamilyData
+  container?: {
+    properties?: Record<string, unknown>
+  }
+}
 
-import "swiper/css"
-import "swiper/css/navigation"
-
-library.add(
-  faCube,
-  faLink,
-  faInfoCircle,
-  faStar,
-  faCircle,
-  faBadgePercent,
-  faChevronCircleLeft,
-  faChevronCircleRight
-)
+type ScreenType = "mobile" | "tablet" | "desktop"
 
 const props = defineProps<{
-  modelValue: any
-  webpageData?: any
-  blockData?: Object
-  screenType: "mobile" | "tablet" | "desktop"
+  modelValue: FieldValue
+  screenType: ScreenType
   indexBlock: number
 }>()
 
-const layout: any = inject("layout", {})
-
-const { modelValue, webpageData, blockData } = toRefs(props)
-
-const showExtra = ref(false)
-
-/* hide image in mobile */
-const showImage = computed(() => props.screenType !== "mobile")
-
-const name = ref(
-  modelValue.value?.family?.description_title ||
-  modelValue.value?.family?.name ||
-  ""
-)
-
-const bestOffer = computed(() => {
-  return getBestOffer(modelValue.value?.family?.offers_data)
-})
+const layout = inject<Record<string, any>>("layout", {})
 
 const cleanedDescription = computed(() => {
-  const html = modelValue.value?.family?.description || ""
-  return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+  const html = props.modelValue?.family?.description || ""
+
+  return html.replace(
+    /<h1[^>]*>.*?<\/h1>/gis,
+    ""
+  )
 })
 
-const columnPosition = computed(() => {
-  const rawVal = get(modelValue.value, ["column_position"])
+console.log(props)
 
-  if (!isPlainObject(rawVal)) return rawVal
+const images = computed<FamilyImage[]>(() => {
+  const data =
+    props.modelValue?.family?.web_images?.description
 
-  const view = props.screenType
-  return rawVal?.[view] ?? rawVal?.desktop ?? "Image-right"
+  if (!data) return []
+
+  return Object.values(data).filter(
+    (item) => item && item.original
+  )
 })
 
-const isImageLeft = computed(() => columnPosition.value === "Image-right")
-
-
-const imageOrder = computed(() =>
-  isImageLeft.value ? "order-1" : "order-2"
-)
-
-const textOrder = computed(() =>
-  isImageLeft.value ? "order-2" : "order-1"
-)
-
-const images = computed(() => {
-  const src = modelValue.value?.family?.web_images?.all
-  if (!src) return []
-  return Array.isArray(src) ? src : [src]
-})
-
-const saveDescription = debounce(async (key: string, value: string) => {
-  try {
-    const url = route("grp.models.product_category.update", {
-      productCategory: modelValue.value.family.id,
-    })
-
-    await axios.patch(url, { [key]: value })
-  } catch (error: any) {
-    console.error("Save failed:", error)
-  }
-}, 1000)
-
-const isExpanded = ref(false)
-
-watch(name, async (val) => {
-  modelValue.value.family.description_title = val
-  saveDescription("description_title", val)
-
-  await nextTick()
-  autoResize()
-})
-
-const titleRef = ref<HTMLTextAreaElement | null>(null)
-
-const autoResize = () => {
-  const el = titleRef.value
-  if (!el) return
-
-  requestAnimationFrame(() => {
-    el.style.height = "auto"
-    el.style.height = el.scrollHeight + "px"
-  })
+const hasImage = (index: number) => {
+  return Boolean(images.value?.[index]?.original)
 }
 
-onMounted(async () => {
-  await nextTick()
-  autoResize()
+const screenStyles = computed(() => {
+  switch (props.screenType) {
+    case "mobile":
+      return {
+        wrapperDirection: "flex-col",
 
-  requestAnimationFrame(() => {
-    autoResize()
-  })
+        mainImage: {
+          width: "220px",
+          height: "280px",
+        },
+
+        sideImage: {
+          width: "105px",
+          height: "137px",
+        },
+
+        title: {
+          fontSize: "22px",
+        },
+
+        description: {
+          fontSize: "14px",
+        },
+
+        button: {
+          height: "38px",
+          paddingLeft: "32px",
+          paddingRight: "32px",
+          fontSize: "14px",
+        },
+
+        contentAlign: "text-center",
+        buttonAlign: "justify-center",
+      }
+
+    case "tablet":
+      return {
+        wrapperDirection: "flex-row",
+
+        mainImage: {
+          width: "340px",
+          height: "320px",
+        },
+
+        sideImage: {
+          width: "160px",
+          height: "157px",
+        },
+
+        title: {
+          fontSize: "24px",
+        },
+
+        description: {
+          fontSize: "15px",
+        },
+
+        button: {
+          height: "42px",
+          paddingLeft: "40px",
+          paddingRight: "40px",
+          fontSize: "15px",
+        },
+
+        contentAlign: "text-left",
+        buttonAlign: "justify-start",
+      }
+
+    default:
+      return {
+        wrapperDirection: "flex-row",
+
+        mainImage: {
+          width: "420px",
+          height: "380px",
+        },
+
+        sideImage: {
+          width: "200px",
+          height: "187px",
+        },
+
+        title: {
+          fontSize: "30px",
+        },
+
+        description: {
+          fontSize: "19px",
+        },
+
+        button: {
+          height: "48px",
+          paddingLeft: "48px",
+          paddingRight: "48px",
+          fontSize: "16px",
+        },
+
+        contentAlign: "text-left",
+        buttonAlign: "justify-start",
+      }
+  }
 })
-
-console.log("Family2 Workshop Props:", props)
 </script>
 
 <template>
-  <div class="w-full"  :id="modelValue?.id ? modelValue?.id : 'family-3'+indexBlock"  :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(modelValue?.container?.properties, screenType)
-    }">
-
-    <!-- 🔧 LIMIT WIDTH biar tidak melebar di 2xl -->
-    <div class="mx-auto max-w-[2000px] w-full px-4 md:px-8 xl:px-12" >
-
-      <div class="grid w-full grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
-
-        <!-- IMAGE -->
+  <section
+    class="editor-class"
+    :id="
+      modelValue?.id
+        ? modelValue.id
+        : `family-2`
+    "
+    component="family-2-workshop"
+  >
+    <div
+      class="mx-auto w-full bg-white px-4 py-4"
+      :style="{
+        ...getStyles(
+          layout?.app?.webpage_layout?.container
+            ?.properties,
+          screenType
+        ),
+        ...getStyles(
+          modelValue?.container?.properties,
+          screenType
+        ),
+        width: 'auto',
+      }"
+    >
+      <div
+        class="flex gap-6"
+        :class="screenStyles.wrapperDirection"
+      >
+        <!-- IMAGES -->
         <div
-          v-if="showImage"
-          :style="getStyles(modelValue?.image?.container?.properties, screenType)"
-          class="relative w-full overflow-hidden
-                 aspect-[4/2]
-                 max-h-[500px] md:max-h-[550px] xl:max-h-[600px] 2xl:max-h-[650px]"
-          :class="imageOrder"
+          class="flex shrink-0 justify-center gap-[6px]"
         >
-
-          <!-- NAV -->
-          <div v-if="images.length > 1" class="nav-btn left-3 swiper-btn-prev">
-            <FontAwesomeIcon icon="far fa-chevron-circle-left" />
-          </div>
-
-          <div v-if="images.length > 1" class="nav-btn right-3 swiper-btn-next">
-            <FontAwesomeIcon icon="far fa-chevron-circle-right" />
-          </div>
-
-          <!-- MULTI -->
-          <Swiper
-            v-if="images.length > 1"
-            :modules="[Navigation]"
-            :slides-per-view="1"
-            :loop="true"
-            :navigation="{ prevEl: '.swiper-btn-prev', nextEl: '.swiper-btn-next' }"
-            class="w-full h-full"
-          >
-            <SwiperSlide v-for="(img, i) in images" :key="i">
-              <div class="relative w-full h-full">
-                <Image
-                  :src="img.original"
-                  :imageCover="true"
-                  class="absolute inset-0 w-full h-full object-cover object-center"
-                />
-              </div>
-            </SwiperSlide>
-          </Swiper>
-
-          <!-- SINGLE -->
-          <div v-else class="relative w-full h-full">
+          <!-- IMAGE 1 -->
+          <template v-if="hasImage(0)">
             <Image
-              :src="images[0]?.original"
+              :src="images[0].original"
               :imageCover="true"
-              class="absolute inset-0 w-full h-full object-cover object-center"
+              :alt="
+                images[0]?.alt || 'family image'
+              "
+              class="object-cover"
+              :style="screenStyles.mainImage"
+            />
+          </template>
+
+          <div
+            v-else
+            class="flex items-center justify-center border border-gray-200 bg-gray-100"
+            :style="screenStyles.mainImage"
+          >
+            <FontAwesomeIcon
+              :icon="faImage"
+              class="h-14 w-14 text-gray-400"
             />
           </div>
 
+          <div class="flex flex-col gap-[6px]">
+            <!-- IMAGE 2 -->
+            <template v-if="hasImage(1)">
+              <Image
+                :src="images[1].original"
+                :imageCover="true"
+                :alt="
+                  images[1]?.alt ||
+                  'family image'
+                "
+                class="object-cover"
+                :style="screenStyles.sideImage"
+              />
+            </template>
+
+            <div
+              v-else
+              class="flex items-center justify-center border border-gray-200 bg-gray-100"
+              :style="screenStyles.sideImage"
+            >
+              <FontAwesomeIcon
+                :icon="faImage"
+                class="h-14 w-14 text-gray-400"
+              />
+            </div>
+
+            <!-- IMAGE 3 -->
+            <template v-if="hasImage(2)">
+              <Image
+                :src="images[2].original"
+                :imageCover="true"
+                :alt="
+                  images[2]?.alt ||
+                  'family image'
+                "
+                class="object-cover"
+                :style="screenStyles.sideImage"
+              />
+            </template>
+
+            <div
+              v-else
+              class="flex items-center justify-center border border-gray-200 bg-gray-100"
+              :style="screenStyles.sideImage"
+            >
+              <FontAwesomeIcon
+                :icon="faImage"
+                class="h-14 w-14 text-gray-400"
+              />
+            </div>
+          </div>
         </div>
 
-        <!-- TEXT -->
+        <!-- CONTENT -->
         <div
-          class="flex flex-col justify-center items-center text-center px-2 md:px-4
-                 md:items-start md:text-left"
-          :class="textOrder"
+          class="flex min-w-0 flex-1 flex-col"
+          :class="screenStyles.contentAlign"
         >
-        <h1 class="mb-3 w-full max-w-xl">
-  <textarea
-    ref="titleRef"
-    v-model="name"
-    @input="autoResize"
-    rows="1"
-    placeholder="Family Title"
-    class="w-full resize-none overflow-hidden bg-transparent border-none p-0 m-0
-           text-2xl md:text-3xl font-semibold text-gray-900
-           leading-tight
-           focus:outline-none focus:ring-0
-           text-center md:text-left"
-  ></textarea>
-</h1>
-
-          <div
-            v-if="modelValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
-            class="discount-wrapper"
-          >
+          <div class="">
+            <h1
+              class="font-bold leading-[1.15] text-[#12243c]"
+              :style="screenStyles.title"
+            >
+              {{ modelValue.family?.name }}
+            </h1>
           </div>
 
           <div
+            class="flex-1 text-[#1d2430]"
+            :style="{
+              ...screenStyles.description,
+              lineHeight: '1.6',
+            }"
             v-html="cleanedDescription"
-            class="text-gray-600 leading-relaxed text-sm md:text-base max-w-xl"
           />
 
-          <div class="btn-wrapper">
-              <LinkIris :href="modelValue?.button?.link?.href" :canonical_url="modelValue?.button?.link?.canonical_url"
-                :target="modelValue?.button?.link?.target" :type="modelValue?.button?.link?.type">
-                <Button :label="modelValue?.button?.text"
-                  :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)" />
-              </LinkIris>
-            </div>
+          <div
+            class="mt-5 flex"
+            :class="screenStyles.buttonAlign"
+          >
+            <button
+              class="rounded-xl border border-[#333] font-medium"
+              :style="{
+                ...screenStyles.button,
+                ...getStyles(modelValue?.button?.container?.properties)
+              }"
+            >
+              <span v-if="modelValue?.button?.text">{{ modelValue?.button?.text }}</span>
+              <span v-else>{{ ctrans('Learn more') }}</span>
+            </button>
+          </div>
         </div>
-
       </div>
     </div>
-
-  </div>
+  </section>
 </template>
 
 <style scoped>
-
-.btn-wrapper {
-  @apply flex justify-center md:justify-start mt-6;
-}
-
-.nav-btn {
-  @apply absolute top-1/2 -translate-y-1/2 z-10 cursor-pointer
-         text-gray-500 text-3xl opacity-70 hover:opacity-100;
-}
 </style>
