@@ -32,7 +32,7 @@ trait WithWebAuthorisation
             if (str_starts_with($routeName, $prefix)) {
                 $this->canEdit = $user->authTo("org-supervisor.{$this->organisation->id}");
                 $this->isSupervisor = $this->canEdit;
-                
+
                 return $user->authTo([
                     "websites-view.{$this->organisation->id}",
                     "group-webmaster.view"

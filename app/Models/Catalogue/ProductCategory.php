@@ -129,6 +129,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Organisation $organisation
  * @property-read ProductCategory|null $parent
+ * @property-read LaravelCollection<int, ProductCategory> $relatedProductCategories
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Product> $relatedProducts
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
@@ -418,7 +419,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsToMany(Product::class, 'product_category_has_related_products')
             ->withTimestamps();
     }
-    
+
     public function relatedProductCategories(): BelongsToMany
     {
         return $this->belongsToMany(ProductCategory::class, 'product_category_has_related_product_categories', 'product_category_id', 'related_product_category_id')

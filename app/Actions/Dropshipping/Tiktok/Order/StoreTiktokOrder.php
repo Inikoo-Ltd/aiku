@@ -73,7 +73,7 @@ class StoreTiktokOrder extends RetinaAction
 
         $handOverMethod = null;
         $packageId = Arr::get($order, 'packages.0.id');
-        if($packageId) {
+        if ($packageId) {
             $package = $tiktokUser->getPackageDetail($packageId);
             $handOverMethod = Arr::get($package, 'data.handover_method');
         }

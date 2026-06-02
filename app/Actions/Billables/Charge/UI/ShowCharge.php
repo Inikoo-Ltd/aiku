@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ChargeTabsEnum;
-use App\Enums\UI\Catalogue\ShippingZoneSchemaTabsEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;

@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 13-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -13,11 +13,9 @@ namespace App\Actions\Api\Retina\Dropshipping\Portfolio;
 use App\Actions\RetinaApiAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
-use App\Http\Resources\Api\PortfoliosResource;
-use App\Models\Catalogue\Product;
+use App\Http\Resources\Api\DropshippingApiPortfoliosResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Fulfilment\StoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -26,65 +24,74 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetPortfolios extends RetinaApiAction
+class GetApiDropshippingPortfolios extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
+        if ($customerSalesChannel->customer->is_fulfilment) {
+            abort('422');
+        }
+
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
-
-        $query->with(['item']);
+        $query->where('item_type', 'Product');
 
         if (Arr::get($modelData, 'search')) {
-            $query->whereHas('item', function ($query) use ($modelData) {
-                $query->whereAnyWordStartWith('name', $modelData['search']);
-            });
+            $query->whereAnyWordStartWith('products.name', $modelData['search']);
         }
 
-        if ($customerSalesChannel->customer->is_fulfilment) {
-            $query->where('portfolios.item_type', class_basename(StoredItem::class));
-        } else {
-            $query->where('portfolios.item_type', class_basename(Product::class));
-        }
 
         $query->where('portfolios.status', true);
 
         $query->leftJoin('products', 'products.id', 'portfolios.item_id')
             ->select(
-                'portfolios.*',
+                'portfolios.id',
+                'portfolios.item_id',
+                'portfolios.item_type',
+                'portfolios.created_at',
+                'portfolios.updated_at',
+                'products.slug as product_slug',
+                'products.code as product_code',
+                'products.name as product_name',
+                'products.available_quantity as available_quantity',
+                'products.gross_weight as gross_weight',
+                'products.price as price',
+                'products.barcode as barcode',
+                'products.web_images',
                 'products.state as product_state',
                 'products.is_for_sale',
             );
-
+        $query->selectRaw("'{$customerSalesChannel->shop->currency->code}'  as currency_code");
         $query->where('products.status', ProductStatusEnum::FOR_SALE);
         $query->where('products.state', ProductStateEnum::ACTIVE);
 
         return $query->withPaginator(null, queryName: 'per_page')
-        ->withQueryString();
+            ->withQueryString();
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromDropshipping($request);
+
         return $this->handle($this->customerSalesChannel, $this->validatedData);
     }
 
 
     public function jsonResponse(LengthAwarePaginator $portfolio): AnonymousResourceCollection
     {
-        return PortfoliosResource::collection($portfolio);
+        return DropshippingApiPortfoliosResource::collection($portfolio);
     }
 
     public function rules(): array
     {
         return [
-            'search' => ['nullable', 'string'],
-            'page' => ['nullable', 'integer'],
+            'search'   => ['nullable', 'string'],
+            'page'     => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer'],
-            'sort' => ['nullable', 'string'],
+            'sort'     => ['nullable', 'string'],
         ];
     }
 
@@ -92,10 +99,10 @@ class GetPortfolios extends RetinaApiAction
     {
         $request->merge(
             [
-                'search' => $request->query('search', null),
-                'page' => $request->query('page', 1),
+                'search'   => $request->query('search'),
+                'page'     => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
-                'sort' => $request->query('sort', 'id'),
+                'sort'     => $request->query('sort', 'id'),
             ]
         );
     }

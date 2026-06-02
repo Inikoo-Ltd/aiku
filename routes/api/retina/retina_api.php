@@ -8,19 +8,26 @@
 
 use App\Actions\Api\Retina\GetProfile;
 use Illuminate\Support\Facades\Route;
+use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 
-Route::middleware(['auth:sanctum', 'ability:retina', 'treblle'])->group(function () {
+Route::middleware(
+    [
+        'auth:sanctum',
+        'ability:retina',
+        Sample::always()
+    ]
+)->group(function () {
     Route::get('/user-profile', GetProfile::class)->name('profile');
 
     Route::prefix("dropshipping")
         ->name("dropshipping.")
-        ->group(__DIR__ . "/dropshipping/dropshipping.php");
+        ->group(__DIR__."/dropshipping/dropshipping.php");
 
     Route::prefix("fulfilment")
         ->name("fulfilment.")
-        ->group(__DIR__ . "/fulfilment/fulfilment.php");
+        ->group(__DIR__."/fulfilment/fulfilment.php");
 });

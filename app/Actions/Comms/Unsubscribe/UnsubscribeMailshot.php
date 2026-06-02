@@ -23,6 +23,7 @@ use App\Models\CRM\Prospect;
 use Illuminate\Support\Facades\Crypt;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
+use Exception;
 use Illuminate\Support\Facades\DB;
 
 class UnsubscribeMailshot
@@ -137,8 +138,12 @@ class UnsubscribeMailshot
 
     public function asController(string $encryptedDispatchedEmailID, ActionRequest $request): array
     {
-        $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
-        $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
+        try {
+            $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
+        } catch (Exception) {
+            abort(404);
+        }
+        $dispatchedEmail = DispatchedEmail::findOrFail($dispatchedEmailID);
 
         $tag = $request->get('tag');
 

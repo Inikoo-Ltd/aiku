@@ -36,7 +36,7 @@ class GetWebBlockRecommendationsProductCategoriesFromMaster
             )->resolve()
         );
 
-         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
+        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
 
         return $webBlock;
     }

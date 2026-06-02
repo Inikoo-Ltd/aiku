@@ -27,7 +27,6 @@ use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Masters\RelatedMasterProductsResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -200,8 +199,8 @@ class ShowFamily extends OrgAction
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
 
             FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
-                    fn() => GetRelatedProductCategories::run($family)
-                    : Inertia::lazy(fn() => GetRelatedProductCategories::run($family)),
+                    fn () => GetRelatedProductCategories::run($family)
+                    : Inertia::lazy(fn () => GetRelatedProductCategories::run($family)),
 
             FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
                 fn () => GetRelatedProducts::run($family)

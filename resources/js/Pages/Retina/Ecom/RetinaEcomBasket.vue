@@ -80,6 +80,7 @@ const props = defineProps<{
             created_at: string
             available_quantity: string
             currency_code: string
+            luigi_identity: string | null
             deleteRoute: routeType
         }[]
     }
@@ -398,13 +399,19 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
         })
 }
 
-const blackListProductIds = computed(() => {
+// const blackListProductIds = computed(() => {
+//     if (!props.transactions?.data) return []
+
+//     return props.transactions.data
+//         .map(transaction => transaction.id.toString())
+//         .filter(Boolean)
+// })
+
+const basketProductIdentities = computed(() => {
     if (!props.transactions?.data) return []
 
     return props.transactions.data
-        .map(transaction => {
-            return transaction.id.toString()
-        })
+        .map(transaction => transaction.luigi_identity)
         .filter(Boolean)
 })
 
@@ -783,7 +790,8 @@ const onChangeInsurance = async (val: boolean) => {
                 <BasketRecommendations
                     @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"
                     :listLoadingProducts
-                    :blacklistItems="blackListProductIds"
+                    xblacklistItems="blackListProductIds"
+                    :basketItemIds="basketProductIdentities"
                 />
             </div>
         </div>

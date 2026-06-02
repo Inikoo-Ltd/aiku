@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 29-05-2026-13h-11m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -52,7 +52,8 @@ class GetProductCategorySiblingRecommendation extends OrgAction
                 'product_categories.name',
                 'product_categories.web_images',
                 DB::raw('master_product_category_has_related_product_categories.position as position'),
-            ])->get();;
+            ])->get();
+
 
         if (!$includeMasterRelatedProductCategory) {
             return $localRecommendations;

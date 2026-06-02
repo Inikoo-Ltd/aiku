@@ -3,17 +3,16 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 08-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use App\Actions\Helpers\Images\GetImgProxyUrl;
-use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -21,11 +20,11 @@ class PortfoliosJsonExport
 {
     use AsAction;
 
-    public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel): array
+    public function handle(CustomerSalesChannel $customerSalesChannel): array
     {
         return [
             'schema' => $this->schema(),
-            'data'   => $this->getData($customer, $customerSalesChannel),
+            'data'   => $this->getData($customerSalesChannel),
         ];
     }
 
@@ -63,20 +62,46 @@ class PortfoliosJsonExport
         ];
     }
 
-    private function getData(Customer $customer, CustomerSalesChannel $customerSalesChannel): array
+    private function getData(CustomerSalesChannel $customerSalesChannel): array
     {
-        $portfolios = $customer->portfolios()
-            ->where('customer_sales_channel_id', $customerSalesChannel->id)
-            ->with(['item.family', 'item.currency'])
-            ->with(['item.image'])
-            ->get();
+        $portfolios = DB::table('portfolios')
+            ->select(
+                'portfolios.status',
+                'portfolios.item_code',
+                'portfolios.reference',
+                'products.units',
+                'products.unit',
+                'products.price',
+                'products.barcode',
+                'products.cpnp_number',
+                'products.name',
+                'products.rrp',
+                'products.marketing_weight',
+                'products.gross_weight',
+                'products.description',
+                'products.country_of_origin',
+                'products.tariff_code',
+                'products.duty_rate',
+                'products.hts_us',
+                'products.available_quantity',
+                'products.updated_at',
+                'products.available_quantity_updated_at',
+                'products.price_updated_at',
+                'products.images_updated_at',
+                'products.web_images',
+                'products.marketing_dimensions',
+                'products.marketing_ingredients',
+                'product_categories.name as family_name',
+            )
+            ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
+            ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
+            ->where('portfolios.item_type', 'Product')
+            ->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id)
+            ->cursor();
 
         return $portfolios->map(function ($row) {
-            /** @var Product $product */
-            $product = $row->item;
-
-            if ($product->units != 0) {
-                $unitPrice = $product->price / $product->units;
+            if ($row->units != 0) {
+                $unitPrice = $row->price / $row->units;
             } else {
                 $unitPrice = 0;
             }
@@ -85,35 +110,31 @@ class PortfoliosJsonExport
                 $row->status,
                 $row->item_code,
                 $row->reference,
-                $product->family?->name,
-                $product->barcode,
-                $product->cpnp_number,
-                $product->price,
-                $product->units,
-                $product->unit,
+                $row->family_name,
+                $row->barcode,
+                $row->cpnp_number,
+                $row->price,
+                $row->units,
+                $row->unit,
                 $unitPrice,
-                $product->name,
-                $product->rrp,
-                $product->marketing_weight,
-                $product->gross_weight,
-
-                $product->marketing_dimensions,
-                $product->marketing_ingredients,
-
-                $product->description,
-                Str::of($product->description)->stripTags(),
-                $product->country_of_origin,
-
-                $product->tariff_code,
-                $product->duty_rate,
-                $product->hts_us,
-
-                $product->available_quantity,
-                $row->item->image ? GetImgProxyUrl::run($row->item->image?->getImage()) : '',
-                $product->updated_at,
-                $product->available_quantity_updated_at,
-                $product->price_updated_at,
-                $product->images_updated_at, // $row->item->images->sortByDesc('updated_at')->first()?->updated_at,
+                $row->name,
+                $row->rrp,
+                $row->marketing_weight,
+                $row->gross_weight,
+                $row->marketing_dimensions,
+                $row->marketing_ingredients,
+                $row->description,
+                Str::of($row->description)->stripTags(),
+                $row->country_of_origin,
+                $row->tariff_code,
+                $row->duty_rate,
+                $row->hts_us,
+                $row->available_quantity,
+                Arr::get(json_decode($row->web_images, true), 'main.gallery'),
+                $row->updated_at,
+                $row->available_quantity_updated_at,
+                $row->price_updated_at,
+                $row->images_updated_at,
             ];
         })->toArray();
     }

@@ -17,7 +17,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetRelatedMasterProductCategories
 {
     use AsObject;
-    
+
     public function handle(MasterProductCategory $masterProductCategory)
     {
         $masterShop = $masterProductCategory->masterShop;

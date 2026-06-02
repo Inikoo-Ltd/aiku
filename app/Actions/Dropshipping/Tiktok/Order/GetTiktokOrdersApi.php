@@ -40,7 +40,7 @@ class GetTiktokOrdersApi extends RetinaAction
     {
         $platform = Platform::where('type', PlatformTypeEnum::TIKTOK)->firstOrFail();
         $csc = $command->argument('customerSalesChannel');
-        if($csc) {
+        if ($csc) {
             $customerSalesChannels = CustomerSalesChannel::where('slug', $csc)->get();
         } else {
             $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
@@ -49,7 +49,7 @@ class GetTiktokOrdersApi extends RetinaAction
         }
 
         foreach ($customerSalesChannels as $customerSalesChannel) {
-            if($customerSalesChannel->user) {
+            if ($customerSalesChannel->user) {
                 $this->handle($customerSalesChannel->user);
             }
         }

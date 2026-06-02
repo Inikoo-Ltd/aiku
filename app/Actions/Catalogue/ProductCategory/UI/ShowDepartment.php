@@ -168,8 +168,8 @@ class ShowDepartment extends OrgAction
                     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $department->shop, prefix: 'customers'))),
 
                 DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
-                    fn() => GetRelatedProductCategories::run($department)
-                    : Inertia::lazy(fn() => GetRelatedProductCategories::run($department)),
+                    fn () => GetRelatedProductCategories::run($department)
+                    : Inertia::lazy(fn () => GetRelatedProductCategories::run($department)),
 
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
                     fn () =>  GetProductCategoryImages::run($department)
