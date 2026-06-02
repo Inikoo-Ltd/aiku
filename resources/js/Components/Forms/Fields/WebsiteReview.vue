@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { trans } from 'laravel-vue-i18n'
 import { ref, watch, computed } from 'vue'
 import { isNull, get } from 'lodash-es'
 import { faTimes, faCheck } from '@fas'
@@ -118,15 +119,15 @@ const currentSchema = computed(() => {
     <div class="flex flex-col gap-4">
 
         <div class="flex flex-col gap-1">
-            <label class="text-sm">Enable</label>
+            <label class="text-sm">{{ trans('Enable') }}</label>
             <InputSwitch v-model="enabled" />
         </div>
 
         <!-- PROVIDER SELECT -->
         <div  class="flex flex-col gap-1" :class="{ 'opacity-50 pointer-events-none': !enabled }">
-            <label class="text-sm">Provider</label>
+            <label class="text-sm">{{ trans('Provider') }}</label>
             <select v-model="provider" class="border rounded px-3 py-2">
-                <option disabled value="">Select Provider</option>
+                <option disabled value="">{{ trans('Select Provider') }}</option>
                 <option value="reviews.io">reviews.io</option>
                 <option value="trust_pilot">trust_pilot</option>
             </select>

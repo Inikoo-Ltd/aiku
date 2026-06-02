@@ -11,6 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Common/Components/Image.vue"
 
 import { faChevronLeft, faChevronRight, faImage } from "@far"
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
@@ -38,6 +39,10 @@ const props = defineProps<{
   indexBlock?: number
 }>()
 
+const emits = defineEmits<{
+  (e: "update:modelValue", value: string): void
+  (e: "autoSave"): void
+}>()
 
 const prevEl = ref<HTMLElement | null>(null)
 const nextEl = ref<HTMLElement | null>(null)
@@ -151,6 +156,17 @@ console.log(props)
 
 <template>
   <div ref="containerRef" class="w-full overflow-hidden" :class="wrapperSpacingClass">
+    <div class="px-3 py-6 pb-2">
+      <div class="px-4 py-6 pb-2">
+        <div class="text-3xl text-center flex justify-center font-semibold text-gray-800">
+          <EditorV2 v-model="modelValue.title" @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
+            name: webpageData.images_upload_route.name,
+            parameters: { modelHasWebBlocks: blockData.id }
+          }" />
+
+        </div>
+      </div>
+    </div>
     <div class="relative w-full">
       <button v-if="showNavigation" ref="prevEl" type="button"
         class="absolute left-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full  transition  hover:text-gray-950 md:flex"

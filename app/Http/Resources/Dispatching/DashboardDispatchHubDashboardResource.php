@@ -239,7 +239,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             'grand_total' => [
                 'value' => $grandTotal,
                 'icon'  => ['fal', 'fa-chart-line'],
-                'tooltip' => 'Total',
+                'tooltip' => __('Total'),
                 'route_target' => [
                         'name'       => 'grp.org.warehouses.show.dispatching.in_warehouse.delivery-notes',
                         'parameters' => $routeParams,
