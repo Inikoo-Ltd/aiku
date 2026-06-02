@@ -8,5 +8,7 @@
 
 use App\Actions\Catalogue\Shop\UI\EditShop;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Catalogue\Shop\UI\IndexHistoryInShop;
 
 Route::get('', EditShop::class)->name('edit');
+Route::get('/changelog', IndexHistoryInShop::class)->name('changelog');

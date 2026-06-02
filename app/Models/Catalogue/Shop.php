@@ -336,7 +336,6 @@ class Shop extends Model implements HasMedia, Auditable
         'timezone_id',
         'company_name',
         'contact_name',
-        'data',
         'identity_document_number'
     ];
 

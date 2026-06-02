@@ -1,9 +1,9 @@
 <?php
 
 /*
- *  Author: Raul Perusquia <raul@inikoo.com>
- *  Created: Fri, 26 Aug 2022 02:04:48 Malaysia Time, Kuala Lumpur, Malaysia
- *  Copyright (c) 2022, Raul A Perusquia F
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 26 Aug 2022 02:04:48 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2022, Raul A Perusquia F
  */
 
 namespace App\Actions\Catalogue\Shop;
@@ -40,7 +40,6 @@ class UpdateShop extends OrgAction
     use WithActionUpdate;
     use WithModelAddressActions;
     use WithNoStrictRules;
-
 
     public function authorize(ActionRequest $request): bool
     {
@@ -107,7 +106,6 @@ class UpdateShop extends OrgAction
         }
 
         // Catalogue Descriptions etc
-
         if (Arr::has($modelData, 'collection_follow_master')) {
             data_set($modelData, 'settings.catalog.collection_follow_master', Arr::pull($modelData, 'collection_follow_master'));
         }
@@ -142,7 +140,6 @@ class UpdateShop extends OrgAction
         }
 
         // Catalogue Indexing etc
-
         if (Arr::has($modelData, 'family_indexing_follow_master')) {
             data_set($modelData, 'settings.catalog.family_indexing_follow_master', Arr::pull($modelData, 'family_indexing_follow_master'));
         }
@@ -152,20 +149,6 @@ class UpdateShop extends OrgAction
                 data_set($modelData, 'portal_link', '');
             }
         }
-
-        // if (Arr::exists($modelData, 'registration_number')) {
-        //     $oldRegristrationNumber = data_get($shop->data, 'registration_number');
-        //     $newRegistrationNumber = Arr::get($modelData, 'registration_number');
-
-        //     if ($oldRegristrationNumber !== $newRegistrationNumber) {
-        //         DispatchSimpleAudit::run(
-        //             auditableModel: $shop,
-        //             logKey: 'registration_number',
-        //             oldValue: $oldRegristrationNumber ?? 'None',
-        //             newValue: $newRegistrationNumber ?? 'None'
-        //         );
-        //     }
-        // }
 
         foreach ($modelData as $key => $value) {
             data_set(
@@ -300,31 +283,126 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
         }
 
-        $old     = [$shop->data, $shop->settings];
+        $old = [
+            'data'     => json_decode(json_encode($shop->data), true) ?? [],
+            'settings' => json_decode(json_encode($shop->settings), true) ?? []
+        ];
+
+        $originalAttributes = $shop->getOriginal();
 
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
-        $shop->refresh();
+        $shop->refresh(); // Wajib untuk mutusin reference memori JSON
 
-        $new     = [$shop->data, $shop->settings];
+        $new = [
+            'data'     => json_decode(json_encode($shop->data), true) ?? [],
+            'settings' => json_decode(json_encode($shop->settings), true) ?? []
+        ];
 
-        $traceableChanges = [
-            'registration_number'               => 'data.registration_number', 
-            'vat_number'                        => 'data.vat_number',
-            'catalog.collection_follow_master'  => 'settings.catalog.collection_follow_master',
-            ];
+        // Blacklist untuk data sensitif & array utama JSON
+        $sensitiveFields = [
+            'shopify_api_key', 'shopify_api_secret', 'shopify_access_token',
+            'faire_access_token', 'wix_access_token', 'ebay_redirect_key',
+            'updated_at', 'data', 'settings'
+        ];
 
-        foreach ($traceableChanges as $key => $path) {
-            $oldValue = Arr::get($old, $path) ?? 'None';
-            $newValue = Arr::get($new, $path) ?? 'None';
+        // 1. Audit kolom-kolom utama (Root Columns) secara otomatis
+        foreach ($changes as $key => $newValue) {
+            
+            if(in_array($key, $sensitiveFields)) {
+                continue;
+            }
+            
+            $oldValue = $originalAttributes[$key] ?? 'None';
+
+            // Sanitasi angka untuk Root Column biar terhindar dari false positive
+            if (is_numeric($oldValue) && is_numeric($newValue)) {
+                if ((float)$oldValue === (float)$newValue) {
+                    continue; 
+                }
+            }
 
             DispatchSimpleAudit::run(
                 auditableModel: $shop,
                 logKey: $key,
-                oldValue: $oldValue,
-                newValue: $newValue
+                oldValue: is_array($oldValue) ? json_encode($oldValue) : ($oldValue ?? 'None'),
+                newValue: is_array($newValue) ? json_encode($newValue) : ($newValue ?? 'None')
             );
         }
+
+        // 2. Audit khusus untuk properti detail di dalam JSON (Data & Settings)
+        if (array_key_exists('data', $changes) || array_key_exists('settings', $changes)) {
+            
+            $traceableChanges = [
+                // Data
+                'registration_number'                                     => 'data.registration_number', 
+                'vat_number'                                              => 'data.vat_number',
+
+                // Settings: Catalog
+                'collection_follow_master'                                => 'settings.catalog.collection_follow_master',
+                'department_follow_master'                                => 'settings.catalog.department_follow_master',
+                'sub_department_follow_master'                            => 'settings.catalog.sub_department_follow_master',
+                'family_follow_master'                                    => 'settings.catalog.family_follow_master',
+                'product_follow_master'                                   => 'settings.catalog.product_follow_master',
+                'related_product_follow_master'                           => 'settings.catalog.related_product_follow_master',
+                'related_product_categories_follow_master'                => 'settings.catalog.related_product_categories_follow_master',
+                'follow_master_pricing'                                   => 'settings.catalog.follow_master_pricing',
+                'family_indexing_follow_master'                           => 'settings.catalog.family_indexing_follow_master',
+                
+                // Settings: Registration
+                'required_approval'                                       => 'settings.registration.require_approval',
+                'required_phone_number'                                   => 'settings.registration.require_phone_number',
+                'marketing_opt_in_label'                                  => 'settings.registration.marketing_opt_in_label',
+                'marketing_opt_in_default'                                => 'settings.registration.marketing_opt_in_default',
+                
+                // Settings: Invoicing
+                'stand_alone_invoice_numbers'                             => 'settings.invoicing.stand_alone_invoice_numbers',
+                'download_pdf_columns'                                    => 'settings.invoicing.download_pdf_columns',
+                
+                // Settings: Dispatch
+                'dispatch_require_shipping'                               => 'settings.dispatch.require_shipping',
+                
+                // Settings: Ebay
+                'ebay_marketplace_id'                                     => 'settings.ebay.marketplace_id',
+                'ebay_warehouse_city'                                     => 'settings.ebay.warehouse_city',
+                'ebay_warehouse_state'                                    => 'settings.ebay.warehouse_state',
+                'ebay_warehouse_country'                                  => 'settings.ebay.warehouse_country',
+                
+                // Settings: Faire
+                'faire_order_from_days'                                   => 'settings.faire.order_from_days',
+                'faire_is_shipping_by_external'                           => 'settings.faire.is_shipping_by_external',
+                'faire_dont_send_first_orders_automatically_to_warehouse' => 'settings.faire.dont_send_first_orders_automatically_to_warehouse',
+                
+                // Settings: Lainnya
+                'enable_chat'                                             => 'settings.chat.enable_chat',
+                'portal_link'                                             => 'settings.portal.link',
+                'reviews'                                                 => 'settings.reviews',
+                'bank_transfer_instructions_for_email'                    => 'settings.bank_transfer_instructions_for_email',
+            ];
+
+            foreach ($traceableChanges as $logKey => $path) {
+                // Tarik value spesifik pakai data_get (bawaan Laravel yang super sakti)
+                $oldVal = data_get($old, $path);
+                $newVal = data_get($new, $path);
+
+                // Sanitasi angka (khusus untuk JSON) biar aman dari false positive
+                if (is_numeric($oldVal) && is_numeric($newVal)) {
+                    $oldVal = (float) $oldVal;
+                    $newVal = (float) $newVal;
+                }
+
+                if ($oldVal !== $newVal) {
+                    DispatchSimpleAudit::run(
+                        auditableModel: $shop,
+                        logKey: $logKey,
+                        oldValue: $oldVal,
+                        newValue: $newVal
+                    );
+                }
+            }
+        }
+        
+        // --- END AUDIT CORE LOGIC ---
 
         if (Arr::hasAny($changes, ['state', 'type'])) {
             GroupHydrateShops::dispatch($shop->group)->delay($this->hydratorsDelay);
@@ -363,7 +441,6 @@ class UpdateShop extends OrgAction
                 'serial' => $modelData['stand_alone_invoice_numbers_serial'],
             ]
         );
-
 
         $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
             ->where('container_type', 'Shop')

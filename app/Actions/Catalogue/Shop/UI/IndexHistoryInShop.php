@@ -126,7 +126,7 @@ class IndexHistoryInShop extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.dashboard.changelog' =>
+            'grp.org.shops.show.settings.changelog' =>
             array_merge(
                 EditShop::make()->getBreadcrumbs('grp.org.shops.show.settings.edit', $routeParameters),
                 $headCrumb(
