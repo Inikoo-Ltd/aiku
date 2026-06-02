@@ -142,7 +142,7 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $customerSalesChannel->user;
 
-        SyncRetinaStoredItemsFromApiProductsTiktok::run($tiktokUser);
+        SyncRetinaStoredItemsFromApiProductsTiktok::dispatch($tiktokUser);
     }
 
     public string $commandSignature = 'SyncRetinaStoredItemsFromApiProductsTiktok {customer_sales_channel}';
