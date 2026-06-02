@@ -14,13 +14,13 @@ use App\Actions\CRM\Customer\UI\GetCustomersDashboard;
 use App\Actions\CRM\Customer\UI\IndexCustomerCountries;
 use App\Actions\CRM\Prospect\UI\GetProspectsDashboard;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardTopCustomersLimitSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\CRM\Customer\GetTopCustomersStats;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\UI\CRM\CrmDashboardTabsEnum;
 use App\Http\Resources\CRM\CustomerCountriesResource;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
@@ -33,7 +33,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowCrmDashboard extends OrgAction
 {
-    use WithHumanResourcesAuthorisation;
+    use WithCRMAuthorisation;
     use WithDashboardTopCustomersLimitSettings;
     use WithDashboardIntervalOption;
     use WithPerformanceDateResolution;
