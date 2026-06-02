@@ -113,7 +113,7 @@ class EditShop extends OrgAction
 
             $typeLabel = $channel->type->labels()[$channel->type->value] ?? $channel->type->value;
             $salesChannelFields['sales_channel_' . $channel->id] = [
-                'label'       => $channel->name,
+                'label'       => __($channel->name),
                 'type'        => 'toggle',
                 'value'       => $shop->salesChannels->contains($channel->id),
                 'information' => __('Enable the :name sales channel. Active means it is available for this shop; inactive means it is not available for this shop.', ['name' => $channel->name]),

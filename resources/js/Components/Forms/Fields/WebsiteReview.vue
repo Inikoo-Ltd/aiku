@@ -18,15 +18,15 @@ const emits = defineEmits(['update:form'])
 
 const providerSchemas: Record<string, Array<{ key: string; label: string; type: string }>> = {
     "reviews.io": [
-        { key: "url", label: "API URL", type: "text" },
-        { key: "store", label: "Store", type: "text" },
-        { key: "apikey", label: "API Key", type: "text" },
+        { key: "url", label: trans("API URL"), type: "text" },
+        { key: "store", label: trans("Store"), type: "text" },
+        { key: "apikey", label: trans("API Key"), type: "text" },
     ],
     "trust_pilot": [
-        { key: "template_id", label: "Template ID", type: "text" },
-        { key: "business_unit_id", label: "Business Unit ID", type: "text" },
-        { key: "url", label: "Review URL", type: "text" },
-        { key: "email", label: "Email", type: "text" },
+        { key: "template_id", label: trans("Template ID"), type: "text" },
+        { key: "business_unit_id", label: trans("Business Unit ID"), type: "text" },
+        { key: "url", label: trans("Review URL"), type: "text" },
+        { key: "email", label: trans("Email"), type: "text" },
     ],
 }
 
