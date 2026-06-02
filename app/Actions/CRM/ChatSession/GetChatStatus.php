@@ -63,14 +63,25 @@ class GetChatStatus
 
     private function refreshWebsiteVisitor(ChatSession $chatSession, int $shopId): void
     {
-        if (!request()->hasSession()) {
-            return;
+        $currentVisitorId = null;
+
+        if (request()->hasSession()) {
+            $currentVisitorId = WebsiteVisitor::where('session_id', request()->session()->getId())
+                ->where('shop_id', $shopId)
+                ->latest('id')
+                ->value('id');
         }
 
-        $currentVisitorId = WebsiteVisitor::where('session_id', request()->session()->getId())
-            ->where('shop_id', $shopId)
-            ->latest('id')
-            ->value('id');
+        if (!$currentVisitorId) {
+            $ipHash       = hash('sha256', request()->ip().config('app.key'));
+            $visitorHash  = hash('sha256', $ipHash.(request()->userAgent() ?? ''));
+
+            $currentVisitorId = WebsiteVisitor::where('visitor_hash', $visitorHash)
+                ->where('shop_id', $shopId)
+                ->where('last_seen_at', '>=', now()->subMinutes(30))
+                ->latest('id')
+                ->value('id');
+        }
 
         if ($currentVisitorId && $chatSession->website_visitor_id !== $currentVisitorId) {
             $chatSession->update(['website_visitor_id' => $currentVisitorId]);
