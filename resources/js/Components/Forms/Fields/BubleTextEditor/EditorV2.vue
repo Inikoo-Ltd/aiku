@@ -1124,7 +1124,7 @@ onMounted(async () => {
 
 :deep(.editor-class ol li),
 :deep(.editor-class ul li) {
-    @apply mt-2 first:mt-0;
+    @apply mt-[0.3rem] first:mt-0;
 }
 
 :deep(.editor-class blockquote) {

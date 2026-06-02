@@ -62,7 +62,7 @@ const isLoadingSave = ref(false)
 const loadingTemplate = ref(false)
 const previewKey = ref<string | number>("")
 const currentView = ref<"desktop" | "tablet" | "mobile">("desktop")
-
+const themeColor4 = props.layout_theme?.color?.[4] || '#fcd34d'
 provide("visibleDrawer", visibleDrawer)
 provide("currentView", currentView)
 
@@ -170,7 +170,7 @@ onMounted(() => {
 
       <!-- LEFT MENU -->
       <div
-        class="col-span-1 lg:col-span-3 bg-white rounded-xl shadow-md p-3 lg:p-4 overflow-y-auto border max-h-[40vh] lg:max-h-full">
+        class="col-span-1 lg:col-span-3 bg-[#F9FAFB] rounded-xl shadow-md p-3 lg:p-4 overflow-y-auto border max-h-[40vh] lg:max-h-full">
         <SideMenuFamilyDescriptionBlockWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
           :selectedBlock="selectedBlock" @update:data="layoutState = $event"
           @update:selectedBlock="selectedBlock = $event" @set-up-template="onPickTemplate"
@@ -195,13 +195,13 @@ onMounted(() => {
         </div>
 
         <!-- CONTENT -->
-        <div class="flex-1 min-h-0 p-2 lg:p-4">
+        <div class="flex-1 min-h-0">
           <div v-if="layoutState && dataPicked.family" :key="previewKey" ref="rootRef" :class="[
-            'border-2 border-t-0 h-full overflow-auto',
+            ' h-full overflow-auto',
             iframeClass
           ]">
             <div v-for="(block, key) in layoutState" :key="key + '-' + previewKey"
-              class="my-2 lg:my-3 transition-all duration-200" :class="{
+              class="transition-all duration-200" :class="{
                 'border-2 block-active': key === selectedBlock?.code,
                 'border border-transparent': key !== selectedBlock?.code
               }">
@@ -210,12 +210,6 @@ onMounted(() => {
                   ...block?.fieldValue,
                   family: dataPicked.family
                 }" />
-
-              <!-- SPECIAL BLOCK -->
-              <div v-if="key === 'family-2'"
-                class="mx-2 h-28 lg:h-32 my-3 flex items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 lg:px-4 py-2 text-[10px] lg:text-xs font-medium text-gray-600">
-                Products Block
-              </div>
             </div>
           </div>
 
@@ -269,8 +263,47 @@ onMounted(() => {
 
 </template>
 
-<style scoped>
+<style>
 .block-active {
-  border: 2px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
+  border: 2px solid color-mix(in srgb, v-bind(themeColor4) 80%, black);
 }
+
+.background-primary {
+    background-color: v-bind(themeColor4);
+}
+
+.border-primary {
+    border-color: v-bind(themeColor4);
+}
+
+.text-primary {
+    color: v-bind(themeColor4) !important;
+}
+
+.primaryLink {
+    background: linear-gradient(
+        to top,
+        v-bind(themeColor4),
+        v-bind(themeColor4)
+    );
+
+    @apply focus:ring-0
+    focus:outline-none
+    focus:border-none
+    bg-no-repeat
+    [background-position:0%_100%]
+    [background-size:100%_0.2em]
+    motion-safe:transition-all
+    motion-safe:duration-200
+    hover:[background-size:100%_100%]
+    focus:[background-size:100%_100%]
+    px-1
+    py-0.5;
+
+    &:hover,
+    &:focus {
+        color: #374151;
+    }
+}
+
 </style>
