@@ -22,6 +22,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 
 class EditWebpage extends OrgAction
@@ -225,6 +226,13 @@ class EditWebpage extends OrgAction
                                     'type'     => 'structure_data_website',
                                     'value'    => Arr::get($webpage->seo_data, 'structured_data') ?? '',
                                     'required' => false,
+                                    ...($webpage->sub_type == WebpageSubTypeEnum::FAMILY ? [
+                                        'information_warning' => [
+                                            [
+                                                'description' => "Structure @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
+                                            ]
+                                        ]
+                                    ] : []),
                                 ],
                             ]
                         ] : null,

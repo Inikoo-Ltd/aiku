@@ -14,6 +14,7 @@ use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 trait WithIrisProductsInWebpage
@@ -172,6 +173,7 @@ trait WithIrisProductsInWebpage
             'webpages.canonical_url',
             'webpages.website_id',
             'webpages.id as webpage_id',
+            DB::raw("(SELECT brands.name FROM brands INNER JOIN model_has_brands ON brands.id = model_has_brands.brand_id WHERE model_has_brands.model_id = products.id AND model_has_brands.model_type = 'Product' LIMIT 1) as brand_name"),
             ...$additionalColumns
         ];
 
