@@ -19,6 +19,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 import { trans } from "laravel-vue-i18n"
+import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 library.add(faChevronLeft, faChevronRight)
 
 
@@ -41,7 +42,7 @@ const bKeys = Blueprint(props.webpageData)?.blueprint?.map(b => b?.key?.join("-"
 const slidesPerView = computed(() => {
   const perRow = props.modelValue?.settings?.per_row ?? {}
   return {
-    desktop: perRow.desktop ?? 4,
+    desktop: perRow.desktop ?? 5,
     tablet: perRow.tablet ?? 4,
     mobile: perRow.mobile ?? 2,
   }[props.screenType] ?? 1
@@ -100,11 +101,12 @@ const compSwiperOptions = computed(() => {
       sendMessageToParent('activeChildBlock', bKeys[0])
     }">
       <!-- Tombol Navigasi Custom -->
-      <button ref="prevEl" class="swiper-nav-button left-0">
-        <FontAwesomeIcon :icon="['fas', 'chevron-left']" />
+      <button ref="prevEl" class="swiper-nav-button hidden lg:block left-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg"/>
       </button>
-      <button ref="nextEl" class="swiper-nav-button right-0">
-        <FontAwesomeIcon :icon="['fas', 'chevron-right']" />
+
+      <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg"/>
       </button>
 
       <!-- Swiper -->
@@ -136,7 +138,7 @@ const compSwiperOptions = computed(() => {
 
 <style scoped>
 .swiper-nav-button {
-  @apply absolute top-1/2 transform -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full shadow-md p-2 hover:bg-gray-100 transition-all duration-300;
+  @apply absolute top-1/2;
 }
 
 .swiper-nav-button svg {

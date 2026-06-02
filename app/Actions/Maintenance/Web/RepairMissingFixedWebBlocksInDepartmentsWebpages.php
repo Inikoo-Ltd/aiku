@@ -166,6 +166,11 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             }
         }
 
+        $countRelatedProductCategoryBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master');
+        if (count($countRelatedProductCategoryBlock) == 0) {
+            $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+        }
+
         $webpage->refresh();
 
         $this->reorderDepartmentPageBlocks($webpage, (bool) $command->option('set-description-top'));

@@ -26,6 +26,7 @@ import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
+import error from "@iris/Pages/Errors/Error.vue"
 
 library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode)
 

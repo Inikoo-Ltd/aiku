@@ -19,9 +19,10 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategoriesFromMaster;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
-use App\Actions\Web\WebBlock\GetWebBlockProduct;
-use App\Actions\Web\WebBlock\GetWebBlockProducts;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks
@@ -48,7 +49,7 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['family-2', 'family-2-extra-description', 'family-3', 'family-3-extra-description'])) {
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
-        } elseif (str_contains($webBlockType, 'product-')) {
+        } elseif (str_starts_with($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
         } elseif ($webBlockType == 'see-also-1') {
             $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
@@ -58,6 +59,8 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-from-master') {
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'recommendation-product-category-from-master') {
+            $parsedWebBlocks[$key] = GetWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } else {

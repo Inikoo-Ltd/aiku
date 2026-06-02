@@ -71,13 +71,16 @@ class StoreTiktokOrder extends RetinaAction
             );
         }
 
+        $handOverMethod = null;
         $packageId = Arr::get($order, 'packages.0.id');
-        $package = $tiktokUser->getPackageDetail($packageId);
-        $handOverMethod = Arr::get($package, 'data.handover_method');
+        if ($packageId) {
+            $package = $tiktokUser->getPackageDetail($packageId);
+            $handOverMethod = Arr::get($package, 'data.handover_method');
+        }
 
         if ($handOverMethod && $handOverMethod !== 'PICKUP') {
             UpdateOrder::run($order, [
-                'shipping_notes' => __('We\'re unable to ship this order due to customer\'s default pickup method is not PICKUP. Please contact customer to change the pickup method to PICKUP. TikTok Order ID: .' . $order->platform_order_id)
+                'shipping_notes' => __("We're unable to ship this order due to customer's default pickup method is not PICKUP. Please contact customer to change the pickup method to PICKUP. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
             ]);
         }
 

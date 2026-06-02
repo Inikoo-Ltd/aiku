@@ -26,6 +26,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
+use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
 use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\Http\Resources\Masters\MasterProductCategoryTimeSeriesResource;
 
@@ -199,6 +200,10 @@ class ShowMasterSubDepartment extends GrpAction
                 'salesData' => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryTimeSeriesData::run($masterSubDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryTimeSeriesData::run($masterSubDepartment)),
+
+                MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab === MasterSubDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
+                    fn () => GetRelatedMasterProductCategories::run($masterSubDepartment)
+                    : Inertia::lazy(fn () => GetRelatedMasterProductCategories::run($masterSubDepartment)),
 
                 MasterSubDepartmentTabsEnum::SALES->value => $this->tab == MasterSubDepartmentTabsEnum::SALES->value ?
                     fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterSubDepartment, MasterSubDepartmentTabsEnum::SALES->value))

@@ -81,11 +81,14 @@ class RouteServiceProvider extends ServiceProvider
             ->name('retina.api.')
             ->group(base_path('routes/api/retina/retina_api.php'));
 
-
         Route::middleware('grp-api')
         ->prefix('app/api')
         ->name('grp.api.')
         ->group(base_path('routes/api/grp/grp_api.php'));
+
+        Route::middleware('analytics')
+            ->name('analytics.')
+            ->group(base_path('routes/analytics/analytics.php'));
 
         Route::middleware('iris')
             ->name('iris.')

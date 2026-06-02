@@ -65,10 +65,13 @@ class ShowIrisWebpage
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
-                'sub_type'      => $webpage->sub_type,
-                'model_type'    => $webpage->model_type,
+                'sub_type'      => $webpage->sub_type,  // 'sub_department', 'department', 'product', 'category'
+                'model_type'    => $webpage->model_type,  // Product, ProductCategory, etc
                 'product_page'  => $webpage->sub_type?->value === 'product' && $webpage->model_type === 'Product'
-                    ? ['department' => [ 'name' => $webpage->model?->department?->name]]
+                    ? ['department' => [
+                        'name'          => $webpage->model?->department?->name,
+                        'webpage_title' => $webpage->model?->department?->webpage?->title,
+                    ]]
                     : null,
             ],
             'webpage_img'                 => $webpageImg,

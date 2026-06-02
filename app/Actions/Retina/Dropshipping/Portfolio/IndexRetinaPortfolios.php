@@ -31,8 +31,6 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -317,15 +315,6 @@ class IndexRetinaPortfolios extends RetinaAction
                 ->count();
         }
 
-        $groupedPortfolios = $this->customerSalesChannel->portfolios
-            ->groupBy(fn (Portfolio $portfolio): string => Str::upper(Str::substr((string)$portfolio->item_code, 0, 1)))
-            ->map(fn (Collection $group, string $char): array => [
-                'char'  => $char,
-                'count' => $group->count(),
-                'ids'   => $group->pluck('id')->implode(','),
-            ])
-            ->sortKeys();
-
         $downloadPortfolioCustomerSalesChannel                     = DownloadPortfolioCustomerSalesChannel::where('customer_sales_channel_id', $this->customerSalesChannel->id)->whereNotNull('download_url')->orderBy('created_at', 'desc')->first();
         $last_active_download_portfolio_customer_sales_channel_url = $downloadPortfolioCustomerSalesChannel?->download_url;
         $last_created_at_download_portfolio_customer_sales_channel = $downloadPortfolioCustomerSalesChannel?->created_at;
@@ -336,7 +325,6 @@ class IndexRetinaPortfolios extends RetinaAction
             [
                 'breadcrumbs'        => $this->getBreadcrumbs($this->customerSalesChannel),
                 'title'              => $title,
-                'is_manual'          => $manual,
                 'pageHead'           => [
                     'title'      => $title,
                     'afterTitle' => [
@@ -348,7 +336,6 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 ],
                 'is_closed'          => $this->customerSalesChannel->status == CustomerSalesChannelStatusEnum::CLOSED,
-                'grouped_portfolios' => $groupedPortfolios,
 
                 'tabs' => [
                     'current'    => $this->tab,
@@ -447,10 +434,6 @@ class IndexRetinaPortfolios extends RetinaAction
                     ],
                     'updatePortfolioRoute'        => [
                         'name'       => 'retina.models.portfolio.update',
-                        'parameters' => []
-                    ],
-                    'deletePortfolioRoute'        => [
-                        'name'       => 'retina.models.portfolio.delete',
                         'parameters' => []
                     ],
                     'clonePortfolioRoute'         => [
@@ -572,13 +555,6 @@ class IndexRetinaPortfolios extends RetinaAction
                     'currency_code'   => $shop->currency->code,
                 ],
 
-                'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
-                    'name'       => 'retina.models.customer.order.platform.store',
-                    'parameters' => [
-                        'customer' => $this->customer->id,
-                        'platform' => $this->platform->id
-                    ]
-                ] : [],
                 'content'     => [
                     'portfolio_empty' => [
                         'title'       => __("You don't have any items in your portfolio"),

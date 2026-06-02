@@ -1,7 +1,7 @@
 <?php
 
 /*
- *  Author: Jonathan lopez <raul@inikoo.com>
+ *  Author: Jonathan Lopez <raul@inikoo.com>
  *  Created: Sat, 22 Oct 2022 18:53:15 British Summer Time, Sheffield, UK
  *  Copyright (c) 2022, inikoo
  */
@@ -43,6 +43,7 @@ use Illuminate\Support\Arr;
  * @property mixed $web_images
  * @property mixed $health_rank
  * @property mixed $canonical_url
+ * @property mixed $webpage_state
  */
 class DepartmentsResource extends JsonResource
 {
@@ -51,47 +52,48 @@ class DepartmentsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                             => $this->id,
-            'slug'                           => $this->slug,
-            'shop_slug'                      => $this->shop_slug,
-            'shop_code'                      => $this->shop_code,
-            'shop_name'                      => $this->shop_name,
-            'code'                           => $this->code,
-            'name'                           => $this->name,
-            'currency_code'                  => $this->currency_code,
-            'state'                          => [
+            'id'                                => $this->id,
+            'slug'                              => $this->slug,
+            'shop_slug'                         => $this->shop_slug,
+            'shop_code'                         => $this->shop_code,
+            'shop_name'                         => $this->shop_name,
+            'code'                              => $this->code,
+            'name'                              => $this->name,
+            'currency_code'                     => $this->currency_code,
+            'state'                             => [
                 'label' => $this->state->labels()[$this->state->value],
                 'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
                 'class' => $this->state->stateIcon()[$this->state->value]['class']
             ],
-            'description'                    => $this->description,
-            'created_at'                     => $this->created_at,
-            'updated_at'                     => $this->updated_at,
-            'number_current_families'        => $this->number_current_families,
-            'number_current_products'        => $this->number_current_products,
-            'number_current_sub_departments' => $this->number_current_sub_departments,
-            'number_current_collections'     => $this->number_current_collections,
-            'sales_grp_currency_external'    => $this->sales_grp_currency_external ?? 0,
-            'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
+            'description'                       => $this->description,
+            'created_at'                        => $this->created_at,
+            'updated_at'                        => $this->updated_at,
+            'number_current_families'           => $this->number_current_families,
+            'number_current_products'           => $this->number_current_products,
+            'number_current_sub_departments'    => $this->number_current_sub_departments,
+            'number_current_collections'        => $this->number_current_collections,
+            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
-            'invoices'                       => $this->invoices ?? 0,
-            'invoices_ly'                    => $this->invoices_ly ?? 0,
-            'invoices_delta'                 => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
-            'dropshippers'                   => $this->dropshippers ?? 0,
-            'listings'                       => $this->listings ?? 0,
-            'sold'                           => $this->sold ?? 0,
-            'organisation_name'              => $this->organisation_name,
-            'organisation_code'              => $this->organisation_code,
-            'organisation_slug'              => $this->organisation_slug,
-            'master_product_category_id'     => $this->master_product_category_id,
-            'webpage_state'                 => $this->webpage_state,
-            'is_name_reviewed'               => $this->is_name_reviewed,
-            'is_description_title_reviewed'  => $this->is_description_title_reviewed,
-            'is_description_reviewed'        => $this->is_description_reviewed,
-            'is_description_extra_reviewed'  => $this->is_description_extra_reviewed,
-            'image_thumbnail'                => Arr::get($this->web_images, 'main.thumbnail'),
-            'health_rank'                    => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
-            'public_url'                     => $this->canonical_url,
+            'invoices'                          => $this->invoices ?? 0,
+            'invoices_ly'                       => $this->invoices_ly ?? 0,
+            'invoices_delta'                    => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'dropshippers'                      => $this->dropshippers ?? 0,
+            'listings'                          => $this->listings ?? 0,
+            'sold'                              => $this->sold ?? 0,
+            'organisation_name'                 => $this->organisation_name,
+            'organisation_code'                 => $this->organisation_code,
+            'organisation_slug'                 => $this->organisation_slug,
+            'master_product_category_id'        => $this->master_product_category_id,
+            'webpage_state'                     => $this->webpage_state,
+            'is_name_reviewed'                  => $this->is_name_reviewed,
+            'is_description_title_reviewed'     => $this->is_description_title_reviewed,
+            'is_description_reviewed'           => $this->is_description_reviewed,
+            'is_description_extra_reviewed'     => $this->is_description_extra_reviewed,
+            'image_thumbnail'                   => Arr::get($this->web_images, 'main.thumbnail'),
+            'health_rank'                       => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'public_url'                        => $this->canonical_url,
+            'image'                             => Arr::get($this->web_images, 'main.gallery'),
         ];
     }
 

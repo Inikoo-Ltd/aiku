@@ -12,6 +12,7 @@ use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -40,6 +41,15 @@ class SendOrderBackToBasket extends OrgAction
             'state'  => OrderStateEnum::CREATING,
             'status' => OrderStatusEnum::CREATING
         ]);
+
+        if ($order->shop?->type == ShopTypeEnum::B2B) {
+            // Patch for sending order back to basket. You did not update the customer current_order_in_basket_id previously Raul.
+            $order->customer?->update([
+                'current_order_in_basket_id' => $order->id
+            ]);
+        }
+
+
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::CREATING);
@@ -54,13 +64,22 @@ class SendOrderBackToBasket extends OrgAction
             $validator->errors()->add('state', 'You only can return to basket if current status is submitted');
         }
 
-        $count = Order::where('customer_id', $this->order->customer_id)
-            ->where('state', OrderStateEnum::CREATING)
-            ->count();
+        $shop = $this->shop ?? $this->order->shop;
 
-        if ($count > 0) {
-            $validator->errors()->add('message', 'Customer already has an order in basket');
+        if ($shop->type == ShopTypeEnum::EXTERNAL) {
+            $validator->errors()->add('message', 'Unable to send external shop order back to basket');
         }
+
+        if (!in_array($shop->type, [ShopTypeEnum::DROPSHIPPING])) {
+            $count = Order::where('customer_id', $this->order->customer_id)
+                ->where('state', OrderStateEnum::CREATING)
+                ->count();
+
+            if ($count > 0) {
+                $validator->errors()->add('message', 'Customer already has an order in basket');
+            }
+        }
+
     }
 
     public function action(Order $order): Order

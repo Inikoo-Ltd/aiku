@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property float $percentage_value_dormant_stock_1y
  * @property int $number_stocks
  * @property int $number_org_stocks_no_stock
- * @property int $number_stocks_org_stocks_no_stock Number of stocks plus org stocks with no stock relationship
+ * @property int $number_stocks_org_stocks_no_stock
  * @property int $number_org_stocks
  * @property int $number_out_of_stock_org_stocks
  * @property int $number_location_org_stocks

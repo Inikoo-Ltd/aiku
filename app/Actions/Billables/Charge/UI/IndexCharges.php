@@ -190,6 +190,7 @@ class IndexCharges extends OrgAction
                 'title'       => __('Charges'),
                 'pageHead'    => [
                     'title'   => __('Charges'),
+                    'model'   => $this->parent instanceof Shop ? $this->parent->code : '',
                     'icon'    => [
                         'icon'  => ['fal', 'fa-charging-station'],
                         'title' => __('Charges')

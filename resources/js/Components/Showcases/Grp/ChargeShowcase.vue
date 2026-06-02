@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue';
+import { computed, inject, ref } from 'vue';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faTag, faInfoCircle, faCalendarAlt, faPoundSign, faCog, faRuler, faHashtag } from "@fal";
+import { faTag, faInfoCircle, faCalendarAlt, faPoundSign, faCog, faRuler, faHashtag, faTimes } from "@fal";
 import { faCheckCircle, faTimesCircle } from "@fas";
+import { faCheck } from "@far";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { trans } from "laravel-vue-i18n";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure';
+import InformationIcon from '@/Components/Utils/InformationIcon.vue';
+import { ToggleSwitch } from 'primevue';
 
-library.add(faTag, faInfoCircle, faCalendarAlt, faPoundSign, faCog, faRuler, faHashtag, faCheckCircle, faTimesCircle);
+library.add(faTag, faInfoCircle, faCalendarAlt, faPoundSign, faCog, faRuler, faHashtag, faCheckCircle, faTimesCircle, faTimes, faCheck);
+
+const previewToggleValue = ref(false);
 
 interface ChargeData {
     id: number;
@@ -29,7 +34,7 @@ interface ChargeData {
 }
 
 const props = defineProps<{
-    data?: {
+    data: {
         charge: ChargeData
     }
 }>()
@@ -64,14 +69,43 @@ const stateBgColor = computed(() => {
 
 <template>
     <div class="p-4">
-        <div v-if="data.charge" class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+        
+        <!-- Customer Preview Section -->
+        <div class="mt-6 border border-dashed border-blue-300 rounded-lg overflow-hidden">
+            <div class="bg-blue-50 px-4 py-2 border-b border-blue-200 flex items-center gap-x-2">
+                <FontAwesomeIcon :icon="faInfoCircle" class="text-blue-500" fixed-width />
+                <span class="text-sm font-semibold text-blue-700">{{ ctrans('Customer view') }}</span>
+                <span class="text-sm text-blue-500">— {{ ctrans('This is exactly what customers see when this charge appears in their basket') }}</span>
+                <span class="opacity-50 text-xs italic">({{ ctrans('Toggle is interactive for preview purposes only') }})</span>
+            </div>
+            
+            <div class="bg-white px-6 py-4 text-center flex flex-col items-center">
+                <div class="flex gap-4 justify-between md:justify-end pr-2">
+                    <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                        <InformationIcon v-if="data.charge.description" :information="data.charge.description ?? ''" />
+                        {{ data.charge.label ?? data.charge.name }}
+                        <span class="text-gray-400">({{ formattedAmount }})</span>
+                    </div>
+                    <div class="px-2 flex justify-end relative">
+                        <ToggleSwitch v-model="previewToggleValue">
+                            <template #handle="{ checked }">
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </ToggleSwitch>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="data.charge" class="mt-6 bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
             <!-- Header Section -->
             <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                        <div class="flex-shrink-0">
+                        <!-- <div class="flex-shrink-0">
                             <FontAwesomeIcon :icon="faTag" class="w-8 h-8 text-blue-600" />
-                        </div>
+                        </div> -->
                         <div>
                             <h2 class="text-xl font-bold text-gray-900">{{ data.charge.name }}</h2>
                             <p class="text-sm text-gray-600">{{ data.charge.code }}</p>
@@ -97,7 +131,7 @@ const stateBgColor = computed(() => {
                         <div class="bg-gray-50 rounded-lg p-4">
                             <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
                                 <FontAwesomeIcon :icon="faHashtag" class="w-4 h-4 mr-2 text-gray-500" />
-                                {{ trans('Identification') }}
+                                {{ ctrans('Identification') }}
                             </h3>
                             <div class="space-y-2">
                                 <!-- <div class="flex justify-between">

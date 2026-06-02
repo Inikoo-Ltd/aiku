@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProductCategories\GetRelatedProductCategories;
+use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProducts\GetRelatedProducts;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
@@ -25,7 +27,6 @@ use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Masters\RelatedMasterProductsResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -197,73 +198,18 @@ class ShowFamily extends OrgAction
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
 
-            FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
-                fn () => [
-                    'id' => $family->id,
-                    'data' => RelatedMasterProductsResource::collection(
-                        GetProductCategoryRecomendation::run(
-                            $family,
-                            $isRelatedProductFollowMaster
-                        )
-                    ),
-                    'editable' => !$isRelatedProductFollowMaster,
-                    'route_sync_related_products' => [
-                        'name' => 'grp.models.product_category.related_products.sync',
-                        'parameters' => [
-                            'productCategory' => $family->id,
-                        ]
-                    ],
-                    'sync_payload_key' => 'product_ids',
-                    'route_get_products' => [
-                        'name' => 'grp.org.shops.show.catalogue.products.current_products.index',
-                        'parameters' => [
-                            'organisation' => $this->organisation->slug,
-                            'shop' => $this->shop->slug,
-                        ]
-                    ]
-                ]
-                : Inertia::lazy(fn () => [
-                    'id' => $family->id,
-                    'data' => RelatedMasterProductsResource::collection(
-                        GetProductCategoryRecomendation::run(
-                            $family,
-                            $isRelatedProductFollowMaster
-                        )
-                    ),
-                    'editable' => !$isRelatedProductFollowMaster,
-                    'route_sync_related_products' => [
-                        'name' => 'grp.models.product_category.related_products.sync',
-                        'parameters' => [
-                            'productCategory' => $family->id,
-                        ]
-                    ],
-                    'sync_payload_key' => 'product_ids',
-                    'route_get_products' => [
-                        'name' => 'grp.org.shops.show.catalogue.products.current_products.index',
-                        'parameters' => [
-                            'organisation' => $this->organisation->slug,
-                            'shop' => $this->shop->slug,
-                        ]
-                    ]
-                ]),
-        ];
+            FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
+                    fn () => GetRelatedProductCategories::run($family)
+                    : Inertia::lazy(fn () => GetRelatedProductCategories::run($family)),
 
-        $tabs[FamilyTabsEnum::VARIANTS->value] =
-            $this->tab === FamilyTabsEnum::VARIANTS->value
-                ? fn () => VariantsResource::collection(
-                    IndexVariant::run(
-                        $family,
-                        FamilyTabsEnum::VARIANTS->value
-                    )
-                )
-                : Inertia::lazy(
-                    fn () => VariantsResource::collection(
-                        IndexVariant::run(
-                            $family,
-                            FamilyTabsEnum::VARIANTS->value
-                        )
-                    )
-                );
+            FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
+                fn () => GetRelatedProducts::run($family)
+                : Inertia::lazy(fn () => GetRelatedProducts::run($family)),
+
+                FamilyTabsEnum::VARIANTS->value => $this->tab === FamilyTabsEnum::VARIANTS->value ?
+                    fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))
+                    : Inertia::lazy(fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))),
+        ];
 
         return Inertia::render(
             'Org/Catalogue/Family',
@@ -341,12 +287,12 @@ class ShowFamily extends OrgAction
                 ...$tabs
             ]
         )
-            ->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-            ->table(IndexMailshots::make()->tableStructure(parent: $family))
-            ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
-            ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
-            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
-            ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value));
+        ->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+        ->table(IndexMailshots::make()->tableStructure(parent: $family))
+        ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
+        ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
+        ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
+        ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value));
     }
 
 

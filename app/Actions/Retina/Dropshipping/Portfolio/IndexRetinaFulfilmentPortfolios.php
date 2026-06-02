@@ -16,7 +16,6 @@ use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\Dropshipping\FulfilmentPortfolioResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
@@ -38,6 +37,10 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
+        if (!$this->customer->is_fulfilment) {
+            abort(422);
+        }
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('portfolios.reference', $value)
@@ -53,13 +56,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
 
-        $query->with(['item']);
+        $query->where('item_type', class_basename(StoredItem::class));
 
-        if ($this->customer->is_fulfilment) {
-            $query->where('item_type', class_basename(StoredItem::class));
-        } else {
-            $query->where('item_type', class_basename(Product::class));
-        }
 
         return $query
             ->defaultSort('-portfolios.id')
@@ -74,6 +72,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
         if ($customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
+
         return false;
     }
 
@@ -81,15 +80,14 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
     {
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request)->withTab(CustomerSalesChannelPortfolioTabsEnum::values());
+
         return $this->handle($customerSalesChannel, 'products');
     }
 
 
-
-
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
     {
-        $title = __('Portfolio');
+        $title        = __('Portfolio');
         $syncAllRoute = [];
 
         $routeName = match ($this->customerSalesChannel->platform->type) {
@@ -101,11 +99,11 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
         if ($this->customer->is_fulfilment) {
             $syncAllRoute = [
-                'name' => $routeName,
+                'name'       => $routeName,
                 'parameters' => [
                     'customerSalesChannel' => $this->customerSalesChannel->id
                 ],
-                'method' => 'post'
+                'method'     => 'post'
             ];
         }
 
@@ -121,25 +119,25 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(request()->route()->originalParameters()),
                 'title'       => $title,
                 'pageHead'    => [
-                    'title'   => $title,
-                    'icon'    => 'fal fa-cube',
+                    'title'      => $title,
+                    'icon'       => 'fal fa-cube',
                     'afterTitle' => [
                         'label' => ' @'.$this->customerSalesChannel->reference
                     ],
                 ],
-                'routes'    => [
-                    'itemRoute' => [
+                'routes'      => [
+                    'itemRoute'         => [
                         'name' => 'retina.fulfilment.itemised_storage.stored_items.index',
                     ],
-                    'syncAllRoute' => $syncAllRoute,
+                    'syncAllRoute'      => $syncAllRoute,
                     'addPortfolioRoute' => [
-                        'name' => 'retina.models.customer_sales_channel.customer.product.store',
+                        'name'       => 'retina.models.customer_sales_channel.customer.product.store',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ]
                 ],
-                'step'             => [
+                'step'        => [
                     'current' => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
                         default => 0
@@ -148,21 +146,21 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
                 'content' => [
                     'portfolio_empty' => [
-                        'title' => __("You don't have any items in your portfolio"),
+                        'title'       => __("You don't have any items in your portfolio"),
                         'description' => __("To get started, add products to your shop. You can sync from your inventory or create a new one."),
-                        'separation' => __("or"),
+                        'separation'  => __("or"),
                         'sync_button' => __("Sync from Inventory"),
-                        'add_button' => __("Add Product"),
+                        'add_button'  => __("Add Product"),
                     ]
                 ],
-                'tabs'        => [
+                'tabs'    => [
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
 
                 'is_platform_connected' => $this->customerSalesChannel->platform_status,
 
-                'products' => FulfilmentPortfolioResource::collection($portfolios),
+                'products'         => FulfilmentPortfolioResource::collection($portfolios),
                 'platform_user_id' => $this->customerSalesChannel->user?->id,
                 'platform_data'    => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
             ]
@@ -188,8 +186,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'actions', label: __('actions'), canBeHidden: false);
+            $table->column(key: 'quantity_left', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
         };
     }
 
@@ -203,7 +201,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index',
+                                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('My Products'),

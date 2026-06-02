@@ -347,7 +347,19 @@ class GetGroupNavigation
             'route'   => [
                 'name' => 'grp.overview.hub'
             ],
-            'topMenu' => []
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Top Customers'),
+                        'icon'    => ['fal', 'fa-trophy'],
+                        'root'    => 'grp.overview.crm.customers.top_customers',
+                        'route'   => [
+                            'name'       => 'grp.overview.crm.customers.top_customers',
+                            'parameters' => []
+                        ]
+                    ],
+                ]
+            ]
         ];
     }
 

@@ -187,7 +187,7 @@ return [
                     PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
                 ]) : [],
         ],
-        'nightowl'           => [
+        'nightowl' => [
             'driver'         => 'pgsql',
             'url'            => null,
             'host'           => env('NIGHTOWL_DB_HOST', '127.0.0.1'),
@@ -268,14 +268,21 @@ return [
             'port'     => env('REDIS_HORIZON_PORT', '6379'),
             'database' => env('REDIS_HORIZON_DB', '0'),
         ],
-
-        'cache' => [
+        'cache'   => [
             'url'      => env('REDIS_CACHE_URL'),
             'host'     => env('REDIS_CACHE_HOST', '127.0.0.1'),
             'username' => env('REDIS_CACHE_USERNAME'),
             'password' => env('REDIS_CACHE_PASSWORD'),
             'port'     => env('REDIS_CACHE_PORT', '6379'),
             'database' => env('REDIS_CACHE_DB', '1'),
+        ],
+        'sessions' => [
+            'url'      => env('REDIS_SESSIONS_URL'),
+            'host'     => env('REDIS_SESSIONS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_SESSIONS_USERNAME'),
+            'password' => env('REDIS_SESSIONS_PASSWORD'),
+            'port'     => env('REDIS_SESSONS_PORT', '6379'),
+            'database' => env('REDIS_SESSIONS_DB', '2'),
         ],
 
     ],

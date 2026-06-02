@@ -8,12 +8,13 @@
 
 namespace App\Actions\Discounts\Offer;
 
+use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\Catalogue\ProductCategory;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
-use App\Models\Discounts\OfferAllowance;
 use App\Models\Masters\MasterProductCategory;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateVolumeGrOfferFromMaster extends OrgAction
@@ -23,26 +24,70 @@ class UpdateVolumeGrOfferFromMaster extends OrgAction
     private int $updatedOffersCount = 0;
     private int $updatedAllowancesCount = 0;
 
-    public function handle(MasterProductCategory $masterProductCategory, ?array $volumeDiscount): array
+    public function handle(MasterProductCategory $masterProductCategory): array
     {
+        $masterProductCategory->refresh();
         $this->updatedOffersCount = 0;
         $this->updatedAllowancesCount = 0;
+        $masterEnableGR = $masterProductCategory->masterShop->gold_reward_eligible;
 
-        foreach (ProductCategory::where('type', ProductCategoryTypeEnum::FAMILY)
-            ->where('master_product_category_id', $masterProductCategory->id)
-            ->get() as $family) {
+        if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY || !$masterEnableGR) {
 
-            $offers = Offer::where('type', 'Category Quantity Ordered Order Interval')
-                ->where('trigger_type', 'ProductCategory')
-                ->where('trigger_id', $family->id)
-                ->get();
-
-            foreach ($offers as $offer) {
-                $this->updateOffer($offer, $volumeDiscount);
-                $this->updateOfferAllowances($offer, $volumeDiscount);
-                UpdateProductCategoryOffersData::run($offer);
-            }
+            return [
+                'success'            => false,
+                'updated_offers'     => $this->updatedOffersCount,
+                'updated_allowances' => $this->updatedAllowancesCount,
+                'error_message'      => $masterEnableGR ? __('Unable to update GR. Only master family is able to be edited') : __('Unable to update GR, master shop disabled Master Level offer update')
+            ];
         }
+
+        DB::transaction(function () use ($masterProductCategory) {
+            $percentageOff = (float) ($masterProductCategory->gr_vol_discount_percentage / 100);
+
+            foreach ($masterProductCategory->productCategories as $productCategory) {
+                $offer = Offer::where('shop_id', $productCategory->shop_id)->where('type', 'Category Quantity Ordered Order Interval')->where('trigger_id', $productCategory->id)->first();
+
+                if (!$offer) {
+                    StoreVolumeGRDiscount::make()->action(
+                        $productCategory,
+                        [
+                                'trigger_data_item_quantity' => $masterProductCategory->gr_vol_discount_quantity,
+                                'percentage_off'             => $percentageOff,
+                                'interval'                   => 30
+                            ]
+                    );
+                } else {
+                    $triggerData = $offer->trigger_data;
+                    data_set($triggerData, 'item_quantity', $masterProductCategory->gr_vol_discount_quantity);
+
+                    $offer->update([
+                        'state'         => OfferStateEnum::ACTIVE,
+                        'status'        => true,
+                        'trigger_data'  => $triggerData,
+                    ]);
+
+                    foreach ($offer->offerAllowances as $offerAllowance) {
+                        $allowanceData = $offerAllowance->data;
+                        data_set($allowanceData, 'percentage_off', $percentageOff);
+
+                        $offerAllowance->update([
+                            'state'  => $offer->state->value,
+                            'status' => $offer->status,
+                            'data'   => $allowanceData,
+                            'end_at' => null,
+                        ]);
+
+                        $this->updatedAllowancesCount++;
+                    }
+
+                    UpdateOfferAllowanceSignature::run($offer);
+                }
+
+
+
+                $this->updatedOffersCount++;
+            }
+        });
 
         return [
             'success' => true,
@@ -51,58 +96,11 @@ class UpdateVolumeGrOfferFromMaster extends OrgAction
         ];
     }
 
-    private function updateOffer(Offer $offer, ?array $volumeDiscount): void
-    {
-        $triggerData = $offer->trigger_data ?? [];
-
-        if ($volumeDiscount !== null && isset($volumeDiscount['item_quantity'])) {
-            // Update item_quantity in trigger_data
-            $triggerData['item_quantity'] = (int) $volumeDiscount['item_quantity'];
-        } else {
-            // Remove item_quantity from trigger_data if volume_discount is null
-            # unset($triggerData['item_quantity']);
-
-            $triggerData['item_quantity'] = 0;
-        }
-
-        $offer->update([
-            'trigger_data' => $triggerData
-        ]);
-
-        $this->updatedOffersCount++;
-    }
-
-    private function updateOfferAllowances(Offer $offer, ?array $volumeDiscount): void
-    {
-        $offerAllowances = OfferAllowance::where('offer_id', $offer->id)->get();
-
-        foreach ($offerAllowances as $allowance) {
-            $data = $allowance->data ?? [];
-
-            if ($volumeDiscount !== null && isset($volumeDiscount['percentage_off'])) {
-                // Update percentage_off in data
-                // Convert from decimal to percentage if needed (0.1 stays as 0.1)
-                $data['percentage_off'] = (string) $volumeDiscount['percentage_off'];
-            } else {
-                // Remove percentage_off from data if volume_discount is null
-                # unset($data['percentage_off']);
-
-                $data['percentage_off'] = 0;
-            }
-
-            $allowance->update([
-                'data' => $data
-            ]);
-
-            $this->updatedAllowancesCount++;
-        }
-    }
-
-    public function action(MasterProductCategory $masterProductCategory, ?array $volumeDiscount): array
+    public function action(MasterProductCategory $masterProductCategory): array
     {
         $this->asAction = true;
         $this->initialisationFromGroup($masterProductCategory->group, []);
 
-        return $this->handle($masterProductCategory, $volumeDiscount);
+        return $this->handle($masterProductCategory);
     }
 }

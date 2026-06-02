@@ -136,6 +136,7 @@ class IndexShippingZoneSchemas extends OrgAction
         ];
         $afterTitle = null;
         $iconRight  = null;
+        $modelPageHeading = null;
 
         $actions = [
             [
@@ -152,6 +153,7 @@ class IndexShippingZoneSchemas extends OrgAction
 
         if ($this->parent instanceof Shop) {
             $subNavigation = $this->getShippingZoneSchemaSubNavigation($this->parent);
+            $modelPageHeading = $this->parent->code;
         } elseif ($this->parent instanceof Group) {
             $actions = null;
         }
@@ -166,6 +168,7 @@ class IndexShippingZoneSchemas extends OrgAction
                 'title'       => __('Shipping'),
                 'pageHead'    => array_filter([
                     'title'         => $title,
+                    'model'         => $modelPageHeading,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,

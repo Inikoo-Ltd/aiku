@@ -111,6 +111,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read MasterProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $relatedMasterAssets
+ * @property-read LaravelCollection<int, MasterProductCategory> $relatedMasterProductCategories
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
@@ -308,6 +309,14 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function relatedMasterAssets(): BelongsToMany
     {
         return $this->belongsToMany(MasterAsset::class, 'master_product_category_has_related_assets')
+            ->orderByPivot('position')
+            ->withPivot('id', 'position')
+            ->withTimestamps();
+    }
+
+    public function relatedMasterProductCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(MasterProductCategory::class, 'master_product_category_has_related_product_categories', 'master_product_category_id', 'related_master_product_category_id')
             ->orderByPivot('position')
             ->withPivot('id', 'position')
             ->withTimestamps();

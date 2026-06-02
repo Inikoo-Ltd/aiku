@@ -111,7 +111,18 @@ class EditMasterShop extends OrgAction
                                     'min'         => 0,
                                 ]
                             ]
-                        ]
+                        ],
+                        [
+                            'label'  => __('Offer'),
+                            'icon'   => 'fa-light fa-badge-percent',
+                            'fields' => [
+                                'gold_reward_eligible' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Enable Master Level Offer'),
+                                    'value' => $masterShop->gold_reward_eligible
+                                ],
+                            ]
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

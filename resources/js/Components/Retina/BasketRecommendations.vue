@@ -39,8 +39,10 @@ interface ProductHits {
 const props = withDefaults(defineProps<{
     listLoadingProducts?: Record<string, string>
     blacklistItems?: string[]
+    basketItemIds?: string[]
 }>(), {
-    blacklistItems: () => []
+    blacklistItems: () => [],
+    basketItemIds: () => []
 })
 
 const emit = defineEmits<{
@@ -90,7 +92,7 @@ const fetchRecommenders = async (nextPage = false) => {
       [
         {
           blacklisted_item_ids: props.blacklistItems,
-          item_ids: [],
+          item_ids: props.basketItemIds,
           recommendation_type: 'basket',
           recommender_client_identifier: 'basket',
           size,

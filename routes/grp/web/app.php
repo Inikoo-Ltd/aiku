@@ -14,10 +14,17 @@ use App\Actions\Web\Website\BreakWebsiteVarnishCache;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Laravel\Nightwatch\Http\Middleware\Sample;
 
 require __DIR__."/auth.php";
 
-Route::middleware(["auth", "two_fa"])->group(function () {
+Route::middleware(
+    [
+        "auth",
+        "two_fa",
+        Sample::rate(0.5)
+    ]
+)->group(function () {
     Route::get('/', function () {
         return redirect('/dashboard');
     });
@@ -44,9 +51,9 @@ Route::middleware(["auth", "two_fa"])->group(function () {
                 echo "<td>".$value->methods()[0]."</td>";
                 echo "<td>".$value->uri()."</td>";
                 echo "<td>".$value->getName()."</td>";
-                $actionName = $value->getActionName();
+                $actionName                = $value->getActionName();
                 $fileNameWithoutActionName = preg_replace('/@.*$/', '', $actionName);
-                $highlighted = preg_replace(
+                $highlighted               = preg_replace(
                     '/([^\\\\]+)$/',
                     '<span class="copy-action" data-copy="'.$fileNameWithoutActionName.'" style="cursor:pointer;background:#c790ff;padding:2px 4px">$1</span>',
                     $actionName
@@ -169,7 +176,7 @@ Route::middleware(["auth", "two_fa"])->group(function () {
 
     Route::prefix("clocking-employees")
         ->name("clocking_employees.")
-        ->group(__DIR__ . "/clocking_employees.php");
+        ->group(__DIR__."/clocking_employees.php");
 
     Route::prefix("platforms")
         ->name("platforms.")

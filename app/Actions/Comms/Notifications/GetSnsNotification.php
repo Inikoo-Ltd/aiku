@@ -13,6 +13,8 @@ use App\Models\Comms\SesNotification;
 use Aws\Sns\Message;
 use Aws\Sns\MessageValidator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -23,10 +25,25 @@ class GetSnsNotification
     public function asController(ServerRequestInterface $request): string
     {
         $message   = Message::fromPsrRequest($request);
-        $validator = new MessageValidator();
+        $validator = new MessageValidator(function ($certUrl) {
+            $cacheKey = 'sns-cert:'.md5($certUrl);
+            if ($cert = Cache::get($cacheKey)) {
+                return $cert;
+            }
+
+            $response = Http::get($certUrl);
+            if ($response->successful()) {
+                $cert = $response->body();
+                Cache::put($cacheKey, $cert, now()->addWeek());
+
+                return $cert;
+            }
+
+            return false;
+        });
         if ($validator->isValid($message)) {
             if ($message['Type'] == 'SubscriptionConfirmation') {
-                file_get_contents($message['SubscribeURL']);
+                Http::get($message['SubscribeURL']);
             } elseif ($message['Type'] === 'Notification') {
                 $messageData = json_decode($message['Message'], true);
 

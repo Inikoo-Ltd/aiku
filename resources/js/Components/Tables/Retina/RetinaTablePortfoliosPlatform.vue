@@ -107,8 +107,6 @@ const props = defineProps<{
 		products: number[]
 	}
 	routes: {
-		batch_upload: routeType
-		batch_match: routeType
 		fetch_products: routeType
 		single_create_new: routeType
 		single_match: routeType

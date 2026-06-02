@@ -18,7 +18,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisProduct;
 use App\Actions\Web\Webpage\Iris\ShowIrisSubDepartment;
 
 Route::get('product/{product}', GetProductDetail::class)->name('product.resource');
-Route::get('bundles/{bundle:id}', ShowRetinaBundle::class)->name('bundles.show')->withoutScopedBindings();
+Route::get('bundles/{bundle:id}', ShowRetinaBundle::class)->name('bundles.show')->withoutScopedBindings()->whereNumber('bundle');
 
 Route::get('department/{department}', ShowIrisDepartment::class)->name('department.show');
 Route::get('sub-department/{subDepartment}', ShowIrisSubDepartment::class)->name('sub_department.show');

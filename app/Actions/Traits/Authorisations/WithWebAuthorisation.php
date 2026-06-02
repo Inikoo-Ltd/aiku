@@ -32,6 +32,7 @@ trait WithWebAuthorisation
             if (str_starts_with($routeName, $prefix)) {
                 $this->canEdit = $user->authTo("org-supervisor.{$this->organisation->id}");
                 $this->isSupervisor = $this->canEdit;
+
                 return $user->authTo([
                     "websites-view.{$this->organisation->id}",
                     "group-webmaster.view"
@@ -45,6 +46,7 @@ trait WithWebAuthorisation
 
         if (str_starts_with($routeName, 'grp.org.shops.show.web.')) {
             $this->canEdit = $user->authTo([
+                "websites-view.{$this->organisation?->id}",
                 "web.{$this->shop->id}.edit",
                 "group-webmaster.edit"
             ]);
@@ -53,6 +55,8 @@ trait WithWebAuthorisation
                 "group-webmaster.edit"
             ]);
             return $user->authTo([
+                "websites-view.{$this->organisation?->id}",
+                "web.{$this->shop->id}",
                 "web.{$this->shop->id}.view",
                 "group-webmaster.view"
             ]);
@@ -61,6 +65,7 @@ trait WithWebAuthorisation
         // TODO RAUL PLEASE REVIEW
         if (str_starts_with($routeName, 'grp.models.product.')) {
             $this->canEdit = $user->authTo([
+                "websites-view.{$this->organisation?->id}",
                 "web.{$this->shop->id}.edit",
                 "group-webmaster.edit"
             ]);
@@ -69,6 +74,8 @@ trait WithWebAuthorisation
                 "group-webmaster.edit"
             ]);
             return $user->authTo([
+                "websites-view.{$this->organisation?->id}",
+                "web.{$this->shop->id}",
                 "web.{$this->shop->id}.view",
                 "group-webmaster.view"
             ]);
@@ -76,6 +83,7 @@ trait WithWebAuthorisation
 
         if (str_starts_with($routeName, 'grp.org.fulfilments.show.web.')) {
             $this->canEdit = $user->authTo([
+                "websites-view.{$this->organisation?->id}",
                 "fulfilment-shop.{$this->fulfilment->id}.edit",
                 "group-webmaster.edit"
             ]);
@@ -84,6 +92,8 @@ trait WithWebAuthorisation
                 "group-webmaster.edit"
             ]);
             return $user->authTo([
+                "websites-view.{$this->organisation?->id}",
+                "fulfilment-shop.{$this->fulfilment->id}",
                 "fulfilment-shop.{$this->fulfilment->id}.view",
                 "group-webmaster.view"
             ]);
