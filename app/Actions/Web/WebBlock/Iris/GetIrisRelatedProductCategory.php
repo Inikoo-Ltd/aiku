@@ -20,21 +20,15 @@ class GetIrisRelatedProductCategory
     use AsObject;
 
 
-    public function handle(Webpage $webpage, array $webBlock): array
+    public function handle(array $webBlock): array
     {
-        data_set(
-            $webBlock,
-            'web_block.layout.data.fieldValue.recommendation_settings',
-            data_get($webpage, 'website.settings.recommender_product_category_web_block', [])
-        );
-
-        $relatedProductCategory = Arr::get($webBlock, 'web_block.layout.data.fieldValue.settings.product_category', []);
+        $relatedProductCategory = data_get($webBlock, 'web_block.layout.data.fieldValue.settings.product_category.*.id', []);
 
         // Ensure newest data shown (for image. Arya Request)
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.settings.product_category',
-            ProductCategoryForRelatedWebBlockResource::collection($relatedProductCategory ? GetIrisProductCategoriesInRelated::run() : [])->resolve(),
+            ProductCategoryForRelatedWebBlockResource::collection($relatedProductCategory ? GetIrisProductCategoriesInRelated::run($relatedProductCategory) : [])->resolve(),
             true
         );
 
