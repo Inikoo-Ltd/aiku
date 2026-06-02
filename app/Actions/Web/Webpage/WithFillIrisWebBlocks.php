@@ -25,7 +25,6 @@ use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Iris\GetIrisRelatedProductCategory;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
-
 use Illuminate\Support\Arr;
 
 trait WithFillIrisWebBlocks
