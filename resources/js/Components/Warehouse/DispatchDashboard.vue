@@ -22,6 +22,7 @@ import {
 } from "@fal"
 import { faExclamationSquare} from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
 
@@ -142,7 +143,7 @@ const isWeakValue = (value: number | null | undefined) => {
 
                 <div class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
                     <span class="md:hidden">Σ</span>
-                    <span class="hidden md:inline">Total</span>
+                    <span class="hidden md:inline">{{ trans("Total") }}</span>
                 </div>
             </div>
 
@@ -301,7 +302,7 @@ const isWeakValue = (value: number | null | undefined) => {
                 :style="{ flexGrow: 1 }">
                 <div
                     class="h-14 md:h-20 flex flex-col items-center justify-center font-semibold text-xs md:text-lg gap-1 border-b border-gray-200">
-                    <span class="hidden md:inline">Total</span>
+                    <span class="hidden md:inline">{{ trans("Total") }}</span>
                     <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xs md:text-lg' />
                 </div>
 
