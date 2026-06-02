@@ -126,30 +126,30 @@ const luigiTrendsSubDepartment = async () => {
 }
 
 // If subType is 'family'
-const luigiTrendsCategory = async () => {
-    const urlWithoutDomain = new URL(dataWebpage?.canonical_url ?? '').pathname
-    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+// const luigiTrendsCategory = async () => {
+//     const urlWithoutDomain = new URL(dataWebpage?.canonical_url ?? '').pathname
+//     const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
     
-    const response = await axios.post(
-        `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
-        [
-            {
-                size: 25,
-                widget_id: "category_recommendation",
-                auth_user_id: userId,
-                identities: [urlWithoutDomain],
-                model: "category"
-            }
-        ],
-        {
-            headers: {
-                'Content-Type': 'application/json;charset=utf-8'
-            }
-        }
-    )
+//     const response = await axios.post(
+//         `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+//         [
+//             {
+//                 size: 25,
+//                 widget_id: "category_recommendation",
+//                 auth_user_id: userId,
+//                 identities: [urlWithoutDomain],
+//                 model: "category"
+//             }
+//         ],
+//         {
+//             headers: {
+//                 'Content-Type': 'application/json;charset=utf-8'
+//             }
+//         }
+//     )
 
-    return response
-}
+//     return response
+// }
 
 
 // global trends
