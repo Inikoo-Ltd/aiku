@@ -1,4 +1,5 @@
 User-agent: *
+Disallow: /*?variant
 Disallow: /*.pdf$
 Disallow: /return_policy
 Disallow: /privacy_policy
