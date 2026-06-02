@@ -282,6 +282,24 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
+        if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::HANDLING_BLOCKED) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'icon'    => 'fal fa-check-circle',
+                'tooltip' => __('Check if all items are picked and finish waiting'),
+                'label'   => __('Auto Finish Waiting'),
+                'key'     => 'auto-finish-waiting',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.auto_finish_waiting',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
         if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && $deliveryNote->shop?->type != ShopTypeEnum::EXTERNAL) {
             $actions[] = [
                 'type' => 'button',

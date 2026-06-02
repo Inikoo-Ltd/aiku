@@ -23,6 +23,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay;
@@ -73,6 +74,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
         Route::patch('undo-packing', UndoPackingDeliveryNote::class)->name('undo_packing');
         Route::patch('undo-set-as-picked', UndoSetAsPickedDeliveryNote::class)->name('undo_set_as_picked');
+        Route::patch('auto-finish-waiting', AutoFinishWaitingDeliveryNote::class)->name('auto_finish_waiting');
 
         Route::patch('packed', UpdateDeliveryNoteStatePacked::class)->name('packed');
         Route::patch('set-as-picked-with-picked-bay', SetAsPickedWithPickingBaysDeliveryNote::class)->name('set_as_picked_with_picked_bay');

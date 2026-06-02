@@ -38,6 +38,12 @@ class AutoFinishWaitingDeliveryNote extends OrgAction
         return 'dispatching:delivery-note:auto-finish-waiting {delivery_note}';
     }
 
+    public function asController(DeliveryNote $deliveryNote, \Lorisleiva\Actions\ActionRequest $request): DeliveryNote
+    {
+        $this->initialisationFromShop($deliveryNote->shop, $request);
+        return $this->handle($deliveryNote);
+    }
+
     public function asCommand(Command $command): int
     {
 
