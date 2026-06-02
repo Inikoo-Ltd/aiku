@@ -160,7 +160,7 @@ defineExpose({
     </TabView>
 
     <div class="my-3">
-      <PureInput v-model="query" placeholder="Search..." @update:modelValue="debounceFetch" />
+      <PureInput v-model="query" :placeholder="trans('Search...')" @update:modelValue="debounceFetch" />
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[400px] overflow-auto">

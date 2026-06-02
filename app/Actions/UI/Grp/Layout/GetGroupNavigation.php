@@ -131,7 +131,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => 'Trade Units',
+                        'label' => __('Trade Units'),
                         'icon'  => ['fal', 'fa-atom'],
                         'root'  => 'grp.trade_units.units.',
                         'route' => [
@@ -140,7 +140,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Trade Unit Families',
+                        'label' => __('Trade Unit Families'),
                         'icon'  => ['fal', 'fa-atom-alt'],
                         'root'  => 'grp.trade_units.families.',
                         'route' => [
@@ -149,7 +149,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Brands',
+                        'label' => __('Brands'),
                         'icon'  => ['fal', 'fa-copyright'],
                         'root'  => 'grp.trade_units.brands.',
                         'route' => [
@@ -158,7 +158,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Tags',
+                        'label' => __('Tags'),
                         'icon'  => ['fal', 'fa-tags'],
                         'root'  => 'grp.trade_units.tags.',
                         'route' => [
@@ -237,7 +237,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Ingredients',
+                        'label' => __('Ingredients'),
                         'icon'  => ['fal', 'fa-apple-crate'],
                         'root'  => 'grp.goods.ingredients.',
                         'route' => [

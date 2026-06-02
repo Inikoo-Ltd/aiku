@@ -138,6 +138,13 @@ console.log(props)
 
 <template>
   <div ref="containerRef" class="w-full overflow-hidden " :class="wrapperSpacingClass">
+     <div class="px-3 py-6 pb-2 text-center">
+      <div class="text-3xl font-semibold text-gray-800">
+        <div v-if="fieldValue.title" v-html="fieldValue.title"></div>
+        <div v-else>{{ ctrans('Other Category') }}</div>
+      </div>
+    </div>
+
     <div class="relative w-full">
       <button v-if="showNavigation" ref="prevEl" type="button"
         class="absolute left-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full  transition  hover:text-gray-950 md:flex"

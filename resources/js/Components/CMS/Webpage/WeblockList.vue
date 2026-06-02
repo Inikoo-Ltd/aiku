@@ -71,7 +71,7 @@ onMounted(() => {
 
 						<!-- search -->
 						<div class="relative">
-							<input v-model="search" type="text" placeholder="Search block..."
+							<input v-model="search" type="text" :placeholder="trans('Search block...')"
 								class="w-64 pl-9 pr-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300" />
 							<FontAwesomeIcon :icon="faSearch"
 								class=" absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></FontAwesomeIcon>
