@@ -100,7 +100,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('banner/{banner:id}', GetBanner::class)->name('get_banner')->whereNumber('banner');
 
     // Reviews
-    Route::get('product/{product:slug}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review');
+    Route::get('product/{product:id}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review');
 
     // Families Custom Sort
     Route::get('{webpage:slug}/{productCategory}/families', FetchFamilyListCustomSorted::class)->name('website.category.family_list_sorted');
