@@ -69,7 +69,7 @@ const onRightNavigation = () => {
 
 
 const hasImage = (image: any) => {
-    return image.original && String(image.original).trim() !== ""
+    return image?.original && String(image?.original).trim() !== ""
 }
 
 console.log("Family Extra Description 2 Props:", props)
@@ -119,7 +119,7 @@ console.log("Family Extra Description 2 Props:", props)
              lg:h-[238px]
              2xl:h-[320px]">
                     <template v-if="hasImage(displayImages[0])">
-                        <Image :src="displayImages[0].original" :image-cover="true" class="w-full h-full object-cover"
+                        <Image :src="displayImages[0]?.original" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 
@@ -136,7 +136,7 @@ console.log("Family Extra Description 2 Props:", props)
                lg:h-[114px]
                2xl:h-[155px]">
                         <template v-if="hasImage(displayImages[1])">
-                            <Image :src="displayImages[1].original" :image-cover="true" class="w-full h-full object-cover"
+                            <Image :src="displayImages[1]?.original" :image-cover="true" class="w-full h-full object-cover"
                                 :alt="fieldValue?.family?.name" />
                         </template>
 
@@ -151,7 +151,7 @@ console.log("Family Extra Description 2 Props:", props)
                lg:h-[114px]
                2xl:h-[155px]">
                         <template v-if="hasImage(displayImages[2])">
-                            <Image :src="displayImages[2].original" :image-cover="true" class="w-full h-full object-cover"
+                            <Image :src="displayImages[2]?.original" :image-cover="true" class="w-full h-full object-cover"
                                 :alt="fieldValue?.family?.name" />
                         </template>
 
@@ -168,7 +168,7 @@ console.log("Family Extra Description 2 Props:", props)
              lg:h-[255px]
              2xl:h-[350px]">
                     <template v-if="hasImage(displayImages[3])">
-                        <Image :src="displayImages[3].original" :image-cover="true" class="w-full h-full object-cover"
+                        <Image :src="displayImages[3]?.original" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 
