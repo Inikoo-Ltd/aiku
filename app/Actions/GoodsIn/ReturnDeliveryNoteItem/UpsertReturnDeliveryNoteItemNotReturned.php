@@ -39,7 +39,9 @@ class UpsertReturnDeliveryNoteItemNotReturned extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request)
     {
-        if ($this->asAction) return;
+        if ($this->asAction) {
+            return;
+        }
 
         $returnDeliveryNoteItem = $request->returnDeliveryNoteItem;
 

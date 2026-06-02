@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 18-05-2026-16h-18m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -14,6 +14,7 @@ use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
 use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
+use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithReturnDeliveryNoteTransition;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -32,18 +33,18 @@ class SetDoneReturnDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use WithHydrateReturnDeliveryNotes;
+    use WithReturnDeliveryNoteTransition;
 
+    /**
+     * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
         $user = request()->user();
-        $oldState = $returnDeliveryNote->state;
         $originalInvoice = $returnDeliveryNote->order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->first();
 
-        if ($oldState !== ReturnDeliveryNoteStateEnum::RETURNED) {
-            throw ValidationException::withMessages([
-                'message' => __('Return cannot be finished.').' ['.__('Invalid state').': '.$oldState->value.']',
-            ]);
-        }
+        $this->validateReturnDeliveryNoteState($returnDeliveryNote, ReturnDeliveryNoteStateEnum::RETURNED, 'Return cannot be finished.');
 
         if (!$originalInvoice) {
             throw ValidationException::withMessages([
@@ -66,12 +67,12 @@ class SetDoneReturnDeliveryNote extends OrgAction
             }
             if ($createReplacement) {
                 $replacementData = array_filter(Arr::get($modelData, 'refundedData', []), fn ($item) => data_get($item, 'replaced_quantity') > 0);
-                
+
                 $replacement = $this->processReplacement($returnDeliveryNote, $replacementData);
                 data_set($modelData, 'replacement_id', $replacement->id);
 
             }
-                
+
             unset($modelData['refundedData']);
 
             $returnDeliveryNote = UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, $modelData);
@@ -86,6 +87,9 @@ class SetDoneReturnDeliveryNote extends OrgAction
         return $returnDeliveryNote;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function processRefund(ReturnDeliveryNote $returnDeliveryNote, Invoice $originalInvoice, array $refundData): Invoice
     {
         $refund = StoreRefund::make()->action($originalInvoice, []);
@@ -97,7 +101,7 @@ class SetDoneReturnDeliveryNote extends OrgAction
                 continue;
             }
 
-            $refundedItem = data_get($refundData, $invoiceTransaction->transaction_id, null);
+            $refundedItem = data_get($refundData, $invoiceTransaction->transaction_id);
 
             if ($refundedItem) {
                 StoreRefundInvoiceTransaction::make()->action($refund, $invoiceTransaction, [
@@ -128,6 +132,9 @@ class SetDoneReturnDeliveryNote extends OrgAction
         return $refund;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function processReplacement(ReturnDeliveryNote $returnDeliveryNote, array $replacementData): DeliveryNote
     {
         $replacementData = collect($replacementData)->map(function ($item) {
@@ -137,13 +144,11 @@ class SetDoneReturnDeliveryNote extends OrgAction
             ];
         });
 
-        $replacement    = StoreReplacementDeliveryNote::make()->action($returnDeliveryNote->order, [
+        return StoreReplacementDeliveryNote::make()->action($returnDeliveryNote->order, [
             'delivery_note_items' => $replacementData->toArray(),
             'warehouse_id'        => $returnDeliveryNote->warehouse_id,
             'reference'           => $returnDeliveryNote->order->reference,
         ]);
-
-        return $replacement;
     }
 
     public function rules(): array
@@ -159,10 +164,15 @@ class SetDoneReturnDeliveryNote extends OrgAction
         ];
     }
 
+    /**
+     * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): ReturnDeliveryNote
     {
         $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $request);
 
-        return $this->handle($returnDeliveryNote, $this->validatedData);
+        return $this->handle($returnDeliveryNote, $this->validatedData ?? []);
     }
+
 }

@@ -147,7 +147,7 @@ class ShowReturnDeliveryNote extends OrgAction
             ->where('total_expected_qty', '>', 0)
             ->where('is_handled', false)
             ->exists();
-        
+
         $hasHandledItem = ReturnDeliveryNoteItem::where('return_delivery_note_id', $returnDeliveryNote->id)
             ->where('total_expected_qty', '>', 0)
             ->where('is_handled', true)

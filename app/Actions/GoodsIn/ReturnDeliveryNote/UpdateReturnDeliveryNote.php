@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 15-05-2026-11h-13m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -28,12 +28,12 @@ class UpdateReturnDeliveryNote extends OrgAction
     public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
         if (Arr::has($modelData, 'state')) {
-            $returnState = data_get($modelData, 'state');
+            $returnState    = data_get($modelData, 'state');
             $timestampField = match ($returnState) {
                 ReturnDeliveryNoteStateEnum::CANCELLED => 'cancelled_at',
                 ReturnDeliveryNoteStateEnum::RETURNING => 'returning_at',
-                ReturnDeliveryNoteStateEnum::RETURNED  => 'returned_at',
-                ReturnDeliveryNoteStateEnum::DONE      => 'done_at',
+                ReturnDeliveryNoteStateEnum::RETURNED => 'returned_at',
+                ReturnDeliveryNoteStateEnum::DONE => 'done_at',
                 default => null,
             };
 
@@ -44,8 +44,8 @@ class UpdateReturnDeliveryNote extends OrgAction
             if ($returnState == ReturnDeliveryNoteStateEnum::RECEIVED) {
                 foreach ($returnDeliveryNote->returnDeliveryNoteItem as $returnedItem) {
                     UpdateReturnDeliveryNoteItem::make()->action($returnedItem, [
-                        'state'  => ReturnDeliveryNoteItemStateEnum::UNASSIGNED,
-                        'handling_at'   => null,
+                        'state'       => ReturnDeliveryNoteItemStateEnum::UNASSIGNED,
+                        'handling_at' => null,
                     ]);
                 }
             }
@@ -59,12 +59,12 @@ class UpdateReturnDeliveryNote extends OrgAction
     public function rules(): array
     {
         return [
-            'handler_user_id'   => ['sometimes', 'nullable'],
-            'reference'         => ['sometimes', 'string'],
-            'returning_at'      => ['sometimes', 'nullable'],
-            'refund_id'         => ['sometimes', 'nullable', 'exists:invoices,id'],
-            'replacement_id'    => ['sometimes', 'nullable', 'exists:delivery_notes,id'],
-            'state'             => ['sometimes', Rule::enum(ReturnDeliveryNoteStateEnum::class)],
+            'handler_user_id' => ['sometimes', 'nullable'],
+            'reference'       => ['sometimes', 'string'],
+            'returning_at'    => ['sometimes', 'nullable'],
+            'refund_id'       => ['sometimes', 'nullable', 'exists:invoices,id'],
+            'replacement_id'  => ['sometimes', 'nullable', 'exists:delivery_notes,id'],
+            'state'           => ['sometimes', Rule::enum(ReturnDeliveryNoteStateEnum::class)],
         ];
     }
 
@@ -79,6 +79,7 @@ class UpdateReturnDeliveryNote extends OrgAction
     {
         $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $request);
 
-        return $this->handle($returnDeliveryNote, $this->validatedData);
+        return $this->handle($returnDeliveryNote, $this->validatedData ?? []);
     }
+
 }

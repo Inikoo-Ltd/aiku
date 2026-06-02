@@ -11,7 +11,6 @@ namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Catalogue\Product\Json\GetIrisProductCategoriesInRelated;
 use App\Http\Resources\Catalogue\ProductCategoryForRelatedWebBlockResource;
-use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -24,21 +23,20 @@ class GetIrisRelatedProductCategory
     {
         $relatedProductCategory = data_get($webBlock, 'web_block.layout.data.fieldValue.settings.product_category.*.id', []);
 
-        // Ensure newest data shown (for image. Arya Request)
+        // Ensure the newest data shown (for image. Arya Request)
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.settings.product_category',
-            ProductCategoryForRelatedWebBlockResource::collection($relatedProductCategory ? GetIrisProductCategoriesInRelated::run($relatedProductCategory) : [])->resolve(),
-            true
+            ProductCategoryForRelatedWebBlockResource::collection($relatedProductCategory ? GetIrisProductCategoriesInRelated::run($relatedProductCategory) : [])->resolve()
         );
 
         return [
-          'type' => $webBlock['type'],
-          'structure' => Arr::get(
-              $webBlock,
-              'web_block.layout.data.fieldValue',
-              []
-          ),
+            'type' => $webBlock['type'],
+            'structure' => Arr::get(
+                $webBlock,
+                'web_block.layout.data.fieldValue',
+                []
+            ),
         ];
     }
 }
