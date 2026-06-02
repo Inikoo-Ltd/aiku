@@ -43,6 +43,7 @@ const props = withDefaults(defineProps<{
     loading: 'lazy',
     decoding: 'async',
   }),
+  alt: 'image',
 })
 
 const emits = defineEmits<{
