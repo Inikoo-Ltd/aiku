@@ -88,24 +88,25 @@ const removeProduct = (index: number) => {
             </template>
         </draggable>
 
-        <SelectorProductCategory ref="productDialog" v-model="products" :routeFetchDepartment="{
-            name: 'grp.org.shops.show.catalogue.departments.index',
-            parameters: {
-                shop: route().params.shop,
-                organisation: route().params.organisation
-            }
-        }" :routeFetchSubDepartment="{
-                name: 'grp.org.shops.show.catalogue.sub_departments.index',
+        <SelectorProductCategory ref="productDialog" v-model="products" 
+            :routeFetchDepartment="{
+                name: 'grp.json.shop.departments.for_related_web_block',
                 parameters: {
                     shop: route().params.shop,
-                    organisation: route().params.organisation
                 }
-            }" :routeFetchFamily="{
-                name: 'grp.org.shops.show.catalogue.families.index',
+            }" 
+            :routeFetchSubDepartment="{
+                name: 'grp.json.shop.sub_departments.for_related_web_block',
                 parameters: {
                     shop: route().params.shop,
-                    organisation: route().params.organisation
                 }
-            }" />
+            }" 
+            :routeFetchFamily="{
+                name: 'grp.json.shop.families.for_related_web_block',
+                parameters: {
+                    shop: route().params.shop,
+                }
+            }" 
+        />
     </div>
 </template>

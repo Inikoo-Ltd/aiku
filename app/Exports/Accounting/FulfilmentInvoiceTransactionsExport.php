@@ -40,7 +40,7 @@ class FulfilmentInvoiceTransactionsExport implements FromQuery, WithMapping, Sho
     public function map($row): array
     {
         $palletData = 'no data';
-        $palletRef='';
+        $palletRef = '';
         if ($row->model_type == 'Service') {
             $service = Service::find($row->model_id);
             if ($service->is_pallet_handling == true) {
