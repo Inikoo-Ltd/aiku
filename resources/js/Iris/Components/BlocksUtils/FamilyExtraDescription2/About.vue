@@ -69,10 +69,10 @@ const onRightNavigation = () => {
 
 
 const hasImage = (image: any) => {
-    return image && String(image).trim() !== ""
+    return image?.original && String(image?.original).trim() !== ""
 }
 
-
+console.log("Family Extra Description 2 Props:", props)
 </script>
 
 <template>
@@ -119,7 +119,7 @@ const hasImage = (image: any) => {
              lg:h-[238px]
              2xl:h-[320px]">
                     <template v-if="hasImage(displayImages[0])">
-                        <Image :src="displayImages[0]" :image-cover="true" class="w-full h-full object-cover"
+                        <Image :src="displayImages[0]?.original" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 
@@ -136,7 +136,7 @@ const hasImage = (image: any) => {
                lg:h-[114px]
                2xl:h-[155px]">
                         <template v-if="hasImage(displayImages[1])">
-                            <Image :src="displayImages[1]" :image-cover="true" class="w-full h-full object-cover"
+                            <Image :src="displayImages[1]?.original" :image-cover="true" class="w-full h-full object-cover"
                                 :alt="fieldValue?.family?.name" />
                         </template>
 
@@ -151,7 +151,7 @@ const hasImage = (image: any) => {
                lg:h-[114px]
                2xl:h-[155px]">
                         <template v-if="hasImage(displayImages[2])">
-                            <Image :src="displayImages[2]" :image-cover="true" class="w-full h-full object-cover"
+                            <Image :src="displayImages[2]?.original" :image-cover="true" class="w-full h-full object-cover"
                                 :alt="fieldValue?.family?.name" />
                         </template>
 
@@ -168,7 +168,7 @@ const hasImage = (image: any) => {
              lg:h-[255px]
              2xl:h-[350px]">
                     <template v-if="hasImage(displayImages[3])">
-                        <Image :src="displayImages[3]" :image-cover="true" class="w-full h-full object-cover"
+                        <Image :src="displayImages[3]?.original" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 
@@ -211,7 +211,7 @@ const hasImage = (image: any) => {
            h-[300px]
            md:h-[500px]
            lg:h-[500px]">
-                <Image :src="galleryImages[selectedIndex]" :alt="`Image ${selectedIndex + 1}`"
+                <Image :src="galleryImages[selectedIndex].original" :alt="`Image ${selectedIndex + 1}`"
                     class="w-full h-full object-contain flex justify-center" :image-cover="false" />
             </div>
 
@@ -228,7 +228,7 @@ const hasImage = (image: any) => {
                     ? 'border-white'
                     : 'border-transparent'
                     ">
-                <Image :src="image" class="h-full w-full object-cover" :image-cover="true" />
+                <Image :src="image.original" class="h-full w-full object-cover" :image-cover="true" />
             </button>
         </div>
     </Dialog>
