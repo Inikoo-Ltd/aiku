@@ -39,20 +39,13 @@ const periods = [
 const rateMetrics = ['open_rate', 'clicked_rate', 'spam_rate', 'unsubscribe_rate'];
 
 const metrics = [
-    { key: 'error', label: 'Error' },
-    { key: 'sent', label: 'Sent' },
-    { key: 'delay', label: 'Delay' },
-    { key: 'delivered', label: 'Delivered' },
-    { key: 'hard_bounce', label: 'Hard Bounce' },
-    { key: 'soft_bounce', label: 'Soft Bounce' },
-    { key: 'opened', label: 'Opened' },
-    { key: 'clicked', label: 'Clicked' },
-    { key: 'spam', label: 'Spam' },
-    { key: 'unsubscribed', label: 'Unsubscribed' },
+    { key: 'opened', label: 'Total Emails Opened' },
+    { key: 'clicked', label: 'Total Clicks' },
     { key: 'open_rate', label: 'Open Rate' },
-    { key: 'clicked_rate', label: 'Clicked Rate' },
+    { key: 'clicked_rate', label: 'Average Click Rate' },
     { key: 'spam_rate', label: 'Spam Rate' },
-    { key: 'unsubscribe_rate', label: 'Unsubscribe Rate' }
+    { key: 'unsubscribe_rate', label: 'Unsubscribe Rate' },
+    { key: 'bounce_rate', label: 'Bounce Rate' }
 ];
 
 const processTimeSeriesData = (period: string, metric: string) => {
