@@ -75,6 +75,51 @@ class EditMasterFamily extends OrgAction
             ];
         }
 
+        // todo for tag product category, 
+
+         /*  $tagRoute = [
+           'index_tag' => [
+               'name'       => 'grp.json.trade_units.tags.index',
+               'parameters' => [
+                   'tradeUnit' => 34102,
+               ]
+           ],
+           'store_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.store',
+               'parameters' => [
+                   'tradeUnit' => 34102,
+               ]
+           ],
+           'update_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.update',
+               'parameters' => [
+                   'tradeUnit' => 34102,
+               ],
+               'method'    => 'patch'
+           ],
+           'delete_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.delete',
+               'parameters' => [
+                   'tradeUnit' => 34102,
+               ],
+               'method'    => 'delete'
+           ],
+           'attach_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.attach',
+               'parameters' => [
+                   'tradeUnit' => 34102,
+               ],
+               'method'    => 'post'
+           ],
+           'detach_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.detach',
+               'parameters' => [
+                   'tradeUnit' => 34102,
+               ],
+               'method'    => 'delete'
+           ],
+        ]; */
+
         return Inertia::render(
             'EditModel',
             [
@@ -121,6 +166,32 @@ class EditMasterFamily extends OrgAction
                                 ],
                             ]
                         ],
+                    // todo for tag product category, 
+                        /* [
+                            'label'  => __('Tags'),
+                            'icon'   => 'fa-light fa-tags',
+                            'fields' => [
+                               'tags' => [
+                                    'type'  => 'tags-trade-unit',
+                                    'label' => __('Tags'),
+                                    'value' => [],
+                                    'tag_routes' => $tagRoute,
+                                    'noSaveButton'  => true,
+                                    'isWithRefreshFieldForm'    => true
+                                ],
+                            ]
+                        ], */
+                        /* [
+                            'label'  => __('FAQ'),
+                            'icon'   => 'fa-light fa-question-circle',
+                            'fields' => [
+                               'faq' => [
+                                    'type'  => 'faq',
+                                    'label' => __('FAQ'),
+                                    'value' => [],
+                                ],
+                            ]
+                        ], */
                         [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
