@@ -608,6 +608,9 @@ const handleClickOutside = (e: MouseEvent) => {
                         parameters: [session?.organisation.id, session?.ulid],
                         method: 'patch',
                     }" :title="trans('Are you sure you want to close this session?')"
+                        :noLabel="trans('Close Session')"
+                        :noIcon="faTimesCircle"
+                        :description="trans('This will close the chat session. The conversation history will be preserved.')"
                         @success="$emit('close-session')">
                         <template #default="{ changeModel }">
                             <button @click="changeModel" class="menu-item text-red-600">
