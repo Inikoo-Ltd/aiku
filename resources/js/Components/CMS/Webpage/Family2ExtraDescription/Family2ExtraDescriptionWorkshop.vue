@@ -70,7 +70,7 @@ const containerClass = computed(() => {
       return "px-8 py-4"
 
     default:
-      return "px-14 py-4"
+      return "px-6 py-4"
   }
 })
 
@@ -103,11 +103,11 @@ const tabButtonClass = computed(() => {
 
 <template>
   <section
-    class="w-full bg-[#D8D9DB]"
+    class="w-full bg-[#D8D9DB] "
     :id="sectionId"
   >
     <div
-      class="mx-auto w-full max-w-[1700px] bg-white"
+      class="mx-auto w-full  bg-white editor-class"
       :class="containerClass"
       :style="containerStyle"
     >
