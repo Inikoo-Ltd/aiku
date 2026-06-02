@@ -42,6 +42,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategories;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
+use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryForRelatedWebBlock;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInShop;
@@ -162,6 +163,10 @@ Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.d
 Route::get('shop/{shop:id}/sub-departments', GetSubDepartmentsInShop::class)->name('shop.sub_departments');
 Route::get('shop/{shop:id}/products-no-webpage', GetProductsWithNoWebpage::class)->name('shop.products.no-webpage');
 Route::get('shop/{shop}/product-categories', GetProductCategories::class)->name('shop.product_categories');
+
+Route::get('shop/{shop}/families-for-related-web-blocks', [GetProductCategoryForRelatedWebBlock::class, 'onlyFamily'])->name('shop.families.for_related_web_block');
+Route::get('shop/{shop}/departments-for-related-web-blocks', [GetProductCategoryForRelatedWebBlock::class, 'onlyDepartment'])->name('shop.departments.for_related_web_block');
+Route::get('shop/{shop}/sub-departments-for-related-web-blocks', [GetProductCategoryForRelatedWebBlock::class, 'onlySubDepartment'])->name('shop.sub_departments.for_related_web_block');
 
 Route::get('shop/{shop}/catalogue/{productCategory}/families', GetProductCategoryFamilies::class)->name('shop.catalogue.departments.families');
 Route::get('shop/{shop:id}/catalogue/collection/{collection:id}/products', GetProductsNotAttachedToACollection::class)->name('shop.products.not_attached_to_collection')->withoutScopedBindings();
