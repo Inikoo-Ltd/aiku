@@ -2,7 +2,6 @@
 
 /*
  * @Author: andiferdiawan (https://github.com/andiferdiawan)
- * @Created: YYYY-MM-DD HH:mm:ss
  * @Copyright: Copyright (c) 2026, andiferdiawan
  */
 
