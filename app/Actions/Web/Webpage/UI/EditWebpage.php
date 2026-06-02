@@ -188,7 +188,7 @@ class EditWebpage extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage's settings"),
+                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage :webpageCode settings", ['webpageCode' => $webpage->code]),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'warning'     => $warning,
                 'pageHead'    => [
@@ -200,7 +200,7 @@ class EditWebpage extends OrgAction
                     'model'      => $isBlog ? __('Blog') : __('Webpage'),
                     'iconRight'  => WebpageStateEnum::stateIcon()[$webpage->state->value],
                     'afterTitle' => [
-                        'label' => $webpage->getUrl(),
+                        'label' => $webpage->getCanonicalUrl(),
                     ],
                     'actions' => [
                         [
