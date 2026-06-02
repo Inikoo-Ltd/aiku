@@ -14,9 +14,10 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
 import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { inject, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut)
 
@@ -30,17 +31,17 @@ const handleToggleLeftBar = () => {
 	layout.leftSidebar.show = !layout.leftSidebar.show
 }
 
-const logoutData = {
-	label: "Logout",
-	tooltip: "Logout the app",
+const logoutData = computed(() => ({
+	label: trans("Logout"),
+	tooltip: trans("Logout the app"),
 	icon: "fal fa-sign-out-alt",
-}
+}))
 
-const helpData = {
-	label: "Help",
-	tooltip: "Open help portal",
+const helpData = computed(() => ({
+	label: trans("Help"),
+	tooltip: trans("Open help portal"),
 	icon: "fal fa-life-ring",
-}
+}))
 
 const isLoadingLogout = ref(false)
 const onLogoutAuth = () => {
@@ -153,13 +154,13 @@ const onLogoutAuth = () => {
 							class="absolute -top-3 left-1/2 -translate-y-full bg-white rounded-md px-4 py-3 border border-gray-200 shadow">
 							<div class="min-w-32 flex flex-col justify-center gap-y-2">
 								<div class="whitespace-nowrap text-gray-500 text-xs">
-									Are you sure want to logout?
+									{{ trans("Are you sure want to logout?") }}
 								</div>
 								<div class="mx-auto">
 									<Button
 										@click="onLogoutAuth()"
-										:loading="isLoadingLogout"
-										label="Yes, Logout"
+										:loading="isLoadingLogout"										
+										:label="trans('Yes, Logout')"
 										type="red" />
 								</div>
 							</div>
