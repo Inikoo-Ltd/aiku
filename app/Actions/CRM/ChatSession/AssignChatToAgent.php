@@ -315,10 +315,10 @@ class AssignChatToAgent
                     'action_type'         => 'self_assign',
                 ]
             ]);
-        } catch (Exception) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to assign chat session to self',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

@@ -78,39 +78,39 @@ class GetGroupNavigation
             $groupNavigation['overview'] = $this->getOverviewNavs();
         }
 
-        if (app()->environment('local')) {
-            $groupNavigation['chat'] = [
-                'label'   => __('Chat'),
-                'tooltip' => __('Chat'),
-                'icon'    => ['fal', 'fa-comment-alt'],
-                'root'    => 'grp.chat.',
-                'route'   => [
-                    'name' => 'grp.chat.dashboard',
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label'   => __('Dashboard'),
-                            'tooltip' => __('Dashboard'),
-                            'icon'    => ['fal', 'fa-comment-alt'],
-                            'root'    => 'grp.chat.dashboard',
-                            'route'   => [
-                                'name' => 'grp.chat.dashboard',
-                            ],
-                        ],
-                        [
-                            'label'   => __('Agents'),
-                            'tooltip' => __('Agents'),
-                            'icon'    => ['fal', 'fa-headset'],
-                            'root'    => 'grp.chat.agents.',
-                            'route'   => [
-                                'name' => 'grp.chat.agents.show',
-                            ],
+
+        $groupNavigation['chat'] = [
+            'label'   => __('Chat'),
+            'tooltip' => __('Chat'),
+            'icon'    => ['fal', 'fa-comment-alt'],
+            'root'    => 'grp.chat.',
+            'route'   => [
+                'name' => 'grp.chat.dashboard',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Dashboard'),
+                        'tooltip' => __('Dashboard'),
+                        'icon'    => ['fal', 'fa-comment-alt'],
+                        'root'    => 'grp.chat.dashboard',
+                        'route'   => [
+                            'name' => 'grp.chat.dashboard',
                         ],
                     ],
+                    // [
+                    //     'label'   => __('Agents'),
+                    //     'tooltip' => __('Agents'),
+                    //     'icon'    => ['fal', 'fa-headset'],
+                    //     'root'    => 'grp.chat.agents.',
+                    //     'route'   => [
+                    //         'name' => 'grp.chat.agents.show',
+                    //     ],
+                    // ],
                 ],
-            ];
-        }
+            ],
+        ];
+
 
         if ($user->hasPermissionTo('sysadmin.view')) {
             $groupNavigation['sysadmin'] = $this->getSysAdminNavs();

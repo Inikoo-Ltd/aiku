@@ -608,6 +608,9 @@ const handleClickOutside = (e: MouseEvent) => {
                         parameters: [session?.organisation.id, session?.ulid],
                         method: 'patch',
                     }" :title="trans('Are you sure you want to close this session?')"
+                        :noLabel="trans('Close Session')"
+                        :noIcon="faTimesCircle"
+                        :description="trans('This will close the chat session. The conversation history will be preserved.')"
                         @success="$emit('close-session')">
                         <template #default="{ changeModel }">
                             <button @click="changeModel" class="menu-item text-red-600">
@@ -691,51 +694,54 @@ const handleClickOutside = (e: MouseEvent) => {
         </div>
 
         <!-- Footer -->
-        <footer v-if="!isClosed" class="flex items-center gap-2 px-3 py-2 border-t bg-white">
-            <button @click="imageInput?.click()"
-                class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100" title="Upload image">
-                <FontAwesomeIcon :icon="faImage" />
-            </button>
-
-            <button @click="fileInput?.click()"
-                class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100" title="Upload file">
-                <FontAwesomeIcon :icon="faPaperclip" />
-            </button>
-
+        <footer v-if="!isClosed" class="px-3 py-2 bg-white">
             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
                 @change="handleImageSelect" />
-
             <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
 
-            <textarea ref="messageInput" v-model="newMessage" @input="
-                () => {
-                    autoResize()
-                    handleTyping()
-                }
-            " @blur="
-                () => {
-                    isTyping = false
-                    sendTypingStatus(false)
-                }
-            " @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
-                class="flex-1 resize-none border rounded-lg px-3 py-3 text-sm leading-5 focus:outline-none" />
+            <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
+                <textarea ref="messageInput" v-model="newMessage" @input="
+                    () => {
+                        autoResize()
+                        handleTyping()
+                    }
+                " @blur="
+                    () => {
+                        isTyping = false
+                        sendTypingStatus(false)
+                    }
+                " @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
+                    class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
-            <Button
-                @click="isEmailNotif = !isEmailNotif"
-                type="transparent"
-                class="transition-all duration-150"
-                :class="isEmailNotif
-                    ? '!bg-green-500 !border-green-600 !text-white'
-                    : '!bg-transparent text-gray-500 hover:!bg-gray-100'"
-                :tooltip="isEmailNotif
-                    ? 'Email notification ON'
-                    : 'Send email notification'"
-            >
-                <template #icon>
-                    <FontAwesomeIcon :icon="faEnvelope" />
-                </template>
-            </Button>
-            <Button @click="sendMessage" :icon="faPaperPlane"></Button>
+                <div class="flex items-center justify-between px-2 pb-2 pt-1">
+                    <div class="flex items-center gap-1">
+                        <button @click="imageInput?.click()"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image">
+                            <FontAwesomeIcon :icon="faImage" class="text-sm" />
+                        </button>
+                        <button @click="fileInput?.click()"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file">
+                            <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
+                        </button>
+                        <Button
+                            @click="isEmailNotif = !isEmailNotif"
+                            type="transparent"
+                            class="transition-all duration-150"
+                            :class="isEmailNotif
+                                ? '!bg-green-500 !border-green-600 !text-white'
+                                : '!bg-transparent text-gray-500 hover:!bg-gray-100'"
+                            :tooltip="isEmailNotif
+                                ? 'Email notification ON'
+                                : 'Send email notification'"
+                        >
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faEnvelope" />
+                            </template>
+                        </Button>
+                    </div>
+                    <Button @click="sendMessage" :icon="faPaperPlane"></Button>
+                </div>
+            </div>
         </footer>
     </div>
 </template>
