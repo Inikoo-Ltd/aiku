@@ -27,6 +27,7 @@ class DeliveryNoteResource extends JsonResource
             'reference'                      => $deliverNote->reference,
             'date'                           => $deliverNote->date,
             'state'                          => $deliverNote->state,
+            'state_icon'                     => $deliverNote->state->stateIcon()[$deliverNote->state->value],
             'type'                           => $deliverNote->type,
             'weight'                         => $deliverNote->weight,
             'created_at'                     => $deliverNote->created_at,

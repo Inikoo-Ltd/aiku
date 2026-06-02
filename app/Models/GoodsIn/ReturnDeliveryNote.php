@@ -156,4 +156,9 @@ class ReturnDeliveryNote extends Model implements Auditable
     {
         return $this->hasOne(Invoice::class, 'id', 'refund_id');
     }
+    
+    public function replacement(): HasOne
+    {
+        return $this->hasOne(DeliveryNote::class, 'id', 'replacement_id');
+    }
 }

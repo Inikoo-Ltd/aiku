@@ -10,7 +10,9 @@
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
 use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\SetReturnDeliveryNoteItemAsNotReturned;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpsertReturnDeliveryNoteItemNotReturned;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
@@ -44,9 +46,19 @@ class SetReturnedReturnDeliveryNote extends OrgAction
             $returnDeliveryNote = UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, $modelData);
 
             foreach ($returnDeliveryNote->returnDeliveryNoteItem as $item) {
-                UpdateReturnDeliveryNoteItem::make()->action($item, [
+                $updatedData = [
                     'state'        => ReturnDeliveryNoteItemStateEnum::PROCESSED,
-                ]);
+                ];
+                $qtyReturned     = $item->total_item_damaged + $item->total_item_returned;
+                $qtyNotReturned  = $item->total_expected_qty - $qtyReturned;
+
+                if ($qtyNotReturned > 0) {
+                    UpsertReturnDeliveryNoteItemNotReturned::make()->action($item, [
+                        'quantity' => $qtyNotReturned,
+                    ]);
+                }
+
+                UpdateReturnDeliveryNoteItem::make()->action($item, $updatedData);
 
                 $deliveryNoteItem = $item->deliveryNoteItems;
 

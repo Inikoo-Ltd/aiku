@@ -147,6 +147,11 @@ class ShowReturnDeliveryNote extends OrgAction
             ->where('total_expected_qty', '>', 0)
             ->where('is_handled', false)
             ->exists();
+        
+        $hasHandledItem = ReturnDeliveryNoteItem::where('return_delivery_note_id', $returnDeliveryNote->id)
+            ->where('total_expected_qty', '>', 0)
+            ->where('is_handled', true)
+            ->exists();
 
         return match ($returnDeliveryNote->state) {
             ReturnDeliveryNoteStateEnum::RECEIVED => [
@@ -165,8 +170,8 @@ class ShowReturnDeliveryNote extends OrgAction
                     ],
                 ],
             ],
-            ReturnDeliveryNoteStateEnum::RETURNING => $hasUnHandledItems ? [
-                [
+            ReturnDeliveryNoteStateEnum::RETURNING => [
+                $hasUnHandledItems ? [
                     'type'   => 'buttonGroup',
                     'key'    => 'picker',
                     'button' => [
@@ -191,22 +196,22 @@ class ShowReturnDeliveryNote extends OrgAction
                         ]
 
                     ],
-                ],
-            ] : [
-                [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'icon'    => 'fas fa-box-check',
-                    'label'   => __('Set as Returned'),
-                    'key'     => 'finish-return',
-                    'route'   => [
+                ] : null,
+                $hasHandledItem ? [
+                    'type'          => 'button',
+                    'style'         => 'save',
+                    'icon'          => 'fas fa-box-check',
+                    'label'         => __('Set as Returned'),
+                    'key'           => 'finish-return',
+                    'showWarning'   => $hasUnHandledItems,
+                    'route'         => [
                         'method'        => 'patch',
                         'name'          => 'grp.models.return_delivery_note.state.returned',
                         'parameters'    =>  [
                             'returnDeliveryNote'    => $returnDeliveryNote->id
                         ]
                     ],
-                ],
+                ] : null
             ],
             default => []
         };
@@ -293,7 +298,8 @@ class ShowReturnDeliveryNote extends OrgAction
                 'slug'      => $deliveryNote->slug,
                 'id'        => $deliveryNote->id,
             ],
-            'refund'        => $returnDeliveryNote->refund ? InvoicesResource::make($returnDeliveryNote->refund)->resolve() : null
+            'refund'        => $returnDeliveryNote->refund ? InvoicesResource::make($returnDeliveryNote->refund)->resolve() : null,
+            'replacement'   => $returnDeliveryNote->replacement ? DeliveryNoteResource::make($returnDeliveryNote->replacement)->resolve() : null,
         ];
     }
 

@@ -340,6 +340,25 @@ const refundRoute = (refund) => {
 	}
 }
 
+const replacementRoute = (replacement) => {
+	switch(route().current()) {
+		case "grp.org.warehouses.show.dispatching.delivery_notes.show":
+			return route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
+				route().params["organisation"],
+				route().params["warehouse"],
+                replacement.slug,
+			])
+		case "grp.org.shops.show.ordering.return_delivery_notes.show":
+			return route("grp.org.shops.show.ordering.delivery-notes.show",[
+                route().params["organisation"],
+                route().params["shop"],
+                replacement.slug
+            ]);
+        default:
+            return '';
+	}
+}
+
 </script>
 
 <template>
@@ -470,7 +489,7 @@ const refundRoute = (refund) => {
                     {{ trans('Cash on Delivery') }}
                 </div>
 
-                <div v-if="boxStats.refund" class="font-semibold mt-2 text-base">
+                <div v-if="boxStats.refund || boxStats.state == 'done'" class="font-semibold mt-2 text-base">
                     {{ trans("Refund") }}
                 </div>
                 <div v-if="boxStats.refund" class="pl-2 w-max">
@@ -486,7 +505,35 @@ const refundRoute = (refund) => {
                         {{ trans('Refund has not been processed') }}
                     </span>
                 </div>
+                <div v-else-if="boxStats.state == 'done' && !boxStats.refund" class="pl-2 w-max">
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <span class="text-xs italic">
+                        - {{ 'No Refund' }}
+                    </span>
+                </div>
 
+                <div v-if="boxStats.replacement || boxStats.state == 'done'" class="font-semibold mt-2 text-base">
+                    {{ trans("Replacement") }}
+                </div>
+                <div v-if="boxStats.replacement" class="pl-2 w-max">
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <Link class="primaryLink" :href="replacementRoute(boxStats.replacement)">
+                        {{ boxStats.replacement.reference }}
+                    </Link>
+                    <Icon 
+                        :data="boxStats.replacement.state_icon" 
+                        :class="boxStats.replacement.state !== 'dispatched' ? '!text-red-500 animate-pulse' : ''"
+                    />
+                    <span v-if="boxStats.replacement.state !== 'dispatched'" class="pl-1 text-xs italic text-gray-500">
+                        {{ trans('Replacement has not been processed') }}
+                    </span>
+                </div>
+                <div v-else-if="boxStats.state == 'done' && !boxStats.refund" class="pl-2 w-max">
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <span class="text-xs italic">
+                        - {{ 'No Replacement' }}
+                    </span>
+                </div>
             </div>
         </BoxStatPallet>
 

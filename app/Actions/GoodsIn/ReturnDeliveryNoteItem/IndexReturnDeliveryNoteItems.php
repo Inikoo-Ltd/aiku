@@ -75,11 +75,13 @@ class IndexReturnDeliveryNoteItems extends OrgAction
             ->select([
                 'return_delivery_note_items.id',
                 'return_delivery_note_items.original_transaction_id',
+                'return_delivery_note_items.delivery_note_items_id',
                 'return_delivery_note_items.state',
                 'return_delivery_note_items.total_item_damaged',
                 'return_delivery_note_items.total_item_not_returned',
                 'return_delivery_note_items.total_item_returned',
                 'return_delivery_note_items.total_expected_qty',
+                'delivery_note_items.quantity_dispatched as dn_dispatched_qty',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
