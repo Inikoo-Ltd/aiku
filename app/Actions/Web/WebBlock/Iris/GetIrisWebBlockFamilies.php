@@ -60,7 +60,7 @@ class GetIrisWebBlockFamilies
                 ->where(function ($query) use ($webpage) {
                     if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
                         $query->where('product_categories.department_id', $webpage->model_id)
-                            ->orWhereIn('product_categories.id', function ($sub) use ($webpage) {
+                            ->whereIn('product_categories.id', function ($sub) use ($webpage) {
                                 $sub->select('chm.model_id')
                                     ->from('collection_has_models as chm')
                                     ->where('chm.model_type', 'ProductCategory')
