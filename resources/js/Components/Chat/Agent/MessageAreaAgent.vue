@@ -48,10 +48,39 @@ const emit = defineEmits([
     "view-history",
     "view-user-profile",
     "view-message-details",
+    "transfer-agent-success",
 ])
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
+
+const isMyChat = computed(() => {
+    if (!props.session?.assigned_agent) return true
+    return String(props.session.assigned_agent.user_id ?? "") === String(layout?.user?.id ?? "")
+})
+
+const isTakingOver = ref(false)
+const takeoverChat = async () => {
+    if (!props.session?.ulid || isTakingOver.value) return
+    isTakingOver.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.patch(
+            route("grp.org.chat.agents.takeover", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent.user_id = layout?.user?.id
+            props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
+        }
+        emit("transfer-agent-success")
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to take over chat"), type: "error" })
+    } finally {
+        isTakingOver.value = false
+    }
+}
 
 const messagesLocal = ref<LocalChatMessage[]>([])
 const newMessage = ref("")
@@ -693,8 +722,26 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer v-if="!isClosed" class="px-3 py-2 bg-white">
+        <!-- Footer: Takeover banner for team chats -->
+        <footer v-if="!isClosed && !isMyChat" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
+                <div class="text-xs text-indigo-600">
+                    <span class="font-semibold">{{ props.session?.assigned_agent?.name }}</span>
+                    {{ trans(' is handling this chat') }}
+                </div>
+                <Button
+                    @click="takeoverChat"
+                    :loading="isTakingOver"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Take Over')"
+                    :icon="['far', 'fa-user']"
+                />
+            </div>
+        </footer>
+
+        <!-- Footer: Normal message input -->
+        <footer v-else-if="!isClosed" class="px-3 py-2 bg-white">
             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
                 @change="handleImageSelect" />
             <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
