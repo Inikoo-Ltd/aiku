@@ -73,6 +73,7 @@ class GetWebBlockFamilies
                         $query->where('product_categories.sub_department_id', $webpage->model_id);
                     }
                 })
+                ->where('product_categories.shop_id', $webpage->shop_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)
@@ -108,6 +109,7 @@ class GetWebBlockFamilies
                 ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id)
+                ->where('product_categories.shop_id', $webpage->shop_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)

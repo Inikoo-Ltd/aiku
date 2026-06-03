@@ -680,6 +680,14 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+            $this->logSchedule(
+                $schedule->command('charge:hydrate-stats')->dailyAt('02:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ChargeHydrateStats',
+                ),
+                name: 'ChargeHydrateStats',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 

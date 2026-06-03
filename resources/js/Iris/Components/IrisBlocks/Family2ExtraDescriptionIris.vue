@@ -3,6 +3,7 @@ import { computed, inject, ref } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
 import About from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/About.vue"
+import MarketingMaterials from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/MarketingMaterials.vue"
 
 const props = defineProps<{
   fieldValue: any
@@ -34,10 +35,14 @@ const component = (tab: string) => {
   switch (tab) {
     case "about":
       return About
+    case "marketing":
+      return MarketingMaterials
     default:
       return null
   }
 }
+
+const isMobile = computed(() => props.screenType === "mobile")
 
 </script>
 
@@ -47,12 +52,24 @@ const component = (tab: string) => {
       :style="containerStyle">
       <!-- TOP NAV -->
       <div class="border-b border-[#9a9a9a]">
-        <div class="flex flex-wrap items-center justify-center lg:justify-end gap-3 md:gap-6 lg:gap-10 2xl:gap-14">
+        <!-- Mobile -->
+        <div v-if="isMobile" class="py-3">
+          <select v-model="activeTab"
+            class="w-full rounded-md border border-[#d9d9d9] bg-transparent px-4 py-3 text-[13px] focus:outline-none">
+            <option v-for="tab in tabs" :key="tab.key" :value="tab.key">
+              {{ tab.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Tablet & Desktop -->
+        <div v-else
+          class="flex flex-wrap items-center justify-center lg:justify-end gap-3 md:gap-6 lg:gap-10 2xl:gap-14">
           <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
             class="relative -mb-px border-b px-1 md:px-2 py-3 md:py-4 text-[10px] sm:text-[11px] md:text-[12px] transition-all duration-200"
             :class="activeTab === tab.key
-              ? 'border-primary text-primary'
-              : 'border-transparent text-[#9a9a9a]'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-[#9a9a9a]'
               ">
             {{ tab.label }}
           </button>

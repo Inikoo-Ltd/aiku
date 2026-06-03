@@ -5,6 +5,8 @@ import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage } from "@far"
+import { getBestOffer } from '@/Composables/useOffers'
+import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 
 interface FamilyImage {
   original: string
@@ -15,6 +17,7 @@ interface FamilyData {
   name?: string
   description?: string
   description_image?: Record<string, FamilyImage>
+  offers_data: object
 }
 
 interface FieldValue {
@@ -53,6 +56,11 @@ const images = computed<FamilyImage[]>(() => {
 const hasImage = (index: number) => {
   return Boolean(images.value?.[index]?.original)
 }
+
+const bestOffer = computed(() => {
+  return getBestOffer(props.fieldValue?.family?.offers_data)
+})
+
 </script>
 
 <template>
@@ -169,7 +177,7 @@ const hasImage = (index: number) => {
             ">
             <div class="min-w-0 flex-1">
               <h1 class="
-                  text-[22px]
+                  text-[18px]
                   font-bold
                   leading-[1.15]
                   text-[#12243c]
@@ -178,6 +186,13 @@ const hasImage = (index: number) => {
                 ">
                 {{ fieldValue.family?.name }}
               </h1>
+            </div>
+            <div class="flex  gap-x-1 gap-y-1 md:gap-y-2 offer">
+              <DiscountByType :offers_data="fieldValue?.family?.offers_data"
+                :template="bestOffer?.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr-v2' : 'max_discount'" />
+              <DiscountByType
+                v-if="!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) && bestOffer?.type == 'Category Quantity Ordered Order Interval'"
+                :offers_data="fieldValue?.family?.offers_data" :template="'triggers_labels_v2'" />
             </div>
           </div>
 
@@ -229,4 +244,29 @@ const hasImage = (index: number) => {
   </section>
 </template>
 
-<style scoped></style>
+<style scoped>
+:deep(.offer .vd-content) {
+    @apply flex flex-col justify-center -ml-4 pl-7 pr-3 my-0.5 mr-0.5 rounded-md bg-gray-900 shadow-sm min-w-0;
+}
+
+:deep(.offer .vd-triggers) {
+    @apply text-[10px] leading-tight opacity-80 truncate max-w-[65px];
+}
+
+.editor-class h1 {
+    font-size: 1.75rem; /* mobile */
+}
+
+@media (min-width: 1280px) {
+    .editor-class h1 {
+        font-size: 1.8rem; /* xl */
+    }
+}
+
+@media (min-width: 1536px) {
+    .editor-class h1 {
+        font-size: 2.5rem; /* 2xl */
+    }
+}
+
+</style>
