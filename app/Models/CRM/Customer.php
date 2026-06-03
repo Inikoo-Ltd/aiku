@@ -600,6 +600,13 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
     }
 
+    public function trafficSources(): MorphToMany
+    {
+        return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
+            ->withPivot('share')
+            ->withTimestamps();
+    }
+
     public function tags(): MorphToMany
     {
         return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
