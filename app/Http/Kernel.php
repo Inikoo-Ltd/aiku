@@ -93,6 +93,13 @@ class Kernel extends HttpKernel
             AddFrameOptionsHeader::class
         ],
 
+        'devops' => [
+            ForceJsonResponse::class,
+            EnsureFrontendRequestsAreStateful::class,
+            SubstituteBindings::class,
+            AddFrameOptionsHeader::class
+        ],
+
         'bk-api' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,

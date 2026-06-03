@@ -10,4 +10,4 @@
 use App\Actions\DevOps\Server\GetServerInfo;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/host/{server}', GetServerInfo::class)->name('info');
+Route::get('/server/{server}', GetServerInfo::class)->name('devops.host.info');
