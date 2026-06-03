@@ -12,7 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Http\Resources\Dropshipping\DropshippingPortfolioResource;
+use App\Http\Resources\Dropshipping\FulfilmentPortfolioResource;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
@@ -55,7 +55,7 @@ class UpdateRetinaPortfolio extends RetinaAction
 
     public function jsonResponse(Portfolio $portfolio): array
     {
-        return DropshippingPortfolioResource::make($portfolio)->resolve();
+        return FulfilmentPortfolioResource::make($portfolio)->resolve();
     }
 
     public function authorize(ActionRequest $request): bool
@@ -68,6 +68,6 @@ class UpdateRetinaPortfolio extends RetinaAction
         $this->portfolio = $portfolio;
         $this->initialisation($request);
 
-        $this->handle($portfolio, $request->all());
+        return $this->handle($portfolio, $request->all());
     }
 }
