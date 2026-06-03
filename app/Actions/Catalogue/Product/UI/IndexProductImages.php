@@ -35,6 +35,7 @@ class IndexProductImages extends OrgAction
             ->select([
                 'media.*',
                 'model_has_media.sub_scope as sub_scope',
+                'model_has_media.caption as caption',
             ]);
 
         return $queryBuilder->allowedSorts(['size', 'name'])
