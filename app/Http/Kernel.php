@@ -98,7 +98,7 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            AddFrameOptionsHeader::class.
+            AddFrameOptionsHeader::class,
             DevOpsAuthenticationMiddleware::class
         ],
 
