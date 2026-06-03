@@ -28,7 +28,7 @@ const props = defineProps<{
 }>();
 
 const selectedPeriod = ref('day');
-const selectedMetric = ref('sent');
+const selectedMetric = ref('opened');
 
 const periods = [
     { key: 'day', label: 'Day' },
