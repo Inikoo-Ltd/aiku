@@ -296,6 +296,24 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function getPackageHandoverTimeslot(string $packageId): array
+    {
+        $path = "/fulfillment/$this->version/packages/$packageId/handover_time_slots";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getTracking(string $orderId): array
+    {
+        $path = "/fulfillment/$this->version/orders/$orderId/tracking";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function cancelFulfilOrder(string $orderId): array
     {
         $path = "/return_refund/$this->version/cancellations";
