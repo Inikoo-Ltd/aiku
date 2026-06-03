@@ -65,7 +65,7 @@ const bestOffer = computed(() => {
 
 <template>
   <section :id="`family-2`" component="family-2-iris">
-    <div class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14" :style="{
+    <div class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1800px] 2xl:px-14" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue?.container?.properties),
       width: 'auto'
@@ -80,8 +80,8 @@ const bestOffer = computed(() => {
                 w-[220px]
                 object-cover
                 sm:w-[290px]
-                xl:h-[320px]
-                xl:w-[340px]
+                lg:h-[320px]
+                lg:w-[340px]
                 2xl:h-[380px]
                 2xl:w-[420px]
               " />
@@ -94,8 +94,8 @@ const bestOffer = computed(() => {
               border border-gray-200
               bg-gray-100
               sm:w-[290px]
-              xl:h-[320px]
-              xl:w-[340px]
+              lg:h-[320px]
+              lg:w-[340px]
               2xl:h-[380px]
               2xl:w-[420px]
             ">
@@ -110,8 +110,8 @@ const bestOffer = computed(() => {
                   w-[105px]
                   object-cover
                   sm:w-[140px]
-                  xl:h-[157px]
-                  xl:w-[160px]
+                  lg:h-[157px]
+                  lg:w-[160px]
                   2xl:h-[187px]
                   2xl:w-[200px]
                 " />
@@ -124,8 +124,8 @@ const bestOffer = computed(() => {
                 border border-gray-200
                 bg-gray-100
                 sm:w-[140px]
-                xl:h-[157px]
-                xl:w-[160px]
+                lg:h-[157px]
+                lg:w-[160px]
                 2xl:h-[187px]
                 2xl:w-[200px]
               ">
@@ -139,8 +139,8 @@ const bestOffer = computed(() => {
                   w-[105px]
                   object-cover
                   sm:w-[140px]
-                  xl:h-[157px]
-                  xl:w-[160px]
+                  lg:h-[157px]
+                  lg:w-[160px]
                   2xl:h-[187px]
                   2xl:w-[200px]
                 " />
@@ -153,8 +153,8 @@ const bestOffer = computed(() => {
                 border border-gray-200
                 bg-gray-100
                 sm:w-[140px]
-                xl:h-[157px]
-                xl:w-[160px]
+                lg:h-[157px]
+                lg:w-[160px]
                 2xl:h-[187px]
                 2xl:w-[200px]
               ">
@@ -171,9 +171,9 @@ const bestOffer = computed(() => {
               gap-4
               text-center
               lg:text-left
-              xl:flex-row
-              xl:items-start
-              xl:justify-between
+              lg:flex-row
+              lg:items-start
+              lg:justify-between
             ">
             <div class="min-w-0 flex-1">
               <h1 class="
@@ -203,7 +203,7 @@ const bestOffer = computed(() => {
               leading-[1.6]
               text-[#1d2430]
               sm:text-[15px]
-              xl:text-[16px]
+              lg:text-[16px]
               2xl:space-y-2
               2xl:text-[19px]
             " v-html="cleanedDescription" />
@@ -222,7 +222,7 @@ const bestOffer = computed(() => {
 
             <a href="#family-2-extra-description">
               <button class="h-[38px]
-                rounded-xl
+                rounded-lg
                 border
                 border-[#333]
                 px-8
@@ -259,7 +259,7 @@ const bestOffer = computed(() => {
 
 @media (min-width: 1280px) {
     .editor-class h1 {
-        font-size: 1.8rem; /* xl */
+        font-size: 1.8rem; /* lg */
     }
 }
 
