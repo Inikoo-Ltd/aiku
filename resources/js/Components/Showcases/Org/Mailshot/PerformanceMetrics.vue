@@ -6,6 +6,7 @@ import { trans } from 'laravel-vue-i18n';
 const props = defineProps<{
     mailshotState: string;
     totalOpened: number;
+    totalClicked: number;
     timeSeriesData?: Array<{
         id: number;
         period: string;
