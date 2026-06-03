@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 03 Jun 2026 17:27:33 Indochina Time, Kuala Lumpur, Malaysia
@@ -12,7 +13,6 @@ use Illuminate\Http\Request;
 
 class DevOpsAuthenticationMiddleware
 {
-
     public function handle(Request $request, Closure $next)
     {
         $token = $request->header('X-DEVOPS-TOKEN');
