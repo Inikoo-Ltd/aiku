@@ -72,7 +72,7 @@ class WebBlockProductForWorkshopResource extends JsonResource
             'units'             => $units,
             'unit'              => $product->unit,
             'web_images'        => $product->web_images,
-            'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
+            'images'            => $product->bucket_images ? $this->getImagesData($product, true) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
         ];
     }
