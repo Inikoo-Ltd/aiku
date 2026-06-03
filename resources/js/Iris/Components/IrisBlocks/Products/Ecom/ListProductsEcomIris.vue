@@ -46,7 +46,7 @@ const props = defineProps<{
     webpageData?: any
     blockData?: {}
     screenType: "mobile" | "tablet" | "desktop"
-    code : string
+    code: string
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)
@@ -66,9 +66,9 @@ const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
 const totalProducts = ref(
-    props.fieldValue?.products?.meta?.last_page == 1 ? 
-    props.fieldValue.products.meta.total + get(props.fieldValue,['products_out_of_stock','meta','total'],0) : 
-    props.fieldValue.products.meta.total
+    props.fieldValue?.products?.meta?.last_page == 1 ?
+        props.fieldValue.products.meta.total + get(props.fieldValue, ['products_out_of_stock', 'meta', 'total'], 0) :
+        props.fieldValue.products.meta.total
 )
 const isShowFilters = ref(false)
 const isShowAside = ref(false)
@@ -157,8 +157,8 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
     if (isLoadMore) {
         isLoadingMore.value = true;
     } else {
-        if(firstLoad.value == 1)
-        isLoadingInitial.value = false;
+        if (firstLoad.value == 1)
+            isLoadingInitial.value = false;
     }
 
     const filters = buildFilters();
@@ -183,7 +183,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         const data = response.data;
 
         lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
-    
+
 
         if (useOutOfStock) {
             totalProducts.value =
@@ -270,8 +270,8 @@ const isAscending = ref(true)
 
 const getArrow = (key: typeof sortKey.value) => {
     if (sortKey.value !== key) return ""
-    if(sortKey.value == 'recommended') return ""
-    if(sortKey.value == 'created_at') return ""
+    if (sortKey.value == 'recommended') return ""
+    if (sortKey.value == 'created_at') return ""
     return isAscending.value ? "↑" : "↓"
 }
 
@@ -284,8 +284,8 @@ onMounted(() => {
 
     layout.buttonBasket = {
         buttonStyle: getStyles(props.fieldValue?.button?.properties, props.screenType, false),
-        buttonStyleLogin : getStyles(props.fieldValue?.buttonLogin?.properties, props.screenType),
-        buttonStyleHover : getStyles(props.fieldValue?.buttonHover?.properties, props.screenType, false),
+        buttonStyleLogin: getStyles(props.fieldValue?.buttonLogin?.properties, props.screenType),
+        buttonStyleHover: getStyles(props.fieldValue?.buttonHover?.properties, props.screenType, false),
         button: props.fieldValue?.button
     }
 
@@ -345,7 +345,7 @@ const toggleSort = (key: string) => {
         isAscending.value = true
     }
 
-    if(props.fieldValue?.sub_type == 'family' && key == 'recommended') orderBy.value = key
+    if (props.fieldValue?.sub_type == 'family' && key == 'recommended') orderBy.value = key
     /* if(key == 'created_at') orderBy.value = `-${key}` */
     else orderBy.value = isAscending.value ? key : `${key}`
     updateQueryParams()
@@ -408,9 +408,8 @@ const responsiveGridClass = computed(() => {
 
     const count = columnCount[props.screenType] ?? 1
 
-    if(layout.rightbasket?.show) 
-    {
-        if(props.screenType == 'mobile') return `grid-cols-2`
+    if (layout.rightbasket?.show) {
+        if (props.screenType == 'mobile') return `grid-cols-2`
         return `grid-cols-3`
     }
     return `grid-cols-${count}`
@@ -434,7 +433,8 @@ watch(
 
 <template>
 
-    <div  :id="fieldValue?.id ? fieldValue?.id  : 'list-products-ecom-iris'"  component="list-products-ecom-iris" class="">
+    <div :id="fieldValue?.id ? fieldValue?.id : 'list-products-ecom-iris'" component="list-products-ecom-iris"
+        class="">
         <ConfirmDialog>
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
@@ -442,26 +442,21 @@ watch(
         </ConfirmDialog>
         <div class="flex flex-col lg:flex-row" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-            ...getStyles(fieldValue.container?.properties, screenType)
+            ...getStyles(fieldValue.container?.properties, screenType),
         }">
 
             <!-- Sidebar Filters for Desktop -->
             <transition v-if="!props.fieldValue?.settings?.is_hide_filter" name="slide-fade">
                 <aside v-show="!isMobile && isShowAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
-                    <FilterProducts 
-                        v-model="filter" 
-                        :productCategory="props.fieldValue.model_id" 
-                        :search="q" 
-                        @handleSearch="handleSearch" 
-                        @update:search="(e)=> q = e"
-                    />
+                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" :search="q"
+                        @handleSearch="handleSearch" @update:search="(e) => q = e" />
                 </aside>
             </transition>
 
             <!-- Main Content -->
-            <div class="flex-1" >
+            <div class="flex-1">
                 <!-- Search & Sort -->
-                <div class="px-4 pt-3 pb-2 flex flex-col md:flex-row justify-between items-center gap-4" :style="{...getStyles(fieldValue?.container?.properties, screenType), paddingTop : '10px', paddingBottom : '0px'}">
+                <div class="pt-3 pb-2 flex flex-col md:flex-row justify-between items-center gap-4 px-0 2xl:px-[50px]">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
                         <template v-if="!props.fieldValue?.settings?.is_hide_filter">
                             <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-2 !w-auto"
@@ -488,8 +483,8 @@ watch(
                                 {{ products.length === 1 ? trans("product") : trans("products") }}
                             </span>
                         </div>
-                        
-                       <!--  <div class=" w-full" >
+
+                        <!--  <div class=" w-full" >
                             <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
                                 :placeholder="trans('Search products...')" :clear="true" :isLoading="isLoadingInitial"
                                 :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
@@ -548,8 +543,8 @@ watch(
                 </div> -->
 
                 <!-- Product Grid -->
-               <div :class="responsiveGridClass" class="grid gap-x-6 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 gap-y-10 p-3"
-                    :style="getStyles(fieldValue?.container?.properties, screenType)">
+                <div :class="responsiveGridClass"
+                    class="grid gap-x-6 gap-y-10 p-3 px-0 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 2xl:px-[50px]">
                     <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
                             <Skeleton height="200px" class="mb-3" />
@@ -561,24 +556,17 @@ watch(
 
 
 
-                    <template v-else-if="products.length" >
-                      <div
-                            v-for="(product, index) in products"
+                    <template v-else-if="products.length">
+                        <div v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class=" relative rounded flex md:flex-1 justify-center"
-                        >
-                            <RenderProduct 
-                                :code="code" 
-                                :product="product" 
-                                :key="index" 
-                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" 
+                            class=" relative rounded flex md:flex-1 justify-center">
+                            <RenderProduct :code="code" :product="product" :key="index"
+                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
                                 :button="fieldValue?.button"
-                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])" 
-                                :bestSeller="fieldValue.bestseller" 
-                                :screenType
-                            />
+                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])"
+                                :bestSeller="fieldValue.bestseller" :screenType />
                         </div>
 
                         <div v-if="fieldValue?.cards" v-for="card in fieldValue?.cards.filter((item) => item.visible)"
@@ -620,20 +608,15 @@ watch(
             <Drawer v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"
                 :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
-                    <FilterProducts  
-                        v-model="filter" 
-                        :productCategory="props.fieldValue.model_id" 
-                        :search="q" 
-                        @handleSearch="handleSearch" 
-                        @update:search="(e)=> q = e" 
-                    />
+                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" :search="q"
+                        @handleSearch="handleSearch" @update:search="(e) => q = e" />
                 </div>
             </Drawer>
         </div>
     </div>
-    
+
     <!-- <ReviewFamily v-if="layout?.iris?.website?.reviews_settings" :products="products" code="family" /> -->
-     
+
 </template>
 
 
@@ -658,15 +641,15 @@ aside {
 }
 
 
-.sort-button{
-   color: v-bind('search_sort_class?.color || null') !important;
-   font-family: v-bind('search_sort_class?.fontFamily || null') !important;
-   font-size: v-bind('search_sort_class?.fontSize || "14px"') !important;
-   font-style: v-bind('search_sort_class?.fontStyle || null') !important;
+.sort-button {
+    color: v-bind('search_sort_class?.color || null') !important;
+    font-family: v-bind('search_sort_class?.fontFamily || null') !important;
+    font-size: v-bind('search_sort_class?.fontSize || "14px"') !important;
+    font-style: v-bind('search_sort_class?.fontStyle || null') !important;
 }
 
-.icon-search{
-     color: v-bind('search_class?.color || null') !important;
+.icon-search {
+    color: v-bind('search_class?.color || null') !important;
     font-family: v-bind('search_class?.fontFamily || null') !important;
     font-size: v-bind('search_class?.fontSize || null') !important;
     font-style: v-bind('search_class?.fontStyle || null') !important;
@@ -688,19 +671,18 @@ aside {
     border-bottom-left-radius: v-bind('search_class?.borderBottomLeftRadius || null') !important;
     border-bottom-right-radius: v-bind('search_class?.borderBottomRightRadius || null') !important;
 
-  :deep(input) {
-    color: v-bind('search_class?.color || null') !important;
-    font-family: v-bind('search_class?.fontFamily || null') !important;
-    font-size: v-bind('search_class?.fontSize || null') !important;
-    font-style: v-bind('search_class?.fontStyle || null') !important;
-  }
+    :deep(input) {
+        color: v-bind('search_class?.color || null') !important;
+        font-family: v-bind('search_class?.fontFamily || null') !important;
+        font-size: v-bind('search_class?.fontSize || null') !important;
+        font-style: v-bind('search_class?.fontStyle || null') !important;
+    }
 
-  :deep(input::placeholder) {
-    color: v-bind('placeholder_class?.color || "#999"') !important;
-    font-family: v-bind('placeholder_class?.fontFamily || "inherit"') !important;
-    font-size: v-bind('placeholder_class?.fontSize || null') !important;
-    font-style: v-bind('placeholder_class?.fontStyle || null') !important;
-  }
+    :deep(input::placeholder) {
+        color: v-bind('placeholder_class?.color || "#999"') !important;
+        font-family: v-bind('placeholder_class?.fontFamily || "inherit"') !important;
+        font-size: v-bind('placeholder_class?.fontSize || null') !important;
+        font-style: v-bind('placeholder_class?.fontStyle || null') !important;
+    }
 }
-
 </style>

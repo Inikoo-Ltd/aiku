@@ -123,7 +123,7 @@ defineExpose({
 
     <div class="flex items-center justify-between gap-x-6 mb-4">
         <div class="w-full md:w-1/4">
-            <PureInput v-model="tableFilter.search" placeholder="Search" :loading="loading" :copy-button="true"
+            <PureInput v-model="tableFilter.search" :placeholder="trans('Search')" :loading="loading" :copy-button="true"
                 @update:modelValue="() => getData()">
                 <template #copyButton>
                     <div

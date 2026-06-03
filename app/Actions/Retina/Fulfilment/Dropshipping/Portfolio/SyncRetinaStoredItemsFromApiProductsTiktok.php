@@ -75,10 +75,7 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                     }
 
                     $storedItem = StoredItem::where('fulfilment_customer_id', $tiktokUser->customer->fulfilmentCustomer->id)
-                        ->where(function ($query) use ($reference) {
-                            $query->where('slug', $reference)
-                                ->orWhere('reference', $reference);
-                        })
+                        ->where('reference', $reference)
                         ->first();
 
                     if ($shopType === ShopTypeEnum::FULFILMENT) {

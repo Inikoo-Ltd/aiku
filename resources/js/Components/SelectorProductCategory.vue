@@ -160,7 +160,7 @@ defineExpose({
     </TabView>
 
     <div class="my-3">
-      <PureInput v-model="query" placeholder="Search..." @update:modelValue="debounceFetch" />
+      <PureInput v-model="query" :placeholder="trans('Search...')" @update:modelValue="debounceFetch" />
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[400px] overflow-auto">
@@ -172,7 +172,7 @@ defineExpose({
         <FontAwesomeIcon v-if="isSelected(item.id)" icon="fas fa-check-circle"
           class="absolute top-2 right-2 text-green-500" />
 
-        <Image v-if="item.image" :src="item.image.thumbnail" class="w-full h-20 object-cover mb-2 rounded" />
+        <Image v-if="item.image" :src="item.image" class="w-full h-20 object-cover mb-2 rounded" />
 
         <div class="text-sm font-medium">
           {{ item.name }}

@@ -11,7 +11,7 @@ trait WithCalculateTransactionDiscount
     public function calculateTransactionDiscountTotal(Transaction $transaction)
     {
         if ($transaction->current_discount_factor) {
-            $discountedAmount = round((float) $transaction->gross_amount * $transaction->current_discount_factor, 2);
+            $discountedAmount = round((float) $transaction->gross_amount * $transaction->submitted_discount_factor, 2);
 
             DB::table('transactions')->where('id', $transaction->id)
                 ->update(

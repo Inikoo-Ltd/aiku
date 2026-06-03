@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -17,7 +17,6 @@ use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterFamily extends OrgAction
 {
@@ -75,13 +74,57 @@ class EditMasterFamily extends OrgAction
             ];
         }
 
+        // todo for tag product category,
+
+        /*  $tagRoute = [
+          'index_tag' => [
+              'name'       => 'grp.json.trade_units.tags.index',
+              'parameters' => [
+                  'tradeUnit' => 34102,
+              ]
+          ],
+          'store_tag' => [
+              'name'       => 'grp.models.trade-unit.tags.store',
+              'parameters' => [
+                  'tradeUnit' => 34102,
+              ]
+          ],
+          'update_tag' => [
+              'name'       => 'grp.models.trade-unit.tags.update',
+              'parameters' => [
+                  'tradeUnit' => 34102,
+              ],
+              'method'    => 'patch'
+          ],
+          'delete_tag' => [
+              'name'       => 'grp.models.trade-unit.tags.delete',
+              'parameters' => [
+                  'tradeUnit' => 34102,
+              ],
+              'method'    => 'delete'
+          ],
+          'attach_tag' => [
+              'name'       => 'grp.models.trade-unit.tags.attach',
+              'parameters' => [
+                  'tradeUnit' => 34102,
+              ],
+              'method'    => 'post'
+          ],
+          'detach_tag' => [
+              'name'       => 'grp.models.trade-unit.tags.detach',
+              'parameters' => [
+                  'tradeUnit' => 34102,
+              ],
+              'method'    => 'delete'
+          ],
+        ]; */
+
         return Inertia::render(
             'EditModel',
             [
                 'warning'     => $masterProductCategory->productCategories ? [
                     'type'  => 'warning',
                     'title' => __('Important'),
-                    // 'text'  => __('Changing name or description may affect multiple families in various shops.'), // Turned off this one, obsolete warning
                     'text'  => __('Changes to this master name or descriptions will overwrite child product names and descriptions where “Follow Master” is enabled.'),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
@@ -121,6 +164,32 @@ class EditMasterFamily extends OrgAction
                                 ],
                             ]
                         ],
+                        // todo for tag product category,
+                        /* [
+                            'label'  => __('Tags'),
+                            'icon'   => 'fa-light fa-tags',
+                            'fields' => [
+                               'tags' => [
+                                    'type'  => 'tags-trade-unit',
+                                    'label' => __('Tags'),
+                                    'value' => [],
+                                    'tag_routes' => $tagRoute,
+                                    'noSaveButton'  => true,
+                                    'isWithRefreshFieldForm'    => true
+                                ],
+                            ]
+                        ], */
+                        /* [
+                            'label'  => __('FAQ'),
+                            'icon'   => 'fa-light fa-question-circle',
+                            'fields' => [
+                               'faq' => [
+                                    'type'  => 'faq',
+                                    'label' => __('FAQ'),
+                                    'value' => [],
+                                ],
+                            ]
+                        ], */
                         [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
@@ -145,9 +214,26 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toogle'  => [
-                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
-                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                        'heading2',
+                                        'heading3',
+                                        'fontSize',
+                                        'bold',
+                                        'italic',
+                                        'underline',
+                                        'bulletList',
+                                        "fontFamily",
+                                        'orderedList',
+                                        'blockquote',
+                                        'divider',
+                                        'alignLeft',
+                                        'alignRight',
+                                        "link",
+                                        'alignCenter',
+                                        'undo',
+                                        'redo',
+                                        'highlight',
+                                        'color',
+                                        'clear'
                                     ],
                                     'value'   => $masterProductCategory->description
                                 ],
@@ -158,9 +244,26 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toogle'  => [
-                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
-                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                        'heading2',
+                                        'heading3',
+                                        'fontSize',
+                                        'bold',
+                                        'italic',
+                                        'underline',
+                                        'bulletList',
+                                        "fontFamily",
+                                        'orderedList',
+                                        'blockquote',
+                                        'divider',
+                                        'alignLeft',
+                                        'alignRight',
+                                        "link",
+                                        'alignCenter',
+                                        'undo',
+                                        'redo',
+                                        'highlight',
+                                        'color',
+                                        'clear'
                                     ],
                                     'value'   => $masterProductCategory->description_extra
                                 ],
@@ -262,11 +365,11 @@ class EditMasterFamily extends OrgAction
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
                                 'vol_gr_offer' => [
-                                    'label'  => 'Vol / GR',
-                                    'information' => __('Any changes will affect the offer in all shops.'),
-                                    'type'   => 'vol_discount',
+                                    'label'         => 'Vol / GR',
+                                    'information'   => __('Any changes will affect the offer in all shops.'),
+                                    'type'          => 'vol_discount',
                                     'initial_value' => [
-                                        'item_quantity' => $masterProductCategory->gr_vol_discount_quantity,
+                                        'item_quantity'  => $masterProductCategory->gr_vol_discount_quantity,
                                         'percentage_off' => $masterProductCategory->gr_vol_discount_percentage,
                                     ],
                                 ],

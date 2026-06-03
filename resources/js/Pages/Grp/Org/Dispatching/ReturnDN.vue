@@ -8,6 +8,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import type { Component } from 'vue'
+import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
@@ -170,18 +171,22 @@ const setRefund = async (data: {}, fieldName: string) => {
 	set(refundedData.value, fieldName, data)
 }
 
-const isConfirmRefundModal = ref(false)
+const isFinishReturnModal = ref(false)
 const pendingRouteData = ref<any>(null)
 const isSubmittingRefund = ref(false)
 
+const createRefund 		= ref(true);
+const createReplacement = ref(true);
+
 const refundSummary = computed(() => {
 	const itemsData = (props.items as any)?.data ?? []
-	const entries = Object.entries(refundedData.value as Record<string, any>)
+	const entries = Object.entries(refundedData.value as Record<string, any>).filter((item) => item[1].refund_amount > 0);
 
 	const items = entries.map(([transactionId, refund]) => {
 		const originalItem = itemsData.find(
 			(i: any) => String(i.to_refund?.original_transaction_id) === String(transactionId)
 		)
+		
 		return {
 			transactionId,
 			quantity: refund.quantity ?? 0,
@@ -202,9 +207,53 @@ const refundSummary = computed(() => {
 	}
 })
 
+const replacementSummary = computed(() => {
+	const itemsData = (props.items as any)?.data ?? []
+	const entries = Object.entries(refundedData.value as Record<string, any>).filter((item) => item[1].replaced_quantity > 0);
+
+	const items = entries.map(([transactionId, replacement]) => {
+		const originalItem = itemsData.find(
+			(i: any) => String(i.to_refund?.original_transaction_id) === String(transactionId)
+		)
+		
+		return {
+			transactionId,
+			replacedAmount: replacement.replaced_quantity ?? 0,
+			currencyCode: replacement.currency_code ?? '',
+			stockCode: originalItem?.org_stock_code ?? transactionId,
+			stockName: originalItem?.org_stock_name ?? '',
+		}
+	})
+
+	return {
+		items,
+		totalItems: items.length,
+		totalQuantity: items.reduce((sum, item) => sum + item.replacedAmount, 0),
+	}
+})
+
 const finishProcessingRefund = (routeData: any) => {
-	pendingRouteData.value = routeData
-	isConfirmRefundModal.value = true
+	pendingRouteData.value = routeData;
+	createRefund.value = refundSummary.value.totalAmount > 0;
+	createReplacement.value = replacementSummary.value.totalQuantity > 0;
+	isFinishReturnModal.value = true
+}
+
+const setAsReturned = (routeData: any) => {
+	router.patch(
+		route(routeData.name, routeData.parameters),
+		{},
+		{
+			onSuccess: () => {},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message,
+					type: "error",
+				})
+			},
+		}
+	)
 }
 
 const confirmAndSubmitRefund = () => {
@@ -215,11 +264,13 @@ const confirmAndSubmitRefund = () => {
 	router.patch(
 		route(pendingRouteData.value.name, pendingRouteData.value.parameters),
 		{
-			refundedData: refundedData.value
+			refundedData: refundedData.value,
+			createRefund: createRefund.value,
+			createReplacement: createReplacement.value,
 		},
 		{
 			onSuccess: () => {
-				isConfirmRefundModal.value = false
+				isFinishReturnModal.value = false
 				notify({
 					title: trans("Success"),
 					text: trans("Successfully processed return with refunds"),
@@ -289,6 +340,42 @@ const confirmAndSubmitRefund = () => {
 			/>
 		</template>
 
+		<template #button-finish-return="{ action }">
+            <ModalConfirmation
+				v-if="action.showWarning"
+				:title="trans('Are you sure you want to finish returning this item?')"
+                :description="trans('Unprocessed items will be marked as not returned')"
+                isFullLoading
+				:noLabel="trans('Cancel')"
+			>
+                <template #default="{ isOpenModal, changeModel }">
+					<Button
+						@click="changeModel"
+						:label="action.label"
+						:icon="action.icon"
+						:type="action.type"
+						:style="action.style"
+					/>
+                </template>
+                <template #btn-yes>
+                    <Button 
+						:label="trans('Set as Returned')" 
+						@click="setAsReturned(action.route)"
+                        type="submit" 
+						:icon="action.icon" 
+					/>
+                </template>
+            </ModalConfirmation>
+			<Button
+				v-else
+				@click="setAsReturned(action.route)"
+				:label="action.label"
+				:icon="action.icon"
+				:type="action.type"
+				:style="action.style"
+			/>
+		</template>
+
 	</PageHeading>
 
 	<!-- Section: Box Note (TODO: update the routes ) -->
@@ -337,26 +424,40 @@ const confirmAndSubmitRefund = () => {
 	/>
 
 	<!-- Modal: Confirm Refund -->
-	<Modal :isOpen="isConfirmRefundModal" @close="isConfirmRefundModal = false" width="w-full max-w-2xl" :title="ctrans('Confirm Refund')">
+	<Modal :isOpen="isFinishReturnModal" @close="isFinishReturnModal = false" width="w-full max-w-2xl">
 		<div class="mt-2 flex flex-col gap-y-4">
 			<div class="px-4">
 				<div class="text-2xl font-bold text-center">
-					{{ ctrans("Refund Summary") }}
+					{{ ctrans("Return Summary") }}
 				</div>
 
 				<div class="text-center italic text-xs opacity-70 text-balance">
-					{{ ctrans("Check the summary of items to be refunded. You can go back and make changes if needed before confirming the refund.") }}
+					{{ ctrans("Check the summary of items to be refunded/replaced. You can go back and make changes if needed before confirming the refund.") }}
 				</div>
 			</div>
 
-			<div class="flex items-center gap-x-6 bg-gray-50 rounded px-4 py-3 text-sm">
+			<!-- Refund Data -->
+			<div class="flex items-center gap-x-6 bg-gray-50 rounded px-4 text-sm">
+				<div class="flex flex-col items-center text-xl font-bold">
+					{{ trans('Create Refund') }}
+				</div>
+				<div class="flex flex-col items-center text-xl font-bold ml-auto">
+					<ToggleSwitch v-model="createRefund" :disabled="refundSummary.totalAmount == 0">
+						<template #handle="{ checked }">
+							<FontAwesomeIcon
+								:icon="checked ? faCheck : faTimes"
+								:class="checked ? '' : 'text-red-500'"
+								class="text-xs"
+								fixed-width />
+						</template>
+					</ToggleSwitch>
+				</div>
+			</div>
+
+			<div class="flex items-center gap-x-6 bg-gray-50 rounded px-4 pb-1 text-sm" v-if="createRefund">
 				<div class="flex flex-col items-center">
 					<span class="text-2xl font-bold">{{ refundSummary.totalItems }}</span>
 					<span class="text-xs text-gray-500">{{ ctrans('Items') }}</span>
-				</div>
-				<div class="flex flex-col items-center">
-					<span class="text-2xl font-bold">{{ refundSummary.totalQuantity }}</span>
-					<span class="text-xs text-gray-500">{{ ctrans('Total Qty') }}</span>
 				</div>
 				<div class="flex flex-col items-center ml-auto">
 					<span class="text-2xl font-bold text-emerald-600">
@@ -366,13 +467,12 @@ const confirmAndSubmitRefund = () => {
 				</div>
 			</div>
 
-			<div class="overflow-auto max-h-64 rounded-md border border-gray-200">
+			<div class="overflow-auto max-h-64 rounded-md border border-gray-200" v-if="createRefund">
 				<table class="min-w-full divide-y divide-gray-200 text-sm">
 					<thead class="bg-gray-50 sticky top-0">
 						<tr>
 							<th class="px-3 py-2 text-left font-medium text-gray-600">{{ ctrans('Code') }}</th>
 							<th class="px-3 py-2 text-left font-medium text-gray-600">{{ ctrans('Item') }}</th>
-							<th class="px-3 py-2 text-right font-medium text-gray-600">{{ ctrans('Qty') }}</th>
 							<th class="px-3 py-2 text-right font-medium text-gray-600">{{ ctrans('Refund Amount') }}</th>
 						</tr>
 					</thead>
@@ -380,7 +480,6 @@ const confirmAndSubmitRefund = () => {
 						<tr v-for="item in refundSummary.items" :key="item.transactionId" class="hover:bg-gray-50">
 							<td class="px-3 py-2 text-gray-500 whitespace-nowrap">{{ item.stockCode }}</td>
 							<td class="px-3 py-2 text-gray-800">{{ item.stockName }}</td>
-							<td class="px-3 py-2 text-right text-gray-700">{{ item.quantity }}</td>
 							<td class="px-3 py-2 text-right font-medium text-emerald-600 whitespace-nowrap tabular-nums">
 								{{ item.currencyCode }} {{ item.netAmount.toFixed(2) }}
 							</td>
@@ -389,16 +488,66 @@ const confirmAndSubmitRefund = () => {
 				</table>
 			</div>
 
+			<!-- Replacement Data -->
+			 <div class="flex items-center gap-x-6 bg-gray-50 rounded px-4 text-sm">
+				<div class="flex flex-col items-center text-xl font-bold">
+					{{ trans('Create Replacement') }}
+				</div>
+				<div class="flex flex-col items-center text-xl font-bold ml-auto">
+					<ToggleSwitch v-model="createReplacement" :disabled="refundSummary.totalAmount == 0">
+						<template #handle="{ checked }">
+							<FontAwesomeIcon
+								:icon="checked ? faCheck : faTimes"
+								:class="checked ? '' : 'text-red-500'"
+								class="text-xs"
+								fixed-width />
+						</template>
+					</ToggleSwitch>
+				</div>
+			</div>
+
+			<div class="flex items-center gap-x-6 bg-gray-50 rounded px-4 pb-1 text-sm" v-if="createReplacement">
+				<div class="flex flex-col items-center">
+					<span class="text-2xl font-bold">{{ replacementSummary.totalItems }}</span>
+					<span class="text-xs text-gray-500">{{ ctrans('Items') }}</span>
+				</div>
+				<div class="flex flex-col items-center ml-auto">
+					<span class="text-2xl font-bold text-emerald-600">{{ replacementSummary.totalQuantity }}</span>
+					<span class="text-xs text-gray-500">{{ ctrans('Total Items Replaced') }}</span>
+				</div>
+			</div>
+
+			<div class="overflow-auto max-h-64 rounded-md border border-gray-200" v-if="createReplacement">
+				<table class="min-w-full divide-y divide-gray-200 text-sm">
+					<thead class="bg-gray-50 sticky top-0">
+						<tr>
+							<th class="px-3 py-2 text-left font-medium text-gray-600">{{ ctrans('Code') }}</th>
+							<th class="px-3 py-2 text-left font-medium text-gray-600">{{ ctrans('Item') }}</th>
+							<th class="px-3 py-2 text-right font-medium text-gray-600">{{ ctrans('Replaced Qty') }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100 bg-white">
+						<tr v-for="item in replacementSummary.items" :key="item.transactionId" class="hover:bg-gray-50">
+							<td class="px-3 py-2 text-gray-500 whitespace-nowrap">{{ item.stockCode }}</td>
+							<td class="px-3 py-2 text-gray-800">{{ item.stockName }}</td>
+							<td class="px-3 py-2 text-right font-medium text-emerald-600 whitespace-nowrap tabular-nums">
+								{{ item.replacedAmount }}
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
 			<div class="flex gap-x-3 justify-end pt-2">
 				<Button
-					@click="isConfirmRefundModal = false"
+					@click="isFinishReturnModal = false"
 					:label="ctrans('Cancel')"
 					type="tertiary"
 					:disabled="isSubmittingRefund"
 				/>
 				<Button
 					@click="confirmAndSubmitRefund"
-					:label="ctrans('Confirm Refund')"
+					:label="ctrans('Finish Return')"
 					icon="fas fa-box-check"
 					type="primary"
 					full

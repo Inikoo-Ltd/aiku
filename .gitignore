@@ -121,3 +121,4 @@ laradumps.yaml
 /.junie/*
 /nightowl/*
 /local_storage/*
+/devops/haproxy/facebook-bots.lst

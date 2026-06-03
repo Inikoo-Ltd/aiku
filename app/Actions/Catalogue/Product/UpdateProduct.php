@@ -194,7 +194,7 @@ class UpdateProduct extends OrgAction
                 CloseWebpage::make()->action(
                     $product->webpage,
                     [
-                        'redirect_type' => RedirectTypeEnum::TEMPORAL,
+                        'redirect_type' => RedirectTypeEnum::PERMANENT,
                         'to_webpage_id' => $product->webpage->website->storefront_id
                     ]
                 );

@@ -510,40 +510,99 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         </template>
 
         <template #cell(action)="{ item, proxyItem}">
-            <div v-if="item.to_refund.max_refundable_amount > 0" class="flex flex-col items-start gap-3 w-fit">
-                <InputNumber
-                    :modelValue="proxyItem.to_refund.net_amount"
-                    @input="(e) => (set(proxyItem.to_refund, 'net_amount', e.value))"
-                    @update:model-value="(e) => {
-                        set(proxyItem.to_refund, 'refund_amount', e);
-                        emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
-                    }"
-                    buttonLayout="horizontal"
-                    :showButtons="true"
-                    :min="0"
-                    :max="proxyItem.to_refund.max_refundable_amount"
-                    :currency="proxyItem.to_refund.currency_code"
-                    :maxFractionDigits="2"
-                    mode="currency"
-                    :input-style="{ width : '100px'}"
-                    :step="proxyItem.to_refund.original_item_net_price"
-                >
-                    <template #decrementicon>
-                        <FontAwesomeIcon :icon="faMinus" aria-hidden="true" />
-                    </template>
-                    <template #incrementicon>
-                        <FontAwesomeIcon :icon="faPlus" aria-hidden="true" />
-                    </template>
-                </InputNumber>
-                <button
-                    @click="()=> {
-                        proxyItem.to_refund.net_amount = item.to_refund.max_refundable_amount;
-                        set(proxyItem.to_refund, 'refund_amount', item.to_refund.max_refundable_amount);
-                        emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
-                    }"
-                    class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
-                    {{ trans("Refundable") }}: {{ locale.currencyFormat(item.to_refund.currency_code, item.to_refund.max_refundable_amount)}}
-                </button>
+            <div class="flex flex-row fit-content gap-3">
+                <div v-if="item.to_refund.quantity > 0" class="flex flex-col items-start gap-2 w-fit">
+                    <span class="text-xs italic">
+                        {{ trans("Refundable") }}
+                    </span>
+                    <InputNumber
+                        :modelValue="proxyItem.to_refund.net_amount"
+                        @input="(e) => {
+                            let maxReplacableAmount = Math.round((proxyItem.to_refund.original_max_refundable_amount - Number(e.value)) / proxyItem.to_refund.original_item_net_price);
+                            set(proxyItem.to_refund, 'net_amount', e.value)
+                            set(proxyItem.to_refund, 'max_replace_amount', maxReplacableAmount);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        @update:model-value="(e) => {
+                            set(proxyItem.to_refund, 'refund_amount', e);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        buttonLayout="horizontal"
+                        :showButtons="true"
+                        :min="0"
+                        :max="proxyItem.to_refund.max_refundable_amount"
+                        :currency="proxyItem.to_refund.currency_code"
+                        :maxFractionDigits="2"
+                        mode="currency"
+                        :input-style="{ width : '100px'}"
+                        :step="proxyItem.to_refund.original_item_net_price"
+                    >
+                        <template #decrementicon>
+                            <FontAwesomeIcon :icon="faMinus" aria-hidden="true" />
+                        </template>
+                        <template #incrementicon>
+                            <FontAwesomeIcon :icon="faPlus" aria-hidden="true" />
+                        </template>
+                    </InputNumber>
+                    <button
+                        @click="()=> {
+                            proxyItem.to_refund.net_amount = item.to_refund.max_refundable_amount;
+                            set(proxyItem.to_refund, 'refund_amount', item.to_refund.max_refundable_amount);
+                            let maxReplacableAmount = Math.round((proxyItem.to_refund.original_max_refundable_amount - proxyItem.to_refund.net_amount) / proxyItem.to_refund.original_item_net_price);
+                            set(proxyItem.to_refund, 'max_replace_amount', maxReplacableAmount);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
+                        {{ trans("Refundable") }}: {{ locale.currencyFormat(item.to_refund.currency_code, item.to_refund.max_refundable_amount)}}
+                    </button>
+                </div>
+                <div v-if="item.to_refund.quantity > 0" class="flex flex-col items-start gap-2 w-fit">
+                    <span class="text-xs italic">
+                        {{ trans("Replacable") }}
+                    </span>
+                    <InputNumber
+                        :modelValue="proxyItem.to_refund.replaced_quantity"
+                        @input="(e) => {
+                            let maxRefundableAmount = proxyItem.to_refund.original_item_net_price * (proxyItem.to_refund.quantity - Number(e.value));
+                            set(proxyItem.to_refund, 'replaced_quantity', e.value);
+                            set(proxyItem.to_refund, 'max_refundable_amount', maxRefundableAmount);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        @update:model-value="(e) => {
+                            set(proxyItem.to_refund, 'replaced_quantity', e);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        buttonLayout="horizontal"
+                        :showButtons="true"
+                        :min="0"
+                        :max="proxyItem.to_refund.max_replace_amount"
+                        :maxFractionDigits="2"
+                        :input-style="{ width : '100px'}"
+                        :step="1"
+                    >
+                        <template #decrementicon>
+                            <FontAwesomeIcon :icon="faMinus" aria-hidden="true" />
+                        </template>
+                        <template #incrementicon>
+                            <FontAwesomeIcon :icon="faPlus" aria-hidden="true" />
+                        </template>
+                    </InputNumber>
+                    <button
+                        @click="()=> {
+                            proxyItem.to_refund.replaced_quantity = item.to_refund.max_replace_amount;
+                            let maxRefundableAmount = proxyItem.to_refund.original_item_net_price * (proxyItem.to_refund.quantity - proxyItem.to_refund.replaced_quantity);
+                            set(proxyItem.to_refund, 'replaced_quantity', item.to_refund.max_replace_amount);
+                            set(proxyItem.to_refund, 'max_refundable_amount', maxRefundableAmount);
+                            if (proxyItem.to_refund.refund_amount > maxRefundableAmount) {
+                                let newRefundValue = proxyItem.to_refund.refund_amount - (proxyItem.to_refund.replaced_quantity * proxyItem.to_refund.original_item_net_price);
+                                set(proxyItem.to_refund, 'net_amount', newRefundValue);
+                            }
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
+                        {{ trans("Replacable") }}: {{ proxyItem.to_refund.max_replace_amount }}
+                    </button>
+                </div>
             </div>
         </template>
     </Table>

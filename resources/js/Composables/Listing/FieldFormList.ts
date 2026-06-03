@@ -83,6 +83,7 @@ import EmergencyContact from '@/Components/Forms/Fields/EmergencyContact.vue'
 import WebsiteReview from '@/Components/Forms/Fields/WebsiteReview.vue'
 import InputTranslationWithOptionLanguages from '@/Components/Forms/Fields/InputTranslationWithOptionLanguages.vue'
 import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQrExpiry.vue'
+import InputFaq from '@/Components/Forms/Fields/InputFaq.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -167,7 +168,8 @@ export const componentsList: { [key: string]: Component } = {
     'website_reviews' : WebsiteReview,
     'input_translation_use_option' : InputTranslationWithOptionLanguages,
     'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
-    'job_title_select_create': JobTitleSelectCreate
+    'job_title_select_create': JobTitleSelectCreate,
+    'faq' : InputFaq,
 }
 
 export const getComponent = (componentName: string) => {

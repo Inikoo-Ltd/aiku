@@ -113,7 +113,7 @@ class EditShop extends OrgAction
 
             $typeLabel = $channel->type->labels()[$channel->type->value] ?? $channel->type->value;
             $salesChannelFields['sales_channel_' . $channel->id] = [
-                'label'       => $channel->name,
+                'label'       => __($channel->name),
                 'type'        => 'toggle',
                 'value'       => $shop->salesChannels->contains($channel->id),
                 'information' => __('Enable the :name sales channel. Active means it is available for this shop; inactive means it is not available for this shop.', ['name' => $channel->name]),
@@ -216,56 +216,56 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-books',
                     'fields' => [
                         'collection_follow_master' => [
-                            'label'         => 'Collection Content Follow Master',
+                            'label'         => __('Collection Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.collection_follow_master', false),
                             'information'   => __('This would force all Collections under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'department_follow_master' => [
-                            'label'         => 'Department Content Follow Master',
+                            'label'         => __('Department Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.department_follow_master', false),
                             'information'   => __('This would force all Departments under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'sub_department_follow_master' => [
-                            'label'         => 'Sub Department Content Follow Master',
+                            'label'         => __('Sub Department Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.sub_department_follow_master', false),
                             'information'   => __('This would force all Sub Departments under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'family_follow_master' => [
-                            'label'         => 'Family Content Follow Master',
+                            'label'         => __('Family Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.family_follow_master', false),
                             'information'   => __('This would force all Families under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'product_follow_master' => [
-                            'label'         => 'Product Content Follow Master',
+                            'label'         => __('Product Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.product_follow_master', false),
                             'information'   => __('This would force all Products under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'family_indexing_follow_master' => [
-                            'label'         => 'Family Page Product Index Follow Master',
+                            'label'         => __('Family Page Product Index Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.family_indexing_follow_master', true),
                             'information'   => __('This would force all Products under this shop to follow the family indexing updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'related_product_follow_master' => [
-                            'label'         => 'Related Product Follow Master',
+                            'label'         => __('Related Product Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.related_product_follow_master', false),
                             'information'   => __('This would force related products under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'related_product_categories_follow_master' => [
-                            'label'         => 'Related Product Category Follow Master',
+                            'label'         => __('Related Product Category Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.related_product_categories_follow_master', false),
                             'information'   => __('This would force related product categories under this shop to follow any updates done on master'),
@@ -300,10 +300,10 @@ class EditShop extends OrgAction
                             'min'         => 0
                         ],
                         'follow_master_pricing' => [
-                            'label'         => 'Follow Master Pricing',
+                            'label'         => __('Follow Master Pricing'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.follow_master_pricing', false),
-                            'information'   => 'Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio',
+                            'information'   => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio'),
                             'warningText'   => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio') .
                                 '. ' . __(':__amountProducts Products would be updated', ['__amountProducts' => $shop->products()->count()]) . '. ' . __('Are you sure you want to do this?'),
                         ],

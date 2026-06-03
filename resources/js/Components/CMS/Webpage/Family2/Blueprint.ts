@@ -1,90 +1,16 @@
 export default {
 	blueprint: [
 		{
-			label: "# Id ",
-			key: ["id"],
-			type: "text",
-			information : 'id selector is used to select one unique element!'
-		},
-		{
 			label: "Responsive Visibility",
 			key: ["container", "properties", "visibility"],
 			type: "visibility",
 			useIn: ["desktop", "tablet", "mobile"],
 		},
 		{
-			label: "Column position",
-			key: ["column_position"],
-			type: "select-button",
-			useIn: ["desktop", "tablet", "mobile"],
-			defaultValue : 'Image-left',
-			props_data:{
-				options : [ "Image-left", "Image-right" ],
-			}
-		},
-		/* {
-			name: "Image",
-			key: ["image"],
-			replaceForm: [
-				{
-					key: ["source"],
-					label: "Image",
-					type: "image-cropped",
-					props_data: {
-						stencilProps: {
-							aspectRatio: [16 / 9, null],
-							movable: true,
-							scalable: true,
-							resizable: true,
-						},
-					},
-				},
-				{
-					key: ["alt"],
-					label: "Alternate Text",
-					type: "text",
-				},
-				{
-					key: ["link"],
-					label: "Link",
-					type: "link",
-				},
-				{
-					key: ['container',"properties",'dimension'],
-					label: "Dimension",
-					type: "dimension",
-					useIn: ["desktop", "tablet", "mobile"],
-				}
-			]
-		}, */
-		/* {
-			name: "Text Block",
-			key: ["text_block"],
-			replaceForm: [
-				{
-					key: ["properties", "padding"],
-					useIn: ["desktop", "tablet", "mobile"],
-					label: "Padding",
-					type: "padding",
-				},
-				{
-					key: ["properties", "margin"],
-					useIn: ["desktop", "tablet", "mobile"],
-					label: "Margin",
-					type: "margin",
-				},
-			],
-		}, */
-		{
 			name: "Button",
 			key: ["button"],
 			editGlobalStyle: "button",
 			replaceForm: [
-				/* {
-					key: ["link"],
-					label: "Link",
-					type: "link",
-				}, */
 				{
 					key: ["text"],
 					label: "Text",

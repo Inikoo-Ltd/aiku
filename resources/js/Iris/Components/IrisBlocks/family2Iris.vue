@@ -1,240 +1,232 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject } from "vue"
-import { get, isPlainObject } from "lodash-es"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import { getStyles } from "@/Composables/styles"
 
 import Image from "@common/Components/Image.vue"
-import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
-import { getBestOffer } from "@/Composables/useOffers"
+import { getStyles } from "@/Composables/styles"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faImage } from "@far"
 
-import { faChevronCircleLeft, faChevronCircleRight } from "@far"
+interface FamilyImage {
+  original: string
+  alt?: string
+}
 
-import { Swiper, SwiperSlide } from "swiper/vue"
-import { Navigation } from "swiper/modules"
+interface FamilyData {
+  name?: string
+  description?: string
+  description_image?: Record<string, FamilyImage>
+}
 
-import "swiper/css"
-import "swiper/css/navigation"
+interface FieldValue {
+  id?: string | number
+  family?: FamilyData
+  container?: {
+    properties?: Record<string, unknown>
+  }
+}
 
-library.add(faChevronCircleLeft, faChevronCircleRight)
+type ScreenType = "mobile" | "tablet" | "desktop"
 
 const props = defineProps<{
-  fieldValue: any
-  screenType: "mobile" | "tablet" | "desktop"
+  fieldValue: FieldValue
+  screenType: ScreenType
   indexBlock: number
 }>()
 
-const layout: any = inject("layout", {})
-
-const showImage = computed(() => props.screenType !== "mobile")
-
-const offersData = computed(() => props.fieldValue?.family?.offers_data)
-const bestOffer = computed(() => getBestOffer(offersData.value))
-
-const showTriggers = computed(() => {
-  if (!bestOffer.value) return false
-  return (
-    !(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) &&
-    bestOffer.value.type === "Category Quantity Ordered Order Interval"
-  )
-})
+const layout = inject<Record<string, any>>("layout", {})
 
 const cleanedDescription = computed(() => {
   const html = props.fieldValue?.family?.description || ""
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
 
-const columnPosition = computed(() => {
-  const raw = get(props.fieldValue, ["column_position"])
-  if (!isPlainObject(raw)) return raw
-  return raw?.[props.screenType] ?? raw?.desktop ?? "Image-right"
-})
-
-const isImageLeft = computed(() => columnPosition.value === "Image-right")
-
-const imageOrder = computed(() => (isImageLeft.value ? "order-1" : "order-2"))
-const textOrder = computed(() => (isImageLeft.value ? "order-2" : "order-1"))
-
-const images = computed(() => {
+const images = computed<FamilyImage[]>(() => {
   const data = props.fieldValue?.family?.description_image
 
   if (!data) return []
 
-  return Object.values(data)
-    .map((item: any) => item )
-    .filter(Boolean)
+  return Object.values(data).filter(
+    (item) => item && item.original
+  )
 })
 
-console.log(props)
+const hasImage = (index: number) => {
+  return Boolean(images.value?.[index]?.original)
+}
 </script>
 
 <template>
-  <div class="w-full"  :id="fieldValue?.id ? fieldValue?.id : 'family-2'+indexBlock"  :style="{
+  <section :id="`family-2`" component="family-2-iris">
+    <div class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue?.container?.properties, screenType)
+      ...getStyles(fieldValue?.container?.properties),
+      width: 'auto'
     }">
+      <div class="flex flex-col gap-6 lg:flex-row">
+        <!-- IMAGE SECTION -->
+        <div class="flex shrink-0 justify-center gap-[6px]">
+          <!-- IMAGE 1 -->
+          <template v-if="hasImage(0)">
+            <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'" class="
+                h-[280px]
+                w-[220px]
+                object-cover
+                sm:w-[290px]
+                xl:h-[320px]
+                xl:w-[340px]
+                2xl:h-[380px]
+                2xl:w-[420px]
+              " />
+          </template>
 
-    <!-- 🔧 LIMIT WIDTH biar tidak melebar di 2xl -->
-    <div class="mx-auto max-w-[2000px] w-full px-4 md:px-8 xl:px-12" id="family-description" >
-
-      <div class="grid w-full grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
-
-        <!-- IMAGE -->
-        <div
-          v-if="showImage"
-          :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
-          class="relative w-full overflow-hidden
-                 aspect-[4/]
-                 max-h-[500px] md:max-h-[550px] xl:max-h-[600px] 2xl:max-h-[650px]"
-          :class="imageOrder"
-        >
-
-          <!-- NAV -->
-          <div v-if="images.length > 1" class="nav-btn left-3 swiper-btn-prev">
-            <FontAwesomeIcon icon="far fa-chevron-circle-left" />
+          <div v-else class="
+              flex items-center justify-center
+              h-[280px]
+              w-[220px]
+              border border-gray-200
+              bg-gray-100
+              sm:w-[290px]
+              xl:h-[320px]
+              xl:w-[340px]
+              2xl:h-[380px]
+              2xl:w-[420px]
+            ">
+            <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
           </div>
 
-          <div v-if="images.length > 1" class="nav-btn right-3 swiper-btn-next">
-            <FontAwesomeIcon icon="far fa-chevron-circle-right" />
-          </div>
+          <div class="flex flex-col gap-[6px]">
+            <!-- IMAGE 2 -->
+            <template v-if="hasImage(1)">
+              <Image :src="images[1].original" :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
+                  h-[137px]
+                  w-[105px]
+                  object-cover
+                  sm:w-[140px]
+                  xl:h-[157px]
+                  xl:w-[160px]
+                  2xl:h-[187px]
+                  2xl:w-[200px]
+                " />
+            </template>
 
-          <!-- MULTI -->
-          <Swiper
-            v-if="images.length > 1"
-            :modules="[Navigation]"
-            :slides-per-view="1"
-            :loop="true"
-            :navigation="{ prevEl: '.swiper-btn-prev', nextEl: '.swiper-btn-next' }"
-            class="w-full h-full"
-          >
-            <SwiperSlide v-for="(img, i) in images" :key="i">
-              <div class="relative w-full h-full">
-                <Image
-                  :src="img.original"
-                  :imageCover="true"
-                  class="absolute inset-0 w-full h-full object-cover object-center"
-                />
-              </div>
-            </SwiperSlide>
-          </Swiper>
-
-          <!-- SINGLE -->
-          <div v-else class="relative w-full h-full">
-            <Image
-              :src="images[0]?.original"
-              :imageCover="true"
-              class="absolute inset-0 w-full h-full object-cover object-center"
-            />
-          </div>
-
-        </div>
-
-        <!-- TEXT -->
-        <div
-          class="flex flex-col justify-center items-center text-center px-2 md:px-4
-                 md:items-start md:text-left"
-          :class="textOrder"
-        >
-          <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">
-            {{ fieldValue.family.name }}
-          </h1>
-
-           <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"  class="discount-wrapper">
-
-              <div
-                :class="bestOffer?.type === 'Category Quantity Ordered Order Interval' ? 'flex gap-3' : 'discount-grid'">
-
-                <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data"
-                  template="triggers_labels" class="discount-item discount-span" />
-
-                <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
-                  ? 'active-inactive-gr'
-                  : 'max_discount'" class="discount-item" />
-              </div>
-
+            <div v-else class="
+                flex items-center justify-center
+                h-[137px]
+                w-[105px]
+                border border-gray-200
+                bg-gray-100
+                sm:w-[140px]
+                xl:h-[157px]
+                xl:w-[160px]
+                2xl:h-[187px]
+                2xl:w-[200px]
+              ">
+              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
             </div>
 
-          <div
-            v-html="cleanedDescription"
-            class="text-gray-600 leading-relaxed text-sm md:text-base max-w-xl"
-          />
+            <!-- IMAGE 3 -->
+            <template v-if="hasImage(2)">
+              <Image :src="images[2].original" :imageCover="true" :alt="images[2]?.alt || 'family image'" class="
+                  h-[137px]
+                  w-[105px]
+                  object-cover
+                  sm:w-[140px]
+                  xl:h-[157px]
+                  xl:w-[160px]
+                  2xl:h-[187px]
+                  2xl:w-[200px]
+                " />
+            </template>
 
-          <div class="btn-wrapper">
-                <a href="#family-extra-description">
-                  <Button 
-                    :label="fieldValue?.button?.text"
-                    :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" 
-                  />
-                </a>
+            <div v-else class="
+                flex items-center justify-center
+                h-[137px]
+                w-[105px]
+                border border-gray-200
+                bg-gray-100
+                sm:w-[140px]
+                xl:h-[157px]
+                xl:w-[160px]
+                2xl:h-[187px]
+                2xl:w-[200px]
+              ">
+              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
             </div>
+          </div>
         </div>
 
+        <!-- CONTENT -->
+        <div class="flex min-w-0 flex-1 flex-col">
+          <div class="
+              flex
+              flex-col
+              gap-4
+              text-center
+              lg:text-left
+              xl:flex-row
+              xl:items-start
+              xl:justify-between
+            ">
+            <div class="min-w-0 flex-1">
+              <h1 class="
+                  text-[22px]
+                  font-bold
+                  leading-[1.15]
+                  text-[#12243c]
+                  sm:text-[24px]
+                  2xl:text-[30px]
+                ">
+                {{ fieldValue.family?.name }}
+              </h1>
+            </div>
+          </div>
+
+          <div class="
+              flex-1
+              space-y-[4px]
+              text-[14px]
+              leading-[1.6]
+              text-[#1d2430]
+              sm:text-[15px]
+              xl:text-[16px]
+              2xl:space-y-2
+              2xl:text-[19px]
+            " v-html="cleanedDescription" />
+
+          <div class="
+              mt-5
+              flex
+              flex-col
+              items-center
+              gap-4
+              xl:flex-row
+              xl:items-center
+              xl:justify-start
+              2xl:mt-8
+            ">
+
+            <a href="#family-2-extra-description">
+              <button class="h-[38px]
+                rounded-xl
+                border
+                border-[#333]
+                px-8
+                text-sm
+                font-medium
+                2xl:h-[48px]
+                2xl:px-12
+                2xl:text-base" :style="{
+                  ...getStyles(fieldValue?.button?.container?.properties)
+                }">
+                <span v-if="fieldValue?.button?.text">{{ fieldValue?.button?.text }}</span>
+                <span v-else>{{ ctrans('Learn more') }}</span>
+              </button>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
-
-  </div>
+  </section>
 </template>
 
-<style scoped>
-
-.btn-wrapper {
-  @apply flex justify-center md:justify-start mt-6;
-}
-
-.nav-btn {
-  @apply absolute top-1/2 -translate-y-1/2 z-10 cursor-pointer
-         text-gray-500 text-3xl opacity-70 hover:opacity-100;
-
-         
-}
-
-/* discount layout */
-.discount-wrapper {
-  @apply w-full mt-4 2xl:mt-5;
-}
-
-.discount-grid {
-  @apply grid grid-cols-3 gap-2 2xl:gap-3 items-center;
-}
-
-.discount-span {
-  @apply col-span-2;
-}
-
-.discount-item {
-  @apply min-w-0;
-}
-
-/* discount styles */
-.discount-wrapper :deep(.offer-max-discount) {
-  @apply bg-[#A80000] border border-red-900 text-gray-100 flex items-center rounded-sm
-         px-1.5 py-1
-         text-xs
-         mb-2;
-}
-.discount-span :deep(.percentage-text) {
-  @apply text-xs md:text-xs 2xl:text-base;
-}
-
-.discount-wrapper :deep(.gr-content) {
-  @apply w-full relative flex items-center text-xs md:text-xs 2xl:text-base;
-}
-
-.discount-wrapper :deep(.discount-percentage) {
-  @apply flex items-center text-white font-bold text-center px-2 md:px-7 text-lg md:text-xs 2xl:text-sm max-w-fit;
-}
-
-.discount-wrapper :deep(.discount-title) {
-  @apply whitespace-nowrap capitalize text-sm md:text-xxs 2xl:text-xs;
-}
-
-.discount-span :deep(.discount-triggers) {
-  @apply text-xxs md:text-xs whitespace-pre-line;
-}
-
-.discount-wrapper :deep(.gr-logo) {
-  height: 3em;
-}
-</style>
+<style scoped></style>
