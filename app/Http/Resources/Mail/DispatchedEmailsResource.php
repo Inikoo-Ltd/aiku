@@ -46,6 +46,14 @@ class DispatchedEmailsResource extends JsonResource
         $customer = $this->customer_id ? Customer::find($this->customer_id) : null;
         $order = $this->order_id ? Order::find($this->order_id) : null;
         $outbox = $this->outbox_id ? Outbox::find($this->outbox_id) : null;
+        $emailPreviewCodes = [
+            OutboxCodeEnum::DELIVERY_CONFIRMATION,
+            OutboxCodeEnum::ORDER_CONFIRMATION,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            OutboxCodeEnum::RENTAL_AGREEMENT,
+        ];
+        $hasEmailPreview = $outbox?->code?->value ? in_array($outbox->code, $emailPreviewCodes) : false;
 
         return array(
             'id'                           => $this->id,
@@ -70,6 +78,7 @@ class DispatchedEmailsResource extends JsonResource
             'shop_slug'                    => $customer?->shop?->slug ?? null,
             'fulfilment_customer_slug'     => $this->fulfilment_customer_slug,
             'outbox_code'                  => $outbox?->code?->value ? OutboxCodeEnum::from($outbox->code->value)->label() : null,
+            'has_email_preview'            => $hasEmailPreview,
         );
     }
 }
