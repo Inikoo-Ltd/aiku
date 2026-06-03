@@ -60,7 +60,7 @@ class GetIrisWebBlockFamilies
                 ->where(function ($query) use ($webpage) {
                     if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
                         $query->where('product_categories.department_id', $webpage->model_id)
-                            ->whereIn('product_categories.id', function ($sub) use ($webpage) {
+                            ->orWhereIn('product_categories.id', function ($sub) use ($webpage) {
                                 $sub->select('chm.model_id')
                                     ->from('collection_has_models as chm')
                                     ->where('chm.model_type', 'ProductCategory')
@@ -74,6 +74,7 @@ class GetIrisWebBlockFamilies
                         $query->where('product_categories.sub_department_id', $webpage->model_id);
                     }
                 })
+                ->where('product_categories.shop_id', $webpage->shop_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)
@@ -109,6 +110,7 @@ class GetIrisWebBlockFamilies
                 ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id)
+                ->where('product_categories.shop_id', $webpage->shop_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)
