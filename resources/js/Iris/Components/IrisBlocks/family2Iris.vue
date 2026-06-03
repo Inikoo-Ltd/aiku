@@ -5,6 +5,8 @@ import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage } from "@far"
+import { getBestOffer } from '@/Composables/useOffers'
+import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 
 interface FamilyImage {
   original: string
@@ -15,6 +17,7 @@ interface FamilyData {
   name?: string
   description?: string
   description_image?: Record<string, FamilyImage>
+  offers_data: object
 }
 
 interface FieldValue {
@@ -53,6 +56,11 @@ const images = computed<FamilyImage[]>(() => {
 const hasImage = (index: number) => {
   return Boolean(images.value?.[index]?.original)
 }
+
+const bestOffer = computed(() => {
+  return getBestOffer(props.fieldValue?.family?.offers_data)
+})
+
 </script>
 
 <template>
@@ -178,6 +186,13 @@ const hasImage = (index: number) => {
                 ">
                 {{ fieldValue.family?.name }}
               </h1>
+            </div>
+            <div class="flex flex-col md:flex-row gap-x-4 gap-y-1 md:gap-y-2">
+              <DiscountByType :offers_data="fieldValue?.family?.offers_data"
+                :template="bestOffer?.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr-v2' : 'max_discount'" />
+              <DiscountByType
+                v-if="!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) && bestOffer?.type == 'Category Quantity Ordered Order Interval'"
+                :offers_data="fieldValue?.family?.offers_data" :template="'triggers_labels_v2'" />
             </div>
           </div>
 
