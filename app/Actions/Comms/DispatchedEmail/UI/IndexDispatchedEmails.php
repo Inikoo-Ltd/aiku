@@ -96,6 +96,7 @@ class IndexDispatchedEmails extends OrgAction
             'dispatched_emails.sent_at as sent_at',
             'dispatched_emails.number_reads',
             'dispatched_emails.number_clicks',
+            'dispatched_emails.outbox_id',
         ];
 
         if ($parent instanceof Outbox) {
@@ -150,6 +151,10 @@ class IndexDispatchedEmails extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'email_address', label: __('Email'), canBeHidden: false, sortable: true);
+
+            if ($parent instanceof Customer) {
+                $table->column(key: 'outbox_code', label: __('Type'), canBeHidden: false);
+            }
 
             $table->column(key: 'sent_at', label: __('Sent Date'), canBeHidden: false, sortable: true);
 
