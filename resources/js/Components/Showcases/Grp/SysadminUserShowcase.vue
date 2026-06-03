@@ -181,6 +181,7 @@ const force2FA = async () => {
 
         </dl>
 
+        {{ route('grp.models.user.update', {user: props.data.data.id}) }}
         <div class="w-48 py-6">
             <div class="mb-3 w-full">
                 <dt class="text-sm font-medium">{{ trans('Has 2FA') }}: </dt>

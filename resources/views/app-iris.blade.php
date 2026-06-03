@@ -167,6 +167,98 @@
     </div>
 </script>
 
+<script type="text/x-template" id="template-results">
+    <div class="lb-product-grid">
+        <result :result="result" v-for="(result, i) in results" :key="i"></result>
+    </div>
+</script>
+
+<script type="text/x-template" id="template-result-item">
+    <a :href="attributes?.web_url" class="lb-product-card" id="lb_product_card">
+        <!-- Image -->
+        <div class="lb-product-image-wrap">
+            <img
+                v-if="attributes.image_link"
+                :src="attributes.image_link"
+                :alt="attributes.title || ''"
+                class="lb-product-image"
+                :style="{ opacity: attributes.availability == 1 ? 1 : 0.4 }"
+                loading="lazy"
+            />
+            <div v-else class="lb-product-image-placeholder">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor">
+                    <path d="M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm16 336c0 8.822-7.178 16-16 16H48c-8.822 0-16-7.178-16-16V112c0-8.822 7.178-16 16-16h416c8.822 0 16 7.178 16 16v288zM112 232c30.928 0 56-25.072 56-56s-25.072-56-56-56-56 25.072-56 56 25.072 56 56 56zm0-80c13.234 0 24 10.766 24 24s-10.766 24-24 24-24-10.766-24-24 10.766-24 24-24zm207.029 23.029L224 270.059l-31.029-31.029c-9.373-9.373-24.569-9.373-33.941 0l-88 88A23.998 23.998 0 0 0 64 344v28c0 6.627 5.373 12 12 12h360c6.627 0 12-5.373 12-12v-92c0-6.365-2.529-12.47-7.029-16.971l-88-88c-9.373-9.372-24.569-9.372-33.942 0zM416 352H96v-4.686l80-80 48 48 112-112 80 80V352z"/>
+                </svg>
+            </div>
+
+            <!-- Out of Stock overlay -->
+            <div v-if="attributes.availability != 1" class="lb-oos-overlay">
+                <div class="lb-oos-label">Out of Stock</div>
+            </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="lb-product-info">
+            <!-- Code -->
+            <div style="display:flex;align-items:center;gap:4px;">
+                <span v-if="attributes.product_code" class="lb-product-code">{{ attributes.product_code[0] }}</span>
+                <!-- Stock status -->
+                <span class="xlb-product-stock" cclass="attributes.availability == 1 ? 'lb-product-stock--in' : 'lb-product-stock--out'"
+                    :style="{
+                        color: attributes.availability == 1 ? '#16a34a' : '#dc2626',
+                        opacity: 0.8,
+                        fontSize: '2em',
+                        lineHeight: '0.1em',
+                    }"
+                >
+                    {{ attributes.availability == 1 ? '•' : '•' }}
+                </span>
+            </div>
+
+            <!-- Name -->
+            <span class="lb-product-title">{{ attributes.title }}</span>
+
+            <!-- Price -->
+            <div class="lb-product-footer">
+                {{ __("Excl. Vat") }}
+                <span v-if="attributes.formatted_price" class="lb-product-price">
+                    {{ attributes.formatted_price }}
+                </span>
+                <span v-else-if="attributes.price_amount" class="lb-product-price">
+                    {{ attributes.price_amount | price }}
+                </span>
+                <a v-else href="/app/login" class="lb-product-login-btn" @click.stop>
+                    Login for prices
+                </a>
+            </div>
+
+            <!-- <div class="border-b pb-2 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 whitespace-nowrap text-[9px] sm:text-[10px] md:text-[11px]"
+                v-if="product?.rrp_per_unit ?? 0 > 0"
+            >
+
+                <div class="flex items-baseline gap-1 leading-none" >
+                    <span class="text-xs">
+                        {{ trans("RRP") }}:
+                    </span>
+                    <span class="text-xs font-medium relative top-[1px]">
+                        {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-1 md:justify-end justify-start whitespace-nowrap min-w-0">
+
+                </div>
+            </div> -->
+        </div>
+    </a>
+</script>
+
+<!-- <script type="text/x-template" id="template-result-default">
+    <div class="lb-result-default">
+        rrrrrrrrrrrrrrrrrrrrrrrrrrrrrr {{ attributes.title }} - {{ url }}
+    </div>
+</script> -->
+
 <!-- List: template quick search to overrides -->
 <script type="text/x-template" id="template-quick-search-category"></script>
 <script type="text/x-template" id="template-quick-search-brand"></script>
