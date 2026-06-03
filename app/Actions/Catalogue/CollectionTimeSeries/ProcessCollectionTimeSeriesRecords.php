@@ -54,6 +54,8 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(CollectionTimeSeries $timeSeries, string $from, string $to): void
     {
+        $processedPeriods = [];
+
         $assetsIDs = $timeSeries->collection->products->pluck('id')->unique()->toArray();
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
@@ -83,6 +85,36 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
+                ]
+            );
+
+            $processedPeriods[] = $period;
+        }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+    }
+
+    protected function processPeriodsWithoutInvoices(CollectionTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'collection_time_series_id' => $timeSeries->id,
+                    'period'                    => $periodData['period'],
+                    'frequency'                 => $timeSeries->frequency->singleLetter()
+                ],
+                [
+                    'from'                        => $periodData['from'],
+                    'to'                          => $periodData['to'],
+                    'sales_external'              => 0,
+                    'sales_org_currency_external' => 0,
+                    'sales_grp_currency_external' => 0,
+                    'customers_invoiced'          => 0,
+                    'invoices'                    => 0,
+                    'refunds'                     => 0,
+                    'orders'                      => 0,
                 ]
             );
         }
