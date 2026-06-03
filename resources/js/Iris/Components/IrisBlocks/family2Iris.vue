@@ -177,7 +177,7 @@ const bestOffer = computed(() => {
             ">
             <div class="min-w-0 flex-1">
               <h1 class="
-                  text-[22px]
+                  text-[18px]
                   font-bold
                   leading-[1.15]
                   text-[#12243c]
@@ -187,7 +187,7 @@ const bestOffer = computed(() => {
                 {{ fieldValue.family?.name }}
               </h1>
             </div>
-            <div class="flex flex-col md:flex-row gap-x-4 gap-y-1 md:gap-y-2">
+            <div class="flex  gap-x-1 gap-y-1 md:gap-y-2 offer">
               <DiscountByType :offers_data="fieldValue?.family?.offers_data"
                 :template="bestOffer?.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr-v2' : 'max_discount'" />
               <DiscountByType
@@ -244,4 +244,29 @@ const bestOffer = computed(() => {
   </section>
 </template>
 
-<style scoped></style>
+<style scoped>
+:deep(.offer .vd-content) {
+    @apply flex flex-col justify-center -ml-4 pl-7 pr-3 my-0.5 mr-0.5 rounded-md bg-gray-900 shadow-sm min-w-0;
+}
+
+:deep(.offer .vd-triggers) {
+    @apply text-[10px] leading-tight opacity-80 truncate max-w-[65px];
+}
+
+.editor-class h1 {
+    font-size: 1.75rem; /* mobile */
+}
+
+@media (min-width: 1280px) {
+    .editor-class h1 {
+        font-size: 1.8rem; /* xl */
+    }
+}
+
+@media (min-width: 1536px) {
+    .editor-class h1 {
+        font-size: 2.5rem; /* 2xl */
+    }
+}
+
+</style>
