@@ -13,6 +13,7 @@ use App\Http\Middleware\AddSentryBrowserProfilingHeader;
 use App\Http\Middleware\AddFrameOptionsHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
 use App\Http\Middleware\CorneaAuthenticate;
+use App\Http\Middleware\DevOpsAuthenticationMiddleware;
 use App\Http\Middleware\DisableSSR;
 use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\HandleCorneaInertiaRequests;
@@ -97,7 +98,8 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            AddFrameOptionsHeader::class
+            AddFrameOptionsHeader::class.
+            DevOpsAuthenticationMiddleware::class
         ],
 
         'bk-api' => [
