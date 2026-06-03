@@ -49,7 +49,7 @@ class DispatchedEmailsInOrderResource extends JsonResource
                     'icon'    => 'fal fa-dumpster',
                 ] : [],
             'number_email_tracking_events' => $this->number_email_tracking_events,
-            'body_preview' => $this->is_body_encoded ? $this->decodeBodySafely($this->body) : $this->body,
+            'body_preview' => $this->is_body_encoded ? $this->decodeBodySafely($this->body_preview) : $this->body_preview,
 
         );
     }

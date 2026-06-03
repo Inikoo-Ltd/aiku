@@ -31,7 +31,7 @@ class GetEmailCopy
             'is_body_encoded' => $emailCopy->is_body_encoded,
             'created_at'      => $emailCopy->created_at,
             'updated_at'      => $emailCopy->updated_at,
-            'body_preview' => $emailCopy->is_body_encoded ? $this->decodeBodySafely($emailCopy->body_preview) : $emailCopy->body_preview,
+            'body_preview' => $emailCopy->is_body_encoded ? $this->decodeBodySafely($emailCopy->body) : $emailCopy->body,
         ];
     }
 
