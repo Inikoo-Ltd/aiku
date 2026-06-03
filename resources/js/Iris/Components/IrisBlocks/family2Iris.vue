@@ -214,9 +214,9 @@ const bestOffer = computed(() => {
               flex-col
               items-center
               gap-4
-              xl:flex-row
-              xl:items-center
-              xl:justify-start
+              lg:flex-row
+              lg:items-center
+              lg:justify-start
               2xl:mt-8
             ">
 

@@ -1,74 +1,50 @@
-<script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { ref, computed, inject } from 'vue'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { getStyles } from '@/Composables/styles'
-
-
-library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
+<script setup lang="ts">
+import { inject, ref, computed} from "vue"
+import { getStyles } from "@/Composables/styles"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 interface ModelTopbar2 {
-    greeting: {
+    main_title?: {
         text: string
-        visible: string
+        visible?: boolean
     }
-    main_title: {
-        text: string
-        visible: string // 'all'
+    container?: {
+        properties?: any
     }
-    infomation: {
+    information?: {
         text1: string
         text2: string
         text3: string
         text4: string
     }
-    container: {
-        properties: {
-            color: {
-
-            }
-            background: {
-
-            }
-        }
-    }
-
 }
-
-
 
 const model = defineModel<ModelTopbar2>()
 
-const isLoggedIn = inject('isPreviewLoggedIn', false)
-
+const isLoggedIn = inject<boolean>('isPreviewLoggedIn', false)
 
 const locale = inject('locale', aikuLocaleStructure)
-const layout = inject('layout', {})
+const layout = inject<Record<string, any> | null>('layout', null)
+const onLogout = inject<() => void | undefined>('onLogout')
 
-const isModalOpen = ref(false)
 
-const emits = defineEmits<{
-    (e: 'setPanelActive', value: string | number): void
-}>()
 
 
 const screenType = inject("screenType", "desktop")
-const informationItems = computed(() =>
-    [
+const informationItems = computed(() => {
+    const items = [
         model.value?.information?.text1,
         model.value?.information?.text2,
         model.value?.information?.text3,
         model.value?.information?.text4,
-    ].filter(item => item && item.trim())
-)
+    ]
 
-console.log('informationItems', model.value.information.text1)
+    return items.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+})
+
+
 
 </script>
-
 <template>
     <div id="top_bar_2_iris" class="
         py-2 px-4

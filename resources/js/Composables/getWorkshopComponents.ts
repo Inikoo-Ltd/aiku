@@ -19,14 +19,14 @@ import Overview2 from "@/Components/CMS/Webpage/Overview2/Overview2Workshop.vue"
 import Footer1 from '@/Components/CMS/Website/Footers/footerTheme1/Footer1Workshop.vue'
 import Topbar1 from '@/Components/CMS/Website/TopBars/Template/Topbar1/Topbar1Workshop.vue'
 import Topbar2 from '@/Components/CMS/Website/TopBars/Template/Topbar2/Topbar2Workshop.vue'
-import Topbar3 from '@/Components/CMS/Website/TopBars/Template/Topbar3/Topbar3Workshop.vue'
+
 import Header1 from '@/Components/CMS/Website/Headers/Header1/Header1Workshop.vue'
 import Header2 from '@/Components/CMS/Website/Headers/Header2/Header2Workshop.vue'
 import Menu1 from '@/Components/CMS/Website/Menus/Menu1Workshop.vue'
 import TextColumn from '@/Components/CMS/Webpage/TextColumn/TextColumnWorkshop.vue'
 import Topbar1Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Topbar1FulfilmentWorkshop.vue'
 import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Topbar2FulfilmentWorkshop.vue' 
-import Topbar3Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Topbar3FulfilemntWorkshop.vue'
+
 import Button from "@/Components/CMS/Webpage/Button/ButtonWorkshop.vue"
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
@@ -83,10 +83,8 @@ const components = (shop_type?: string): Record<string, Component> => {
         //topbar
         'top-bar-1': Topbar1,
         'top-bar-2': Topbar2,
-        'top-bar-3': Topbar3,
         'top-bar-1-fulfilment': Topbar1Fulfilment,
         'top-bar-2-fulfilment': Topbar2Fulfilment,
-        'top-bar-3-fulfilment': Topbar3Fulfilment,
 
         //header
         'header-1': Header1,
