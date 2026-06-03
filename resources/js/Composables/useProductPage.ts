@@ -1,7 +1,6 @@
 import { isArray } from "lodash-es"
 import type { Image as ImageTS } from "@/types/Image"
 
-
 export const resolveProductImages = (product: any) => {
   const images = product?.images
 
@@ -15,6 +14,7 @@ export const resolveProductImages = (product: any) => {
       return imgs.map((img: ImageTS) => ({
         source: img,
         thumbnail: img,
+        alt: item.alt || product.name
       }))
     }
 
@@ -24,6 +24,7 @@ export const resolveProductImages = (product: any) => {
         {
           source: item.source,
           thumbnail: item.thumbnail,
+          alt: item.alt || product.name
         },
       ]
     }
@@ -37,4 +38,3 @@ export const resolveProductVideo = (product: any) => {
 
   return images.find(item => item?.type === "video") ?? null
 }
-
