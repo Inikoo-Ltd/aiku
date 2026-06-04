@@ -688,6 +688,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:outboxes')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydrateOutboxes',
+                ),
+                name: 'HydrateOutboxes',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 

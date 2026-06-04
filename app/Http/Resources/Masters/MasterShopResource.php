@@ -92,6 +92,22 @@ class MasterShopResource extends JsonResource
             ];
         }
 
+        $additionalStats[] = [
+            'label'           => __('Master Products Missing Child Description'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.masters.master_shops.show.master_products_missing_child_description',
+                'parameters' => ['masterShop' => $masterShop->slug],
+            ],
+            'icon'            => 'fal fa-align-left',
+            'backgroundColor' => '#ff000011',
+            'color'           => '#df1c1cff',
+            'value'           => $masterShop->masterAssets()
+                ->where('has_missing_child_description', true)
+                ->where('type', \App\Enums\Masters\MasterAsset\MasterAssetTypeEnum::PRODUCT)
+                ->count(),
+        ];
+
         if ($masterShop->stats->number_missing_price_master_asset || $masterShop->stats->number_missing_rrp_master_asset || true) {
             $additionalStats[] = [
                 'label' => __('Master Products Missing Price/RRP'),
