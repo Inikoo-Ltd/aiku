@@ -175,9 +175,9 @@ const buildFamilyProductNode = (): Record<string, any> => {
     return node
 }
 
-const findOrCreateProductNode = (data: Record<string, any>): Record<string, any> => {
+const findOrCreateProductGroupNode = (data: Record<string, any>): Record<string, any> => {
     if (Array.isArray(data['@graph'])) {
-        const existing = data['@graph'].find((node: any) => node['@type'] === 'Product') ?? null
+        const existing = data['@graph'].find((node: any) => node['@type'] === 'ProductGroup') ?? null
         if (existing) return existing
 
         const newNode = buildFamilyProductNode()
@@ -185,7 +185,7 @@ const findOrCreateProductNode = (data: Record<string, any>): Record<string, any>
         return newNode
     }
 
-    if (data['@type'] === 'Product') {
+    if (data['@type'] === 'ProductGroup') {
         return data
     }
 
@@ -234,7 +234,7 @@ onMounted(() => {
                 structuredData = { '@context': 'https://schema.org' }
             }
 
-            const productNode = findOrCreateProductNode(structuredData)
+            const productNode = findOrCreateProductGroupNode(structuredData)
             mergeAutoVariants(productNode, autoVariants)
         }
 
