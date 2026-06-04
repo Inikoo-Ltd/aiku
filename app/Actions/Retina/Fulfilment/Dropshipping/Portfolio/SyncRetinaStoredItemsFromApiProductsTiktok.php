@@ -88,7 +88,8 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                             if (!$storedItem) {
                                 $storedItem = StoreStoredItem::make()->action($tiktokUser->customer->fulfilmentCustomer, [
                                     'reference' => $reference,
-                                    'name' => $title
+                                    'name' => $title,
+                                    'total_quantity' => Arr::get($productSku, 'inventory.0.quantity', 0)
                                 ]);
                             }
 
@@ -113,8 +114,7 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                             ]);
 
                             UpdateStoredItem::run($storedItem, [
-                                'state' => StoredItemStateEnum::ACTIVE,
-                                'total_quantity' => Arr::get($productSku, 'inventory.0.quantity', 0)
+                                'state' => StoredItemStateEnum::ACTIVE
                             ]);
                         }
                         $numberSuccess++;
