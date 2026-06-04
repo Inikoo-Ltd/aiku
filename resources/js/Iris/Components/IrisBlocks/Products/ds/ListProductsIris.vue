@@ -66,7 +66,7 @@ const products = ref<any[]>(
 const loadingInitial = ref(false);
 const loadingMore = ref(false);
 const q = ref("");
-const orderBy = ref("");
+const orderBy = ref(layout.params?.order_by || props.fieldValue?.sub_type == 'family'  ?  'recommended' : 'created_at')
 const page = ref(toRaw(props.fieldValue.products.meta.current_page));
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page));
 const filter = ref({ data: {} });
