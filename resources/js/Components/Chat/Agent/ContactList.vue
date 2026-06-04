@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch, onMounted, onUnmounted, nextTick } from "vue"
+import { ref, inject, computed, watch, onMounted, onUnmounted, nextTick, watchEffect } from "vue"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
@@ -29,6 +29,12 @@ const viewMode = ref<"my" | "team">("my")
 const isAssigning = ref<Record<string, boolean>>({})
 const errorPerContact = ref<Record<string, string>>({})
 
+const currentPage = ref(1)
+const hasMore = ref(false)
+const isLoadingMore = ref(false)
+const sentinelEl = ref<HTMLElement | null>(null)
+let scrollObserver: IntersectionObserver | null = null
+
 const sidePanelVisible = ref(false)
 const sidePanelInitialTab = ref<"history" | "profile" | "message-details">("history")
 
@@ -56,39 +62,64 @@ const openGlobalChatSettings = () => {
     chatSettingVisible.value = true
 }
 
+const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
+
+const mapSession = (s: SessionAPI): Contact => ({
+    id: s.id,
+    ulid: s.ulid,
+    name: s.contact_name || s.guest_identifier || "",
+    avatar: s.image,
+    lastMessage: s.last_message?.message ?? "",
+    lastMessageTime: s.last_message?.created_at
+        ? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
+        : undefined,
+    unread: s.unread_count,
+    status: s.status,
+    webUser: s.web_user,
+    priority: s.priority,
+    guest_profile: s.guest_profile,
+    agent: s.assigned_agent,
+    shop: s.shop,
+    organisation: s.organisation,
+})
+
 const reloadContacts = async () => {
+    currentPage.value = 1
+    hasMore.value = false
     try {
         const params: any = {
             statuses: [activeTab.value],
             assigned_to_me: layout?.user?.id,
+            page: 1,
             ...(viewMode.value === "team" ? { view_team: 1 } : {}),
         }
-        // just a moment code hours
-        const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
-
         const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params })
-        contacts.value = res.data.data.sessions.map(
-            (s: SessionAPI): Contact => ({
-                id: s.id,
-                ulid: s.ulid,
-                name: s.contact_name || s.guest_identifier || "",
-                avatar: s.image,
-                lastMessage: s.last_message?.message ?? "",
-                lastMessageTime: s.last_message?.created_at
-                    ? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
-                    : undefined,
-                unread: s.unread_count,
-                status: s.status,
-                webUser: s.web_user,
-                priority: s.priority,
-                guest_profile: s.guest_profile,
-                agent: s.assigned_agent,
-                shop: s.shop,
-                organisation: s.organisation,
-            })
-        )
+        contacts.value = res.data.data.sessions.map(mapSession)
+        hasMore.value = res.data.data.pagination?.has_more ?? false
     } catch (e) {
         console.error("Failed to reload contacts:", e)
+    }
+}
+
+const loadMore = async () => {
+    if (isLoadingMore.value || !hasMore.value) return
+    isLoadingMore.value = true
+    try {
+        const params: any = {
+            statuses: [activeTab.value],
+            assigned_to_me: layout?.user?.id,
+            page: currentPage.value + 1,
+            ...(viewMode.value === "team" ? { view_team: 1 } : {}),
+        }
+        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params })
+        const newContacts = res.data.data.sessions.map(mapSession)
+        contacts.value = [...contacts.value, ...newContacts]
+        currentPage.value += 1
+        hasMore.value = res.data.data.pagination?.has_more ?? false
+    } catch (e) {
+        console.error("Failed to load more contacts:", e)
+    } finally {
+        isLoadingMore.value = false
     }
 }
 const waitEchoReady = (callback: Function) => {
@@ -147,6 +178,17 @@ onMounted(async () => {
 
 onUnmounted(() => {
     window.Echo.leave("chat-list")
+    scrollObserver?.disconnect()
+})
+
+watchEffect(() => {
+    scrollObserver?.disconnect()
+    if (!sentinelEl.value) return
+    scrollObserver = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) loadMore() },
+        { threshold: 0.1 }
+    )
+    scrollObserver.observe(sentinelEl.value)
 })
 
 const formatTime = (timestamp: string) => {
@@ -407,7 +449,7 @@ onMounted(async () => {
 
                 <!-- LIST -->
                 <div v-else>
-                    <div v-for="c in filteredContacts" :key="c.id">
+                    <div v-for="c in filteredContacts" :key="c.ulid">
                         <div class="relative flex items-center gap-3 px-3 py-2 border-b hover:bg-gray-50 cursor-pointer"
                             @click="handleClickContact(c)">
                             <!-- Loading overlay -->
@@ -487,6 +529,11 @@ onMounted(async () => {
                         <div v-if="errorPerContact[c.ulid]" class="px-3 py-1 text-xs text-red-600 bg-red-50 border-b">
                             {{ errorPerContact[c.ulid] }}
                         </div>
+                    </div>
+
+                    <!-- Sentinel for infinite scroll -->
+                    <div ref="sentinelEl" class="flex justify-center py-3">
+                        <LoadingIcon v-if="isLoadingMore" class="w-5 h-5 text-gray-400" />
                     </div>
                 </div>
             </div>
