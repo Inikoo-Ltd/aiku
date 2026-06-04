@@ -88,8 +88,8 @@ class ShowPlatform extends OrgAction
                         : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run($parent, $platform, prefix: PlatformTabsEnum::SHOWCASE->value))),
                 PlatformTabsEnum::CHANNELS->value =>
                     $this->tab == PlatformTabsEnum::CHANNELS->value
-                        ? fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $parent instanceof Shop ? $parent : null, prefix: PlatformTabsEnum::CHANNELS->value))
-                        : Inertia::lazy(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $parent instanceof Shop ? $parent : null, prefix: PlatformTabsEnum::CHANNELS->value))),
+                        ? fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $parent instanceof Shop ? $parent : null, prefix: PlatformTabsEnum::CHANNELS->value, bucket: $request->get('bucket', '')))
+                        : Inertia::lazy(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $parent instanceof Shop ? $parent : null, prefix: PlatformTabsEnum::CHANNELS->value, bucket: $request->get('bucket', '')))),
                 PlatformTabsEnum::CUSTOMERS->value =>
                     $this->tab == PlatformTabsEnum::CUSTOMERS->value
                         ? fn () => CustomersResource::collection(IndexCustomers::run($parent, $platform, prefix: PlatformTabsEnum::CUSTOMERS->value))

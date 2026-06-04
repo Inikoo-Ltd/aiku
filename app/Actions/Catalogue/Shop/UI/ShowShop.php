@@ -20,6 +20,7 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -124,32 +125,55 @@ class ShowShop extends OrgAction
 
     private function getChannelHealthStats(Shop $shop): array
     {
+        $orgSlug  = $this->organisation->slug;
+        $shopSlug = $shop->slug;
+
         return CustomerSalesChannel::query()
             ->join('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
             ->where('customer_sales_channels.shop_id', $shop->id)
+            ->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN)
             ->whereNull('customer_sales_channels.deleted_at')
             ->where('platforms.type', '!=', PlatformTypeEnum::MANUAL->value)
             ->selectRaw("
                 platforms.id,
                 platforms.name,
+                platforms.slug,
                 platforms.type,
                 CAST(SUM(CASE WHEN customer_sales_channels.platform_status = true THEN 1 ELSE 0 END) AS INTEGER) as ok,
                 CAST(SUM(CASE WHEN customer_sales_channels.platform_status = false THEN 1 ELSE 0 END) AS INTEGER) as problem,
                 CAST(SUM(CASE WHEN customer_sales_channels.platform_status = true AND customer_sales_channels.number_orders > 0 THEN 1 ELSE 0 END) AS INTEGER) as ok_with_invoices,
                 CAST(SUM(CASE WHEN customer_sales_channels.platform_status = true AND customer_sales_channels.last_order_created_at >= NOW() - INTERVAL '30 days' THEN 1 ELSE 0 END) AS INTEGER) as ok_with_recent_invoices
             ")
-            ->groupBy('platforms.id', 'platforms.name', 'platforms.type')
+            ->groupBy('platforms.id', 'platforms.name', 'platforms.slug', 'platforms.type')
             ->orderBy('platforms.name')
             ->get()
-            ->map(fn ($row) => [
-                'name'                   => $row->name,
-                'type'                   => $row->type,
-                'logo'                   => $this->getPlatformLogo($row->type),
-                'ok'                     => (int) $row->ok,
-                'problem'                => (int) $row->problem,
-                'ok_with_invoices'       => (int) $row->ok_with_invoices,
-                'ok_with_recent_invoices'=> (int) $row->ok_with_recent_invoices,
-            ])
+            ->map(function ($row) use ($orgSlug, $shopSlug) {
+                $channelsRoute = [
+                    'name'       => 'grp.org.shops.show.crm.platforms.show',
+                    'parameters' => [
+                        'organisation' => $orgSlug,
+                        'shop'         => $shopSlug,
+                        'platform'     => $row->slug,
+                        'tab'          => 'channels',
+                    ],
+                ];
+
+                return [
+                    'name'                    => $row->name,
+                    'type'                    => $row->type,
+                    'logo'                    => $this->getPlatformLogo($row->type),
+                    'ok'                      => (int) $row->ok,
+                    'problem'                 => (int) $row->problem,
+                    'ok_with_invoices'        => (int) $row->ok_with_invoices,
+                    'ok_with_recent_invoices' => (int) $row->ok_with_recent_invoices,
+                    'routes'                  => [
+                        'problem'                 => array_merge($channelsRoute, ['parameters' => array_merge($channelsRoute['parameters'], ['bucket' => 'problem'])]),
+                        'ok'                      => array_merge($channelsRoute, ['parameters' => array_merge($channelsRoute['parameters'], ['bucket' => 'ok'])]),
+                        'ok_with_invoices'        => array_merge($channelsRoute, ['parameters' => array_merge($channelsRoute['parameters'], ['bucket' => 'ok_with_invoices'])]),
+                        'ok_with_recent_invoices' => array_merge($channelsRoute, ['parameters' => array_merge($channelsRoute['parameters'], ['bucket' => 'ok_with_recent_invoices'])]),
+                    ],
+                ];
+            })
             ->values()
             ->toArray();
     }
