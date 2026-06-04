@@ -18,6 +18,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Events\FetchProductFromPlatformProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
@@ -93,7 +94,10 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                                 ]);
                             }
 
-                            $portfolio = $storedItem->portfolio;
+                            $portfolio = Portfolio::where('customer_sales_channel_id', $tiktokUser->customerSalesChannel->id)
+                                ->where('item_id', $storedItem->id)
+                                ->where('item_type', $storedItem->getMorphClass())
+                                ->first();
                             if (!$portfolio) {
                                 $portfolio = StorePortfolio::make()->action(
                                     $tiktokUser->customerSalesChannel,
