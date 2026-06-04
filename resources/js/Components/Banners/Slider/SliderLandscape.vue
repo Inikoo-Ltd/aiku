@@ -37,8 +37,18 @@ const props = defineProps<{
     jumpToIndex?: string  // ulid
     data: BannerWorkshop
     view?: string
-    ratio?: string
+    ratio?: string    
 }>()
+
+type ImgAttributes = { fetchpriority?: 'high' | 'low'; loading?: 'lazy' | 'eager'; decoding?: 'auto' | 'async' | 'sync' } | undefined
+
+const slideImgAttributes = (index: number): ImgAttributes => {
+    if (index === 0) {
+        return { loading: 'eager', fetchpriority: 'high', decoding: 'async' }
+    }
+
+    return { loading: 'lazy', decoding: 'async' }
+}
 
 const swiperRef = ref(null)
 const intSwiperKey = ref(1)
@@ -242,12 +252,12 @@ onBeforeUnmount(() => {
                         },
                     } : false" :navigation="!data.navigation || data.navigation?.sideNav?.value"
                     :modules="[Autoplay, Pagination, Navigation]">
-                    <SwiperSlide v-for="component in visibleComponents" :key="component.id"
+                    <SwiperSlide v-for="(component, index) in visibleComponents" :key="component.id"
                         class="w-full h-full">
                         <!-- Slide: Image -->
                         <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"
                             class="relative w-full h-full">
-                            <Image :src="renderImage(component)" alt="Wowsbar" />
+                            <Image :src="renderImage(component)" alt="Wowsbar" :imgAttributes="slideImgAttributes(index)" />
                         </div>
                         <div v-else-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'video'"
                             class="relative w-full h-full overflow-hidden">
