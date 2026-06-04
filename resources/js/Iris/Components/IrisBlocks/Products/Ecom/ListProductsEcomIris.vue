@@ -541,11 +541,11 @@ watch(
                     <div>
                     </div>
                 </div> -->
-ttttttttttttttttttttttttt
+
                 <!-- Product Grid -->
                 <div :class="responsiveGridClass"
                     class="grid gap-x-6 gap-y-10 p-3 px-0 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 2xl:px-[50px]">
-                    <pre>{{ getStyles(fieldValue?.container?.properties, screenType) }}</pre>
+                    <!-- <pre>{{ getStyles(fieldValue?.container?.properties, screenType) }}</pre> -->
                     <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
                             <Skeleton height="200px" class="mb-3" />
