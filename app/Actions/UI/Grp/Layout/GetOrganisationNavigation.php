@@ -229,6 +229,15 @@ class GetOrganisationNavigation
                             'parameters' => [$organisation->slug],
                         ],
                     ],
+                    [
+                        'label'   => __('Conversations'),
+                        'icon'    => ['fal', 'fa-comments-alt'],
+                        'root'    => 'grp.org.chat.conversations.show',
+                        'route'   => [
+                            'name'       => 'grp.org.chat.conversations.show',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
                 ],
             ],
         ];
