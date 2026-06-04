@@ -18,6 +18,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Events\FetchProductFromPlatformProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
@@ -60,70 +61,77 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
 
         $shopType = $tiktokUser->customer->shop->type;
 
-        DB::transaction(function () use ($tiktokProducts, $productCount, $tiktokUser, $shopType) {
+        DB::transaction(function () use ($tiktokProducts, $tiktokUser, $shopType) {
             $numberSuccess = 0;
             $numberFails = 0;
 
-            $numberTotal = $productCount;
+            $numberTotal = array_sum(array_map(
+                fn (array $product) => count(Arr::get($product, 'skus', [])),
+                $tiktokProducts
+            ));
+
             foreach ($tiktokProducts as $product) {
-                try {
-                    $title = Arr::get($product, 'title');
-                    $reference = Arr::get($product, 'skus.0.seller_sku');
+                $title = Arr::get($product, 'title');
+                $productSkus = Arr::get($product, 'skus', []);
+                foreach ($productSkus as $productSku) {
+                    try {
+                        $reference = Arr::get($productSku, 'seller_sku');
 
-                    if (!$reference) {
-                        $reference = Str::slug($title);
-                    }
+                        if (!$reference) {
+                            $reference = Str::slug($title);
+                        }
 
-                    $storedItem = StoredItem::where('fulfilment_customer_id', $tiktokUser->customer->fulfilmentCustomer->id)
-                        ->where('reference', $reference)
-                        ->first();
+                        $storedItem = StoredItem::where('fulfilment_customer_id', $tiktokUser->customer->fulfilmentCustomer->id)
+                            ->where('reference', $reference)
+                            ->first();
 
-                    if ($shopType === ShopTypeEnum::FULFILMENT) {
-                        if (!$storedItem) {
-                            $storedItem = StoreStoredItem::make()->action($tiktokUser->customer->fulfilmentCustomer, [
-                                'reference' => $reference,
-                                'name' => $title
+                        if ($shopType === ShopTypeEnum::FULFILMENT) {
+                            if (!$storedItem) {
+                                $storedItem = StoreStoredItem::make()->action($tiktokUser->customer->fulfilmentCustomer, [
+                                    'reference' => $reference,
+                                    'name' => $title,
+                                    'total_quantity' => Arr::get($productSku, 'inventory.0.quantity', 0)
+                                ]);
+                            }
+
+                            $portfolio = Portfolio::where('customer_sales_channel_id', $tiktokUser->customerSalesChannel->id)
+                                ->where('item_id', $storedItem->id)
+                                ->where('item_type', $storedItem->getMorphClass())
+                                ->first();
+                            if (!$portfolio) {
+                                $portfolio = StorePortfolio::make()->action(
+                                    $tiktokUser->customerSalesChannel,
+                                    $storedItem,
+                                    [
+                                        'platform_product_id' => Arr::get($product, 'id'),
+                                        'platform_product_variant_id' => Arr::get($productSku, 'id')
+                                    ]
+                                );
+                            }
+
+                            UpdatePortfolio::run($portfolio, [
+                                'item_name' => $title,
+                                'customer_product_name' => $title,
+                                'customer_description' => Arr::get($product, 'description'),
+                                'platform_product_id' => Arr::get($product, 'id'),
+                                'platform_product_variant_id' => Arr::get($productSku, 'id'),
+                            ]);
+
+                            UpdateStoredItem::run($storedItem, [
+                                'state' => StoredItemStateEnum::ACTIVE
                             ]);
                         }
-
-                        $portfolio = $storedItem->portfolio;
-                        if (!$portfolio) {
-                            $portfolio = StorePortfolio::make()->action(
-                                $tiktokUser->customerSalesChannel,
-                                $storedItem,
-                                [
-                                    'platform_product_id' => Arr::get($product, 'id'),
-                                    'platform_product_variant_id' => Arr::get($product, 'id')
-                                ]
-                            );
-                        }
-
-                        UpdatePortfolio::run($portfolio, [
-                            'item_id' => $storedItem->id,
-                            'item_type' => class_basename(StoredItem::class),
-                            'item_code' => $storedItem->reference,
-                            'item_name' => $title,
-                            'customer_product_name' => $title,
-                            'customer_description' => Arr::get($product, 'description'),
-                            'platform_product_id' => Arr::get($product, 'id'),
-                            'platform_product_variant_id' => Arr::get($product, 'id'),
-                        ]);
-
-                        UpdateStoredItem::run($storedItem, [
-                            'state' => StoredItemStateEnum::ACTIVE,
-                            'total_quantity' => Arr::get($product, 'skus.0.inventory.0.quantity', 0)
-                        ]);
+                        $numberSuccess++;
+                    } catch (ValidationException $exception) {
+                        $numberFails++;
                     }
-                    $numberSuccess++;
-                } catch (ValidationException $exception) {
-                    $numberFails++;
-                }
 
-                FetchProductFromPlatformProgressEvent::dispatch($tiktokUser, [
-                    'number_total' => $numberTotal,
-                    'number_success' => $numberSuccess,
-                    'number_fails' => $numberFails
-                ]);
+                    FetchProductFromPlatformProgressEvent::dispatch($tiktokUser, [
+                        'number_total' => $numberTotal,
+                        'number_success' => $numberSuccess,
+                        'number_fails' => $numberFails
+                    ]);
+                }
             }
 
             FetchProductFromPlatformProgressEvent::dispatch($tiktokUser, [
@@ -142,7 +150,7 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $customerSalesChannel->user;
 
-        SyncRetinaStoredItemsFromApiProductsTiktok::dispatch($tiktokUser);
+        SyncRetinaStoredItemsFromApiProductsTiktok::run($tiktokUser);
     }
 
     public string $commandSignature = 'SyncRetinaStoredItemsFromApiProductsTiktok {customer_sales_channel}';

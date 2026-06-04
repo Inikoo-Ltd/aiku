@@ -41,6 +41,7 @@ class GetCatalogueShowcase
                 $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug),
                 $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
+                $this->buildMissingDescriptionProductsStat($shop, $orgSlug, $shopSlug),
             ];
         }
 
@@ -407,6 +408,23 @@ class GetCatalogueShowcase
                 ],
                 'count' => $shop->stats->number_current_sub_departments,
             ],
+        ];
+    }
+
+    private function buildMissingDescriptionProductsStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products without description'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.missing_description_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-align-left',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->products()->where('is_main', true)->where(function ($q) {
+                $q->whereNull('description')->orWhere('description', '');
+            })->count(),
         ];
     }
 

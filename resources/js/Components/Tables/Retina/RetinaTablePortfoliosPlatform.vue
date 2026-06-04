@@ -1136,6 +1136,12 @@ const percentageIncrease = ref(0);
 			</div>
 		</template>
 
+		<!-- Column: Platform SKU (TikTok only) -->
+		<template #cell(platform_sku)="{ item }">
+			<span v-if="item.platform_sku" class="text-sm font-mono text-gray-700">{{ item.platform_sku }}</span>
+			<span v-else class="text-sm text-gray-400 italic">—</span>
+		</template>
+
 		<!-- Column: Actions 3 -->
 		<template #cell(delete)="{ item }" v-if="!disabled">
 			<div class="flex gap-2">

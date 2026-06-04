@@ -32,7 +32,7 @@ interface Message {
     id?: number
     _status?: MessageStatus
     original?: Translation
-    translations?: Translation[]
+    translations?: Translation[]   
 }
 
 interface Translation {
@@ -252,7 +252,7 @@ watch(selectedLanguage, async (val) => {
                         {{ message.file_name || message.media_url.name }}
                     </div>
                     <div class="text-xs opacity-60 text-red-600">
-                        Click to download
+                        {{ trans("Click to download") }}
                     </div>
                 </div>
             </div>

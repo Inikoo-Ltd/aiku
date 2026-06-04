@@ -1,57 +1,15 @@
-<script setup lang='ts'>
-import { getStyles } from "@/Composables/styles"
-import { faTimes } from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { ref } from "vue"
-import type { BlockProperties, LinkProperties } from "@/types/Announcement"
-
-import { inject } from "vue";
-library.add(faTimes)
-
-defineProps<{
-    announcementData?: {
-        fields: {
-            text_1: {
-                text: string
-                block_properties: BlockProperties
-            }
-            button_1: {
-                link: LinkProperties
-                text: string
-                container: {
-                    properties: BlockProperties
-                }
-            }
-            countdown: {
-                date: string
-                expired_text?: string
-            }
-        }
-        container_properties: BlockProperties
-    }
-    _parentComponent?: Element
-    isEditable?: boolean
-    isToSelectOnly?: boolean
-}>()
-
-const emits = defineEmits<{
-    (e: 'templateClicked',  template: typeof componentDefaultData): void
-}>()
-
-const _text_1 = ref(null)
-
-const fieldSideEditor = [
+export const blueprint = [
     {
         name: "Container",
         icon: {
             icon: "fal fa-rectangle-wide",
             tooltip: "Container"
         },
-        key: ['container_properties'],
+        key: ["container_properties"],
         replaceForm: [
             {
                 key: ["background"],
-                label : "Background",
+                label: "Background",
                 type: "background",
             },
             {
@@ -60,27 +18,27 @@ const fieldSideEditor = [
             },
             {
                 key: ["margin"],
-                label : "Margin",
+                label: "Margin",
                 type: "margin",
-                useIn : ["desktop", "tablet", "mobile"],
+                useIn: ["desktop", "tablet", "mobile"],
             },
             {
                 key: ["padding"],
-                label : "Padding",
+                label: "Padding",
                 type: "padding",
-                useIn : ["desktop", "tablet", "mobile"],
+                useIn: ["desktop", "tablet", "mobile"],
             },
             {
                 key: ["border"],
-                label : "Border",
+                label: "Border",
                 type: "border",
-                useIn : ["desktop", "tablet", "mobile"],
+                useIn: ["desktop", "tablet", "mobile"],
             },
             {
                 key: ["dimension"],
-                label:"Dimension",
+                label: "Dimension",
                 type: "dimension",
-                useIn : ["desktop", "tablet", "mobile"],
+                useIn: ["desktop", "tablet", "mobile"],
             },
         ]
     },
@@ -107,13 +65,36 @@ const fieldSideEditor = [
         ]
     },
     {
+        name: "Countdown",
+        icon: {
+            icon: "fal fa-stopwatch-20",
+            tooltip: "Time countdown"
+        },
+        key: ['fields'],
+        accordion_key: 2,
+        replaceForm: [
+            {
+                key: ['countdown'],
+                type: "countdown",
+                props_data: {
+                    noToday: true,
+                    toogle: [
+                        'heading', 'fontSize', 'bold', 'italic', 'underline', "fontFamily",
+                        'alignLeft', 'alignRight', "link",
+                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                    ]
+                }
+            }
+        ]
+    },
+    {
         name: "Button",
         icon: {
             icon: "fal fa-hand-pointer",
             tooltip: "Main title"
         },
         key: ['fields'],
-        accordion_key: 2,
+        accordion_key: 3,
         replaceForm: [
             {
                 key: ['button_1'],
@@ -123,8 +104,7 @@ const fieldSideEditor = [
     },
 ]
 
-// Data: Container
-const defaultContainerData = {
+export const defaultContainerData = {
     "link": {
         "href": "#",
         "target": "_blank"
@@ -177,7 +157,7 @@ const defaultContainerData = {
     },
     "padding": {
         "top": {
-            "value": 20
+            "value": 8
         },
         "left": {
             "value": 20
@@ -187,7 +167,7 @@ const defaultContainerData = {
             "value": 20
         },
         "bottom": {
-            "value": 20
+            "value": 8
         }
     },
     "position": {
@@ -207,51 +187,36 @@ const defaultContainerData = {
     },
     "background": {
         "type": "gradient",
-        "color": "rgba(221,245,254,1)",
-        "image": {
-            "original": null
-        },
+        "color": "#f1e1c2",
         "gradient": {
-            "value": "linear-gradient(90deg, rgba(221,245,254,1) 0%, rgba(252,247,255,1) 16%, rgba(255,252,246,1) 35%, rgba(248,240,255,1) 57%, rgba(255,250,246,1) 83%)",
+            "value": "linear-gradient(90deg, #f1e1c2 0%, #fcbc98 35%, #f9cdc3 57%, #facefb 83%)",
             "colors": [
-                "rgba(221,245,254,1)",
-                "rgba(252,247,255,1)",
-                "rgba(255,252,246,1)",
-                "rgba(248,240,255,1)",
-                "rgba(255,250,246,1)",
+                "#f1e1c2",
+                "#fcbc98",
+                "#f9cdc3",
+                "#facefb",
             ],
             "angle": "to right",
             "type": "linear"
         },
+        "image": {
+            "original": null
+        }
     },
     "text": {
         "color": "rgba(10,10,10,1)",
         "fontFamily": "'Raleway', sans-serif"
     },
-    "isCenterHorizontal": false
+    "isCenterHorizontal": false,
 }
 
-// Data: Text, Button, Close Button
-const defaultFieldsData = {
+export const defaultFieldsData = {
     "text_1": {
-        "text": "<p>Pure Ingredients, Pure Health: <strong>20% Off</strong> on Organic Goods!</p>",
-        "block_properties": {
-            "position": {
-                "x": "50%",
-                "y": "50%",
-                "type": "absolute"
-            }
-        }
+        "text": "<p><span style=\"font-family: 'Quicksand', sans-serif; font-size: 20px; color: #a810a8\"><strong>Special christmas sale✨!</strong></span></p>",
     },
-    "text_2": {
-        "text": "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed laoreet nisi at elit venenatis fringilla. Cras ut semper quam, sit.</p>",
-        "block_properties": {
-            "position": {
-                "x": "20%",
-                "y": "30%",
-                "type": "absolute"
-            }
-        }
+    "countdown": {
+        "date": new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        "expired_text": "<p><em>Countdown expired</em></p>"
     },
     "button_1": {
         "link": {
@@ -263,12 +228,12 @@ const defaultFieldsData = {
         "container": {
             "properties": {
                 "text": {
-                    "color": "rgba(255, 255, 255, 1)",
+                    "color": "rgba(255,255,255,1)",
                     "fontFamily": "Arial, sans-serif"
                 },
                 "background": {
                     "type": "color",
-                    "color": "rgba(20,20,20,1)",
+                    "color": "rgba(147, 51, 234, 1)",
                     "image": {
                         "original": null
                     }
@@ -276,7 +241,7 @@ const defaultFieldsData = {
                 "padding": {
                     "unit": "px",
                     "top": {
-                        "value": 3
+                        "value": 5
                     },
                     "left": {
                         "value": 15
@@ -285,7 +250,7 @@ const defaultFieldsData = {
                         "value": 15
                     },
                     "bottom": {
-                        "value": 3
+                        "value": 5
                     }
                 },
                 "margin": {
@@ -309,16 +274,16 @@ const defaultFieldsData = {
                     "rounded": {
                         "unit": "px",
                         "topright": {
-                            "value": 4
+                            "value": 7
                         },
                         "topleft": {
-                            "value": 4
+                            "value": 7
                         },
                         "bottomright": {
-                            "value": 4
+                            "value": 7
                         },
                         "bottomleft": {
-                            "value": 4
+                            "value": 7
                         }
                     },
                     "top": {
@@ -337,84 +302,10 @@ const defaultFieldsData = {
             }
         }
     },
-    "close_button": {
-        "size": "0.5",
-        "block_properties": {
-            "text": {
-                "color": "rgba(0, 0, 0, 0.5)",
-            },
-            "position": {
-                "x": "97%",
-                "y": "50%",
-                "type": "absolute"
-            }
-        }
-    }
 }
 
-// To select on select templates
-const componentDefaultData = {
-    code: 'announcement-promo-1',
+export const defaultData = {
+    code: 'announcement-promo-2-countdown',
     fields: defaultFieldsData,
     container_properties: defaultContainerData
 }
-
-const onClickClose = () => {
-    window.parent.postMessage('close_button_click', '*');
-}
-
-
-
-const openFieldWorkshop = inject('openFieldWorkshop', ref<number | null>(null))
-const onClickOpenFieldWorkshop = (index?: number) => {
-    if(openFieldWorkshop && index) {
-        openFieldWorkshop.value = index
-    }
-}
-
-defineExpose({
-    // compiled_layout,
-    fieldSideEditor
-})
-</script>
-
-<template>
-    <div
-        v-if="!isToSelectOnly"
-        :style="getStyles(announcementData?.container_properties)"
-    >
-        <div class="flex flex-wrap gap-x-4 items-center justify-center w-full">
-            <div
-                v-if="announcementData?.fields?.text_1"
-                ref="_text_1"
-                @click="() => (onClickOpenFieldWorkshop(1))"
-                class="text-sm announcement-component-editable text-center md:text-left"
-                v-html="announcementData?.fields.text_1.text"
-                :style="getStyles(announcementData?.fields.text_1.block_properties, null, { toRemove: ['position', 'top', 'left'] })"
-            >
-    
-            </div>
-
-            <div class="relative">
-                <div v-if="isEditable"  @click="() => (onClickOpenFieldWorkshop(2))" class="absolute inset-0 announcement-component-editable " />
-                <a
-                    v-if="announcementData?.fields?.button_1?.text"
-                    @click="() => (onClickClose())"
-                    :href="announcementData?.fields.button_1.link.href || '#'"
-                    :target="announcementData?.fields.button_1.link.target"
-                    v-html="announcementData?.fields.button_1.text"
-                    class="mt-3 md:mt-0 inline-flex items-center announcement-component-editable"
-                    :style="getStyles(announcementData?.fields.button_1?.container?.properties)"
-                >
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div
-        v-else @click="() => emits('templateClicked', componentDefaultData)"
-        class="inset-0 absolute"
-    >
-    </div>
-
-</template>
