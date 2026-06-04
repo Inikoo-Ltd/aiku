@@ -7,6 +7,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import { faPresentation, faCube, faText, faPaperclip } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Iris/Components/IrisButton.vue";
+import { useFormatTime } from "@/Composables/useFormatTime"
 import {
 	faChevronRight,
 	faSignOutAlt,
@@ -116,10 +117,11 @@ const onClickLogout = () => {
 	)
 }
 
+
 </script>
 
 <template>
-	<div id="header_1_iris" class="bg-white border-t border-sky-200" :style="{
+	<div id="header_1_iris" class="bg-white border-t border-sky-200 md:sticky top-0 z-50" :style="{
 		...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 		margin: 0,
 		padding: 0,
@@ -202,25 +204,71 @@ const onClickLogout = () => {
 
 				<!-- Logged In -->
 				<template v-if="isLoggedIn">
-					<div class="flex items-center gap-1">
-						<div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-							<FontAwesomeIcon :icon="faUser" class="text-gray-500 text-lg" />
+					<div class="flex items-center gap-3">
+						<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100">
+							<FontAwesomeIcon :icon="faUser" class="text-lg text-gray-500" />
 						</div>
 
 						<div class="leading-tight">
-							<div class="font-medium text-sm">
-								{{ layout?.user?.username }}
+							<div class="flex items-center gap-2 text-sm font-medium">
+								<span>{{ layout?.user?.username }}</span>
+
+								<img v-if="layout.offer_data.amnesty || layout.offer_data?.type === 'gr'"
+									:src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo"
+									class="w-auto h-6" />
 							</div>
 
-							<!-- <div class="text-[11px] text-amber-500 whitespace-nowrap">
-								Gold Reward until 26th Jan 2026
-							</div> -->
+							<template v-if="layout.offer_data.amnesty">
+								<span
+									class="inline-flex items-center gap-1 text-[11px] text-amber-500 whitespace-nowrap">
+									<FontAwesomeIcon icon="fas fa-candle-holder" fixed-width aria-hidden="true" />
+
+									{{
+										ctrans('Until :amnestyUntil', {
+											amnestyUntil: useFormatTime(
+												layout.offer_data.amnesty_until,
+												{ formatTime: 'MMM do' }
+											)
+										})
+									}}
+								</span>
+							</template>
+
+							<template v-else-if="layout.offer_data?.type === 'gr'">
+								<span class="inline-flex items-center gap-1 text-yellow-500">
+									{{ layout.offer_data?.label }}
+									<GoldReward>
+										<template #default>
+											<div class="flex items-center">
+												<FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
+													aria-hidden="true" />
+
+												<div
+													class="relative inline-block w-20 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
+													<div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
+														:class="{ xshimmer: true }" :style="{
+															width: `${(layout.offer_data?.meter?.[0] / layout.offer_data?.meter?.[1]) * 100}%`
+														}" />
+
+													<div
+														class="absolute inset-0 flex items-center justify-center font-medium text-black text-xxs">
+														{{ Number(layout.offer_data?.meter?.[0]).toFixed(0) }}
+														/
+														{{ Number(layout.offer_data?.meter?.[1]).toFixed(0) }}
+														days
+													</div>
+												</div>
+											</div>
+										</template>
+									</GoldReward>
+								</span>
+							</template>
 						</div>
 					</div>
 
-					<button
-						class="text-[20px] rounded-full bg-gray-100 text-gray-600 hover:text-gray-900 flex items-center justify-center"
-						v-tooltip="ctrans('Logout')" @click="() => onClickLogout()">
+					<button v-tooltip="ctrans('Logout')"
+						class="flex items-center justify-center text-[20px] text-gray-600 bg-gray-100 rounded-full hover:text-gray-900"
+						@click="onClickLogout">
 						<FontAwesomeIcon :icon="faSignOutAlt" />
 					</button>
 				</template>
@@ -231,7 +279,8 @@ const onClickLogout = () => {
 						<!-- Login -->
 						<LinkIris :href="urlLoginWithRedirect()" :type="'internal'"
 							v-slot="{ isLoading } = { isLoading: false }">
-							<Button @click="() => urlLoginWithRedirect()" :label="ctrans('Login')" :icon="faSignInAlt"></Button>
+							<Button @click="() => urlLoginWithRedirect()" :label="ctrans('Login')"
+								:icon="faSignInAlt"></Button>
 						</LinkIris>
 
 						<!-- Register -->
@@ -245,5 +294,4 @@ const onClickLogout = () => {
 	</div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
