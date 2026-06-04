@@ -281,7 +281,7 @@ onBeforeUnmount(() => {
         <meta name="twitter:image" :content="webpage_img?.png || webpage_img?.url || ''" />
     </Head>
     
-    <pre>{{ blablabla }}</pre>
+    <!-- <pre>{{ blablabla }}</pre> -->
     <div class="bg-white">
         <div class="mx-auto w-full max-w-screen-3xl">
             <div
