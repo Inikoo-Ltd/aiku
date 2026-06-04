@@ -100,7 +100,7 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                                     $storedItem,
                                     [
                                         'platform_product_id' => Arr::get($product, 'id'),
-                                        'platform_product_variant_id' => Arr::get($product, 'id')
+                                        'platform_product_variant_id' => Arr::get($productSku, 'id')
                                     ]
                                 );
                             }
