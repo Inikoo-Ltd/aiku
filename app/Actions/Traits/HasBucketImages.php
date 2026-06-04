@@ -14,12 +14,15 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
+use Illuminate\Support\Collection;
 
 trait HasBucketImages
 {
-    public function getImagesData(MasterAsset|Product|TradeUnit|MasterCollection $model): array
+    public function getImagesData(MasterAsset|Product|TradeUnit|MasterCollection $model, bool $withCaptions = false): array
     {
-        return [
+        $captions = $withCaptions ? $this->getBucketImageCaptions($model) : new Collection();
+
+        $imagesData = [
             [
                 'label'        => __('Main'),
                 'type'         => 'image',
@@ -193,6 +196,41 @@ trait HasBucketImages
                 ]
             ],
         ];
+
+        if (!$withCaptions) {
+            return $imagesData;
+        }
+
+        return array_map(function (array $imageBox) use ($captions): array {
+            if (($imageBox['type'] ?? null) === 'image') {
+                $imageBox['alt'] = $captions->get($imageBox['id']);
+            }
+
+            return $imageBox;
+        }, $imagesData);
+    }
+
+    protected function getBucketImageCaptions(MasterAsset|Product|TradeUnit|MasterCollection $model): Collection
+    {
+        $captions = new Collection();
+
+        if ($model instanceof Product || $model instanceof MasterAsset) {
+            foreach ($model->tradeUnits as $tradeUnit) {
+                foreach ($tradeUnit->images as $media) {
+                    if (filled($media->pivot->caption)) {
+                        $captions->put($media->id, $media->pivot->caption);
+                    }
+                }
+            }
+        }
+
+        foreach ($model->images as $media) {
+            if (filled($media->pivot->caption)) {
+                $captions->put($media->id, $media->pivot->caption);
+            }
+        }
+
+        return $captions;
     }
 
     public function getSingleImageData(MasterProductCategory|ProductCategory|MasterCollection $model): array

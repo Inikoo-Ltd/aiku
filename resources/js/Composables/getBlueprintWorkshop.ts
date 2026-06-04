@@ -1,9 +1,9 @@
-import { RelatedProductCategoryWorkshop } from '@/Components/CMS/Webpage/RelatedProductCategory/RealatedProductCategoryWorkshop.vue';
+
 import { blueprint } from './../Components/CMS/Webpage/LuigiLastSeen1/Blueprint';
 import Footer1Blueprint from "@/Components/CMS/Website/Footers/footerTheme1/bluprint"
 import Topbar1Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar1/Blueprint"
 import Topbar2Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar2/Blueprint"
-import Topbar3Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar3/Blueprint"
+
 import Header1Blueprint from "@/Components/CMS/Website/Headers/Header1/Blueprint"
 import Header2Blueprint from "@/Components/CMS/Website/Headers/Header2/Blueprint"
 import BentoGridBlueprint from "@/Components/CMS/Webpage/BentoGrid/Blueprint"
@@ -24,7 +24,7 @@ import TimelineBlueprint from "@/Components/CMS/Webpage/Timeline/Blueprint"
 import TextColumn from "@/Components/CMS/Webpage/TextColumn/Blueprint"
 import Topbar1Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Blueprint"
 import Topbar2Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Blueprint"
-import Topbar3Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Blueprint"
+
 import Button from "@/Components/CMS/Webpage/Button/Blueprint"
 import ColumnLayout2Blueprint from "@/Components/CMS/Webpage/Column/Blueprint"
 import ColumnLayout3Blueprint from "@/Components/CMS/Webpage/Column3/Blueprint"
@@ -76,10 +76,8 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		// topbar
 		"top-bar-1-fulfilment": Topbar1Fulfilment.blueprint,
 		"top-bar-2-fulfilment": Topbar2Fulfilment.blueprint,
-		"top-bar-3-fulfilment": Topbar3Fulfilment.blueprint,
 		"top-bar-1": Topbar1Blueprint.blueprint,
 		"top-bar-2": Topbar2Blueprint.blueprint,
-		"top-bar-3": Topbar3Blueprint.blueprint,
 
 		// header
 		"header-1": Header1Blueprint.blueprint,

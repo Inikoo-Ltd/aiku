@@ -96,6 +96,18 @@ enum TrafficSourcesTypeEnum: string
         ];
     }
 
+    public static function fromAbbr(string $abbreviation): ?self
+    {
+        $map = array_flip(self::abbr());
+        $typeValue = $map[$abbreviation] ?? null;
+
+        if ($typeValue === null) {
+            return null;
+        }
+
+        return self::tryFrom($typeValue);
+    }
+
 
 
 

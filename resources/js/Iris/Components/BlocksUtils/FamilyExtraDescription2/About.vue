@@ -77,47 +77,68 @@ console.log("Family Extra Description 2 Props:", props)
 
 <template>
     <!-- CONTENT -->
-    <div class="grid grid-cols-1 lg:grid-cols-[48%_52%] 2xl:grid-cols-[46%_54%]">
+    <div class="grid grid-cols-1 lg:grid-cols-[53%_46%] lg:gap-4 gap-0  items-stretch">
         <!-- LEFT -->
-        <div class="order-2 lg:order-1 flex flex-col py-5 md:py-6 lg:py-8 lg:pr-8 2xl:pr-12">
+        <div class="order-2 lg:order-1 flex flex-col h-full py-5 md:py-6 lg:py-8 text-center md:text-left">
             <div class="
-             max-w-full lg:max-w-[500px] 2xl:max-w-[700px]
-             text-[13px]
-             md:text-[14px]
-             2xl:text-[16px]
-             leading-[1.8]
-             text-[#334155]" v-html="cleanedDescription">
-            </div>
+        max-w-full
+        lg:max-w-[700px]
+        2xl:max-w-[860px]
+        text-[13px]
+        md:text-[14px]
+        2xl:text-[16px]
+        leading-[1.8]
+        text-[#334155]
+    " v-html="cleanedDescription" />
 
             <div class="mt-8 md:mt-10 lg:mt-auto">
                 <a href="#family-2">
                     <button class="rounded-[8px] border border-[#24384d]
-               px-5 md:px-7
-               py-[8px]
-               text-[12px] md:text-[13px]
-               text-[#24384d]" :style="{
-                ...getStyles(fieldValue?.button?.container?.properties)
-            }">
-                        <span v-if="fieldValue?.button?.text">{{ fieldValue?.button?.text }}</span>
-                        <span v-else>{{ ctrans('Go back products') }}</span>
+                px-5 md:px-7
+                py-[8px]
+                text-[12px] md:text-[13px]
+                text-[#24384d]" :style="{
+                    ...getStyles(fieldValue?.button?.container?.properties)
+                }">
+                        <span v-if="fieldValue?.button?.text">
+                            {{ fieldValue?.button?.text }}
+                        </span>
+
+                        <span v-else>
+                            {{ ctrans('Go back products') }}
+                        </span>
                     </button>
                 </a>
             </div>
         </div>
 
+
         <!-- RIGHT -->
-        <div class="order-1 lg:order-2 py-5 lg:p-[14px]">
-            <div class="grid gap-[10px]
-           grid-cols-1
-           md:grid-cols-[1fr_180px]
-           lg:grid-cols-[1fr_148px]
-           2xl:grid-cols-[1fr_200px]">
-                <!-- Main Image -->
-                <div class="overflow-hidden rounded-[8px]
-             h-[250px]
-             md:h-[320px]
-             lg:h-[238px]
-             2xl:h-[320px]">
+        <div class="order-1 lg:order-2 flex h-full py-5 md:py-6 lg:py-8">
+            <div class="
+            grid
+            w-full
+            gap-3
+
+            grid-cols-1
+            auto-rows-[220px]
+
+            md:grid-cols-[1.35fr_1fr]
+            md:grid-rows-[260px_220px]
+
+            lg:grid-cols-[1.45fr_1fr]
+            lg:grid-rows-[360px_210px]
+
+            xl:grid-rows-[400px_230px]
+
+            2xl:grid-rows-[440px_260px]
+        ">
+                <!-- TOP LEFT LARGE IMAGE -->
+                <div class="
+                overflow-hidden
+                rounded-[8px]
+                h-full
+            ">
                     <template v-if="hasImage(displayImages[0])">
                         <Image :src="displayImages[0]?.original" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
@@ -128,16 +149,23 @@ console.log("Family Extra Description 2 Props:", props)
                     </div>
                 </div>
 
-                <!-- Side Images -->
-                <div class="grid grid-cols-2 md:grid-cols-1 gap-[10px]">
-                    <div class="overflow-hidden rounded-[8px]
-               h-[120px]
-               md:h-[155px]
-               lg:h-[114px]
-               2xl:h-[155px]">
+                <!-- RIGHT COLUMN -->
+                <div class="
+                grid
+                gap-3
+
+                grid-cols-2
+                h-[180px]
+
+                md:grid-cols-1
+                md:grid-rows-2
+                md:h-full
+            ">
+                    <!-- TOP RIGHT -->
+                    <div class="overflow-hidden rounded-[8px] h-full">
                         <template v-if="hasImage(displayImages[1])">
-                            <Image :src="displayImages[1]?.original" :image-cover="true" class="w-full h-full object-cover"
-                                :alt="fieldValue?.family?.name" />
+                            <Image :src="displayImages[1]?.original" :image-cover="true"
+                                class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
                         </template>
 
                         <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
@@ -145,14 +173,11 @@ console.log("Family Extra Description 2 Props:", props)
                         </div>
                     </div>
 
-                    <div class="overflow-hidden rounded-[8px]
-               h-[120px]
-               md:h-[155px]
-               lg:h-[114px]
-               2xl:h-[155px]">
+                    <!-- BOTTOM RIGHT -->
+                    <div class="overflow-hidden rounded-[8px] h-full">
                         <template v-if="hasImage(displayImages[2])">
-                            <Image :src="displayImages[2]?.original" :image-cover="true" class="w-full h-full object-cover"
-                                :alt="fieldValue?.family?.name" />
+                            <Image :src="displayImages[2]?.original" :image-cover="true"
+                                class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
                         </template>
 
                         <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
@@ -161,12 +186,21 @@ console.log("Family Extra Description 2 Props:", props)
                     </div>
                 </div>
 
-                <!-- Bottom Image -->
-                <div class="relative md:col-span-2 overflow-hidden rounded-[8px]
-             h-[240px]
-             md:h-[320px]
-             lg:h-[255px]
-             2xl:h-[350px]">
+                <!-- BOTTOM WIDE IMAGE -->
+                <div class="
+                relative
+                overflow-hidden
+                rounded-[8px]
+
+                h-[220px]
+
+                md:col-span-2
+                md:h-[220px]
+
+                lg:h-[210px]
+                xl:h-[230px]
+                2xl:h-[260px]
+            ">
                     <template v-if="hasImage(displayImages[3])">
                         <Image :src="displayImages[3]?.original" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
@@ -176,12 +210,18 @@ console.log("Family Extra Description 2 Props:", props)
                         <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
                     </div>
 
-                    <button @click="openGallery(0)" class="absolute bottom-4 right-4
-               rounded-md bg-white/90
-               px-4 py-2
-               text-[11px]
-               text-gray-700
-               shadow">
+                    <button @click="openGallery(0)" class="
+                    absolute
+                    bottom-4
+                    right-4
+                    rounded-md
+                    bg-white/90
+                    px-4
+                    py-2
+                    text-[11px]
+                    text-gray-700
+                    shadow
+                ">
                         {{ ctrans('Image Gallery') }}
                     </button>
                 </div>
