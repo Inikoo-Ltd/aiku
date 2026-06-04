@@ -29,7 +29,7 @@ class SendBackWaitingWarehouse extends OrgAction
             abort(403, 'Waiting is not enabled for this organisation');
         }
 
-        if ($deliveryNoteItem->has_waiting_crm) {
+        if (!$deliveryNoteItem->has_waiting_crm) {
             throw ValidationException::withMessages([
                 'message' => 'Unable to move back to Waiting Warehouse. Not a valid Waiting CRM item'
             ]);
