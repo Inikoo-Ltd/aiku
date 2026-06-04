@@ -174,6 +174,39 @@ const submitReplaceProduct = () => {
         onFinish: () => { isSubmittingReplaceProduct.value = false },
     })
 }
+
+// Section: Modal Send Back to Waiting Warehouse
+const isOpenModalSendBackWarehouse = ref(false)
+const selectedItemSendBack = ref<Record<string, any> | null>(null)
+const isSubmittingSendBack = ref(false)
+
+const openSendBackWarehouseModal = (item: Record<string, any>) => {
+    selectedItemSendBack.value = item
+    isOpenModalSendBackWarehouse.value = true
+}
+
+const submitSendBackWarehouse = () => {
+    if (!selectedItemSendBack.value) return
+    isSubmittingSendBack.value = true
+    router.post(
+        route('grp.models.delivery_note_item.send_back_waiting_warehouse', { deliveryNoteItem: selectedItemSendBack.value.id }),
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                isOpenModalSendBackWarehouse.value = false
+                notify({
+                    title: ctrans('Success!'),
+                    text: ctrans('Item :item has been sent back to waiting warehouse', { item: selectedItemSendBack.value?.org_stock_code ?? '' }),
+                    type: 'success',
+                })
+            },
+            onFinish: () => {
+                isSubmittingSendBack.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -239,6 +272,15 @@ const submitReplaceProduct = () => {
                             type="negative"
                             icon="fas fa-skull"
                             size="xs"
+                        />
+
+                        <!-- Button: Send back to waiting warehouse -->
+                        <Button
+                            :label="ctrans('Send back to waiting warehouse')"
+                            size="xs"
+                            type="tertiary"
+                            icon="fal fa-hourglass-start"
+                            @click="openSendBackWarehouseModal({ ...subItem })"
                         />
 
                         <!-- Refresh Faire Data -->
@@ -420,6 +462,43 @@ const submitReplaceProduct = () => {
                         />
                     </div>
                 </div>
+            </div>
+        </div>
+    </Modal>
+
+    <!-- Modal: Send back to waiting warehouse confirmation -->
+    <Modal :isOpen="isOpenModalSendBackWarehouse" width="w-full max-w-md" @onClose="isOpenModalSendBackWarehouse = false" :closeButton="true">
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-col items-center gap-2 text-center">
+                <FontAwesomeIcon icon="fal fa-hourglass-start" class="text-amber-500 text-4xl" fixed-width aria-hidden="true" />
+                <h2 class="text-xl font-semibold">{{ ctrans('Send back to waiting warehouse') }}</h2>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm">
+                <div class="flex justify-between items-start gap-4">
+                    <div>
+                        <span class="font-semibold">{{ selectedItemSendBack?.org_stock_code }}</span>
+                        <span class="ml-1.5 text-amber-700 italic opacity-80">{{ selectedItemSendBack?.org_stock_name }}</span>
+                    </div>
+                    <div class="shrink-0 tabular-nums font-semibold text-amber-800">
+                        {{ Number(selectedItemSendBack?.quantity_waiting_crm) }} {{ ctrans('items') }}
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-sm text-gray-600 text-center">
+                {{ ctrans('Are you sure you want to send this item back to the waiting warehouse?') }}
+            </p>
+
+            <div class="flex gap-2 pt-2">
+                <Button :label="ctrans('Cancel')" type="negative" full @click="isOpenModalSendBackWarehouse = false" />
+                <Button
+                    :label="ctrans('Confirm')"
+                    icon="fal fa-hourglass-start"
+                    :loading="isSubmittingSendBack"
+                    full
+                    @click="submitSendBackWarehouse"
+                />
             </div>
         </div>
     </Modal>
