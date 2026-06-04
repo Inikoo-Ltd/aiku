@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch, onMounted, onUnmounted, nextTick } from "vue"
+import { ref, inject, computed, watch, onMounted, onUnmounted, nextTick, watchEffect } from "vue"
+import { watchDebounced } from "@vueuse/core"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
@@ -8,7 +9,7 @@ import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
 import { routeType } from "@/types/route"
 import ChatSidePanel from "@/Components/Chat/ChatSidePanel.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { faUser, faCog } from "@far"
+import { faUser, faCog, faSearch, faTimes } from "@far"
 import { faChevronUp, faChevronDown, faChevronDoubleUp, faEquals } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
@@ -28,6 +29,20 @@ const activeTab = ref("waiting")
 const viewMode = ref<"my" | "team">("my")
 const isAssigning = ref<Record<string, boolean>>({})
 const errorPerContact = ref<Record<string, string>>({})
+
+const currentPage = ref(1)
+const hasMore = ref(false)
+const isLoadingMore = ref(false)
+const sentinelEl = ref<HTMLElement | null>(null)
+let scrollObserver: IntersectionObserver | null = null
+
+const showSearch = ref(false)
+const searchQuery = ref("")
+
+const toggleSearch = () => {
+    showSearch.value = !showSearch.value
+    if (!showSearch.value) searchQuery.value = ""
+}
 
 const sidePanelVisible = ref(false)
 const sidePanelInitialTab = ref<"history" | "profile" | "message-details">("history")
@@ -56,41 +71,64 @@ const openGlobalChatSettings = () => {
     chatSettingVisible.value = true
 }
 
-const reloadContacts = async () => {
-    try {
-        const params: any = {
-            statuses: [activeTab.value],
-            assigned_to_me: layout?.user?.id,
-            ...(viewMode.value === "team" ? { view_team: 1 } : {}),
-        }
-        // just a moment code hours
-        const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
+const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
 
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params })
-        contacts.value = res.data.data.sessions.map(
-            (s: SessionAPI): Contact => ({
-                id: s.id,
-                ulid: s.ulid,
-                name: s.contact_name || s.guest_identifier || "",
-                avatar: s.image,
-                lastMessage: s.last_message?.message ?? "",
-                lastMessageTime: s.last_message?.created_at
-                    ? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
-                    : undefined,
-                unread: s.unread_count,
-                status: s.status,
-                webUser: s.web_user,
-                priority: s.priority,
-                guest_profile: s.guest_profile,
-                agent: s.assigned_agent,
-                shop: s.shop,
-                organisation: s.organisation,
-            })
-        )
+const mapSession = (s: SessionAPI): Contact => ({
+    id: s.id,
+    ulid: s.ulid,
+    name: s.contact_name || s.guest_identifier || "",
+    avatar: s.image,
+    lastMessage: s.last_message?.message ?? "",
+    lastMessageTime: s.last_message?.created_at
+        ? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
+        : undefined,
+    unread: s.unread_count,
+    status: s.status,
+    webUser: s.web_user,
+    priority: s.priority,
+    guest_profile: s.guest_profile,
+    agent: s.assigned_agent,
+    shop: s.shop,
+    organisation: s.organisation,
+})
+
+const buildParams = (page: number) => ({
+    statuses: [activeTab.value],
+    assigned_to_me: layout?.user?.id,
+    page,
+    ...(viewMode.value === "team" ? { view_team: 1 } : {}),
+    ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
+})
+
+const reloadContacts = async () => {
+    currentPage.value = 1
+    hasMore.value = false
+    try {
+        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(1) })
+        contacts.value = res.data.data.sessions.map(mapSession)
+        hasMore.value = res.data.data.pagination?.has_more ?? false
     } catch (e) {
         console.error("Failed to reload contacts:", e)
     }
 }
+
+const loadMore = async () => {
+    if (isLoadingMore.value || !hasMore.value) return
+    isLoadingMore.value = true
+    try {
+        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(currentPage.value + 1) })
+        const newContacts = res.data.data.sessions.map(mapSession)
+        contacts.value = [...contacts.value, ...newContacts]
+        currentPage.value += 1
+        hasMore.value = res.data.data.pagination?.has_more ?? false
+    } catch (e) {
+        console.error("Failed to load more contacts:", e)
+    } finally {
+        isLoadingMore.value = false
+    }
+}
+
+watchDebounced(searchQuery, () => reloadContacts(), { debounce: 400 })
 const waitEchoReady = (callback: Function) => {
     if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
         callback()
@@ -147,6 +185,17 @@ onMounted(async () => {
 
 onUnmounted(() => {
     window.Echo.leave("chat-list")
+    scrollObserver?.disconnect()
+})
+
+watchEffect(() => {
+    scrollObserver?.disconnect()
+    if (!sentinelEl.value) return
+    scrollObserver = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) loadMore() },
+        { threshold: 0.1 }
+    )
+    scrollObserver.observe(sentinelEl.value)
 })
 
 const formatTime = (timestamp: string) => {
@@ -375,7 +424,7 @@ onMounted(async () => {
         </div>
 
         <!-- Status tabs -->
-        <div class="flex border-b text-xs">
+        <div class="flex items-center border-b text-xs">
             <div v-if="viewMode === 'my'" class="tabItem" :class="tabClass('waiting')" @click="activeTab = 'waiting'">
                 {{ trans("Waiting") }}
             </div>
@@ -385,7 +434,37 @@ onMounted(async () => {
             <div class="tabItem" :class="tabClass('closed')" @click="activeTab = 'closed'">
                 {{ trans("Closed") }}
             </div>
+            <div class="ml-auto pr-2">
+                <button
+                    @click="toggleSearch"
+                    class="p-1.5 rounded hover:bg-gray-100 transition-colors"
+                    :class="showSearch ? 'text-indigo-500' : 'text-gray-400'">
+                    <FontAwesomeIcon :icon="faSearch" class="text-xs" />
+                </button>
+            </div>
         </div>
+
+        <!-- Search input (collapsible) -->
+        <Transition name="slide-down">
+            <div v-if="showSearch" class="px-3 py-2 border-b bg-gray-50">
+                <div class="relative">
+                    <FontAwesomeIcon :icon="faSearch" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+                    <input
+                        v-model="searchQuery"
+                        type="text"
+                        autofocus
+                        :placeholder="trans('Search by name...')"
+                        class="w-full pl-7 pr-7 py-1.5 text-xs border border-gray-200 rounded bg-white focus:outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200"
+                    />
+                    <button
+                        v-if="searchQuery"
+                        @click="searchQuery = ''"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <FontAwesomeIcon :icon="faTimes" class="text-xs" />
+                    </button>
+                </div>
+            </div>
+        </Transition>
 
         <!-- Content -->
         <div class="flex-1">
@@ -407,7 +486,7 @@ onMounted(async () => {
 
                 <!-- LIST -->
                 <div v-else>
-                    <div v-for="c in filteredContacts" :key="c.id">
+                    <div v-for="c in filteredContacts" :key="c.ulid">
                         <div class="relative flex items-center gap-3 px-3 py-2 border-b hover:bg-gray-50 cursor-pointer"
                             @click="handleClickContact(c)">
                             <!-- Loading overlay -->
@@ -488,6 +567,11 @@ onMounted(async () => {
                             {{ errorPerContact[c.ulid] }}
                         </div>
                     </div>
+
+                    <!-- Sentinel for infinite scroll -->
+                    <div ref="sentinelEl" class="flex justify-center py-3">
+                        <LoadingIcon v-if="isLoadingMore" class="w-5 h-5 text-gray-400" />
+                    </div>
                 </div>
             </div>
 
@@ -510,6 +594,24 @@ onMounted(async () => {
 </template>
 
 <style>
+.slide-down-enter-active,
+.slide-down-leave-active {
+    transition: all 0.15s ease;
+    overflow: hidden;
+}
+.slide-down-enter-from,
+.slide-down-leave-to {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+.slide-down-enter-to,
+.slide-down-leave-from {
+    max-height: 60px;
+    opacity: 1;
+}
+
 /* Tabs */
 .tabItem {
     padding: 6px 12px;

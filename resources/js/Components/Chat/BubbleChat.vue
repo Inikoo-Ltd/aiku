@@ -145,6 +145,14 @@ const activeMessage = computed<Message>(() => {
     return localMessage.value ?? props.message
 })
 
+const displayText = computed(() => {
+    if (props.message.sender_type === "system") {
+        return trans(props.message.message_text)
+    }
+
+    return activeMessage.value.original?.text || props.message.message_text
+})
+
 const canTranslate = computed(() =>
     props.viewerType === "agent" &&
     (
@@ -227,7 +235,7 @@ watch(selectedLanguage, async (val) => {
             :class="bubbleClass">
 
             <p class="whitespace-pre-wrap break-words">
-                {{ activeMessage.original?.text || props.message.message_text }}
+                {{ displayText }}
             </p>
             <div v-if="
                 message?.is_offline_message &&

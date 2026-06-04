@@ -141,7 +141,7 @@ const parseStructuredData = (raw: any): Record<string, any> | null => {
 
 const buildFamilyProductNode = (): Record<string, any> => {
     const node: Record<string, any> = {
-        '@type': 'Product',
+        '@type': 'ProductGroup',
         'name': props.webpage_data.title,
     }
 
@@ -175,9 +175,12 @@ const buildFamilyProductNode = (): Record<string, any> => {
     return node
 }
 
-const findOrCreateProductNode = (data: Record<string, any>): Record<string, any> => {
+const findOrCreateProductGroupNode = (data: Record<string, any>): Record<string, any> => {
+    console.log('aaa')
+    console.log('aa1', data['@graph'])
     if (Array.isArray(data['@graph'])) {
-        const existing = data['@graph'].find((node: any) => node['@type'] === 'Product') ?? null
+        console.log('aa2', data['@graph'])
+        const existing = data['@graph'].find((node: any) => node['@type'] === 'ProductGroup') ?? null
         if (existing) return existing
 
         const newNode = buildFamilyProductNode()
@@ -185,7 +188,7 @@ const findOrCreateProductNode = (data: Record<string, any>): Record<string, any>
         return newNode
     }
 
-    if (data['@type'] === 'Product') {
+    if (data['@type'] === 'ProductGroup') {
         return data
     }
 
@@ -223,23 +226,25 @@ const injectStructuredDataScript = (data: Record<string, any>): void => {
 onMounted(() => {
     currentUrl.value = window.location.href
 
-    let structuredData = parseStructuredData((props.webpage_data?.seo_data as any)?.structured_data)
+    if (props.webpage_data.model_type === 'ProductCategory' && props.webpage_data.sub_type === 'family') {
+        let structuredData = parseStructuredData((props.webpage_data?.seo_data as any)?.structured_data)
 
-    const autoVariants = generateProductsStructureFromProductsList(props.web_blocks)
-    console.log('autoVariants', autoVariants)
+        const autoVariants = generateProductsStructureFromProductsList(props.web_blocks)
+        console.log('autoVariants', autoVariants)
 
-    if (autoVariants.length) {
-        if (!structuredData || typeof structuredData !== 'object') {
-            structuredData = { '@context': 'https://schema.org' }
+        if (autoVariants.length) {
+            if (!structuredData || typeof structuredData !== 'object') {
+                structuredData = { '@context': 'https://schema.org' }
+            }
+
+            const productNode = findOrCreateProductGroupNode(structuredData)
+            mergeAutoVariants(productNode, autoVariants)
         }
 
-        const productNode = findOrCreateProductNode(structuredData)
-        mergeAutoVariants(productNode, autoVariants)
-    }
-
-    if (structuredData) {
-        blablabla.value = structuredData
-        injectStructuredDataScript(structuredData)
+        if (structuredData) {
+            blablabla.value = structuredData
+            injectStructuredDataScript(structuredData)
+        }
     }
 
     checkScreenType()

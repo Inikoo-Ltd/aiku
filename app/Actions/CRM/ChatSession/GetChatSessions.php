@@ -33,6 +33,7 @@ class GetChatSessions
             'view_team'       => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
+            'search'          => ['sometimes', 'string', 'max:100'],
         ];
     }
 
@@ -107,6 +108,19 @@ class GetChatSessions
 
         if (isset($filters['web_user_id'])) {
             $query->where('web_user_id', $filters['web_user_id']);
+        }
+
+        if (!empty($filters['search'])) {
+            $term = mb_strtolower($filters['search']);
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER(chat_sessions.guest_identifier COLLATE "C") LIKE ?', ["%{$term}%"])
+                    ->orWhereHas('webUser', function ($q2) use ($term) {
+                        $q2->whereRaw('LOWER(username COLLATE "C") LIKE ?', ["%{$term}%"])
+                            ->orWhereHas('customer', function ($q3) use ($term) {
+                                $q3->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"]);
+                            });
+                    });
+            });
         }
 
         return $query->paginate($filters['limit'] ?? 20);
