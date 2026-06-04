@@ -102,7 +102,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
     public function setDescriptionWebBlockOnTop(Webpage $webpage, $setDescriptionTop = false): void
     {
         $subDepartmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'sub-department-description-1')->first()->model_has_web_blocks_id;
-        $relatedProductCategoryWebBlock   = $this->getWebpageBlocksByType($webpage, 'sub-department-description-1')->first()->model_has_web_blocks_id;
+        $relatedProductCategoryWebBlock   = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')->first()->model_has_web_blocks_id;
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
 
@@ -110,7 +110,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         foreach ($webBlocks as $key => $position) {
             if ($key == $subDepartmentDescriptionWebBlock && $setDescriptionTop) {
                 $webBlocks[$key] = 1;
-            } if ($key == $relatedProductCategoryWebBlock) {
+            } elseif ($key == $relatedProductCategoryWebBlock) {
                 $webBlocks[$key] = 101;
             } else {
                 $webBlocks[$key] = $runningPosition;
