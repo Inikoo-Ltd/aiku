@@ -109,7 +109,7 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
                                 'customer_product_name' => $title,
                                 'customer_description' => Arr::get($product, 'description'),
                                 'platform_product_id' => Arr::get($product, 'id'),
-                                'platform_product_variant_id' => Arr::get($product, 'id'),
+                                'platform_product_variant_id' => Arr::get($productSku, 'id'),
                             ]);
 
                             UpdateStoredItem::run($storedItem, [
