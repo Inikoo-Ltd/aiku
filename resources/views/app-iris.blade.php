@@ -102,6 +102,51 @@
 @inertia
 </body>
 
+<!-- Method: Convert price amount to price currency -->
+<script>
+    window.lbShopCurrencyCode = '{{ Arr::get(request()->input("currency_data", []), "code") }}' || null;
+
+    window.lbFormatCurrency = function (amount) {
+        if (amount === null || amount === undefined || amount === '') return '';
+        if (!window.lbShopCurrencyCode) return amount;
+        try {
+            return new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: window.lbShopCurrencyCode,
+            }).format(parseFloat(amount) || 0);
+        } catch (e) {
+            return amount;
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[convert-price-currency]').forEach(function (el) {
+            var raw = el.getAttribute('convert-price-currency');
+            if (raw) el.textContent = window.lbFormatCurrency(raw);
+        });
+    });
+
+    var lbPriceObserver = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            mutation.addedNodes.forEach(function (node) {
+                if (node.nodeType !== 1) return;
+                var els = node.querySelectorAll ? node.querySelectorAll('[convert-price-currency]') : [];
+                els.forEach(function (el) {
+                    var raw = el.getAttribute('convert-price-currency');
+                    if (raw) el.textContent = window.lbFormatCurrency(raw);
+                });
+                if (node.hasAttribute && node.hasAttribute('convert-price-currency')) {
+                    node.textContent = window.lbFormatCurrency(node.getAttribute('convert-price-currency'));
+                }
+            });
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        lbPriceObserver.observe(document.body, { childList: true, subtree: true });
+    });
+</script>
+
 @verbatim
 <!-- Script: template custom quick search for all (category, sub, department, tag, collection) -->
 <script type="text/x-template" id="template-quick-search-custom-base">
@@ -168,88 +213,102 @@
 </script>
 
 <script type="text/x-template" id="template-results">
-    <div class="lb-product-grid">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <result :result="result" v-for="(result, i) in results" :key="i"></result>
     </div>
 </script>
 
 <script type="text/x-template" id="template-result-item">
-    <a :href="attributes?.web_url" class="lb-product-card" id="lb_product_card">
-        <!-- Image -->
-        <div class="lb-product-image-wrap">
-            <img
-                v-if="attributes.image_link"
-                :src="attributes.image_link"
-                :alt="attributes.title || ''"
-                class="lb-product-image"
-                :style="{ opacity: attributes.availability == 1 ? 1 : 0.4 }"
-                loading="lazy"
-            />
-            <div v-else class="lb-product-image-placeholder">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor">
-                    <path d="M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm16 336c0 8.822-7.178 16-16 16H48c-8.822 0-16-7.178-16-16V112c0-8.822 7.178-16 16-16h416c8.822 0 16 7.178 16 16v288zM112 232c30.928 0 56-25.072 56-56s-25.072-56-56-56-56 25.072-56 56 25.072 56 56 56zm0-80c13.234 0 24 10.766 24 24s-10.766 24-24 24-24-10.766-24-24 10.766-24 24-24zm207.029 23.029L224 270.059l-31.029-31.029c-9.373-9.373-24.569-9.373-33.941 0l-88 88A23.998 23.998 0 0 0 64 344v28c0 6.627 5.373 12 12 12h360c6.627 0 12-5.373 12-12v-92c0-6.365-2.529-12.47-7.029-16.971l-88-88c-9.373-9.372-24.569-9.372-33.942 0zM416 352H96v-4.686l80-80 48 48 112-112 80 80V352z"/>
-                </svg>
-            </div>
+    <a :href="attributes?.web_url" class="text-gray-800 isolate h-full flex flex-col flex-grow no-underline">
 
-            <!-- Out of Stock overlay -->
-            <div v-if="attributes.availability != 1" class="lb-oos-overlay">
-                <div class="lb-oos-label">Out of Stock</div>
+        <!-- Image Area -->
+        <div class="relative block w-full mb-1 rounded overflow-hidden aspect-square bg-white">
+            <div class="relative w-full h-full">
+
+                <!-- Product Image -->
+                <img
+                    v-if="attributes.image_link"
+                    :src="attributes.image_link"
+                    :alt="attributes.title || ''"
+                    class="w-full h-full object-contain object-center select-none pointer-events-none"
+                    :style="{ opacity: attributes.availability == 1 ? 1 : 0.4 }"
+                    loading="lazy"
+                />
+
+                <!-- No Image Placeholder -->
+                <div v-else class="w-full h-full flex items-center justify-center">
+                    <svg class="w-16 h-16 text-gray-300 opacity-20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor">
+                        <path d="M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm16 336c0 8.822-7.178 16-16 16H48c-8.822 0-16-7.178-16-16V112c0-8.822 7.178-16 16-16h416c8.822 0 16 7.178 16 16v288zM112 232c30.928 0 56-25.072 56-56s-25.072-56-56-56-56 25.072-56 56 25.072 56 56 56zm0-80c13.234 0 24 10.766 24 24s-10.766 24-24 24-24-10.766-24-24 10.766-24 24-24zm207.029 23.029L224 270.059l-31.029-31.029c-9.373-9.373-24.569-9.373-33.941 0l-88 88A23.998 23.998 0 0 0 64 344v28c0 6.627 5.373 12 12 12h360c6.627 0 12-5.373 12-12v-92c0-6.365-2.529-12.47-7.029-16.971l-88-88c-9.373-9.372-24.569-9.372-33.942 0zM416 352H96v-4.686l80-80 48 48 112-112 80 80V352z"/>
+                    </svg>
+                </div>
+
+                <!-- Out of Stock Overlay -->
+                <div v-if="attributes.availability != 1" class="absolute inset-0 bg-white/40 flex items-end justify-center pb-2">
+                    <span class="bg-red-50 text-red-600 text-xs font-medium px-2 py-1 rounded">Out of Stock</span>
+                </div>
+
             </div>
         </div>
 
-        <!-- Product Info -->
-        <div class="lb-product-info">
-            <!-- Code -->
-            <div style="display:flex;align-items:center;gap:4px;">
-                <span v-if="attributes.product_code" class="lb-product-code">{{ attributes.product_code[0] }}</span>
-                <!-- Stock status -->
-                <span class="xlb-product-stock" cclass="attributes.availability == 1 ? 'lb-product-stock--in' : 'lb-product-stock--out'"
-                    :style="{
-                        color: attributes.availability == 1 ? '#16a34a' : '#dc2626',
-                        opacity: 0.8,
-                        fontSize: '2em',
-                        lineHeight: '0.1em',
-                    }"
-                >
-                    {{ attributes.availability == 1 ? '•' : '•' }}
-                </span>
+        <!-- Info Below Image -->
+        <div class="mt-2 flex-1 flex flex-col border-b border-gray-200 pb-2">
+
+            <!-- Code + Stock Dot -->
+            <div class="flex items-center gap-2">
+                <span v-if="attributes.product_code" class="text-xs text-gray-500">{{ attributes.product_code[0] }}</span>
+                <span
+                    class="shrink-0 font-medium leading-snug"
+                    :class="attributes.availability == 1 ? 'text-green-600' : 'text-red-600'"
+                    style="font-size:0.55rem"
+                >●</span>
             </div>
 
-            <!-- Name -->
-            <span class="lb-product-title">{{ attributes.title }}</span>
+            <!-- Product Title -->
+            <h3 class="font-bold !text-sm leading-4 mt-1 line-clamp-2 text-justify">{{ attributes.title }}</h3>
 
-            <!-- Price -->
-            <div class="lb-product-footer">
-                {{ __("Excl. Vat") }}
-                <span v-if="attributes.formatted_price" class="lb-product-price">
-                    {{ attributes.formatted_price }}
-                </span>
-                <span v-else-if="attributes.price_amount" class="lb-product-price">
-                    {{ attributes.price_amount | price }}
-                </span>
-                <a v-else href="/app/login" class="lb-product-login-btn" @click.stop>
-                    Login for prices
-                </a>
+            <!-- HEADER: RRP + Profit -->
+            <div v-if="attributes.price_rrp"
+                class="mt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1 whitespace-nowrap text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px]">
+                <div class="flex items-baseline gap-1 leading-none">
+                    <span>RRP:</span>
+                    <span class="font-medium relative xtop-[1px]" :convert-price-currency="attributes.price_rrp">{{ attributes.price_rrp }}</span>
+                </div>
+                <div v-if="attributes.margin" class="flex items-center gap-1">
+                    <span>Profit:</span>
+                    <span class="font-bold text-green-700">({{ attributes.margin }})</span>
+                </div>
             </div>
-
-            <!-- <div class="border-b pb-2 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 whitespace-nowrap text-[9px] sm:text-[10px] md:text-[11px]"
-                v-if="product?.rrp_per_unit ?? 0 > 0"
-            >
-
-                <div class="flex items-baseline gap-1 leading-none" >
-                    <span class="text-xs">
-                        {{ trans("RRP") }}:
-                    </span>
-                    <span class="text-xs font-medium relative top-[1px]">
-                        {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
-                    </span>
-                </div>
-
-                <div class="flex items-center gap-1 md:justify-end justify-start whitespace-nowrap min-w-0">
-
-                </div>
-            </div> -->
         </div>
+
+        <!-- Price (matching Prices3 layout) -->
+        <div v-if="attributes.formatted_price || attributes.price_amount"
+            class="font-sans border-gray-200 mt-2 mb-1 px-0 tabular-nums leading-none text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px]">
+
+            
+
+            <!-- PRICE ROW -->
+            <div class="grid grid-cols-[auto_1fr] items-center gap-x-2">
+                <div class="font-semibold whitespace-nowrap">
+                    <span>Price</span>
+                    <span class="font-light" style="font-size:0.8em"> (Excl. Vat)</span>
+                </div>
+                <div class="font-bold text-right min-w-0">
+                    <!-- <span v-if="attributes.formatted_price" class="whitespace-nowrap">
+                        {{ attributes.formatted_price }}
+                    </span> -->
+                    <span vxelse class="whitespace-nowrap" :convert-price-currency="attributes.price_amount || attributes.price">
+                        {{ attributes.price_amount || attributes.price }}
+                    </span>
+                </div>
+            </div>
+
+        </div>
+        <div v-else class="mt-auto pt-1">
+            <a href="/app/login" class="block w-full text-center text-xs py-2 px-2 bg-gray-800 text-white rounded hover:bg-gray-700" style="transition:background-color 0.15s" @click.stop>
+                Login for prices
+            </a>
+        </div>
+
     </a>
 </script>
 
