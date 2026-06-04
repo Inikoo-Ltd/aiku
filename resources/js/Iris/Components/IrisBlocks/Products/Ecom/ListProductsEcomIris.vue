@@ -61,7 +61,7 @@ const products = ref<any[]>(
 );
 
 const q = ref("")
-const orderBy = ref(layout.params?.order_by || props.fieldValue?.sub_type == 'family'  ?  'recommended' : 'created_at')
+const orderBy = ref(layout.params?.order_by || props.fieldValue?.sub_type == 'family'  ?  'recommended' : '-created_at')
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
@@ -264,7 +264,7 @@ const sortOptions = computed(() => {
     return baseOptions
 })
 
-const sortKey = ref(props.fieldValue.sub_type == 'family' ? 'recommended' : 'code')
+const sortKey = ref(props.fieldValue.sub_type == 'family' ? 'recommended' : 'created_at')
 const isAscending = ref(true)
 
 
