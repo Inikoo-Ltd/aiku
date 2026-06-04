@@ -63,15 +63,15 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
             ]);
 
             $storedItemModels = [];
-            $orderedProducts = $orderedProducts->groupBy('product_id')->map(fn ($group) => [
-                'product_id' => $group->first()['product_id'],
+            $orderedProducts = $orderedProducts->groupBy('sku_id')->map(fn ($group) => [
+                'sku_id' => $group->first()['sku_id'],
                 'quantity' => count($group)
             ]);
 
             foreach ($orderedProducts as $tiktokProduct) {
                 /** @var Portfolio $portfolio */
                 $portfolio = $tiktokUser->customerSalesChannel->portfolios()
-                    ->where('platform_product_id', Arr::get($tiktokProduct, 'product_id'))->first();
+                    ->where('platform_product_variant_id', Arr::get($tiktokProduct, 'sku_id'))->first();
 
                 if ($portfolio) {
                     /** @var StoredItem $product */
