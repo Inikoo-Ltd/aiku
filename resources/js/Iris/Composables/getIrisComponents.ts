@@ -17,18 +17,18 @@ import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/Ecommerce/Produc
 import LuigiTrends1Iris from '@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue'
 import LuigiLastSeen1Iris from '@/Iris/Components/IrisBlocks/LuigiLastSeen1Iris.vue'
 import LuigiItemAlternatives1Iris from '@/Iris/Components/IrisBlocks/LuigiItemAlternatives1Iris.vue'
-import AnnouncementInformation1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation1.vue'
-import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo1.vue'
-import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
-import AnnouncementInformation2TransitionText from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue'
-import AnnouncementPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
+import AnnouncementInformation1 from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation1.vue'
+import AnnouncementPromo1 from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo1Iris.vue'
+import AnnouncementPromo2Countdown from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo2Countdown.vue'
+import AnnouncementInformation2TransitionText from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation2TransitionText.vue'
+import AnnouncementPromo3 from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo3.vue'
 import RenderDropshippingProduct from "@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"
 import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"
 
 import RecommendationCRB1Iris from '@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue'
 import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
 
-import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
+import AnnouncementInformational1 from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformational1Iris.vue'
 import Products2Render from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"
 
 import Header2Iris from "@/Iris/Components/IrisBlocks/Header2Iris.vue"

@@ -1,51 +1,6 @@
-<script setup lang='ts'>
-import { getStyles } from "@/Composables/styles"
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faTimes } from '@fal'
-import { faSpinnerThird } from '@fad'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { ref } from "vue"
-// import { closeIcon } from '@/Composables/useAnnouncement'
-import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 import { uniqueId } from "lodash-es"
 
-import { inject, computed, onMounted, onUnmounted } from "vue";
-library.add(faTimes, faSpinnerThird)
-
-const props = defineProps<{
-    announcementData?: {
-        fields: {
-            text_1: {
-                text: string
-                block_properties: BlockProperties
-            }
-            button_1: {
-                link: LinkProperties
-                text: string
-                container: {
-                    properties: BlockProperties
-                }
-            }
-            countdown: {
-                date: string
-                expired_text?: string
-            }
-        }
-        container_properties: BlockProperties
-    }
-    _parentComponent?: Element
-    isEditable?: boolean
-    isToSelectOnly?: boolean
-}>()
-
-const emits = defineEmits<{
-    (e: 'templateClicked', template: typeof componentDefaultData): void
-}>()
-
-const _text_1 = ref(null)
-// const _buttonClose = ref(null)
-
-const fieldSideEditor = [
+export const blueprint = [
     {
         name: "Container",
         icon: {
@@ -141,8 +96,7 @@ const fieldSideEditor = [
     },
 ]
 
-// Data: Container
-const defaultContainerData = {
+export const defaultContainerData = {
     "link": {
         "href": "#",
         "target": "_blank"
@@ -225,7 +179,7 @@ const defaultContainerData = {
     },
     "background": {
         "type": "gradient",
-        "color": "rgba(240,248,255,1)", // AliceBlue
+        "color": "rgba(240,248,255,1)",
         "image": {
             "original": null
         },
@@ -247,8 +201,7 @@ const defaultContainerData = {
     "isCenterHorizontal": false
 }
 
-// Data: Text, Button, Close Button
-const defaultFieldsData = {
+export const defaultFieldsData = {
     text_transition_data: {
         multi_text: [
             {
@@ -262,120 +215,8 @@ const defaultFieldsData = {
     },
 }
 
-// To select on select templates
-const componentDefaultData = {
+export const defaultData = {
     code: 'announcement-informational-1',
     fields: defaultFieldsData,
     container_properties: defaultContainerData
 }
-
-const openFieldWorkshop = inject('openFieldWorkshop', ref<number | null>(null))
-const onClickOpenFieldWorkshop = (index?: number) => {
-    if (openFieldWorkshop && index) {
-        openFieldWorkshop.value = index
-    }
-}
-
-const activeIndex = ref(0)
-let intervalId: number | null = null
-let navigationTimeoutId: number | null = null
-
-const isMobile = computed(() => {
-    if (typeof window === 'undefined') {
-        return false
-    }
-
-    return window.innerWidth < 768
-})
-
-const texts = computed(() => {
-    return props.announcementData?.fields?.text_transition_data?.multi_text ?? []
-})
-
-const navigatingIndex = ref<number | null>(null)
-
-const resetNavigationState = () => {
-    if (navigationTimeoutId) {
-        clearTimeout(navigationTimeoutId)
-        navigationTimeoutId = null
-    }
-
-    navigatingIndex.value = null
-}
-
-const onClickAnnouncement = (event: MouseEvent, index: number) => {
-    const anchor = (event.target as HTMLElement)?.closest?.('a[href]') as HTMLAnchorElement | null
-
-    if (!anchor) {
-        return
-    }
-
-    navigatingIndex.value = index
-    navigationTimeoutId = window.setTimeout(() => {
-        navigatingIndex.value = null
-        navigationTimeoutId = null
-    }, 2500)
-}
-
-const startCarousel = () => {
-    if (!isMobile.value || texts.value.length <= 1) return
-
-    intervalId = window.setInterval(() => {
-        activeIndex.value = (activeIndex.value + 1) % texts.value.length
-    }, 5000)
-}
-
-const stopCarousel = () => {
-    if (intervalId) {
-        clearInterval(intervalId)
-        intervalId = null
-    }
-}
-
-onMounted(() => {
-    startCarousel()
-})
-
-onUnmounted(() => {
-    stopCarousel()
-    resetNavigationState()
-})
-
-defineExpose({
-    fieldSideEditor
-})
-</script>
-
-<template>
-    <div v-if="!isToSelectOnly" :style="getStyles(announcementData?.container_properties)">
-        <div
-            @click="() => onClickOpenFieldWorkshop(1)"
-            class="flex justify-center announcement-component-editable overflow-hidden"
-        >
-            <!-- MOBILE : Carousel -->
-            <div v-if="isMobile" @click.capture="onClickAnnouncement($event, activeIndex)" class="flex items-center transition-all duration-500">
-                <FontAwesomeIcon v-if="texts[activeIndex]?.icon && navigatingIndex !== activeIndex" :icon="texts[activeIndex].icon"
-                    class="opacity-50 mr-2" />
-                <span v-html="texts[activeIndex]?.text"></span>
-                <FontAwesomeIcon v-if="navigatingIndex === activeIndex" icon="fad fa-spinner-third" class="opacity-70 ml-2 animate-spin" />
-            </div>
-
-            <!-- DESKTOP & TABLET : Normal layout -->
-            <template v-else>
-                <div v-for="(abc, idx) in texts" :key="idx" @click.capture="onClickAnnouncement($event, idx)" class="flex gap-x-2 items-center transition-all"
-                    :class="idx + 1 < texts.length ? 'border-r border-black/20' : ''" :style="{
-                        paddingLeft: announcementData?.fields?.text_transition_data?.gap + 'px',
-                        paddingRight: announcementData?.fields?.text_transition_data?.gap + 'px',
-                    }">
-                    <FontAwesomeIcon v-if="abc.icon && navigatingIndex !== idx" :icon="abc.icon" class="opacity-50" />
-                    <FontAwesomeIcon v-if="navigatingIndex === idx" icon="fad fa-spinner-third" class="opacity-70 my-auto animate-spin" />
-                    <span v-html="abc.text"></span>
-                </div>
-            </template>
-        </div>
-    </div>
-
-    <div v-else @click="() => emits('templateClicked', componentDefaultData)" class="inset-0 absolute">
-    </div>
-
-</template>
