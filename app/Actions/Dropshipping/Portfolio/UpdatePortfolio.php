@@ -36,13 +36,13 @@ class UpdatePortfolio extends OrgAction
     public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
 
-        if (Arr::exists($modelData, 'item_id') && Arr::get($modelData, 'item_type') === class_basename(StoredItem::class)) {
+        /*if (Arr::exists($modelData, 'item_id') && Arr::get($modelData, 'item_type') === class_basename(StoredItem::class)) {
             $storedItem = StoredItem::find(Arr::get($modelData, 'item_id'));
             if ($storedItem) {
                 data_set($modelData, 'item_code', $storedItem->reference);
                 data_set($modelData, 'item_name', $storedItem->name);
             }
-        }
+        }*/
 
         if (Arr::exists($modelData, 'customer_product_name') && !Arr::exists($modelData, 'platform_handle')) {
             data_set(
