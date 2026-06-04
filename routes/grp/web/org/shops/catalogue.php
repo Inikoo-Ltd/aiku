@@ -22,6 +22,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithIndependentTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
+use App\Actions\Catalogue\Product\UI\IndexMissingDescriptionProducts;
 use App\Actions\Catalogue\Product\UI\IndexRRPViolationProducts;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
 use App\Actions\Catalogue\ProductCategory\UI\CreateDepartment;
@@ -122,6 +123,16 @@ Route::prefix('products')->as('products.')
         Route::prefix('out-of-stock')->as('out_of_stock_products.')->group(function () {
             Route::get('', IndexOutOfStockProducts::class)->name('index');
             Route::get('create', CreateProduct::class)->name('create');
+            Route::prefix('{product}')->group(function () {
+                Route::get('', ShowProduct::class)->name('show');
+                Route::get('images', GetProductUploadedImages::class)->name('images');
+                Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+            });
+        });
+
+        Route::prefix('missing-description')->as('missing_description_products.')->group(function () {
+            Route::get('', IndexMissingDescriptionProducts::class)->name('index');
             Route::prefix('{product}')->group(function () {
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');

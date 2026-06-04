@@ -21,14 +21,19 @@ import {
     faSpellCheck,
     faSquare,
     faTimesCircle,
-    faVirus
+    faVirus,
+    faEyeEvil
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "../Icon.vue";
-import { inject } from "vue";
+import axios from "axios";
+import { inject, ref } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { RouteParams } from "@/types/route-params";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
+import Modal from "@/Components/Utils/Modal.vue";
 
 library.add(
     faSpellCheck,
@@ -44,13 +49,33 @@ library.add(
     faDumpster,
     faHandPaper,
     faCheck,
-    faTimesCircle
+    faTimesCircle,
+    faEyeEvil
 );
 defineProps<{
     data: object,
     tab?: string
 }>();
 
+const showEmailPreview = ref(false);
+const selectedEmail = ref<any>(null);
+
+function formatDate(dateString: string | undefined) {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleString();
+}
+
+async function openEmailPreview(dispatchedEmail: DispatchedEmailResource) {
+    try {
+        const { data } = await axios.get(
+            route("grp.json.email.dispatched-email.copy", { dispatchedEmail: dispatchedEmail.id })
+        );
+        selectedEmail.value = { ...dispatchedEmail, body_preview: data?.body_preview };
+        showEmailPreview.value = true;
+    } catch (e) {
+        console.error("Failed to fetch email copy", e);
+    }
+}
 
 function dispatchedEmailRoute(dispatchedEmail: DispatchedEmailResource) {
     switch (route().current()) {
@@ -140,6 +165,7 @@ const locale = inject("locale", aikuLocaleStructure);
 </script>
 
 <template>
+    <div>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(state)="{ item: dispatchedEmail }">
             <Icon v-if="dispatchedEmail.state" :data="dispatchedEmail.state" />
@@ -154,6 +180,12 @@ const locale = inject("locale", aikuLocaleStructure);
                 {{ dispatchedEmail["email_address"] }}
             </span>
             <Icon :data="dispatchedEmail.mask_as_spam" class="pl-1" />
+            <span v-if="dispatchedEmail.has_email_preview" @click="() => { openEmailPreview(dispatchedEmail); }"
+                  class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 cursor-pointer transition">
+                  <FontAwesomeIcon :icon="faEyeEvil" class="mr-1" />
+                  {{ trans("Preview") }}
+            </span>
+
         </template>
 
         <template #cell(customer_name)="{ item: dispatchedEmail }">
@@ -181,4 +213,21 @@ const locale = inject("locale", aikuLocaleStructure);
         </template>
 
     </Table>
+
+       <!-- Email Preview Modal -->
+    <Modal :show="showEmailPreview" @close="showEmailPreview = false" width="w-auto max-w-4xl px-4">
+      <div class="p-4">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Email Preview</h3>
+        <div v-if="selectedEmail" class="space-y-4">
+          <div>
+            <p class="text-sm text-gray-500">To: {{ selectedEmail?.email_address }}</p>
+            <p class="text-sm text-gray-500">Sent: {{ formatDate(selectedEmail?.sent_at) }}</p>
+          </div>
+          <div class="border-t border-gray-200 pt-4">
+            <div class="bg-gray-50 p-4 rounded" v-html="selectedEmail?.body_preview"></div>
+          </div>
+        </div>
+      </div>
+    </Modal>
+    </div>
 </template>

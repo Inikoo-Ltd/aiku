@@ -140,6 +140,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_minion_variant
  * @property bool $follow_trade_unit_media
  * @property bool $mismatch_detected Have a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
+ * @property bool $has_missing_child_description True when at least one linked product has a null or empty description
  * @property HealthRankEnum|null $health_rank
  * @property bool|null $mismatch_with_seeder_detected
  * @property int|null $index_under_master_family

@@ -699,7 +699,7 @@ if (isClient) {
                                             color: layout.app.theme[5],
                                         }
                                         : {}">
-                                {{ m }}
+                                {{ trans(m === 'chat' ? 'Chat' : 'History') }}
                             </button>
                         </template>
 

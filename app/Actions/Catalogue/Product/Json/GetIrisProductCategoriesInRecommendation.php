@@ -30,7 +30,8 @@ class GetIrisProductCategoriesInRecommendation extends IrisAction
             ->whereIn('product_categories.id', $relatedProductCategoriesId)
             ->leftJoin('webpages', function ($join) {
                 $join->on('product_categories.id', '=', 'webpages.model_id')
-                    ->where('webpages.model_type', 'ProductCategory');
+                    ->where('webpages.model_type', 'ProductCategory')
+                    ->where('webpages.layout_style', 'main_page');
             })
             ->select([
                 'product_categories.code',

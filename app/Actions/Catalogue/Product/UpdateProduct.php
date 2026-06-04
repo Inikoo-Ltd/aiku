@@ -16,6 +16,8 @@ use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
+use App\Models\Masters\MasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -227,6 +229,12 @@ class UpdateProduct extends OrgAction
                     'description' => [$product->shop->language->code => Arr::pull($modelData, 'description')]
                 ]
             ]);
+
+            if ($product->master_product_id) {
+                MasterAssetHydrateMissingChildDescription::dispatch(
+                    MasterAsset::find($product->master_product_id)
+                )->delay($this->hydratorsDelay);
+            }
         }
 
         if (Arr::has($changed, 'description_extra')) {

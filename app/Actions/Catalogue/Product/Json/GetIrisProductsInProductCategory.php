@@ -49,7 +49,7 @@ class GetIrisProductsInProductCategory extends IrisAction
         $orderBy = request()->query('sort');
 
         if (!$orderBy) {
-            $orderBy = $productCategory->type === ProductCategoryTypeEnum::FAMILY ? 'recommended' : 'code';
+            $orderBy = $productCategory->type === ProductCategoryTypeEnum::FAMILY ? 'recommended' : '-created_at';
         }
 
         if ($orderBy == 'recommended') {
