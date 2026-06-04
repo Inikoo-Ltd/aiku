@@ -8,12 +8,11 @@
 
 namespace App\Actions\DevOps\Server;
 
-use App\Actions\OrgAction;
 use App\Models\DevOps\Server;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetServerInfo extends OrgAction
+class GetServerInfo
 {
     use AsAction;
 
@@ -81,7 +80,6 @@ class GetServerInfo extends OrgAction
 
     public function asController(Server $server, ActionRequest $request): \Illuminate\Http\Response|array
     {
-        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($server);
     }

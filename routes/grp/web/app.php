@@ -141,9 +141,6 @@ Route::middleware(
     Route::prefix("models")
         ->name("models.")
         ->group(__DIR__."/models.php");
-    Route::prefix("server")
-        ->name("server.")
-        ->group(__DIR__."/server.php");
     Route::prefix("search")
         ->name("search.")
         ->group(__DIR__."/search.php");

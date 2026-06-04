@@ -157,8 +157,8 @@ trait WithUpdateWebImages
             }
 
             $imageOriginal  = $media->getImage();
-            $imageGallery   = $imageOriginal->resize(0, 600);
-            $imageThumbnail = $imageOriginal->resize(0, 48);
+            $imageGallery   = $media->getImage()->resize(0, 600);
+            $imageThumbnail = $media->getImage()->resize(0, 48);
 
             $images[$field] = [
                 'original'  => GetPictureSources::run($imageOriginal),

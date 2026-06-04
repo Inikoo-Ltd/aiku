@@ -244,7 +244,7 @@ function onDeletefilesInBox(categoryBox: any) {
 
 function openEditAlt(item: any) {
     selectedImageToEditAlt.value = item
-    altInput.value = item?.alt ?? item?.name ?? ""
+    altInput.value = item?.alt ?? ""
     isModalEditAlt.value = true
 }
 
@@ -456,10 +456,13 @@ function onDeleteFilesInList(categoryBox: any) {
 
                                 <div class="flex items-center gap-1 mt-0.5">
                                     <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
-                                        :title="item?.alt ? item?.alt : item?.name">
-                                        {{ trans('Alt') }}: {{ item?.alt ? item?.alt : item?.name }}
+                                        :class="item?.alt ? 'text-gray-500' : 'text-gray-400'"
+                                        :title="item?.alt || trans('Not set')">
+                                        {{ trans('Alt') }}: 
+                                        <template v-if="item?.alt">{{ item?.alt }}</template>
+                                        <span v-else class="not-italic">- {{ trans('not set') }}</span>
                                     </span>                                    
-                                    <button v-if="editable && data?.update_image_alt_route" type="button"
+                                    <button v-if="data?.update_image_alt_route" type="button"
                                         @click="openEditAlt(item)"
                                         class="text-gray-400 hover:text-blue-600 transition"
                                         v-tooltip="trans('Edit alt text')">
@@ -520,9 +523,10 @@ function onDeleteFilesInList(categoryBox: any) {
     <Dialog v-model:visible="isModalEditAlt" modal :header="trans('Edit Alt Text')" :style="{ width: '32rem' }">
         <div class="space-y-3">
             <p class="text-xs text-gray-500">
-                {{ trans('Defaults to the file name if empty') }}
+                {{ trans('Alt text describes the image for SEO and screen readers.') }}
             </p>
-            <InputText v-model="altInput" :placeholder="selectedImageToEditAlt?.name || ''" class="w-full" />
+            
+            <InputText v-model="altInput" :placeholder="trans('Describe the image for SEO & accessibility')" class="w-full" />
         </div>
 
         <template #footer>

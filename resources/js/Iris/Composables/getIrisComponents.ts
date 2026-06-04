@@ -31,16 +31,14 @@ import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
 import Products2Render from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"
 
-import Header2Iris from "@/Components/CMS/Website/Headers/Header2/Header2Iris.vue"
-import Header1Iris from "@/Components/CMS/Website/Headers/Header1/Header1Iris.vue"
+import Header2Iris from "@/Iris/Components/IrisBlocks/Header2Iris.vue"
+import Header1Iris from "@/Iris/Components/IrisBlocks/Header1Iris.vue"
 
-import Topbar1FulfilmentIris from "@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Topbar1FulfilmentIris.vue"
-import Topbar2FulfilmentIris from "@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Topbar2FulfilmentIris.vue"
-import Topbar3FulfilmentIris from "@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Topbar3FulfilmentIris.vue"
+import Topbar1FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar1FulfilmentIris.vue"
+import Topbar2FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"
 
-import Topbar1Iris from "@/Components/CMS/Website/TopBars/Template/Topbar1/Topbar1Iris.vue"
-import Topbar2Iris from "@/Components/CMS/Website/TopBars/Template/Topbar2/Topbar2Iris.vue"
-import Topbar3Iris from "@/Components/CMS/Website/TopBars/Template/Topbar3/Topbar3Iris.vue"
+import Topbar1Iris from "@/Iris/Components/IrisBlocks/Topbar1Iris.vue"
+import Topbar2Iris from "@/Iris/Components/IrisBlocks/Topbar2Iris.vue"
 
 
 import Menu1Workshop from "@/Components/CMS/Website/Menus/Menu1Workshop.vue"
@@ -110,11 +108,9 @@ const components = (shop_type?: string): Record<string, Component> => {
 		//topBar
 		"top-bar-1": Topbar1Iris,
 		"top-bar-2": Topbar2Iris,
-		"top-bar-3": Topbar3Iris,
 
 		"top-bar-1-fulfilment": Topbar1FulfilmentIris,
 		"top-bar-2-fulfilment": Topbar2FulfilmentIris,
-		"top-bar-3-fulfilment": Topbar3FulfilmentIris,
 
 		//header
 		"header-1": Header1Iris,
