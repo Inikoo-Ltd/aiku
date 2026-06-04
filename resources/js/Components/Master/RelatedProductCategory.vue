@@ -148,7 +148,7 @@ const SaveOrder = async () => {
                             {{ trans('Start by adding your first product category to this list.') }}
                         </div>
 
-                        <Button v-if="props.data?.editable" class="mt-5" label="Add Product" type="create"
+                        <Button v-if="props.data?.editable" class="mt-5" label="Add Product Category" type="create"
                             @click="openAddProduct" />
                     </div>
                 </template>

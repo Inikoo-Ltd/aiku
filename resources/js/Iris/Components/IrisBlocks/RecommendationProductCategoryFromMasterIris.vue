@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from "vue"
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
+import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fal'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation } from 'swiper/modules'
@@ -157,15 +157,16 @@ console.log(props)
 
     <div class="relative w-full">
       <button v-if="showNavigation" ref="prevEl" type="button"
-        class="absolute left-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full  transition  hover:text-gray-950 md:flex"
+        class="absolute left-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full  transition  md:flex"
         aria-label="Previous category">
-        <FontAwesomeIcon :icon="faChevronLeft" class="text-xl" fixed-width />
+        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl" fixed-width />
       </button>
 
-      <Swiper :modules="[Navigation]" :loop="true" :slides-per-view="perRow" :space-between="spaceBetween"
+       <div class="py-4 md:px-12 lg:px-[44px] px-4">
+          <Swiper :modules="[Navigation]" :loop="true" :slides-per-view="perRow" :space-between="spaceBetween"
         :allow-touch-move="true" :navigation="true" :initial-slide="0" @swiper="onSwiper" class="w-full">
         <SwiperSlide v-for="(data, index) in allItems" :key="'item-' + index" class="h-auto">
-          <a :href="data?.url || '#'" class="group flex h-full flex-col">
+          <a :href="data?.url || '#'" class="group flex h-full flex-col ">
             <!-- Image -->
             <div class="aspect-square overflow-hidden bg-gray-100">
               <Image v-if="data?.web_images?.main?.original" :src="data?.web_images?.main?.original" :alt="data.name"
@@ -186,10 +187,13 @@ console.log(props)
         </SwiperSlide>
       </Swiper>
 
+       </div>
+    
+
       <button v-if="showNavigation" ref="nextEl" type="button"
-        class="absolute right-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 iitems-center justify-center rounded-full  transition  hover:text-gray-950 md:flex"
+        class="absolute right-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full  transition  md:flex"
         aria-label="Next category">
-        <FontAwesomeIcon :icon="faChevronRight" class="text-xl" fixed-width />
+        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl" fixed-width />
       </button>
     </div>
   </div>
