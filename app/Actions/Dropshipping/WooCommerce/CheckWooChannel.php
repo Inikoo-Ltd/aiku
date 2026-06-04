@@ -24,7 +24,6 @@ class CheckWooChannel
 
     public function handle(WooCommerceUser $wooCommerceUser): CustomerSalesChannel
     {
-        dd($wooCommerceUser->checkConnection());
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
         $connection = $wooCommerceUser->checkConnection();
