@@ -141,7 +141,7 @@ const parseStructuredData = (raw: any): Record<string, any> | null => {
 
 const buildFamilyProductNode = (): Record<string, any> => {
     const node: Record<string, any> = {
-        '@type': 'Product',
+        '@type': 'ProductGroup',
         'name': props.webpage_data.title,
     }
 
@@ -176,7 +176,10 @@ const buildFamilyProductNode = (): Record<string, any> => {
 }
 
 const findOrCreateProductGroupNode = (data: Record<string, any>): Record<string, any> => {
+    console.log('aaa')
+    console.log('aa1', data['@graph'])
     if (Array.isArray(data['@graph'])) {
+        console.log('aa2', data['@graph'])
         const existing = data['@graph'].find((node: any) => node['@type'] === 'ProductGroup') ?? null
         if (existing) return existing
 
@@ -278,7 +281,7 @@ onBeforeUnmount(() => {
         <meta name="twitter:image" :content="webpage_img?.png || webpage_img?.url || ''" />
     </Head>
     
-    <!-- <pre>{{ blablabla }}</pre> -->
+    <pre>{{ blablabla }}</pre>
     <div class="bg-white">
         <div class="mx-auto w-full max-w-screen-3xl">
             <div
