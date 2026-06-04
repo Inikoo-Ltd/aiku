@@ -131,7 +131,7 @@ const SaveOrder = async () => {
                 <!-- TOP ACTION -->
                 <template v-if="props.data?.editable" #before-button-list>
                     <div class="flex justify-end mx-3">
-                        <Button label="+ Add Product" type="tertiary" size="xs" @click="openAddProduct" />
+                        <Button label="+ Add Product Category" type="tertiary" size="xs" @click="openAddProduct" />
                     </div>
                 </template>
 
@@ -141,11 +141,11 @@ const SaveOrder = async () => {
                         class="flex flex-col items-center justify-center text-center py-12 px-6 border border-dashed rounded-lg bg-gray-50">
 
                         <div class="text-sm font-semibold text-gray-700">
-                            {{ trans('No products found') }}
+                            {{ trans('No products category found') }}
                         </div>
 
                         <div class="text-xs text-gray-500 mt-1 max-w-xs">
-                            {{ trans('Start by adding your first product to this list.') }}
+                            {{ trans('Start by adding your first product category to this list.') }}
                         </div>
 
                         <Button v-if="props.data?.editable" class="mt-5" label="Add Product" type="create"
