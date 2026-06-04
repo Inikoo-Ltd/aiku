@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
@@ -19,7 +20,9 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -34,6 +37,7 @@ class ShowShop extends OrgAction
     use WithDashboardSettings;
     use WithPerformanceDateResolution;
     use WithTabsBox;
+    use GetPlatformLogo;
 
     public function handle(Shop $shop): Shop
     {
@@ -89,6 +93,10 @@ class ShowShop extends OrgAction
             ],
         ];
 
+        if ($shop->type->value === 'dropshipping') {
+            $dashboard['super_blocks'][0]['channel_health'] = $this->getChannelHealthStats($shop);
+        }
+
         $currentTabEnum = ShopDashboardSalesTableTabsEnum::from($currentTab);
         $primaryTables  = ShopDashboardSalesTableTabsEnum::tablesForTabs($shop, $timeSeriesData, [$currentTabEnum]);
 
@@ -112,6 +120,38 @@ class ShowShop extends OrgAction
             'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
             'dashboard'   => $dashboard,
         ]);
+    }
+
+    private function getChannelHealthStats(Shop $shop): array
+    {
+        return CustomerSalesChannel::query()
+            ->join('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
+            ->where('customer_sales_channels.shop_id', $shop->id)
+            ->whereNull('customer_sales_channels.deleted_at')
+            ->where('platforms.type', '!=', PlatformTypeEnum::MANUAL->value)
+            ->selectRaw("
+                platforms.id,
+                platforms.name,
+                platforms.type,
+                CAST(SUM(CASE WHEN customer_sales_channels.platform_status = true THEN 1 ELSE 0 END) AS INTEGER) as ok,
+                CAST(SUM(CASE WHEN customer_sales_channels.platform_status = false THEN 1 ELSE 0 END) AS INTEGER) as problem,
+                CAST(SUM(CASE WHEN customer_sales_channels.platform_status = true AND customer_sales_channels.number_orders > 0 THEN 1 ELSE 0 END) AS INTEGER) as ok_with_invoices,
+                CAST(SUM(CASE WHEN customer_sales_channels.platform_status = true AND customer_sales_channels.last_order_created_at >= NOW() - INTERVAL '30 days' THEN 1 ELSE 0 END) AS INTEGER) as ok_with_recent_invoices
+            ")
+            ->groupBy('platforms.id', 'platforms.name', 'platforms.type')
+            ->orderBy('platforms.name')
+            ->get()
+            ->map(fn ($row) => [
+                'name'                   => $row->name,
+                'type'                   => $row->type,
+                'logo'                   => $this->getPlatformLogo($row->type),
+                'ok'                     => (int) $row->ok,
+                'problem'                => (int) $row->problem,
+                'ok_with_invoices'       => (int) $row->ok_with_invoices,
+                'ok_with_recent_invoices'=> (int) $row->ok_with_recent_invoices,
+            ])
+            ->values()
+            ->toArray();
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop

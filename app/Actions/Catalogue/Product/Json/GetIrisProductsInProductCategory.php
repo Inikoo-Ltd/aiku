@@ -52,7 +52,7 @@ class GetIrisProductsInProductCategory extends IrisAction
             $orderBy = $productCategory->type === ProductCategoryTypeEnum::FAMILY ? 'recommended' : '-created_at';
         }
 
-        if ($orderBy == 'recommended') {
+        if ($orderBy == 'recommended' || $orderBy == '-recommended') {
             if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
                 $queryBuilder->orderBy("index_under_{$productCategory->type->value}");
             }
