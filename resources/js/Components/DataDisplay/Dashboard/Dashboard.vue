@@ -3,6 +3,7 @@ import DashboardSettings from "./DashboardSettings.vue"
 import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
 import ShopIntervalStats from "./ShopIntervalStats.vue"
+import ChannelHealthBadges from "./ChannelHealthBadges.vue"
 import { ref, provide } from "vue"
 import {
     faBox,
@@ -79,6 +80,11 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
         </KeepAlive>
 
         <ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
+
+        <ChannelHealthBadges
+            v-if="props.dashboard?.super_blocks?.[0]?.channel_health?.length"
+            :channel-health="props.dashboard?.super_blocks?.[0]?.channel_health"
+        />
 
 		<DashboardSettings
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
