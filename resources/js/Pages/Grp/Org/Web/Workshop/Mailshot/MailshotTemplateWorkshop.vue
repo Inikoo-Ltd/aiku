@@ -16,12 +16,13 @@ import Multiselect from "@vueform/multiselect"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faTrashAlt } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faTrashAlt, faExclamationTriangle } from '@fal'
 import { faUserCog } from '@fas'
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
+library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
 
 const props = defineProps<{
     title: string,
@@ -202,6 +203,15 @@ const handleDelete = async () => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #otherBefore>
+            <div>
+                <span class="inline-flex items-center text-xs text-yellow-600">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="mr-0.5 flex-shrink-0" fixed-width />
+                    {{ ctrans('Click the "SAVE" button in BeeFree Workspace before this template can be used') }}
+                </span>
+            </div>
+
+        </template>
         <template #other>
             <ModalConfirmation :title="trans('Are you sure you want to delete this template?')"
                 :description="trans('This action cannot be undone. This will permanently delete this template')"
