@@ -59,6 +59,7 @@ class IndexChatConversations extends OrgAction
                 'chat_sessions.priority',
                 'chat_sessions.web_user_id',
                 'chat_sessions.shop_id',
+                'chat_sessions.metadata',
             ])
             ->allowedSorts([
                 AllowedSort::field('created_at', 'chat_sessions.created_at'),
@@ -93,6 +94,7 @@ class IndexChatConversations extends OrgAction
                 ->column(key: 'contact', label: __('Contact'), canBeHidden: false)
                 ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false)
                 ->column(key: 'assigned_agent', label: __('Agent'), canBeHidden: true)
+                ->column(key: 'ai_summary', label: __('Summary'), canBeHidden: true)
                 ->column(key: 'created_at', label: __('Started'), canBeHidden: false, sortable: true)
                 ->column(key: 'closed_at', label: __('Closed'), canBeHidden: true, sortable: true);
 
