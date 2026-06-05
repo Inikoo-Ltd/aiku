@@ -28,7 +28,7 @@ class UpdateInventoryTiktokProducts
     use AsAction;
     use WithAttributes;
 
-    public $commandSignature = 'dropshipping:tiktok:product:inventory:update {customerSalesChannel}';
+    public $commandSignature = 'dropshipping:tiktok:product:inventory:update {customerSalesChannel?}';
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
