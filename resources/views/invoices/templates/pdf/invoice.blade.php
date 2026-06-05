@@ -218,8 +218,8 @@
             @if($deliveryNote)
                 <div style="text-align: right">{{__('Weight')}}: <b>{{ $deliveryNote->getBestWeight() }}</b></div>
             @endif
-            @if($show_dispatch_totals)
-<div style="text-align: right">{{__('Total SKO')}}: <b>{{ number_format($dispatch_total_skos, 0) }}</b></div>
+            @if($show_dispatch_totals && $dispatch_total_skos !== null)
+                <div style="text-align: right">{{__('Total SKO')}}: <b>{{ number_format($dispatch_total_skos, 0) }}</b></div>
                 <div style="text-align: right">{{__('Total Units')}}: <b>{{ number_format($dispatch_total_units, 0) }}</b></div>
             @endif
         </td>
