@@ -62,7 +62,6 @@ class TransactionsResource extends JsonResource
             ($this->quantity_ordered * $this->product_units) :
             $this->quantity_ordered;
 
-
         $quantityOrderedFractional = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(

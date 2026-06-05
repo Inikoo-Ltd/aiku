@@ -92,6 +92,11 @@ class ShowIrisWebpage
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
+        if ($path == 'robots.txt') {
+            return 'robots';
+        }
+
+
         $loggedStatusFromHeader = $request->header('X-Logged-Status');
         if ($loggedStatusFromHeader !== null) {
             $loggedIn = $loggedStatusFromHeader === 'In';
@@ -205,9 +210,23 @@ class ShowIrisWebpage
     }
 
 
-    public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
+    public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response|string
     {
         if (is_string($webpageData)) {
+
+            if ($webpageData == 'robots') {
+                $robotText = ShowIrisRobotsTxt::make()->getRobotText(request()->website);
+                if (!$robotText) {
+                    $robotText = 'User-agent: *';
+                }
+
+                return response($robotText, 200, [
+                    'Content-Type'  => 'text/plain; charset=UTF-8',
+                    'Cache-Control' => 'public, max-age=3600',
+                ]);
+            }
+
+
             $queryParameters = Arr::except(request()->query(), [
                 'favicons',
                 'website',

@@ -166,152 +166,109 @@ const screenStyles = computed(() => {
 </script>
 
 <template>
-  <section
-    class="editor-class"
-    :id="
-      modelValue?.id
-        ? modelValue.id
-        : `family-2`
-    "
-    component="family-2-workshop"
-  >
-    <div
-      class="mx-auto w-full bg-white px-4 py-4"
-      :style="{
-        ...getStyles(
-          layout?.app?.webpage_layout?.container
-            ?.properties,
-          screenType
-        ),
-        ...getStyles(
-          modelValue?.container?.properties,
-          screenType
-        ),
-        width: 'auto',
-      }"
-    >
-      <div
-        class="flex gap-6"
-        :class="screenStyles.wrapperDirection"
-      >
+  <section class="editor-class" :id="modelValue?.id
+    ? modelValue.id
+    : `family-2`
+    " component="family-2-workshop">
+    <div class="mx-auto w-full bg-white px-4 py-4" :style="{
+      ...getStyles(
+        layout?.app?.webpage_layout?.container
+          ?.properties,
+        screenType
+      ),
+      ...getStyles(
+        modelValue?.container?.properties,
+        screenType
+      ),
+      width: 'auto',
+    }">
+      <div class="flex gap-6" :class="screenStyles.wrapperDirection">
         <!-- IMAGES -->
-        <div
-          class="flex shrink-0 justify-center gap-[6px]"
-        >
+        <div class="flex shrink-0 justify-center gap-[6px]">
           <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
-            <Image
-              :src="images[0].original"
-              :imageCover="true"
-              :alt="
-                images[0]?.alt || 'family image'
-              "
-              class="object-cover"
-              :style="screenStyles.mainImage"
-            />
+            <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'
+              " class="object-cover" :style="screenStyles.mainImage" />
           </template>
 
-          <div
-            v-else
-            class="flex items-center justify-center border border-gray-200 bg-gray-100"
-            :style="screenStyles.mainImage"
-          >
-            <FontAwesomeIcon
-              :icon="faImage"
-              class="h-14 w-14 text-gray-400"
-            />
+          <div v-else class="flex items-center justify-center border border-gray-200 bg-gray-100"
+            :style="screenStyles.mainImage">
+            <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
           </div>
 
           <div class="flex flex-col gap-[6px]">
             <!-- IMAGE 2 -->
             <template v-if="hasImage(1)">
-              <Image
-                :src="images[1].original"
-                :imageCover="true"
-                :alt="
-                  images[1]?.alt ||
-                  'family image'
-                "
-                class="object-cover"
-                :style="screenStyles.sideImage"
-              />
+              <Image :src="images[1].original" :imageCover="true" :alt="images[1]?.alt ||
+                'family image'
+                " class="object-cover" :style="screenStyles.sideImage" />
             </template>
 
-            <div
-              v-else
-              class="flex items-center justify-center border border-gray-200 bg-gray-100"
-              :style="screenStyles.sideImage"
-            >
-              <FontAwesomeIcon
-                :icon="faImage"
-                class="h-14 w-14 text-gray-400"
-              />
+            <div v-else class="flex items-center justify-center border border-gray-200 bg-gray-100"
+              :style="screenStyles.sideImage">
+              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
             </div>
 
             <!-- IMAGE 3 -->
             <template v-if="hasImage(2)">
-              <Image
-                :src="images[2].original"
-                :imageCover="true"
-                :alt="
-                  images[2]?.alt ||
-                  'family image'
-                "
-                class="object-cover"
-                :style="screenStyles.sideImage"
-              />
+              <Image :src="images[2].original" :imageCover="true" :alt="images[2]?.alt ||
+                'family image'
+                " class="object-cover" :style="screenStyles.sideImage" />
             </template>
 
-            <div
-              v-else
-              class="flex items-center justify-center border border-gray-200 bg-gray-100"
-              :style="screenStyles.sideImage"
-            >
-              <FontAwesomeIcon
-                :icon="faImage"
-                class="h-14 w-14 text-gray-400"
-              />
+            <div v-else class="flex items-center justify-center border border-gray-200 bg-gray-100"
+              :style="screenStyles.sideImage">
+              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
             </div>
           </div>
         </div>
 
         <!-- CONTENT -->
-        <div
-          class="flex min-w-0 flex-1 flex-col"
-          :class="screenStyles.contentAlign"
-        >
+        <div class="flex min-w-0 flex-1 flex-col" :class="screenStyles.contentAlign">
           <div class="">
-            <h1
-              class="font-bold leading-[1.15] text-[#12243c]"
-              :style="screenStyles.title"
-            >
+            <h1 class="font-bold leading-[1.15] text-[#12243c]" :style="screenStyles.title">
               {{ modelValue.family?.name }}
             </h1>
           </div>
 
-          <div
-            class="flex-1 text-[#1d2430]"
-            :style="{
-              ...screenStyles.description,
-              lineHeight: '1.6',
-            }"
-            v-html="cleanedDescription"
-          />
-
-          <div
-            class="mt-5 flex"
-            :class="screenStyles.buttonAlign"
-          >
-            <button
-              class="rounded-xl border border-[#333] font-medium"
-              :style="{
-                ...screenStyles.button,
-                ...getStyles(modelValue?.button?.container?.properties)
-              }"
-            >
-              <span v-if="modelValue?.button?.text">{{ modelValue?.button?.text }}</span>
-              <span v-else>{{ ctrans('Learn more') }}</span>
+          <div class="flex-1 text-[#1d2430]" :style="{
+            ...screenStyles.description,
+            lineHeight: '1.6',
+          }" v-html="cleanedDescription" />
+          <div class="mt-6 flex items-center gap-6">
+            <button class="shrink-0 rounded-xl border border-[#333] font-medium" :style="{
+              ...screenStyles.button,
+              ...getStyles(modelValue?.button?.container?.properties)
+            }">
+              <span v-if="modelValue?.button?.text">
+                {{ modelValue?.button?.text }}
+              </span>
+              <span v-else>
+                {{ ctrans('Learn more') }}
+              </span>
             </button>
+
+            <div class="
+      flex
+      flex-wrap
+      items-center
+      gap-x-4
+      gap-y-2
+      min-w-0
+    ">
+              <div v-for="data in modelValue.family.tags" :key="data.name" class="flex items-center gap-1.5">
+                <Image :src="data.web_image" class="h-4 w-4 shrink-0" image-class="object-contain" />
+
+                <span class="
+          whitespace-nowrap
+          text-[12px]
+          leading-none
+          text-[#555]
+        ">
+                  {{ data.name }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -319,5 +276,4 @@ const screenStyles = computed(() => {
   </section>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

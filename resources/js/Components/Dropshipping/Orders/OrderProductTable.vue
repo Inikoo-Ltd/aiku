@@ -113,12 +113,17 @@ function onCancel(item: ProductRow) {
 const onUpdateQuantity = (
     routeUpdate: routeType,
     idTransaction: number,
-    value: number
+    value: number,
+    is_cut_view: boolean
 ) => {
-    console.log('sdfsdfsdf')
+    let sendData = is_cut_view ? {
+        units_ordered: Number(value)
+    } : {
+        quantity_ordered: Number(value)
+    }
     router.patch(
         route(routeUpdate.name, routeUpdate.parameters),
-        { quantity_ordered: Number(value) },
+        sendData,
         {
             onError: (e: any) => {
                 notify({
@@ -137,8 +142,8 @@ const onUpdateQuantity = (
 
 // Debounced update
 const debounceUpdateQuantity = debounce(
-    (routeUpdate: routeType, idTransaction: number, value: number) => {
-        onUpdateQuantity(routeUpdate, idTransaction, value)
+    (routeUpdate: routeType, idTransaction: number, value: number, is_cut_view = false) => {
+        onUpdateQuantity(routeUpdate, idTransaction, value, is_cut_view)
     },
     500
 )
@@ -400,7 +405,9 @@ const isOffersData = (offersData: any): boolean => {
             <!-- Column: Quantity Ordered -->
             <template #cell(quantity_ordered)="{ item, proxyItem }">
                 <!-- <pre>{{ item.quantity_ordered_fractional }}</pre> -->
-
+                <div v-if="layout.app.environment == 'local'" class="bg-yellow-400 w-fit">
+                    {{ item.quantity_ordered_fractional }}
+                </div> 
                 <div class="flex items-center justify-end gap-2">
                     <div v-if="item.is_gift">
                         {{ locale.number(item.quantity_bonus) }}
@@ -426,17 +433,15 @@ const isOffersData = (offersData: any): boolean => {
                             }"
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         /> -->
-
-                       <span v-if="layout.app.environment == 'local'">{{ item.quantity_ordered_fractional }}</span> 
                         <InputNumber 
                             :model-value="item.quantity_ordered_fractional[0]" 
-                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
                             inputId="horizontal-buttons" 
                             showButtons 
                             buttonLayout="horizontal"
                             :step="1" 
                             min='0',
-                            :max="item.available_quantity"
+                            :max="proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity"
                             v-bind="bindToTarget" 
                             :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
                                 ? `/${Number(item.quantity_ordered_fractional[1][1])}`
@@ -462,7 +467,7 @@ const isOffersData = (offersData: any): boolean => {
 
                         <!-- Toggle: is_cut_view -->
                         <span
-                            v-if="layout.app.environment == 'local'"
+                            xv-if="layout.app.environment == 'local'"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
                             v-tooltip="trans('Cut view')"
                             class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"

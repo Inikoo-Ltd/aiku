@@ -12,6 +12,8 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Discounts\Offer\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateTradeUnitFamilyToChildFamily;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateFAQ;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
@@ -197,6 +199,10 @@ class UpdateMasterProductCategory extends OrgAction
             MasterFamilyHydrateTradeUnitFamilyToChildFamily::make()->action($masterProductCategory);
         }
 
+        if ($masterProductCategory->wasChanged('faq')) {
+            MasterProductCategoryHydrateFAQ::make()->action($masterProductCategory);
+        }
+
         if ($masterProductCategory->wasChanged('status')) {
             if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
@@ -278,6 +284,9 @@ class UpdateMasterProductCategory extends OrgAction
             ],
             'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
+            'faq'                           => ['sometimes', 'array'],
+            'faq.*.question'                => ['sometimes', 'string'],
+            'faq.*.answer'                  => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {

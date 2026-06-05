@@ -187,7 +187,8 @@ const bestOffer = computed(() => {
                 {{ fieldValue.family?.name }}
               </h1>
             </div>
-            <div class="flex  gap-x-1 gap-y-1 md:gap-y-2 offer">
+            <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
+              class="flex gap-x-1 gap-y-1 md:gap-y-2 offer">
               <DiscountByType :offers_data="fieldValue?.family?.offers_data"
                 :template="bestOffer?.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr-v2' : 'max_discount'" />
               <DiscountByType
@@ -209,34 +210,67 @@ const bestOffer = computed(() => {
             " v-html="cleanedDescription" />
 
           <div class="
-              mt-5
-              flex
-              flex-col
-              items-center
-              gap-4
-              lg:flex-row
-              lg:items-center
-              lg:justify-start
-              2xl:mt-8
-            ">
-
-            <a href="#family-2-extra-description">
-              <button class="h-[38px]
-                rounded-lg
-                border
-                border-[#333]
-                px-8
-                text-sm
-                font-medium
-                2xl:h-[48px]
-                2xl:px-12
-                2xl:text-base" :style="{
-                  ...getStyles(fieldValue?.button?.container?.properties)
-                }">
-                <span v-if="fieldValue?.button?.text">{{ fieldValue?.button?.text }}</span>
-                <span v-else>{{ ctrans('Learn more') }}</span>
+    mt-5
+    flex
+    flex-col
+    gap-4
+    lg:flex-row
+    lg:items-start
+    lg:gap-6
+    2xl:mt-8
+  ">
+            <a href="#family-2-extra-description" class="shrink-0">
+              <button class="
+        h-[38px]
+        rounded-xl
+        border
+        border-[#333]
+        px-8
+        text-sm
+        font-medium
+        transition
+        hover:bg-gray-50
+        2xl:h-[48px]
+        2xl:px-12
+        2xl:text-base
+      " :style="{
+        ...getStyles(fieldValue?.button?.container?.properties)
+      }">
+                {{ fieldValue?.button?.text || ctrans('Learn more') }}
               </button>
             </a>
+
+            <div class="
+      flex-1
+      flex
+      flex-wrap
+      items-center
+      gap-x-4
+      gap-y-2
+      min-w-0
+    ">
+              <div class="
+      flex
+      flex-wrap
+      items-center
+      gap-x-4
+      gap-y-2
+      min-w-0
+    ">
+                <div v-for="data in fieldValue.family.tags" :key="data.name" class="flex items-center gap-1.5">
+                  <Image :src="data.web_image" class="h-4 w-4 shrink-0" image-class="object-contain" />
+
+                  <span class="
+          whitespace-nowrap
+          text-[12px]
+          leading-none
+          text-[#555]
+        ">
+                    {{ data.name }}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -246,27 +280,29 @@ const bestOffer = computed(() => {
 
 <style scoped>
 :deep(.offer .vd-content) {
-    @apply flex flex-col justify-center -ml-4 pl-7 pr-3 my-0.5 mr-0.5 rounded-md bg-gray-900 shadow-sm min-w-0;
+  @apply flex flex-col justify-center -ml-4 pl-7 pr-3 my-0.5 mr-0.5 rounded-md bg-gray-900 shadow-sm min-w-0;
 }
 
 :deep(.offer .vd-triggers) {
-    @apply text-[10px] leading-tight opacity-80 truncate max-w-[65px];
+  @apply text-[10px] leading-tight opacity-80 truncate max-w-[65px];
 }
 
 .editor-class h1 {
-    font-size: 1.75rem; /* mobile */
+  font-size: 1.75rem;
+  /* mobile */
 }
 
 @media (min-width: 1280px) {
-    .editor-class h1 {
-        font-size: 1.8rem; /* lg */
-    }
+  .editor-class h1 {
+    font-size: 1.8rem;
+    /* lg */
+  }
 }
 
 @media (min-width: 1536px) {
-    .editor-class h1 {
-        font-size: 2.5rem; /* 2xl */
-    }
+  .editor-class h1 {
+    font-size: 2.5rem;
+    /* 2xl */
+  }
 }
-
 </style>

@@ -255,6 +255,9 @@ class UpdateProductCategory extends OrgAction
             'is_description_extra_reviewed' => ['sometimes', 'boolean'],
             'set_main_webpage'              => ['sometimes', 'string'],
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
+            'faq'                           => ['sometimes', 'array'],
+            'faq.*.question'                => ['sometimes', 'string'],
+            'faq.*.answer'                  => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {
