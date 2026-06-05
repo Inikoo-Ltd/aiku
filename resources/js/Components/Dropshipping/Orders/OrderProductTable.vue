@@ -445,7 +445,7 @@ const isOffersData = (offersData: any): boolean => {
                             :inputStyle="{
                                     width: bindToTarget?.fluid
                                         ? undefined
-                                        : (proxyItem.is_cut_view && item.quantity_ordered_fractional[1][1] ? '75px' : '50px'),
+                                        : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '75px' : '50px'),
                                     textAlign: 'center',
                                 }" 
                             fluid
