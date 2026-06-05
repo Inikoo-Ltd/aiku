@@ -274,7 +274,7 @@ function resetForm() {
 }
 
 const isStep1Invalid = computed(() => {
-    if(!voucherExists.value) return true
+    if (voucherExists.value !== false) return true
     if (!offerVoucher.value?.trim()) return true
     if (!offerLabel.value?.trim()) return true
     if (!startDate.value) return true
@@ -340,13 +340,13 @@ const isFormInvalid = computed(() => {
                             <FontAwesomeIcon icon="fas fa-spinner-third" spin class="text-xs" />
                             {{ trans('Checking voucher code') }}…
                         </p>
-                        <p v-else-if="voucherExists === true" class="text-sm text-green-600 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" />
-                            {{ trans('Voucher code exists') }}
-                        </p>
-                        <p v-else-if="voucherExists === false" class="text-sm text-red-500 flex items-center gap-x-1">
+                        <p v-else-if="voucherExists === true" class="text-sm text-red-500 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
-                            {{ trans('Voucher code not found') }}
+                            {{ trans('Voucher code already exists') }}
+                        </p>
+                        <p v-else-if="voucherExists === false" class="text-sm text-green-600 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" />
+                            {{ trans('Voucher code is available') }}
                         </p>
 
                     </div>

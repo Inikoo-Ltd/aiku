@@ -41,6 +41,10 @@ class UpdateProductCategory extends OrgAction
     {
         $originalImageId = $productCategory->image_id;
 
+        if ($productCategory->type !== ProductCategoryTypeEnum::FAMILY) {
+            Arr::pull($modelData, 'trade_unit_family_id'); // Safe guard so only family would have relationship with TradeUnitFamilyId
+        }
+
         if ($chosenMainWebpageId = Arr::pull($modelData, 'set_main_webpage')) {
             $webpage = Webpage::find($chosenMainWebpageId);
 
@@ -195,7 +199,7 @@ class UpdateProductCategory extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'              => [
+            'code'                          => [
                 'sometimes',
                 $this->strict ? 'max:32' : 'max:255',
                 new AlphaDashDot(),
@@ -210,13 +214,13 @@ class UpdateProductCategory extends OrgAction
                     ]
                 ),
             ],
-            'name'              => ['sometimes', 'max:250', 'string'],
-            'image_id'          => ['sometimes', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
-            'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
-            'description'       => ['sometimes', 'nullable', 'max:65500'],
-            'description_title' => ['sometimes', 'nullable', 'max:255'],
-            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
-            'department_id'     => [
+            'name'                          => ['sometimes', 'max:250', 'string'],
+            'image_id'                      => ['sometimes', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'state'                         => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
+            'description'                   => ['sometimes', 'nullable', 'max:65500'],
+            'description_title'             => ['sometimes', 'nullable', 'max:255'],
+            'description_extra'             => ['sometimes', 'nullable', 'max:65500'],
+            'department_id'                 => [
                 'sometimes',
                 Rule::exists('product_categories', 'id')
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
@@ -229,27 +233,28 @@ class UpdateProductCategory extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
-            'follow_master'              => ['sometimes', 'boolean'],
-            'image'                      => [
+            'follow_master'                 => ['sometimes', 'boolean'],
+            'image'                         => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'webpage_id'                 => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
-            'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
-            'images'                     => ['sometimes', 'array'],
-            'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
-            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
-            'name_i8n' => ['sometimes', 'array'],
-            'description_title_i8n' => ['sometimes', 'array'],
-            'description_i8n' => ['sometimes', 'array'],
-            'description_extra_i8n' => ['sometimes', 'array'],
-            'is_name_reviewed' => ['sometimes', 'boolean'],
+            'webpage_id'                    => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                           => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'                        => ['sometimes', 'array'],
+            'master_product_category_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
+            'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
+            'name_i8n'                      => ['sometimes', 'array'],
+            'description_title_i8n'         => ['sometimes', 'array'],
+            'description_i8n'               => ['sometimes', 'array'],
+            'description_extra_i8n'         => ['sometimes', 'array'],
+            'is_name_reviewed'              => ['sometimes', 'boolean'],
             'is_description_title_reviewed' => ['sometimes', 'boolean'],
-            'is_description_reviewed' => ['sometimes', 'boolean'],
+            'is_description_reviewed'       => ['sometimes', 'boolean'],
             'is_description_extra_reviewed' => ['sometimes', 'boolean'],
-            'set_main_webpage'  => ['sometimes', 'string'],
+            'set_main_webpage'              => ['sometimes', 'string'],
+            'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
         ];
 
         if (!$this->strict) {
