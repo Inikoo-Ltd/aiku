@@ -25,12 +25,8 @@
 
 @php
     $totalQuantity = $items->sum(fn($i) => $i->quantity_required ?? 0);
-    $totalSkos     = $deliveryNote->total_skos > 0
-        ? $deliveryNote->total_skos
-        : $items->sum(fn($i) => $i->quantity_dispatched ?? $i->quantity_packed ?? 0);
-    $totalUnits    = $deliveryNote->total_units > 0
-        ? $deliveryNote->total_units
-        : $items->sum(fn($i) => ($i->quantity_dispatched ?? $i->quantity_packed ?? 0) * ($i->orgStock?->packed_in ?? 1));
+    $totalSkos     = $deliveryNote->total_skos > 0 ? $deliveryNote->total_skos : null;
+    $totalUnits    = $deliveryNote->total_units > 0 ? $deliveryNote->total_units : null;
 @endphp
 
 <!-- Picker / Packer -->
@@ -74,8 +70,10 @@
             <td><strong>Boxes:</strong> {{ $deliveryNote->getNumberParcels() }}</td>
         @endif
         <td><strong>Weight:</strong> {{ $deliveryNote->getBestWeight() }}</td>
-        <td><strong>Total SKO:</strong> {{ number_format($totalSkos, 0) }}</td>
-        <td><strong>Total Units:</strong> {{ number_format($totalUnits, 0) }}</td>
+        @if($totalSkos !== null)
+            <td><strong>Total SKO:</strong> {{ number_format($totalSkos, 0) }}</td>
+            <td><strong>Total Units:</strong> {{ number_format($totalUnits, 0) }}</td>
+        @endif
     </tr>
 </table>
 
