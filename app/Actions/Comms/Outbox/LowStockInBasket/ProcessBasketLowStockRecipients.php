@@ -46,6 +46,9 @@ class ProcessBasketLowStockRecipients
             return;
         }
 
+        $previousLocale = app()->getLocale();
+        app()->setLocale($outbox->shop->language->code);
+
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
 
         foreach ($customers as $customer) {
@@ -77,6 +80,8 @@ class ProcessBasketLowStockRecipients
                 ]
             );
         }
+
+        app()->setLocale($previousLocale);
 
         // After processing the chunk, update and dispatch the delivery channel
         UpdateEmailDeliveryChannel::run(
@@ -182,7 +187,7 @@ class ProcessBasketLowStockRecipients
         // Add "and X more" text if there are remaining products
         if ($remainingCount > 0) {
             $html .= '<p style="font-family: Helvetica, Arial, sans-serif; font-size: 14px; color: #555; margin-top: 12px;">';
-            $html .= 'and ' . $remainingCount . ' more' . ($remainingCount > 1 ? 's' : '');
+            $html .= __('and ') . $remainingCount . ($remainingCount > 1 ? __(' mores') : __(' more'));
             $html .= '</p>';
         }
 

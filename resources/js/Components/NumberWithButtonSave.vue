@@ -74,11 +74,15 @@ const emits = defineEmits<{
 
 const model = defineModel()
 
+const roundToDecimals = (value: number, decimals: number = 2): number => {
+	return Number(Number(value).toFixed(decimals))
+}
+
 const form = useForm({
-	quantity: props.modelValue,
+	quantity: roundToDecimals(props.modelValue),
 })
 const formDefaultValue = ref({
-	quantity: props.modelValue,
+	quantity: roundToDecimals(props.modelValue),
 })
 
 const onSaveViaForm = async () => {
@@ -95,7 +99,7 @@ const onSaveViaForm = async () => {
 				}
 			)
 
-			form.defaults("quantity", form.quantity)
+			form.defaults("quantity", roundToDecimals(form.quantity))
 			emits("onSuccess", form.quantity, formDefaultValue.value.quantity)
 			formDefaultValue.value.quantity = form.quantity
 			// console.log('ee axios', form.processing)
@@ -156,7 +160,8 @@ watch(
 	() => props.modelValue,
 	async (newVal: number) => {
 		if (props.isWithRefreshModel) {
-			form.defaults('quantity', newVal)
+			const roundedVal = roundToDecimals(newVal)
+			form.defaults('quantity', roundedVal)
 			form.reset()
 		}
 	}
@@ -171,10 +176,9 @@ const onClickMinusButton = () => {
 		return false // Prevent decreasing when the quantity is at or below the min value
 	} else {
 		if (props.denominator) {
-			// Changed to precision 5 (6 num behind comma)
-			form.quantity = Number(form.quantity) - Number((1 / props.denominator).toPrecision(5)) // Increase quantity if it's less than the max
+			form.quantity = roundToDecimals(Number(form.quantity) - Number((1 / props.denominator).toPrecision(5)))
 		} else {
-			form.quantity--
+			form.quantity = roundToDecimals(form.quantity - 1)
 		}
 	}
 }
@@ -187,10 +191,9 @@ const onClickPlusButton = () => {
 		return false // Prevent increase if quantity is at or exceeds max value
 	} else {
 		if (props.denominator) {
-			// Changed to precision 5 (6 num behind comma)
-			form.quantity += Number((1 / props.denominator).toPrecision(5)) // Increase quantity if it's less than the max
+			form.quantity = roundToDecimals(Number(form.quantity) + Number((1 / props.denominator).toPrecision(5)))
 		} else {
-			form.quantity++
+			form.quantity = roundToDecimals(form.quantity + 1)
 		}
 	}
 }
@@ -253,21 +256,22 @@ const layout = inject("layout", {})
 				</div>
 
 				<!-- Input -->
+
 				<div
 					class="mx-1 text-center tabular-nums rounded"
 					:style="{
 						border: `1px dashed ${(colorTheme ? colorTheme : null) || '#374151'}55`,
 					}">
-					<span v-if="layout.app.environment == 'local'">
+					<span v-if="layout.app.environment == 'local' && props.denominator">
 						Would only show in local <br>
 						{{ form.quantity }}
-						{{ form.quantity / (props.denominator ?? 1) }}
+						{{ roundToDecimals(props.denominator ? (roundToDecimals(Math.floor(form.quantity * props.denominator)) / props.denominator) : form.quantity) }}
 					</span>
 					<InputNumber
 						vxmodel="form.quantity"
-						:modelValue="props.denominator ? Math.floor(form.quantity * props.denominator) : form.quantity"
-						@update:model-value="(e) => (props.denominator? (form.quantity = e/props.denominator) : (form.quantity = e))"
-						@input="(e) => (props.denominator ? (form.quantity = e.value/props.denominator) : (form.quantity = e.value))"
+						:modelValue="props.denominator ? roundToDecimals(Math.floor(form.quantity * props.denominator)) : form.quantity"
+						@update:model-value="(e) => (props.denominator? (form.quantity = roundToDecimals(e/props.denominator)) : (form.quantity = roundToDecimals(e)))"
+						@input="(e) => (props.denominator ? (form.quantity = roundToDecimals(e.value/props.denominator)) : (form.quantity = roundToDecimals(e.value)))"
 						buttonLayout="horizontal"
 						:min="min || 0"
 						:max="max || undefined"
