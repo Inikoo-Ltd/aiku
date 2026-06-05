@@ -208,10 +208,8 @@ const submitVoucherOffer = () => {
     }
 
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_voucher', {
-            organisation: props.shop_data.organisation,
-            shop: props.shop_data.slug,
-            offerCampaign: props.shop_data.offercampaign,
+        route('grp.models.store_voucher', {
+            shop: props.shop_data.id,
         }),
         payload,
         {
