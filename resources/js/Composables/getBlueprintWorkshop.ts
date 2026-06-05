@@ -70,6 +70,7 @@ import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Bluepr
 import Family2ExtraDescriptionBlueprint from "@/Components/CMS/Webpage/Family2ExtraDescription/Blueprint"
 import RecomendationFromMaster from "../Components/CMS/Webpage/RecommendationFromMaster/Blueprint"
 import RelatedProductCategoryBlueprint from "@/Components/CMS/Webpage/RelatedProductCategory/Blueprint"
+import Tabs from "@/Components/CMS/Webpage/Tabs/Blueprint"
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
@@ -168,6 +169,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'slider-1' : SliderBlueprint.blueprint,
 		'recommendation-from-master' : RecomendationFromMaster.blueprint,
 		'relatedProductCategory' : () => RelatedProductCategoryBlueprint(data).blueprint,
+		'tabs' : Tabs.blueprint
 	}
 
 	const blueprint = components[componentName]
