@@ -34,7 +34,7 @@ Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem
     Route::post('not-picking', StoreNotPickPicking::class)->name('not_picking.store')->withoutScopedBindings();
     Route::post('not-picking-from-waiting-warehouse', StoreNotPickPickingFromWaitingWarehouse::class)->name('not_picking_from_waiting_warehouse.store')->withoutScopedBindings();
     Route::post('not-picking-fron-waiting-crm', StoreNotPickPickingFromWaitingCrm::class)->name('not_picking_from_waiting_crm.store')->withoutScopedBindings();
-    
+
     Route::post('set-as-waiting-warehouse', SetAsWaitingWarehouse::class)->name('set_as_waiting_warehouse')->withoutScopedBindings();
     Route::post('undo-set-as-waiting-warehouse', UndoSetAsWaitingWarehouse::class)->name('undo_set_as_waiting_warehouse')->withoutScopedBindings();
 

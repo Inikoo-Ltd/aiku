@@ -63,7 +63,7 @@ class ReorderShippingZones extends OrgAction
 
     public function htmlResponse(ShippingZoneSchema $shippingZoneSchema): RedirectResponse
     {
-        
+
         return Redirect::route($shippingZoneSchema->is_current ? 'grp.org.shops.show.billables.shipping.current.show' : 'grp.org.shops.show.billables.shipping.discount.show', [
             'organisation'       => $shippingZoneSchema->organisation->slug,
             'shop'               => $shippingZoneSchema->shop->slug,

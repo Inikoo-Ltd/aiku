@@ -125,7 +125,7 @@ class StoreEbayProduct extends RetinaAction
             $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
             $categoryName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
 
-            if($categoryName === 'Other'){
+            if ($categoryName === 'Other') {
                 $family = $product->subDepartment?->name;
 
                 $categories = $ebayUser->getCategorySuggestions($family);

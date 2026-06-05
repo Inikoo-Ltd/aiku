@@ -195,6 +195,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, TopUpPaymentApiPoint> $topUpPaymentApiPoint
  * @property-read Collection<int, TopUp> $topUps
  * @property-read \App\Models\CRM\TrafficSource|null $trafficSource
+ * @property-read Collection<int, \App\Models\CRM\TrafficSource> $trafficSources
  * @property-read Collection<int, Transaction> $transactions
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
  * @property-read WooCommerceUser|null $wooCommerceUser

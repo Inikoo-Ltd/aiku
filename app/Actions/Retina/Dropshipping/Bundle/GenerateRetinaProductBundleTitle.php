@@ -29,9 +29,9 @@ class GenerateRetinaProductBundleTitle extends RetinaAction
     {
         $customer = $this->customer;
 
-        $attempt = Cache::get('ai:title:limit:' . $customer->id,  0);
+        $attempt = Cache::get('ai:title:limit:' . $customer->id, 0);
 
-        if($attempt >= 3) {
+        if ($attempt >= 3) {
             throw ValidationException::withMessages(['message' => __('You have reached the limit of 3 attempts.')]);
         }
 

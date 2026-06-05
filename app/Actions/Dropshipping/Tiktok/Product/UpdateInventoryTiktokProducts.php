@@ -8,11 +8,8 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Product;
 
-use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
-use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
@@ -64,7 +61,7 @@ class UpdateInventoryTiktokProducts
                 continue;
             }
 
-            if(! $tiktokUser->tiktok_warehouse_id) {
+            if (! $tiktokUser->tiktok_warehouse_id) {
                 continue;
             }
 
