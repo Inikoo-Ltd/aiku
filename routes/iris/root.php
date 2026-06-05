@@ -25,11 +25,12 @@ use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
+Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
+
 Route::get('{path}', function () {
     return redirect('/image_not_found.png');
 })->where('path', '.*\.(png|jpe?g|gif)$');
 
-Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
 
 Route::name('webhooks.')->group(function () {
     Route::any('webhooks/checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
