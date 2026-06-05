@@ -262,7 +262,7 @@ const layout = inject("layout", {})
 					:style="{
 						border: `1px dashed ${(colorTheme ? colorTheme : null) || '#374151'}55`,
 					}">
-					<span v-if="layout.app.environment == 'local'">
+					<span v-if="layout.app.environment == 'local' && props.denominator">
 						Would only show in local <br>
 						{{ form.quantity }}
 						{{ roundToDecimals(props.denominator ? (roundToDecimals(Math.floor(form.quantity * props.denominator)) / props.denominator) : form.quantity) }}

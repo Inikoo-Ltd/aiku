@@ -58,10 +58,14 @@ class TransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $quantityOrderedFractional    = riseDivisor(
+        $qtyOrderedInt = $this->is_cut_view ? 
+            ($this->quantity_ordered * $this->product_units) :
+            $this->quantity_ordered;
+
+        $quantityOrderedFractional = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
-                    $this->quantity_ordered ?? 0
+                    $qtyOrderedInt ?? 0
                 )
             ),
             $this->product_units

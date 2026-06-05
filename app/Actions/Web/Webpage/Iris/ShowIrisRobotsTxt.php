@@ -20,10 +20,11 @@ class ShowIrisRobotsTxt
 
     public function asController(ActionRequest $request): Response
     {
+
         /** @var Website $website */
         $website = $request->input('website');
 
-        $filePath = "robots/robots_{$website->id}.txt";
+        $filePath = "robots/robots_$website->id.txt";
 
         if (!Storage::disk('local')->exists($filePath)) {
             return response(

@@ -33,7 +33,7 @@ class UpdateTransaction extends OrgAction
     {
         if (Arr::has($modelData, 'units_ordered')) {
             $unitsOrders = Arr::pull($modelData, 'units_ordered');
-            $product     = Product::find($transaction->model_id)->firstOrFail();
+            $product     = $transaction->model;
             $units       = $product->units;
             if ($units == 0) {
                 abort(423);
