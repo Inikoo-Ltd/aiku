@@ -231,7 +231,7 @@ class GetOrganisationNavigation
                     ],
                     [
                         'label'   => __('Conversations'),
-                        'icon'    => ['fal', 'fa-comments-alt'],
+                        'icon'    => ['fal', 'fa-comments'],
                         'root'    => 'grp.org.chat.conversations.show',
                         'route'   => [
                             'name'       => 'grp.org.chat.conversations.show',

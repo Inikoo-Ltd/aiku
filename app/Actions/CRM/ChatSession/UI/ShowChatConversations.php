@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * @Author: andiferdiawan (https://github.com/andiferdiawan)
+ * @Created: 2026-06-05
+ * @Copyright: Copyright (c) 2026, andiferdiawan
+ */
+
 namespace App\Actions\CRM\ChatSession\UI;
 
 use App\Actions\CRM\ChatSession\IndexChatConversations;
@@ -11,6 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Actions\UI\Dashboards\ShowGroupDashboard;
 
 class ShowChatConversations extends OrgAction
 {
@@ -53,7 +60,7 @@ class ShowChatConversations extends OrgAction
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
-            ShowChatDashboard::make()->getBreadcrumbs('grp.org.chat.dashboard', $routeParameters),
+            ShowGroupDashboard::make()->getBreadcrumbs(),
             [
                 [
                     'type'   => 'simple',
