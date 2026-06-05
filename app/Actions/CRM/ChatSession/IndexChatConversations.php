@@ -91,6 +91,7 @@ class IndexChatConversations extends OrgAction
 
             $table
                 ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true)
+                ->column(key: 'ulid', label: __('Session ID'), canBeHidden: false, sortable: true)
                 ->column(key: 'contact', label: __('Contact'), canBeHidden: false)
                 ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false)
                 ->column(key: 'assigned_agent', label: __('Agent'), canBeHidden: true)

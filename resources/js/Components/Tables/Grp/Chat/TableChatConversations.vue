@@ -41,6 +41,14 @@ const sentimentColor: Record<string, string> = {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(ulid)="{ item }">
+            <span
+                class="font-mono text-xs text-gray-500 tracking-tight cursor-default"
+                v-tooltip="item.ulid">
+                {{ item.ulid?.slice(0, 8) }}...
+            </span>
+        </template>
+
         <template #cell(status)="{ item }">
             <div class="flex items-center gap-x-1.5 whitespace-nowrap">
                 <FontAwesomeIcon
