@@ -14,6 +14,7 @@ class MailshotTemplatesInDashboardResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $hasCompiledLayout = !is_null($this->compiled_layout) && $this->compiled_layout !== '';
         return [
             'id'                => $this->id,
             'slug'              => $this->slug,
@@ -21,6 +22,8 @@ class MailshotTemplatesInDashboardResource extends JsonResource
             'state'             => $this->state,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
+            'has_compiled_layout' => $hasCompiledLayout,
+
         ];
     }
 }

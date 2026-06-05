@@ -113,6 +113,7 @@ class OrdersResource extends JsonResource
             'shipping_notes'              => $this->shipping_notes,
             'shipping_data'               => $this->shipping_data,
             'with_replacement'            => $this->with_replacement,
+            'platform_milestones'         => data_get($this->data, 'platform_milestones'),
         ];
     }
 }

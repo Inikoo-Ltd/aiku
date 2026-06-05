@@ -3,7 +3,7 @@
 	"scope": "webpage",
 	"code": "relatedProductCategory",
 	"name": "Related Product Category",
-	"category": "block",
+	"category": "element",
 	"fixed": false,
 	"icon": ["fal", "folder"],
 	"website_type" : ["b2b","b2c","dropshipping"],

@@ -76,7 +76,7 @@ console.log('see also', layout)
   <div :id="fieldValue?.id ? fieldValue?.id  : 'see-also-1'+indexBlock"   class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
-    width: 'auto'
+    width: '100%'
   }" :dropdown-type="props.fieldValue?.settings?.products_data?.type">
     <!-- Title -->
     <div class="px-3 py-6 pb-2">
