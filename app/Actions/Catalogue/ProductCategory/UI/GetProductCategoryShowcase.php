@@ -188,7 +188,7 @@ class GetProductCategoryShowcase
         $data['has_webpage'] = (bool)$productCategory->webpage;
         $data['is_shop_gr_active'] = (bool) data_get($productCategory->shop->offers_data, 'gr.active', false);
         $data['gr_offer_data'] = $offer ? OfferResource::make($offer) : null;
-        $data['tags'] = $productCategory->tradeUnitFamily->tags;
+        //$data['tags'] = $productCategory->tradeUnitFamily->tags;
         return $data;
     }
 }
