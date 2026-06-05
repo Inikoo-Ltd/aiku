@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, reactive, inject, onBeforeUnmount } from "vue"
+import { ref, reactive, inject, onBeforeUnmount, computed } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Table from "@/Components/Table/Table.vue"
 import Tag from "@/Components/Tag.vue"
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
-import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt } from "@far"
+import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt, faPlus, faMinus } from "@far"
 import { faBarcode } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
@@ -115,6 +115,7 @@ const onUpdateQuantity = (
     idTransaction: number,
     value: number
 ) => {
+    console.log('sdfsdfsdf')
     router.patch(
         route(routeUpdate.name, routeUpdate.parameters),
         { quantity_ordered: Number(value) },
@@ -398,6 +399,7 @@ const isOffersData = (offersData: any): boolean => {
 
             <!-- Column: Quantity Ordered -->
             <template #cell(quantity_ordered)="{ item, proxyItem }">
+                <!-- <pre>{{ item.quantity_ordered_fractional }}</pre> -->
 
                 <div class="flex items-center justify-end gap-2">
                     <div v-if="item.is_gift">
@@ -410,7 +412,7 @@ const isOffersData = (offersData: any): boolean => {
                     <!-- Editable when creating and not in edit mode -->
                     <div v-else-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id) && !is_shop_external"
                         class="w-fit flex gap-x-2">
-                        <NumberWithButtonSave
+                       <!--  <NumberWithButtonSave
                             :modelValue="Number(item.quantity_ordered)"
                             :routeSubmit="item.updateRoute"
                             isWithRefreshModel
@@ -423,7 +425,40 @@ const isOffersData = (offersData: any): boolean => {
                                 max: item.available_quantity,
                             }"
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
-                        />
+                        /> -->
+
+                       <span v-if="layout.app.environment == 'local'">{{ item.quantity_ordered_fractional }}</span> 
+                        <InputNumber 
+                            :model-value="item.quantity_ordered_fractional[0]" 
+                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+                            inputId="horizontal-buttons" 
+                            showButtons 
+                            buttonLayout="horizontal"
+                            :step="1" 
+                            min='0',
+                            :max="item.available_quantity"
+                            v-bind="bindToTarget" 
+                            :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
+                                ? `/${Number(item.quantity_ordered_fractional[1][1])}`
+                                : undefined
+                                " 
+                            :inputStyle="{
+                                    width: bindToTarget?.fluid
+                                        ? undefined
+                                        : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '75px' : '50px'),
+                                    textAlign: 'center',
+                                }" 
+                            fluid
+                            :key="proxyItem.is_cut_view + item.id"
+                        >
+                            <template #incrementbuttonicon>
+                                <FontAwesomeIcon :icon="faPlus" />
+                            </template>
+
+                            <template #decrementbuttonicon>
+                                  <FontAwesomeIcon :icon="faMinus" />
+                            </template>
+                        </InputNumber>
 
                         <!-- Toggle: is_cut_view -->
                         <span
