@@ -609,8 +609,7 @@ onUnmounted(() => {
                     :currency_code="layout.iris?.currency?.code" size="sm" />
 
                 
-                <div class="mb-2 mt-2">
-                    <!-- <div class="text-gray-500 text-sm mb-1">{{ trans("Voucher Code") }} :</div> -->
+                <div class="mb-2 mt-2" v-if="layout.app.environment == 'local'">
                     <div class="flex gap-x-4">
                         <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')" :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }" />
                         <Button
