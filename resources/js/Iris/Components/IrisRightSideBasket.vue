@@ -306,7 +306,7 @@ const onApplyVoucher = async () => {
     }
 
     router.post(
-        route('iris.models.order.store_voucher', { order: dataSideBasket.value.order_data.id }),
+        route('retina.models.order.store_voucher', { order: dataSideBasket.value.order_data.id }),
         { voucher_code: voucherCode.value },
         {
             preserveScroll: true,
