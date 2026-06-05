@@ -244,6 +244,10 @@ class ShowInvoice extends OrgAction
                 'label' => __('Group by Tariff Code'),
                 'value' => 'group_by_tariff_code',
             ],
+            [
+                'label' => __('Show Dispatch Totals (SKO & Units)'),
+                'value' => 'show_dispatch_totals',
+            ],
         ];
 
         return array_map(function (array $column) use ($savedColumns) {
@@ -264,11 +268,12 @@ class ShowInvoice extends OrgAction
                 'tooltip'    => __('Download PDF'),
                 'name'       => 'grp.org.accounting.invoices.download',
                 'parameters' => [
-                    'organisation'      => $invoice->organisation->slug,
-                    'invoice'           => $invoice->slug,
-                    'country_of_origin' => true,
-                    'weight'            => true,
-                    'commodity_codes'   => true,
+                    'organisation'         => $invoice->organisation->slug,
+                    'invoice'              => $invoice->slug,
+                    'country_of_origin'    => true,
+                    'weight'               => true,
+                    'commodity_codes'      => true,
+                    'show_dispatch_totals' => true,
                 ]
             ],
             [

@@ -72,6 +72,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $delivery_country_id
  * @property int|null $weight actual weight, grams
  * @property int $number_stocks
+ * @property int $total_skos
+ * @property int $total_units
  * @property int $number_picks
  * @property bool $has_out_of_stocks
  * @property numeric $picking_percentage
