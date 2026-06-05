@@ -170,6 +170,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'                          => 'array',
+        'faq'                           => 'array',
         'web_images'                    => 'array',
         'health_rank'                   => HealthRankEnum::class,
         'state'                         => ProductCategoryStateEnum::class,
@@ -185,6 +186,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     protected $attributes = [
         'data'        => '{}',
+        'faq'         => '{}',
         'web_images'  => '{}',
         'offers_data' => '{}',
     ];

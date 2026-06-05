@@ -165,32 +165,17 @@ class EditMasterFamily extends OrgAction
                                 ],
                             ]
                         ],
-                        // todo for tag product category,
-                        /* [
-                            'label'  => __('Tags'),
-                            'icon'   => 'fa-light fa-tags',
-                            'fields' => [
-                               'tags' => [
-                                    'type'  => 'tags-trade-unit',
-                                    'label' => __('Tags'),
-                                    'value' => [],
-                                    'tag_routes' => $tagRoute,
-                                    'noSaveButton'  => true,
-                                    'isWithRefreshFieldForm'    => true
-                                ],
-                            ]
-                        ], */
-                        /* [
+                        [
                             'label'  => __('FAQ'),
                             'icon'   => 'fa-light fa-question-circle',
                             'fields' => [
                                'faq' => [
                                     'type'  => 'faq',
                                     'label' => __('FAQ'),
-                                    'value' => [],
+                                    'value' => $masterProductCategory->faq,
                                 ],
                             ]
-                        ], */
+                        ],
                         [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',

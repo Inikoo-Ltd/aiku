@@ -144,6 +144,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'            => 'array',
+        'faq'             => 'array',
         'web_images'      => 'array',
         'type'            => MasterProductCategoryTypeEnum::class,
         'health_rank'     => HealthRankEnum::class,
@@ -156,6 +157,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     protected $attributes = [
         'data'        => '{}',
+        'faq'         => '{}',
         'offers_data' => '{}',
         'web_images'  => '{}',
     ];
