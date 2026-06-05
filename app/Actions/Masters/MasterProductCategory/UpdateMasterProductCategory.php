@@ -35,6 +35,10 @@ class UpdateMasterProductCategory extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
+        if ($masterProductCategory->type !== MasterProductCategoryTypeEnum::FAMILY) {
+            Arr::pull($modelData, 'trade_unit_family_id'); // Safe guard so only family would have relationship with TradeUnitFamilyId
+        }
+
         $originalImageId = $masterProductCategory->image_id;
         if (Arr::has($modelData, 'master_department_id')) {
             $departmentId = Arr::pull($modelData, 'master_department_id');
@@ -189,6 +193,10 @@ class UpdateMasterProductCategory extends OrgAction
             $masterProductCategory->images()->detach($originalImageId);
         }
 
+        if ($masterProductCategory->wasChanged('trade_unit_family_id')) {
+            MasterFamilyHydrateTradeUnitFamilyToChildFamily::make()->action($masterProductCategory);
+        }
+
         if ($masterProductCategory->wasChanged('status')) {
             if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
@@ -220,7 +228,7 @@ class UpdateMasterProductCategory extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'                     => [
+            'code'                          => [
                 'sometimes',
                 $this->strict ? 'max:32' : 'max:255',
                 new AlphaDashDot(),
@@ -235,40 +243,41 @@ class UpdateMasterProductCategory extends OrgAction
                     ]
                 ),
             ],
-            'name'                     => ['sometimes', 'max:250', 'string'],
-            'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'status'                   => ['sometimes', 'required', 'boolean'],
-            'description'              => ['sometimes', 'max:65500'],
-            'description_title'        => ['sometimes', 'nullable', 'max:255'],
-            'description_extra'        => ['sometimes', 'nullable', 'max:65500'],
-            'master_department_id'     => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
-            'master_sub_department_id' => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
-            'show_in_website'          => ['sometimes', 'boolean'],
-            'image'                    => [
+            'name'                          => ['sometimes', 'max:250', 'string'],
+            'image_id'                      => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
+            'status'                        => ['sometimes', 'required', 'boolean'],
+            'description'                   => ['sometimes', 'max:65500'],
+            'description_title'             => ['sometimes', 'nullable', 'max:255'],
+            'description_extra'             => ['sometimes', 'nullable', 'max:65500'],
+            'master_department_id'          => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
+            'master_sub_department_id'      => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
+            'show_in_website'               => ['sometimes', 'boolean'],
+            'image'                         => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024),
             ],
-            'name_i8n'                                   => ['sometimes', 'array'],
-            'description_title_i8n'                      => ['sometimes', 'array'],
-            'description_i8n'                            => ['sometimes', 'array'],
-            'description_extra_i8n'                      => ['sometimes', 'array'],
-            'vol_gr_offer'                               => ['nullable', 'array'],
-            'vol_gr_offer.item_quantity'                 => [
+            'name_i8n'                      => ['sometimes', 'array'],
+            'description_title_i8n'         => ['sometimes', 'array'],
+            'description_i8n'               => ['sometimes', 'array'],
+            'description_extra_i8n'         => ['sometimes', 'array'],
+            'vol_gr_offer'                  => ['nullable', 'array'],
+            'vol_gr_offer.item_quantity'    => [
                 'required_with:vol_gr_offer.percentage_off',
                 'nullable',
                 'integer',
                 'min:1'
             ],
-            'vol_gr_offer.percentage_off'                => [
+            'vol_gr_offer.percentage_off'   => [
                 'required_with:vol_gr_offer.item_quantity',
                 'nullable',
                 'numeric',
                 'min:1',
                 'max:100'
             ],
-            'cost_price_ratio'                           => ['sometimes', 'numeric', 'min:0'],
+            'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
+            'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
         ];
 
         if (!$this->strict) {
@@ -281,9 +290,9 @@ class UpdateMasterProductCategory extends OrgAction
     public function getValidationMessages(): array
     {
         return [
-            'vol_gr_offer.item_quantity.min' => 'Item quantity must be bigger than 1',
-            'vol_gr_offer.item_quantity.required_with' => 'Item quantity must be be bigger than 1',
-            'vol_gr_offer.percentage_off.min' => 'Discount must be bigger than 1',
+            'vol_gr_offer.item_quantity.min'            => 'Item quantity must be bigger than 1',
+            'vol_gr_offer.item_quantity.required_with'  => 'Item quantity must be be bigger than 1',
+            'vol_gr_offer.percentage_off.min'           => 'Discount must be bigger than 1',
             'vol_gr_offer.percentage_off.required_with' => 'Discount must be bigger than 1',
         ];
     }
