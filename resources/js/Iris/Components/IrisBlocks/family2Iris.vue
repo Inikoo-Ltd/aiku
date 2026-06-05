@@ -187,7 +187,8 @@ const bestOffer = computed(() => {
                 {{ fieldValue.family?.name }}
               </h1>
             </div>
-            <div class="flex  gap-x-1 gap-y-1 md:gap-y-2 offer">
+            <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
+              class="flex gap-x-1 gap-y-1 md:gap-y-2 offer">
               <DiscountByType :offers_data="fieldValue?.family?.offers_data"
                 :template="bestOffer?.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr-v2' : 'max_discount'" />
               <DiscountByType
@@ -248,7 +249,7 @@ const bestOffer = computed(() => {
       gap-y-2
       min-w-0
     ">
-             <div class="
+              <div class="
       flex
       flex-wrap
       items-center
@@ -256,19 +257,19 @@ const bestOffer = computed(() => {
       gap-y-2
       min-w-0
     ">
-              <div v-for="data in fieldValue.family.tags" :key="data.name" class="flex items-center gap-1.5">
-                <Image :src="data.web_image" class="h-4 w-4 shrink-0" image-class="object-contain" />
+                <div v-for="data in fieldValue.family.tags" :key="data.name" class="flex items-center gap-1.5">
+                  <Image :src="data.web_image" class="h-4 w-4 shrink-0" image-class="object-contain" />
 
-                <span class="
+                  <span class="
           whitespace-nowrap
           text-[12px]
           leading-none
           text-[#555]
         ">
-                  {{ data.name }}
-                </span>
+                    {{ data.name }}
+                  </span>
+                </div>
               </div>
-            </div>
             </div>
           </div>
         </div>
