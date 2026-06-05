@@ -31,7 +31,7 @@ class GetMasterProductCategoryShowcase
                     ]
                 ],
                 'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
-                'tags' => $productCategory->tradeUnitFamily->tags
+                //'tags' => $productCategory->tradeUnitFamily->tags
             ],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
                 'storeFamilyRoute' => [
@@ -41,11 +41,11 @@ class GetMasterProductCategoryShowcase
                     ]
                 ],
                 'subDepartment' => MasterSubDepartmentResource::make($productCategory)->resolve(),
-                'tags' => $productCategory->tradeUnitFamily->tags
+                //'tags' => $productCategory->tradeUnitFamily->tags
             ],
             default => [
                 'family' => MasterProductCategoryResource::make($productCategory),
-                'tags' => $productCategory->tradeUnitFamily->tags,
+                //'tags' => $productCategory->tradeUnitFamily->tags,
                 'save_route' => [
                     'method' => 'patch',
                     'name'       => 'grp.models.master_product_categories.translations.update',
