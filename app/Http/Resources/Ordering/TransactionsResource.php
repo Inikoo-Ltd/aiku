@@ -52,12 +52,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_picked
  * @property bool $is_cut_view
  * @property string|null $batch_codes
+ * @property mixed $is_gift
  */
 class TransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $quantityOrderedFractional = riseDivisor(
+        $quantityOrderedFractional    = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
                     $this->quantity_ordered ?? 0
@@ -65,7 +66,7 @@ class TransactionsResource extends JsonResource
             ),
             $this->product_units
         );
-        $quantityPickedFractional = riseDivisor(
+        $quantityPickedFractional     = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
                     $this->quantity_picked ?? 0
@@ -97,39 +98,38 @@ class TransactionsResource extends JsonResource
 
 
         return [
-            'id'                        => $this->id,
-            'state'                     => $this->state,
-            'status'                    => $this->status,
-            'quantity_ordered'          => trimDecimalZeros($this->quantity_ordered),
-            'quantity_ordered_fractional'       => $quantityOrderedFractional,
-            'quantity_bonus'            => trimDecimalZeros($this->quantity_bonus),
-            'quantity_picked'           => trimDecimalZeros($this->quantity_picked),
-            'quantity_picked_fractional'        => $quantityPickedFractional,
-            'quantity_dispatched'       => trimDecimalZeros($this->quantity_dispatched),
-            'quantity_dispatched_fractional'    => $quantityDispatchedFractional,
-            'quantity_fail'             => $this->quantity_fail,
-            'quantity_cancelled'        => trimDecimalZeros($this->quantity_cancelled),
-            'quantity_not_picked'       => $this->dni_quantity_not_picked,
-            'gross_amount'              => $this->gross_amount,
-            'net_amount'                => $this->net_amount,
-            'price'                     => $this->price,
-            'asset_code'                => $this->asset_code,
-            'asset_name'                => $this->asset_name,
-            'asset_type'                => $this->asset_type,
-            'image'                     => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
-            'product_slug'              => $this->product_slug,
-            'created_at'                => $this->created_at,
-            'currency_code'             => $this->currency_code,
-            'available_quantity'        => $this->available_quantity ?? 0,
-            'webpage_url'               => $webpageUrl,
-            'offers_data'               => $this->offers_data,
-            'discretionary_offer'       => $this->discretionary_offer !== null ? 100 * $this->discretionary_offer : null,
-            'discretionary_offer_label' => $this->discretionary_offer_label,
-            'transaction_label'         => $this->transaction_label,
-            'product_units'             => $this->product_units,
-            'is_cut_view'               => $this->is_cut_view,
-            'is_gift'                   => $this->is_gift,
-            'batch_codes'               => $this->batch_codes,
+            'id'                             => $this->id,
+            'state'                          => $this->state,
+            'status'                         => $this->status,
+            'quantity_ordered'               => trimDecimalZeros($this->quantity_ordered),
+            'quantity_ordered_fractional'    => $quantityOrderedFractional,
+            'quantity_bonus'                 => trimDecimalZeros($this->quantity_bonus),
+            'quantity_picked'                => trimDecimalZeros($this->quantity_picked),
+            'quantity_picked_fractional'     => $quantityPickedFractional,
+            'quantity_dispatched'            => trimDecimalZeros($this->quantity_dispatched),
+            'quantity_dispatched_fractional' => $quantityDispatchedFractional,
+            'quantity_fail'                  => $this->quantity_fail,
+            'quantity_cancelled'             => trimDecimalZeros($this->quantity_cancelled),
+            'gross_amount'                   => $this->gross_amount,
+            'net_amount'                     => $this->net_amount,
+            'price'                          => $this->price,
+            'asset_code'                     => $this->asset_code,
+            'asset_name'                     => $this->asset_name,
+            'asset_type'                     => $this->asset_type,
+            'image'                          => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
+            'product_slug'                   => $this->product_slug,
+            'created_at'                     => $this->created_at,
+            'currency_code'                  => $this->currency_code,
+            'available_quantity'             => $this->available_quantity ?? 0,
+            'webpage_url'                    => $webpageUrl,
+            'offers_data'                    => $this->offers_data,
+            'discretionary_offer'            => $this->discretionary_offer !== null ? 100 * $this->discretionary_offer : null,
+            'discretionary_offer_label'      => $this->discretionary_offer_label,
+            'transaction_label'              => $this->transaction_label,
+            'product_units'                  => $this->product_units,
+            'is_cut_view'                    => $this->is_cut_view,
+            'is_gift'                        => $this->is_gift,
+            'batch_codes'                    => $this->batch_codes,
 
 
             'deleteRoute' => $request->user() instanceof User
