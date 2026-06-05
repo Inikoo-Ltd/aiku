@@ -64,6 +64,8 @@ const props = defineProps<{
     otherShopTemplates?: { templates: any[] }
     workshopRoute?: routeType
     timeZoneOptions?: any[]
+    defaultShopTimezone?: string
+    defaultOffset?: number
 }>();
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
@@ -103,11 +105,20 @@ const shouldShowCancelScheduleButton = computed(() => {
 
 // Schedule datetime picker state
 const showSchedulePicker = ref(false);
-const scheduleDateTime = ref<string>(new Date().toISOString());
-const minDateTime = ref<string>(new Date().toISOString());
+// const scheduleDateTime = ref<string>(new Date().toISOString());
+// const minDateTime = ref<string>(new Date().toISOString());
 const schedulePicker = ref();
 const nowUtc = ref(new Date());
-const selectedTimezone = ref();
+const selectedTimezone = ref(props.defaultShopTimezone ?? null);
+const offsetSeconds = props.defaultOffset ?? 0;
+
+// Helper: get local datetime string shifted by offset seconds
+const toOffsetDateTime = (date: Date, offsetSeconds: number): string => {
+    const ms = date.getTime() + offsetSeconds * 1000;
+    return new Date(ms).toISOString().slice(0, 19);
+};
+const scheduleDateTime = ref<string>(toOffsetDateTime(new Date(), offsetSeconds));
+const minDateTime = ref<string>(toOffsetDateTime(new Date(), offsetSeconds));
 
 const inProgress = ref(false);
 const scheduleInProgress = ref(false);
@@ -196,7 +207,8 @@ const handleSchedule = async (event: Event) => {
 
     // Refresh both "now" and min-date together
     nowUtc.value = new Date();
-    minDateTime.value = nowUtc.value.toISOString();
+    // minDateTime.value = nowUtc.value.toISOString();
+    minDateTime.value = toOffsetDateTime(nowUtc.value, props.defaultOffset ?? 0);
 
     // Show the datetime picker using the ref
     if (schedulePicker.value) {
@@ -681,8 +693,15 @@ const preloadedEntities = reactive<Record<string, any[]>>({})
                     :placeholder="trans('Select timezone...')"
                     :options="props.timeZoneOptions"
                     :isLoading="false"
-                    :searchable="true "
-                    @OnChange="onChange"
+                    :searchable="true"
+                    @OnChange="(value: any) => {
+                        selectedTimezone.value = value;
+                        const now = new Date();
+                        const offsetSec = value?.offset ?? props.defaultOffset ?? 0;
+                        scheduleDateTime.value = toOffsetDateTime(now, offsetSec);
+                        minDateTime.value = toOffsetDateTime(now, offsetSec);
+                        nowUtc.value = now;
+                    }"
                     :required="true"
                     :label="trans('Timezone')"
                     :valueProp="'value'"
@@ -693,7 +712,7 @@ const preloadedEntities = reactive<Record<string, any[]>>({})
                 <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="minTime" :text-input="true"
                     :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
                     :seconds-increment="1" model-type="iso" :auto-apply="true" :open-on-focus="true"
-                    :time-picker-inline="true" class="w-full" placeholder="" :teleport="true" timezone="UTC" />
+                    :time-picker-inline="true" class="w-full" placeholder="" :teleport="true" />
             </div>
             <div class="flex gap-2 justify-end w-full">
                 <Button :label="trans('Cancel')" @click="cancelSchedule"
