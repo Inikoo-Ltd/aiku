@@ -24,6 +24,7 @@ import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -62,8 +63,8 @@ const props = defineProps<{
     ownShopTemplates?: { templates: any[], shop_name: string }
     otherShopTemplates?: { templates: any[] }
     workshopRoute?: routeType
+    timeZoneOptions?: any[]
 }>();
-
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
@@ -673,15 +674,22 @@ const preloadedEntities = reactive<Record<string, any[]>>({})
             <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
                     class="text-red-600">(Europe/London)</span>
             </h3>
-            <div class="min-w-0 w-full mb-3 !z-1000">
-                <PureMultiselectInfiniteScroll :key="'schedule'" mode="single"
-                    v-model="selectedTimezone"
-                    :classes="'z-1000'"
-                    :fetchRoute="getEntityFetchRoute('schedule')!" valueProp="value" labelProp="label"
-                    :placeholder="trans('Select items...')" />
+            <div class="min-w-0 w-full mb-3">
+
+                <PureMultiselect
+                    :modelValue="selectedTimezone"
+                    :placeholder="trans('Select timezone...')"
+                    :options="props.timeZoneOptions"
+                    :isLoading="false"
+                    :searchable="true "
+                    @OnChange="onChange"
+                    :required="true"
+                    :label="trans('Timezone')"
+                    :valueProp="'value'"
+                    :mode="'single'"/>
             </div>
 
-            <div class="mb-4 flex justify-center">
+            <div class="mb-4 flex justify-center z-10">
                 <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="minTime" :text-input="true"
                     :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
                     :seconds-increment="1" model-type="iso" :auto-apply="true" :open-on-focus="true"
