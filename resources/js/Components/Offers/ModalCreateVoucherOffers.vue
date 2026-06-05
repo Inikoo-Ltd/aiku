@@ -208,10 +208,8 @@ const submitVoucherOffer = () => {
     }
 
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_voucher', {
-            organisation: props.shop_data.organisation,
-            shop: props.shop_data.slug,
-            offerCampaign: props.shop_data.offercampaign,
+        route('grp.models.store_voucher', {
+            shop: props.shop_data.id,
         }),
         payload,
         {
@@ -274,7 +272,7 @@ function resetForm() {
 }
 
 const isStep1Invalid = computed(() => {
-    if(!voucherExists.value) return true
+    if (voucherExists.value !== false) return true
     if (!offerVoucher.value?.trim()) return true
     if (!offerLabel.value?.trim()) return true
     if (!startDate.value) return true
@@ -340,13 +338,13 @@ const isFormInvalid = computed(() => {
                             <FontAwesomeIcon icon="fas fa-spinner-third" spin class="text-xs" />
                             {{ trans('Checking voucher code') }}…
                         </p>
-                        <p v-else-if="voucherExists === true" class="text-sm text-green-600 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" />
-                            {{ trans('Voucher code exists') }}
-                        </p>
-                        <p v-else-if="voucherExists === false" class="text-sm text-red-500 flex items-center gap-x-1">
+                        <p v-else-if="voucherExists === true" class="text-sm text-red-500 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
-                            {{ trans('Voucher code not found') }}
+                            {{ trans('Voucher code already exists') }}
+                        </p>
+                        <p v-else-if="voucherExists === false" class="text-sm text-green-600 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" />
+                            {{ trans('Voucher code is available') }}
                         </p>
 
                     </div>
@@ -429,10 +427,14 @@ const isFormInvalid = computed(() => {
                             </label>
 
                             <div class="flex flex-wrap gap-4">
-                                <div v-for="opt in targetOptions" :key="opt.value" class="flex items-center gap-2">
+                                <label v-for="opt in targetOptions" :key="opt.value" :for="`target-${opt.value}`"
+                                    class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                                    :class="target === opt.value
+                                        ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                        : 'border-gray-200 hover:border-gray-300'">
                                     <RadioButton v-model="target" :value="opt.value" :inputId="`target-${opt.value}`" />
-                                    <label :for="`target-${opt.value}`">{{ trans(opt.label) }}</label>
-                                </div>
+                                    <span>{{ trans(opt.label) }}</span>
+                                </label>
                             </div>
 
                         </div>

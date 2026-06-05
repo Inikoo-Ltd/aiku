@@ -14,6 +14,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
@@ -169,6 +170,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'                          => 'array',
+        'faq'                           => 'array',
         'web_images'                    => 'array',
         'health_rank'                   => HealthRankEnum::class,
         'state'                         => ProductCategoryStateEnum::class,
@@ -184,6 +186,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     protected $attributes = [
         'data'        => '{}',
+        'faq'         => '{}',
         'web_images'  => '{}',
         'offers_data' => '{}',
     ];
@@ -426,5 +429,10 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->orderByPivot('position')
             ->withPivot('id', 'position')
             ->withTimestamps();
+    }
+
+    public function tradeUnitFamily(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
     }
 }

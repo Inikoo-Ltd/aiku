@@ -12,6 +12,7 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
@@ -143,6 +144,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'            => 'array',
+        'faq'             => 'array',
         'web_images'      => 'array',
         'type'            => MasterProductCategoryTypeEnum::class,
         'health_rank'     => HealthRankEnum::class,
@@ -155,6 +157,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     protected $attributes = [
         'data'        => '{}',
+        'faq'         => '{}',
         'offers_data' => '{}',
         'web_images'  => '{}',
     ];
@@ -320,6 +323,11 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
             ->orderByPivot('position')
             ->withPivot('id', 'position')
             ->withTimestamps();
+    }
+    
+    public function tradeUnitFamily(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
     }
 
 }

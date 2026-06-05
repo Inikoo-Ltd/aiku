@@ -71,10 +71,6 @@ Route::name("campaigns.")->prefix('campaigns')
         //todo
         Route::get('{offerCampaign}/edit-gr-amnesty', EditVolGrGift::class)->name('edit_current_gr_amnesty_offer')->withoutScopedBindings();
 
-        Route::post(
-            '{offerCampaign}/voucher',
-            StoreVoucherOffers::class
-        )->name('store_voucher');
 
         Route::get(
             '{offerCampaign}/voucher/check',

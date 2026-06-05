@@ -161,6 +161,17 @@ class EditFamily extends OrgAction
                                 ]
                             ],
                             [
+                                'label'  => __('FAQ'),
+                                'icon'   => 'fa-light fa-question-circle',
+                                'fields' => [
+                                'faq' => [
+                                        'type'  => 'faq',
+                                        'label' => __('FAQ'),
+                                        'value' => $family->faq,
+                                    ],
+                                ]
+                            ],
+                            [
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
