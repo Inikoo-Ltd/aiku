@@ -4,7 +4,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
-import { computed, ref, watch, onMounted, onUnmounted } from "vue";
+import {reactive, computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { Component } from "vue";
 import EmailPreview from "@/Components/Showcases/Org/Mailshot/EmailPreview.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
@@ -24,6 +24,7 @@ import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
+import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -105,6 +106,7 @@ const scheduleDateTime = ref<string>(new Date().toISOString());
 const minDateTime = ref<string>(new Date().toISOString());
 const schedulePicker = ref();
 const nowUtc = ref(new Date());
+const selectedTimezone = ref();
 
 const inProgress = ref(false);
 const scheduleInProgress = ref(false);
@@ -594,6 +596,14 @@ watch(
     },
     { immediate: true }
 )
+
+function getEntityFetchRoute(key: string) {
+    return {
+        name: 'grp.json.timezones'
+    }
+}
+
+const preloadedEntities = reactive<Record<string, any[]>>({})
 </script>
 
 <template>
@@ -661,7 +671,16 @@ watch(
     <Popover ref="schedulePicker" :visible="showSchedulePicker" @hide="cancelSchedule" appendTo="body">
         <div class="p-2 min-w-80 bg-white flex flex-col items-center">
             <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
-                    class="text-red-600">(Europe/London)</span> </h3>
+                    class="text-red-600">(Europe/London)</span>
+            </h3>
+            <div class="min-w-0 w-full mb-3 !z-1000">
+                <PureMultiselectInfiniteScroll :key="'schedule'" mode="single"
+                    v-model="selectedTimezone"
+                    :classes="'z-1000'"
+                    :fetchRoute="getEntityFetchRoute('schedule')!" valueProp="value" labelProp="label"
+                    :placeholder="trans('Select items...')" />
+            </div>
+
             <div class="mb-4 flex justify-center">
                 <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="minTime" :text-input="true"
                     :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
