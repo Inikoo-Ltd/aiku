@@ -36,7 +36,8 @@ class WebBlockFamilyResource extends JsonResource
             'extra_description_image' => Arr::get($family->web_images, 'extraDescription'),
             'url'                     => $family->webpage->url,
             'offers_data'             => $family->offers_data,
-            'web_images'              => $family->web_images
+            'web_images'              => $family->web_images,
+            'tags'                    => $family->tradeUnitFamily->tags
         ];
     }
 }

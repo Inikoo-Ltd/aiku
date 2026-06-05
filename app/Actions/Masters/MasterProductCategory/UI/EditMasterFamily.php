@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Goods\TradeUnitFamily\GetTradeUnitFamilyForFamilies;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
@@ -359,6 +360,23 @@ class EditMasterFamily extends OrgAction
 
                             ],
 
+                        ],
+                        [
+                            'label'  => __('Trade Unit Family'),
+                            'icon'   => 'fa-light fa-folder-tree',
+                            'fields' => [
+                                'trade_unit_family_id' => [
+                                    'label'         => 'Trade Unit Family',
+                                    'placeholder'   => __('Select a Trade Unit Family'),
+                                    'information'   => __('Would link this family to the selected trade unit family'),
+                                    'type'          => 'select',
+                                    'options'       => GetTradeUnitFamilyForFamilies::run($masterProductCategory),
+                                    'required'      => true,
+                                    'searchable'    => true,
+                                    'mode'          => 'single',
+                                    'value'         => $masterProductCategory->trade_unit_family_id
+                                ],
+                            ]
                         ],
                         app()->environment('local') ? [
                             'label'  => __('Vol / GR'),

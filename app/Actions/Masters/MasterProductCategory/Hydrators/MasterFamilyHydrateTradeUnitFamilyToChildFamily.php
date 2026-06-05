@@ -20,7 +20,7 @@ class MasterFamilyHydrateTradeUnitFamilyToChildFamily extends GrpAction
         }
     }
 
-    public function asAction(MasterProductCategory $masterFamily): void
+    public function action(MasterProductCategory $masterFamily): void
     {
         $this->initialisation($masterFamily->group, []);
         $this->handle($masterFamily);
