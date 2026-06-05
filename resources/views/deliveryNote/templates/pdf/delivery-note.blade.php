@@ -77,6 +77,28 @@
     </tbody>
 </table>
 
+<!-- Totals Section -->
+@php
+    $totalSkos  = $deliveryNote->total_skos > 0
+        ? $deliveryNote->total_skos
+        : $items->sum(fn($i) => $i->quantity_dispatched ?? $i->quantity_packed ?? 0);
+    $totalUnits = $deliveryNote->total_units > 0
+        ? $deliveryNote->total_units
+        : $items->sum(fn($i) => ($i->quantity_dispatched ?? $i->quantity_packed ?? 0) * ($i->orgStock?->packed_in ?? 1));
+@endphp
+<table style="margin-top: 10px; width: 100%;">
+    <tr>
+        <td style="border: none; width: 60%;"></td>
+        <td style="text-align: right; font-weight: bold; border: 0.1mm solid #000; padding: 6px 12px; width: 25%;">Total SKO</td>
+        <td style="text-align: right; border: 0.1mm solid #000; padding: 6px 12px; width: 15%;">{{ number_format($totalSkos, 0) }}</td>
+    </tr>
+    <tr>
+        <td style="border: none;"></td>
+        <td style="text-align: right; font-weight: bold; border: 0.1mm solid #000; padding: 6px 12px;">Total Units</td>
+        <td style="text-align: right; border: 0.1mm solid #000; padding: 6px 12px;">{{ number_format($totalUnits, 0) }}</td>
+    </tr>
+</table>
+
 <!-- Footer Section -->
 <div class="footer">
 
