@@ -218,6 +218,10 @@
             @if($deliveryNote)
                 <div style="text-align: right">{{__('Weight')}}: <b>{{ $deliveryNote->getBestWeight() }}</b></div>
             @endif
+            @if($show_dispatch_totals)
+<div style="text-align: right">{{__('Total SKO')}}: <b>{{ number_format($dispatch_total_skos, 0) }}</b></div>
+                <div style="text-align: right">{{__('Total Units')}}: <b>{{ number_format($dispatch_total_units, 0) }}</b></div>
+            @endif
         </td>
 
     </tr>
@@ -543,22 +547,6 @@
     </table>
 @endif
 <br>
-
-@if($show_dispatch_totals)
-<table width="100%" style="font-size: 9pt; border-collapse: collapse; margin-top: 4px;">
-    <tr>
-        <td style="border: none; width: 60%;"></td>
-        <td style="text-align: right; font-weight: bold; border: 0.1mm solid #000; padding: 5px 10px; width: 25%;">{{ __('Total SKO') }}</td>
-        <td style="text-align: right; border: 0.1mm solid #000; padding: 5px 10px; width: 15%;">{{ number_format($dispatch_total_skos, 0) }}</td>
-    </tr>
-    <tr>
-        <td style="border: none;"></td>
-        <td style="text-align: right; font-weight: bold; border: 0.1mm solid #000; padding: 5px 10px;">{{ __('Total Units') }}</td>
-        <td style="text-align: right; border: 0.1mm solid #000; padding: 5px 10px;">{{ number_format($dispatch_total_units, 0) }}</td>
-    </tr>
-</table>
-<br>
-@endif
 
 @if($invoice->payments->count() >0)
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">

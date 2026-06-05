@@ -142,12 +142,13 @@ trait WithInvoicesExport
                 'hide_payment_status'  => Arr::get($options, 'hide_payment_status', false),
                 'group_by_tariff_code' => Arr::get($options, 'group_by_tariff_code', false),
                 'show_dispatch_totals' => Arr::get($options, 'show_dispatch_totals', false),
-                'dispatch_total_skos'  => $deliveryNote?->total_skos > 0
+                'dispatch_total_skos'     => $deliveryNote?->total_skos > 0
                     ? $deliveryNote->total_skos
                     : $transactions->sum(fn ($t) => $t->quantity ?? 0),
-                'dispatch_total_units' => $deliveryNote?->total_units > 0
+                'dispatch_total_units'    => $deliveryNote?->total_units > 0
                     ? $deliveryNote->total_units
                     : $transactions->sum(fn ($t) => ($t->quantity ?? 0) * ($t->model?->units ?? 1)),
+                'dispatch_total_quantity' => $transactions->sum(fn ($t) => $t->quantity ?? 0),
             ], [], $config);
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);
