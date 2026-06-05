@@ -648,7 +648,7 @@ const onChangeInsurance = async (val: boolean) => {
             <!-- Section: Voucher + Offers/Charges -->
             <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mt-4 mb-2">
                 <!-- Voucher -->
-                <div class="flex flex-wrap items-stretch gap-x-3 gap-y-2 pl-2 md:pl-6" v-if="layout.app.environment == 'local'">
+                <div class="flex flex-wrap items-stretch gap-x-3 gap-y-2 pl-2 md:pl-6" v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'">
                     <div class="w-72 shrink-0">
                         <PureInput
                             v-model="voucherCode"
