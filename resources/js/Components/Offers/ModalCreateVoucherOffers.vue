@@ -427,10 +427,14 @@ const isFormInvalid = computed(() => {
                             </label>
 
                             <div class="flex flex-wrap gap-4">
-                                <div v-for="opt in targetOptions" :key="opt.value" class="flex items-center gap-2">
+                                <label v-for="opt in targetOptions" :key="opt.value" :for="`target-${opt.value}`"
+                                    class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                                    :class="target === opt.value
+                                        ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                        : 'border-gray-200 hover:border-gray-300'">
                                     <RadioButton v-model="target" :value="opt.value" :inputId="`target-${opt.value}`" />
-                                    <label :for="`target-${opt.value}`">{{ trans(opt.label) }}</label>
-                                </div>
+                                    <span>{{ trans(opt.label) }}</span>
+                                </label>
                             </div>
 
                         </div>
