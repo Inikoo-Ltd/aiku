@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * author Louis Perez
+ * created on 05-06-2026-15h-32m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
+
 namespace App\Actions\Masters\MasterProductCategory\Hydrators;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
