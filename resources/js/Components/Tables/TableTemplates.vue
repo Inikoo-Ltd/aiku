@@ -9,14 +9,15 @@ import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Mailshot } from "@/types/mailshot";
 import icon from "@/Components/Icon.vue";
-import { faSpellCheck, faSeedling, faPaperPlane, faStop, faCheckDouble, faCheck, faSkull, faDungeon, faEnvelopeOpen, faHandPointer, faEyeSlash, faInboxIn, faDumpsterFire, faThumbsDown } from "@fal";
+import { faSpellCheck, faSeedling, faPaperPlane, faStop, faCheckDouble, faCheck, faSkull, faDungeon, faEnvelopeOpen, faHandPointer, faEyeSlash, faInboxIn, faDumpsterFire, faThumbsDown , faHourglassStart} from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouteParams } from "@/types/route-params";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { inject, ref } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-library.add(faSpellCheck, faSeedling, faPaperPlane, faStop, faCheckDouble, faCheck, faSkull, faDungeon, faEnvelopeOpen, faHandPointer, faEyeSlash, faInboxIn, faDumpsterFire, faThumbsDown);
+library.add(faSpellCheck, faSeedling, faPaperPlane, faStop, faCheckDouble, faCheck, faSkull, faDungeon, faEnvelopeOpen, faHandPointer, faEyeSlash, faInboxIn, faDumpsterFire, faThumbsDown, faCheck, faHourglassStart);
 
 defineProps<{
     data: object,
@@ -63,9 +64,19 @@ function mailshotRoute(mailshot: Mailshot) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(name)="{ item: mailshot }">
-            <Link v-if="mailshotRoute(mailshot)" :href="(mailshotRoute(mailshot) as string)" class="primaryLink">
-                {{ mailshot["name"] }}
-            </Link>
+            <div>
+                <Link v-if="mailshotRoute(mailshot)" :href="(mailshotRoute(mailshot) as string)" class="primaryLink">
+                    {{ mailshot["name"] }}
+                </Link>
+
+                <span
+                    v-tooltip="mailshot.has_compiled_layout ? null : ctrans('Please save the email template by clicking the SAVE button in the BeeFree workspace before it can be used')"
+                    class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium text-slate-600 rounded hover:bg-slate-200 cursor-pointer transition">
+                    <FontAwesomeIcon :icon="mailshot.has_compiled_layout ? faCheck : faHourglassStart" class="mr-1"
+                        :style="{ color: mailshot.has_compiled_layout ? '#22c55e' : '#f59e0b' }" />
+                    {{ mailshot.has_compiled_layout ? ctrans("Ready") : ctrans("Temporary Save") }}
+                </span>
+            </div>
         </template>
         <template #cell(state)="{ item: mailshot }">
             <div class="flex justify-center">
