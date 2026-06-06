@@ -8,7 +8,6 @@
 
 namespace App\Actions\Web\Webpage;
 
-use App\Actions\Web\WebBlock\Iris\GetWebBlockSubDepartmentsThree;
 use App\Actions\Web\WebBlock\Workshop\GetBlockSubDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockCollection;
@@ -24,6 +23,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategorie
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartmentsThree;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks

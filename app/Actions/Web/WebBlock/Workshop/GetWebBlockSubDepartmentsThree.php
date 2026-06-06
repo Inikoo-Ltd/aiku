@@ -7,7 +7,7 @@
  * copyright 2026
 */
 
-namespace App\Actions\Web\WebBlock\Iris;
+namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
