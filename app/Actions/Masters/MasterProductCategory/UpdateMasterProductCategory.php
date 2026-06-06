@@ -293,6 +293,12 @@ class UpdateMasterProductCategory extends OrgAction
             $rules = $this->noStrictUpdateRules($rules);
         }
 
+        if (!$this->asAction && $this->masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
+            // Hard limit for Master Family (To accomodate design) if it's via UI update
+            $rules['description']       = ['sometimes', 'nullable', 'max:400'];
+            $rules['description_extra'] = ['sometimes', 'nullable', 'max:1250'];
+        }
+
         return $rules;
     }
 
