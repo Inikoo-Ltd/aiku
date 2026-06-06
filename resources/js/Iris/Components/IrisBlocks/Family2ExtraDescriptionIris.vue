@@ -4,6 +4,7 @@ import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
 import About from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/About.vue"
 import MarketingMaterials from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/MarketingMaterials.vue"
+import Faq from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Faq.vue"
 
 const props = defineProps<{
   fieldValue: any
@@ -13,13 +14,18 @@ const props = defineProps<{
 
 const layout = inject("layout", {}) as any
 const activeTab = ref("about")
-
 const tabs = [
   { key: "about", label: ctrans("About the Range") },
-  { key: "retailers", label: ctrans("Notes For Retailers") },
+  // { key: "retailers", label: ctrans("Notes For Retailers") },
   { key: "marketing", label: ctrans("Marketing Materials") },
   { key: "faq", label: ctrans("FAQ") },
-]
+].filter(tab => {
+  if (tab.key === "faq") {
+    return Array.isArray(props.fieldValue?.family?.faq) && props.fieldValue?.family?.faq.length > 0
+  }
+
+  return true
+})
 
 const sectionId = computed(
   () => props.fieldValue?.id ?? `family-1-iris-${props.indexBlock}`,
@@ -37,6 +43,8 @@ const component = (tab: string) => {
       return About
     case "marketing":
       return MarketingMaterials
+    case "faq":
+      return Faq
     default:
       return null
   }
