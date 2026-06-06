@@ -20,7 +20,7 @@ class WebBlockFamilyResource extends JsonResource
     public function toArray($request): array
     {
         /** @var ProductCategory $family */
-        $family = $this;
+        $family = $this->resource;
 
         return [
             'slug'                      => $family->slug,
@@ -40,7 +40,7 @@ class WebBlockFamilyResource extends JsonResource
             'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get(),
             'faq'                       => $family->faq,
             'marketing_material_route'  => [
-                'name'          => 'retina.catalogue.feeds.product_category.download',
+                'name'          => 'iris.catalogue.feeds.product_category.download_img',
                 'parameters'    => [
                     'productCategory'   => $family->slug,
                     'type'              => 'products_images'
