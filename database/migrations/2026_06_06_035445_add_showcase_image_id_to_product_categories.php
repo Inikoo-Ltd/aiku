@@ -16,6 +16,11 @@ return new class extends Migration
         Schema::table('product_categories', function (Blueprint $table) {
             $table->unsignedInteger('showcase_image_id')->nullable();
             $table->foreign('showcase_image_id')->on('media')->references('id');
+        });
+
+        Schema::table('master_product_categories', function (Blueprint $table) {
+            $table->unsignedInteger('showcase_image_id')->nullable();
+            $table->foreign('showcase_image_id')->on('media')->references('id');
             $table->foreign('desc_art1')->on('media')->references('id');
             $table->foreign('desc_art2')->on('media')->references('id');
             $table->foreign('desc_art3')->on('media')->references('id');
@@ -36,9 +41,13 @@ return new class extends Migration
     public function down()
     {
         Schema::table('product_categories', function (Blueprint $table) {
+            $table->dropForeign('showcase_image_id');
             $table->dropColumn([
                 'showcase_image_id'
             ]);
+        });
+
+        Schema::table('master_product_categories', function (Blueprint $table) {
             $table->dropForeign('showcase_image_id');
             $table->dropForeign('desc_art1');
             $table->dropForeign('desc_art2');
@@ -49,6 +58,9 @@ return new class extends Migration
             $table->dropForeign('extra_desc_art2');
             $table->dropForeign('extra_desc_art3');
             $table->dropForeign('extra_desc_art4');
+            $table->dropColumn([
+                'showcase_image_id'
+            ]);
         });
     }
 };
