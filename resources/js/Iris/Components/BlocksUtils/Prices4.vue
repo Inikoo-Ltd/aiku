@@ -237,7 +237,7 @@ watch(
                     </template>
 
                     <div v-if="!showMemberPrice" class="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2">
-                        <div class="flex text-xs items-center justify-center rounded-full text-primary">
+                        <div class="flex text-xs items-center justify-center rounded-full ">
                             <FontAwesomeIcon :icon="faCheck" />
                         </div>
                     </div>
