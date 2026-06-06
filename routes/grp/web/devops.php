@@ -7,6 +7,7 @@
 
 
 use App\Actions\DevOps\UI\ShowDevopsDashboard;
+use App\Actions\DevOps\Request\IndexDevopsRequests;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowDevopsDashboard::class)->name('dashboard');
