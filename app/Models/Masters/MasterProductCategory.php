@@ -266,6 +266,10 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
 
+    public function showcaseImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'showcase_image_id');
+    }
 
     public function descArt1Image(): HasOne
     {

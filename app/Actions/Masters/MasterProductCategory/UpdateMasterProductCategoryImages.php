@@ -31,6 +31,7 @@ class UpdateMasterProductCategoryImages extends GrpAction
         $this->update($masterProductCategory, $modelData);
 
         if (Arr::hasAny($modelData, [
+            'showcase_image_id',
             'desc_art1',
             'desc_art2',
             'desc_art3',
