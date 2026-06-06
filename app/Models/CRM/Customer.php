@@ -39,6 +39,7 @@ use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Goods\Stock;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
@@ -616,5 +617,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function dispatchedEmails(): BelongsToMany
     {
         return $this->belongsToMany(DispatchedEmail::class, 'customer_has_dispatched_emails');
+    }
+
+    public function returnDeliveryNotes(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class, 'customer_id', 'id');
     }
 }
