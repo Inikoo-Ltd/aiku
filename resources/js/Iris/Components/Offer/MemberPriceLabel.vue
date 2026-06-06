@@ -72,33 +72,28 @@ defineProps<{
             </button>
         </div>
 
-        <Popover ref="infoPopover">
-            <div class="max-w-[280px] space-y-3 text-sm">
-                <p class="font-semibold">
-                    {{ trans("VOLUME DISCOUNT") }}
-                </p>
+       <Popover ref="infoPopover">
+    <div class="max-w-[280px] space-y-3 text-sm">
+        <p class="font-semibold">
+            {{ trans("GR DISCOUNT") }}
+        </p>
 
-                <p class="text-[#555]">
-                    {{
-                        trans(
-                            "You don't need Gold Reward status to access the lower price"
-                        )
-                    }}.
-                </p>
+        <p class="text-[#555]">
+            {{
+                trans(
+                    "This product qualifies for an exclusive Gold Reward member discount."
+                )
+            }}
+        </p>
 
-                <p class="text-[#555]">
-                    {{
-                        trans(
-                            "Order the listed volume and the member price applies automatically at checkout"
-                        )
-                    }}.
-                    {{
-                        trans(
-                            "The volume can be made up from the whole product family, not just the same item"
-                        )
-                    }}.
-                </p>
-            </div>
-        </Popover>
+        <p class="text-[#555]">
+            {{
+                trans(
+                    "Sign in with your Gold Reward account to access member pricing and enjoy additional savings on this product."
+                )
+            }}
+        </p>
+    </div>
+</Popover>
     </div>
 </template>
