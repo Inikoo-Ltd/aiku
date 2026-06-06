@@ -29,24 +29,46 @@ defineProps<{
 </script>
 
 <template>
-    <div class="inline-flex items-center gap-2 overflow-hidden rounded" :class="{
-        'opacity-60': !active,
-    }">
-        <img :src="active ? `/assets/promo/gr-${layout.retina.organisation}.png` : `/assets/promo/gr-inactive.png`"
-            alt="Gold Reward logo" v-tooltip="ctrans('Gold Reward logo')" :class="active ? 'h-7' : 'h-9'"
-            class="w-auto shrink-0" />
+    <div
+        class="inline-flex items-center overflow-hidden rounded"
+        :class="{
+            'gap-2': active,
+            'gap-0': !active,
+            'opacity-60': !active,
+        }"
+    >
+        <img
+            :src="
+                active
+                    ? `/assets/promo/gr-${layout.retina.organisation}.png`
+                    : `/assets/promo/gr-inactive.png`
+            "
+            alt="Gold Reward logo"
+            v-tooltip="ctrans('Gold Reward logo')"
+            class="h-7 w-auto shrink-0"
+        />
 
-        <div class="flex items-center gap-2 rounded px-2 py-[3px] text-[10px] font-semibold leading-none text-white"
-            :class="active ? 'background-primary' : 'bg-[#c8c8c8]'">
+        <div
+            class="flex items-center gap-2 rounded px-2 py-[3px] text-[8px] 2xl:text-xs font-semibold leading-none text-white"
+            :class="active ? 'background-primary' : 'bg-[#c8c8c8]'"
+        >
             <span v-if="offer?.allowances?.[0]?.percentage_off">
                 {{ offer.allowances[0].percentage_off * 100 }}%
+
                 <span class="hidden sm:inline">
                     {{ trans("OFF") }}
                 </span>
             </span>
 
-            <button type="button" class="flex items-center justify-center" @click="toggleInfo">
-                <FontAwesomeIcon :icon="faInfoCircle" class="text-[11px] text-white/90 hover:text-white" />
+            <button
+                type="button"
+                class="flex items-center justify-center"
+                @click="toggleInfo"
+            >
+                <FontAwesomeIcon
+                    :icon="faInfoCircle"
+                    class="text-[10px] 2xl:text-xs text-white/90 hover:text-white"
+                />
             </button>
         </div>
 
@@ -57,12 +79,24 @@ defineProps<{
                 </p>
 
                 <p class="text-[#555]">
-                    {{ trans("You don't need Gold Reward status to access the lower price") }}.
+                    {{
+                        trans(
+                            "You don't need Gold Reward status to access the lower price"
+                        )
+                    }}.
                 </p>
 
                 <p class="text-[#555]">
-                    {{ trans("Order the listed volume and the member price applies automatically at checkout") }}.
-                    {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
+                    {{
+                        trans(
+                            "Order the listed volume and the member price applies automatically at checkout"
+                        )
+                    }}.
+                    {{
+                        trans(
+                            "The volume can be made up from the whole product family, not just the same item"
+                        )
+                    }}.
                 </p>
             </div>
         </Popover>

@@ -247,8 +247,8 @@ watch(
 
             <!-- GR PRICE -->
             <div v-if="product.discounted_price" class="relative grid items-center gap-x-2 w-full" :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                ? 'grid-cols-[1fr_minmax(0,78px)] sm:grid-cols-[1fr_minmax(0,150px)]'
-                : 'grid-cols-[1fr_minmax(0,78px)] sm:grid-cols-[1fr_minmax(0,98px)]'">
+                ? 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,75px)] 2xl:grid-cols-[1fr_minmax(0,150px)]'
+                : 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,75px)] 2xl:grid-cols-[1fr_minmax(0,150px)]'">
                 <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'">
                     <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" />
                 </div>
