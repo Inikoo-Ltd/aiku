@@ -38,13 +38,59 @@ const layout = inject<Record<string, any>>("layout", {})
 const cleanedDescription = computed(() => {
   const html = props.modelValue?.family?.description || ""
 
-  return html.replace(
-    /<h1[^>]*>.*?<\/h1>/gis,
-    ""
-  )
+  return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
 
-console.log(props)
+const trimmedDescription = computed(() => {
+  const html = cleanedDescription.value
+
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, "text/html")
+
+  let count = 0
+  const limit = 400
+
+  const walk = (node: Node): boolean => {
+    if (count >= limit) {
+      node.parentNode?.removeChild(node)
+      return true
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent || ""
+      const remaining = limit - count
+
+      if (text.length > remaining) {
+        node.textContent = text.slice(0, remaining) + "..."
+        count = limit
+        return true
+      }
+
+      count += text.length
+    }
+
+    const children = [...node.childNodes]
+
+    for (const child of children) {
+      if (walk(child)) {
+        const siblings = [...node.childNodes]
+        const index = siblings.indexOf(child)
+
+        siblings.slice(index + 1).forEach((sibling) => {
+          sibling.parentNode?.removeChild(sibling)
+        })
+
+        return true
+      }
+    }
+
+    return false
+  }
+
+  walk(doc.body)
+
+  return doc.body.innerHTML
+})
 
 const images = computed<FamilyImage[]>(() => {
   const data =
@@ -234,7 +280,7 @@ const screenStyles = computed(() => {
           <div class="flex-1 text-[#1d2430]" :style="{
             ...screenStyles.description,
             lineHeight: '1.6',
-          }" v-html="cleanedDescription" />
+          }" v-html="trimmedDescription" />
           <div class="mt-6 flex items-center gap-6">
             <button class="shrink-0 rounded-xl border border-[#333] font-medium" :style="{
               ...screenStyles.button,
