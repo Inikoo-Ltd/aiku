@@ -61,17 +61,18 @@ class UpdateMasterProductCategoryImages extends GrpAction
     public function rules(): array
     {
         return [
-            'image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art1' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art2' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art3' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art4' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art5' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art1' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art2' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art3' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art4' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_video_url' => ['sometimes', 'nullable'],
+            'image_id'          => ['sometimes', 'nullable', 'exists:media,id'],
+            'showcase_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art1'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art2'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art3'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art4'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art5'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art1'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art2'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art3'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art4'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_video_url'    => ['sometimes', 'nullable'],
         ];
     }
 

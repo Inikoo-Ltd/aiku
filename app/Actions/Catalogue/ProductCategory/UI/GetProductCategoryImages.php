@@ -28,7 +28,7 @@ class GetProductCategoryImages
             'editable'            => !$productCategory->master_product_category_id,
             'id'                  => $productCategory->id,
             // 'images_category_box' => $this->getSingleImageData($productCategory), // Old One
-            'images_category_box' => array_merge($this->getSingleImageData($productCategory), $this->getDescriptionImages($productCategory)),
+            'images_category_box' => array_merge($this->getSingleImageData($productCategory), $this->getShowcaseImageData($productCategory), $this->getDescriptionImages($productCategory)),
             'images_update_route' => [
                 'method'     => 'patch',
                 'name'       => 'grp.models.product_category.update_images',

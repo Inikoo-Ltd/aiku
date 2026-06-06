@@ -374,6 +374,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->where('state', OfferStateEnum::ACTIVE)
             ->where('type', 'Category Quantity Ordered Order Interval');
     }
+    
+    public function showcaseImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'showcase_image_id');
+    }
 
     public function descArt1Image(): HasOne
     {

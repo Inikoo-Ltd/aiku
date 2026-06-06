@@ -249,4 +249,21 @@ trait HasBucketImages
             ],
         ];
     }
+
+    public function getShowcaseImageData(MasterProductCategory|ProductCategory $model): array
+    {
+        return [
+            [
+                'label'        => __('Showcase'),
+                'type'         => 'image',
+                'column_in_db' => 'showcase_image_id',
+                'id'           => $model->showcase_image_id,
+                'images'       => $model->imageSources(getImage: 'showcaseImage'),
+                'dimensions'   => [
+                    'width'  => $model->showcaseImage->width ?? 0,
+                    'height' => $model->showcaseImage->height ?? 0
+                ]
+            ],
+        ];
+    }
 }
