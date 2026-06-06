@@ -1,0 +1,70 @@
+<script setup lang="ts">
+import { trans } from "laravel-vue-i18n"
+import { inject, ref } from "vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import Popover from "primevue/popover"
+
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faInfoCircle } from "@far"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+
+library.add(faInfoCircle)
+
+const layout = inject("layout", retinaLayoutStructure)
+
+const infoPopover = ref()
+
+const toggleInfo = (event: Event) => {
+    infoPopover.value?.toggle(event)
+}
+
+defineProps<{
+    active?: boolean
+    offer?: {
+        allowances?: {
+            percentage_off?: number
+        }[]
+    }
+}>()
+</script>
+
+<template>
+    <div class="inline-flex items-center gap-2 overflow-hidden rounded" :class="{
+        'opacity-60': !active,
+    }">
+        <img :src="active ? `/assets/promo/gr-${layout.retina.organisation}.png` : `/assets/promo/gr-inactive.png`"
+            alt="Gold Reward logo" v-tooltip="ctrans('Gold Reward logo')" :class="active ? 'h-7' : 'h-9'"
+            class="w-auto shrink-0" />
+
+        <div class="flex items-center gap-2 rounded px-2 py-[3px] text-[10px] font-semibold leading-none text-white"
+            :class="active ? 'background-primary' : 'bg-[#c8c8c8]'">
+            <span v-if="offer?.allowances?.[0]?.percentage_off">
+                {{ offer.allowances[0].percentage_off * 100 }}%
+                <span class="hidden sm:inline">
+                    {{ trans("OFF") }}
+                </span>
+            </span>
+
+            <button type="button" class="flex items-center justify-center" @click="toggleInfo">
+                <FontAwesomeIcon :icon="faInfoCircle" class="text-[11px] text-white/90 hover:text-white" />
+            </button>
+        </div>
+
+        <Popover ref="infoPopover">
+            <div class="max-w-[280px] space-y-3 text-sm">
+                <p class="font-semibold">
+                    {{ trans("VOLUME DISCOUNT") }}
+                </p>
+
+                <p class="text-[#555]">
+                    {{ trans("You don't need Gold Reward status to access the lower price") }}.
+                </p>
+
+                <p class="text-[#555]">
+                    {{ trans("Order the listed volume and the member price applies automatically at checkout") }}.
+                    {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
+                </p>
+            </div>
+        </Popover>
+    </div>
+</template>
