@@ -212,11 +212,9 @@ const bestOffer = computed(() => {
           <div class="
     mt-5
     flex
-    flex-col
+    items-center
     gap-4
-    lg:flex-row
-    lg:items-start
-    lg:gap-6
+    flex-wrap
     2xl:mt-8
   ">
             <a href="#family-2-extra-description" class="shrink-0">
@@ -240,35 +238,13 @@ const bestOffer = computed(() => {
               </button>
             </a>
 
-            <div class="
-      flex-1
-      flex
-      flex-wrap
-      items-center
-      gap-x-4
-      gap-y-2
-      min-w-0
-    ">
-              <div class="
-      flex
-      flex-wrap
-      items-center
-      gap-x-4
-      gap-y-2
-      min-w-0
-    ">
-                <div v-for="data in fieldValue.family.tags" :key="data.name" class="flex items-center gap-1.5">
-                  <Image :src="data.web_image" class="h-4 w-4 shrink-0" image-class="object-contain" />
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div v-for="data in fieldValue.family.tags" :key="data.name" class="flex items-center gap-1.5">
+                <Image :src="data.web_image" class="h-4 w-4 shrink-0" image-class="object-contain" />
 
-                  <span class="
-          whitespace-nowrap
-          text-[12px]
-          leading-none
-          text-[#555]
-        ">
-                    {{ data.name }}
-                  </span>
-                </div>
+                <span class="whitespace-nowrap text-[12px] leading-none text-[#555]">
+                  {{ data.name }}
+                </span>
               </div>
             </div>
           </div>
