@@ -9,7 +9,7 @@ const props = defineProps<{
 }>()
 
 const openIndex = ref<number | null>(0)
-
+ 
 const toggle = (index: number) => {
     openIndex.value = openIndex.value === index ? null : index
 }
