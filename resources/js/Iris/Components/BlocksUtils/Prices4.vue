@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, computed, watch} from "vue"
+import { inject, ref, computed, watch } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
@@ -81,9 +81,9 @@ interface ProductResource {
 
 const props = defineProps<{
     product: ProductResource
-    hasInBasket?:{
-        transaction_id: number, 
-        quantity_ordered: number, 
+    hasInBasket?: {
+        transaction_id: number,
+        quantity_ordered: number,
         quantity_ordered_new: number
     }
     currency?: {
@@ -106,7 +106,7 @@ const hasOffer =
 
 const showIntervalOffer = computed(() => {
     return getBestOfferfromComposable(props.product?.product_offers_data)?.type
-        === 'Category Quantity Ordered Order Interval'  && webpage_data.sub_type != 'familys'
+        === 'Category Quantity Ordered Order Interval' && webpage_data.sub_type != 'family'
 })
 
 const quantityOrdered = computed(() =>
@@ -156,6 +156,7 @@ watch(
     { immediate: true }
 )
 
+const _popoverProfit = ref(null)
 </script>
 
 <template>
@@ -179,10 +180,18 @@ watch(
                 <LabelComingSoon v-else-if="product.is_coming_soon" :product="product" />
             </div>
 
-            <div class="flex items-center gap-1 text-primary">
-                <span>{{ trans('RRP') }}:</span>
-                <span class="font-medium">
-                    {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
+            <div class="flex items-center gap-1 whitespace-nowrap">
+                <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
+                    @mouseleave="_popoverProfit?.hide"
+                    class="cursor-pointer opacity-60 hover:opacity-100 flex items-center text-[8px] sm:text-[9px] md:text-[10px]">
+                    <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
+                </span>
+
+                <span class="text-[8px] sm:text-[9px] md:text-[10px]">
+                    {{ trans('RRP') }}:
+                    <span class="font-medium">
+                        {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
+                    </span>
                 </span>
             </div>
 
@@ -195,7 +204,10 @@ watch(
         <!-- PRICE -->
         <div class="flex flex-col gap-y-[0.2rem] 2xl:gap-y-0 ">
 
-            <div class="grid grid-cols-[auto_1fr] items-center gap-x-2">
+            <div class="relative grid items-center gap-x-2 w-full"
+                :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
+                    ? 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,43%)] 2xl:grid-cols-[1fr_minmax(0,43%)]'
+                    : 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,43%)] 2xl:grid-cols-[1fr_minmax(0,43%)]'">
 
                 <div class="font-semibold whitespace-nowrap">
                     <span>{{ trans("Price") }}</span>
@@ -246,9 +258,10 @@ watch(
 
 
             <!-- GR PRICE -->
-            <div v-if="product.discounted_price" class="relative grid items-center gap-x-2 w-full" :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                ? 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,75px)] 2xl:grid-cols-[1fr_minmax(0,150px)]'
-                : 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,75px)] 2xl:grid-cols-[1fr_minmax(0,150px)]'">
+            <div v-if="product.discounted_price" class="relative grid items-center gap-x-2 w-full"
+                :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
+                    ? 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,43%)] 2xl:grid-cols-[1fr_minmax(0,43%)]'
+                    : 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,43%)] 2xl:grid-cols-[1fr_minmax(0,43%)]'">
                 <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'">
                     <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" />
                 </div>
@@ -276,13 +289,14 @@ watch(
 
                 <div v-if="bestOffer" class="font-medium text-right  min-w-0" :class="bestOfferClass">
                     <div class="flex items-baseline justify-end gap-1 min-w-0">
-                        <div class="min-w-0 flex-1 truncate text-[1rem]">
+                        <div class="min-w-0 flex-1 truncate">
                             <span v-if="product.units == 1">{{ locale.currencyFormat(currency?.code,
                                 product.discounted_price) }}
                                 /{{ product.unit }}</span>
                             <span v-else>{{ locale.currencyFormat(currency?.code, product.discounted_price) }}<span
-                                    class="text-xs">({{ locale.currencyFormat(currency?.code,
-                                        product.discounted_price_per_unit) }}
+                                    class="text-[8px] sm:text-[9px] md:text-[10px]">({{
+                                        locale.currencyFormat(currency?.code,
+                                            product.discounted_price_per_unit) }}
                                     /{{ product.unit }})</span></span>
                         </div>
 

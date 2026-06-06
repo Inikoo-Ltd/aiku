@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Web\WebBlock\Iris\GetWebBlockSubDepartmentsThree;
 use App\Actions\Web\WebBlock\Workshop\GetBlockSubDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockCollection;
@@ -39,6 +40,8 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
         } elseif (str_starts_with($webBlockType, 'families-') && str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetWebBlockFamiliesOverview::run($webpage, $webBlock);
+        } elseif ($webBlockType !== 'sub-departments-3' && str_contains($webBlockType, 'sub-departments-')) {
+            $parsedWebBlocks[$key] = GetWebBlockSubDepartmentsThree::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {

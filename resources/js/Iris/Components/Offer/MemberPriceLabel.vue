@@ -18,7 +18,7 @@ const toggleInfo = (event: Event) => {
     infoPopover.value?.toggle(event)
 }
 
-defineProps<{
+const props = defineProps<{
     active?: boolean
     offer?: {
         allowances?: {
@@ -26,6 +26,10 @@ defineProps<{
         }[]
     }
 }>()
+
+const webpage_data = inject("webpage_data", null)
+
+console.log(props.offer)
 </script>
 
 <template>
@@ -35,7 +39,7 @@ defineProps<{
         'opacity-60': !active,
     }">
         <img :src="active
-            ? `/assets/promo/gr-${layout.retina.organisation}.png`
+            ? `/assets/promo/gr-aw.png`
             : `/assets/promo/gr-inactive.png`
             " alt="Gold Reward logo" v-tooltip="ctrans('Gold Reward logo')" class="h-7 w-auto shrink-0" />
 
@@ -44,9 +48,9 @@ defineProps<{
             <div v-if="offer?.allowances?.[0]?.percentage_off">
                 {{ offer.allowances[0].percentage_off * 100 }}%
 
-                  <span class="hidden lg:inline-flex">
-        {{ ctrans("OFF") }}
-    </span>
+                <span class="hidden lg:inline-flex">
+                    {{ ctrans("OFF") }}
+                </span>
             </div>
 
             <button type="button" class="flex items-center justify-center" @click="toggleInfo">
@@ -57,24 +61,35 @@ defineProps<{
         <Popover ref="infoPopover">
             <div class="max-w-[280px] space-y-3 text-sm">
                 <p class="font-semibold">
-                    {{ ctrans("GR DISCOUNT") }}
+                    {{ ctrans("GOLD REWARD DISCOUNT") }}
                 </p>
 
-                <p class="text-[#555]">
-                    {{
-                        ctrans(
-                            "This product qualifies for an exclusive Gold Reward member discount."
-                        )
-                    }}
-                </p>
+                <div v-if="webpage_data?.sub_type != 'family'">
+                    <p class="text-[#555]">
+                        {{
+                            ctrans(
+                                "This product qualifies for an exclusive Gold Reward member discount."
+                            )
+                        }}
+                    </p>
 
-                <p class="text-[#555]">
-                    {{
-                        ctrans(
-                            "Sign in with your Gold Reward account to access member pricing and enjoy additional savings on this product."
-                        )
-                    }}
-                </p>
+                    <p class="text-[#555]">
+                        {{
+                            ctrans(
+                                "Sign in with your Gold Reward account to access member pricing and enjoy additional savings on  this product."
+                            )
+                        }}
+                    </p>
+
+                </div>
+                <div v-else>
+
+                    <p class="text-[#555]" v-html="offer?.products_triggers_label">
+                    </p>
+
+                </div>
+
+
             </div>
         </Popover>
     </div>

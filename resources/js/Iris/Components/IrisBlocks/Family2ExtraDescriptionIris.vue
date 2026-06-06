@@ -14,19 +14,26 @@ const props = defineProps<{
 
 const layout = inject("layout", {}) as any
 const activeTab = ref("about")
-const tabs = [
-  { key: "about", label: ctrans("About the Range") },
-  // { key: "retailers", label: ctrans("Notes For Retailers") },
-  { key: "marketing", label: ctrans("Marketing Materials") },
-  { key: "faq", label: ctrans("FAQ") },
-].filter(tab => {
-  if (tab.key === "faq") {
-    return Array.isArray(props.fieldValue?.family?.faq) && props.fieldValue?.family?.faq.length > 0
-  }
+const tabs = computed(() =>
+  [
+    { key: "about", label: ctrans("About the Range") },
+    { key: "marketing", label: ctrans("Marketing Materials") },
+    { key: "faq", label: ctrans("FAQ") },
+  ].filter(tab => {
+    if (tab.key === "marketing") {
+      return layout?.iris?.is_logged_in
+    }
 
-  return true
-})
+    if (tab.key === "faq") {
+      return (
+        Array.isArray(props.fieldValue?.family?.faq) &&
+        props.fieldValue.family.faq.length > 0
+      )
+    }
 
+    return true
+  })
+)
 const sectionId = computed(
   () => props.fieldValue?.id ?? `family-1-iris-${props.indexBlock}`,
 )
