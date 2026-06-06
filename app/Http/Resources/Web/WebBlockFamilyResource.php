@@ -23,22 +23,29 @@ class WebBlockFamilyResource extends JsonResource
         $family = $this;
 
         return [
-            'slug'                    => $family->slug,
-            'code'                    => $family->code,
-            'name'                    => $family->name,
-            'description'             => $family->description,
-            'description_title'       => $family->description_title,
-            'description_extra'       => $family->description_extra,
-            'id'                      => $family->id,
-            'image'                   => Arr::get($family->web_images, 'main.original'),
-            'description_image'       => Arr::get($family->web_images, 'description'),
-            'description_video'       => $family->desc_video_url,
-            'extra_description_image' => Arr::get($family->web_images, 'extraDescription'),
-            'url'                     => $family->webpage->url,
-            'offers_data'             => $family->offers_data,
-            'web_images'              => $family->web_images,
-            'tags'                    => $family->tradeUnitFamily?->tags()->limit(3)->get(),
-            'faq'                     => $family->faq,
+            'slug'                      => $family->slug,
+            'code'                      => $family->code,
+            'name'                      => $family->name,
+            'description'               => $family->description,
+            'description_title'         => $family->description_title,
+            'description_extra'         => $family->description_extra,
+            'id'                        => $family->id,
+            'image'                     => Arr::get($family->web_images, 'main.original'),
+            'description_image'         => Arr::get($family->web_images, 'description'),
+            'description_video'         => $family->desc_video_url,
+            'extra_description_image'   => Arr::get($family->web_images, 'extraDescription'),
+            'url'                       => $family->webpage->url,
+            'offers_data'               => $family->offers_data,
+            'web_images'                => $family->web_images,
+            'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get(),
+            'faq'                       => $family->faq,
+            'marketing_material_route'  => [
+                'name'          => 'retina.catalogue.feeds.product_category.download',
+                'parameters'    => [
+                    'productCategory'   => $family->slug,
+                    'type'              => 'products_images'
+                ]
+            ],
         ];
     }
 }
