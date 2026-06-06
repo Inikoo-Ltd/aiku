@@ -111,12 +111,27 @@ const tabButtonClass = computed(() => {
       return "px-2 py-4 text-[12px]"
   }
 })
+
+const sectionStyle = computed(() => {
+  const bg = props.modelValue?.container?.properties?.background[props.screenType]
+
+  return {
+    backgroundColor: bg?.color || undefined,
+    backgroundImage: bg?.image?.original
+      ? `url(${bg.image.original})`
+      : undefined,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }
+})
+
 </script>
 
 <template>
   <section
     class="w-full bg-[#D8D9DB] "
     :id="sectionId"
+     :style="sectionStyle"
   >
     <div
       class="mx-auto w-full  bg-white editor-class"

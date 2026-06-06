@@ -50,12 +50,25 @@ const component = (tab: string) => {
   }
 }
 
+const sectionStyle = computed(() => {
+  const bg = props.fieldValue?.container?.properties?.background[props.screenType]
+
+  return {
+    backgroundColor: bg?.color || undefined,
+    backgroundImage: bg?.image?.original
+      ? `url(${bg.image.original})`
+      : undefined,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }
+})
+
 const isMobile = computed(() => props.screenType === "mobile")
 
 </script>
 
 <template>
-  <section  class="w-full bg-[#D8D9DB]" :id="sectionId">
+  <section  class="w-full bg-[#D8D9DB]" :id="sectionId"   :style="sectionStyle">
     <div class="mx-auto w-full max-w-[1700px]  px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
       :style="containerStyle">
       <!-- TOP NAV -->
