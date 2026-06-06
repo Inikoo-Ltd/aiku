@@ -29,7 +29,7 @@ const props = defineProps<{
 
 const webpage_data = inject("webpage_data", null)
 
-console.log(props.offer)
+
 </script>
 
 <template>

@@ -119,82 +119,88 @@ const titleState = ref<'single' | 'double' | 'truncated'>('single')
 let resizeObserver: ResizeObserver | null = null
 
 const titleStyles = computed(() => ({
-    fontSize: titleState.value === 'single' ? '36px' : '25px',
+  fontSize: titleState.value === 'single' ? '36px' : '25px',
 }))
 
 const measureLines = (el: HTMLElement, fontSize: string): number => {
-    const clone = el.cloneNode(true) as HTMLElement
+  const clone = el.cloneNode(true) as HTMLElement
 
-    clone.style.position = 'fixed'
-    clone.style.visibility = 'hidden'
-    clone.style.pointerEvents = 'none'
-    clone.style.left = '-9999px'
-    clone.style.top = '0'
-    clone.style.width = `${el.clientWidth}px`
-    clone.style.whiteSpace = 'normal'
-    clone.style.fontSize = fontSize
-    clone.style.lineHeight = getComputedStyle(el).lineHeight
-    clone.style.padding = '0'
-    clone.style.margin = '0'
-    clone.style.border = 'none'
-    clone.style.boxSizing = 'border-box'
-    clone.style.overflow = 'visible'
+  clone.style.position = 'fixed'
+  clone.style.visibility = 'hidden'
+  clone.style.pointerEvents = 'none'
+  clone.style.left = '-9999px'
+  clone.style.top = '0'
+  clone.style.width = `${el.clientWidth}px`
+  clone.style.whiteSpace = 'normal'
+  clone.style.fontSize = fontSize
+  clone.style.lineHeight = getComputedStyle(el).lineHeight
+  clone.style.padding = '0'
+  clone.style.margin = '0'
+  clone.style.border = 'none'
+  clone.style.boxSizing = 'border-box'
+  clone.style.overflow = 'visible'
 
-    document.body.appendChild(clone)
+  document.body.appendChild(clone)
 
-    const lineHeight = parseFloat(getComputedStyle(clone).lineHeight)
-    const lines = Math.max(1, Math.round(clone.scrollHeight / lineHeight))
+  const lineHeight = parseFloat(getComputedStyle(clone).lineHeight)
+  const lines = Math.max(1, Math.round(clone.scrollHeight / lineHeight))
 
-    document.body.removeChild(clone)
+  document.body.removeChild(clone)
 
-    return lines
+  return lines
 }
 
 const updateTitleSize = () => {
-    const el = titleRef.value
+  const el = titleRef.value
 
-    if (!el) {
-        return
+  if (!el) {
+    return
+  }
+
+  requestAnimationFrame(() => {
+    const linesAt36 = measureLines(el, '36px')
+
+    if (linesAt36 <= 1) {
+      titleState.value = 'single'
+      return
     }
 
-    requestAnimationFrame(() => {
-        const linesAt36 = measureLines(el, '36px')
+    const linesAt25 = measureLines(el, '25px')
 
-        if (linesAt36 <= 1) {
-            titleState.value = 'single'
-            return
-        }
-
-        const linesAt25 = measureLines(el, '25px')
-
-        titleState.value = linesAt25 <= 2 ? 'double' : 'truncated'
-    })
+    titleState.value = linesAt25 <= 2 ? 'double' : 'truncated'
+  })
 }
 
 onMounted(() => {
+  updateTitleSize()
+
+  resizeObserver = new ResizeObserver(() => {
     updateTitleSize()
+  })
 
-    resizeObserver = new ResizeObserver(() => {
-        updateTitleSize()
-    })
-
-    if (titleRef.value) {
-        resizeObserver.observe(titleRef.value)
-    }
+  if (titleRef.value) {
+    resizeObserver.observe(titleRef.value)
+  }
 })
 
 onUnmounted(() => {
-    if (resizeObserver) {
-        resizeObserver.disconnect()
-        resizeObserver = null
-    }
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 
 watch(
-    () => props.fieldValue?.family?.name,
-    () => {
-        updateTitleSize()
-    }
+  () => props.fieldValue?.family?.name,
+  () => {
+    updateTitleSize()
+  }
+)
+
+const contentClass = computed(() =>
+  layout.rightbasket?.show
+    ? 'flex flex-col gap-6'
+    : 'flex flex-col gap-6 lg:flex-row lg:items-stretch'
 )
 
 </script>
@@ -206,7 +212,7 @@ watch(
       ...getStyles(fieldValue?.container?.properties),
       width: 'auto'
     }">
-      <div class="flex flex-col gap-6 lg:flex-row lg:items-stretch">
+      <div :class="contentClass">
         <!-- IMAGE SECTION -->
         <div class="flex shrink-0 justify-center gap-[6px]">
           <!-- IMAGE 1 -->
@@ -300,7 +306,6 @@ watch(
         </div>
 
         <!-- CONTENT -->
-        <!-- CONTENT -->
         <div class="flex min-w-0 flex-1 flex-col">
           <div class="
       flex
@@ -313,23 +318,19 @@ watch(
       lg:justify-between
     ">
             <div class="min-w-0 flex-1">
-<h1
-    ref="titleRef"
-    :style="titleStyles"
-    :class="[
-        'font-bold leading-[1.15] break-words',
-        titleState === 'truncated' ? 'title--truncated' : ''
-    ]"
->
-    {{ fieldValue.family?.name }}
-</h1>
+              <h1 ref="titleRef" :style="titleStyles" :class="[
+                'font-bold leading-[1.15] break-words',
+                titleState === 'truncated' ? 'title--truncated' : ''
+              ]">
+                {{ fieldValue.family?.name }}
+              </h1>
             </div>
 
             <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
               class="flex gap-x-1 gap-y-1 md:gap-y-2 offer">
               <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                  ? 'active-inactive-gr-v2'
-                  : 'max_discount'
+                ? 'active-inactive-gr-v2'
+                : 'max_discount'
                 " />
 
               <DiscountByType v-if="
@@ -448,26 +449,26 @@ watch(
 }
 
 .title {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 
-    font-size: 2rem;
-    line-height: 1.15;
+  font-size: 2rem;
+  line-height: 1.15;
 }
 
 .title--truncated {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 @container (max-height: 4.6em) {
-    .title {
-        font-size: 1.75rem;
-    }
+  .title {
+    font-size: 1.75rem;
+  }
 }
 </style>
