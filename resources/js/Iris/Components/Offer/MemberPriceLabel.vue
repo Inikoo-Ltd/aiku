@@ -44,9 +44,9 @@ defineProps<{
             <div v-if="offer?.allowances?.[0]?.percentage_off">
                 {{ offer.allowances[0].percentage_off * 100 }}%
 
-                <span >
-                    {{ ctrans("OFF") }}
-                </span>
+                  <span class="hidden lg:inline-flex">
+        {{ ctrans("OFF") }}
+    </span>
             </div>
 
             <button type="button" class="flex items-center justify-center" @click="toggleInfo">
