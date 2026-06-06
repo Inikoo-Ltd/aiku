@@ -56,7 +56,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 
 <template>
   <section  class="w-full bg-[#D8D9DB]" :id="sectionId">
-    <div class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
+    <div class="mx-auto w-full max-w-[1700px]  px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
       :style="containerStyle">
       <!-- TOP NAV -->
       <div class="border-b border-[#9a9a9a]">

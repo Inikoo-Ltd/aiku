@@ -216,7 +216,7 @@ const screenStyles = computed(() => {
     ? modelValue.id
     : `family-2`
     " component="family-2-workshop">
-    <div class="mx-auto w-full bg-white px-4 py-4" :style="{
+    <div class="mx-auto w-full  px-4 py-4" :style="{
       ...getStyles(
         layout?.app?.webpage_layout?.container
           ?.properties,
