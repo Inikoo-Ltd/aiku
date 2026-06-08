@@ -39,6 +39,7 @@ use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Goods\Stock;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
@@ -195,6 +196,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, TopUpPaymentApiPoint> $topUpPaymentApiPoint
  * @property-read Collection<int, TopUp> $topUps
  * @property-read \App\Models\CRM\TrafficSource|null $trafficSource
+ * @property-read Collection<int, \App\Models\CRM\TrafficSource> $trafficSources
  * @property-read Collection<int, Transaction> $transactions
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
  * @property-read WooCommerceUser|null $wooCommerceUser
@@ -615,5 +617,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function dispatchedEmails(): BelongsToMany
     {
         return $this->belongsToMany(DispatchedEmail::class, 'customer_has_dispatched_emails');
+    }
+
+    public function returnDeliveryNotes(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class, 'customer_id', 'id');
     }
 }

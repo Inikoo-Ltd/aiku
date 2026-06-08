@@ -60,18 +60,20 @@ const layout = inject('layout', {})
 const getHref = (index: number) => {
   const image = props.fieldValue?.value?.images?.[index]
   return (
-    image?.link_data?.url ||
+    image?.link_data?.canonical_url ||
     image?.link_data?.workshop_url ||
     image?.link_data?.href ||
+    /* image?.link_data?.url || */
     ''
   )
 }
 
 const getHrefFromImageData = (image: any) => {
   return (
-    image?.link_data?.url ||
+    image?.link_data?.canonical_url ||
     image?.link_data?.href ||
     image?.link_data?.workshop_url ||
+    /* image?.link_data?.url || */
     ''
   )
 }

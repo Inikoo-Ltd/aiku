@@ -12,15 +12,24 @@ use App\Models\Web\Website;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsController;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowIrisRobotsTxt
 {
-    use AsController;
+    use AsAction;
+
+
+    public function getRobotText(Website $website): string
+    {
+        $filePath = "robots/robots_$website->id.txt";
+        if (Storage::disk('local')->exists($filePath)) {
+            return Storage::disk('local')->get($filePath);
+        }
+        return '';
+    }
 
     public function asController(ActionRequest $request): Response
     {
-
         /** @var Website $website */
         $website = $request->input('website');
 
@@ -35,7 +44,6 @@ class ShowIrisRobotsTxt
                     'Cache-Control' => 'public, max-age=3600',
                 ]
             );
-
         }
 
         return response(

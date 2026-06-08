@@ -58,7 +58,7 @@ class TransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $qtyOrderedInt = $this->is_cut_view ? 
+        $qtyOrderedInt = $this->is_cut_view ?
             ($this->quantity_ordered * $this->product_units) :
             $this->quantity_ordered;
 

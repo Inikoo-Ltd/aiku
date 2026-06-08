@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * author Louis Perez
+ * created on 05-06-2026-15h-32m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
+
 namespace App\Actions\Masters\MasterProductCategory\Hydrators;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -20,7 +27,7 @@ class MasterFamilyHydrateTradeUnitFamilyToChildFamily extends GrpAction
         }
     }
 
-    public function asAction(MasterProductCategory $masterFamily): void
+    public function action(MasterProductCategory $masterFamily): void
     {
         $this->initialisation($masterFamily->group, []);
         $this->handle($masterFamily);

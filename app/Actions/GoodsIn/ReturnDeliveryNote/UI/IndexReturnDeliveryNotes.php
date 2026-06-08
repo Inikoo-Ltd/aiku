@@ -10,6 +10,8 @@
 namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithReturnDeliveryNotesSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -17,6 +19,7 @@ use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Http\Resources\Procurement\ReturnDeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -34,8 +37,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexReturnDeliveryNotes extends OrgAction
 {
     use WithReturnDeliveryNotesSubNavigation;
+    use WithCustomerSubNavigation;
 
-    private Warehouse|Shop $parent;
+    private Warehouse|Shop|Customer $parent;
     private string $bucket = 'all';
 
     protected function getElementGroups(Group|Organisation|Shop|Warehouse|Order $parent): array
@@ -57,7 +61,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         ];
     }
 
-    public function handle(Group|Organisation|Shop|Warehouse|Order $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop|Warehouse|Order|Customer $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -80,12 +84,14 @@ class IndexReturnDeliveryNotes extends OrgAction
         } elseif ($parent instanceof Order) {
             $query->where('return_delivery_notes.order_id', $parent->id);
         } elseif ($parent instanceof Organisation) {
-            $query->where('organisations.id', $parent->id);
+            $query->where('return_delivery_notes.organisation_id', $parent->id);
         } elseif ($parent instanceof Shop) {
-            $query->where('shops.id', $parent->id);
+            $query->where('return_delivery_notes.shop_id', $parent->id);
+        } elseif ($parent instanceof Customer) {
+            $query->where('return_delivery_notes.customer_id', $parent->id);
         }
 
-        if (!($parent instanceof Order)) {
+        if (!($parent instanceof Order || $parent instanceof Customer)) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $query->whereElementGroup(
                     key: $key,
@@ -135,11 +141,6 @@ class IndexReturnDeliveryNotes extends OrgAction
     public function htmlResponse(LengthAwarePaginator $returnDeliveryNote, ActionRequest $request): Response
     {
         $subNavigation = null;
-
-        if ($this->parent instanceof Warehouse) {
-            $subNavigation = $this->getReturnDeliveryNotesSubNavigation($this->parent);
-        }
-
         $title      = __('Returns');
         $model      = '';
         $icon       = [
@@ -149,6 +150,25 @@ class IndexReturnDeliveryNotes extends OrgAction
         $afterTitle = null;
         $iconRight  = null;
         $actions    = [];
+
+        if ($this->parent instanceof Warehouse) {
+            $subNavigation = $this->getReturnDeliveryNotesSubNavigation($this->parent);
+        } elseif ($this->parent instanceof Customer) {
+            $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
+            
+            $icon       = [
+                'icon'  => ['fal', 'fa-user'],
+                'title' => __('Customer')
+            ];
+            $title      = $this->parent->name;
+            $iconRight  = [
+                'icon'  => ['fal', 'fa-exchange'],
+                'title' => $title
+            ];
+            $afterTitle = [
+                'label' => __('Returns')
+            ];
+        }
 
         if ($this->parent instanceof Warehouse) {
             $icon      = ['fal', 'fa-arrow-to-bottom'];
@@ -189,7 +209,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         ->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
     }
 
-    public function tableStructure(Group|Organisation|Shop|Warehouse|Order $parent, $prefix = null, $bucket = 'all'): Closure
+    public function tableStructure(Group|Organisation|Shop|Warehouse|Order|Customer $parent, $prefix = null, $bucket = 'all'): Closure
     {
 
         return function (InertiaTable $table) use ($parent, $prefix, $bucket) {
@@ -206,7 +226,7 @@ class IndexReturnDeliveryNotes extends OrgAction
 
 
 
-            if ($bucket == 'all' && !($parent instanceof Order)) {
+            if ($bucket == 'all' && !($parent instanceof Order || $parent instanceof Customer)) {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -290,6 +310,14 @@ class IndexReturnDeliveryNotes extends OrgAction
         return $this->handle(parent: $shop, bucket: $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inCustomer(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $customer;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent: $customer, bucket: $this->bucket);
+    }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
@@ -328,6 +356,18 @@ class IndexReturnDeliveryNotes extends OrgAction
             'grp.org.warehouses.show.incoming.return_delivery_notes.index' => array_merge(
                 ShowProcurementDashboard::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'warehouse'])
+                ),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.crm.customers.show.return_delivery_notes.index' => array_merge(
+                ShowCustomer::make()->getBreadcrumbs(
+                    'grp.org.shops.show.crm.customers.show',
+                    $routeParameters
                 ),
                 $headCrumb(
                     [

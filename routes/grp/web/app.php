@@ -190,6 +190,10 @@ Route::middleware(
         ->name("chat.")
         ->group(__DIR__."/chat.php");
 
+    Route::prefix("devops")
+        ->name("devops.")
+        ->group(__DIR__."/devops.php");
+
     Route::fallback(function () {
         $status = 404;
 

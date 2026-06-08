@@ -41,7 +41,9 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockCollection::run($webpage, $webBlock);
         } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamiliesOverview::run($webpage, $webBlock);
-        } elseif (str_contains($webBlockType, 'sub-departments-')) {
+        } elseif ($webBlockType == 'sub-departments-3') {
+            $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartments::run($webpage, $webBlock);
+        } elseif ($webBlockType !== 'sub-departments-3' && str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamilies::run($webpage, $webBlock);

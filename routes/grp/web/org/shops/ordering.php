@@ -71,6 +71,5 @@ Route::prefix('purges/{purge:id}')->group(function () {
 
 Route::name('return_delivery_notes.')->prefix('returns-dn')->group(function () {
     Route::get('/', [IndexReturnDeliveryNotes::class, 'inShop'])->name('index');
-
     Route::get('/{returnDeliveryNote}', [ShowReturnDeliveryNote::class, 'inShop'])->name('show');
 });

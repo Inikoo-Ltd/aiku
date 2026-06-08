@@ -121,6 +121,15 @@ class ShowDeliveryNote extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function inCustomerReplacements(Organisation $organisation, Shop $shop, Customer $customer, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    {
+        $this->parent = $customer;
+        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
+
+        return $this->handle($deliveryNote);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
     public function inOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->parent = $customer;
@@ -1078,7 +1087,7 @@ class ShowDeliveryNote extends OrgAction
 
     public function getBreadcrumbs(DeliveryNote $deliveryNote, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (DeliveryNote $deliveryNote, array $routeParameters, string $suffix) {
+        $headCrumb = function (DeliveryNote $deliveryNote, array $routeParameters, string $suffix, ?string $customRouteIndexLabel = null) {
             return [
                 [
 
@@ -1086,7 +1095,7 @@ class ShowDeliveryNote extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Delivery Note')
+                            'label' => $customRouteIndexLabel ?? __('Delivery Note')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -1182,6 +1191,28 @@ class ShowDeliveryNote extends OrgAction
                     $suffix
                 ),
             ),
+            'grp.org.shops.show.crm.customers.show.replacements.show',
+            => array_merge(
+                ShowCustomer::make()->getBreadcrumbs(
+                    'grp.org.shops.show.crm.customers.show',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $deliveryNote,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.replacements.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.replacements.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'deliveryNote'])
+                        ]
+                    ],
+                    $suffix,
+                    __("Replacements")
+                ),
+            ),
             default => []
         };
     }
@@ -1212,7 +1243,10 @@ class ShowDeliveryNote extends OrgAction
         } elseif ($request->route()->getName() == 'grp.org.shops.show.ordering.orders.show.delivery-note') {
             $query->leftjoin('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id');
             $query->where('delivery_note_order.order_id', $this->parent->id);
-        } elseif ($request->route()->getName() == 'grp.org.shops.show.crm.customers.show.delivery_notes.show') {
+        } elseif (in_array($request->route()->getName(), [
+            'grp.org.shops.show.crm.customers.show.delivery_notes.show',
+            'grp.org.shops.show.crm.customers.show.replacements.show'
+        ])) {
             $query->where('delivery_notes.customer_id', $this->parent->id);
         }
 
@@ -1277,6 +1311,7 @@ class ShowDeliveryNote extends OrgAction
 
                 ]
             ],
+            'grp.org.shops.show.crm.customers.show.replacements.show',
             'grp.org.shops.show.crm.customers.show.delivery_notes.show' => [
                 'label' => $deliveryNote->reference,
                 'route' => [

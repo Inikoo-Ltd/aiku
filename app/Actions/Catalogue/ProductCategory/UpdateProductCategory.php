@@ -255,12 +255,21 @@ class UpdateProductCategory extends OrgAction
             'is_description_extra_reviewed' => ['sometimes', 'boolean'],
             'set_main_webpage'              => ['sometimes', 'string'],
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
+            'faq'                           => ['sometimes', 'array'],
+            'faq.*.question'                => ['sometimes', 'string'],
+            'faq.*.answer'                  => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {
             $rules['source_department_id'] = ['sometimes', 'string', 'max:255'];
             $rules['source_family_id']     = ['sometimes', 'string', 'max:255'];
             $rules                         = $this->noStrictUpdateRules($rules);
+        }
+
+        if (!$this->asAction && $this->productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            // Hard limit for Family (To accomodate design) if it's via UI update
+            $rules['description']       = ['sometimes', 'nullable', 'max:400'];
+            $rules['description_extra'] = ['sometimes', 'nullable', 'max:1250'];
         }
 
         return $rules;
