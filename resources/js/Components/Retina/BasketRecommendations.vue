@@ -181,7 +181,7 @@ onBeforeUnmount(() => {
 <template>
     <div class="md:py-4" id="basket-recommendations" >
         <Swiper
-            :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
+            :slides-per-view="slidesPerView ? Math.min((listProducts?.length || (isLoadingFetch ? pageSize : 0)), slidesPerView || 0) : 4"
             :loop="false"
             :autoplay="false"
             :pagination="{ clickable: true }"
@@ -191,7 +191,26 @@ onBeforeUnmount(() => {
             autoHeight
             @reachEnd="(e) => (e.slides?.length > 0 ? onReachEnd() : false)"
         >
-            <template v-if="listProducts?.length">
+            <template v-if="(!listProducts?.length && isLoadingFetch)">
+                <SwiperSlide
+                    v-for="n in pageSize"
+                    class="w-full cursor-grab relative px-2 md:px-4 py-3 rounded !flex !flex-col !justify-between gap-y-4 min-h-full animate-pulse"
+                >
+                    <div class="flex flex-col md:flex-row gap-x-2">
+                        <div class="h-fit mx-auto md:mx-0 w-full max-w-[50px] md:max-w-[120px] rounded aspect-[4/4] bg-gray-200"></div>
+                        <div class="flex-1 space-y-3 mt-2 md:mt-0">
+                            <div class="h-3 bg-gray-200 rounded w-full"></div>
+                            <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+                            <div class="h-2 bg-gray-200 rounded w-1/3"></div>
+                            <div class="h-4 bg-gray-200 rounded w-2/5"></div>
+                            <div class="h-6 bg-gray-200 rounded w-full"></div>
+                            <div class="h-9 bg-gray-200 rounded w-2/3"></div>
+                        </div>
+                    </div>
+                </SwiperSlide>
+            </template>
+
+            <template v-else-if="listProducts?.length">
                 <SwiperSlide v-for="(product, index) in listProducts"
                     :key="index"
                     class="w-full cursor-grab relative px-2 md:px-4 py-3 rounded !flex !flex-col !justify-between gap-y-4 min-h-full"
