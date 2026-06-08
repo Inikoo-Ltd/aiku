@@ -132,6 +132,7 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.web_images',
                 'available_quantity',
                 'products.is_for_sale',
+                'products.is_bundle',
                 'products.units',
                 'products.unit',
                 'products.created_at',
