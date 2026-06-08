@@ -12,7 +12,6 @@ namespace App\Actions\Ordering\Order\Watcher;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
-use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -20,19 +19,9 @@ use OwenIt\Auditing\Events\AuditCustom;
 use Sentry;
 use Sentry\State\Scope;
 
-class FixMiscalculatedTransactionAmounts implements ShouldBeUniqueUntilProcessing
+class FixMiscalculatedTransactionAmounts
 {
     use AsAction;
-
-    private Order $order;
-
-    public string $jobQueue = 'urgent';
-    public int $jobTries = 1;
-
-    public function uniqueId(Order $order): string
-    {
-        return $order->id;
-    }
 
     /**
      * @throws \Throwable
