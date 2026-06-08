@@ -313,11 +313,11 @@ const _popoverProfit = ref(null)
     </div>
 
     <!-- MEMBER -->
-    <div v-if="showIntervalOffer && !showMemberPrice"
-        class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] discount">
-        <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
-            template="products_triggers_label" />
-    </div>
+<!--    <div v-if="showIntervalOffer && !showMemberPrice"-->
+<!--        class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] discount">-->
+<!--        <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"-->
+<!--            template="products_triggers_label" />-->
+<!--    </div>-->
 </template>
 
 
