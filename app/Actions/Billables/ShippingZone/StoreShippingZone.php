@@ -148,7 +148,7 @@ class StoreShippingZone extends OrgAction
         return $this->handle($shippingZoneSchema, $this->validatedData);
     }
 
-    public function htmlResponse(ShippingZone $shippingZone)
+    public function htmlResponse(ShippingZone $shippingZone): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         request()->session()->flash('notification', [
             'status'      => 'success',
