@@ -47,6 +47,10 @@ const cleanedDescription = computed(() => {
 const trimmedDescription = computed(() => {
   const html = cleanedDescription.value
 
+  if (typeof DOMParser === "undefined") {
+        return html
+  }
+
   const parser = new DOMParser()
   const doc = parser.parseFromString(html, "text/html")
 
