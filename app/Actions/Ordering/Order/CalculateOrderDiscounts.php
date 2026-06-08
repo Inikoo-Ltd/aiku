@@ -8,6 +8,8 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Ordering\Order\Watcher\WatchMiscalculatedTransactionGrossAmt;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
@@ -121,6 +123,13 @@ class CalculateOrderDiscounts
         }
 
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
+
+        // INI-1649 Check after 2 minutes
+        // Order & Force repair = false. Add true besides order later Raul if you want to force repair after the check
+        if ($order->shop->is_aiku && $order->shop->type !== ShopTypeEnum::EXTERNAL) {
+            WatchMiscalculatedTransactionGrossAmt::dispatch($order)->delay(120);
+        }
+
 
         $order->update(
             [
