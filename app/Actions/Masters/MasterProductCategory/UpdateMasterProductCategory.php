@@ -151,9 +151,9 @@ class UpdateMasterProductCategory extends OrgAction
 
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 $shop = $productCategory->shop;
-                // if (!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) {
-                //     continue;
-                // }
+                if (!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) {
+                    continue;
+                }
 
                 $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
