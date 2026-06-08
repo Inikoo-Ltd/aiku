@@ -104,6 +104,10 @@ class StoreBundle extends OrgAction
                 $productData['description'] = $productSelected->first()?->description ?? '-';
             }
 
+            $productData['data'] = [
+                'products' => $selectedProducts
+            ];
+
             $product = StoreProduct::make()->action($customerSalesChannel->shop, $productData);
 
             data_set($modelData, 'group_id', $customerSalesChannel->group_id);

@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
+use App\Models\Bundle;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
@@ -603,5 +604,10 @@ class Product extends Model implements Auditable, HasMedia
     public function variant(): BelongsTo
     {
         return $this->belongsTo(Variant::class, 'variant_id');
+    }
+
+    public function bundle(): MorphOne
+    {
+        return $this->morphOne(Bundle::class, 'bundleable');
     }
 }
