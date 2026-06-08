@@ -29,6 +29,7 @@ defineProps<{
         id: number
         label: string
         value: number
+        subtitle?: string
         change: number
         changeType: string
         icon: string

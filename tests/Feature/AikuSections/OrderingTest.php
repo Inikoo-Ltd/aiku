@@ -753,7 +753,7 @@ test('UI show asset shipping', function () {
 test('UI edit asset shipping', function () {
     $shippingZoneSchema = ShippingZoneSchema::first();
     $this->withoutExceptionHandling();
-    $response = get(route('grp.org.shops.show.billables.shipping.edit', [$this->organisation->slug, $this->shop, $shippingZoneSchema]));
+    $response = get(route('grp.org.shops.show.billables.shipping.current.edit', [$this->organisation->slug, $this->shop, $shippingZoneSchema]));
     $response->assertInertia(function (AssertableInertia $page) use ($shippingZoneSchema) {
         $page
             ->component('EditModel')

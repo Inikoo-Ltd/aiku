@@ -40,11 +40,61 @@ class ShowOrderingDashboard extends OrgAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-
         $excessOrderCount = DB::table('orders')
             ->whereColumn('payment_amount', '>', 'total_amount')
             ->where('shop_id', $shop->id)
+            ->whereNull('deleted_at')
             ->count();
+
+        $avgOrderValue = round((float) (DB::table('orders')
+            ->where('shop_id', $shop->id)
+            ->whereNotIn('state', ['cancelled'])
+            ->whereNull('deleted_at')
+            ->avg('total_amount') ?? 0), 2);
+
+        $avgOrderWeight = (int) round((float) (DB::table('delivery_notes')
+            ->where('shop_id', $shop->id)
+            ->whereBetween('effective_weight', [1, 50000])
+            ->whereNull('deleted_at')
+            ->avg('effective_weight') ?? 0));
+
+        $topCourier = DB::table('delivery_notes as dn')
+            ->join('model_has_shipments as mhs', function ($join) {
+                $join->on('mhs.model_id', '=', 'dn.id')
+                    ->where('mhs.model_type', '=', 'DeliveryNote');
+            })
+            ->join('shipments as s', 's.id', '=', 'mhs.shipment_id')
+            ->join('shippers as sh', 'sh.id', '=', 's.shipper_id')
+            ->join('delivery_note_order as dno', 'dno.delivery_note_id', '=', 'dn.id')
+            ->join('orders as o', function ($join) use ($shop) {
+                $join->on('o.id', '=', 'dno.order_id')
+                    ->where('o.shop_id', '=', $shop->id)
+                    ->whereNull('o.deleted_at');
+            })
+            ->whereNull('dn.deleted_at')
+            ->whereNull('s.deleted_at')
+            ->whereNull('sh.deleted_at')
+            ->selectRaw('sh.id, sh.name, COUNT(DISTINCT o.id) as count')
+            ->groupBy('sh.id', 'sh.name')
+            ->orderByDesc('count')
+            ->first();
+
+        $topCountry = DB::table('orders as o')
+            ->join('countries as c', 'c.id', '=', 'o.delivery_country_id')
+            ->where('o.shop_id', $shop->id)
+            ->whereNull('o.deleted_at')
+            ->selectRaw('c.name, COUNT(*) as count')
+            ->groupBy('c.name')
+            ->orderByDesc('count')
+            ->first();
+
+        $avgDispatchHours = round((float) (DB::table('orders')
+            ->where('shop_id', $shop->id)
+            ->whereNull('deleted_at')
+            ->whereNotNull('dispatched_at')
+            ->whereNotNull('date')
+            ->selectRaw('AVG(EXTRACT(EPOCH FROM (dispatched_at - date)) / 3600) as avg_hours')
+            ->value('avg_hours') ?? 0), 1);
 
         return Inertia::render(
             'Org/Ordering/OrderingDashboard',
@@ -67,7 +117,53 @@ class ShowOrderingDashboard extends OrgAction
                 ],
                 'stats'       => [
                     [
-                        'label'           => __('Orders excesses payment'),
+                        'label' => __('Avg Order Value'),
+                        'icon'  => 'fal fa-coin',
+                        'color' => '#10b981',
+                        'value' => $avgOrderValue,
+                    ],
+                    [
+                        'label' => __('Avg Order Weight (g)'),
+                        'icon'  => 'fal fa-weight-hanging',
+                        'color' => '#6366f1',
+                        'value' => $avgOrderWeight,
+                    ],
+                    [
+                        'label' => __('Avg Dispatch Time (hrs)'),
+                        'icon'  => 'fal fa-clock',
+                        'color' => '#8b5cf6',
+                        'value' => $avgDispatchHours,
+                    ],
+                    [
+                        'label'    => __('Top Courier Used'),
+                        'icon'     => 'fal fa-truck',
+                        'color'    => '#f59e0b',
+                        'value'    => $topCourier?->count ?? 0,
+                        'subtitle' => $topCourier?->name,
+                        'route'    => [
+                            'name'       => 'grp.org.shops.show.ordering.couriers.index',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug,
+                            ],
+                        ],
+                    ],
+                    [
+                        'label'    => __('Top Country Dispatched'),
+                        'icon'     => 'fal fa-globe',
+                        'color'    => '#3b82f6',
+                        'value'    => $topCountry?->count ?? 0,
+                        'subtitle' => $topCountry?->name,
+                        'route'    => [
+                            'name'       => 'grp.org.shops.show.ordering.countries.index',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug,
+                            ],
+                        ],
+                    ],
+                    [
+                        'label'           => __('Orders Excesses Payment'),
                         'is_negative'     => true,
                         'route'           => [
                             'name'       => 'grp.org.shops.show.ordering.orders.index',

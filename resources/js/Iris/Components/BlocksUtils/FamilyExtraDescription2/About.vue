@@ -27,6 +27,10 @@ const cleanedDescription = computed(() => {
     const html = String(family.value.description_extra ?? "")
         .replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 
+    if (typeof DOMParser === "undefined") {
+        return html
+    }
+
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, "text/html")
 

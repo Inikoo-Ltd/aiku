@@ -23,10 +23,12 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Str;
 
 class UpdateProductCategory extends OrgAction
 {
@@ -34,6 +36,7 @@ class UpdateProductCategory extends OrgAction
     use WithNoStrictRules;
     use WithImageCatalogue;
     use WithProductCategoryHydrators;
+    use SanitizeInputs;
 
     private ProductCategory $productCategory;
 
@@ -268,8 +271,18 @@ class UpdateProductCategory extends OrgAction
 
         if (!$this->asAction && $this->productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             // Hard limit for Family (To accomodate design) if it's via UI update
-            $rules['description']       = ['sometimes', 'nullable', 'max:400'];
-            $rules['description_extra'] = ['sometimes', 'nullable', 'max:1250'];
+            $rules['description']       = ['sometimes', 'nullable',  function ($attribute, $value, $fail) {
+                $count = count(explode(' ', trim($this->sanitizeValue($value))));
+                if ($count > 100) {
+                    $fail(__("The description must not exceed 100 words."));
+                }
+            }];
+            $rules['description_extra'] = ['sometimes', 'nullable', function ($attribute, $value, $fail) {
+                $count = count(explode(' ', trim($this->sanitizeValue($value))));
+                if ($count > 250) {
+                    $fail(__("The description extra must not exceed 250 words."));
+                }
+            }];
         }
 
         return $rules;

@@ -202,6 +202,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customer_sales_channels_platform_type_allegro
  * @property int $number_bundles
  * @property int $number_current_bundles
+ * @property int $number_return_delivery_notes
+ * @property int $number_return_delivery_notes_state_received
+ * @property int $number_return_delivery_notes_state_returning
+ * @property int $number_return_delivery_notes_state_returned
+ * @property int $number_return_delivery_notes_state_done
+ * @property int $number_return_delivery_notes_state_cancelled
  * @property-read \App\Models\CRM\Customer|null $customer
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()

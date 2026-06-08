@@ -32,7 +32,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans";
 import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification"
-import { set } from "lodash"
+import { set } from "lodash-es"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { faUserPlus } from "@far";
 

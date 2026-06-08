@@ -14,7 +14,6 @@ use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductCategoryImages extends OrgAction

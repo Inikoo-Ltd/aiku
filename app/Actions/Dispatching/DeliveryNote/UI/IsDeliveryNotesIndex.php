@@ -114,7 +114,9 @@ trait IsDeliveryNotesIndex
             $query->where('delivery_note_order.order_id', $parent->id);
         } elseif ($parent instanceof Customer) {
             $query->where('delivery_notes.customer_id', $parent->id);
-            if (!$replacementsOnly) $query->whereNot('delivery_notes.type', DeliveryNoteTypeEnum::REPLACEMENT);
+            if (!$replacementsOnly) {
+                $query->whereNot('delivery_notes.type', DeliveryNoteTypeEnum::REPLACEMENT);
+            }
         } elseif ($parent instanceof CustomerClient) {
             $query->where('delivery_notes.customer_client_id', $parent->id);
         } elseif ($parent instanceof Shop) {
