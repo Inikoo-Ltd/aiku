@@ -84,6 +84,7 @@ import WebsiteReview from '@/Components/Forms/Fields/WebsiteReview.vue'
 import InputTranslationWithOptionLanguages from '@/Components/Forms/Fields/InputTranslationWithOptionLanguages.vue'
 import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQrExpiry.vue'
 import InputFaq from '@/Components/Forms/Fields/InputFaq.vue'
+import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -170,6 +171,7 @@ export const componentsList: { [key: string]: Component } = {
     'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
     'job_title_select_create': JobTitleSelectCreate,
     'faq' : InputFaq,
+    'tags': TagsInput,
 }
 
 export const getComponent = (componentName: string) => {

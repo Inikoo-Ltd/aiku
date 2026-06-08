@@ -618,7 +618,21 @@ class EditShop extends OrgAction
                             'information'   => __('If active, will enable the Chat feature on this shop website'),
                             'label'         => __('Enable Chat Feature'),
                             'value'         => Arr::get($shop->settings, 'chat.enable_chat', false),
-                        ]
+                        ],
+                        'chat_slack_token' => [
+                            'type'        => 'input',
+                            'label'       => __('Slack Bot Token'),
+                            'placeholder' => 'xoxb-xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx',
+                            'information' => __('Bot User OAuth Token from your Slack App. Used to share conversations to Slack.'),
+                            'value'       => Arr::get($shop->settings, 'chat.slack_token') ?? '',
+                        ],
+                        'chat_slack_channels' => [
+                            'type'        => 'tags',
+                            'label'       => __('Slack Channels'),
+                            'placeholder' => '#general',
+                            'information' => __('Slack channels where chat conversations will be shared. Press Enter to add each channel.'),
+                            'value'       => Arr::get($shop->settings, 'chat.slack_channels') ?? [],
+                        ],
                     ],
                 ],
                 [

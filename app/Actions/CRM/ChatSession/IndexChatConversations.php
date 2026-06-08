@@ -23,7 +23,8 @@ class IndexChatConversations extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('chat_sessions.guest_identifier', 'ILIKE', "%$value%")
+                $query->where('chat_sessions.ulid', 'ILIKE', "%$value%")
+                    ->orWhere('chat_sessions.guest_identifier', 'ILIKE', "%$value%")
                     ->orWhereHas('webUser', function ($q) use ($value) {
                         $q->where('username', 'ILIKE', "%$value%")
                             ->orWhere('email', 'ILIKE', "%$value%");

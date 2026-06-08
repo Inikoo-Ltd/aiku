@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Arr;
 
 class ShowOrgChatConversation extends OrgAction
 {
@@ -71,8 +72,21 @@ class ShowOrgChatConversation extends OrgAction
                         ],
                     ],
                 ],
-                'chatSession' => (new ChatSessionResource($chatSession))->resolve(),
-                'messages'    => $this->resolveMessagesWithSenderNames($chatSession),
+                'chatSession'      => (new ChatSessionResource($chatSession))->resolve(),
+                'messages'         => $this->resolveMessagesWithSenderNames($chatSession),
+                'slackConfigured'  => !empty(Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_token'))
+                    && !empty(Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_channels')),
+                'slackCurrentConfig' => [
+                    'token'    => Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_token') ?? '',
+                    'channels' => Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_channels') ?? [],
+                ],
+                'slackUpdateRoute' => [
+                    'name'       => 'grp.models.org.shop.update',
+                    'parameters' => [
+                        'organisation' => $this->organisation->id,
+                        'shop'         => $chatSession->shop?->id,
+                    ],
+                ],
             ]
         );
     }
