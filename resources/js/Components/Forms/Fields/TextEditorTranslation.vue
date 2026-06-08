@@ -13,6 +13,7 @@ import { faMale } from "@fas"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
+import { get } from 'lodash-es'
 
 interface Language {
   code: string
@@ -212,6 +213,10 @@ const generateTranslateAI = async () => {
     </div>
 
   </div>
+
+    <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+        {{ form.errors[fieldName] }}
+    </p>
 </template>
 
 <style scoped>

@@ -52,6 +52,7 @@ import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme
 import CarouselCtaWorkshop from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaWorkshop.vue'
 import CarouselImageBackground from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundWorkshop.vue'
 import SubDepartmentWorkshop2 from '@/Components/CMS/Webpage/SubDepartment2/SubDepartmentWorkshop.vue'
+import SubDepartmentWorkshop3 from '@/Components/CMS/Webpage/SubDepartment3/SubDepartment3Workshop.vue'
 
 import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'
 import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'
@@ -105,6 +106,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         //sub-department
         'sub-departments-1' : SubDepartmentWorkshop1,
         'sub-departments-2' : SubDepartmentWorkshop2,
+        'sub-departments-3' : SubDepartmentWorkshop3,
 
         //family
         'families-1' : Families1Workshop,

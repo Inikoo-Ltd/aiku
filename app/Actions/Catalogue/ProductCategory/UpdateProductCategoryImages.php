@@ -29,15 +29,6 @@ class UpdateProductCategoryImages extends OrgAction
 
         $this->update($productCategory, $modelData);
 
-        if (
-            Arr::has($modelData, 'extra_desc_art1') ||
-            Arr::has($modelData, 'extra_desc_art2') ||
-            Arr::has($modelData, 'extra_desc_art3') ||
-            Arr::has($modelData, 'extra_desc_art4')
-        ) {
-            $this->updateWebImages($productCategory);
-        }
-
         UpdateProductCategoryWebImages::run($productCategory);
 
 
@@ -47,17 +38,18 @@ class UpdateProductCategoryImages extends OrgAction
     public function rules(): array
     {
         return [
-            'image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art1' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art2' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art3' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art4' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art5' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art1' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art2' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art3' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art4' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_video_url' => ['sometimes', 'nullable'],
+            'image_id'          => ['sometimes', 'nullable', 'exists:media,id'],
+            'showcase_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art1'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art2'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art3'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art4'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art5'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art1'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art2'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art3'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art4'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_video_url'    => ['sometimes', 'nullable'],
         ];
     }
 

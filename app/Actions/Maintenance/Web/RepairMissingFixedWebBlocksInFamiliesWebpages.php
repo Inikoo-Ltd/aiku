@@ -216,24 +216,25 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $productList = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes)->first()->model_has_web_blocks_id;
 
-        $trendsWebBlock             = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
-        $lastSeenWebBlock           = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
-        $lastBoughtWebBlock         = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1')->first()->model_has_web_blocks_id;
-
         $recommendationFromMaster   = $this->getWebpageBlocksByType($webpage, 'recommendation-from-master')->first()->model_has_web_blocks_id;
         $relatedProductCategory     = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')->first()->model_has_web_blocks_id;
 
+        $trendsWebBlock             = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
+        $lastBoughtWebBlock         = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1')->first()->model_has_web_blocks_id;
+        $lastSeenWebBlock           = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
 
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
         $count = $webpage->webBlocks()->count();
 
-        $trendsWebBlockPosition     = $count + 101;
-        $lastBoughtWebBlockPosition = $count + 102;
-        $lastSeenWebBlockPosition   = $count + 103;
+        $recommendationFromMasterPosition   = $count + 101;
+        $relatedProductCategoryPosition     = $count + 102;
 
+        $trendsWebBlockPosition             = $count + 103;
+        $lastBoughtWebBlockPosition         = $count + 104;
+        $lastSeenWebBlockPosition           = $count + 105;
 
-        $runningPosition = 6;
+        $runningPosition = 4;
         foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
                 $webBlocks[$key] = 1;
@@ -242,9 +243,9 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             } elseif ($key == $familyExtraDesc) {
                 $webBlocks[$key] = 3;
             } elseif ($key == $recommendationFromMaster) {
-                $webBlocks[$key] = 4;
+                $webBlocks[$key] = $recommendationFromMasterPosition;
             } elseif ($key == $relatedProductCategory) {
-                $webBlocks[$key] = 5;
+                $webBlocks[$key] = $relatedProductCategoryPosition;
             } elseif ($key == $trendsWebBlock) {
                 $webBlocks[$key] = $trendsWebBlockPosition;
             } elseif ($key == $lastSeenWebBlock) {
@@ -256,7 +257,6 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 $runningPosition++;
             }
         }
-
 
         foreach ($webBlocks as $key => $position) {
             DB::table('model_has_web_blocks')

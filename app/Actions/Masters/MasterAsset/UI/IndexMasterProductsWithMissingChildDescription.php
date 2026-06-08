@@ -4,7 +4,6 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterProductsResource;

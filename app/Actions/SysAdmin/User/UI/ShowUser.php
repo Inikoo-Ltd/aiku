@@ -132,10 +132,11 @@ class ShowUser extends OrgAction
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($user)))
 
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: UserTabsEnum::HISTORY->value))
-            ->table(
-                IndexApiTokens::make()->tableStructure(prefix: UserTabsEnum::API_TOKENS->value)
-            );
+        )
+        ->table(IndexHistory::make()->tableStructure(prefix: UserTabsEnum::HISTORY->value))
+        ->table(
+            IndexApiTokens::make()->tableStructure(prefix: UserTabsEnum::API_TOKENS->value)
+        );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

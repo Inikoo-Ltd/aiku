@@ -87,6 +87,8 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $extra_desc_art4
  * @property numeric|null $gr_vol_discount_percentage
  * @property int|null $gr_vol_discount_quantity
+ * @property int|null $trade_unit_family_id
+ * @property array<array-key, mixed> $faq
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Media|null $descArt1Image
@@ -116,6 +118,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
+ * @property-read TradeUnitFamily|null $tradeUnitFamily
  * @property-read mixed $translations
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()
@@ -263,6 +266,10 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
 
+    public function showcaseImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'showcase_image_id');
+    }
 
     public function descArt1Image(): HasOne
     {
@@ -324,7 +331,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
             ->withPivot('id', 'position')
             ->withTimestamps();
     }
-    
+
     public function tradeUnitFamily(): BelongsTo
     {
         return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');

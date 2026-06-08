@@ -94,6 +94,7 @@ class StoreShippingZone extends OrgAction
                     table: 'shipping_zones',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
+                        ['column' => 'shipping_zone_schema_id', 'value' => $this->shippingZoneSchema->id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
@@ -151,7 +152,8 @@ class StoreShippingZone extends OrgAction
             'description' => __('Shipping zone successfully created.'),
         ]);
 
-        return redirect()->route('grp.org.shops.show.billables.shipping.show', [
+        $shippingZoneSchema = $shippingZone->schema;
+        return redirect()->route($shippingZoneSchema->is_current ? 'grp.org.shops.show.billables.shipping.current.show' : 'grp.org.shops.show.billables.shipping.discount.show', [
             'organisation'       => $shippingZone->organisation->slug,
             'shop'               => $shippingZone->shop->slug,
             'shippingZoneSchema' => $shippingZone->schema->slug,

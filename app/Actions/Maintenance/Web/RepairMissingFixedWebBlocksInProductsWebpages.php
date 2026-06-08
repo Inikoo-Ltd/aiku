@@ -14,7 +14,6 @@ use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Web\WebBlock;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -162,27 +161,20 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         $familyWebBlock = $this->getWebpageBlocksByType($webpage, 'product-1')->first()->model_has_web_blocks_id;
 
 
-        $trendsWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
-        $lastSeenWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
-
-        $recentlyBoughtWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1')->first()->model_has_web_blocks_id;
-
-
-        /** @var WebBlock $alternativesWebBlock */
-        $alternativesWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-item-alternatives-1')->first();
-        if ($alternativesWebBlock) {
-            $alternativesWebBlock = $alternativesWebBlock->model_has_web_blocks_id;
-        }
+        $alternativesWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-item-alternatives-1')->first()?->model_has_web_blocks_id;
+        $trendsWebBlock         = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()?->model_has_web_blocks_id;
+        $recentlyBoughtWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1')->first()?->model_has_web_blocks_id;
+        $lastSeenWebBlock       = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()?->model_has_web_blocks_id;
 
 
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
         $count = $webpage->webBlocks()->count();
 
-        $alternativesWebBlockPosition = $count + 101;
-        $trendsWebBlockPosition       = $count + 102;
-        $recentlyBoughtWebBlockPosition       = $count + 103;
-        $lastSeenWebBlockPosition     = $count + 104;
+        $alternativesWebBlockPosition   = $count + 101;
+        $trendsWebBlockPosition         = $count + 102;
+        $recentlyBoughtWebBlockPosition = $count + 103;
+        $lastSeenWebBlockPosition       = $count + 104;
 
 
         $runningPosition = 2;

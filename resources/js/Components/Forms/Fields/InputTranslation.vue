@@ -10,7 +10,7 @@ import { trans } from "laravel-vue-i18n"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import { faArrowToRight } from "@fal"
-
+import { get } from "lodash-es"
 interface Language {
   code: string
   [key: string]: any
@@ -203,6 +203,10 @@ const changeValue = (async () => {
 
     </div>
   </div>
+
+   <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+        {{ form.errors[fieldName] }}
+    </p>
 </template>
 
 <style scoped>

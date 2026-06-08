@@ -53,6 +53,7 @@ import FamiliesIris3 from "@/Iris/Components/IrisBlocks/FamiliesIris3.vue"
 
 import SubDepartment1Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris.vue"
 import SubDepartment2Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris2.vue"
+import SubDepartment3Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris3.vue"
 
 import CtaImageBackroundIris from "@/Iris/Components/IrisBlocks/CtaImageBackroundIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"
@@ -132,6 +133,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,
 		"sub-departments-2": SubDepartment2Iris,
+		"sub-departments-3": SubDepartment3Iris,
 
 		//family
 		"families-1": FamiliesIris1,

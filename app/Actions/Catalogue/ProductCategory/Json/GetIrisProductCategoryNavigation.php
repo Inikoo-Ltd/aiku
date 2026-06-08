@@ -134,6 +134,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
 
         return $data;
     }
+    
     private function getFamiliesByCollection(int $collectionId)
     {
         return DB::table('product_categories')

@@ -733,7 +733,7 @@ test('UI create asset shipping', function () {
 test('UI show asset shipping', function () {
     $shippingZoneSchema = ShippingZoneSchema::first();
     $this->withoutExceptionHandling();
-    $response = get(route('grp.org.shops.show.billables.shipping.show', [$this->organisation->slug, $this->shop, $shippingZoneSchema]));
+    $response = get(route('grp.org.shops.show.billables.shipping.current.show', [$this->organisation->slug, $this->shop, $shippingZoneSchema]));
     $response->assertInertia(function (AssertableInertia $page) use ($shippingZoneSchema) {
         $page
             ->component('Org/Catalogue/ShippingZoneSchema')

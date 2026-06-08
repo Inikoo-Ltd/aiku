@@ -10,6 +10,7 @@
 namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\IndexReturnDeliveryNoteItems;
 use App\Actions\Helpers\Country\UI\GetAddressData;
@@ -75,6 +76,15 @@ class ShowReturnDeliveryNote extends OrgAction
         return $this->handle($returnDeliveryNote);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inCustomer(Organisation $organisation, Shop $shop, Customer $customer, ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): ReturnDeliveryNote
+    {
+        $this->parent = $customer;
+        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
+
+        return $this->handle($returnDeliveryNote);
+    }
+
     public function wrappedActions(ReturnDeliveryNote $returnDeliveryNote): array
     {
         $isEditable = false;
@@ -117,7 +127,7 @@ class ShowReturnDeliveryNote extends OrgAction
         $isEditable = false;
         if ($this->parent instanceof Warehouse) {
             $isEditable = true;
-        } elseif ($this->parent instanceof Shop) {
+        } elseif ($this->parent instanceof Shop || $this->parent instanceof Customer) {
             return match ($returnDeliveryNote->state) {
                 ReturnDeliveryNoteStateEnum::RETURNED => [
                     [
@@ -427,7 +437,7 @@ class ShowReturnDeliveryNote extends OrgAction
             $props
         );
 
-        $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure(parent: $returnDeliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop)));
+        $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure(parent: $returnDeliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop || $this->parent instanceof Customer)));
         if ($returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING) {
             $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure(parent: $returnDeliveryNote, prefix: DeliveryNoteTabsEnum::PENDING_ITEMS->value));
             $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure(parent: $returnDeliveryNote, prefix: DeliveryNoteTabsEnum::DONE_ITEMS->value));
@@ -441,8 +451,8 @@ class ShowReturnDeliveryNote extends OrgAction
     {
         $initArr = [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop)))
-                : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop)))),
+                fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop || $this->parent instanceof Customer)))
+                : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop || $this->parent instanceof Customer)))),
         ];
 
         if ($returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING) {
@@ -553,6 +563,24 @@ class ShowReturnDeliveryNote extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.warehouses.show.incoming.return_delivery_notes.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse', 'returnDeliveryNote'])
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+            'grp.org.shops.show.crm.customers.show.return_delivery_notes.show'
+            => array_merge(
+                ShowCustomer::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show', $routeParameters),
+                $headCrumb(
+                    $returnDeliveryNote,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.return_delivery_notes.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.return_delivery_notes.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'returnDeliveryNote'])
                         ]
                     ],
                     $suffix
