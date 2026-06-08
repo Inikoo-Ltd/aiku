@@ -303,9 +303,7 @@ class ShowMailshot extends OrgAction
                     ]
                 ],
                 'timeZoneOptions' => GetTimeZonesOptionsComplexData::run(),
-                'defaultShopTimezone' => $this->shop->timezone_id,
-                'defaultShopTimeZoneName' => $this->shop->timezone->name,
-                'defaultOffset' => $this->shop->timezone->offset,
+                'defaultShopTimezone' => $this->shop->timezone->name,
 
             ]
         )->table(

@@ -28,6 +28,9 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+
+
 
 library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
 
@@ -65,7 +68,6 @@ const props = defineProps<{
     workshopRoute?: routeType
     timeZoneOptions?: any[]
     defaultShopTimezone?: string
-    defaultOffset?: number
 }>();
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
@@ -105,39 +107,32 @@ const shouldShowCancelScheduleButton = computed(() => {
 
 // Schedule datetime picker state
 const showSchedulePicker = ref(false);
-// const scheduleDateTime = ref<string>(new Date().toISOString());
-// const minDateTime = ref<string>(new Date().toISOString());
+const scheduleDateTime = ref<string>(new Date().toISOString());
+const minDateTime = ref<string>(new Date().toISOString());
+
 const schedulePicker = ref();
 const nowUtc = ref(new Date());
-const selectedTimezone = ref(props.defaultShopTimezone ?? null);
-const offsetSeconds = props.defaultOffset ?? 0;
-
-// Helper: get local datetime string shifted by offset seconds
-const toOffsetDateTime = (date: Date, offsetSeconds: number): string => {
-    const ms = date.getTime() + offsetSeconds * 1000;
-    return new Date(ms).toISOString().slice(0, 19);
-};
-const scheduleDateTime = ref<string>(toOffsetDateTime(new Date(), offsetSeconds));
-const minDateTime = ref<string>(toOffsetDateTime(new Date(), offsetSeconds));
+const selectedTimezone = ref(props.defaultShopTimezone || 'UTC');
 
 const inProgress = ref(false);
 const scheduleInProgress = ref(false);
 
 const minTime = computed(() => {
-    const selected = new Date(scheduleDateTime.value);
-    const now = nowUtc.value;
+    const tz = selectedTimezone.value;
+    const selectedZoned = toZonedTime(new Date(scheduleDateTime.value), tz);
+    const nowZoned = toZonedTime(nowUtc.value, tz);
 
     const sameUTCDate =
-        selected.getUTCFullYear() === now.getUTCFullYear() &&
-        selected.getUTCMonth() === now.getUTCMonth() &&
-        selected.getUTCDate() === now.getUTCDate();
+        selectedZoned.getUTCFullYear() === nowZoned.getUTCFullYear() &&
+        selectedZoned.getUTCMonth() === nowZoned.getUTCMonth() &&
+        selectedZoned.getUTCDate() === nowZoned.getUTCDate();
 
     if (sameUTCDate) {
         // Today (UTC) → block past minutes/seconds
         return {
-            hours: now.getUTCHours(),
-            minutes: now.getUTCMinutes(),
-            seconds: now.getUTCSeconds(),
+            hours: nowZoned.getHours(),
+            minutes: nowZoned.getMinutes(),
+            seconds: nowZoned.getSeconds(),
         };
     }
 
@@ -204,13 +199,9 @@ const handleSchedule = async (event: Event) => {
         })
         return;
     }
-
-    // Refresh both "now" and min-date together
     nowUtc.value = new Date();
-    // minDateTime.value = nowUtc.value.toISOString();
-    minDateTime.value = toOffsetDateTime(nowUtc.value, props.defaultOffset ?? 0);
+    minDateTime.value = toZonedTime(new Date(nowUtc.value), selectedTimezone.value).toISOString();
 
-    // Show the datetime picker using the ref
     if (schedulePicker.value) {
         schedulePicker.value.show(event);
     }
@@ -616,7 +607,9 @@ function getEntityFetchRoute(key: string) {
     }
 }
 
-const preloadedEntities = reactive<Record<string, any[]>>({})
+const handleTimeZoneChange = (value: any) => {
+    console.log(value)
+}
 </script>
 
 <template>
@@ -684,35 +677,24 @@ const preloadedEntities = reactive<Record<string, any[]>>({})
     <Popover ref="schedulePicker" :visible="showSchedulePicker" @hide="cancelSchedule" appendTo="body">
         <div class="p-2 min-w-80 bg-white flex flex-col items-center">
             <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
-                    class="text-red-600">(Europe/London)</span>
+                    class="text-red-600">{{ selectedTimezone }}</span>
             </h3>
             <div class="min-w-0 w-full mb-3">
 
                 <PureMultiselect
-                    :modelValue="selectedTimezone"
+                    v-model="selectedTimezone"
                     :placeholder="trans('Select timezone...')"
-                    :options="props.timeZoneOptions"
-                    :isLoading="false"
+                    :options="props.timeZoneOptions || []"
                     :searchable="true"
-                    @OnChange="(value: any) => {
-                        selectedTimezone.value = value;
-                        const now = new Date();
-                        const offsetSec = value?.offset ?? props.defaultOffset ?? 0;
-                        scheduleDateTime.value = toOffsetDateTime(now, offsetSec);
-                        minDateTime.value = toOffsetDateTime(now, offsetSec);
-                        nowUtc.value = now;
-                    }"
-                    :required="true"
-                    :label="trans('Timezone')"
-                    :valueProp="'value'"
-                    :mode="'single'"/>
+                    @on-change="handleTimeZoneChange"
+                    caret/>
             </div>
 
             <div class="mb-4 flex justify-center z-10">
                 <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="minTime" :text-input="true"
                     :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
                     :seconds-increment="1" model-type="iso" :auto-apply="true" :open-on-focus="true"
-                    :time-picker-inline="true" class="w-full" placeholder="" :teleport="true" />
+                    :time-picker-inline="true" class="w-full" placeholder="" :teleport="true" :timezone="selectedTimezone" />
             </div>
             <div class="flex gap-2 justify-end w-full">
                 <Button :label="trans('Cancel')" @click="cancelSchedule"

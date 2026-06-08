@@ -23,10 +23,8 @@ class GetTimeZonesOptionsComplexData
         foreach (Timezone::all() as $timezone) {
 
             $selectOptions[] = [
-                'label'  => $this->formatLabel($timezone->name, $timezone->offset),
-                'name'   => $timezone->name,
-                'value'  => $timezone->name,
-                'offset' => $timezone->offset,
+                'label' => $this->formatLabel($timezone->name, $timezone->offset),
+                'value' => $timezone->name,
             ];
         }
 
