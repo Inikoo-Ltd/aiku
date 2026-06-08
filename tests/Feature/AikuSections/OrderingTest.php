@@ -714,7 +714,7 @@ test('delete transaction', function (Order $order) {
 
 test('UI create asset shipping', function () {
     $this->withoutExceptionHandling();
-    $response = get(route('grp.org.shops.show.billables.shipping.current.create', [$this->organisation->slug, $this->shop]));
+    $response = get(route('grp.org.shops.show.billables.shipping.create', [$this->organisation->slug, $this->shop]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
