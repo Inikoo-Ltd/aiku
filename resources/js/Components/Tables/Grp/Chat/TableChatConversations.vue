@@ -64,8 +64,8 @@ const sentimentColor: Record<string, string> = {
 
         <template #cell(contact)="{ item }">
             <Link
-                v-if="item.route && item.route.parameters?.shop"
-                :href="route(item.route.name, item.route.parameters)"
+                v-if="item.conversation_route?.parameters?.organisation"
+                :href="route(item.conversation_route.name as string, item.conversation_route.parameters)"
                 class="primaryLink">
                 {{ item.contact_name }}
             </Link>

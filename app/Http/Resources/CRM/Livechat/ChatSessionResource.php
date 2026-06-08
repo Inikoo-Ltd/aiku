@@ -53,6 +53,13 @@ class ChatSessionResource extends JsonResource
                     'chatSession'  => $chatSession->id,
                 ],
             ],
+            'conversation_route' => [
+                'name'       => 'grp.org.chat.conversations.detail',
+                'parameters' => [
+                    'organisation' => request()->route()?->originalParameters()['organisation'] ?? null,
+                    'chatSession'  => $chatSession->id,
+                ],
+            ],
         ];
     }
 
