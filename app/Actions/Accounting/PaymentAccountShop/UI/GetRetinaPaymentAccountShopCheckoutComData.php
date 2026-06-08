@@ -76,9 +76,9 @@ class GetRetinaPaymentAccountShopCheckoutComData
             'environment'    => app()->environment()
         ];
 
-        $paymentSessionRequest->disabled_payment_methods = [
-            'bizum'
-        ];
+//        $paymentSessionRequest->disabled_payment_methods = [
+//            'bizum'
+//        ];
 
 
         $billingAddress = $order->billingAddress;
