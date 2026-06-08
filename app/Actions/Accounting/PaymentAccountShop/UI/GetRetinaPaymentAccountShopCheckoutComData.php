@@ -77,7 +77,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         ];
 
         $paymentSessionRequest->disabled_payment_methods = [
-            'bizum'
+      //      'bizum'
         ];
 
 

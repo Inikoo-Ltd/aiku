@@ -62,7 +62,7 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         ];
 
         $paymentSessionRequest->disabled_payment_methods = [
-            'bizum'
+       //     'bizum'
         ];
 
         $product                      = new Product();
