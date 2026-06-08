@@ -196,6 +196,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read Media|null $bottomImage
  * @property-read LaravelCollection<int, Brand> $brands
+ * @property-read Bundle|null $bundle
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents

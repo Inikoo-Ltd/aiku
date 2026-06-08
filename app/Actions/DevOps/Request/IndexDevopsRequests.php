@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 06 Jun 2026 09:22:41 Indochina Time, Kuala Lumpur, Malaysia
@@ -11,14 +12,11 @@ use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
-use App\Enums\UI\Inventory\WarehouseTabsEnum;
 use App\Http\Resources\Inventory\WarehouseAreaResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -31,10 +29,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDevopsRequests extends OrgAction
 {
-
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $group=group();
+        $group = group();
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle();

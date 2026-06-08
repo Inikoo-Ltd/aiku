@@ -97,7 +97,7 @@ class WatchMiscalculatedTransactionGrossAmt implements ShouldBeUniqueUntilProces
             ]);
 
             Event::dispatch(new AuditCustom($order));
-        });        
+        });
 
     }
 }

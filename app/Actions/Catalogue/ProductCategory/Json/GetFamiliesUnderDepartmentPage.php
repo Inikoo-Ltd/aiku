@@ -62,7 +62,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
         return $this->handle($productCategory);
     }
 
-    
+
     public function jsonResponse(LengthAwarePaginator $familyList): AnonymousResourceCollection
     {
         return WebBlockFamilyResourceForDepartmentWebpage::collection($familyList);
