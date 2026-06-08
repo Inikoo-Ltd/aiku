@@ -44,7 +44,7 @@ const webpage_data = inject("webpage_data", null)
             " alt="Gold Reward logo" v-tooltip="ctrans('Gold Reward logo')" class="h-7 w-auto shrink-0" />
 
         <div class="flex items-center gap-2 rounded px-2 py-[3px] text-[8px] 2xl:text-xs font-semibold leading-none text-white"
-            :class="active ? 'bg-orange-600' : 'bg-[#c8c8c8]'">
+            :class="active ? 'bg-[#E87928]' : 'bg-[#c8c8c8]'">
             <div v-if="offer?.allowances?.[0]?.percentage_off">
                 {{ offer.allowances[0].percentage_off * 100 }}%
 
