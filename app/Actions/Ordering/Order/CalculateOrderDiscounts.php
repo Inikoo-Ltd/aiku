@@ -8,7 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\Ordering\Order\Watcher\WatchMiscalculatedTransactionGrossAmt;
+use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\OfferAllowance;

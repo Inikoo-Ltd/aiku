@@ -10,7 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
-use App\Actions\Ordering\Order\Watcher\WatchMiscalculatedTransactionGrossAmt;
+use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexIndexTransactionsInBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
@@ -43,9 +43,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
     public function handle(Order $order): Order
     {
-        WatchMiscalculatedTransactionGrossAmt::run($order, true);
+        return FixMiscalculatedTransactionAmounts::run($order, true);
 
-        return $order;
     }
 
     public function authorize(ActionRequest $request): bool

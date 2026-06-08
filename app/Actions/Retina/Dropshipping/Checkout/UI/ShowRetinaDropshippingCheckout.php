@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
-use App\Actions\Ordering\Order\Watcher\WatchMiscalculatedTransactionGrossAmt;
+use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\GetRetinaPaymentMethods;
@@ -34,7 +34,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     {
         $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);
 
-        WatchMiscalculatedTransactionGrossAmt::run($order, true);
+        $order=FixMiscalculatedTransactionAmounts::run($order, true);
 
         $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
 
