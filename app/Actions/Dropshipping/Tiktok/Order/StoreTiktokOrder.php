@@ -83,7 +83,7 @@ class StoreTiktokOrder extends RetinaAction
 
         if ($shipByTiktok) {
             UpdateOrder::run($order, [
-                'shipping_notes' => __("We're unable to ship this order due to customer's default pickup method is not PICKUP. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
+                'shipping_notes' => __("We're unable to ship this order due to customer's default shipping template is not 'Shipped by Seller'. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
             ]);
 
             CancelOrder::run($order);
