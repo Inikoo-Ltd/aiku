@@ -36,6 +36,8 @@ class WatchMiscalculatedTransactionGrossAmt implements ShouldBeUniqueUntilProces
     public function handle(Order $order, bool $forceRepair = false): void
     {
         $this->order        = $order;
+        // Return if not submitted
+        if (!$this->order->submitted_at) return;
 
         $transactions              = $order->itemTransactions()->with('historicAsset')->get();
         $miscalculatedTransactions = [];
@@ -45,14 +47,14 @@ class WatchMiscalculatedTransactionGrossAmt implements ShouldBeUniqueUntilProces
             $historicPrice  = $transaction->historicAsset->price;
             $grossAmt       = trimDecimalZeros($qtyOrdered * $historicPrice);
 
-            if ($grossAmt != $transaction->gross_amount) {
+            if ($grossAmt != $transaction->submitted_gross_amount) {
                 data_set($miscalculatedTransactions, $transaction->id, [
                     'transaction_id'        => $transaction->id,
                     'item_code'             => $transaction->historicAsset->code,
-                    'gross_amount'          => $transaction->gross_amount,
-                    'net_amount'            => $transaction->net_amount,
+                    'gross_amount'          => $transaction->submitted_gross_amount,
+                    'net_amount'            => $transaction->submitted_net_amount,
                     'gross_amount_expected' => $grossAmt,
-                    'net_amount_expected'   => $grossAmt * ($transaction->submitted_discount_factor ?? $transaction->current_discount_factor ?? 1),
+                    'net_amount_expected'   => $grossAmt * ($transaction->submitted_discount_factor ?? 1),
                 ]);
 
                 if ($forceRepair) {
@@ -75,15 +77,15 @@ class WatchMiscalculatedTransactionGrossAmt implements ShouldBeUniqueUntilProces
 
         DB::transaction(function () use ($order, $transaction) {
             $grossAmt   = $transaction->submitted_quantity_ordered * $transaction->historicAsset->price;
-            $netAmt     = $grossAmt * ($transaction->submitted_discount_factor ?? $transaction->current_discount_factor ?? 1);
+            $netAmt     = $grossAmt * ($transaction->submitted_discount_factor?? 1);
 
             $order->auditEvent = 'miscalculated_total_amount_repair';
             $order->isCustomEvent = true;
 
             $order->auditCustomOld = [
                 'item_code'     =>      '',
-                'gross_amount'  =>      $transaction->gross_amount,
-                'net_amount'    =>      $transaction->net_amount,
+                'gross_amount'  =>      $transaction->submitted_gross_amount,
+                'net_amount'    =>      $transaction->submitted_net_amount,
             ];
 
             $order->auditCustomNew = [
