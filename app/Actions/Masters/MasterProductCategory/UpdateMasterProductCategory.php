@@ -145,15 +145,15 @@ class UpdateMasterProductCategory extends OrgAction
             }
         }
 
-        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'faq'])) {
 
             $english      = Language::where('code', 'en')->first();
 
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 $shop = $productCategory->shop;
-                if (!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) {
-                    continue;
-                }
+                // if (!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) {
+                //     continue;
+                // }
 
                 $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
@@ -183,6 +183,14 @@ class UpdateMasterProductCategory extends OrgAction
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
                 }
 
+                // Temporary set up, auto translate FAQ 
+                if (Arr::has($changed, 'faq') && $shop->language->code != 'en') {
+                    $translatedFaq = Translate::run(json_encode($masterProductCategory->faq), $english, $shopLanguage);
+                    if (is_string($translatedFaq)) {
+                        $dataToBeUpdated['faq'] = json_decode($translatedFaq, true);
+                    }
+                }
+
                 if ($dataToBeUpdated) {
                     UpdateProductCategory::make()->action($productCategory, $dataToBeUpdated);
                 }
@@ -199,9 +207,9 @@ class UpdateMasterProductCategory extends OrgAction
             MasterFamilyHydrateTradeUnitFamilyToChildFamily::make()->action($masterProductCategory);
         }
 
-        if ($masterProductCategory->wasChanged('faq')) {
-            MasterProductCategoryHydrateFAQ::make()->action($masterProductCategory);
-        }
+        // if ($masterProductCategory->wasChanged('faq')) {
+        //     MasterProductCategoryHydrateFAQ::make()->action($masterProductCategory);
+        // }
 
         if ($masterProductCategory->wasChanged('status')) {
             if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {

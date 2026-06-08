@@ -83,13 +83,23 @@ class ValidateIncomingTiktokOrder extends RetinaAction
             ->filter()
             ->toArray();
 
-        $hasOutProducts = DB::table('portfolios')
+        $portfolios = DB::table('portfolios')
             ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
             ->whereIn('platform_product_variant_id', $lineItems)
             ->where('item_type', class_basename(StoredItem::class))
-            ->exists();
+            ->get();
 
-        if ($hasOutProducts) {
+        $hasPallet = false;
+        foreach ($portfolios as $portfolio) {
+            /** @var StoredItem $storedItem */
+            $storedItem = $portfolio->item;
+
+            if($storedItem->pallets->count() > 0) {
+                $hasPallet = true;
+            }
+        }
+
+        if (!blank($portfolios) && $hasPallet) {
             StoreTiktokFulfilmentOrder::run($tiktokUser, $order);
         }
     }

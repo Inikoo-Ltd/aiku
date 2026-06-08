@@ -187,7 +187,7 @@ const _popoverProfit = ref(null)
                     <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
                 </span>
 
-                <span class="text-[8px] sm:text-[9px] md:text-[10px]">
+                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-orange-600 border-orange-600">
                     {{ trans('RRP') }}:
                     <span class="font-medium">
                         {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
@@ -289,7 +289,7 @@ const _popoverProfit = ref(null)
 
                 <div v-if="bestOffer" class="font-medium text-right  min-w-0" :class="bestOfferClass">
                     <div class="flex items-baseline justify-end gap-1 min-w-0">
-                        <div class="min-w-0 flex-1 truncate">
+                        <div class="min-w-0 flex-1 truncate text-orange-600 border-orange-600">
                             <span v-if="product.units == 1">{{ locale.currencyFormat(currency?.code,
                                 product.discounted_price) }}
                                 /{{ product.unit }}</span>
@@ -323,9 +323,9 @@ const _popoverProfit = ref(null)
 
 <style scoped>
 .discount :deep(.offer-trigger-label) {
-    @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
-    border-color: var(--theme-color-4);
-    color: var(--theme-color-4);
+    @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs text-orange-600 border-orange-600;
+    /* border-color: var(--theme-color-4);
+    color: var(--theme-color-4); */
 }
 
 .break-safe {

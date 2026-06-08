@@ -75,7 +75,7 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                     ->where('platform_product_variant_id', Arr::get($tiktokProduct, 'sku_id'))->first();
 
                 if ($portfolio) {
-                    /** @var StoredItem $product */
+                    /** @var StoredItem $storedItem */
                     $storedItem = $portfolio->item;
                     if (!$storedItem) {
                         \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
