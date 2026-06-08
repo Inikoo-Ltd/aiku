@@ -94,7 +94,7 @@ class ValidateIncomingTiktokOrder extends RetinaAction
             /** @var StoredItem $storedItem */
             $storedItem = $portfolio->item;
 
-            if($storedItem->pallets->count() > 0) {
+            if ($storedItem->pallets->count() > 0) {
                 $hasPallet = true;
             }
         }

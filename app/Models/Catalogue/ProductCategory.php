@@ -109,6 +109,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $extra_desc_art4
  * @property int|null $trade_unit_family_id
  * @property array<array-key, mixed> $faq
+ * @property int|null $showcase_image_id
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -136,6 +137,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Product> $relatedProducts
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Media|null $showcaseImage
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
  * @property-read ProductCategory|null $subDepartment
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategoryTimeSeries> $timeSeries
@@ -374,7 +376,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->where('state', OfferStateEnum::ACTIVE)
             ->where('type', 'Category Quantity Ordered Order Interval');
     }
-    
+
     public function showcaseImage(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'showcase_image_id');

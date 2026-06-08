@@ -43,11 +43,11 @@ Route::get('export', [ExportCustomers::class, 'inShop'])->name('export');
 Route::get('{customer}/edit', EditCustomer::class)->name('edit');
 Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('', ShowCustomer::class);
-    
+
     Route::get('/payments/{payment}', [ShowPayment::class, 'inCustomer'])->name('.payments.show');
     Route::get('/refunds/{payment}', [ShowRefundPayment::class, 'inCustomer'])->name('.refunds.show');
 
-    Route::prefix('/returns')->as('.return_delivery_notes.')->group(function () { 
+    Route::prefix('/returns')->as('.return_delivery_notes.')->group(function () {
         Route::get('/', [IndexReturnDeliveryNotes::class, 'inCustomer'])->name('index');
         Route::get('/{returnDeliveryNote}', [ShowReturnDeliveryNote::class, 'inCustomer'])->name('show');
     });
@@ -66,7 +66,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
         Route::get('/', [IndexInvoices::class, 'inCustomer'])->name('index');
         Route::get('/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('show');
     });
-    
+
     Route::prefix('/orders')->as('.orders')->group(function () {
         Route::get('', [IndexOrders::class, 'inCustomer'])->name('.index');
 
@@ -75,13 +75,13 @@ Route::prefix('{customer}')->as('show')->group(function () {
 
             Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inOrderInCustomerInShop'])->name('.invoices.show');
             Route::get('/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInOrderInCustomerInShop'])->name('.invoices.show.refunds.show');
-            
+
             Route::get('/refunds/{refund}', [ShowRefund::class, 'inOrderInCustomerInShop'])->name('.refunds.show');
-            
+
             Route::get('/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerInShop'])->name('.delivery-note.show');
         });
     });
-    
+
     Route::prefix('/channels')->as('.customer_sales_channels')->group(function () {
         Route::get('', IndexCustomerSalesChannels::class)->name('.index');
 

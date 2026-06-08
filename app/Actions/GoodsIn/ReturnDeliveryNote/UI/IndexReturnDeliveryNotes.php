@@ -155,7 +155,7 @@ class IndexReturnDeliveryNotes extends OrgAction
             $subNavigation = $this->getReturnDeliveryNotesSubNavigation($this->parent);
         } elseif ($this->parent instanceof Customer) {
             $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
-            
+
             $icon       = [
                 'icon'  => ['fal', 'fa-user'],
                 'title' => __('Customer')
