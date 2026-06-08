@@ -143,20 +143,17 @@ class GetCatalogueShowcase
             'value'     => $shop->stats->number_bundles,
             'metas' => [
                 [
-                    "icon"    => [
-                        "tooltip" => "active",
-                        "icon"    => "fas fa-check-circle",
-                        "class"   => "text-green-500"
-                    ],
+                    "icon"    => ["icon"    => "fas fa-check-circle", "class"   => "text-green-500"],
                     "count"   => $shop->stats->number_bundles_state_active,
                     "tooltip" => "Active"
                 ],
                 [
-                    "icon"    => [
-                        "tooltip" => "discontinuing",
-                        "icon"    => "fas fa-times-circle",
-                        "class"   => "text-amber-500"
-                    ],
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
+                    'count'   => $shop->stats->number_bundles_state_inactive,
+                    'tooltip' => "Inactive"
+                ],
+                [
+                    "icon"    => ["icon"    => "fas fa-times-circle", "class"   => "text-amber-500"],
                     "count"   => $shop->stats->number_bundles_state_discontinuing,
                     "tooltip" => "Discontinuing"
                 ],
