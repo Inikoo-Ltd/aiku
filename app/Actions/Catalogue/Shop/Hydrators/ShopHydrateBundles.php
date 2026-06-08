@@ -30,19 +30,34 @@ class ShopHydrateBundles implements ShouldBeUnique
     {
         $numberBundles = 0;
         $numberBundlesStateActive = 0;
+        $numberBundlesStateInactive = 0;
         $numberBundlesStateDiscontinuing = 0;
 
         Product::where('shop_id', $shop->id)->where('is_bundle', true)
-            ->select('id', 'state')
-            ->chunk(1000, function ($products) use (&$numberBundles, &$numberBundlesStateActive, &$numberBundlesStateDiscontinuing) {
+            ->select('id', 'state', 'available_quantity')
+            ->chunk(1000, function ($products) use (
+                &$numberBundles,
+                &$numberBundlesStateActive,
+                &$numberBundlesStateInactive,
+                &$numberBundlesStateDiscontinuing
+            ) {
                 $numberBundles += $products->count();
-                $numberBundlesStateActive += $products->where('state', ProductStateEnum::ACTIVE)->count();
                 $numberBundlesStateDiscontinuing += $products->where('state', ProductStateEnum::DISCONTINUING)->count();
+
+                $activeBundles = $products->where('state', ProductStateEnum::ACTIVE);
+                foreach ($activeBundles as $bundle) {
+                    if ($bundle->available_quantity > 0) {
+                        $numberBundlesStateActive++;
+                    } else {
+                        $numberBundlesStateInactive++;
+                    }
+                }
             });
 
         $shop->stats()->update([
-            'number_bundles'                    => $numberBundles,
-            'number_bundles_state_active'       => $numberBundlesStateActive,
+            'number_bundles'                     => $numberBundles,
+            'number_bundles_state_active'        => $numberBundlesStateActive,
+            'number_bundles_state_inactive'      => $numberBundlesStateInactive,
             'number_bundles_state_discontinuing' => $numberBundlesStateDiscontinuing,
         ]);
     }
