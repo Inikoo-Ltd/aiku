@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
@@ -41,9 +42,11 @@ class StoreTiktokOrder extends RetinaAction
         $customerClient = $this->digestTiktokCustomerClient($tiktokUser, $tiktokOrders);
         $orderedProducts = $this->digestTiktokProducts($tiktokUser, $tiktokOrders);
 
+        $shipByTiktok = Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK';
+
         $orderData = [
             'customer_client_id'        => $customerClient->id,
-            'is_shipping_by_external'   => Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK',
+            'is_shipping_by_external'   => $shipByTiktok,
             'platform_id'               => $tiktokUser->platform_id,
             'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
             'customer_reference'        => Arr::get($tiktokOrders, 'user_id'),
@@ -78,10 +81,12 @@ class StoreTiktokOrder extends RetinaAction
             $handOverMethod = Arr::get($package, 'data.handover_method');
         }
 
-        if ($handOverMethod && $handOverMethod !== 'PICKUP') {
+        if ($shipByTiktok) {
             UpdateOrder::run($order, [
-                'shipping_notes' => __("We're unable to ship this order due to customer's default pickup method is not PICKUP. Please contact customer to change the pickup method to PICKUP. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
+                'shipping_notes' => __("We're unable to ship this order due to customer's default pickup method is not PICKUP. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
             ]);
+
+            CancelOrder::run($order);
         }
 
         try {
