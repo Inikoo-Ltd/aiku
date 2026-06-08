@@ -66,18 +66,18 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
 
-        $paymentSessionRequest->customer = new CustomerRequest();
+        $paymentSessionRequest->customer       = new CustomerRequest();
         $paymentSessionRequest->customer->name = $order->customer->name;
 
         $paymentSessionRequest->metadata = [
-            'origin'         => 'aiku',
-            'operation'      => 'order',
+            'origin'       => 'aiku',
+            'operation'    => 'order',
             'api_point_id' => $orderPaymentApiPoint->id,
-            'environment'    => app()->environment()
+            'environment'  => app()->environment()
         ];
 
         $paymentSessionRequest->disabled_payment_methods = [
-      //      'bizum'
+            'bizum'
         ];
 
 
