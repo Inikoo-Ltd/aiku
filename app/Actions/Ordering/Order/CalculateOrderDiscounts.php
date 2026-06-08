@@ -124,13 +124,6 @@ class CalculateOrderDiscounts
 
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
-        // INI-1649 Check after 2 minutes
-        // Order & Force repair = false. Add true besides order later Raul if you want to force repair after the check
-        if ($order->shop->is_aiku && $order->shop->type !== ShopTypeEnum::EXTERNAL) {
-            WatchMiscalculatedTransactionGrossAmt::dispatch($order)->delay(120);
-        }
-
-
         $order->update(
             [
                 'offer_meters' => $this->offerMeters

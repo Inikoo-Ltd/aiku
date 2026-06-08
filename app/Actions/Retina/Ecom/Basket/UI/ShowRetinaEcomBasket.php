@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
+use App\Actions\Ordering\Order\Watcher\WatchMiscalculatedTransactionGrossAmt;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\InteractsWithOrderInBasket;
@@ -38,7 +39,12 @@ class ShowRetinaEcomBasket extends RetinaAction
             return null;
         }
 
-        return $this->getOrderInBasket($customer);
+        $order = $this->getOrderInBasket($customer);
+        
+        WatchMiscalculatedTransactionGrossAmt::run($order, true);
+
+
+        return $order;
     }
 
 

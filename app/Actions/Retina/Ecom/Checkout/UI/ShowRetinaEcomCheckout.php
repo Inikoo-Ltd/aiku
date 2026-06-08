@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Ecom\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
+use App\Actions\Ordering\Order\Watcher\WatchMiscalculatedTransactionGrossAmt;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\GetRetinaPaymentMethods;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
@@ -39,6 +40,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
         $paymentMethods = [];
 
         if ($order) {
+            WatchMiscalculatedTransactionGrossAmt::run($customer->current_order_in_basket, true);
             $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
         }
 
