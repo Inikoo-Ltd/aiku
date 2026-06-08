@@ -754,7 +754,7 @@ const onChangeInsurance = async (val: boolean) => {
                             </div>
                         </div>
                     </template>
-                    
+
                     <!-- Checkout -->
                     <ButtonWithLink
                         v-else
