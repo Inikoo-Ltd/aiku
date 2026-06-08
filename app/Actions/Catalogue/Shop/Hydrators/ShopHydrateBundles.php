@@ -41,7 +41,7 @@ class ShopHydrateBundles implements ShouldBeUnique
                 &$numberBundlesStateInactive,
                 &$numberBundlesStateDiscontinuing
             ) {
-                $numberBundles += $products->count();
+                $numberBundles += $products->where('state', ProductStateEnum::ACTIVE)->count();
                 $numberBundlesStateDiscontinuing += $products->where('state', ProductStateEnum::DISCONTINUING)->count();
 
                 $activeBundles = $products->where('state', ProductStateEnum::ACTIVE);

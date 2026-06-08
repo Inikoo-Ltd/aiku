@@ -136,7 +136,7 @@ class GetCatalogueShowcase
             'label' => __('Current Bundles'),
             'route' => [
                 'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
-                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'is_bundle' => true],
             ],
             'icon'  => 'fal fa-layer-group',
             "color" => "#4f46e5",

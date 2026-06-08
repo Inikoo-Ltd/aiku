@@ -85,7 +85,12 @@ class IndexProductsInCatalogue extends OrgAction
         $queryBuilder->orderBy('products.state');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
-        $queryBuilder->whereNull('products.exclusive_for_customer_id');
+
+        if (request()->has('is_bundle')) {
+            $queryBuilder->where('products.is_bundle', true);
+        } else {
+            $queryBuilder->whereNull('products.exclusive_for_customer_id');
+        }
 
         if ($bucket == 'current') {
             $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
