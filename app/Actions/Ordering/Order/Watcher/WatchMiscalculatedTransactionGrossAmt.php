@@ -43,10 +43,11 @@ class WatchMiscalculatedTransactionGrossAmt implements ShouldBeUniqueUntilProces
         foreach ($transactions as $transaction) {
             $qtyOrdered     = $transaction->submitted_quantity_ordered;
             $historicPrice  = $transaction->historicAsset->price;
-            $grossAmt       = $qtyOrdered * $historicPrice;
+            $grossAmt       = trimDecimalZeros($qtyOrdered * $historicPrice);
 
             if ($grossAmt != $transaction->gross_amount) {
                 data_set($miscalculatedTransactions, $transaction->id, [
+                    'transaction_id'        => $transaction->id,
                     'item_code'             => $transaction->historicAsset->code,
                     'gross_amount'          => $transaction->gross_amount,
                     'net_amount'            => $transaction->net_amount,

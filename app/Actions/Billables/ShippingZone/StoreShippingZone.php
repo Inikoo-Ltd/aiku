@@ -26,6 +26,8 @@ class StoreShippingZone extends OrgAction
     use AsAction;
     use WithAttributes;
 
+    private ShippingZoneSchema $shippingZoneSchema;
+
     /**
      * @throws \Throwable
      */
@@ -123,6 +125,7 @@ class StoreShippingZone extends OrgAction
      */
     public function asController(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZone
     {
+        $this->$shippingZoneSchema = $shippingZoneSchema;
         $this->initialisationFromShop($shippingZoneSchema->shop, $request);
 
         return $this->handle($shippingZoneSchema, $this->validatedData);
@@ -133,6 +136,7 @@ class StoreShippingZone extends OrgAction
      */
     public function action(ShippingZoneSchema $shippingZoneSchema, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): ShippingZone
     {
+        $this->$shippingZoneSchema = $shippingZoneSchema;
         if (!$audit) {
             ShippingZone::disableAuditing();
         }
@@ -152,8 +156,7 @@ class StoreShippingZone extends OrgAction
             'description' => __('Shipping zone successfully created.'),
         ]);
 
-        $shippingZoneSchema = $shippingZone->schema;
-        return redirect()->route($shippingZoneSchema->is_current ? 'grp.org.shops.show.billables.shipping.current.show' : 'grp.org.shops.show.billables.shipping.discount.show', [
+        return redirect()->route($shippingZone->schema->is_current ? 'grp.org.shops.show.billables.shipping.current.show' : 'grp.org.shops.show.billables.shipping.discount.show', [
             'organisation'       => $shippingZone->organisation->slug,
             'shop'               => $shippingZone->shop->slug,
             'shippingZoneSchema' => $shippingZone->schema->slug,
