@@ -15,7 +15,7 @@ import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import { faCheck } from "@far"
-import { toInteger } from "lodash"
+import { toInteger } from "lodash-es"
 
 library.add(faPlusCircle, faQuestionCircle)
 
