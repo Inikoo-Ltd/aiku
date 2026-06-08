@@ -125,7 +125,7 @@ class StoreShippingZone extends OrgAction
      */
     public function asController(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZone
     {
-        $this->$shippingZoneSchema = $shippingZoneSchema;
+        $this->shippingZoneSchema = $shippingZoneSchema;
         $this->initialisationFromShop($shippingZoneSchema->shop, $request);
 
         return $this->handle($shippingZoneSchema, $this->validatedData);
@@ -136,7 +136,7 @@ class StoreShippingZone extends OrgAction
      */
     public function action(ShippingZoneSchema $shippingZoneSchema, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): ShippingZone
     {
-        $this->$shippingZoneSchema = $shippingZoneSchema;
+        $this->shippingZoneSchema = $shippingZoneSchema;
         if (!$audit) {
             ShippingZone::disableAuditing();
         }
