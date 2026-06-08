@@ -61,9 +61,9 @@ class ShowRetinaTopUpCheckout extends RetinaAction
             'environment'    => app()->environment()
         ];
 
-//        $paymentSessionRequest->disabled_payment_methods = [
-//            'bizum'
-//        ];
+        $paymentSessionRequest->disabled_payment_methods = [
+            'bizum'
+        ];
 
         $product                      = new Product();
         $product->name                = 'top up';
