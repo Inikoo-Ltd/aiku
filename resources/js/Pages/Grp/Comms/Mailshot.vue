@@ -25,10 +25,8 @@ import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
-import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import { useFormatTime } from "@/Composables/useFormatTime";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+import { toZonedTime} from 'date-fns-tz';
+import { format } from 'date-fns'
 
 
 
@@ -213,7 +211,10 @@ const confirmSchedule = async () => {
     if (!props.scheduleMailshotRoute) return;
 
     scheduleInProgress.value = true;
-    const formattedDateTime = scheduleDateTime.value.slice(0, 19).replace('T', ' ')
+    // const formattedDateTime = scheduleDateTime.value.slice(0, 19).replace('T', ' ')
+     const formattedDateTime = scheduleDateTime.value
+     const convertToTimezone = toZonedTime(formattedDateTime, selectedTimezone.value)
+     const displayFormated = format(convertToTimezone, 'yyyy-MM-dd HH:mm:ss')
 
     showSchedulePicker.value = false;
     schedulePicker.value?.hide();
@@ -226,7 +227,7 @@ const confirmSchedule = async () => {
                 notify({
                     type: 'success',
                     title: 'Success',
-                    text: `Mailshot scheduled for ${formattedDateTime} UTC`,
+                    text: `Mailshot scheduled for ${displayFormated} ${selectedTimezone.value}`,
                 })
                 showSchedulePicker.value = false;
                 schedulePicker.value?.hide();
@@ -686,6 +687,7 @@ const handleTimeZoneChange = (value: any) => {
                     :placeholder="trans('Select timezone...')"
                     :options="props.timeZoneOptions || []"
                     :searchable="true"
+                    :required="true"
                     @on-change="handleTimeZoneChange"
                     caret/>
             </div>
