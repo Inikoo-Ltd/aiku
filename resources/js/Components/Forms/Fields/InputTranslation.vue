@@ -52,7 +52,8 @@ if (typeof props.form[props.fieldName] !== "string") {
 
 
 const isDisabled = computed(() =>
-  props.fieldData.disable || !props.fieldData.main || loading.value
+  // props.fieldData.disable || !props.fieldData.main || loading.value
+  props.fieldData.disable || loading.value
 )
 
 
@@ -170,6 +171,7 @@ const changeValue = (async () => {
         <div class="relative flex-1">
           <input
             v-model="props.form[props.fieldName]"
+            :class="get(form, ['errors', `${fieldName}`]) ? 'border-red-500' : ''"
             :disabled="isDisabled"
             type="text"
             placeholder="Translation..."
@@ -204,9 +206,9 @@ const changeValue = (async () => {
     </div>
   </div>
 
-   <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
-        {{ form.errors[fieldName] }}
-    </p>
+  <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+    {{ form.errors[fieldName] }}
+  </p>
 </template>
 
 <style scoped>
