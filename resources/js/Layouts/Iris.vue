@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed, onUnmounted } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -32,6 +32,7 @@ import axios from 'axios'
 import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
 import BundleSidebar from '@/Components/Dropshipping/BundleSidebar.vue'
 import { useBundle } from '@/Composables/useBundle'
+import { Drawer } from 'primevue'
 
 interface ChatConfig {
     is_online: boolean
@@ -194,6 +195,37 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
         set(layout, 'rightbasket.show', false)
     }
 })
+
+// Section: Drag to move the right basket button (desktop only)
+const topPosition = ref(360)
+const dragging = ref(false)
+const offsetY = ref(0)
+const startDrag = (e: MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    offsetY.value = e.clientY - rect.top
+    dragging.value = true
+}
+const onDrag = (e: MouseEvent) => {
+    if (!dragging.value) return
+
+    const newTop = e.clientY - offsetY.value
+
+    const min = 0
+    const max = window.innerHeight - 40 // tinggi tombol ±40px
+
+    topPosition.value = Math.min(Math.max(newTop, min), max)
+}
+const stopDrag = () => {
+    dragging.value = false
+}
+onMounted(() => {
+    window.addEventListener('mousemove', onDrag)
+    window.addEventListener('mouseup', stopDrag)
+})
+onUnmounted(() => {
+    window.removeEventListener('mousemove', onDrag)
+    window.removeEventListener('mouseup', stopDrag)
+})
 </script>
 
 <template>
@@ -281,17 +313,62 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                     <slot />
                 </div>
 
-                <!-- Layout: SideBasket (right) -->
-                <div
-                    v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
-                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen transition-all"
-                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent max-w-0'"
-                >
-                    <IrisRightSideBasket
-                        v-if="layout.iris_variables?.cart_count > 0"
-                        :isOpen="layout.rightbasket?.show"
-                    />  
+                <!-- Button: open right basket -->
+                <div @click="() => set(layout, 'rightbasket.show', !layout.rightbasket?.show)"
+                    class="z-[60] w-8 aspect-square rounded-full
+                        flex items-center justify-center cursor-pointer
+                        hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)]
+                        bg-[var(--theme-color-0)]"  
+                    :class="layout.rightbasket?.show
+                        ? 'absolute -left-4'
+                        : 'fixed right-4'"
+                    :style="{
+                        top: layout.rightbasket?.show ? '50%' : topPosition + 'px',
+                        color: layout.app.theme[1]
+                }">
+                    <span v-if="layout.rightbasket?.show">
+                        <FontAwesomeIcon icon="far fa-chevron-right" fixed-width />
+                    </span>
+
+                    <span v-else @mousedown.stop="startDrag">
+                        <FontAwesomeIcon icon="fal fa-shopping-cart" fixed-width class="cursor-grab" />
+                    </span>
                 </div>
+
+                <!-- Layout: SideBasket (right) -->
+                <KeepAlive>
+                    <Drawer
+                        v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
+                        vxmodel:visible="layout.rightbasket.show"
+                        :visible="layout.rightbasket?.show"
+                        @update:visible="(val) => set(layout, 'rightbasket.show', val)"
+                        header="Right Drawer"
+                        position="right"
+                        class="!w-full md:!w-[30rem] lg:!w-[40rem]">
+                    >
+                        <template #container="{ closeCallback }">
+                            <IrisRightSideBasket
+                                v-if="layout.iris_variables?.cart_count > 0"
+                                :isOpen="layout.rightbasket?.show"
+                            />
+                        </template>
+                    </Drawer>
+                </KeepAlive>
+                
+                <!-- <div
+                    v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
+                    class="sticky top-0 w-0 h-screen z-[51] overflow-visible pointer-events-none"
+                >
+                    <div
+                        class="absolute top-0 h-full pointer-events-auto border-l transition-all right-0 duration-1000"
+                        :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent w-0 overflow-hidden'"
+                    >
+                        <IrisRightSideBasket
+                            v-if="layout.iris_variables?.cart_count > 0"
+                            :isOpen="layout.rightbasket?.show"
+                        />
+                    </div>
+                </div> -->
 
                 <div
                     v-if="bundle.open.value"

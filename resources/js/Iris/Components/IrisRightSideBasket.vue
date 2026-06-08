@@ -255,30 +255,30 @@ const idxProductLoading = ref<number | null>(null)
 
 const basketContainer = ref<HTMLElement | null>(null)
 
-const topPosition = ref(360)
-const dragging = ref(false)
-const offsetY = ref(0)
+// const topPosition = ref(360)
+// const dragging = ref(false)
+// const offsetY = ref(0)
 
-const startDrag = (e: MouseEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    offsetY.value = e.clientY - rect.top
-    dragging.value = true
-}
+// const startDrag = (e: MouseEvent) => {
+//     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+//     offsetY.value = e.clientY - rect.top
+//     dragging.value = true
+// }
 
-const onDrag = (e: MouseEvent) => {
-    if (!dragging.value) return
+// const onDrag = (e: MouseEvent) => {
+//     if (!dragging.value) return
 
-    const newTop = e.clientY - offsetY.value
+//     const newTop = e.clientY - offsetY.value
 
-    const min = 0
-    const max = window.innerHeight - 40 // tinggi tombol ±40px
+//     const min = 0
+//     const max = window.innerHeight - 40 // tinggi tombol ±40px
 
-    topPosition.value = Math.min(Math.max(newTop, min), max)
-}
+//     topPosition.value = Math.min(Math.max(newTop, min), max)
+// }
 
-const stopDrag = () => {
-    dragging.value = false
-}
+// const stopDrag = () => {
+//     dragging.value = false
+// }
 
 const basketRef = ref<HTMLElement | null>(null)
 
@@ -294,14 +294,14 @@ const basketRef = ref<HTMLElement | null>(null)
  */
 
 onMounted(() => {
-    window.addEventListener('mousemove', onDrag)
-    window.addEventListener('mouseup', stopDrag)
+    // window.addEventListener('mousemove', onDrag)
+    // window.addEventListener('mouseup', stopDrag)
     /*   document.addEventListener('mousedown', handleClickOutside) */
 })
 
 onUnmounted(() => {
-    window.removeEventListener('mousemove', onDrag)
-    window.removeEventListener('mouseup', stopDrag)
+    // window.removeEventListener('mousemove', onDrag)
+    // window.removeEventListener('mouseup', stopDrag)
     /* document.removeEventListener('mousedown', handleClickOutside) */
 })
 
@@ -311,20 +311,27 @@ onUnmounted(() => {
 <template>
     <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl" ref="basketRef">
         <!-- Toggle: collapse-expand right basket -->
-        <div @click="handleToggleLeftBar" class="z-[60] w-8 aspect-square rounded-full
-         flex items-center justify-center cursor-pointer
-         hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)]
-         bg-[var(--theme-color-0)]" :class="layout.rightbasket?.show
+        <div @click="handleToggleLeftBar"
+            class="z-[60] w-8 aspect-square rounded-full
+                flex items-center justify-center cursor-pointer
+                hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)]
+                bg-[var(--theme-color-0)]
+                border-[var(--theme-color-1)] border
+                absolute -left-4
+            "
+         xclass="layout.rightbasket?.show
             ? 'absolute -left-4'
-            : 'fixed right-4'" :style="{
+            : 'fixed right-4'"
+        :style="{
                 top: layout.rightbasket?.show ? '50%' : topPosition + 'px',
                 color: layout.app.theme[1]
             }">
             <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" fixed-width />
 
-            <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width class="cursor-grab"
-                @mousedown.stop="startDrag" />
+            <!-- <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width class="cursor-grab"
+                @mousedown.stop="startDrag" /> -->
         </div>
+        
         <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 ">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
@@ -498,9 +505,9 @@ onUnmounted(() => {
                     </template>
 
                     <template v-else>
-                        <li class="h-24 w-full skeleton"></li>
-                        <li class="h-24 w-full skeleton"></li>
-                        <li class="h-24 w-full skeleton"></li>
+                        <li class="h-20 w-full skeleton"></li>
+                        <li class="h-20 w-full skeleton mt-2"></li>
+                        <li class="h-20 w-full skeleton mt-2"></li>
                     </template>
                 </ul>
             </div>

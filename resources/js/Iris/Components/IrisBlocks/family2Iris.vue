@@ -201,11 +201,12 @@ watch(
   }
 )
 
-const contentClass = computed(() =>
-  layout.rightbasket?.show
-    ? 'flex flex-col gap-6'
-    : 'flex flex-col gap-6 lg:flex-row lg:items-stretch'
-)
+// const contentClass = computed(() =>
+//   layout.rightbasket?.show
+//     ? 'flex flex-col gap-6'
+//     : 'flex flex-col gap-6 lg:flex-row lg:items-stretch'
+// )
+const contentClass = 'flex flex-col gap-6 lg:flex-row lg:items-stretch'
 
 </script>
 
