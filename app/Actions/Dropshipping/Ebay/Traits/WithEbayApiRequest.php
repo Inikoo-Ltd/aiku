@@ -213,7 +213,11 @@ trait WithEbayApiRequest
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
-                    // Add more mappings as needed
+                case 'Item Height':
+                    $height = Arr::get($product->marketing_dimensions, 'h');
+                    $h = in_array($height, [null, 0]) ? 0.5 : $height;
+                    $attributes['Item Height'] = [$h * 100 . 'cm'];
+                    break;
                 default:
                     // Use generic mapping or default value
                     $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
