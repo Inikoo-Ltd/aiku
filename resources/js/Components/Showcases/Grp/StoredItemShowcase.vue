@@ -196,6 +196,14 @@ onMounted(() => {
                     </div>
 
                     <div class="flex justify-between gap-x-4 py-3">
+                        <dt class="text-gray-500">{{ trans("State") }}</dt>
+                        <dd class="flex items-center gap-x-2">
+                            <Icon :data="data.stored_item?.state_icon" />
+                            <div class="font-medium">{{ data.stored_item?.state_label || '-' }}</div>
+                        </dd>
+                    </div>
+
+                    <div class="flex justify-between gap-x-4 py-3">
                         <dt class="text-gray-500">{{ trans("Quantity warehouse") }}</dt>
                         <dd class="flex items-start gap-x-2">
                             <div class="font-medium">{{ locale.number(data.stored_item?.total_quantity || 0) }}</div>
