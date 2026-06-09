@@ -608,9 +608,6 @@ function getEntityFetchRoute(key: string) {
     }
 }
 
-const handleTimeZoneChange = (value: any) => {
-    console.log(value)
-}
 </script>
 
 <template>
@@ -688,7 +685,6 @@ const handleTimeZoneChange = (value: any) => {
                     :options="props.timeZoneOptions || []"
                     :searchable="true"
                     :required="true"
-                    @on-change="handleTimeZoneChange"
                     caret/>
             </div>
 
