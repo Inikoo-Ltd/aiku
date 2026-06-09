@@ -35,7 +35,7 @@ class UpdateOrderReCalculateVAT extends OrgAction
     {
         $customer = $order->customer;
 
-        $taxCategory=GetTaxCategory::run(
+        $taxCategory = GetTaxCategory::run(
             country: $order->organisation->country,
             taxNumber: $customer->taxNumber,
             billingAddress: $order->billingAddress,
@@ -61,7 +61,7 @@ class UpdateOrderReCalculateVAT extends OrgAction
             $validator->errors()->add('message', __('Unable to re-calculate VAT Charge on a closed order.'));
         }
 
-        if($this->order->invoices()->count()>0){
+        if ($this->order->invoices()->count() > 0) {
             $validator->errors()->add('message', __('Unable to re-calculate VAT Charge on an invoiced order.'));
         }
 
@@ -82,7 +82,7 @@ class UpdateOrderReCalculateVAT extends OrgAction
 
     public function asCommand(Command $command): int
     {
-        $order=Order::where('slug',$command->argument('order'))->firstOrFail();
+        $order = Order::where('slug', $command->argument('order'))->firstOrFail();
         $this->handle($order);
         return 0;
     }
