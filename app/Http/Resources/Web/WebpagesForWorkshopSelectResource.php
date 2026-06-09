@@ -1,0 +1,81 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 11 Jun 2024 14:30:36 Central European Summer Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2024, Raul A Perusquia Flores
+ */
+
+namespace App\Http\Resources\Web;
+
+use App\Http\Resources\HasSelfCall;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * @property mixed $id
+ * @property mixed $slug
+ * @property mixed $level
+ * @property mixed $code
+ * @property mixed $url
+ * @property mixed $type
+ * @property mixed $sub_type
+ * @property mixed $created_at
+ * @property mixed $updated_at
+ * @property mixed $state
+ * @property mixed $organisation_name
+ * @property mixed $shop_name
+ * @property mixed $shop_slug
+ * @property mixed $organisation_slug
+ * @property mixed $website_url
+ * @property mixed $title
+ * @property mixed $website_slug
+ * @property mixed $canonical_url
+ */
+class WebpagesForWorkshopSelectResource extends JsonResource
+{
+    use HasSelfCall;
+
+
+    public function toArray($request): array
+    {
+        $imageAlt = $this->title;
+
+        //todo try to get a better alt
+
+        return [
+            "id"            => $this->id,
+            "slug"          => $this->slug,
+            "code"          => $this->code,
+            'image_alt'     => $imageAlt,
+            "url"           => $this->url,
+            'canonical_url' => $this->canonical_url,
+            "title"         => $this->title,
+
+
+            // todo i think you should delete this
+            "level"         => $this->level,
+            "workshop"      => route('grp.org.shops.show.web.webpages.workshop', [
+                'organisation' => $this->organisation_slug,
+                'shop'         => $this->shop_slug,
+                'website'      => $this->website_slug,
+                'webpage'      => $this->slug,
+            ]),
+            "href"          => $this->canonical_url,
+            "type"          => $this->type,
+            "typeIcon"      => $this->type->stateIcon()[$this->type->value] ?? ["fal", "fa-browser"],
+            "path"          => $this->code,
+
+            "sub_type"          => $this->sub_type,
+            "created_at"        => $this->created_at,
+            "updated_at"        => $this->updated_at,
+            "state"             => $this->state,
+            "state_icon"        => $this->state?->stateIcon()[$this->state?->value],
+            'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
+            'shop_name'         => $this->shop_name,
+            'shop_slug'         => $this->shop_slug,
+
+
+        ];
+    }
+}

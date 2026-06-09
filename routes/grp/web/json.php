@@ -115,6 +115,7 @@ use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
+use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use App\Actions\Web\Website\UI\Json\FetchFamilyDescriptionBlockLayout;
 use Illuminate\Support\Facades\Route;
@@ -314,3 +315,5 @@ Route::get('{warehouse}/return/select-delivery-notes', GetDeliveryNoteValidForRe
 Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name('dispatching_waiting_badge');
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
+
+Route::get('{website:id}/webpages-for-worshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
