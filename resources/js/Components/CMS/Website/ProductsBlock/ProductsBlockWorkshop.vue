@@ -83,7 +83,7 @@ const parentLayout = inject<any>("layout")
 const rootRef = ref<HTMLElement | null>(null)
 
 const layout = reactive(cloneDeep(parentLayout))
-layout.app.theme = props.layout_theme.color
+layout.app.theme = props?.layout_theme?.color
 layout.iris = {
   ...layout.iris,
   is_logged_in: true,
