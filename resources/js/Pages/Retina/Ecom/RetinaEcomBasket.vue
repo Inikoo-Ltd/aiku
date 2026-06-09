@@ -714,6 +714,8 @@ const onChangeInsurance = async (val: boolean) => {
                                 size="xs"
                                 :label="trans('Add voucher')"
                                 icon="fas fa-plus"
+                                type="tertiary"
+                                key=2
                                 :loading="isLoadingVoucher"
                                 @click="() => onApplyVoucher()"
                                 :disabled="!voucherCode || isLoadingVoucher"
