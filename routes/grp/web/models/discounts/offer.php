@@ -6,11 +6,11 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Discounts\Offer\StoreCustomerOffers;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\StoreShopOffer;
 use App\Actions\Discounts\Offer\UI\FinishOffer;
 use App\Actions\Discounts\Offer\VolGr\UpdateVolGrGift;
-use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
 use App\Actions\Discounts\OfferCampaign\StoreGiftsOffers;
 use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
 use Illuminate\Support\Facades\Route;
