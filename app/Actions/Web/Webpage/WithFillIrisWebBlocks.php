@@ -25,6 +25,7 @@ use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Iris\GetIrisRelatedProductCategory;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartmentsThree;
+use App\Actions\Web\WebBlock\Workshop\GetIrisWebBlockDepartmentDescription;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
@@ -34,8 +35,11 @@ trait WithFillIrisWebBlocks
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
-        if ($webBlockType == 'department-description-1') {
-            $parsedWebBlocks[$key] = GetIrisWebBlockDepartment::run($webpage, $webBlock);
+        // Old. Commented it out
+        // if ($webBlockType == 'department-description-1') {
+        //     $parsedWebBlocks[$key] = GetIrisWebBlockDepartment::run($webpage, $webBlock);
+        if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
+            $parsedWebBlocks[$key] = GetIrisWebBlockDepartmentDescription::run($webpage, $webBlock);
         } elseif ($webBlockType == 'sub-department-description-1') {
             $parsedWebBlocks[$key] = GetIrisBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
