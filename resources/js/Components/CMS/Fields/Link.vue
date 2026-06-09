@@ -124,7 +124,7 @@ const cleanCanonicalPath = (url) => {
 				placeholder="https://www.anotherwebsite.com/page" v-bind="props_input" @update:modelValue="(e) => {
 					set(localModel, 'href', e)
 					emit('update:modelValue', localModel)
-				}" />
+				}" clear />
 			<SelectQuery v-if="localModel?.type == 'internal'" :object="true" fieldName="data" :value="localModel"
 				:closeOnSelect="true" :searchable="true" label="path" :canClear="true" :clearOnSearch="true" :onChange="(e) => {
 					set(localModel, 'url', e?.url)
