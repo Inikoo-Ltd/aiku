@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
+use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Order\UI\IndexOrders;
@@ -30,6 +31,7 @@ use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;
 use App\Http\Resources\CRM\CustomerFavouritesResource;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
@@ -182,10 +184,17 @@ class ShowCustomer extends OrgAction
                     'credit_transactions' => $customer->stats->number_credit_transactions
                 ],
                 'shop_data'        => [
-                    'id'   => $customer->shop->id,
-                    'name' => $customer->shop->name,
-                    'slug' => $customer->shop->slug,
-                    'type' => $customer->shop->type,
+                    'customer_id'   => $customer->id,
+                    'id'            => $customer->shop->id,
+                    'name'          => $customer->shop->name,
+                    'slug'          => $customer->shop->slug,
+                    'type'          => $customer->shop->type,
+                    'organisation'  => $customer->organisation->slug,
+                    'currency_code' => $customer->shop->currency->code,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                        'end'   => now()->addDays(7)->toDateString(),
+                    ],
                 ],
 
                 $tabs::SHOWCASE->value            => $this->tab == $tabs::SHOWCASE->value ?
@@ -216,6 +225,10 @@ class ShowCustomer extends OrgAction
                 $tabs::DISPATCHED_EMAILS->value   => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
                     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
                     : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
+
+                // $tabs::OFFERS->value   => $this->tab == $tabs::OFFERS->value ?
+                //     fn () => OffersResource::collection(IndexOffers::run($customer->shop, $tabs::OFFERS->value))
+                //     : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($customer->shop, $tabs::OFFERS->value))),
             ]
         )
         ->table(IndexOrders::make()->tableStructure($customer))
@@ -225,6 +238,7 @@ class ShowCustomer extends OrgAction
         ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
         ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
         ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
+        // ->table(IndexOffers::make()->tableStructure(parent: $customer->shop, prefix: $tabs::OFFERS->value))
         ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value));
     }
 

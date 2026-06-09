@@ -36,7 +36,7 @@ const cleanedDescription = computed(() => {
 
     let remaining = 1250
 
-    const truncateNode = (node: Node) => {
+    /* const truncateNode = (node: Node) => {
         if (remaining <= 0) {
             node.parentNode?.removeChild(node)
             return
@@ -73,7 +73,7 @@ const cleanedDescription = computed(() => {
         }
     }
 
-    truncateNode(doc.body)
+    truncateNode(doc.body) */
 
     return doc.body.innerHTML
 })

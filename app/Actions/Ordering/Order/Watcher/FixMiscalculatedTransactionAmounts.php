@@ -36,18 +36,18 @@ class FixMiscalculatedTransactionAmounts
         foreach ($transactions as $transaction) {
             $qtyOrdered    = $transaction->quantity_ordered;
             $historicPrice = $transaction->historicAsset->price;
-            $grossAmount   = trimDecimalZeros($qtyOrdered * $historicPrice);
-            $netAmount     = trimDecimalZeros(($qtyOrdered * $historicPrice) * ($transaction->current_discount_factor ?? 1));
+            $grossAmountExpected   = round($qtyOrdered * $historicPrice,2);
+            $netAmountExpected     = round(($qtyOrdered * $historicPrice) * ($transaction->current_discount_factor ?? 1),2);
 
 
-            if ($grossAmount != $transaction->gross_amount || $netAmount != $transaction->net_amount) {
+            if ($grossAmountExpected != $transaction->gross_amount || $netAmountExpected != $transaction->net_amount) {
                 data_set($miscalculatedTransactionsDebugData, $transaction->id, [
                     'transaction_id'        => $transaction->id,
                     'item_code'             => $transaction->historicAsset->code,
                     'gross_amount'          => $transaction->gross_amount,
                     'net_amount'            => $transaction->net_amount,
-                    'gross_amount_expected' => $grossAmount,
-                    'net_amount_expected'   => $grossAmount * ($transaction->current_discount_factor ?? 1),
+                    'gross_amount_expected' => $grossAmountExpected,
+                    'net_amount_expected'   => $netAmountExpected,
                 ]);
 
                 if ($repairAmount) {

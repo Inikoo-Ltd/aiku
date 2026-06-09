@@ -29,9 +29,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
         }
 
         $categorySearch = AllowedFilter::callback('category', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->where("sub_department.code", $value);
-            });
+            $query->where("sub_department.code", $value);
         });
 
         return QueryBuilder::for(ProductCategory::class)
@@ -45,6 +43,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
                     'product_categories.id',
                     'product_categories.slug',
                     'product_categories.code',
+                    'sub_department.code as sub_department_code',
                     'product_categories.name',
                     'product_categories.web_images',
                     'product_categories.image_id',
@@ -61,7 +60,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ->whereNull('product_categories.deleted_at')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$categorySearch])
-            ->withPaginator($parent->code)
+            ->withIrisPaginator(25)
             ->withQueryString();
     }
 

@@ -42,9 +42,7 @@ console.log(props.fieldValue)
                         class="mt-8 inline-flex items-center gap-3 rounded-lg border border-[#1f2937] bg-white px-6 py-3 text-base font-medium text-[#13294B] transition hover:bg-gray-50">
                         <span>{{ ctrans("Download Marketing Pack") }}</span>
 
-                        <span class="text-gray-500">
-                            5.56 MB
-                        </span>
+                      
 
                         <span class="text-lg">
                             ↓
