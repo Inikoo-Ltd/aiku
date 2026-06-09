@@ -63,6 +63,7 @@ const props = defineProps<{
 	autoSave?: boolean
 	isWithRefreshModel?: boolean
 	denominator?: number
+	disableInput?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -243,7 +244,7 @@ const layout = inject("layout", {})
 					:class="[
 						props.readonly || form.processing
 							? 'text-gray-400 '
-							:  (props.bindToTarget?.min && form.quantity <= props.bindToTarget?.min) || (props.min && form.quantity <= props.min)
+							:  (props.bindToTarget?.min !== undefined && form.quantity <= props.bindToTarget?.min) || (props.min !== undefined && form.quantity <= props.min)
 								? 'text-gray-400'
 								: 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"
@@ -276,7 +277,7 @@ const layout = inject("layout", {})
 						:min="min || 0"
 						:max="max || undefined"
 						style="width: 100%"
-						:disabled="props.readonly || form.processing"
+						:disabled="props.readonly || form.processing || props.disableInput"
 						inputClass="!p-1 lg:!p-0"
 						:suffix="props.denominator ? '/' + props.denominator : undefined"
 						:inputStyle="{
@@ -301,7 +302,7 @@ const layout = inject("layout", {})
 					:class="[
 						props.readonly || form.processing
 							? 'text-gray-400 '
-							:  (props.bindToTarget?.max && form.quantity >= props.bindToTarget?.max) || (props.max && form.quantity >= props.max)
+							: (props.bindToTarget?.max !== undefined && form.quantity >= props.bindToTarget?.max) || (props.max !== undefined && form.quantity >= props.max)
 								? 'text-gray-400'
 								: 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"
