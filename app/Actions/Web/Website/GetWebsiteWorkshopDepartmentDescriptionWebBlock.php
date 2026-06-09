@@ -34,14 +34,17 @@ class GetWebsiteWorkshopDepartmentDescriptionWebBlock
             'department'        => WorkshopDepartmentsResource::collection($website->shop->getDepartmentsRelation()->where('state', ProductCategoryStateEnum::ACTIVE)->get()),
             'layout'            => Arr::get($website->unpublishedDepartmentDescriptionSnapshot, 'layout', []),
             'autosaveRoute' => [
-                'name'       => 'grp.models.website.autosave.family_description',
+                'name'       => 'grp.models.website.autosave.department_description',
                 'parameters' => [
                     'website' => $website->id
                 ]
             ],
-            'update_sub_department_route' => [
-                'name' => 'grp.models.product_category.update',
-                'parameters' => []
+            'route_get_list' => [
+                'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
+                'parameters' => [
+                    'shop' => $website->shop->slug,
+                    'organisation' => $website->organisation->slug
+                ]
             ]
         ];
     }
