@@ -17,6 +17,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -33,14 +34,18 @@ class UpdateOrderReCalculateVAT extends OrgAction
     public function handle(Order $order): Order
     {
         $customer = $order->customer;
+
+        $taxCategory=GetTaxCategory::run(
+            country: $order->organisation->country,
+            taxNumber: $customer->taxNumber,
+            billingAddress: $order->billingAddress,
+            deliveryAddress: $order->deliveryAddress,
+            isRe: $customer->is_re,
+        );
+
+
         $order->update([
-            'tax_category_id' => GetTaxCategory::run(
-                country: $order->organisation->country,
-                taxNumber: $customer->taxNumber,
-                billingAddress: $order->billingAddress,
-                deliveryAddress: $order->deliveryAddress,
-                isRe: $customer->is_re,
-            )->id,
+            'tax_category_id' => $taxCategory->id,
         ]);
         CalculateOrderTotalAmounts::run($order, false, false);
 
@@ -63,6 +68,20 @@ class UpdateOrderReCalculateVAT extends OrgAction
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order, $this->validatedData);
+        return $this->handle($order);
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'order:recalculate-vat {order}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $order=Order::where('slug',$command->argument('order'))->firstOrFail();
+        $this->handle($order);
+        return 0;
+    }
+
+
 }
