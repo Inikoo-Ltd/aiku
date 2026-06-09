@@ -11,7 +11,6 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import InputNumber from 'primevue/inputnumber'
-import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import Button from 'primevue/button'
 
