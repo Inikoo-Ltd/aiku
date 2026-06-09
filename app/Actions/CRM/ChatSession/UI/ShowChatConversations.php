@@ -18,6 +18,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 
 class ShowChatConversations extends OrgAction
 {
@@ -46,12 +47,37 @@ class ShowChatConversations extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Conversations'),
                 'pageHead'    => [
-                    'title' => __('Conversations'),
-                    'icon'  => [
+                    'title'   => __('Conversations'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-comments'],
                         'title' => __('Conversations'),
                     ],
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'secondary',
+                            'label' => __('Export Data'),
+                            'icon'  => ['fal', 'fa-file-download'],
+                            'route' => [
+                                'name'       => 'grp.org.chat.conversations.export',
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
+                        ],
+                    ],
                 ],
+                'exportRoute' => [
+                    'name'       => 'grp.org.chat.conversations.export',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'shops' => $organisation->shops()
+                    ->orderBy('name')
+                    ->where('state', ShopStateEnum::OPEN)
+                    ->get()
+                    ->map(fn ($shop) => [
+                        'id'   => $shop->id,
+                        'name' => $shop->name,
+                        'code' => $shop->code,
+                    ]),
                 'data' => ChatSessionResource::collection($chatSessions),
             ]
         )->table(IndexChatConversations::make()->tableStructure());
