@@ -14,6 +14,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
+use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Fulfilment\Pallet;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
@@ -127,5 +128,11 @@ class UpdateRetinaPallet extends RetinaAction
         $this->initialisationFulfilmentActions($pallet->fulfilmentCustomer, $modelData);
 
         return $this->handle($pallet, $this->validatedData);
+    }
+    
+    // Brought back in case there's router.patch
+    public function jsonResponse(Pallet $pallet): PalletResource
+    {
+        return new PalletResource($pallet);
     }
 }
