@@ -90,6 +90,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'webpage_url'         => $webpageUrl,
             'luigi_identity'      => $luigiIdentity,
             'offers_data'         => $transaction->offers_data,
+            'is_cut_view'         => $transaction->is_cut_view,
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
                 'parameters' => [
