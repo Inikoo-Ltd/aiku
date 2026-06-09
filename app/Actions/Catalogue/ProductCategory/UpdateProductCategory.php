@@ -274,13 +274,13 @@ class UpdateProductCategory extends OrgAction
         if (!$this->asAction && $this->productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             // Hard limit for Family (To accomodate design) if it's via UI update
             $rules['description']       = ['sometimes', 'nullable',  function ($attribute, $value, $fail) {
-                $count = count(explode(' ', trim($this->sanitizeValue($value))));
+                $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
                 if ($count > 100) {
                     $fail(__("The description must not exceed 100 words."));
                 }
             }];
             $rules['description_extra'] = ['sometimes', 'nullable', function ($attribute, $value, $fail) {
-                $count = count(explode(' ', trim($this->sanitizeValue($value))));
+                $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
                 if ($count > 250) {
                     $fail(__("The description extra must not exceed 250 words."));
                 }
