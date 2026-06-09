@@ -602,12 +602,6 @@ watch(
     { immediate: true }
 )
 
-function getEntityFetchRoute(key: string) {
-    return {
-        name: 'grp.json.timezones'
-    }
-}
-
 </script>
 
 <template>
