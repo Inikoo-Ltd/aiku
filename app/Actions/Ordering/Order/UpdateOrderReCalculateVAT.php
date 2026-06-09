@@ -57,10 +57,14 @@ class UpdateOrderReCalculateVAT extends OrgAction
     {
         if (in_array($this->order->state, [
             OrderStateEnum::DISPATCHED,
-            OrderStateEnum::FINALISED,
             OrderStateEnum::CANCELLED])) {
             $validator->errors()->add('message', __('Unable to re-calculate VAT Charge on a closed order.'));
         }
+
+        if($this->order->invoices()->count()>0){
+            $validator->errors()->add('message', __('Unable to re-calculate VAT Charge on an invoiced order.'));
+        }
+
     }
 
     public function asController(Order $order, ActionRequest $request): Order
