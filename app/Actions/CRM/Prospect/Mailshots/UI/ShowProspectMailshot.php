@@ -13,6 +13,7 @@ use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplates;
 use App\Actions\CRM\Prospect\Mailshots\GetProspectMailshotRecipientsQueryBuilder;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
+use App\Actions\Helpers\TimeZone\UI\GetTimeZoneSelectOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\WithProspectsSubNavigation;
@@ -277,6 +278,8 @@ class ShowProspectMailshot extends OrgAction
                 ],
                 'mailshotId' => $mailshot->id,
                 'groupId' => $mailshot->group_id,
+                'timeZoneOptions' => GetTimeZoneSelectOptions::run(),
+                'defaultShopTimezone' => $this->shop->timezone->name,
 
             ]
         )->table(
