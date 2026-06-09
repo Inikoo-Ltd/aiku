@@ -103,6 +103,7 @@ const onPickTemplate = async (template: any) => {
 
     if (response.data) {
       layoutState.value = response.data
+      debouncedAutosave()
       emits("update:layout", response.data);
     }
   } catch (error) {

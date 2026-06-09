@@ -66,7 +66,7 @@ const createSnapshot = () => {
     delete snapshot.data.fieldValue.sub_departments;
   }
 
-  return snapshot;
+  return { [raw.code ] : snapshot};
 };
 
 const autosave = () => {
