@@ -45,7 +45,7 @@ class GetIrisWebBlockSubDepartmentsThree
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
             ->get()
-            ->toArray();;
+            ->toArray();
 
         $familiesList = GetFamiliesUnderDepartmentPage::run($webpage->model);
 

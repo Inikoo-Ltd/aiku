@@ -185,7 +185,7 @@ onMounted(() => {
   }
 })
 
-
+console.log(props)
 </script>
 
 

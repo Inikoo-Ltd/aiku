@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\Iris\GetIrisBlockSubDepartment;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartmentDescription;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCollection;
@@ -25,7 +26,6 @@ use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Iris\GetIrisRelatedProductCategory;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartmentsThree;
-use App\Actions\Web\WebBlock\Workshop\GetIrisWebBlockDepartmentDescription;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
