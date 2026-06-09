@@ -123,7 +123,8 @@ class EditShippingZoneSchema extends OrgAction
 
 
         return match ($routeName) {
-            'grp.org.shops.show.billables.shipping.edit' => [
+            'grp.org.shops.show.billables.shipping.current.edit',
+            'grp.org.shops.show.billables.shipping.discount.edit' => [
                 'label' => $shippingZoneSchema->name,
                 'route' => [
                     'name'       => $routeName,

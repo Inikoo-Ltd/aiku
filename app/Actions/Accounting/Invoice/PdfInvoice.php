@@ -43,6 +43,7 @@ class PdfInvoice extends OrgAction
             'cpnp'                 => ['sometimes', 'boolean'],
             'hide_payment_status'  => ['sometimes', 'boolean'],
             'group_by_tariff_code' => ['sometimes', 'boolean'],
+            'show_dispatch_totals' => ['sometimes', 'boolean'],
         ];
     }
 

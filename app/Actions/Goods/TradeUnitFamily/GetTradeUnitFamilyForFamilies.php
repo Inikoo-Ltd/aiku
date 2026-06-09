@@ -6,6 +6,7 @@
  * github: https://github.com/louis-perez
  * copyright 2025
 */
+
 namespace App\Actions\Goods\TradeUnitFamily;
 
 use App\Models\Catalogue\ProductCategory;
@@ -20,8 +21,10 @@ class GetTradeUnitFamilyForFamilies
     public function handle(MasterProductCategory|ProductCategory $parent): array
     {
         $selectOptions = [];
-        foreach(TradeUnitFamily::all() as $tradeUnitFamily) {
-            data_set($selectOptions, $tradeUnitFamily->id,
+        foreach (TradeUnitFamily::all() as $tradeUnitFamily) {
+            data_set(
+                $selectOptions,
+                $tradeUnitFamily->id,
                 [
                     'label' => $tradeUnitFamily->code.' ('.$tradeUnitFamily->name.')',
                     'id'    => $tradeUnitFamily->id

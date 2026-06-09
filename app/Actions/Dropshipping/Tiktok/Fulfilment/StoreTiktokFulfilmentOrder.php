@@ -10,7 +10,7 @@ namespace App\Actions\Dropshipping\Tiktok\Fulfilment;
 
 use App\Actions\Dropshipping\Tiktok\Order\StoreTiktokOrder;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
-use App\Actions\Fulfilment\PalletReturn\SubmitPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
 use App\Actions\RetinaAction;
@@ -59,7 +59,8 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                 'data'                      => ['tiktok_order' => $tiktokOrders],
                 'platform_order_id'         => Arr::get($tiktokOrders, 'id'),
                 'is_collection'             => false,
-                'is_shipping_by_external'   => Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK'
+                'is_shipping_by_external'   => Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK',
+                'estimated_delivery_date'    => now()->addDays(7),
             ]);
 
             $storedItemModels = [];
@@ -74,7 +75,7 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                     ->where('platform_product_variant_id', Arr::get($tiktokProduct, 'sku_id'))->first();
 
                 if ($portfolio) {
-                    /** @var StoredItem $product */
+                    /** @var StoredItem $storedItem */
                     $storedItem = $portfolio->item;
                     if (!$storedItem) {
                         \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
@@ -94,7 +95,7 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                 ]
             );
 
-            SubmitPalletReturn::run($palletReturn, []);
+            SubmitAndConfirmPalletReturn::run($palletReturn);
 
             $palletReturn->refresh();
         }

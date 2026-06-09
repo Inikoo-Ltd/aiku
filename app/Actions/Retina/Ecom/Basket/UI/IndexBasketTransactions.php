@@ -52,6 +52,7 @@ class IndexBasketTransactions extends OrgAction
                 'transactions.quantity_dispatched',
                 'transactions.quantity_fail',
                 'transactions.quantity_cancelled',
+                'transactions.is_cut_view',
                 'transactions.gross_amount',
                 'transactions.net_amount',
                 'transactions.model_type as model_type',

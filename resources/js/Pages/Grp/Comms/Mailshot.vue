@@ -4,7 +4,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
-import { computed, ref, watch, onMounted, onUnmounted } from "vue";
+import {reactive, computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { Component } from "vue";
 import EmailPreview from "@/Components/Showcases/Org/Mailshot/EmailPreview.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
@@ -24,8 +24,11 @@ import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
-import { useFormatTime } from "@/Composables/useFormatTime";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import { toZonedTime} from 'date-fns-tz';
+import { format } from 'date-fns'
+
+
 
 library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
 
@@ -61,8 +64,9 @@ const props = defineProps<{
     ownShopTemplates?: { templates: any[], shop_name: string }
     otherShopTemplates?: { templates: any[] }
     workshopRoute?: routeType
+    timeZoneOptions?: any[]
+    defaultShopTimezone?: string
 }>();
-
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
@@ -103,27 +107,30 @@ const shouldShowCancelScheduleButton = computed(() => {
 const showSchedulePicker = ref(false);
 const scheduleDateTime = ref<string>(new Date().toISOString());
 const minDateTime = ref<string>(new Date().toISOString());
+
 const schedulePicker = ref();
 const nowUtc = ref(new Date());
+const selectedTimezone = ref(props.defaultShopTimezone || 'UTC');
 
 const inProgress = ref(false);
 const scheduleInProgress = ref(false);
 
 const minTime = computed(() => {
-    const selected = new Date(scheduleDateTime.value);
-    const now = nowUtc.value;
+    const tz = selectedTimezone.value;
+    const selectedZoned = toZonedTime(new Date(scheduleDateTime.value), tz);
+    const nowZoned = toZonedTime(nowUtc.value, tz);
 
     const sameUTCDate =
-        selected.getUTCFullYear() === now.getUTCFullYear() &&
-        selected.getUTCMonth() === now.getUTCMonth() &&
-        selected.getUTCDate() === now.getUTCDate();
+        selectedZoned.getUTCFullYear() === nowZoned.getUTCFullYear() &&
+        selectedZoned.getUTCMonth() === nowZoned.getUTCMonth() &&
+        selectedZoned.getUTCDate() === nowZoned.getUTCDate();
 
     if (sameUTCDate) {
         // Today (UTC) → block past minutes/seconds
         return {
-            hours: now.getUTCHours(),
-            minutes: now.getUTCMinutes(),
-            seconds: now.getUTCSeconds(),
+            hours: nowZoned.getHours(),
+            minutes: nowZoned.getMinutes(),
+            seconds: nowZoned.getSeconds(),
         };
     }
 
@@ -190,12 +197,9 @@ const handleSchedule = async (event: Event) => {
         })
         return;
     }
-
-    // Refresh both "now" and min-date together
     nowUtc.value = new Date();
-    minDateTime.value = nowUtc.value.toISOString();
+    minDateTime.value = toZonedTime(new Date(nowUtc.value), selectedTimezone.value).toISOString();
 
-    // Show the datetime picker using the ref
     if (schedulePicker.value) {
         schedulePicker.value.show(event);
     }
@@ -207,7 +211,10 @@ const confirmSchedule = async () => {
     if (!props.scheduleMailshotRoute) return;
 
     scheduleInProgress.value = true;
-    const formattedDateTime = scheduleDateTime.value.slice(0, 19).replace('T', ' ')
+    // const formattedDateTime = scheduleDateTime.value.slice(0, 19).replace('T', ' ')
+     const formattedDateTime = scheduleDateTime.value
+     const convertToTimezone = toZonedTime(formattedDateTime, selectedTimezone.value)
+     const displayFormated = format(convertToTimezone, 'yyyy-MM-dd HH:mm:ss')
 
     showSchedulePicker.value = false;
     schedulePicker.value?.hide();
@@ -220,7 +227,7 @@ const confirmSchedule = async () => {
                 notify({
                     type: 'success',
                     title: 'Success',
-                    text: `Mailshot scheduled for ${formattedDateTime} UTC`,
+                    text: `Mailshot scheduled for ${displayFormated} ${selectedTimezone.value}`,
                 })
                 showSchedulePicker.value = false;
                 schedulePicker.value?.hide();
@@ -594,6 +601,7 @@ watch(
     },
     { immediate: true }
 )
+
 </script>
 
 <template>
@@ -661,12 +669,24 @@ watch(
     <Popover ref="schedulePicker" :visible="showSchedulePicker" @hide="cancelSchedule" appendTo="body">
         <div class="p-2 min-w-80 bg-white flex flex-col items-center">
             <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
-                    class="text-red-600">(Europe/London)</span> </h3>
-            <div class="mb-4 flex justify-center">
+                    class="text-red-600">{{ selectedTimezone }}</span>
+            </h3>
+            <div class="min-w-0 w-full mb-3">
+
+                <PureMultiselect
+                    v-model="selectedTimezone"
+                    :placeholder="trans('Select timezone...')"
+                    :options="props.timeZoneOptions || []"
+                    :searchable="true"
+                    :required="true"
+                    caret/>
+            </div>
+
+            <div class="mb-4 flex justify-center z-10">
                 <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="minTime" :text-input="true"
                     :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
                     :seconds-increment="1" model-type="iso" :auto-apply="true" :open-on-focus="true"
-                    :time-picker-inline="true" class="w-full" placeholder="" :teleport="true" timezone="UTC" />
+                    :time-picker-inline="true" class="w-full" placeholder="" :teleport="true" :timezone="selectedTimezone" />
             </div>
             <div class="flex gap-2 justify-end w-full">
                 <Button :label="trans('Cancel')" @click="cancelSchedule"

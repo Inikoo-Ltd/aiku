@@ -9,10 +9,12 @@
 namespace App\Actions\Billables\ShippingZone\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ShippingZoneTabsEnum;
 use App\Http\Resources\Catalogue\ShippingZoneResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
@@ -43,49 +45,53 @@ class ShowShippingZone extends OrgAction
         return Inertia::render(
             'Org/Catalogue/ShippingZoneSchema',
             [
-                    'title'       => __('Shipping Zone'),
-                    'breadcrumbs' => $this->getBreadcrumbs(
-                        $shippingZone,
-                        $request->route()->getName(),
-                        $request->route()->originalParameters()
-                    ),
-                    'navigation'  => [
-                        'previous' => $this->getPrevious($shippingZone, $request),
-                        'next'     => $this->getNext($shippingZone, $request),
+                'title'       => __('Shipping Zone'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $shippingZone,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'navigation'  => [
+                    'previous' => $this->getPrevious($shippingZone, $request),
+                    'next'     => $this->getNext($shippingZone, $request),
+                ],
+                'pageHead'    => [
+                    'icon'    => [
+                        'title' => __('Trade unit'),
+                        'icon'  => 'fal fa-atom'
                     ],
-                    'pageHead'    => [
-                        'icon'    => [
-                            'title' => __('Trade unit'),
-                            'icon'  => 'fal fa-atom'
-                        ],
-                        'title'   => $shippingZone->name,
-                        'actions' => [
-                            $this->canEdit ? [
-                                'type'  => 'button',
-                                'style' => 'edit',
-                                'route' => [
-                                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                    'parameters' => array_values($request->route()->originalParameters())
-                                ]
-                            ] : false,
-                            // $this->canDelete ? [
-                            //     'type'  => 'button',
-                            //     'style' => 'delete',
-                            //     'route' => [
-                            //         'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.stocks.remove',
-                            //         'parameters' => array_values($request->route()->originalParameters())
-                            //     ]
+                    'title'   => $shippingZone->name,
+                    'actions' => [
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : false,
+                        // $this->canDelete ? [
+                        //     'type'  => 'button',
+                        //     'style' => 'delete',
+                        //     'route' => [
+                        //         'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.stocks.remove',
+                        //         'parameters' => array_values($request->route()->originalParameters())
+                        //     ]
 
-                            // ] : false
-                                ],
-                    ],
-                    'tabs' => [
-                        'current'    => $this->tab,
-                        'navigation' => ShippingZoneTabsEnum::navigation()
+                        // ] : false
+                            ],
+                ],
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => ShippingZoneTabsEnum::navigation()
 
-                    ],
+                ],
+                ShippingZoneTabsEnum::HISTORY->value => $this->tab == ShippingZoneTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($shippingZone))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($shippingZone))),
             ]
-        );
+        )
+        ->table(IndexHistory::make()->tableStructure(prefix: ShippingZoneTabsEnum::HISTORY->value));
     }
 
 
@@ -103,7 +109,8 @@ class ShowShippingZone extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Shipping zone')
+                            'label' => __('Shippings'),
+                            'suffix'    => '('. ($shippingZone->schema->is_current ? __("Current") : __("Discount")) . ')',
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -117,24 +124,42 @@ class ShowShippingZone extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.billables.shipping.show.shipping-zone.show' =>
-            array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $shippingZone,
-                    [
-                        'index' => [
-                            'name'       => "grp.org.shops.show.billables.shipping.show",
-                            'parameters' => $routeParameters
+            'grp.org.shops.show.billables.shipping.current.show.shipping-zone.show' =>
+                array_merge(
+                    ShowShop::make()->getBreadcrumbs($routeParameters),
+                    $headCrumb(
+                        $shippingZone,
+                        [
+                            'index' => [
+                                'name'       => "grp.org.shops.show.billables.shipping.current.show",
+                                'parameters' => $routeParameters
+                            ],
+                            'model' => [
+                                'name'       => $routeName,
+                                'parameters' => $routeParameters
+                            ]
                         ],
-                        'model' => [
-                            'name'       => $routeName,
-                            'parameters' => $routeParameters
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
+                        $suffix
+                    )
+                ),
+            'grp.org.shops.show.billables.shipping.discount.show.shipping-zone.show' =>
+                array_merge(
+                    ShowShop::make()->getBreadcrumbs($routeParameters),
+                    $headCrumb(
+                        $shippingZone,
+                        [
+                            'index' => [
+                                'name'       => "grp.org.shops.show.billables.shipping.discount.show",
+                                'parameters' => $routeParameters
+                            ],
+                            'model' => [
+                                'name'       => $routeName,
+                                'parameters' => $routeParameters
+                            ]
+                        ],
+                        $suffix
+                    )
+                ),
             default => []
         };
     }
@@ -154,14 +179,14 @@ class ShowShippingZone extends OrgAction
 
     private function getNavigation(?ShippingZone $shippingZone, string $routeName): ?array
     {
-
         if (!$shippingZone) {
             return null;
         }
 
 
         return match ($routeName) {
-            'grp.org.shops.show.billables.shipping.show.shipping-zone.show' => [
+            'grp.org.shops.show.billables.shipping.current.show.shipping-zone.show',
+            'grp.org.shops.show.billables.shipping.discount.show.shipping-zone.show' => [
                 'label' => $shippingZone->name,
                 'route' => [
                     'name'       => $routeName,

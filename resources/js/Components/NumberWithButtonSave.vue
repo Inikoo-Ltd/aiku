@@ -63,6 +63,7 @@ const props = defineProps<{
 	autoSave?: boolean
 	isWithRefreshModel?: boolean
 	denominator?: number
+	disableInput?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -200,6 +201,27 @@ const onClickPlusButton = () => {
 
 const layout = inject("layout", {})
 
+const holdInterval = ref<ReturnType<typeof setInterval> | null>(null)
+const holdTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const startHold = (action: () => void) => {
+	action()
+	holdTimeout.value = setTimeout(() => {
+		holdInterval.value = setInterval(action, 50)
+	}, 400)
+}
+
+const stopHold = () => {
+	if (holdInterval.value) {
+		clearInterval(holdInterval.value)
+		holdInterval.value = null
+	}
+	if (holdTimeout.value) {
+		clearTimeout(holdTimeout.value)
+		holdTimeout.value = null
+	}
+}
+
 </script>
 
 <template>
@@ -238,12 +260,14 @@ const layout = inject("layout", {})
 				:class="bindToTarget?.fluid ? 'w-full' : 'w-28'">
 				<!-- Button: Minus -->
 				<div
-					@click.stop="() => props.readonly || form.processing ? null : onClickMinusButton()"
+					@mousedown.stop="() => props.readonly || form.processing ? null : startHold(onClickMinusButton)"
+					@mouseup="stopHold"
+					@mouseleave="stopHold"
 					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing
 							? 'text-gray-400 '
-							:  (props.bindToTarget?.min && form.quantity <= props.bindToTarget?.min) || (props.min && form.quantity <= props.min)
+							:  (props.bindToTarget?.min !== undefined && form.quantity <= props.bindToTarget?.min) || (props.min !== undefined && form.quantity <= props.min)
 								? 'text-gray-400'
 								: 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"
@@ -276,7 +300,7 @@ const layout = inject("layout", {})
 						:min="min || 0"
 						:max="max || undefined"
 						style="width: 100%"
-						:disabled="props.readonly || form.processing"
+						:disabled="props.readonly || form.processing || props.disableInput"
 						inputClass="!p-1 lg:!p-0"
 						:suffix="props.denominator ? '/' + props.denominator : undefined"
 						:inputStyle="{
@@ -296,12 +320,14 @@ const layout = inject("layout", {})
 
 				<!-- Button: Plus -->
 				<div
-					@click.stop="() => props.readonly || form.processing ? null : onClickPlusButton()"
+					@mousedown.stop="() => props.readonly || form.processing ? null : startHold(onClickPlusButton)"
+					@mouseup="stopHold"
+					@mouseleave="stopHold"
 					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing
 							? 'text-gray-400 '
-							:  (props.bindToTarget?.max && form.quantity >= props.bindToTarget?.max) || (props.max && form.quantity >= props.max)
+							: (props.bindToTarget?.max !== undefined && form.quantity >= props.bindToTarget?.max) || (props.max !== undefined && form.quantity >= props.max)
 								? 'text-gray-400'
 								: 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"

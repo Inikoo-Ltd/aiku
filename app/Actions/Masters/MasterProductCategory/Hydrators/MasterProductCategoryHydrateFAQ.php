@@ -27,7 +27,7 @@ class MasterProductCategoryHydrateFAQ extends GrpAction
     public function action(MasterProductCategory $masterProductCategory)
     {
         $this->initialisation($masterProductCategory->group, []);
-        
+
         $this->handle($masterProductCategory);
     }
 }

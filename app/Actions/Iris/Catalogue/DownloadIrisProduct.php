@@ -20,9 +20,9 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DownloadIrisProduct extends IrisAction
 {
-    public function handle(Shop|ProductCategory|Product|Collection $parent): BinaryFileResponse|Response
+    public function handle(Shop|ProductCategory|Product|Collection $parent, ?string $type = null): BinaryFileResponse|Response
     {
-        return DownloadProduct::run($parent, 'products_csv');
+        return DownloadProduct::run($parent, $type ?? 'products_csv');
     }
 
     public function asController(ActionRequest $request): BinaryFileResponse|Response
@@ -44,6 +44,13 @@ class DownloadIrisProduct extends IrisAction
         $this->initialisation($request);
 
         return $this->handle($productCategory);
+    }
+
+    public function imagesInProductCategory(ProductCategory $productCategory, ActionRequest $request): BinaryFileResponse|Response
+    {
+        $this->initialisation($request);
+
+        return $this->handle($productCategory, 'products_images');
     }
 
     public function inCollection(Collection $collection, ActionRequest $request): BinaryFileResponse|Response

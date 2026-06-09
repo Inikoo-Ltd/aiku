@@ -36,6 +36,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategor
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Shop\Json\FetchProductReviewThirdParty;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
@@ -104,4 +105,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     // Families Custom Sort
     Route::get('{webpage:slug}/{productCategory}/families', FetchFamilyListCustomSorted::class)->name('website.category.family_list_sorted');
+
+    // Families list under department page
+    Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
 });

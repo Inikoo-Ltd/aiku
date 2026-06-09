@@ -10,6 +10,7 @@
 namespace App\Actions\Fulfilment\StoredItem;
 
 use App\Actions\OrgAction;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\StoredItem;
 
 class SetStoredItemQuantityFromPalletStoreItems extends OrgAction
@@ -19,6 +20,10 @@ class SetStoredItemQuantityFromPalletStoreItems extends OrgAction
         $quantity = 0;
         foreach ($storedItem->pallets as $pallet) {
             $quantity += $pallet->pivot->quantity;
+        }
+
+        if ($storedItem->state == StoredItemStateEnum::DISCONTINUING && $quantity === 0) {
+            //todo: if state=Discontinuing and $quantity=0  call action to set state to Discontinued
         }
 
         $storedItem->update(

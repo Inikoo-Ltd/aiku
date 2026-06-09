@@ -22,7 +22,6 @@ use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
-use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
 use App\Actions\Discounts\OfferCampaign\Json\CheckVoucherCodeExistence;
 use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
@@ -82,10 +81,6 @@ Route::name("campaigns.")->prefix('campaigns')
             StoreDiscountShipping::class
         )->name('store_shipping');
 
-        Route::post(
-            '{offerCampaign}/customer',
-            StoreCustomerOffers::class
-        )->name('store_customer');
 
         Route::post(
             '{offerCampaign}/product',

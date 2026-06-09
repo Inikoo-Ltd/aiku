@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, onMounted, onBeforeUnmount, computed } from "vue"
+import { inject, ref, onMounted, onBeforeUnmount, computed, provide } from "vue"
 import { faCheck, faPlus, faMinus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
@@ -37,6 +37,8 @@ const layout: any = inject("layout", {})
 const review = ref(usePage().props?.iris?.website?.reviews_settings)
 const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
 const currentUrl = ref("")
+
+provide('webpage_data', props.webpage_data)
 
 const checkScreenType = () => {
     const width = window.innerWidth

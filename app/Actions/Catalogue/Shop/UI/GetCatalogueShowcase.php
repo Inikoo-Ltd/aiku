@@ -136,27 +136,24 @@ class GetCatalogueShowcase
             'label' => __('Current Bundles'),
             'route' => [
                 'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
-                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'is_bundle' => true],
             ],
             'icon'  => 'fal fa-layer-group',
             "color" => "#4f46e5",
             'value'     => $shop->stats->number_bundles,
             'metas' => [
                 [
-                    "icon"    => [
-                        "tooltip" => "active",
-                        "icon"    => "fas fa-check-circle",
-                        "class"   => "text-green-500"
-                    ],
+                    "icon"    => ["icon"    => "fas fa-check-circle", "class"   => "text-green-500"],
                     "count"   => $shop->stats->number_bundles_state_active,
                     "tooltip" => "Active"
                 ],
                 [
-                    "icon"    => [
-                        "tooltip" => "discontinuing",
-                        "icon"    => "fas fa-times-circle",
-                        "class"   => "text-amber-500"
-                    ],
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
+                    'count'   => $shop->stats->number_bundles_state_inactive,
+                    'tooltip' => "Inactive"
+                ],
+                [
+                    "icon"    => ["icon"    => "fas fa-times-circle", "class"   => "text-amber-500"],
                     "count"   => $shop->stats->number_bundles_state_discontinuing,
                     "tooltip" => "Discontinuing"
                 ],

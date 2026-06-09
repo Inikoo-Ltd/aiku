@@ -35,8 +35,6 @@ class CreateShippingZones
     public function asCommand(Command $command): void
     {
         $shippingZoneSchema = ShippingZoneSchema::where('slug', $command->argument('shippingZoneSchema'))->first();
-        ;
-        ;
 
         $data['bg'] = [
             [

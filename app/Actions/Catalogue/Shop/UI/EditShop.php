@@ -462,6 +462,7 @@ class EditShop extends OrgAction
                                     ['label' => __('Hide Payment Status'), 'key' => 'hide_payment_status'],
                                     ['label' => __('CPNP'), 'key' => 'cpnp'],
                                     ['label' => __('Group by Tariff Code'), 'key' => 'group_by_tariff_code'],
+                                    ['label' => __('Show Dispatch Totals (SKO & Units)'), 'key' => 'show_dispatch_totals'],
                                 ];
 
                                 return array_map(fn ($col) => [

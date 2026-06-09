@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, onMounted, nextTick } from "vue"
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
@@ -13,6 +13,7 @@ const props = defineProps<{
 }>()
 
 const family = computed(() => props.fieldValue?.family ?? {})
+
 const displayImages = computed(() => {
     const source = family.value.extra_description_image
     const values = Array.isArray(source)
@@ -24,9 +25,58 @@ const displayImages = computed(() => {
 
 const cleanedDescription = computed(() => {
     const html = String(family.value.description_extra ?? "")
-    return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
-})
+        .replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 
+    if (typeof DOMParser === "undefined") {
+        return html
+    }
+
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, "text/html")
+
+    let remaining = 1250
+
+    /* const truncateNode = (node: Node) => {
+        if (remaining <= 0) {
+            node.parentNode?.removeChild(node)
+            return
+        }
+
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent ?? ""
+
+            if (text.length <= remaining) {
+                remaining -= text.length
+            } else {
+                node.textContent = text.slice(0, remaining) + "..."
+                remaining = 0
+            }
+
+            return
+        }
+
+        const children = [...node.childNodes]
+
+        for (const child of children) {
+            truncateNode(child)
+
+            if (remaining <= 0) {
+                const siblings = [...node.childNodes]
+                const index = siblings.indexOf(child)
+
+                siblings.slice(index + 1).forEach((sibling) => {
+                    sibling.parentNode?.removeChild(sibling)
+                })
+
+                break
+            }
+        }
+    }
+
+    truncateNode(doc.body) */
+
+    return doc.body.innerHTML
+})
 const showModal = ref(false)
 const selectedIndex = ref(0)
 
@@ -72,15 +122,19 @@ const hasImage = (image: any) => {
     return image?.original && String(image?.original).trim() !== ""
 }
 
-console.log("Family Extra Description 2 Props:", props)
+
+
+
 </script>
 
 <template>
     <!-- CONTENT -->
-    <div class="grid grid-cols-1 lg:grid-cols-[53%_46%] lg:gap-4 gap-0  items-stretch">
+    <div class="grid grid-cols-1 lg:grid-cols-[53%_46%] lg:gap-4 gap-0 items-stretch">
         <!-- LEFT -->
-        <div class="order-2 lg:order-1 flex flex-col h-full py-5 md:py-6 lg:py-8 text-center md:text-left">
+        <div class="order-2 lg:order-1 flex flex-col py-5 md:py-6 lg:py-8 text-center md:text-left lg:h-[700px] 2xl:h-[780px]">
             <div class="
+        flex-1
+        overflow-hidden
         max-w-full
         lg:max-w-[700px]
         2xl:max-w-[860px]
@@ -91,7 +145,7 @@ console.log("Family Extra Description 2 Props:", props)
         text-[#334155]
     " v-html="cleanedDescription" />
 
-            <div class="mt-8 md:mt-10 lg:mt-auto">
+            <div class="mt-8 md:mt-10">
                 <a href="#family-2">
                     <button class="rounded-[8px] border border-[#24384d]
                 px-5 md:px-7
@@ -114,7 +168,7 @@ console.log("Family Extra Description 2 Props:", props)
 
 
         <!-- RIGHT -->
-        <div class="order-1 lg:order-2 flex h-full py-5 md:py-6 lg:py-8">
+        <div class="order-1 lg:order-2 flex py-5 md:py-6 lg:py-8">
             <div class="
             grid
             w-full

@@ -25,15 +25,18 @@ use App\Models\Helpers\Language;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Validator;
+use Illuminate\Support\Str;
 
 class UpdateMasterProductCategory extends OrgAction
 {
     use WithImageCatalogue;
     use WithMasterProductCategoryAction;
+    use SanitizeInputs;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
@@ -145,7 +148,7 @@ class UpdateMasterProductCategory extends OrgAction
             }
         }
 
-        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'faq'])) {
 
             $english      = Language::where('code', 'en')->first();
 
@@ -183,6 +186,14 @@ class UpdateMasterProductCategory extends OrgAction
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
                 }
 
+                // Temporary set up, auto translate FAQ
+                if (Arr::has($changed, 'faq') && $shop->language->code != 'en') {
+                    $translatedFaq = Translate::run(json_encode($masterProductCategory->faq), $english, $shopLanguage);
+                    if (is_string($translatedFaq)) {
+                        $dataToBeUpdated['faq'] = json_decode($translatedFaq, true);
+                    }
+                }
+
                 if ($dataToBeUpdated) {
                     UpdateProductCategory::make()->action($productCategory, $dataToBeUpdated);
                 }
@@ -199,9 +210,9 @@ class UpdateMasterProductCategory extends OrgAction
             MasterFamilyHydrateTradeUnitFamilyToChildFamily::make()->action($masterProductCategory);
         }
 
-        if ($masterProductCategory->wasChanged('faq')) {
-            MasterProductCategoryHydrateFAQ::make()->action($masterProductCategory);
-        }
+        // if ($masterProductCategory->wasChanged('faq')) {
+        //     MasterProductCategoryHydrateFAQ::make()->action($masterProductCategory);
+        // }
 
         if ($masterProductCategory->wasChanged('status')) {
             if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
@@ -291,6 +302,23 @@ class UpdateMasterProductCategory extends OrgAction
 
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
+        }
+
+        if (!$this->asAction && $this->masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
+            // Hard limit for Master Family (To accomodate design) if it's via UI update
+            $rules['description']       = ['sometimes', 'nullable',  function ($attribute, $value, $fail) {
+                $count = count(explode(' ', trim($this->sanitizeValue($value))));
+                if ($count > 100) {
+                    $fail(__("The description must not exceed 100 words."));
+                }
+            }];
+            
+            $rules['description_extra'] = ['sometimes', 'nullable', function ($attribute, $value, $fail) {
+                $count = count(explode(' ', trim($this->sanitizeValue($value))));
+                if ($count > 250) {
+                    $fail(__("The description extra must not exceed 250 words."));
+                }
+            }];
         }
 
         return $rules;

@@ -2,10 +2,8 @@
 
 namespace App\Actions\UI\Grp;
 
-use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
-use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CheckUserPermissionsCommand
@@ -38,7 +36,7 @@ class CheckUserPermissionsCommand
             $authTo = str_contains($authTo, ',') ? explode(',', $authTo) : [$authTo];
             $command->info("\n- Checking Permission -");
 
-            foreach($authTo as $auth) {
+            foreach ($authTo as $auth) {
                 $auth = trim($auth);
                 $allowed = $user->hasPermissionTo($auth);
                 $command->info("Permission [$auth]: $allowed");

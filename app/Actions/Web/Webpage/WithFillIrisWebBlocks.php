@@ -24,6 +24,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Iris\GetIrisRelatedProductCategory;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartmentsThree;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
@@ -41,7 +42,9 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockCollection::run($webpage, $webBlock);
         } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamiliesOverview::run($webpage, $webBlock);
-        } elseif (str_contains($webBlockType, 'sub-departments-')) {
+        } elseif ($webBlockType == 'sub-departments-3') {
+            $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartmentsThree::run($webpage, $webBlock);
+        } elseif ($webBlockType !== 'sub-departments-3' && str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamilies::run($webpage, $webBlock);

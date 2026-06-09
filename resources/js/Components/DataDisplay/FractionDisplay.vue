@@ -5,7 +5,7 @@
   -->
 
 <template>
-  <div class="fraction-display">
+  <div class="fraction-display" :class="{ 'fraction-display--strikethrough': strikethrough }">
     <!-- If there's a quotient and a fraction -->
 
     <template v-if="quotient !== 0 && remainingDividend !== 0">
@@ -71,6 +71,14 @@ export default {
      * Whether to simplify the fraction (reduce to the lowest terms)
      */
     simplify: {
+      type: Boolean,
+      default: false
+    },
+
+    /**
+     * Whether to show a strikethrough line over the fraction
+     */
+    strikethrough: {
       type: Boolean,
       default: false
     }
@@ -164,5 +172,22 @@ export default {
 /* Adjust spacing for mixed numbers */
 .quotient + .fraction {
   margin-left: 0.1em;
+}
+
+.fraction-display--strikethrough {
+  position: relative;
+}
+
+.fraction-display--strikethrough::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  rotate: 5deg;
+  height: 1.5px;
+  background: currentColor;
+  pointer-events: none;
 }
 </style>

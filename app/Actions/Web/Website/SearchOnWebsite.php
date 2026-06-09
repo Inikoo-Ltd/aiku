@@ -22,12 +22,12 @@ class SearchOnWebsite extends IrisAction
     {
         $website = request()->website;
         $webBlockData = [];
-        
+
         if ($website) {
             $layout = $website->liveProductsSnapshot->layout;
 
             $webBlockData = data_get($layout, 'data');
-        };
+        }
         return Inertia::render('Search', [
             'web_block_family'  => $webBlockData,
             ...$dataList,

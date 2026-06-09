@@ -32,7 +32,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans";
 import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification"
-import { set } from "lodash"
+import { set } from "lodash-es"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { faUserPlus } from "@far";
 
@@ -213,12 +213,12 @@ const onClickLogout = () => {
 							<div class="flex items-center gap-2 text-sm font-medium">
 								<span>{{ layout?.user?.username }}</span>
 
-								<img v-if="layout.offer_data.amnesty || layout.offer_data?.type === 'gr'"
+								<img v-if="layout?.offer_data?.amnesty || layout?.offer_data?.type === 'gr'"
 									:src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo"
 									class="w-auto h-6" />
 							</div>
 
-							<template v-if="layout.offer_data.amnesty">
+							<template v-if="layout?.offer_data?.amnesty">
 								<span
 									class="inline-flex items-center gap-1 text-[11px] text-amber-500 whitespace-nowrap">
 									<FontAwesomeIcon icon="fas fa-candle-holder" fixed-width aria-hidden="true" />
@@ -226,7 +226,7 @@ const onClickLogout = () => {
 									{{
 										ctrans('Until :amnestyUntil', {
 											amnestyUntil: useFormatTime(
-												layout.offer_data.amnesty_until,
+												layout?.offer_data?.amnesty_until,
 												{ formatTime: 'MMM do' }
 											)
 										})
@@ -234,9 +234,9 @@ const onClickLogout = () => {
 								</span>
 							</template>
 
-							<template v-else-if="layout.offer_data?.type === 'gr'">
+							<template v-else-if="layout?.offer_data?.type === 'gr'">
 								<span class="inline-flex items-center gap-1 text-yellow-500">
-									{{ layout.offer_data?.label }}
+									{{ layout?.offer_data?.label }}
 									<GoldReward>
 										<template #default>
 											<div class="flex items-center">
@@ -247,14 +247,14 @@ const onClickLogout = () => {
 													class="relative inline-block w-20 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
 													<div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
 														:class="{ xshimmer: true }" :style="{
-															width: `${(layout.offer_data?.meter?.[0] / layout.offer_data?.meter?.[1]) * 100}%`
+															width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%`
 														}" />
 
 													<div
 														class="absolute inset-0 flex items-center justify-center font-medium text-black text-xxs">
-														{{ Number(layout.offer_data?.meter?.[0]).toFixed(0) }}
+														{{ Number(layout?.offer_data?.meter?.[0]).toFixed(0) }}
 														/
-														{{ Number(layout.offer_data?.meter?.[1]).toFixed(0) }}
+														{{ Number(layout?.offer_data?.meter?.[1]).toFixed(0) }}
 														days
 													</div>
 												</div>

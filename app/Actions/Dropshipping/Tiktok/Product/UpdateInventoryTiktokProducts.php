@@ -8,11 +8,8 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Product;
 
-use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
-use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
@@ -28,7 +25,7 @@ class UpdateInventoryTiktokProducts
     use AsAction;
     use WithAttributes;
 
-    public $commandSignature = 'dropshipping:tiktok:product:inventory:update {customerSalesChannel?}';
+    public string $commandSignature = 'dropshipping:tiktok:product:inventory:update {customerSalesChannel?}';
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
@@ -64,6 +61,18 @@ class UpdateInventoryTiktokProducts
                 continue;
             }
 
+            if (! $tiktokUser->tiktok_warehouse_id) {
+                continue;
+            }
+
+            if (! $tiktokUser->tiktok_shop_id) {
+                continue;
+            }
+
+            if (! $tiktokUser->tiktok_shop_chiper) {
+                continue;
+            }
+
             $tiktokShop = Arr::get($tiktokUser->getAuthorizedShop(), 'data.shops');
 
             if (Arr::get($tiktokShop, '0')) {
@@ -85,59 +94,8 @@ class UpdateInventoryTiktokProducts
                 ->get();
 
             foreach ($portfolios as $portfolio) {
-                /** @var Product $product */
-                $product = $portfolio->item;
-
                 if ($this->checkIfApplicable($portfolio)) {
-                    $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
-
-                    $availableQuantity = $product->available_quantity ?? 0;
-
-                    if (!$product->is_for_sale) {
-                        $availableQuantity = 0;
-                    }
-
-                    if ($customerSalesChannel->max_quantity_advertise > 0) {
-                        $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
-                    }
-
-                    $tiktokInventory = $tiktokUser->updateProductInventory($portfolio->platform_product_id, [
-                        'skus' => [
-                            'id' => Arr::get($portfolio, 'data.tiktok_product.skus.0.id', ''),
-                            'inventory' => [
-                                'quantity' => $availableQuantity
-                            ]
-                        ]
-                    ]);
-
-                    if (count(Arr::get($tiktokInventory, 'data.errors', [])) === 0) {
-                        UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
-                            'status' => PlatformPortfolioLogsStatusEnum::OK,
-                            'last_stock_value' => $availableQuantity
-                        ]);
-                        $customerSalesChannel->update([
-                            'ban_stock_update_util' => null
-                        ]);
-
-                        $portfolio->update([
-                            'last_stock_value' => $availableQuantity,
-                            'stock_last_updated_at' => now()
-                        ]);
-                    } else {
-                        UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
-                            'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                            'response' => 'E1: ' . Arr::get($tiktokInventory, 'data.errors.0.message', [])
-                        ]);
-
-                        $customerSalesChannel->update([
-                            'ban_stock_update_util' => now()->addSeconds(10)
-                        ]);
-
-
-                        $portfolio->update([
-                            'stock_last_fail_updated_at' => now()
-                        ]);
-                    }
+                    UpdateTiktokInventory::dispatch($portfolio, $customerSalesChannel)->delay(5);
                 }
             }
         }
@@ -164,8 +122,8 @@ class UpdateInventoryTiktokProducts
 
     public function asCommand(Command $command): void
     {
-        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
 
-        $this->handle($customerSalesChannel->user);
+        $this->handle($customerSalesChannel);
     }
 }

@@ -38,18 +38,25 @@ class IndexCouriersInShop extends OrgAction
                 DB::raw('COALESCE(AVG(orders.total_amount), 0) as avg_order_amount'),
                 DB::raw("'" . $shop->currency->code . "' as currency_code")
             )
-            ->join('shipments', 'shipments.shipper_id', '=', 'shippers.id')
+            ->join('shipments', function ($join) {
+                $join->on('shipments.shipper_id', '=', 'shippers.id')
+                    ->whereNull('shipments.deleted_at');
+            })
             ->join('model_has_shipments', function ($join) {
                 $join->on('model_has_shipments.shipment_id', '=', 'shipments.id')
                     ->where('model_has_shipments.model_type', '=', 'DeliveryNote');
             })
-            ->join('delivery_notes', 'delivery_notes.id', '=', 'model_has_shipments.model_id')
+            ->join('delivery_notes', function ($join) {
+                $join->on('delivery_notes.id', '=', 'model_has_shipments.model_id')
+                    ->whereNull('delivery_notes.deleted_at');
+            })
             ->join('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id')
             ->join('orders', function ($join) use ($shop) {
                 $join->on('orders.id', '=', 'delivery_note_order.order_id')
                     ->where('orders.shop_id', '=', $shop->id)
                     ->whereNull('orders.deleted_at');
             })
+            ->defaultSort('-total_orders')
             ->groupBy('shippers.id', 'shippers.slug', 'shippers.name')
             ->allowedSorts(['total_orders', 'total_amount', 'shippers.name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())

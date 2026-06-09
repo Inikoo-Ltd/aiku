@@ -13,6 +13,7 @@ import { faMale } from "@fas"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
+import { get } from 'lodash-es'
 
 interface Language {
   code: string
@@ -129,6 +130,9 @@ const generateTranslateAI = async () => {
 
 
 <template>
+  <p v-if="get(form, ['errors', `${fieldName}`])" class="text-sm text-red-600 bold pb-1" :id="`${fieldName}-error`">
+    {{ form.errors[fieldName] }}
+  </p>
   <div class="space-y-3">
     <div class="space-y-2">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -173,7 +177,7 @@ const generateTranslateAI = async () => {
             </p>
 
             <div class="flex-1 pr-10  rounded-md  ">
-              <div class="bg-gray-50 border p-2 rounded-md">
+              <div class="bg-gray-50 border p-2 rounded-md" :class="get(form, ['errors', `${fieldName}`]) ? 'border-red-500' : ''">
                 <EditorV2 v-model="props.form[props.fieldName]" :key="key" :toogle="fieldData.toogle" :routeGetInternalLink="fieldData.routeGetInternalLink">
                   <template #editor-content="{ editor }">
                     <EditorContent :editor="editor" class="focus:outline-none text-sm text-gray-700
@@ -198,10 +202,11 @@ const generateTranslateAI = async () => {
             </button>
 
             <button v-if="fieldData.main" type="button" class="h-6 w-6 flex items-center justify-center
-           rounded-md bg-white hover:bg-gray-300 border
-           disabled:opacity-50 disabled:pointer-events-none
-           shrink-0 transition mt-0.5" @click="generateTranslateAI" :disabled="isDisabled || loading"
-              v-tooltip="trans('Get translation from AI')">
+              rounded-md bg-white hover:bg-gray-300 border
+              disabled:opacity-50 disabled:pointer-events-none
+              shrink-0 transition mt-0.5" @click="generateTranslateAI" :disabled="isDisabled || loading"
+              v-tooltip="trans('Get translation from AI')"
+            >
               <LoadingIcon v-if="loading" class="h-3.5 w-3.5 animate-spin" />
               <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" />
             </button>
@@ -210,7 +215,6 @@ const generateTranslateAI = async () => {
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
