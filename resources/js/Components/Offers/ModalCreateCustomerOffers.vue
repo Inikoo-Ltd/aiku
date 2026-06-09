@@ -14,6 +14,7 @@ import Multiselect from "@vueform/multiselect"
 
 const props = defineProps<{
     shop_data: {
+        id: number
         slug: string
         currency_code: string
     }
@@ -140,10 +141,9 @@ const submitCategoryOffer = () => {
     console.log("SUBMIT PAYLOAD:", payload)
     // return
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_customer', {
-            organisation: 'sk',
-            shop: 'se',
-            offerCampaign: 'co-se',
+        route('grp.models.store_customer_offer', {
+            shop: props.shop_data.id,
+
         }), 
         payload,
         {

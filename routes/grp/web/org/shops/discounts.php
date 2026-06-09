@@ -81,10 +81,6 @@ Route::name("campaigns.")->prefix('campaigns')
             StoreDiscountShipping::class
         )->name('store_shipping');
 
-        Route::post(
-            '{offerCampaign}/customer',
-            StoreCustomerOffers::class
-        )->name('store_customer');
 
         Route::post(
             '{offerCampaign}/product',
