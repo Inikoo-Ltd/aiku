@@ -127,17 +127,15 @@ const generateTranslateAI = async () => {
   }
 }
 
-const countWords = (value: string | null | undefined) => {
-  if (!value) return 0
-
-  const text = value
+const countWords = (value?: string | null) => {
+  const text = (value ?? '')
     .replace(/&nbsp;/gi, ' ')
-    .replace(/<[^>]*>/g, '') // mimic sanitizeValue HTML strip
     .trim()
 
-  return text ? text.split(/\s+/).length : 0
+  return text
+    ? text.split(' ').length
+    : 0
 }
-
 </script>
 
 
