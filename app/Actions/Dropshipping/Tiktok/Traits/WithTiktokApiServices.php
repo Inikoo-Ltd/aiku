@@ -329,6 +329,21 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function rejectFulfilOrder(string $orderId): array
+    {
+        $path = "/return_refund/$this->version/cancellations";
+
+        return $this->makeApiRequest('POST', $path, [
+            'order_id' => $orderId,
+            'cancel_reason' => match ($this->customerSalesChannel?->shop?->country?->code) {
+                'GB' => 'seller_cancel_paid_reason_address_not_deliver_uk',
+                default => 'seller_cancel_paid_reason_address_not_deliver'
+            }
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function updateProductInventory(string $productId, array $attributes): array
     {
         $path = "/product/$this->version/products/$productId/inventory/update";

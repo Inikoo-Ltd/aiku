@@ -21,7 +21,6 @@ import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import { routeType } from '@/types/route'
 /* import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue' */
-/* import Prices from '@/Iris/Components/BlocksUtils/Prices3.vue' */
 import Prices from '@/Iris/Components/BlocksUtils/Prices4.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
@@ -333,7 +332,7 @@ defineExpose({
             <Prices v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket/>
             <div v-else class="text-xs leading-tight space-y-1">
 
-                <!-- CODE + RRP -->
+                <!-- CODE + RRP + V2-->
                 <div class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
                     <!-- RRP + UNIT  -->
                     <span class="truncate min-w-0 overflow-hidden text-primary">

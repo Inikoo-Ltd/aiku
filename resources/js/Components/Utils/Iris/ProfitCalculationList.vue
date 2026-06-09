@@ -100,10 +100,10 @@ const locale = inject('locale', aikuLocaleStructure)
             <td class="pt-1.5 sm:pt-3 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
               <div class="flex items-center gap-0.5 sm:gap-1 text-slate-800">
                 {{ trans("Profit") }}
-                <span class="text-primary font-semibold text-[0.95em]">[{{ product.discounted_margin }}]:</span>
+                <span class="text-[#E87928] font-semibold text-[0.95em]">[{{ product.discounted_margin }}]:</span>
               </div>
             </td>
-            <td class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-primary">
+            <td class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-[#E87928]">
               {{
                 locale.currencyFormat(
                   layout?.iris?.currency?.code,
@@ -112,7 +112,7 @@ const locale = inject('locale', aikuLocaleStructure)
               }}
               <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
             </td>
-            <td v-if="product.units > 1" class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-primary">
+            <td v-if="product.units > 1" class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-[#E87928]">
               {{
                 locale.currencyFormat(
                   layout?.iris?.currency?.code,
@@ -123,8 +123,8 @@ const locale = inject('locale', aikuLocaleStructure)
             </td>
             <td class="pt-1.5 sm:pt-3 pr-1.5 sm:pr-3 text-right align-middle">
               <div class="flex items-center justify-end gap-1">
-                <img :src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo" class="h-[1.2em] sm:h-[1.5em]" />
-                <span class="text-[0.65em] sm:text-[0.75em] leading-[1em] sm:leading-[1.1em] text-primary whitespace-normal text-left">
+                <img :src="`/assets/promo/gr-aw.png`" alt="Gold Reward Logo" class="h-[1.2em] sm:h-[1.5em]" />
+                <span class="text-[0.65em] sm:text-[0.75em] leading-[1em] sm:leading-[1.1em] text-[#E87928] whitespace-normal text-left">
                   {{ trans("Members") }} <br />
                   & {{ trans("Volume") }}
                 </span>

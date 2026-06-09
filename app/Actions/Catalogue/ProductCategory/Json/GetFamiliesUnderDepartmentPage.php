@@ -18,21 +18,28 @@ use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class GetFamiliesUnderDepartmentPage extends IrisAction
 {
     public function handle(ProductCategory $parent): LengthAwarePaginator
     {
+        if ($parent->type !== ProductCategoryTypeEnum::DEPARTMENT) {
+            abort(404);
+        }
+
+        $categorySearch = AllowedFilter::callback('category', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->where("sub_department.code", $value);
+            });
+        });
+
         return QueryBuilder::for(ProductCategory::class)
-            ->when(
-                $parent->type === ProductCategoryTypeEnum::DEPARTMENT,
-                fn ($q) => $q->where('department_id', $parent->id),
-                fn ($q) => $q->where('sub_department_id', $parent->id),
-            )
-            ->leftjoin('webpages', function ($join) {
+            ->leftJoin('webpages', function ($join) {
                 $join->on('product_categories.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
+            ->leftJoin('product_categories as sub_department', 'product_categories.sub_department_id',  '=', 'sub_department.id')
             ->select(
                 [
                     'product_categories.id',
@@ -47,10 +54,13 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ->orderBy('product_categories.code')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->where('product_categories.show_in_website', true)
+            ->where('product_categories.shop_id', $parent->shop_id)
+            ->where('product_categories.department_id', $parent->id)
             ->whereNotNull('webpages.id')
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
             ->allowedSorts(['code', 'name'])
+            ->allowedFilters([$categorySearch])
             ->withPaginator($parent->code)
             ->withQueryString();
     }
@@ -61,7 +71,6 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
 
         return $this->handle($productCategory);
     }
-
 
     public function jsonResponse(LengthAwarePaginator $familyList): AnonymousResourceCollection
     {
