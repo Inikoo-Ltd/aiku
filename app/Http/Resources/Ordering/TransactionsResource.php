@@ -89,10 +89,10 @@ class TransactionsResource extends JsonResource
         }
 
         $webpageUrl = null;
+        $webpage = null;
         if ($this->model_type === class_basename(Product::class)) {
             $webpage = Webpage::where('model_id', $this->product_id)
                 ->where('model_type', class_basename(Product::class))->first();
-
             $webpageUrl = $webpage?->getUrl();
         }
 
@@ -122,6 +122,7 @@ class TransactionsResource extends JsonResource
             'currency_code'                  => $this->currency_code,
             'available_quantity'             => $this->available_quantity ?? 0,
             'webpage_url'                    => $webpageUrl,
+            'webpage_canonical_url'          => $webpage?->getCanonicalUrl(),
             'offers_data'                    => $this->offers_data,
             'discretionary_offer'            => $this->discretionary_offer !== null ? 100 * $this->discretionary_offer : null,
             'discretionary_offer_label'      => $this->discretionary_offer_label,

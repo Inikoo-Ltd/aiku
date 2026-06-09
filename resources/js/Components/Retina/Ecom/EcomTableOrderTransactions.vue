@@ -34,7 +34,7 @@ const locale = inject('locale', retinaLayoutStructure)
 function productRoute(product) {
     switch (route().current()) {
         case 'retina.ecom.orders.show':
-            return product.webpage_url
+            return product.webpage_canonical_url
         default:
             return ''
     }
