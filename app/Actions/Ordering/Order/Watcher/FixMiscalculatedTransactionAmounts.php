@@ -47,7 +47,7 @@ class FixMiscalculatedTransactionAmounts
                     'gross_amount'          => $transaction->gross_amount,
                     'net_amount'            => $transaction->net_amount,
                     'gross_amount_expected' => $grossAmountExpected,
-                    'net_amount_expected'   => $grossAmountExpected * ($transaction->current_discount_factor ?? 1),
+                    'net_amount_expected'   => $netAmountExpected,
                 ]);
 
                 if ($repairAmount) {
