@@ -282,9 +282,27 @@ const isFormInvalid = computed(() => {
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
                         {{ trans('Select Customer') }}:
                     </label>
-                    <PureMultiselectInfiniteScroll 
+                    <PureMultiselectInfiniteScroll
                     v-model="customerId" :fetchRoute="customerFetchRoute" valueProp="id"
-                        labelProp="name" labelAdditionalProp="reference" :placeholder="trans('Select customer')" />
+                        labelProp="name" labelAdditionalProp="reference" :placeholder="trans('Select customer')">
+                        <template #singlelabel="{ value }">
+                            <div class="w-full text-left pl-4 leading-4 truncate mr-2">
+                                {{ value.name }}
+                                <span class="text-sm text-gray-400">
+                                    ({{ value.reference }}<template v-if="value.email"> · {{ value.email }}</template>)
+                                </span>
+                            </div>
+                        </template>
+
+                        <template #option="{ option }">
+                            <div>
+                                {{ option.name }}
+                                <span class="text-sm text-gray-400">
+                                    ({{ option.reference }}<template v-if="option.email"> · {{ option.email }}</template>)
+                                </span>
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
                 </div>
 
                 <!-- Minimum purchase amount -->
@@ -362,16 +380,24 @@ const isFormInvalid = computed(() => {
                         {{ trans('Offer Duration') }}:
                     </div>
 
-                    <div class="flex gap-x-4">
-                        <div class="flex items-center gap-x-2">
+                    <div class="flex flex-wrap gap-4">
+                        <label for="permanent"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'permanent'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
-                            <label for="permanent">{{ trans('Permanent') }}</label>
-                        </div>
+                            <span>{{ trans('Permanent') }}</span>
+                        </label>
 
-                        <div class="flex items-center gap-x-2">
+                        <label for="interval"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'interval'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
-                            <label for="interval">{{ trans('Interval') }}</label>
-                        </div>
+                            <span>{{ trans('Interval') }}</span>
+                        </label>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
