@@ -357,7 +357,7 @@ const contentClass = computed(() =>
       lg:text-[16px]
       2xl:space-y-2
       2xl:text-[19px]
-    " v-html="trimmedDescription" />
+    " v-html="cleanedDescription" />
 
           <!-- Always bottom -->
           <div class="
