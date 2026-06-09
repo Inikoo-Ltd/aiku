@@ -28,19 +28,14 @@ class GetIrisWebBlockSubDepartmentsThree
         $subDepartmentList = DB::table('product_categories')
             ->where('product_categories.department_id', $webpage->model_id)
             ->where('product_categories.shop_id', $webpage->shop_id)
-            ->leftjoin('webpages', function ($join) {
+            ->leftJoin('webpages', function ($join) {
                 $join->on('product_categories.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
             ->select(
                 [
-                    'product_categories.id',
-                    'product_categories.slug',
                     'product_categories.code',
                     'product_categories.name',
-                    'product_categories.web_images',
-                    'product_categories.image_id',
-                    'webpages.canonical_url'
                 ]
             )
             ->orderBy('product_categories.code')
@@ -50,12 +45,13 @@ class GetIrisWebBlockSubDepartmentsThree
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
             ->get()
-            ->pluck('product_categories.name', 'product_categories.code');
+            ->toArray();;
 
         $familiesList = GetFamiliesUnderDepartmentPage::run($webpage->model);
 
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_department_list', $subDepartmentList ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.department', $webpage->model);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamilyResourceForDepartmentWebpage::collection($familiesList) ?? []);
 
         return [
