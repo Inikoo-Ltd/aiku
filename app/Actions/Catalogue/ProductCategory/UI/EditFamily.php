@@ -164,11 +164,28 @@ class EditFamily extends OrgAction
                                 'label'  => __('FAQ'),
                                 'icon'   => 'fa-light fa-question-circle',
                                 'fields' => [
-                                'faq' => [
-                                        'type'  => 'faq',
-                                        'label' => __('FAQ'),
-                                        'value' => $family->faq,
-                                    ],
+                                    'faq' => $family->masterProductCategory
+                                        ? [
+                                            'type'          => 'faq-shop',
+                                            'label'         => __('FAQ'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'noSaveButton'  => true,
+                                            'main'          => $family->masterProductCategory->faq,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $family->faq,
+                                            'toogle'        => [
+                                                'heading2', 'heading3', 'bold', 'italic', 'underline', 'bulletList',
+                                                'orderedList', 'blockquote', 'alignLeft', 'alignCenter', 'alignRight',
+                                                'undo', 'redo', 'clear'
+                                            ],
+                                        ]
+                                        : [
+                                            'type'  => 'faq-shop',
+                                            'label' => __('FAQ'),
+                                            'value' => $family->faq,
+                                        ],
                                 ]
                             ],
                             [

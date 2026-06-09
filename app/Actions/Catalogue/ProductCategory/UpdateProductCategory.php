@@ -261,6 +261,8 @@ class UpdateProductCategory extends OrgAction
             'faq'                           => ['sometimes', 'array'],
             'faq.*.question'                => ['sometimes', 'string'],
             'faq.*.answer'                  => ['sometimes', 'string'],
+            'faq.*.source_question'         => ['sometimes', 'nullable', 'string'],
+            'faq.*.source_answer'           => ['sometimes', 'nullable', 'string'],
         ];
 
         if (!$this->strict) {
