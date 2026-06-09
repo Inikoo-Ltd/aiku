@@ -33,18 +33,20 @@ const webpage_data = inject("webpage_data", null)
 </script>
 
 <template>
-    <div class="inline-flex items-center overflow-hidden rounded" :class="{
-        'gap-2': active,
-        'gap-0': !active,
+    <div class="inline-flex items-center overflow-hidden rounded gap-2" :class="{
+        // 'gap-2': active,
+        // 'gap-0': !active,
         'opacity-60': !active,
     }">
         <img :src="active
             ? `/assets/promo/gr-aw.png`
-            : `/assets/promo/gr-inactive.png`
+            // : `/assets/promo/gr-inactive.png`
+            : `/assets/promo/gr-inactive-2.png`
             " alt="Gold Reward logo" v-tooltip="ctrans('Gold Reward logo')" class="h-7 w-auto shrink-0" />
 
-        <div class="flex items-center gap-2 rounded px-2 py-[3px] text-[8px] 2xl:text-xs font-semibold leading-none text-white"
-            :class="active ? 'bg-[#E87928]' : 'bg-[#c8c8c8]'">
+        <div class="flex items-center gap-2 rounded px-2 py-[3px] text-[10px] 2xl:text-xs font-semibold leading-none text-white"
+        :class="active ? 'bg-[#E87928]' : 'bg-[#b3b3b3]'">
+        <!-- :class="active ? 'bg-[#E87928]' : 'bg-[#c8c8c8]'"> -->
             <div v-if="offer?.allowances?.[0]?.percentage_off">
                 {{ offer.allowances[0].percentage_off * 100 }}%
 
@@ -83,10 +85,8 @@ const webpage_data = inject("webpage_data", null)
 
                 </div>
                 <div v-else>
-
                     <p class="text-[#555]" v-html="offer?.products_triggers_label">
                     </p>
-
                 </div>
 
 
