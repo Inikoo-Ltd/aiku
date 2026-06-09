@@ -25,15 +25,18 @@ use App\Models\Helpers\Language;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Validator;
+use Illuminate\Support\Str;
 
 class UpdateMasterProductCategory extends OrgAction
 {
     use WithImageCatalogue;
     use WithMasterProductCategoryAction;
+    use SanitizeInputs;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
@@ -303,8 +306,19 @@ class UpdateMasterProductCategory extends OrgAction
 
         if (!$this->asAction && $this->masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
             // Hard limit for Master Family (To accomodate design) if it's via UI update
-            $rules['description']       = ['sometimes', 'nullable', 'max:400'];
-            $rules['description_extra'] = ['sometimes', 'nullable', 'max:1250'];
+            $rules['description']       = ['sometimes', 'nullable',  function ($attribute, $value, $fail) {
+                $count = count(explode(' ', trim($this->sanitizeValue($value))));
+                if ($count > 100) {
+                    $fail(__("The description must not exceed 100 words."));
+                }
+            }];
+            
+            $rules['description_extra'] = ['sometimes', 'nullable', function ($attribute, $value, $fail) {
+                $count = count(explode(' ', trim($this->sanitizeValue($value))));
+                if ($count > 250) {
+                    $fail(__("The description extra must not exceed 250 words."));
+                }
+            }];
         }
 
         return $rules;
