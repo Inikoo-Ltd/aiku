@@ -4,12 +4,13 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { debounce, get, set } from 'lodash-es'
 import { faChevronRight, faTrashAlt } from "@fal"
-import { faCheckCircle } from "@fas"
+import { faCheckCircle, faExclamationTriangle } from "@fas"
 import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import Modal from '@/Components/Utils/Modal.vue'
 import { ToggleSwitch } from 'primevue'
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
@@ -26,7 +27,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import MissedOfferFOB from '@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue'
-library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle)
+library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle, faExclamationTriangle)
 
 interface DataSideBasket {
     order_summary: any
@@ -36,6 +37,7 @@ interface DataSideBasket {
         is_premium_dispatch: boolean
         has_extra_packing: boolean
         has_insurance: boolean
+        voucher_code?: string | null
     }
 }
 
@@ -91,6 +93,7 @@ const fetchDataSideBasket = async (isWithoutSkeleton?: boolean) => {
         //     set(dataSideBasket.value, 'order_summary', response.data.order_summary)
         //     set(dataSideBasket.value, 'order_data', response.data.order_data)
         dataSideBasket.value = response.data
+        voucherCode.value = response.data?.order_data?.voucher_code || ''        
         set(layout, 'rightbasket.products', response.data?.products || [])
         // }
     } catch (error: any) {
@@ -292,6 +295,54 @@ const basketRef = ref<HTMLElement | null>(null)
   }
 }
  */
+
+const isLoadingVoucher = ref(false)
+const voucherCode = ref('')
+const isModalVoucherNotFound = ref(false)
+const voucherNotFoundMessage = ref('')
+const onApplyVoucher = async () => {
+    if (!voucherCode.value || !dataSideBasket.value?.order_data?.id) {
+        return
+    }
+
+    router.post(
+        route('iris.models.order.store_voucher', { order: dataSideBasket.value.order_data.id }),
+        { voucher_code: voucherCode.value },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingVoucher.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Voucher added to your basket."),
+                    type: "success"
+                })
+
+                layout?.reload_handle?.()
+                fetchDataSideBasket(true)
+            },
+            onError: (errors: Record<string, string>) => {
+                if (errors?.voucher_code) {
+                    voucherNotFoundMessage.value = errors.voucher_code
+                    isModalVoucherNotFound.value = true
+                    return
+                }
+
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the voucher, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingVoucher.value = false
+            },
+        }
+    )
+}
 
 onMounted(() => {
     window.addEventListener('mousemove', onDrag)
@@ -507,19 +558,23 @@ onUnmounted(() => {
         </div>
 
         <!-- Section: Voucher Code -->
-        <div v-if="false" class="px-6 mb-4">
-            <div class="text-rose-700 font-semibold text-sm mb-3">
-                You missed ( 1 ) offer
-            </div>
-
+        <!-- <div class="px-6 mb-4">
             <div>
-                <div class="text-gray-500 text-sm">Voucher Code:</div>
+                <div class="text-gray-500 text-sm mb-1">{{ trans("Voucher Code") }} :</div>
                 <div class="flex gap-x-4">
-                    <PureInput :modelValue="''" placeholder="Enter voucher code" />
-                    <Button label="Apply" />
+                    <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')" :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }" />
+                    <Button
+                        :label="trans('Add voucher')"
+                        class="shrink-0"
+                            size="xs"
+                        icon="fas fa-plus"
+                        :loading="isLoadingVoucher"
+                        @click="() => onApplyVoucher()"
+                        :disabled="!voucherCode"
+                    />
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!-- Section: Missed Offers -->
         <Transition name="slide-to-right">
@@ -553,6 +608,22 @@ onUnmounted(() => {
                 <OrderSummary :order_summary="dataSideBasket?.order_summary"
                     :currency_code="layout.iris?.currency?.code" size="sm" />
 
+                
+                <div class="mb-2 mt-2" v-if="layout.app.environment == 'local'">
+                    <div class="flex gap-x-4">
+                        <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')" :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }" />
+                        <Button
+                            :label="trans('Add voucher')"
+                            class="shrink-0"
+                                size="xs"
+                            icon="fas fa-plus"
+                            :loading="isLoadingVoucher"
+                            @click="() => onApplyVoucher()"
+                            :disabled="!voucherCode || isLoadingVoucher"
+                        />
+                    </div>
+                </div>
+                
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
                     <!-- Section: Eligible Gift -->
                     <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
@@ -619,6 +690,22 @@ onUnmounted(() => {
                 </p>
             </div>
         </div>
+
+        <!-- Modal: Voucher not found -->
+        <Modal :isOpen="isModalVoucherNotFound" @onClose="isModalVoucherNotFound = false" width="w-full max-w-md z-[9999]">
+            <div class="text-center">
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-red-500" fixed-width aria-hidden="true" />
+                </div>
+                <h3 class="mt-4 text-lg font-semibold text-gray-900">{{ trans("Voucher not found") }}</h3>
+                <p class="mt-2 text-sm text-gray-500">
+                    {{ voucherNotFoundMessage || trans("The voucher code you entered was not found or is no longer available.") }}
+                </p>
+                <div class="mt-6 flex justify-center">
+                    <Button :label="trans('OK')" @click="isModalVoucherNotFound = false" />
+                </div>
+            </div>
+        </Modal>
     </div>
 </template>
 
