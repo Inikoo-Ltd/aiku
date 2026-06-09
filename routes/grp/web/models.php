@@ -939,6 +939,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::patch('autosave/menu', [AutosaveWebsiteMarginal::class, 'menu'])->name('autosave.menu');
     Route::patch('autosave/sidebar', [AutosaveWebsiteMarginal::class, 'sidebar'])->name('autosave.sidebar');
     Route::patch('autosave/department', [AutosaveWebsiteMarginal::class, 'department'])->name('autosave.department');
+    Route::patch('autosave/department_description', [AutosaveWebsiteMarginal::class, 'departmentDescription'])->name('autosave.department_description');
     Route::patch('autosave/sub_department', [AutosaveWebsiteMarginal::class, 'subDepartment'])->name('autosave.sub_department');
     Route::patch('autosave/family', [AutosaveWebsiteMarginal::class, 'family'])->name('autosave.family');
     Route::patch('autosave/families_overview', [AutosaveWebsiteMarginal::class, 'familiesOverview'])->name('autosave.families_overview');

@@ -23,11 +23,10 @@ const props = defineProps<{
   tab : string
   data: {
     web_block_types: any;
-    parent_product_category: any[];
+    autosaveRoute: routeType;
     layout: any;
-    auto_save_route: routeType;
-    update_route: routeType;
-    route_get_list:routeType;
+    department: any[];
+    update_department_route: routeType;
   };
 }>();
 
@@ -73,7 +72,10 @@ const createSnapshot = () => {
 const autosave = () => {
   const payload = createSnapshot();
   router.patch(
-    route(props.data.auto_save_route.name, props.data.auto_save_route.parameters),
+    route(
+      props.data.autosaveRoute.name, 
+      props.data.autosaveRoute.parameters
+    ),
     { layout: payload },
     {
       onStart: () => { isLoadingSave.value = true },
@@ -102,6 +104,7 @@ const debouncedAutosave = debounce(autosave);
 
 
 const onPickTemplate = (template: any) => {
+  console.log("PROPPSS", props);
   layoutState.value = JSON.parse(JSON.stringify({
     ...template,
     data: {
@@ -177,12 +180,11 @@ onMounted(() => {
   if (rootRef.value && props.layout_theme?.color) {
     setColorStyleRootByEl(rootRef.value, props.layout_theme.color)
   }
-  if(props?.data?.parent_product_category?.data.length){
-    const initialDept = props.data.parent_product_category.data[0];
+  if(props?.data?.department?.data.length){
+    const initialDept = props.data.department.data[0];
     selectProductCategory(initialDept);
   }
 })
-
 
 </script>
 
@@ -190,12 +192,11 @@ onMounted(() => {
 <template>
   <div class="pt-4">
     <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-
       <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-        <SideMenuWebsiteWorkshop 
+        <SideMenuWebsiteWorkshop
           :data="layoutState" 
           :webBlockTypes="props.data.web_block_types"
-          :dataList="props.data.parent_product_category" 
+          :dataList="props.data.department" 
           @auto-save="debouncedAutosave" 
           @set-up-template="onPickTemplate" 
         />
@@ -253,7 +254,7 @@ onMounted(() => {
 
     <div class="mx-auto">
       <ul class="space-y-3">
-        <li v-for="(dept, index) in props.data.parent_product_category.data" :key="dept.slug" @click="() => selectProductCategory(dept)"
+        <li v-for="(dept, index) in props.data.department.data" :key="dept.slug" @click="() => selectProductCategory(dept)"
           class="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow" :class="[
             'rounded-lg shadow-sm transition-shadow',
             dept.slug == dataPicked.sub_department?.slug
