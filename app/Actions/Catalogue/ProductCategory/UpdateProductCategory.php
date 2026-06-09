@@ -44,7 +44,7 @@ class UpdateProductCategory extends OrgAction
         $originalImageId = $productCategory->image_id;
 
         if ($productCategory->type !== ProductCategoryTypeEnum::FAMILY) {
-            Arr::pull($modelData, 'trade_unit_family_id'); // Safe guard so only family would have relationship with TradeUnitFamilyId
+            Arr::pull($modelData, 'trade_unit_family_id'); // Safeguard so only family would have relationship with TradeUnitFamilyId
         }
 
         if ($chosenMainWebpageId = Arr::pull($modelData, 'set_main_webpage')) {
@@ -82,7 +82,6 @@ class UpdateProductCategory extends OrgAction
             } else {
                 data_set($modelData, 'image_id', null, false);
             }
-
         }
 
         $originalMasterProductCategory = null;
@@ -122,15 +121,6 @@ class UpdateProductCategory extends OrgAction
                 ]
             ]);
         }
-
-        //        if (Arr::has($changes, 'offers_data')) {
-        //            $offers = Offer::whereIn('id', array_keys($modelData['offers_data']))->get();
-        //            foreach ($offers as $offer) {
-        //                $offer->update([
-        //                    'label' => data_get($modelData, "offers_data.{$offer->id}.label")
-        //                ]);
-        //            }
-        //        }
 
         if (Arr::has($changes, 'description_title')) {
             UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
@@ -228,7 +218,7 @@ class UpdateProductCategory extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
-            'sub_department_id' => [
+            'sub_department_id'             => [
                 'sometimes',
                 'nullable',
                 Rule::exists('product_categories', 'id')
@@ -271,19 +261,27 @@ class UpdateProductCategory extends OrgAction
         }
 
         if (!$this->asAction && $this->productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            // Hard limit for Family (To accomodate design) if it's via UI update
-            $rules['description']       = ['sometimes', 'nullable',  function ($attribute, $value, $fail) {
-                $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
-                if ($count > 100) {
-                    $fail(__("The description must not exceed 100 words."));
+            // Hard limit for Family (To accommodate design) if it's via UI update
+            $rules['description']       = [
+                'sometimes',
+                'nullable',
+                function ($value, $fail) {
+                    $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
+                    if ($count > 100) {
+                        $fail(__("The description must not exceed 100 words."));
+                    }
                 }
-            }];
-            $rules['description_extra'] = ['sometimes', 'nullable', function ($attribute, $value, $fail) {
-                $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
-                if ($count > 250) {
-                    $fail(__("The description extra must not exceed 250 words."));
+            ];
+            $rules['description_extra'] = [
+                'sometimes',
+                'nullable',
+                function ($value, $fail) {
+                    $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
+                    if ($count > 250) {
+                        $fail(__("The description extra must not exceed 250 words."));
+                    }
                 }
-            }];
+            ];
         }
 
         return $rules;
