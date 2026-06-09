@@ -37,7 +37,7 @@ const triggersLabel = computed<string>(() => props.offer?.triggers_labels?.join(
 
         <div class="vd-content">
             <div class="vd-percentage">
-                <span v-if="percentageOff !== null">{{ percentageOff }}% {{ trans('OFF') }}</span>
+                <span v-if="percentageOff !== null">{{ percentageOff }}% {{ ctrans('OFF') }}</span>
                 <span v-else>{{ offer?.allowances?.[0]?.label }}</span>
             </div>
 
