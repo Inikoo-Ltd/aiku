@@ -127,7 +127,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 		 //description catalogue
 		'collection-description-1' : CollectionDescriptionIris,
-		'department-description-1' : DepartmentDescriptionIris2,
+		'department-description-1' : DepartmentDescriptionIris,
 		'department-description-2' : DepartmentDescriptionIris2,
 		'sub-department-description-1' : SubDepartmentDescriptionIris,
 
