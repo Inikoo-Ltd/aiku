@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * author Louis Perez
+ * created on 14-04-2026-13h-51m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
+
 namespace App\Actions\Web;
 
 use App\Actions\Maintenance\Web\WithRepairWebpages;
@@ -27,6 +34,10 @@ class UpdateDescriptionBlockToWebsiteAndChild
                 'subType'   => 'family',
                 'codes'     => WebBlockTemplateEnum::FAMILY_DESCRIPTION->templateCodes()
             ],
+            'department_description'    => [
+                'subType'   => 'family',
+                'codes'     => WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes()
+            ],
             default                 => null
         };
 
@@ -53,11 +64,30 @@ class UpdateDescriptionBlockToWebsiteAndChild
             foreach ($layouts as $code => $layout) {
                 Log::info("Code: [$code]", $layout);
                 $this->createWebBlock($webpage, $code, $layout);
+
+                if ($marginal == 'department-description') {
+                    if ($code == 'department-description-1') {
+                        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
+                        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
+                        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);                    
+                    } elseif ($code == 'department-description-2') {
+                        foreach(WebBlockTemplateEnum::PRODUCT->templateCodes() as $productCode) {
+                            $this->deleteWebBlocksByCode($webpage, $productCode);
+                        }
+                        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
+                        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
+                    }
+                }
             }
+
 
             $webpage->refresh();
             if ($webpage->sub_type === WebpageSubTypeEnum::FAMILY) {
                 $this->setFamilyDescriptionIndex($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
+            }
+
+            if ($webpage->sub_type === WebpageSubTypeEnum::DEPARTMENT) {
+                $this->reorderDepartmentPageBlocks($webpage, true);
             }
 
             $webpage->refresh();
@@ -105,6 +135,9 @@ class UpdateDescriptionBlockToWebsiteAndChild
         $usedWebBlockTemplateCodes = data_get($liveProductsSnapshot?->layout, 'code', data_get($unpublishedProductsSnapshot?->layout, 'code', array_first(WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes())));
 
         $productList = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes)->first()->model_has_web_blocks_id;
+        
+        $recommendationFromMaster   = $this->getWebpageBlocksByType($webpage, 'recommendation-from-master')->first()->model_has_web_blocks_id;
+        $relatedProductCategory     = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')->first()->model_has_web_blocks_id;
 
         $trendsWebBlock     = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
         $lastSeenWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
@@ -115,9 +148,12 @@ class UpdateDescriptionBlockToWebsiteAndChild
 
         $count = $webpage->webBlocks()->count();
 
-        $trendsWebBlockPosition     = $count + 101;
-        $lastBoughtWebBlockPosition = $count + 102;
-        $lastSeenWebBlockPosition   = $count + 103;
+        $recommendationFromMasterPosition   = $count + 101;
+        $relatedProductCategoryPosition     = $count + 102;
+
+        $trendsWebBlockPosition             = $count + 103;
+        $lastBoughtWebBlockPosition         = $count + 104;
+        $lastSeenWebBlockPosition           = $count + 105;
 
         $runningPosition = 4;
         foreach ($webBlocks as $key => $position) {
@@ -127,6 +163,10 @@ class UpdateDescriptionBlockToWebsiteAndChild
                 $webBlocks[$key] = 2;
             } elseif ($key == $familyExtraDesc) {
                 $webBlocks[$key] = 3;
+            } elseif ($key == $recommendationFromMaster) {
+                $webBlocks[$key] = $recommendationFromMasterPosition;
+            } elseif ($key == $relatedProductCategory) {
+                $webBlocks[$key] = $relatedProductCategoryPosition;
             } elseif ($key == $trendsWebBlock) {
                 $webBlocks[$key] = $trendsWebBlockPosition;
             } elseif ($key == $lastSeenWebBlock) {

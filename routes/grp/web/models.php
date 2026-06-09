@@ -951,6 +951,8 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('publish/menu', [PublishWebsiteMarginal::class, 'menu'])->name('publish.menu');
     Route::post('publish/sidebar', [PublishWebsiteMarginal::class, 'sidebar'])->name('publish.sidebar');
     Route::post('publish/department', [PublishWebsiteMarginal::class, 'department'])->name('publish.department');
+    Route::post('publish/department_description', [PublishWebsiteMarginal::class, 'department'])->name('publish.department_description');
+    Route::post('publish/department_description', [PublishWebsiteMarginal::class, 'departmentDescription'])->name('publish.department_description');
     Route::post('publish/sub_department', [PublishWebsiteMarginal::class, 'subDepartment'])->name('publish.sub_department');
     Route::post('publish/family', [PublishWebsiteMarginal::class, 'family'])->name('publish.family');
     Route::post('publish/families_overview', [PublishWebsiteMarginal::class, 'familiesOverview'])->name('publish.families_overview');

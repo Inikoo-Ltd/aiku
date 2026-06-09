@@ -243,6 +243,13 @@ class ShowWebsiteWorkshop extends OrgAction
                             'website' => $website->id
                         ]
                     ],
+                    'department_description' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.department_description',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
                     'sub_department' => [
                         'method'     => 'post',
                         'name'       => 'grp.models.website.publish.sub_department',
