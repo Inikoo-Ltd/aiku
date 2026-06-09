@@ -13,7 +13,6 @@ use App\Actions\Discounts\Offer\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateTradeUnitFamilyToChildFamily;
-use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateFAQ;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
@@ -30,7 +29,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Validator;
-use Illuminate\Support\Str;
 
 class UpdateMasterProductCategory extends OrgAction
 {
@@ -41,7 +39,7 @@ class UpdateMasterProductCategory extends OrgAction
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
         if ($masterProductCategory->type !== MasterProductCategoryTypeEnum::FAMILY) {
-            Arr::pull($modelData, 'trade_unit_family_id'); // Safe guard so only family would have relationship with TradeUnitFamilyId
+            Arr::pull($modelData, 'trade_unit_family_id'); // Safeguard so only family would have relationship with TradeUnitFamilyId
         }
 
         $originalImageId = $masterProductCategory->image_id;
@@ -186,7 +184,7 @@ class UpdateMasterProductCategory extends OrgAction
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
                 }
 
-                // Temporary set up, auto translate FAQ
+                // Temporary setup, auto translate FAQ
                 if (Arr::has($changed, 'faq') && $shop->language->code != 'en') {
                     $translatedFaq = Translate::run(json_encode($masterProductCategory->faq), $english, $shopLanguage);
                     if (is_string($translatedFaq)) {
@@ -305,15 +303,15 @@ class UpdateMasterProductCategory extends OrgAction
         }
 
         if (!$this->asAction && $this->masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
-            // Hard limit for Master Family (To accomodate design) if it's via UI update
-            $rules['description']       = ['sometimes', 'nullable',  function ($attribute, $value, $fail) {
+            // Hard limit for Master Family (To accommodate design) if it's via UI update
+            $rules['description']       = ['sometimes', 'nullable',  function ($value, $fail) {
                 $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
                 if ($count > 100) {
                     $fail(__("The description must not exceed 100 words."));
                 }
             }];
-            
-            $rules['description_extra'] = ['sometimes', 'nullable', function ($attribute, $value, $fail) {
+
+            $rules['description_extra'] = ['sometimes', 'nullable', function ($value, $fail) {
                 $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
                 if ($count > 250) {
                     $fail(__("The description extra must not exceed 250 words."));

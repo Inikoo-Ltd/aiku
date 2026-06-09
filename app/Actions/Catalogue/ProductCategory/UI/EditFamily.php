@@ -273,7 +273,7 @@ class EditFamily extends OrgAction
                                                     /* 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                     'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear' */
-                                            ], 
+                                            ],
                                         ],
                                     'description_extra' => $family->masterProductCategory
                                         ? [

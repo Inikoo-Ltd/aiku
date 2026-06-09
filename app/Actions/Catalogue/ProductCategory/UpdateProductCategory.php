@@ -28,7 +28,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Str;
 
 class UpdateProductCategory extends OrgAction
 {
