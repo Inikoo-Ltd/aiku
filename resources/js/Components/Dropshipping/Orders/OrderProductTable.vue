@@ -481,36 +481,37 @@ const isOffersData = (offersData: any): boolean => {
 
                     <!-- Read-only display -->
                     <div v-else-if="!editingIds.has(item.id)" class="flex flex-wrap items-center gap-x-2">
-                        <span :class="[
-                            (state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered)
-                            || ((state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered)
-                            || item.quantity_not_picked > 0
-                                ? 'line-through'
-                                : '',
-                            item.quantity_not_picked > 0 ? 'text-red-500' : ''
-                        ]"
+                        <span
                             v-tooltip="item.quantity_not_picked > 0 ? ctrans('Original quantity ordered') : ''"
                         >
-                            {{ formatQuantity(item.quantity_ordered) }}
+                            <!-- {{ formatQuantity(item.quantity_ordered) }} -->
+                            <FractionDisplay
+                                :fractionData="item.quantity_ordered_fractional"
+                                :strikethrough="(state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered)
+                                    || ((state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered)
+                                    || item.quantity_not_picked > 0"
+                            />
                         </span>
+
                         <span v-if="item.quantity_not_picked > 0" v-tooltip="ctrans('Quantity ordered (some is not picked)')">
                             {{ formatQuantity(item.quantity_ordered - item.quantity_not_picked) }}
                         </span>
 
                         <template v-if="(state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered">
-                            <span class="pl-3" :class="item.quantity_not_picked > 0 ? 'line-through text-red-500' : ''"
+                            <FractionDisplay
+                                :fractionData="item.quantity_picked_fractional"
+                                :strikethrough="item.quantity_not_picked > 0"
+                                class="pl-3"
                                 v-tooltip="item.quantity_not_picked > 0 ? ctrans('Original quantity to pick') : ''"
-                            >
-                                {{ formatQuantity(item.quantity_picked) }}
-                            </span>
+                            />
                             <span v-if="item.quantity_not_picked > 0" v-tooltip="item.quantity_not_picked > 0 ? ctrans('Quantity picked (some is not picked)') : ''">
                                 {{ formatQuantity(item.quantity_picked - item.quantity_not_picked) }}
                             </span>
                         </template>
 
-                        <span class="pl-3" v-if="state === 'dispatched'&&  item.quantity_dispatched!=item.quantity_ordered">
-                            {{ formatQuantity(item.quantity_dispatched) }}
-                            <!-- <FractionDisplay :fractionData="item.quantity_dispatched_fractional" /> -->
+                        <span class="pl-3" v-if="state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered">
+                            <!-- {{ formatQuantity(item.quantity_dispatched) }} -->
+                            <FractionDisplay :fractionData="item.quantity_dispatched_fractional" />
                         </span>
 
                     </div>

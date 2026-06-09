@@ -133,12 +133,12 @@ const debounceUpdateQuantity = debounce(
                 </div>
 
                 <div v-else>
-                    {{
+                    <!-- {{
                         Number.isInteger(Number(item.quantity_ordered)) && String(item.quantity_ordered).match(/^\d+(\.0+)?$/)
                             ? parseInt(item.quantity_ordered)
                             : parseFloat(item.quantity_ordered)
-                    }}
-                    <!-- <FractionDisplay :fractionData="item.quantity_ordered_fractional" /> -->
+                    }} -->
+                    <FractionDisplay :fractionData="item.quantity_ordered_fractional" />
                 </div>
                 
                 <!-- <Transition name="spin-to-down">
