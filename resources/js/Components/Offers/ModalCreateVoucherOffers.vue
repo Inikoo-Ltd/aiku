@@ -212,8 +212,8 @@ const submitVoucherOffer = () => {
         offer_amount: offerAmount.value,
         start_at: formatDate(startDate.value),
         end_at: formatDate(endDate.value),
-        reuse_customer: reuseCustomer.value,
-        discount_percentage: discountPercentage.value,
+        can_customer_reuse: reuseCustomer.value,
+        percentage_off: discountPercentage.value,
         target_type: targetPayload?.target_type ?? null,
         target_id: targetPayload?.target_id ?? null,
     }
