@@ -3,7 +3,7 @@ import { defineAsyncComponent } from "vue"
 
 //Department
 import DepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/DepartmentDescriptionIris.vue"
-
+import DepartmentDescriptionIris2 from "@/Iris/Components/IrisBlocks/DepartmentDescriptionIris2.vue"
 
 // Sub-department
 import SubDepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/SubDepartmentDescriptionIris.vue"
@@ -128,6 +128,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		 //description catalogue
 		'collection-description-1' : CollectionDescriptionIris,
 		'department-description-1' : DepartmentDescriptionIris,
+		'department-description-2' : DepartmentDescriptionIris2,
 		'sub-department-description-1' : SubDepartmentDescriptionIris,
 
 		//sub-department	

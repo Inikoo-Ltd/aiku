@@ -6,7 +6,7 @@ export default {
 			type: "text",
 			information: "id selector is used to select one unique element!",
 		},
-        {
+      /*   {
             name: "Settings",
             key: ["settings"],
             replaceForm: [
@@ -80,6 +80,6 @@ export default {
                     useIn : ["desktop", "tablet", "mobile"],
                 },
             ],
-        },
+        }, */
     ],
 }

@@ -28,8 +28,9 @@ class GetWebBlockSubDepartmentsThree
         $department = $webpage->model;
 
         $subDepartmentList = DB::table('product_categories')
-            ->where('department_id', $webpage->model_id)
-            ->leftjoin('webpages', function ($join) {
+            ->where('product_categories.department_id', $webpage->model_id)
+            ->where('product_categories.shop_id', $webpage->shop_id)
+            ->leftJoin('webpages', function ($join) {
                 $join->on('product_categories.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
@@ -46,7 +47,7 @@ class GetWebBlockSubDepartmentsThree
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
             ->get()
-            ->pluck('product_categories.name', 'product_categories.code');
+            ->toArray();
 
         $familiesList = GetFamiliesUnderDepartmentPage::run($department);
 

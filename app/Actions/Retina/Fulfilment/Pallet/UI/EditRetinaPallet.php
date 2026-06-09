@@ -10,28 +10,14 @@
 namespace App\Actions\Retina\Fulfilment\Pallet\UI;
 
 use App\Actions\RetinaAction;
-use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Fulfilment\Pallet;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditRetinaPallet extends RetinaAction
 {
-    public function handle(Pallet $pallet): Pallet
-    {
-        return $pallet;
-    }
-
-    public function jsonResponse(LengthAwarePaginator $pallet): AnonymousResourceCollection
-    {
-        return PalletResource::collection($pallet);
-    }
-
-
-    public function htmlResponse(Pallet $pallet, ActionRequest $request): Response
+    public function handle(Pallet $pallet, ActionRequest $request): Response
     {
         return Inertia::render(
             'EditModel',
@@ -88,11 +74,11 @@ class EditRetinaPallet extends RetinaAction
         );
     }
 
-    public function asController(Pallet $pallet, ActionRequest $request): Pallet
+    public function asController(Pallet $pallet, ActionRequest $request): Response
     {
         $this->initialisation($request);
 
-        return $this->handle($pallet);
+        return $this->handle($pallet, $request);
     }
 
     public function getBreadcrumbs(Pallet $pallet, string $routeName): array
