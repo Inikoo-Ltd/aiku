@@ -201,6 +201,27 @@ const onClickPlusButton = () => {
 
 const layout = inject("layout", {})
 
+const holdInterval = ref<ReturnType<typeof setInterval> | null>(null)
+const holdTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const startHold = (action: () => void) => {
+	action()
+	holdTimeout.value = setTimeout(() => {
+		holdInterval.value = setInterval(action, 50)
+	}, 400)
+}
+
+const stopHold = () => {
+	if (holdInterval.value) {
+		clearInterval(holdInterval.value)
+		holdInterval.value = null
+	}
+	if (holdTimeout.value) {
+		clearTimeout(holdTimeout.value)
+		holdTimeout.value = null
+	}
+}
+
 </script>
 
 <template>
@@ -239,7 +260,9 @@ const layout = inject("layout", {})
 				:class="bindToTarget?.fluid ? 'w-full' : 'w-28'">
 				<!-- Button: Minus -->
 				<div
-					@click.stop="() => props.readonly || form.processing ? null : onClickMinusButton()"
+					@mousedown.stop="() => props.readonly || form.processing ? null : startHold(onClickMinusButton)"
+					@mouseup="stopHold"
+					@mouseleave="stopHold"
 					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing
@@ -297,7 +320,9 @@ const layout = inject("layout", {})
 
 				<!-- Button: Plus -->
 				<div
-					@click.stop="() => props.readonly || form.processing ? null : onClickPlusButton()"
+					@mousedown.stop="() => props.readonly || form.processing ? null : startHold(onClickPlusButton)"
+					@mouseup="stopHold"
+					@mouseleave="stopHold"
 					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing
