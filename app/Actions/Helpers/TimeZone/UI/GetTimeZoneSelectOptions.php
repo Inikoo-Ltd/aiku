@@ -11,7 +11,7 @@ namespace App\Actions\Helpers\TimeZone\UI;
 use App\Models\Helpers\Timezone;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetTimeZonesOptionsComplexData
+class GetTimeZoneSelectOptions
 {
     use AsObject;
 
