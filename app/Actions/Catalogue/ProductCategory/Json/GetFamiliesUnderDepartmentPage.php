@@ -24,7 +24,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
 {
     public function handle(ProductCategory $parent): LengthAwarePaginator
     {
-        if ($parent !== ProductCategoryTypeEnum::DEPARTMENT) {
+        if ($parent->type !== ProductCategoryTypeEnum::DEPARTMENT) {
             abort(404);
         }
 
@@ -60,7 +60,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
             ->allowedSorts(['code', 'name'])
-            ->allowedFilter([$categorySearch])
+            ->allowedFilters([$categorySearch])
             ->withPaginator($parent->code)
             ->withQueryString();
     }
