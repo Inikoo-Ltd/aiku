@@ -322,7 +322,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                $schedule->command('woo:update-inventory')->everyThreeHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'UpdateWooStockInventories',
                 ),
                 name: 'UpdateWooStockInventories',
@@ -330,14 +330,14 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            /*$this->logSchedule(
+            $this->logSchedule(
                 $schedule->command('dropshipping:tiktok:product:inventory:update')->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'UpdateTiktokInventory',
                 ),
                 name: 'UpdateTiktokInventory',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
-            );*/
+            );
 
             $this->logSchedule(
                 $schedule->command('ebay:update-inventory')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
@@ -357,14 +357,14 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            $this->logSchedule(
-                $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'CheckShopifyPortfolios',
-                ),
-                name: 'CheckShopifyPortfolios',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
+//            $this->logSchedule(
+//                $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+//                    monitorSlug: 'CheckShopifyPortfolios',
+//                ),
+//                name: 'CheckShopifyPortfolios',
+//                type: 'command',
+//                scheduledAt: now()->format('H:i')
+//            );
 
             $this->logSchedule(
                 $schedule->command('shop-external:check-all-shop-connections')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(

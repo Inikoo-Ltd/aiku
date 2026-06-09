@@ -338,7 +338,14 @@ return [
         ],
         'dropshipping'         => [
             'connection'          => 'redis',
-            'queue'               => ['ds', 'shopify', 'ebay', 'woo'],
+            'queue'               =>
+                [
+                    'ds',
+                    'shopify',
+                    'shopify-bulk',
+                    'ebay',
+                    'woo'
+                ],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
@@ -385,7 +392,7 @@ return [
             'balanceCooldown'     => 3,
         ],
         'cache-warming'        => [
-            'connection' => 'redis-long-running',
+            'connection'          => 'redis-long-running',
             'queue'               => ['cache-warming'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
