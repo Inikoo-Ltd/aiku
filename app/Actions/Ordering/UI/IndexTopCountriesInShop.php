@@ -10,6 +10,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,18 @@ class IndexTopCountriesInShop extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $dateRange = request()->input('between.date');
+        $fromDate  = null;
+        $toDate    = null;
+
+        if ($dateRange) {
+            $parts = explode('-', $dateRange);
+            if (count($parts) === 2) {
+                $fromDate = Carbon::createFromFormat('Ymd', $parts[0])->startOfDay();
+                $toDate   = Carbon::createFromFormat('Ymd', $parts[1])->endOfDay();
+            }
+        }
+
         return QueryBuilder::for(Country::class)
             ->select(
                 'countries.id',
@@ -42,6 +55,8 @@ class IndexTopCountriesInShop extends OrgAction
                     ->where('orders.shop_id', '=', $shop->id)
                     ->whereNull('orders.deleted_at');
             })
+            ->when($fromDate, fn ($q) => $q->where('orders.date', '>=', $fromDate))
+            ->when($toDate, fn ($q) => $q->where('orders.date', '<=', $toDate))
             ->defaultSort('-total_orders')
             ->groupBy('countries.id', 'countries.code', 'countries.name')
             ->allowedSorts(['total_orders', 'total_amount', 'countries.name'])
@@ -62,6 +77,7 @@ class IndexTopCountriesInShop extends OrgAction
                     'title'       => __('No countries found'),
                     'description' => __('No dispatched orders with country data recorded for this shop.'),
                 ])
+                ->betweenDates(['date'])
                 ->column(key: 'name', label: __('Country'), sortable: true)
                 ->column(key: 'total_orders', label: __('Orders'), sortable: true)
                 ->column(key: 'total_amount', label: __('Total Amount'), sortable: true)
@@ -91,7 +107,7 @@ class IndexTopCountriesInShop extends OrgAction
                         'title' => __('Countries'),
                     ],
                 ],
-                'data'        => $countries,
+                'data' => $countries,
             ]
         )->table($this->tableStructure());
     }

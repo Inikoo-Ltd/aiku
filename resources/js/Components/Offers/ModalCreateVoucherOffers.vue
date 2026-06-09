@@ -170,30 +170,40 @@ function formatDate(date: Date | null) {
     return `${year}-${month}-${day}`
 }
 
+const targetTypeMap: Record<TargetType, string> = {
+    shop: 'shop',
+    department: 'department',
+    subdepartment: 'sub_department',
+    family: 'family',
+    collection: 'collection',
+    product: 'product',
+}
+
 const buildTargetPayload = () => {
     const t = target.value
     if (!t) return null
 
+    let id: number | null = null
     if (t === 'shop') {
-        return shopId ? { type: 'shop', id: shopId } : null
+        id = shopId
+    } else if (t === 'product') {
+        id = productFilters.value
+    } else if (t === 'collection') {
+        id = collectionFilters.value
+    } else if (isCategoryTarget(t)) {
+        id = categoryFilters.value
     }
-    if (t === 'product') {
-        return productFilters.value ? { type: 'product', id: productFilters.value } : null
+
+    if (!id) return null
+
+    return {
+        target_type: targetTypeMap[t],
+        target_id: id,
     }
-    if (t === 'collection') {
-        return collectionFilters.value ? { type: 'collection', id: collectionFilters.value } : null
-    }
-    if (isCategoryTarget(t)) {
-        return categoryFilters.value
-            ? { type: t, id: categoryFilters.value }
-            : null
-    }
-    return null
 }
 
 const submitVoucherOffer = () => {
     const targetPayload = buildTargetPayload()
-    const targets = targetPayload ? [targetPayload] : []
 
     const payload = {
         voucher: offerVoucher.value,
@@ -204,7 +214,8 @@ const submitVoucherOffer = () => {
         end_at: formatDate(endDate.value),
         reuse_customer: reuseCustomer.value,
         discount_percentage: discountPercentage.value,
-        targets: targets,
+        target_type: targetPayload?.target_type ?? null,
+        target_id: targetPayload?.target_id ?? null,
     }
 
     router.post(

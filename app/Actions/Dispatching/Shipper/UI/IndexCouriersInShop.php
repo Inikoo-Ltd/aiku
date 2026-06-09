@@ -10,6 +10,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,18 @@ class IndexCouriersInShop extends OrgAction
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
+        $dateRange = request()->input('between.date');
+        $fromDate  = null;
+        $toDate    = null;
+
+        if ($dateRange) {
+            $parts = explode('-', $dateRange);
+            if (count($parts) === 2) {
+                $fromDate = Carbon::createFromFormat('Ymd', $parts[0])->startOfDay();
+                $toDate   = Carbon::createFromFormat('Ymd', $parts[1])->endOfDay();
+            }
         }
 
         return QueryBuilder::for(Shipper::class)
@@ -56,6 +69,8 @@ class IndexCouriersInShop extends OrgAction
                     ->where('orders.shop_id', '=', $shop->id)
                     ->whereNull('orders.deleted_at');
             })
+            ->when($fromDate, fn ($q) => $q->where('orders.date', '>=', $fromDate))
+            ->when($toDate, fn ($q) => $q->where('orders.date', '<=', $toDate))
             ->defaultSort('-total_orders')
             ->groupBy('shippers.id', 'shippers.slug', 'shippers.name')
             ->allowedSorts(['total_orders', 'total_amount', 'shippers.name'])
@@ -76,6 +91,7 @@ class IndexCouriersInShop extends OrgAction
                     'title'       => __('No couriers found'),
                     'description' => __('No orders with courier data recorded for this shop.'),
                 ])
+                ->betweenDates(['date'])
                 ->column(key: 'name', label: __('Courier'), sortable: true)
                 ->column(key: 'total_orders', label: __('Orders'), sortable: true)
                 ->column(key: 'total_amount', label: __('Total Amount'), sortable: true)
@@ -106,7 +122,7 @@ class IndexCouriersInShop extends OrgAction
                         'title' => __('Couriers'),
                     ],
                 ],
-                'data'        => $couriers,
+                'data' => $couriers,
             ]
         )->table($this->tableStructure());
     }
