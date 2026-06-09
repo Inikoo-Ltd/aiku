@@ -12,6 +12,7 @@ namespace App\Actions\Fulfilment\StoredItem;
 use App\Actions\Fulfilment\PalletStoredItem\RunPalletStoredItemQuantity;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\PalletStoredItem;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
@@ -29,6 +30,10 @@ class RunStoredItemQuantity extends OrgAction
             $palletStoredItemQuantity = $palletStoredItem->quantity;
             $quantity                 = $quantity + $palletStoredItemQuantity;
             $command?->line(' >> '.$pallet->reference."\t\t".$palletStoredItemQuantity);
+        }
+
+        if ($storedItem->state == StoredItemStateEnum::DISCONTINUING && $quantity === 0) {
+            //todo: if state=Discontinuing and $quantity=0  call action to set state to Discontinued
         }
 
         $storedItem = $this->update($storedItem, [

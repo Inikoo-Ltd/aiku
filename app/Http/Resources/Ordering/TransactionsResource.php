@@ -58,14 +58,10 @@ class TransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $qtyOrderedInt = $this->is_cut_view ?
-            ($this->quantity_ordered * $this->product_units) :
-            $this->quantity_ordered;
-
         $quantityOrderedFractional = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
-                    $qtyOrderedInt ?? 0
+                    $this->quantity_ordered ?? 0
                 )
             ),
             $this->product_units
@@ -93,10 +89,10 @@ class TransactionsResource extends JsonResource
         }
 
         $webpageUrl = null;
+        $webpage = null;
         if ($this->model_type === class_basename(Product::class)) {
             $webpage = Webpage::where('model_id', $this->product_id)
                 ->where('model_type', class_basename(Product::class))->first();
-
             $webpageUrl = $webpage?->getUrl();
         }
 
@@ -126,6 +122,7 @@ class TransactionsResource extends JsonResource
             'currency_code'                  => $this->currency_code,
             'available_quantity'             => $this->available_quantity ?? 0,
             'webpage_url'                    => $webpageUrl,
+            'webpage_canonical_url'          => $webpage?->getCanonicalUrl(),
             'offers_data'                    => $this->offers_data,
             'discretionary_offer'            => $this->discretionary_offer !== null ? 100 * $this->discretionary_offer : null,
             'discretionary_offer_label'      => $this->discretionary_offer_label,

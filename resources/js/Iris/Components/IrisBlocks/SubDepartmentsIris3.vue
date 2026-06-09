@@ -1,4 +1,20 @@
 <script setup lang="ts">
+import LinkIris from '@/Iris/Components/LinkIris.vue';
+
+
+const props = defineProps<{
+  fieldValue: {
+    collections: Array<Object>
+    sub_departments: Array<Object>
+    container: {
+      properties: object
+    }
+  }
+  webpageData?: any
+  blockData?: object
+  screenType: 'mobile' | 'tablet' | 'desktop'
+}>();
+
 const products = [
   {
     name: "Magic Spell Candles",
@@ -33,6 +49,9 @@ const products = [
     image: "https://picsum.photos/400?random=8",
   },
 ]
+
+
+console.log(props)
 </script>
 
 <template>
@@ -40,25 +59,26 @@ const products = [
     <!-- Header -->
     <div class="mb-10">
       <h1 class="mb-4 text-4xl font-bold text-slate-900">
-        All Candles:
+        {{ ctrans('All Family') }} :
       </h1>
 
       <div
         class="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-20"
       >
         <div class="text-2xl text-slate-700">
-          1365 Products Found
+          1365  {{ ctrans('products Found') }}
         </div>
 
         <div class="flex items-center gap-4">
           <span class="text-xl text-slate-700">
-            Filter By Category:
+             {{ ctrans('Filter By Category') }} :
           </span>
 
           <select
             class="h-11 min-w-[180px] rounded-md border border-slate-400 bg-white px-4"
           >
-            <option>All</option>
+            <option>{{ ctrans('All') }}</option>
+            <option v-for="item of fieldValue.sub_departments">{{ item.name }}</option>
           </select>
         </div>
       </div>
@@ -68,11 +88,12 @@ const products = [
     <div
       class="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-3 lg:grid-cols-5"
     >
-      <a
+      <LinkIris
         v-for="product in products"
         :key="product.name"
         href="#"
         class="group block"
+        type="internal"
       >
         <div class="overflow-hidden bg-gray-100">
           <img
@@ -87,7 +108,8 @@ const products = [
         >
           {{ product.name }}
         </h3>
-      </a>
+      </LinkIris>
     </div>
+
   </section>
 </template>

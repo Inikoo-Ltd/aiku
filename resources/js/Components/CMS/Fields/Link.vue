@@ -59,9 +59,12 @@ function getRoute() {
 			website: route().params['website'],
 		})
 	} else {
-		return route('grp.org.shops.show.web.webpages.index', {
-			organisation: route().params['organisation'],
-			shop: route().params['shop'],
+		// return route('grp.org.shops.show.web.webpages.index', {
+		// 	organisation: route().params['organisation'],
+		// 	shop: route().params['shop'],
+		// 	website: route().params['website'],
+		// })
+		return route('grp.json.webpages_for_workshop_select', {
 			website: route().params['website'],
 		})
 	}
@@ -128,6 +131,7 @@ const cleanCanonicalPath = (url) => {
 					set(localModel, 'href', e?.href)
 					set(localModel, 'canonical_url', e?.canonical_url)
 					set(localModel, 'id', e?.id)
+					set(localModel, 'image_alt', e?.image_alt)
 					emit('update:modelValue', localModel)
 				}" :urlRoute="getRoute()" v-bind="props_selectquery">
 				<template #singlelabel="{ value }">

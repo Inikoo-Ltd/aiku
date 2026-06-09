@@ -113,12 +113,12 @@ class UpdateRetinaPallet extends RetinaAction
         ];
     }
 
-    public function asController(Pallet $pallet, ActionRequest $request): Pallet
+    public function asController(Pallet $pallet, ActionRequest $request)
     {
         $this->pallet = $pallet;
         $this->initialisation($request);
 
-        return $this->handle($pallet, $this->validatedData);
+        $this->handle($pallet, $this->validatedData);
     }
 
     public function action(Pallet $pallet, array $modelData): Pallet
@@ -129,7 +129,8 @@ class UpdateRetinaPallet extends RetinaAction
 
         return $this->handle($pallet, $this->validatedData);
     }
-
+    
+    // Brought back in case there's router.patch
     public function jsonResponse(Pallet $pallet): PalletResource
     {
         return new PalletResource($pallet);
