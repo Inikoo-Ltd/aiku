@@ -330,14 +330,14 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            /*$this->logSchedule(
+            $this->logSchedule(
                 $schedule->command('dropshipping:tiktok:product:inventory:update')->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'UpdateTiktokInventory',
                 ),
                 name: 'UpdateTiktokInventory',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
-            );*/
+            );
 
             $this->logSchedule(
                 $schedule->command('ebay:update-inventory')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
