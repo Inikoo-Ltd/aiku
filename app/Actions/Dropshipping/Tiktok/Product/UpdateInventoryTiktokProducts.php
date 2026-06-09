@@ -65,6 +65,14 @@ class UpdateInventoryTiktokProducts
                 continue;
             }
 
+            if (! $tiktokUser->tiktok_shop_id) {
+                continue;
+            }
+
+            if (! $tiktokUser->tiktok_shop_chiper) {
+                continue;
+            }
+
             $tiktokShop = Arr::get($tiktokUser->getAuthorizedShop(), 'data.shops');
 
             if (Arr::get($tiktokShop, '0')) {
@@ -87,7 +95,7 @@ class UpdateInventoryTiktokProducts
 
             foreach ($portfolios as $portfolio) {
                 if ($this->checkIfApplicable($portfolio)) {
-                    UpdateTiktokInventory::dispatch($portfolio, $customerSalesChannel);
+                    UpdateTiktokInventory::dispatch($portfolio, $customerSalesChannel)->delay(5);
                 }
             }
         }

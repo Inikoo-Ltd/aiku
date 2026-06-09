@@ -24,7 +24,12 @@ class UpdateTiktokInventory
     use AsAction;
     use WithAttributes;
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'tiktok';
+
+    public function getJobUniqueId(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel): string
+    {
+        return $portfolio->id;
+    }
 
     public function handle(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel): void
     {

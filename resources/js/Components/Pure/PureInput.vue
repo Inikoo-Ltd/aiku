@@ -178,11 +178,12 @@ const checkNumber = (event: KeyboardEvent) => {
 
 
             <div v-if="clear && modelValue?.length"
-                class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100"
+                class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-50 hover:opacity-95 active:opacity-100 text-red-500"
                 @click="clearValue()"
             >
-               <font-awesome-icon :icon="['fas', 'times-circle']"
+               <font-awesome-icon icon="fal fa-times"
                     class="text-lg leading-none"
+                    fixed-width
                     aria-hidden="true" />
             </div>
         </div>

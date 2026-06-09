@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from "vue"
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount, inject } from "vue"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fal'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
@@ -13,6 +13,7 @@ import { getStyles } from "@/Composables/styles"
 
 
 import { faChevronLeft, faChevronRight, faImage } from "@far"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
@@ -27,6 +28,7 @@ const props = defineProps<{
     code?: string
 }>()
 
+const layout = inject('layout', retinaLayoutStructure)
 
 const prevEl = ref<HTMLElement | null>(null)
 const nextEl = ref<HTMLElement | null>(null)
@@ -39,6 +41,10 @@ const allItems = computed(() => [
 ])
 
 const perRow = computed(() => {
+  if (layout.rightbasket?.show) {
+    return 3
+  }
+
   if (props.screenType === 'mobile') {
     return  2
   }
