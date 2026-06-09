@@ -316,4 +316,4 @@ Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
 
-Route::get('{website:id}/webpages-for-worshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
+Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');

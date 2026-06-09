@@ -37,12 +37,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetWebpagesForWorkshopSelect extends OrgAction
 {
-    use WithWebAuthorisation;
+    // use WithWebAuthorisation;
 
 
     public function asController(Website $website, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromShop($website->shop, $request);
+        // $this->initialisationFromShop($website->shop, $request);
 
 
         return $this->handle($website);
@@ -76,6 +76,11 @@ class GetWebpagesForWorkshopSelect extends OrgAction
             END, webpages.sub_type ASC"
         );
 
+        
+        $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
+        $queryBuilder->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id');
+        $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
+
 
 
         return $queryBuilder
@@ -91,6 +96,8 @@ class GetWebpagesForWorkshopSelect extends OrgAction
                 'webpages.sub_type',
                 'webpages.url',
                 'webpages.canonical_url',
+                'organisations.slug as organisation_slug',
+                'shops.slug as shop_slug',
                 'websites.domain as website_url',
                 'websites.slug as website_slug'
             ])
