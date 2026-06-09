@@ -713,7 +713,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                 <input
                                     v-model="slackModalToken"
                                     :type="slackTokenVisible ? 'text' : 'password'"
-                                    placeholder="xoxb-xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxxxxxx"
+                                    placeholder="Paste your Slack bot token here"
                                     class="w-full rounded-lg border border-gray-200 px-3 py-2 pr-9 text-sm font-mono focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300"
                                 />
                                 <button
