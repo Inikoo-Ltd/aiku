@@ -98,6 +98,7 @@ use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
+use App\Actions\CRM\Customer\Json\GetCustomersInShop;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
@@ -245,7 +246,7 @@ Route::get('picking-session/{pickingSession:id}/pallet-returns', GetPalletReturn
 Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
-
+Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
