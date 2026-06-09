@@ -19,16 +19,18 @@ class StoreVoucherOffers extends OrgAction
 
     public function handle(Shop $shop, array $modelData)
     {
+        dd($modelData);
     }
 
     public function rules(): array
     {
         return [
-            'voucher'             => ['sometimes', 'string', 'max:16'],
-            'name'                => ['sometimes', 'string', 'max:255'],
+            'voucher'             => ['required', 'string', 'max:16'],
+            'name'                => ['required', 'string', 'max:255'],
             'type'                => ['required', 'string', 'in:amount'],
             'duration'            => ['required', 'string', 'in:interval,permanent'],
             'offer_amount'        => ['nullable', 'required_if:type,amount', 'numeric', 'min:0'],
+            'reuse_customer'      => ['required', 'boolean'],
             'start_at'            => [
                 'required',
                 'date',
