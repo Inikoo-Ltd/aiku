@@ -284,7 +284,7 @@ const screenStyles = computed(() => {
           <div class="flex-1 text-[#1d2430]" :style="{
             ...screenStyles.description,
             lineHeight: '1.6',
-          }" v-html="trimmedDescription" />
+          }" v-html="cleanedDescription" />
           <div class="mt-6 flex items-center gap-6">
             <button class="shrink-0 rounded-xl border border-[#333] font-medium" :style="{
               ...screenStyles.button,
