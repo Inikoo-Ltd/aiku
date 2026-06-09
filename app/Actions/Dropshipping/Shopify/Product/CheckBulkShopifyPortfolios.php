@@ -25,7 +25,6 @@ class CheckBulkShopifyPortfolios extends OrgAction
 
     public function handle($collections, ?Command $command = null): void
     {
-        return;
         $count = 0;
         foreach ($collections as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
