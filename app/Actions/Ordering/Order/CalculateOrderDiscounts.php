@@ -140,7 +140,7 @@ class CalculateOrderDiscounts
     {
         foreach (
             DB::table('offers')
-                ->select(['id',  'trigger_data', 'allowance_signature', 'name'])
+                ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
                 ->where('shop_id', $order->shop_id)
                 ->where('type', OfferTypeEnum::GIFT->value)
                 ->where('status', true)->get() as $giftOfferData
@@ -150,13 +150,13 @@ class CalculateOrderDiscounts
             $this->offerMeters[$giftOfferData->allowance_signature] = [
                 'offer_id' => $giftOfferData->id,
                 'label'    => $giftOfferData->name,
+                'is_gift'  => true,
                 'metadata' => [
-                        'current' => $order->gross_amount,
-                        'target'  => Arr::get($triggerData, 'min_order_amount', 0),
+                    'current' => $order->gross_amount,
+                    'target'  => Arr::get($triggerData, 'min_order_amount', 0),
 
                 ]
             ];
-
         }
     }
 
@@ -215,6 +215,7 @@ class CalculateOrderDiscounts
                     $this->offerMeters[$offerData->allowance_signature] = [
                         'offer_id' => $offerData->id,
                         'label'    => $offerData->name,
+                        'is_gift'  => false,
                         'metadata' => $metadata,
                     ];
                 }
