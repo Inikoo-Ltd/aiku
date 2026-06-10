@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { getStyles } from "@/Composables/styles"
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import Dialog from 'primevue/dialog'
+import Image from '@/Common/Components/Image.vue'
 
 
 
@@ -281,9 +282,12 @@ watch(
               </div>
 
               <!-- Image / Video / Placeholder -->
-              <div class="overflow-hidden">
+              <div class="overflow-hidden   h-[220px]
+                      md:h-[280px]
+                      lg:h-[360px]
+                      2xl:h-[500px]" ref="mediaRef">
                 <template v-if="modelValue.department.showcase_video && embedUrl">
-                  <div ref="mediaRef" class="
+                  <div  class="
                       video-cover
                       w-full
                       h-[220px]
@@ -298,7 +302,7 @@ watch(
                 </template>
 
                 <template v-else-if="modelValue.department.showcase_image">
-                  <Image ref="mediaRef" :src="modelValue.department.showcase_image"
+                  <Image  :src="modelValue.department.showcase_image"
                     :alt="modelValue.department.name || 'showcase image'" class="
                       w-full
                       h-[220px]
@@ -310,7 +314,7 @@ watch(
                 </template>
 
                 <template v-else>
-                  <div ref="mediaRef" class="
+                  <div  class="
                       w-full
                       h-[220px]
                       md:h-[280px]
