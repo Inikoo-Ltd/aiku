@@ -221,7 +221,7 @@ return [
             'connection'      => 'redis',
             'queue'           => ['hydrators-slave-low-priority'],
             'balance'         => 'auto',
-            'maxProcesses'    => w,
+            'maxProcesses'    => 2,
             'maxTime'         => 0,
             'maxJobs'         => 0,
             'memory'          => 1280,
