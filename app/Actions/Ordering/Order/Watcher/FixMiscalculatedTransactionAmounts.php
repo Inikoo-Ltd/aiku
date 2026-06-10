@@ -34,20 +34,22 @@ class FixMiscalculatedTransactionAmounts
         $orderRepaired = false;
         /** @var Transaction $transaction */
         foreach ($transactions as $transaction) {
-            $qtyOrdered    = $transaction->quantity_ordered;
-            $historicPrice = $transaction->historicAsset->price;
-            $grossAmountExpected   = round($qtyOrdered * $historicPrice, 2);
-            $netAmountExpected     = round(($qtyOrdered * $historicPrice) * ($transaction->current_discount_factor ?? 1), 2);
+            $qtyOrdered          = $transaction->quantity_ordered;
+            $historicPrice       = $transaction->historicAsset->price;
+            $grossAmountExpected = round($qtyOrdered * $historicPrice, 2);
+            $netAmountExpected   = round(($qtyOrdered * $historicPrice) * ($transaction->current_discount_factor ?? 1), 2);
 
 
             if ($grossAmountExpected != $transaction->gross_amount || $netAmountExpected != $transaction->net_amount) {
                 data_set($miscalculatedTransactionsDebugData, $transaction->id, [
-                    'transaction_id'        => $transaction->id,
-                    'item_code'             => $transaction->historicAsset->code,
-                    'gross_amount'          => $transaction->gross_amount,
-                    'net_amount'            => $transaction->net_amount,
-                    'gross_amount_expected' => $grossAmountExpected,
-                    'net_amount_expected'   => $netAmountExpected,
+                    'transaction_id'          => $transaction->id,
+                    'item_code'               => $transaction->historicAsset->code,
+                    'gross_amount'            => $transaction->gross_amount,
+                    'net_amount'              => $transaction->net_amount,
+                    'gross_amount_expected'   => $grossAmountExpected,
+                    'net_amount_expected'     => $netAmountExpected,
+                    'offer_data'              => $transaction->offers_data,
+                    'current_discount_factor' => $transaction->current_discount_factor,
                 ]);
 
                 if ($repairAmount) {
