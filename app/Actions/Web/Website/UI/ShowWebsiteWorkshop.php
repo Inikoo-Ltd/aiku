@@ -88,12 +88,12 @@ class ShowWebsiteWorkshop extends OrgAction
         ];
 
         $tabs[WebsiteWorkshopTabsEnum::DEPARTMENT_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::DEPARTMENT_DESCRIPTION->value
-            ? 
+            ?
             fn () => GetWebsiteWorkshopDepartmentDescriptionWebBlock::run($website)
             : Inertia::lazy(
                 fn () => GetWebsiteWorkshopDepartmentDescriptionWebBlock::run($website)
             );
-        
+
         $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
             ?
             fn () => GetWebsiteWorkshopSubDepartmentWebBlock::run($website)

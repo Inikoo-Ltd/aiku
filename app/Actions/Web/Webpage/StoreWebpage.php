@@ -173,7 +173,7 @@ class StoreWebpage extends OrgAction
                             }
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
-                            if ($usedDepartmentDescriptionTemplateCode == 'department-description-1')  {
+                            if ($usedDepartmentDescriptionTemplateCode == 'department-description-1') {
                                 $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                             }
                             $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
