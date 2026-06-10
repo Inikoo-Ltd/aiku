@@ -27,7 +27,7 @@ enum OfferStateEnum: string
     public static function labels(): array
     {
         return [
-            self::IN_PROCESS->value => __('In process'),
+            self::IN_PROCESS->value => __('Scheduled'),
             self::ACTIVE->value  => __('Active'),
             self::FINISHED->value => __('Finished'),
             self::SUSPENDED->value  => __('Suspended'),
@@ -39,7 +39,7 @@ enum OfferStateEnum: string
         return [
             self::IN_PROCESS->value         => [
                 'tooltip' => self::labels()[self::IN_PROCESS->value],
-                'icon'    => 'fal fa-seedling',
+                'icon'    => 'fal fa-stopwatch',
                 'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
                 'color'   => 'lime',  // Color for box (Retina)
                 'app'     => [

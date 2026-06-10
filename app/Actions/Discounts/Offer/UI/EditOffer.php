@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -38,7 +39,6 @@ class EditOffer extends OrgAction
 
         $offerResource  = OfferResource::make($offer)->resolve();
         $percentage_off = $offerResource['data_allowance_signature']['percentage_off'] * 100;
-
 
         $warning = null;
         if ($productCategory) {
@@ -80,14 +80,14 @@ class EditOffer extends OrgAction
                             'required'    => true,
                             'value'       => $offer->name,
                         ],
-                        'label'               => [
+                        'label'               => $offer->offerCampaign->type !== OfferCampaignTypeEnum::VOUCHERS ? [
                             'type'        => 'input',
                             'information' => __('Label to put on the discount coupon, if empty will take offer name'),
                             'label'       => __('Label'),
                             'placeholder' => __('Label'),
                             'required'    => true,
                             'value'       => $offer->label,
-                        ],
+                        ] : null,
                         'date'                => app()->environment('local') ? [
                             'type'        => 'date',
                             'information' => __('The date until which the offer is valid. After this date, the offer will no longer be applicable.'),

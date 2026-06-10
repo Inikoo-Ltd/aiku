@@ -6,7 +6,7 @@ export default {
 			type: "text",
 			information : 'id selector is used to select one unique element!'
 		},
-        {
+        /* {
             name: "Layout",
             key: ["container", "properties"],
             replaceForm: [
@@ -31,6 +31,6 @@ export default {
                     useIn : ["desktop", "tablet", "mobile"],
                 },
             ],
-        },
+        }, */
     ],
 }

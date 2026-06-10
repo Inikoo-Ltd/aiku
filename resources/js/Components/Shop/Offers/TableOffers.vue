@@ -20,6 +20,8 @@ import { faAbacus } from "@fad"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import Offer from "@/Pages/Grp/Org/Discounts/Offer.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import { faSkull } from "@fal"
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -136,6 +138,23 @@ console.log("Curr Route", route().current())
 
         <template #cell(sales_grp_currency_external)="{ item: collection }">
             <span class="tabular-nums">{{ locale.currencyFormat('GBP', collection.sales_grp_currency_external) }}</span>
+        </template>
+
+        <template #cell(actions)="{ item }">
+            <Button
+                v-if="item.is_active"
+                v-tooltip="ctrans('Terminate offer immidiately')"
+                :type="'negative'"
+                @click="() => {
+                    router.patch(route('grp.models.offer.finish'), {
+                        offer: item.id
+                    })
+                }"
+            >
+                <FontAwesomeIcon 
+                    :icon="faSkull"
+                />
+            </Button>
         </template>
     </Table>
 </template>

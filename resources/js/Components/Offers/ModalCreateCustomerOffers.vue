@@ -27,7 +27,6 @@ const props = defineProps<{
     customer_id?: number
 }>()
 
-console.log("props.show", props)
 const isOpenModal = ref(false)
 const openModal = () => {
     resetForm()

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, computed} from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons"
+import { getStyles } from "@/Composables/styles"
 
 const props = defineProps<{
     fieldValue: any
@@ -13,13 +14,17 @@ const openIndex = ref<number | null>(0)
 const toggle = (index: number) => {
     openIndex.value = openIndex.value === index ? null : index
 }
+
+const containerStyle = computed(() => (getStyles(props.fieldValue?.faq?.container?.properties)))
 </script>
 
 <template>
+  
     <section
         v-if="fieldValue?.family?.faq?.length"
-        class="w-full"
+        class="w-full" :style="containerStyle"
     >
+    
         <div
             class="mx-auto w-full"
         >

@@ -32,13 +32,13 @@ class RunStoredItemQuantity extends OrgAction
             $command?->line(' >> '.$pallet->reference."\t\t".$palletStoredItemQuantity);
         }
 
-        if ($storedItem->state == StoredItemStateEnum::DISCONTINUING && $quantity === 0) {
-            //todo: if state=Discontinuing and $quantity=0  call action to set state to Discontinued
-        }
-
         $storedItem = $this->update($storedItem, [
             'total_quantity' => $quantity
         ]);
+
+        if ($storedItem->state == StoredItemStateEnum::DISCONTINUING && $quantity == 0) {
+            $storedItem = SetStoredItemAsDiscontinued::run($storedItem);
+        }
 
         $command?->line($storedItem->reference.' '.$quantity);
 

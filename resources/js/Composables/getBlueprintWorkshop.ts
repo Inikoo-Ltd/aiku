@@ -55,6 +55,7 @@ import TimelineIris2 from "@/Components/CMS/Webpage/Step2/Blueprint"
 import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
 import CollectionDescription from '@/Components/CMS/Webpage/CollectionDescription/Blueprint'
 import DepartmentDescription from "@/Components/CMS/Webpage/DepartmentDescription/Blueprint"
+import DepartmentDescription2 from "@/Components/CMS/Webpage/DepartmentDescription2/Blueprint"
 import SubDepartmentDesciption from "../Components/CMS/Webpage/SubDepartmentDescription/Blueprint"
 import { Mainbluprint } from '@/Components/CMS/Webpage/Product1/BlueprintWebpages'
 import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
@@ -96,6 +97,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		// family
 		'collection-description-1' : CollectionDescription.blueprint,
 		'department-description-1' : DepartmentDescription.blueprint,
+		'department-description-2' : DepartmentDescription2.blueprint,
 		'sub-department-description-1' : SubDepartmentDesciption.blueprint,
 
 		// families list

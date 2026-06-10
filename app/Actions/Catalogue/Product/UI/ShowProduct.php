@@ -24,6 +24,7 @@ use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Catalogue\ExternalShop\ProductInExternalTabsEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
@@ -140,9 +141,10 @@ class ShowProduct extends OrgAction
 
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
-        $shop           = $product->shop;
-        $isExternalShop = $shop->type == ShopTypeEnum::EXTERNAL;
-        $hasMaster      = (bool)$product->masterProduct;
+        $shop              = $product->shop;
+        $isExternalShop    = $shop->type == ShopTypeEnum::EXTERNAL;
+        $hasMaster         = (bool)$product->masterProduct;
+        $giftOfferCampaign = $shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::GIFT)->first();
 
         $miniBreadcrumbs = [];
         if ($product->department) {
@@ -412,6 +414,12 @@ class ShowProduct extends OrgAction
                     'id'            => $product->shop_id,
                     'slug'          => $product->shop->slug,
                     'currency_code' => $product->shop->currency->code,
+                    'organisation'  => $product->organisation->slug,
+                    'offercampaign' => $giftOfferCampaign?->slug,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                        'end'   => now()->addDays(7)->toDateString(),
+                    ],
                 ],
                 'is_external_shop'          => $isExternalShop,
                 'is_dependent_trade_unit'   => $product->not_follow_master_trade_units,

@@ -12,7 +12,6 @@ namespace App\Actions\Web\WebBlock\Workshop;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockDepartmentResource;
-use App\Http\Resources\Web\WebBlockSubDepartmentsResource;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;

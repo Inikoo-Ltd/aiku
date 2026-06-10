@@ -27,6 +27,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import MissedOfferFOB from '@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue'
+import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle, faExclamationTriangle)
 
 interface DataSideBasket {
@@ -408,7 +409,18 @@ onUnmounted(() => {
                 </div>
 
                 <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3 gap-x-3">
-                    <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                    <div v-if="offer.is_gift" :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full">
+                        <FontAwesomeIcon icon='fal fa-gift' class='opacity-60 mr-1' fixed-width aria-hidden='true' />
+                        <span class="font-bold">{{ ctrans('Gift') }}</span>:
+
+                        <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
+
+                        <span class="ml-2 xopacity-70">
+                            {{ offer.label }}
+                        </span>
+                    </div>
+                    <div v-else :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                         class="flex items-center whitespace-nowrap text-ellipsis truncate w-full">
                         <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)"
                             v-tooltip="offer.label" class="text-ellipsis truncate text-base">
@@ -426,8 +438,8 @@ onUnmounted(() => {
 
                     <!-- Section: meter -->
                     <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
-                        ? trans(`:xcurrent of :xtarget products amount`, { xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
-                        : trans('Bonus secured')" class="w-full flex items-center">
+                        ? trans(`:xcurrentx / :xtargetx  (Spend at least :xtargetx to get the offer)`, { xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
+                        : trans('Offer activated')" class="w-full flex items-center">
                         <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
                                 :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
@@ -602,28 +614,32 @@ onUnmounted(() => {
             </div>
         </Transition>
 
+        <!-- Section: Voucher Code -->
+        <InputVoucherInBasket
+            v-if="layout.retina.type == 'b2b'"
+            :voucher="dataSideBasket?.voucher"
+            :order="dataSideBasket?.order_data"
+            :routes="{
+                store: {
+                    name: 'iris.models.order.store_voucher',
+                    parameters: dataSideBasket?.order_data?.id
+                },
+                remove: {
+                    name: 'iris.models.order.remove_voucher',
+                    parameters: dataSideBasket?.order_data?.id
+                }
+            }"
+            @onRemove="fetchDataSideBasket(true)"
+            @onApply="fetchDataSideBasket(true)"
+            inIris
+            class="py-2 w-full flex px-6"
+        />
+
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 pt-3 pb-6 sm:px-6">
             <div class="relative isolate">
                 <OrderSummary :order_summary="dataSideBasket?.order_summary"
                     :currency_code="layout.iris?.currency?.code" size="sm" />
-
-                
-                <div class="mb-2 mt-2" v-if="layout.app.environment == 'local'">
-                    <div class="flex gap-x-4">
-                        <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')" :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }" />
-                        <Button
-                            :label="trans('Add voucher')"
-                            class="shrink-0"
-                                size="xs"
-                            icon="fas fa-plus"
-                            :loading="isLoadingVoucher"
-                            @click="() => onApplyVoucher()"
-                            :disabled="!voucherCode || isLoadingVoucher"
-                        />
-                    </div>
-                </div>
-                
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
                     <!-- Section: Eligible Gift -->
                     <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">

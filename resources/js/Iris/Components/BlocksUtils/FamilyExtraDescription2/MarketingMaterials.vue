@@ -9,6 +9,8 @@ import {
 } from '@fal'
 import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { computed } from 'vue'
+import { getStyles } from "@/Composables/styles"
 
 const props = defineProps<{
     fieldValue: any
@@ -21,12 +23,12 @@ library.add(faHeart,
     faBell,
     faBullhorn)
 
-
+const containerStyle = computed(() => (getStyles(props.fieldValue?.marketing?.container?.properties)))
 console.log(props.fieldValue)
 </script>
 
 <template>
-    <section class="w-full px-6 py-12 md:px-10 lg:px-16">
+    <section class="w-full px-6 py-12 md:px-10 lg:px-16" :style="containerStyle">
         <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-10 lg:flex-row">
             <!-- Left Content -->
             <div class="flex-1">
@@ -38,12 +40,13 @@ console.log(props.fieldValue)
 
                 <a :href="route(fieldValue?.family?.marketing_material_route.name, fieldValue?.family?.marketing_material_route.parameters)"
                     target="_blank">
-                    <button
+                     <button
+                         :style="{
+                    ...getStyles(fieldValue?.marketing?.button?.container?.properties)
+                }"
                         class="mt-8 inline-flex items-center gap-3 rounded-lg border border-[#1f2937] bg-white px-6 py-3 text-base font-medium text-[#13294B] transition hover:bg-gray-50">
-                        <span>{{ ctrans("Download Marketing Pack") }}</span>
-
-                      
-
+                         <span v-if="fieldValue?.marketing?.button?.text">{{ fieldValue?.marketing?.button?.text }}</span>
+                        <span v-else>{{ ctrans("Download Marketing Pack") }}</span>
                         <span class="text-lg">
                             ↓
                         </span>

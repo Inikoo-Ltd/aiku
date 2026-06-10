@@ -1,12 +1,6 @@
 export default {
 	blueprint: [
 		{
-			label: "Responsive Visibility",
-			key: ["container", "properties", "visibility"],
-			type: "visibility",
-			useIn: ["desktop", "tablet", "mobile"],
-		},
-		{
 			name: "Button",
 			key: ["button"],
 			editGlobalStyle: "button",

@@ -19,6 +19,7 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
@@ -76,6 +77,7 @@ class SubmitOrder extends OrgAction
         }
 
         $this->processGrGift($order);
+        $this->processGiftOffers($order);
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
@@ -140,6 +142,73 @@ class SubmitOrder extends OrgAction
         return $order;
     }
 
+    public function processGiftOffers(Order $order): Order
+    {
+        foreach (
+            DB::table('offers')
+                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id', 'offer_campaign_id'])
+                ->where('shop_id', $order->shop_id)
+                ->where('type', OfferTypeEnum::GIFT->value)
+                ->where('status', true)->get() as $giftOfferData
+        ) {
+            $triggerData = json_decode($giftOfferData->trigger_data, true);
+
+            if ($order->gross_amount >= Arr::get($triggerData, 'min_order_amount', 0)) {
+                $allowanceData     = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', $giftOfferData->id)->first();
+                $allowanceGiftData = json_decode($allowanceData->data, true);
+
+                /** @var Product $gift */
+                $gift     = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
+                $quantity = Arr::get($allowanceGiftData, 'quantity', 0);
+                if ($quantity > 0 && $gift) {
+                    $giftTransaction = StoreTransaction::make()->action(
+                        $order,
+                        $gift->currentHistoricProduct,
+                        [
+                            'quantity_ordered' => 0,
+                            'quantity_bonus'   => $quantity,
+                            'is_gift'          => true,
+                        ]
+                    );
+
+                    $giftTransaction->update([
+                        'offers_data' => [
+                            'v' => 1,
+                            'o' => [
+                                'oc' => $giftOfferData->offer_campaign_id,
+                                'o'  => $giftOfferData->id,
+                                'oa' => $allowanceData->id,
+                                't'  => 'gift',
+                                'p'  => 0,
+                                'l'  => $giftOfferData->name,
+                            ]
+                        ]
+                    ]);
+
+                    DB::table('transaction_has_offer_allowances')->insert([
+                        'order_id'              => $order->id,
+                        'transaction_id'        => $giftTransaction->id,
+                        'model_type'            => $giftTransaction->model_type,
+                        'model_id'              => $giftTransaction->model_id,
+                        'offer_campaign_id'     => $giftOfferData->offer_campaign_id,
+                        'offer_id'              => $giftOfferData->id,
+                        'offer_allowance_id'    => $giftOfferData->id,
+                        'discounted_amount'     => 0,
+                        'discounted_percentage' => 0,
+                        'is_gift'               => true,
+                        'free_items_value'      => $gift->price * $quantity,
+                        'number_of_free_items'  => 1,
+                        'created_at'            => now(),
+                        'updated_at'            => now(),
+                        'data'                  => '{}'
+
+                    ]);
+                }
+            }
+        }
+
+        return $order;
+    }
 
     public function processGrGift(Order $order): Order
     {
@@ -203,7 +272,6 @@ class SubmitOrder extends OrgAction
                             ]
                         );
 
-
                         $grGiftTransaction->update([
                             'offers_data' => [
                                 'v' => 1,
@@ -217,7 +285,6 @@ class SubmitOrder extends OrgAction
                                 ]
                             ]
                         ]);
-
 
                         DB::table('transaction_has_offer_allowances')->insert([
                             'order_id'              => $order->id,

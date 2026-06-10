@@ -131,7 +131,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     ],
                 ],
 
-                'voucher' => GetVoucherData::run($order->offer_voucher_id),
+                'voucher' => $order ? GetVoucherData::run($order->offer_voucher_id) : null,
                 'order'   => $order ? OrderResource::make($order)->resolve() : null,
                 'summary' => $order
                     ? $this->getOrderBoxStats($order)

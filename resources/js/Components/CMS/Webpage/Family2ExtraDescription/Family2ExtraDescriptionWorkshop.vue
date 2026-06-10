@@ -37,21 +37,7 @@ const tabs = computed(() =>
     { key: "about", label: ctrans("About the Range") },
     { key: "marketing", label: ctrans("Marketing Materials") },
     { key: "faq", label: ctrans("FAQ") },
-  ].filter(tab => {
-    if (tab.key === "marketing") {
-      return layout?.iris?.is_logged_in
-    }
-
-    if (tab.key === "faq") {
-      return (
-        Array.isArray(props.modelValue?.family?.faq) &&
-        props.modelValue.family.faq.length > 0
-      )
-    }
-
-    return true
-  })
-)
+  ])
 
 const sectionId = computed(
   () => props.modelValue?.id ?? `family-1-iris-${props.indexBlock}`

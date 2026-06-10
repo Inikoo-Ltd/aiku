@@ -152,9 +152,9 @@ class IndexOffers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null, $modelOperations = []): Closure
+    public function tableStructure(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null, $modelOperations = [], bool $showActions = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $modelOperations, $parent) {
+        return function (InertiaTable $table) use ($prefix, $modelOperations, $parent, $showActions) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -196,6 +196,10 @@ class IndexOffers extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), sortable: true);
                 $table->column(key: 'shop_name', label: __('Shop'), sortable: true);
+            }
+
+            if ($showActions) {
+                $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
             }
 
             $table->defaultSort('id');

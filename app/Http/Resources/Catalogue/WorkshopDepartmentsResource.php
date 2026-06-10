@@ -47,7 +47,7 @@ class WorkshopDepartmentsResource extends JsonResource
         return [
             'id' => $this->id,
             'slug' => $this->slug,
-            'showcase_image' => $department->imageSources(720, 480, 'showcase_image'),
+            'showcase_image' => $department->imageSources(720, 480, 'showcaseImage'),
             'showcase_video' => $department->desc_video_url,
             'web_images' => $webImages,
             'code' => $this->code,

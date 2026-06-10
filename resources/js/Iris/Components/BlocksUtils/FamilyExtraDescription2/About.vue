@@ -122,16 +122,17 @@ const hasImage = (image: any) => {
     return image?.original && String(image?.original).trim() !== ""
 }
 
-
+const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.container?.properties)))
 
 
 </script>
 
 <template>
     <!-- CONTENT -->
-    <div class="grid grid-cols-1 lg:grid-cols-[53%_46%] lg:gap-4 gap-0 items-stretch">
+    <div class="grid grid-cols-1 lg:grid-cols-[53%_46%] lg:gap-4 gap-0 items-stretch" :style="containerStyle">
         <!-- LEFT -->
-        <div class="order-2 lg:order-1 flex flex-col py-5 md:py-6 lg:py-8 text-center md:text-left lg:h-[700px] 2xl:h-[780px]">
+        <div
+            class="order-2 lg:order-1 flex flex-col py-5 md:py-6 lg:py-8 text-center md:text-left lg:h-[700px] 2xl:h-[780px]">
             <div class="
         flex-1
         overflow-hidden
@@ -152,10 +153,10 @@ const hasImage = (image: any) => {
                 py-[8px]
                 text-[12px] md:text-[13px]
                 text-[#24384d]" :style="{
-                    ...getStyles(fieldValue?.button?.container?.properties)
+                    ...getStyles(fieldValue?.about?.button?.container?.properties)
                 }">
-                        <span v-if="fieldValue?.button?.text">
-                            {{ fieldValue?.button?.text }}
+                        <span v-if="fieldValue?.about?.button?.text">
+                            {{ fieldValue?.about?.button?.text }}
                         </span>
 
                         <span v-else>

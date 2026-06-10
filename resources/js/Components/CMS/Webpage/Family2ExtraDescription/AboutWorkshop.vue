@@ -6,6 +6,10 @@ import { ctrans } from "@/Composables/useTrans"
 import Dialog from 'primevue/dialog'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage } from "@far"
+import axios from "axios"
+import { debounce } from "lodash-es"
+import { notify } from "@kyvg/vue3-notification"
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
 const props = defineProps<{
     fieldValue: any
@@ -71,9 +75,7 @@ const hasImage = (image: any) => {
     return image?.original && String(image?.original).trim() !== ""
 }
 
-const isMobile = computed(() => props.screenType === "mobile")
-const isTablet = computed(() => props.screenType === "tablet")
-const isDesktop = computed(() => props.screenType === "desktop")
+const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.container?.properties)))
 
 const layoutClasses = computed(() => ({
     wrapper:
@@ -156,22 +158,47 @@ const layoutClasses = computed(() => ({
             : "col-span-2 h-full",
 }))
 
+const saveDescription = debounce(async (key: string, value: string) => {
+  try {
+    const url = route('grp.models.product_category.update', {
+      productCategory: props.fieldValue.family.id,
+    })
+    await axios.patch(url, { [key]: value })
+  } catch (error: any) {
+    console.error('Save failed:', error)
+    notify({
+      title: 'Failed to Save',
+      text: error?.response?.data?.message || 'Please check your input and try again.',
+      type: 'error',
+    })
+  }
+}, 1500)
+
 </script>
 
 <template>
     <!-- CONTENT -->
-    <div class="grid gap-0 lg:gap-4 items-stretch" :class="layoutClasses.wrapper">
+    <div class="grid gap-0 lg:gap-4 items-stretch" :class="layoutClasses.wrapper" :style="containerStyle" >
         <!-- LEFT -->
         <div class="flex flex-col h-full text-center md:text-left" :class="layoutClasses.left">
-            <div :class="layoutClasses.description" class="text-[#334155]" v-html="cleanedDescription" />
+     <!--        <div :class="layoutClasses.description" class="text-[#334155]" v-html="cleanedDescription" /> -->
+             <div :class="layoutClasses.description" class="text-[#334155]">
+                <EditorV2 :model-value="props.fieldValue?.family?.description_extra"
+                    @update:model-value="(e) => saveDescription('description_extra', e)"
+                    :toogle="['bold', 'italic', 'underline', 'bulletList', 'customLink', 'undo', 'redo', 'highlight', 'color', 'clear']" />
+            </div>
 
-            <div :class="layoutClasses.buttonWrapper">
+            <div class="mt-8 md:mt-10">
                 <a href="#family-2">
-                    <button :class="layoutClasses.button" :style="{
-                        ...getStyles(fieldValue?.button?.container?.properties)
-                    }">
-                        <span v-if="fieldValue?.button?.text">
-                            {{ fieldValue?.button?.text }}
+                    <button class="rounded-[8px] border border-[#24384d]
+                px-5 md:px-7
+                py-[8px]
+                text-[12px] md:text-[13px]
+                text-[#24384d]" :style="{
+                    ...getStyles(fieldValue?.about.button?.container?.properties)
+                }">
+                        <span v-if="fieldValue?.about?.button?.text">
+                            {{ fieldValue?.about?.button?.text }}
                         </span>
 
                         <span v-else>

@@ -10,6 +10,7 @@ namespace App\Actions\Fulfilment\StoredItem\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\StoredItem;
 use Closure;
@@ -52,6 +53,7 @@ class IndexStoredItemsInReturn extends OrgAction
 
         if ($parent->state === PalletReturnStateEnum::IN_PROCESS) {
             $queryBuilder->where('stored_items.total_quantity', '>', 0);
+            $queryBuilder->where('stored_items.state', '!=', StoredItemStateEnum::DISCONTINUED->value);
         } else {
             $queryBuilder->where('pallet_returns.id', $parent->id);
         }

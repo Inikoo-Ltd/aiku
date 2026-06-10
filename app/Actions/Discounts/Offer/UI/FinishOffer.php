@@ -11,9 +11,11 @@ namespace App\Actions\Discounts\Offer\UI;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasketUsingVouchers;
 use App\Actions\OrgAction;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Discounts\Offer;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,6 +28,7 @@ class FinishOffer extends OrgAction
     public function handle(Offer $offer): Offer
     {
         $currentStatus = $offer->status;
+
         $offer->update(
             [
                 'state'  => OfferStateEnum::FINISHED,
@@ -33,6 +36,7 @@ class FinishOffer extends OrgAction
                 'end_at' => now()
             ]
         );
+
         foreach ($offer->offerAllowances as $offerAllowance) {
             $offerAllowance->update([
                 'state'  => OfferAllowanceStateEnum::FINISHED,
@@ -40,12 +44,17 @@ class FinishOffer extends OrgAction
                 'end_at' => now()
             ]);
         }
+
         ShopHydrateOffersData::run($offer->shop_id);
         if ($currentStatus != $offer->status) {
-            if ($offer->trigger_type == 'ProductCategory') {
-                UpdateProductCategoryOffersData::run($offer);
+            if ($offer->offerCampaign->type == OfferCampaignTypeEnum::VOUCHERS) {
+                RecalculateTotalsOrdersInBasketUsingVouchers::dispatch($offer->id)->delay(now()->addSeconds(10));
+            } else {
+                if ($offer->trigger_type == 'ProductCategory') {
+                    UpdateProductCategoryOffersData::run($offer);
+                }
+                RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
             }
-            RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
         }
 
         return $offer;

@@ -55,6 +55,7 @@ class WorkshopFamiliesResource extends JsonResource
             'description_extra' => $this->description_extra,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'tags'       => $this->tradeUnitFamily?->tags()->limit(3)->get(),
         ];
     }
 }

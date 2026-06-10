@@ -159,9 +159,10 @@ const onStoreStoredItem = (row: number, idPallet: number, idStoredItem: number, 
             },
             onError: (e) => {
                 console.error(e)
+                const errorMessages = e && Object.keys(e).length ? Object.values(e).join("\n") : ""
                 notify({
                     title: trans("Something went wrong."),
-                    text: trans("Failed to update the quantity."),
+                    text: errorMessages || trans("Failed to update the quantity."),
                     type: "error"
                 })
             },
@@ -201,9 +202,10 @@ const onChangeQuantity = (row: number, idStoredItemAuditDelta: number | null, qu
             },
             onError: (e) => {
                 console.error(e)
+                const errorMessages = e && Object.keys(e).length ? Object.values(e).join("\n") : ""
                 notify({
                     title: trans("Something went wrong."),
-                    text: trans("Failed to update the quantity."),
+                    text: errorMessages || trans("Failed to update the quantity."),
                     type: "error"
                 })
             },

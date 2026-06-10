@@ -188,7 +188,7 @@ const calculateDescriptionHeight = async () => {
   }
 
   maxDescriptionHeight.value = imageRef.value.offsetHeight
-  showReadMore.value = descriptionRef.value.scrollHeight > imageRef.value.offsetHeight
+  showReadMore.value = descriptionRef.value.scrollHeight > imageRef.value.offsetHeight - 110
 }
 
 onMounted(() => {
@@ -248,7 +248,7 @@ const contentClass = computed(() =>
         <div class="flex shrink-0 justify-center gap-[6px]">
           <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
-            <Image ref="imageRef" :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'"
+            <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'"
               class="
                 h-[280px]
                 w-[220px]
@@ -261,7 +261,7 @@ const contentClass = computed(() =>
               " />
           </template>
 
-          <div v-else ref="imageRef" class="
+          <div v-else  class="
               flex items-center justify-center
               h-[280px]
               w-[220px]
@@ -276,7 +276,7 @@ const contentClass = computed(() =>
             <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
           </div>
 
-          <div class="flex flex-col gap-[6px]">
+          <div ref="imageRef"  class="flex flex-col gap-[6px]">
             <!-- IMAGE 2 -->
             <template v-if="hasImage(1)">
               <Image :src="images[1].original" :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
