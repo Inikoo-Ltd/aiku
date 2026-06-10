@@ -29,7 +29,7 @@ import SideMenuFamilyDescriptionBlockWorkshop from "@/Components/CMS/Website/Fam
 import ScreenView from "@/Components/ScreenView.vue"
 import type { routeType } from "@/types/route"
 import { cloneDeep } from "lodash-es"
-import { faDotCircle } from "@far"
+import { faChevronCircleLeft, faChevronCircleRight, faCompressWide, faDotCircle, faExpand } from "@far"
 
 library.add(
   faCube,
@@ -103,6 +103,7 @@ const onPickTemplate = async (template: any) => {
 
     if (response.data) {
       layoutState.value = response.data
+      debouncedAutosave()
       emits("update:layout", response.data);
     }
   } catch (error) {
@@ -122,7 +123,6 @@ const onChangeFamily = (payload: any) => {
 // AUTOSAVE
 const autosave = () => {
   const payload = cloneDeep(layoutState.value)
-
   router.patch(
     route(
       props.data.autosaveRoute.name,
@@ -159,31 +159,63 @@ onMounted(() => {
   if (props?.data?.family?.data[0]) onChangeFamily(props.data.family.data[0])
 })
 
-
+const sidebarOpen = ref(true)
 </script>
 
 <template>
   <div class="pt-4">
 
     <!-- LAYOUT -->
-    <div class="h-[85vh] grid grid-cols-1 lg:grid-cols-12 gap-4 p-3">
+    <div class="h-[85vh] grid gap-4 p-3" :class="[
+      sidebarOpen
+        ? 'grid-cols-1 lg:grid-cols-12'
+        : 'grid-cols-1'
+    ]">
 
       <!-- LEFT MENU -->
-      <div
-        class="col-span-1 lg:col-span-3 bg-[#F9FAFB] rounded-xl shadow-md p-3 lg:p-4 overflow-y-auto border max-h-[40vh] lg:max-h-full">
-        <SideMenuFamilyDescriptionBlockWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
-          :selectedBlock="selectedBlock" @update:data="layoutState = $event"
-          @update:selectedBlock="selectedBlock = $event" @set-up-template="onPickTemplate"
-          @auto-save="debouncedAutosave" />
-      </div>
+      <Transition enter-active-class="transition-all duration-300" leave-active-class="transition-all duration-300">
+        <div v-if="sidebarOpen" class="
+        col-span-1
+        lg:col-span-3
+        bg-[#F9FAFB]
+        rounded-xl
+        shadow-md
+        p-3
+        lg:p-4
+        overflow-y-auto
+        border
+        max-h-[40vh]
+        lg:max-h-full
+      ">
+          <SideMenuFamilyDescriptionBlockWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
+            :selectedBlock="selectedBlock" @update:data="layoutState = $event"
+            @update:selectedBlock="selectedBlock = $event" @set-up-template="onPickTemplate"
+            @auto-save="debouncedAutosave" />
+        </div>
+      </Transition>
 
       <!-- PREVIEW -->
-      <div class="col-span-1 lg:col-span-9 bg-white rounded-xl shadow-md flex flex-col border overflow-hidden">
-
+      <div class="
+      bg-white
+      rounded-xl
+      shadow-md
+      flex
+      flex-col
+      border
+      overflow-hidden
+    " :class="sidebarOpen ? 'col-span-1 lg:col-span-9' : 'col-span-1'">
         <!-- HEADER -->
         <div class="flex justify-between items-center px-3 lg:px-4 py-2 bg-gray-100 border-b shrink-0">
-          <div class="py-1 px-2 hidden lg:block">
-            <ScreenView v-model="currentView" />
+
+          <div class="flex items-center gap-2">
+            <button type="button" class="w-8 h-8 rounded-lg hover:bg-gray-200 transition"
+              @click="sidebarOpen = !sidebarOpen">
+              <FontAwesomeIcon :icon="sidebarOpen ? faExpand : faCompressWide" />
+            </button>
+
+            <div class="py-1 px-2 hidden lg:block">
+              <ScreenView v-model="currentView" />
+            </div>
           </div>
 
           <div class="text-xs lg:text-sm text-gray-600 italic cursor-pointer truncate" @click="visibleDrawer = true">
@@ -195,13 +227,14 @@ onMounted(() => {
         </div>
 
         <!-- CONTENT -->
+
         <div class="flex-1 min-h-0">
           <div v-if="layoutState && dataPicked.family" :key="previewKey" ref="rootRef" :class="[
             ' h-full overflow-auto',
             iframeClass
           ]">
-            <div v-for="(block, key) in layoutState" :key="key + '-' + previewKey"
-              class="transition-all duration-200" :class="{
+            <div v-for="(block, key) in layoutState" :key="key + '-' + previewKey" class="transition-all duration-200"
+              :class="{
                 'border-2 block-active': key === selectedBlock?.code,
                 'border border-transparent': key !== selectedBlock?.code
               }">
@@ -225,6 +258,7 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
   </div>
 
   <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
@@ -269,41 +303,27 @@ onMounted(() => {
 }
 
 .background-primary {
-    background-color: v-bind(themeColor4);
+  background-color: v-bind(themeColor4);
 }
 
 .border-primary {
-    border-color: v-bind(themeColor4);
+  border-color: v-bind(themeColor4);
 }
 
 .text-primary {
-    color: v-bind(themeColor4) !important;
+  color: v-bind(themeColor4) !important;
 }
 
 .primaryLink {
-    background: linear-gradient(
-        to top,
-        v-bind(themeColor4),
-        v-bind(themeColor4)
-    );
+  background: linear-gradient(to top,
+      v-bind(themeColor4),
+      v-bind(themeColor4));
 
-    @apply focus:ring-0
-    focus:outline-none
-    focus:border-none
-    bg-no-repeat
-    [background-position:0%_100%]
-    [background-size:100%_0.2em]
-    motion-safe:transition-all
-    motion-safe:duration-200
-    hover:[background-size:100%_100%]
-    focus:[background-size:100%_100%]
-    px-1
-    py-0.5;
+  @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5;
 
-    &:hover,
-    &:focus {
-        color: #374151;
-    }
+  &:hover,
+  &:focus {
+    color: #374151;
+  }
 }
-
 </style>

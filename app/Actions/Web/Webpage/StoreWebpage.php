@@ -15,6 +15,7 @@ use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
+use App\Actions\Web\Website\Layouts\FetchUsedDepartmentDescriptionWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedFamiliesOverviewWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedProductWebBlock;
@@ -136,12 +137,13 @@ class StoreWebpage extends OrgAction
             $templates = [];
 
             if ($this->strict) {
-                $usedProductsTemplateCode           = FetchUsedProductsWebBlock::run($this->website);
-                $usedProductTemplateCode            = FetchUsedProductWebBlock::run($this->website);
-                $usedFamiliesTemplateCode           = FetchUsedFamiliesWebBlock::run($this->website);
-                $usedFamiliesOverviewTemplateCode   = FetchUsedFamiliesOverviewWebBlock::run($this->website);
-                $usedFamilyDescriptionTemplateCode  = FetchUsedFamilyDescriptionWebBlock::run($this->website);
-                $usedSubDepartmentsTemplateCode     = FetchUsedSubDepartmentsWebBlock::run($this->website);
+                $usedProductsTemplateCode               = FetchUsedProductsWebBlock::run($this->website);
+                $usedProductTemplateCode                = FetchUsedProductWebBlock::run($this->website);
+                $usedFamiliesTemplateCode               = FetchUsedFamiliesWebBlock::run($this->website);
+                $usedFamiliesOverviewTemplateCode       = FetchUsedFamiliesOverviewWebBlock::run($this->website);
+                $usedFamilyDescriptionTemplateCode      = FetchUsedFamilyDescriptionWebBlock::run($this->website);
+                $usedDepartmentDescriptionTemplateCode  = FetchUsedDepartmentDescriptionWebBlock::run($this->website);
+                $usedSubDepartmentsTemplateCode         = FetchUsedSubDepartmentsWebBlock::run($this->website);
 
                 if ($model instanceof Product) {
                     $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::PRODUCT, $usedProductTemplateCode);
@@ -161,13 +163,19 @@ class StoreWebpage extends OrgAction
                         $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
                         if (data_get($modelData, 'layout_style') == 'families-overview') {
-                            $this->createWebBlock($webpage, 'department-description-1');
+                            foreach ($usedDepartmentDescriptionTemplateCode as $code) {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, $code);
+                            }
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILY_OVERVIEW, $usedFamiliesOverviewTemplateCode);
                         } else {
-                            $this->createWebBlock($webpage, 'department-description-1');
+                            foreach ($usedDepartmentDescriptionTemplateCode as $code) {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, $code);
+                            }
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
-                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+                            if ($usedDepartmentDescriptionTemplateCode == 'department-description-1') {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+                            }
                             $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
                         }
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {

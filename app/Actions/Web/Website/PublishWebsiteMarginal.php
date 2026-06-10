@@ -71,6 +71,10 @@ class PublishWebsiteMarginal extends OrgAction
             $customAudit = true;
             $oldLayout   = $website->liveFamilyDescriptionSnapshot?->layout ?? $website->unpublishedFamilyDescriptionSnapshot?->layout;
             $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedFamilyDescriptionSnapshot?->layout, $marginal);
+        } elseif ($marginal == 'department_description') {
+            $customAudit = true;
+            $oldLayout   = $website->liveDepartmentDescriptionSnapshot?->layout ?? $website->unpublishedDepartmentDescriptionSnapshot?->layout;
+            $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedDepartmentDescriptionSnapshot?->layout, $marginal);
         } elseif ($marginal == 'product') {
             $customAudit = true;
             $oldLayout   = $website->liveProductSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedProductSnapshot?->layout, $marginal);
@@ -119,7 +123,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer', 'menu', 'sidebar', 'department', 'sub_department', 'family', 'families_overview', 'family_description', 'product', 'products', 'collection'])) {
+        if (in_array($marginal, ['header', 'footer', 'menu', 'sidebar', 'department', 'department_description', 'sub_department', 'family', 'families_overview', 'family_description', 'product', 'products', 'collection'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"   => $snapshot->id,
                 "published_layout->$marginal"    => $snapshot->layout,
@@ -136,7 +140,7 @@ class PublishWebsiteMarginal extends OrgAction
         if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products', 'families_overview'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
             UpdateWebBlockToWebsiteAndChild::dispatch($website, WebBlockType::find(data_get($layout, "id")), $marginal, data_get($layout, 'data.fieldValue'))->onQueue('low-priority');
-        } elseif ($marginal == 'family_description') {
+        } elseif (in_array($marginal, ['department_description', 'family_description'])) {
             UpdateDescriptionBlockToWebsiteAndChild::dispatch($website, $layout, $marginal)->onQueue('low-priority');
         }
 
@@ -224,6 +228,12 @@ class PublishWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'department', $this->validatedData);
+    }
+
+    public function departmentDescription(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'department_description', $this->validatedData);
     }
 
     public function subDepartment(Website $website, ActionRequest $request): void

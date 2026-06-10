@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
@@ -44,7 +44,7 @@ const cleanedDescription = computed(() => {
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
 
-const trimmedDescription = computed(() => {
+/* const trimmedDescription = computed(() => {
   const html = cleanedDescription.value
 
   if (typeof DOMParser === "undefined") {
@@ -97,7 +97,7 @@ const trimmedDescription = computed(() => {
   walk(doc.body)
 
   return doc.body.innerHTML
-})
+}) */
 
 const images = computed<FamilyImage[]>(() => {
   const data = props.fieldValue?.family?.description_image
@@ -120,6 +120,11 @@ const bestOffer = computed(() => {
 
 const titleRef = ref<HTMLElement | null>(null)
 const titleState = ref<'single' | 'double' | 'truncated'>('single')
+const descriptionRef = ref<HTMLElement | null>(null)
+const imageRef = ref<HTMLElement | null>(null)
+const expanded = ref(false)
+const showReadMore = ref(false)
+const maxDescriptionHeight = ref(0)
 let resizeObserver: ResizeObserver | null = null
 
 const titleStyles = computed(() => ({
@@ -175,15 +180,32 @@ const updateTitleSize = () => {
   })
 }
 
+const calculateDescriptionHeight = async () => {
+  await nextTick()
+
+  if (!imageRef.value || !descriptionRef.value) {
+    return
+  }
+
+  maxDescriptionHeight.value = imageRef.value.offsetHeight
+  showReadMore.value = descriptionRef.value.scrollHeight > imageRef.value.offsetHeight - 110
+}
+
 onMounted(() => {
   updateTitleSize()
+  calculateDescriptionHeight()
 
   resizeObserver = new ResizeObserver(() => {
     updateTitleSize()
+    calculateDescriptionHeight()
   })
 
   if (titleRef.value) {
     resizeObserver.observe(titleRef.value)
+  }
+
+  if (imageRef.value) {
+    resizeObserver.observe(imageRef.value)
   }
 })
 
@@ -195,9 +217,14 @@ onUnmounted(() => {
 })
 
 watch(
-  () => props.fieldValue?.family?.name,
+  () => [
+    props.fieldValue?.family?.name,
+    props.fieldValue?.family?.description,
+    props.fieldValue?.family?.description_image,
+  ],
   () => {
     updateTitleSize()
+    calculateDescriptionHeight()
   }
 )
 
@@ -221,7 +248,8 @@ const contentClass = computed(() =>
         <div class="flex shrink-0 justify-center gap-[6px]">
           <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
-            <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'" class="
+            <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'"
+              class="
                 h-[280px]
                 w-[220px]
                 object-cover
@@ -233,7 +261,7 @@ const contentClass = computed(() =>
               " />
           </template>
 
-          <div v-else class="
+          <div v-else  class="
               flex items-center justify-center
               h-[280px]
               w-[220px]
@@ -248,7 +276,7 @@ const contentClass = computed(() =>
             <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
           </div>
 
-          <div class="flex flex-col gap-[6px]">
+          <div ref="imageRef"  class="flex flex-col gap-[6px]">
             <!-- IMAGE 2 -->
             <template v-if="hasImage(1)">
               <Image :src="images[1].original" :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
@@ -347,17 +375,43 @@ const contentClass = computed(() =>
 
           <!-- Description fills remaining space -->
           <div class="
-      flex-1
-      min-h-0
-      space-y-[4px]
-      text-[14px]
-      leading-[1.6]
-      text-[#1d2430]
-      sm:text-[15px]
-      lg:text-[16px]
-      2xl:space-y-2
-      2xl:text-[19px]
-    " v-html="trimmedDescription" />
+    relative
+    flex-1
+    min-h-0
+    space-y-[4px]
+    text-[14px]
+    leading-[1.6]
+    text-[#1d2430]
+    sm:text-[15px]
+    lg:text-[16px]
+    2xl:space-y-2
+    2xl:text-[19px]
+    overflow-hidden
+  " ref="descriptionRef" :style="!expanded && showReadMore
+    ? { maxHeight: `${maxDescriptionHeight - 110}px` }
+    : {}">
+            <div v-html="cleanedDescription"></div>
+
+            <!-- Fade overlay -->
+            <div v-if="!expanded && showReadMore" class="
+      absolute
+      bottom-0
+      left-0
+      right-0
+      h-6
+      pointer-events-none
+      bg-gradient-to-t
+      from-white
+      via-white/90
+      to-transparent
+    " />
+          </div>
+
+          <div v-if="showReadMore" class="mt-2 flex justify-end">
+            <button type="button" class="text-xs italic underline  " @click="expanded = !expanded">
+              {{ expanded ? ctrans('Read Less') : ctrans('Read More') }}
+            </button>
+          </div>
 
           <!-- Always bottom -->
           <div class="

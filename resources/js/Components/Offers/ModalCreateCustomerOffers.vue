@@ -2,56 +2,79 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, reactive, inject, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
-import { InputNumber, RadioButton, Checkbox, DatePicker } from 'primevue'
+import { InputNumber, RadioButton, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
-import Multiselect from "@vueform/multiselect"
+import axios from 'axios'
 
 const props = defineProps<{
     shop_data: {
+        id: number
+        organisation?: string
+        offercampaign?: string
         slug: string
         currency_code: string
+        default_dates: {
+            start: string
+            end: string
+        }
     }
+    customer_id?: number
 }>()
 
-const layout = inject('layout', {})
-const currentParams = layout?.currentParams ?? {}
 const isOpenModal = ref(false)
+const openModal = () => {
+    resetForm()
+    startDate.value = new Date(props.shop_data.default_dates.start)
+    endDate.value = new Date(props.shop_data.default_dates.end)
+    isOpenModal.value = true
+}
+const closeModal = () => {
+    isOpenModal.value = false
+    resetForm()
+}
 const isLoadingSubmit = ref(false)
 
+const customerId = ref<number | null>(null)
 const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
 
-const organisation = currentParams.organisation
-const shopCode = currentParams.shop
-const offerCampaign = currentParams.offerCampaign
-
-const selectedFilters = ref<number[]>([])
-const selectedShops = ref([])
-const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
-const categoryFilters = ref<number[]>([])
-const collectionFilters = ref<number[]>([])
-const productFilters = ref<number[]>([])
 const dateType = ref<'permanent' | 'interval'>('permanent')
-const startDate = ref<Date | null>(null)
-const endDate = ref<Date | null>(null)
+const startDate = ref<Date | null>(
+    props.shop_data.default_dates?.start
+        ? new Date(props.shop_data.default_dates.start)
+        : null
+)
 
-const target = reactive({
-    shop: false,
-    category: false,
-    collection: false,
-    product: false
-})
+const endDate = ref<Date | null>(
+    props.shop_data.default_dates?.end
+        ? new Date(props.shop_data.default_dates.end)
+        : null
+)
 
-const shopId = layout?.group?.id
+type TargetType = 'shop' | 'department' | 'subdepartment' | 'family' | 'collection' | 'product'
+const target = ref<TargetType | null>(null)
+
+const categoryFilters = ref<number | null>(null)
+const collectionFilters = ref<number | null>(null)
+const productFilters = ref<number | null>(null)
+
+const shopId = props.shop_data.id
 const shopSlug = props.shop_data.slug
 
-const categoryRoutes = {
+const customerFetchRoute = {
+    name: 'grp.json.shop.customers',
+    parameters: { shop: shopId }
+}
+
+type CategoryTarget = 'department' | 'subdepartment' | 'family'
+
+const categoryRoutes: Record<CategoryTarget, { name: string; parameters: Record<string, unknown> }> = {
     department: {
         name: 'grp.json.shop.departments',
         parameters: { shop: shopSlug }
@@ -66,17 +89,31 @@ const categoryRoutes = {
     }
 }
 
-const activeCategoryRoute = computed(() => {
-    if (!categoryType.value) return null
-    return categoryRoutes[categoryType.value]
-})
+const isCategoryTarget = (t: TargetType | null): t is CategoryTarget =>
+    t === 'department' || t === 'subdepartment' || t === 'family'
+
+const activeCategoryRoute = computed(() =>
+    isCategoryTarget(target.value) ? categoryRoutes[target.value] : null
+)
+
+const collectionRoute = {
+    name: 'grp.json.shop.catalogue.collections',
+    parameters: { shop: shopSlug, scope: shopSlug }
+}
 
 const productFetchRoute = {
     name: 'grp.json.shop.products',
-    parameters: {
-        shop: (route().params as any).shop
-    }
+    parameters: { shop: shopSlug }
 }
+
+const targetOptions: { value: TargetType; label: string }[] = [
+    { value: 'shop', label: 'Shop' },
+    { value: 'department', label: 'Department' },
+    { value: 'subdepartment', label: 'Sub Department' },
+    { value: 'family', label: 'Family' },
+    { value: 'collection', label: 'Collection' },
+    { value: 'product', label: 'Product' },
+]
 
 const today = new Date(new Date().setHours(0, 0, 0, 0))
 
@@ -90,61 +127,93 @@ function formatDate(date: Date | null) {
     return `${year}-${month}-${day}`
 }
 
-const submitCategoryOffer = () => {
-    const targets: any[] = []
-    
-    if (target.product && productFilters.value.length) {
-            targets.push({
-                type: 'product',
-                ids: productFilters.value,
-            })
-    
-        } else {
-            if (target.category && categoryFilters.value.length) {
-                targets.push({
-                type: 'category',
-                category_type: categoryType.value,
-                ids: categoryFilters.value,
-                })
-            }
-    
-            if (target.collection && collectionFilters.value.length) {
-                targets.push({
-                type: 'collection',
-                ids: collectionFilters.value,
-                })
-            }
-    
-            if (target.shop && selectedShops.value.length) {
-                targets.push({
-                type: 'shop',
-                ids: selectedShops.value,
-                })
-            }
-    }
-    const payload = {
-        target,
-        category_type: categoryType.value,
-        category_ids: categoryFilters.value,
-        collection_ids: collectionFilters.value,
-        product_ids: productFilters.value,
-        offer_amount: offerAmount.value,
-        discount_percentage: discountPercentage.value,
-        shops: selectedShops.value,
-        targets: targets, 
-        date_type: dateType.value,
-        start_at: formatDate(startDate.value),
-        end_at: formatDate(endDate.value)
+const targetTypeMap: Record<TargetType, string> = {
+    shop: 'shop',
+    department: 'department',
+    subdepartment: 'sub_department',
+    family: 'family',
+    collection: 'collection',
+    product: 'product',
+}
+
+const buildTargetPayload = () => {
+    const t = target.value
+    if (!t) return null
+
+    let id: number | null = null
+    if (t === 'shop') {
+        id = shopId
+    } else if (t === 'product') {
+        id = productFilters.value
+    } else if (t === 'collection') {
+        id = collectionFilters.value
+    } else if (isCategoryTarget(t)) {
+        id = categoryFilters.value
     }
 
-    console.log("SUBMIT PAYLOAD:", payload)
-    // return
+    if (!id) return null
+
+    return {
+        target_type: targetTypeMap[t],
+        target_id: id,
+    }
+}
+
+const submitCustomerOffer = () => {
+    const targetPayload = buildTargetPayload()
+
+    const payload = {
+        customer_id: customerId.value || props.customer_id,
+        offer_amount: offerAmount.value,
+        discount_percentage: discountPercentage.value,
+        target_type: targetPayload?.target_type ?? null,
+        target_id: targetPayload?.target_id ?? null,
+        duration: dateType.value,
+        start_at: formatDate(startDate.value),
+        end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
+    }
+
+    // axios.post(
+    //     route('grp.models.store_customer_offer', {
+    //         shop: props.shop_data.id,
+    //     }),
+    //     payload
+    // )
+    // .then((response) => {
+    //     notify({
+    //         title: trans("Success"),
+    //         text: trans("Successfully submit the data"),
+    //         type: "success"
+    //     })
+    //     resetForm();
+    //     isOpenModal.value = false
+
+    //     if (!props.customer_id) {
+    //         router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+    //             organisation: props.shop_data.organisation,
+    //             shop: props.shop_data.slug,
+    //             offerCampaign: props.shop_data.offercampaign,
+    //             offer: response.data.slug
+    //         }))
+    //     }
+    //     router.reload()
+    // })
+    // .catch((error) => {
+    //     const errors = error.response?.data?.errors || {}
+    //     const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+    //     notify({
+    //         title: trans("Something went wrong"),
+    //         text: errMsg,
+    //         type: "error"
+    //     })
+    // })
+    // .finally(() => {
+    //     isLoadingSubmit.value = false
+    // })
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_customer', {
-            organisation: 'sk',
-            shop: 'se',
-            offerCampaign: 'co-se',
-        }), 
+        route('grp.models.store_customer_offer', {
+            shop: props.shop_data.id,
+        }),
         payload,
         {
             preserveScroll: true,
@@ -153,14 +222,14 @@ const submitCategoryOffer = () => {
                 isLoadingSubmit.value = true
             },
             onSuccess: () => {
-                resetForm()
+                closeModal()
                 notify({
                     title: trans("Success"),
                     text: trans("Successfully submit the data"),
                     type: "success"
                 })
             },
-            onError: errors => {
+            onError: () => {
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to submit the data, please try again"),
@@ -175,111 +244,80 @@ const submitCategoryOffer = () => {
 }
 
 const resetForm = () => {
+    customerId.value = null
     offerAmount.value = 0
     discountPercentage.value = null
-    categoryType.value = null
-    categoryFilters.value = []
-    collectionFilters.value = []
-    productFilters.value = []
-    target.category = false
-    target.collection = false
-    target.shop = false
-    target.product = false
+    target.value = null
+    categoryFilters.value = null
+    collectionFilters.value = null
+    productFilters.value = null
     dateType.value = 'permanent'
     startDate.value = null
     endDate.value = null
 }
 
+watch(target, () => {
+    categoryFilters.value = null
+    collectionFilters.value = null
+    productFilters.value = null
+})
+
 const isFormInvalid = computed(() => {
+    if (!customerId.value && !props.customer_id) return true
 
-    if (!discountPercentage.value) return true
+    if (offerAmount.value === null || offerAmount.value === undefined || offerAmount.value < 0) return true
 
-    if (!target.shop && !target.category && !target.collection && !target.product) {
-        return true
-    }
+    const pct = discountPercentage.value
+    if (pct === null || pct === undefined || pct <= 0 || pct > 100) return true
 
-    if (target.product) {
-        if (!productFilters.value.length) return true
-        return false
-    }
-
-    if (target.shop && !selectedShops.value.length) {
-        return true
-    }
-
-    if (target.category) {
-
-        if (!categoryType.value) return true
-
-        if (!categoryFilters.value.length) return true
-    }
-
-    if (target.collection && !collectionFilters.value.length) {
-        return true
-    }
+    if (buildTargetPayload() === null) return true
 
     if (!startDate.value) return true
 
     if (dateType.value === 'interval' && !endDate.value) return true
+
     return false
 })
-
-const collectionRoute = computed(() => {
-
-    const routeConfig = {
-        name: 'grp.json.shop.catalogue.collections',
-        parameters: {
-            shop: shopCode,
-            scope: shopCode
-        }
-    }
-
-    return routeConfig
-})
-
-watch(() => target.product, (val) => {
-    if (val) {
-        target.category = false
-        target.collection = false
-        categoryType.value = null
-        categoryFilters.value = []
-        collectionFilters.value = []
-    }
-})
-
-watch(categoryType, () => {
-    categoryFilters.value = []
-})
-
-watch(categoryFilters, () => {
-    collectionFilters.value = []
-})
-
-watch(() => target.category, (val) => {
-
-    if (!val) {
-        categoryType.value = null
-        selectedFilters.value = []
-    }
-
-})
-
-const authorisedShops =
-    layout.organisations.data
-        .find((o: any) => o.slug === organisation)
-        ?.authorised_shops ?? []
-        
-resetForm()
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Customer Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Customer Offer')" @click="openModal" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Customer Offer') }}</h2>
 
+                <!-- Customer -->
+                <div class="space-y-2" v-if="!props.customer_id">
+                    <label class="font-medium flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Select Customer') }}:
+                    </label>
+                    <PureMultiselectInfiniteScroll
+                    v-model="customerId" :fetchRoute="customerFetchRoute" valueProp="id"
+                        labelProp="name" labelAdditionalProp="reference" :placeholder="trans('Select customer')">
+                        <template #singlelabel="{ value }">
+                            <div class="w-full text-left pl-4 leading-4 truncate mr-2">
+                                {{ value.name }}
+                                <span class="text-sm text-gray-400">
+                                    ({{ value.reference }}<template v-if="value.email"> · {{ value.email }}</template>)
+                                </span>
+                            </div>
+                        </template>
+
+                        <template #option="{ option }">
+                            <div>
+                                {{ option.name }}
+                                <span class="text-sm text-gray-400">
+                                    ({{ option.reference }}<template v-if="option.email"> · {{ option.email }}</template>)
+                                </span>
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
+                </div>
+
+                <!-- Minimum purchase amount -->
                 <div class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
@@ -290,124 +328,54 @@ resetForm()
                         :placeholder="trans('Enter minimum amount')" />
                 </div>
 
+                <!-- Target -->
                 <div class="space-y-3">
-
+                    <h3 class="text-sm text-gray-500">
+                        {{ trans('Choose where this offer will apply') }}
+                    </h3>
                     <label class="font-semibold">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
                         {{ trans('Target') }}
                     </label>
 
                     <div class="flex flex-wrap gap-4">
-
-                        <!-- <div class="flex items-center gap-2">
-                            <Checkbox v-model="target.shop" binary />
-                            <label>{{ trans('Shop') }}</label>
-                        </div> -->
-
-                        <div class="flex items-center gap-2">
-                            <Checkbox v-model="target.category" :disabled="target.product" binary />
-                            <label>{{ trans('Category') }}</label>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <Checkbox v-model="target.collection" :disabled="target.product" binary />
-                            <label>{{ trans('Collection') }}</label>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <Checkbox v-model="target.product" binary />
-                            <label>{{ trans('Product') }}</label>
-                        </div>
-
+                        <label v-for="opt in targetOptions" :key="opt.value" :for="`target-${opt.value}`"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="target === opt.value
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
+                            <RadioButton v-model="target" :value="opt.value" :inputId="`target-${opt.value}`" />
+                            <span>{{ trans(opt.label) }}</span>
+                        </label>
                     </div>
 
-                </div>
-
-                <div v-if="target.category" class="space-y-2">
-
-                    <label class="font-medium">
-                        {{ trans('Category Type') }}
-                    </label>
-
-                    <div class="flex gap-4">
-
-                        <div class="flex items-center gap-2">
-                            <RadioButton v-model="categoryType" value="department" />
-                            <label>{{ trans('Department') }}</label>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <RadioButton v-model="categoryType" value="subdepartment" />
-                            <label>{{ trans('Sub Department') }}</label>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <RadioButton v-model="categoryType" value="family" />
-                            <label>{{ trans('Family') }}</label>
-                        </div>
-
+                    <div v-if="activeCategoryRoute" class="space-y-2">
+                        <label class="font-medium">
+                            {{ trans('Select Item') }}
+                        </label>
+                        <PureMultiselectInfiniteScroll :key="target ?? 'none'" v-model="categoryFilters"
+                            :fetchRoute="activeCategoryRoute" valueProp="id" labelProp="name" />
                     </div>
 
+                    <div v-if="target === 'collection'" class="space-y-2">
+                        <label class="font-medium">
+                            {{ trans('Select Item') }}
+                        </label>
+                        <PureMultiselectInfiniteScroll v-model="collectionFilters" :fetchRoute="collectionRoute"
+                            valueProp="id" labelProp="name" />
+                    </div>
+
+                    <div v-if="target === 'product'" class="space-y-2">
+                        <label class="font-medium">
+                            {{ trans('Select Item') }}
+                        </label>
+                        <PureMultiselectInfiniteScroll v-model="productFilters" :fetchRoute="productFetchRoute"
+                            valueProp="id" labelProp="name" />
+                    </div>
                 </div>
 
-                <div v-if="activeCategoryRoute">
-
-                    <label class="font-medium">
-                        {{ trans('Select Category') }}
-                    </label>
-
-                    <PureMultiselectInfiniteScroll :key="categoryType" v-model="categoryFilters" mode="multiple"
-                        :fetchRoute="activeCategoryRoute" valueProp="id" labelProp="name"
-                        :placeholder="trans('Select items')" />
-
-                </div>
-
-                <div v-if="target.shop">
-
-                    <label class="font-medium">
-                        {{ trans('Select Shop') }}
-                    </label>
-                    <Multiselect v-model="selectedShops" :options="authorisedShops" valueProp="slug" label="label"
-                        mode="multiple" :closeOnSelect="false" :searchable="true" placeholder="Select shops">
-
-                        <template #option="{ option }">
-                            <div class="flex justify-between w-full">
-                                <span>{{ option.label }}</span>
-                                <span class="text-gray-400 text-sm">{{ option.code }}</span>
-                            </div>
-                        </template>
-
-                    </Multiselect>
-
-                </div>
-
-                <div v-if="target.collection && collectionRoute">
-
-                    <label class="font-medium">
-                        {{ trans('Select Collection') }}
-                    </label>
-
-                    <PureMultiselectInfiniteScroll :key="categoryFilters" v-model="collectionFilters" mode="multiple"
-                        :fetchRoute="collectionRoute" valueProp="id" labelProp="name"
-                        @optionsList="(data) => console.log('Collection API result:', data)" />
-
-                </div>
-
-                <div v-if="target.product">
-
-                    <label class="font-medium">
-                        {{ trans('Select Product') }}
-                    </label>
-
-                    <PureMultiselectInfiniteScroll v-model="productFilters" :fetchRoute="productFetchRoute"
-                        valueProp="id" labelProp="name" mode="multiple" />
-
-                </div>
-
-
-                <!-- DISCOUNT -->
+                <!-- Discount -->
                 <div class="space-y-2">
-
                     <label class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="text-xs text-red-400" />
                         {{ trans('Percentage Discount') }}
@@ -417,28 +385,34 @@ resetForm()
                         class="w-full" :placeholder="trans('Enter percentage')" />
                 </div>
 
-                <!-- Section: Offer Duration -->
+                <!-- Offer Duration -->
                 <div class="space-y-3">
-
                     <div class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
                         {{ trans('Offer Duration') }}:
                     </div>
 
-                    <div class="flex gap-x-4">
-                        <div class="flex items-center gap-x-2">
+                    <div class="flex flex-wrap gap-4">
+                        <label for="permanent"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'permanent'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
-                            <label for="permanent">{{ trans('Permanent') }}</label>
-                        </div>
+                            <span>{{ trans('Permanent') }}</span>
+                        </label>
 
-                        <div class="flex items-center gap-x-2">
+                        <label for="interval"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'interval'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
-                            <label for="interval">{{ trans('Interval') }}</label>
-                        </div>
+                            <span>{{ trans('Interval') }}</span>
+                        </label>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Start Date -->
                         <div class="space-y-2">
                             <label class="font-medium mb-2 block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
@@ -452,27 +426,24 @@ resetForm()
                                 :placeholder="trans('Select start date')" />
                         </div>
 
-                        <!-- End Date (Only for Interval) -->
                         <div v-if="dateType === 'interval'" class="space-y-2">
                             <label class="font-medium mb-2 block">
                                 {{ trans('End Date') }}
                                 <InformationIcon
-                                    :information="trans('If start date is empty, will start immediately')" />:
+                                    :information="trans('If end date is empty, will treat as permanent')" />:
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :minDate="startDate" :placeholder="trans('Select end date')" />
                         </div>
                     </div>
-
                 </div>
 
-
                 <div class="mt-8 flex justify-end gap-x-4">
-                    <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitCategoryOffer"
-                                           :loading="isLoadingSubmit" :disabled="isFormInvalid">
-                                       </Button>
+                    <Button @click="closeModal" type="cancel" />
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+                        @click="submitCustomerOffer" :loading="isLoadingSubmit"
+                        :disabled="isFormInvalid || isLoadingSubmit" />
                 </div>
             </div>
         </Modal>

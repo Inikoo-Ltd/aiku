@@ -76,12 +76,14 @@ use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalanceAfterSubmitted;
+use App\Actions\Retina\Dropshipping\Orders\RemoveRetinaOrderVoucher;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
+use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrderVoucher;
 use App\Actions\Retina\Dropshipping\Orders\UpdateOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
@@ -202,7 +204,6 @@ Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder:
 Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings()->whereNumber('product');
 
 
-
 Route::post('pallet-return', StoreRetinaPalletReturn::class)->name('pallet-return.store');
 Route::post('pallet-return/stored-items', [StoreRetinaPalletReturn::class, 'withStoredItems'])->name('pallet-return-stored-items.store');
 Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->whereNumber('palletReturn')->group(function () {
@@ -276,6 +277,8 @@ Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(f
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
+    Route::post('store-voucher', StoreRetinaOrderVoucher::class)->name('store_voucher');
+    Route::post('remove-voucher', RemoveRetinaOrderVoucher::class)->name('remove_voucher');
     Route::delete('delete-basket', DeleteRetinaBasket::class)->name('delete_basket');
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
     Route::patch('pay-with-balance', PayRetinaOrderWithBalance::class)->name('pay_with_balance');
@@ -464,7 +467,6 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::post('{product:id}/favourite', StoreRetinaFavourite::class)->name('favourite')->whereNumber('product');
     Route::delete('{product:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite')->whereNumber('product');
     Route::post('{product:id}/add-to-basket', StoreRetinaEcomBasketTransaction::class)->name('add-to-basket')->whereNumber('product');
-
 });
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');

@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { computed, inject } from "vue"
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage } from "@far"
+import { getBestOffer } from '@/Composables/useOffers'
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
+import { debounce } from 'lodash-es'
 
 interface FamilyImage {
   original: string
@@ -41,64 +46,8 @@ const cleanedDescription = computed(() => {
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
 
-const trimmedDescription = computed(() => {
-  const html = cleanedDescription.value
-
-  if (typeof DOMParser === "undefined") {
-     return html
-  }
-    
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(html, "text/html")
-
-  let count = 0
-  const limit = 400
-
-  const walk = (node: Node): boolean => {
-    if (count >= limit) {
-      node.parentNode?.removeChild(node)
-      return true
-    }
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || ""
-      const remaining = limit - count
-
-      if (text.length > remaining) {
-        node.textContent = text.slice(0, remaining) + "..."
-        count = limit
-        return true
-      }
-
-      count += text.length
-    }
-
-    const children = [...node.childNodes]
-
-    for (const child of children) {
-      if (walk(child)) {
-        const siblings = [...node.childNodes]
-        const index = siblings.indexOf(child)
-
-        siblings.slice(index + 1).forEach((sibling) => {
-          sibling.parentNode?.removeChild(sibling)
-        })
-
-        return true
-      }
-    }
-
-    return false
-  }
-
-  walk(doc.body)
-
-  return doc.body.innerHTML
-})
-
 const images = computed<FamilyImage[]>(() => {
-  const data =
-    props.modelValue?.family?.web_images?.description
+  const data = props.modelValue?.family?.description_image
 
   if (!data) return []
 
@@ -111,213 +60,346 @@ const hasImage = (index: number) => {
   return Boolean(images.value?.[index]?.original)
 }
 
-const screenStyles = computed(() => {
-  switch (props.screenType) {
-    case "mobile":
-      return {
-        wrapperDirection: "flex-col",
+const bestOffer = computed(() => {
+  return getBestOffer(props.modelValue?.family?.offers_data)
+})
 
-        mainImage: {
-          width: "220px",
-          height: "280px",
-        },
 
-        sideImage: {
-          width: "105px",
-          height: "137px",
-        },
+const titleRef = ref<HTMLElement | null>(null)
+const titleState = ref<'single' | 'double' | 'truncated'>('single')
+const descriptionRef = ref<HTMLElement | null>(null)
+const imageRef = ref<HTMLElement | null>(null)
+const expanded = ref(false)
+const showReadMore = ref(false)
+const maxDescriptionHeight = ref(0)
+let resizeObserver: ResizeObserver | null = null
 
-        title: {
-          fontSize: "22px",
-        },
+const titleStyles = computed(() => ({
+  fontSize: titleState.value === 'single' ? '36px' : '25px',
+}))
 
-        description: {
-          fontSize: "14px",
-        },
+const measureLines = (el: HTMLElement, fontSize: string): number => {
+  const clone = el.cloneNode(true) as HTMLElement
 
-        button: {
-          height: "38px",
-          paddingLeft: "32px",
-          paddingRight: "32px",
-          fontSize: "14px",
-        },
+  clone.style.position = 'fixed'
+  clone.style.visibility = 'hidden'
+  clone.style.pointerEvents = 'none'
+  clone.style.left = '-9999px'
+  clone.style.top = '0'
+  clone.style.width = `${el.clientWidth}px`
+  clone.style.whiteSpace = 'normal'
+  clone.style.fontSize = fontSize
+  clone.style.lineHeight = getComputedStyle(el).lineHeight
+  clone.style.padding = '0'
+  clone.style.margin = '0'
+  clone.style.border = 'none'
+  clone.style.boxSizing = 'border-box'
+  clone.style.overflow = 'visible'
 
-        contentAlign: "text-center",
-        buttonAlign: "justify-center",
-      }
+  document.body.appendChild(clone)
 
-    case "tablet":
-      return {
-        wrapperDirection: "flex-row",
+  const lineHeight = parseFloat(getComputedStyle(clone).lineHeight)
+  const lines = Math.max(1, Math.round(clone.scrollHeight / lineHeight))
 
-        mainImage: {
-          width: "340px",
-          height: "320px",
-        },
+  document.body.removeChild(clone)
 
-        sideImage: {
-          width: "160px",
-          height: "157px",
-        },
+  return lines
+}
 
-        title: {
-          fontSize: "24px",
-        },
+const updateTitleSize = () => {
+  const el = titleRef.value
 
-        description: {
-          fontSize: "15px",
-        },
+  if (!el) {
+    return
+  }
 
-        button: {
-          height: "42px",
-          paddingLeft: "40px",
-          paddingRight: "40px",
-          fontSize: "15px",
-        },
+  requestAnimationFrame(() => {
+    const linesAt36 = measureLines(el, '36px')
 
-        contentAlign: "text-left",
-        buttonAlign: "justify-start",
-      }
+    if (linesAt36 <= 1) {
+      titleState.value = 'single'
+      return
+    }
 
-    default:
-      return {
-        wrapperDirection: "flex-row",
+    const linesAt25 = measureLines(el, '25px')
 
-        mainImage: {
-          width: "420px",
-          height: "380px",
-        },
+    titleState.value = linesAt25 <= 2 ? 'double' : 'truncated'
+  })
+}
 
-        sideImage: {
-          width: "200px",
-          height: "187px",
-        },
+const calculateDescriptionHeight = async () => {
+  await nextTick()
 
-        title: {
-          fontSize: "30px",
-        },
+  if (!imageRef.value || !descriptionRef.value) {
+    return
+  }
 
-        description: {
-          fontSize: "19px",
-        },
+  maxDescriptionHeight.value = imageRef.value.offsetHeight
+  showReadMore.value = descriptionRef.value.scrollHeight > imageRef.value.offsetHeight - 110
+}
 
-        button: {
-          height: "48px",
-          paddingLeft: "48px",
-          paddingRight: "48px",
-          fontSize: "16px",
-        },
+onMounted(() => {
+  updateTitleSize()
+  calculateDescriptionHeight()
 
-        contentAlign: "text-left",
-        buttonAlign: "justify-start",
-      }
+  resizeObserver = new ResizeObserver(() => {
+    updateTitleSize()
+    calculateDescriptionHeight()
+  })
+
+  if (titleRef.value) {
+    resizeObserver.observe(titleRef.value)
+  }
+
+  if (imageRef.value) {
+    resizeObserver.observe(imageRef.value)
   }
 })
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+})
+
+watch(
+  () => [
+    props.modelValue?.family?.name,
+    props.modelValue?.family?.description,
+    props.modelValue?.family?.description_image,
+  ],
+  () => {
+    updateTitleSize()
+    calculateDescriptionHeight()
+  }
+)
+
+// Debounced save function
+const saveDescription = debounce(async (key: string, value: string) => {
+  try {
+    const url = route('grp.models.product_category.update', {
+      productCategory: props.modelValue.family.id,
+    })
+    await axios.patch(url, { [key]: value })
+  } catch (error: any) {
+    console.error('Save failed:', error)
+    notify({
+      title: 'Failed to Save',
+      text: error?.response?.data?.message || 'Please check your input and try again.',
+      type: 'error',
+    })
+  }
+}, 1500)
+
+const contentClass = computed(() =>
+  layout.rightbasket?.show
+    ? 'flex flex-col gap-6'
+    : 'flex flex-col gap-6 lg:flex-row lg:items-stretch'
+)
 </script>
 
 <template>
-  <section class="editor-class" :id="modelValue?.id
-    ? modelValue.id
-    : `family-2`
-    " component="family-2-workshop">
-    <div class="mx-auto w-full  px-4 py-4" :style="{
-      ...getStyles(
-        layout?.app?.webpage_layout?.container
-          ?.properties,
-        screenType
-      ),
-      ...getStyles(
-        modelValue?.container?.properties,
-        screenType
-      ),
-      width: 'auto',
+  <section :id="`family-2`" component="family-2-iris" class="editor-class">
+    <div class="mx-auto w-full  bg-white  py-4 sm:px-8  " :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(modelValue?.container?.properties),
+      width: 'auto'
     }">
-      <div class="flex gap-6" :class="screenStyles.wrapperDirection">
-        <!-- IMAGES -->
+      <div :class="contentClass">
+        <!-- IMAGE SECTION -->
         <div class="flex shrink-0 justify-center gap-[6px]">
           <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
-            <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'
-              " class="object-cover" :style="screenStyles.mainImage" />
+            <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'" class="
+                h-[280px]
+                w-[220px]
+                object-cover
+                sm:w-[290px]
+                lg:h-[320px]
+                lg:w-[340px]
+              " />
           </template>
 
-          <div v-else class="flex items-center justify-center border border-gray-200 bg-gray-100"
-            :style="screenStyles.mainImage">
+          <div v-else class="
+              flex items-center justify-center
+              h-[280px]
+              w-[220px]
+              border border-gray-200
+              bg-gray-100
+              sm:w-[290px]
+              lg:h-[320px]
+              lg:w-[340px]
+            ">
             <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
           </div>
 
-          <div class="flex flex-col gap-[6px]">
+          <div ref="imageRef" class="flex flex-col gap-[6px]">
             <!-- IMAGE 2 -->
             <template v-if="hasImage(1)">
-              <Image :src="images[1].original" :imageCover="true" :alt="images[1]?.alt ||
-                'family image'
-                " class="object-cover" :style="screenStyles.sideImage" />
+              <Image :src="images[1].original" :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
+                  h-[137px]
+                  w-[105px]
+                  object-cover
+                  sm:w-[140px]
+                  lg:h-[157px]
+                  lg:w-[160px]
+                " />
             </template>
 
-            <div v-else class="flex items-center justify-center border border-gray-200 bg-gray-100"
-              :style="screenStyles.sideImage">
+            <div v-else class="
+                flex items-center justify-center
+                h-[137px]
+                w-[105px]
+                border border-gray-200
+                bg-gray-100
+                sm:w-[140px]
+                lg:h-[157px]
+                lg:w-[160px]
+              ">
               <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
             </div>
 
             <!-- IMAGE 3 -->
             <template v-if="hasImage(2)">
-              <Image :src="images[2].original" :imageCover="true" :alt="images[2]?.alt ||
-                'family image'
-                " class="object-cover" :style="screenStyles.sideImage" />
+              <Image :src="images[2].original" :imageCover="true" :alt="images[2]?.alt || 'family image'" class="
+                  h-[137px]
+                  w-[105px]
+                  object-cover
+                  sm:w-[140px]
+                  lg:h-[157px]
+                  lg:w-[160px]
+                " />
             </template>
 
-            <div v-else class="flex items-center justify-center border border-gray-200 bg-gray-100"
-              :style="screenStyles.sideImage">
+            <div v-else class="
+                flex items-center justify-center
+                h-[137px]
+                w-[105px]
+                border border-gray-200
+                bg-gray-100
+                sm:w-[140px]
+                lg:h-[157px]
+                lg:w-[160px]
+              ">
               <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
             </div>
           </div>
         </div>
 
         <!-- CONTENT -->
-        <div class="flex min-w-0 flex-1 flex-col" :class="screenStyles.contentAlign">
-          <div class="">
-            <h1 class="font-bold leading-[1.15] text-[#12243c]" :style="screenStyles.title">
-              {{ modelValue.family?.name }}
-            </h1>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <div class="
+      flex
+      flex-col
+      gap-4
+      text-center
+      lg:text-left
+      lg:flex-row
+      lg:items-start
+      lg:justify-between
+    ">
+            <div class="min-w-0 flex-1">
+              <h1 ref="titleRef" :style="titleStyles" :class="[
+                'font-bold leading-[1.15] break-words',
+                titleState === 'truncated' ? 'title--truncated' : ''
+              ]">
+                {{ modelValue.family?.name }}
+              </h1>
+            </div>
           </div>
 
-          <div class="flex-1 text-[#1d2430]" :style="{
-            ...screenStyles.description,
-            lineHeight: '1.6',
-          }" v-html="trimmedDescription" />
-          <div class="mt-6 flex items-center gap-6">
-            <button class="shrink-0 rounded-xl border border-[#333] font-medium" :style="{
-              ...screenStyles.button,
-              ...getStyles(modelValue?.button?.container?.properties)
-            }">
-              <span v-if="modelValue?.button?.text">
-                {{ modelValue?.button?.text }}
-              </span>
-              <span v-else>
-                {{ ctrans('Learn more') }}
-              </span>
+          <!-- Description fills remaining space -->
+          <div class="
+    relative
+    flex-1
+    min-h-0
+    space-y-[4px]
+    text-[14px]
+    leading-[1.6]
+    text-[#1d2430]
+    sm:text-[15px]
+    lg:text-[16px]
+    overflow-hidden
+  " ref="descriptionRef" :style="!expanded && showReadMore
+    ? { maxHeight: `${maxDescriptionHeight - 110}px` }
+    : {}">
+           <!--  <div v-html="cleanedDescription"></div> -->
+            <EditorV2 
+              :model-value="props.modelValue?.family?.description" 
+              @update:model-value="(e) => saveDescription('description', e)"
+              :toogle="['bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear']"
+            />
+
+            <!-- Fade overlay -->
+            <div v-if="!expanded && showReadMore" class="
+      absolute
+      bottom-0
+      left-0
+      right-0
+      h-6
+      pointer-events-none
+      bg-gradient-to-t
+      from-white
+      via-white/90
+      to-transparent
+    " />
+          </div>
+
+          <div v-if="showReadMore" class="mt-2 flex justify-end">
+            <button type="button" class="text-xs italic underline  " @click="expanded = !expanded">
+              {{ expanded ? ctrans('Read Less') : ctrans('Read More') }}
             </button>
+          </div>
 
-            <div class="
+          <!-- Always bottom -->
+          <div class="
+      mt-auto
+      pt-1
       flex
-      flex-wrap
       items-center
-      gap-x-4
-      gap-y-2
-      min-w-0
+      gap-4
+      flex-wrap
     ">
-              <div v-for="data in modelValue.family.tags" :key="data.name" class="flex items-center gap-1.5">
-                <Image :src="data.web_image" class="h-4 w-4 shrink-0" image-class="object-contain" />
+            <a href="#family-2-extra-description" class="shrink-0">
+              <button class="
+          h-[38px]
+          rounded-xl
+          border
+          border-[#333]
+          px-8
+          text-sm
+          font-medium
+          transition
+          hover:bg-gray-50
+        " :style="{
+          ...getStyles(modelValue?.button?.container?.properties)
+        }">
+                {{ modelValue?.button?.text || ctrans('Learn more') }}
+              </button>
+            </a>
 
-                <span class="
+            <div v-for="data in modelValue.family.tags" :key="data.name" class="
+        flex
+        items-center
+        px-3
+        py-1.5
+        sm:px-2
+        lg:px-2
+        lg:py-2
+      ">
+              <Image :src="data.web_image" class="h-4 w-4 shrink-0" image-class="object-contain" />
+
+              <span class="
           whitespace-nowrap
-          text-[12px]
-          leading-none
+          text-[11px]
+          font-medium
           text-[#555]
+          sm:text-xs
+          lg:text-sm
         ">
-                  {{ data.name }}
-                </span>
-              </div>
+                {{ data.name }}
+              </span>
             </div>
           </div>
         </div>

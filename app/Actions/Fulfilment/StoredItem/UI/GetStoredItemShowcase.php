@@ -25,10 +25,13 @@ class GetStoredItemShowcase
             'stored_item'         => StoredItemResource::make($storedItem)->getArray(),
             'pallets'             => $storedItem->pallets->map(function (Pallet $pallet) {
                 return [
-                    'id'        => $pallet->id,
-                    'slug'      => $pallet->slug,
-                    'reference' => $pallet->reference,
-                    'location'  => [
+                    'id'          => $pallet->id,
+                    'slug'        => $pallet->slug,
+                    'reference'   => $pallet->reference,
+                    'state'       => $pallet->state,
+                    'state_label' => $pallet->state->labels()[$pallet->state->value],
+                    'state_icon'  => $pallet->state->stateIcon()[$pallet->state->value],
+                    'location'    => [
                         'id'     => $pallet->location?->id,
                         'code'   => $pallet->location?->code,
                         'slug'   => $pallet->location?->slug,

@@ -12,7 +12,7 @@ enum OfferTypeEnum: string
     case ORDER_INTERVAL = "Order Interval";
     case ORDER_TOTAL_NET_AMOUNT_AND_ORDER_NUMBER = "Order Total Net Amount AND Order Number";
     case FAMILY_QUANTITY_ORDERED = "Family Quantity Ordered";
-    case VOUCHER_AND_AMOUNT = "Voucher AND Amount";
+    case VOUCHER_AND_AMOUNT = "Voucher AND Amount"; // Old one from aurora to delete
     case PRODUCT_QUANTITY_ORDERED = "Product Quantity Ordered";
     case CATEGORY_FOR_EVERY_QUANTITY_ORDERED = "Category For Every Quantity Ordered";
     case DISCRETIONARY = "Discretionary";
@@ -22,11 +22,16 @@ enum OfferTypeEnum: string
 
 
     case VOL_GR_GIFT = "VolGr Gift";
-    case VOUCHER = "Voucher";
+
+    case VOUCHER = "Voucher"; // Old one from aurora to delete
+
+    case VOUCHER_ANY_ORDER = "Voucher Any Order";
+    case VOUCHER_AMOUNT_ORDERED = "Voucher Amount Ordered";
+
     case GR_AMNESTY = "GR Amnesty";
     case PRODUCT_FOR_EVERY_QUANTITY_ORDERED = "Product For Every Quantity Ordered";
     case EVERY_ORDER = "Every Order";
-    case VOUCHER_AND_ORDER_NUMBER = "Voucher AND Order Number";
+    case VOUCHER_AND_ORDER_NUMBER = "Voucher AND Order Number"; // Old one from aurora to delete
     case PRODUCT_AMOUNT_ORDERED = "Product Amount Ordered";
 
     case SHOP_ORDERED = "Shop Ordered";
@@ -49,6 +54,7 @@ enum OfferTypeEnum: string
     case AMOUNT_AND_ORDER_NUMBER = "Amount AND Order Number";
     case ORDER_NUMBER = "Order Number";
     case CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL = "Category Quantity Ordered Order Interval";
+    case GIFT = "Gift";
 
     public function label(): string
     {
@@ -84,7 +90,11 @@ enum OfferTypeEnum: string
 
             self::VOUCHER,
             self::VOUCHER_AND_AMOUNT,
-            self::VOUCHER_AND_ORDER_NUMBER
+            self::VOUCHER_AND_ORDER_NUMBER,
+
+            self::VOUCHER_ANY_ORDER,
+            self::VOUCHER_AMOUNT_ORDERED,
+
             => $this->voucherIcon(),
 
             self::AMOUNT,
@@ -110,6 +120,7 @@ enum OfferTypeEnum: string
             self::CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED
             => $this->catalogueIcon(),
 
+            self::GIFT,
             self::VOL_GR_GIFT
             => $this->giftIcon(),
 

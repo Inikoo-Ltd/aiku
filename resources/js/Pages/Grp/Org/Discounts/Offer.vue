@@ -27,6 +27,7 @@ import { faFlagCheckered } from "@fortawesome/free-solid-svg-icons"
 import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import PreviewVoucher from '@/Components/Offers/PreviewOffer/PreviewVoucher.vue'
 
 library.add(faFlagCheckered)
 
@@ -223,6 +224,11 @@ const irisOffersData = computed(() => {
                     template="max_discount"
                     class="scale-[200%] mt-6"
                 />
+                <PreviewVoucher
+                    v-else-if="data.offer.type == 'Voucher Amount Ordered'"
+                    :offer="data.offer"
+                    class="scale-[120%] mt-3"
+                />
                 <Coupon v-else :offer="data.offer" :currency_code="currency_code" />    
             </div>
 
@@ -266,6 +272,20 @@ const irisOffersData = computed(() => {
                                 >
                                     {{ data.offer.data_allowance_signature.product_category?.name }}
                                 </Link>
+                            </dd>
+                        </div>
+
+                        <div v-if="data.offer.settings?.can_customer_reuse !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Customer can reuse") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%]">
+                                <span v-if="data.offer.settings?.can_customer_reuse" v-tooltip="ctrans('Voucher are allowed to reuse')">
+                                    <FontAwesomeIcon icon='fas fa-check-circle' class='text-green-500' fixed-width aria-hidden='true' />
+                                </span>
+                                <span v-else v-tooltip="ctrans('Voucher not allowed to reuse')">
+                                    <FontAwesomeIcon icon='fas fa-times-circle' class='text-red-500' fixed-width aria-hidden='true' />
+                                </span>
                             </dd>
                         </div>
 
@@ -320,6 +340,7 @@ const irisOffersData = computed(() => {
             
         </div>
     </div>
+    <pre>{{ data.offer }}</pre>
 
     <!-- Tabs: Customers / Orders -->
     <div class="">

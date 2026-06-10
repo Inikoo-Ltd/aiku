@@ -164,11 +164,26 @@ class EditFamily extends OrgAction
                                 'label'  => __('FAQ'),
                                 'icon'   => 'fa-light fa-question-circle',
                                 'fields' => [
-                                'faq' => [
-                                        'type'  => 'faq',
-                                        'label' => __('FAQ'),
-                                        'value' => $family->faq,
-                                    ],
+                                    'faq' => $family->masterProductCategory
+                                        ? [
+                                            'type'          => 'faq-shop',
+                                            'label'         => __('FAQ'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'noSaveButton'  => true,
+                                            'main'          => $family->masterProductCategory->faq,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $family->faq,
+                                            'toogle'        => [
+                                               'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
+                                        ]
+                                        : [
+                                            'type'  => 'faq-shop',
+                                            'label' => __('FAQ'),
+                                            'value' => $family->faq,
+                                        ],
                                 ]
                             ],
                             [
@@ -232,9 +247,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                  'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
                                         : [
@@ -253,9 +266,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                  'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
                                     'description_extra' => $family->masterProductCategory
@@ -278,9 +289,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                               'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
                                         : [
@@ -299,9 +308,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                 'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
                                 ]

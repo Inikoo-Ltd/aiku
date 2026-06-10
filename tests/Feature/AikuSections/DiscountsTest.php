@@ -687,7 +687,7 @@ describe('calculate order discounts', function () {
                 'percentage_off'             => 0.60,
                 'type'                       => 'quantity',
                 'duration'                   => 'interval',
-                'start_at'                   => now()->addDays(7)->toDateTimeString(),
+                'start_at'                   => now(),
                 'end_at'                     => now()->addDays(14)->toDateTimeString(),
             ]
         );

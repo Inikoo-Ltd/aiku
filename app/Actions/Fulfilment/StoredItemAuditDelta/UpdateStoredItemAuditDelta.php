@@ -16,6 +16,7 @@ use App\Enums\Fulfilment\StoredItemAuditDelta\StoredItemAuditDeltaTypeEnum;
 use App\Models\Fulfilment\StoredItemAuditDelta;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStoredItemAuditDelta extends OrgAction
@@ -46,6 +47,17 @@ class UpdateStoredItemAuditDelta extends OrgAction
                 $originalQuantity = 0;
                 $type             = StoredItemAuditDeltaTypeEnum::SET_UP;
             }
+
+            $storedItem = $storedItemAuditDelta->storedItem;
+            if (in_array($type, [StoredItemAuditDeltaTypeEnum::SET_UP, StoredItemAuditDeltaTypeEnum::ADDITION], true) && !$storedItem->state->canBeStored()) {
+                $messageReplacements = ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()];
+                $message = match ($type) {
+                    StoredItemAuditDeltaTypeEnum::SET_UP   => __('The SKU ":reference" is :state and cannot be added to a pallet.', $messageReplacements),
+                    StoredItemAuditDeltaTypeEnum::ADDITION => __('The SKU ":reference" is :state, its quantity cannot be increased.', $messageReplacements),
+                };
+                throw ValidationException::withMessages(['audited_quantity' => $message]);
+            }
+
             data_set($modelData, 'original_quantity', $originalQuantity);
             data_set($modelData, 'audit_type', $type);
         }
