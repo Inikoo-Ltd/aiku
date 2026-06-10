@@ -62,8 +62,7 @@ class EditVolGrGift extends OrgAction
                     'actions' => [
                         [
                             'type'  => 'button',
-                            'style' => 'cancel',
-                            'label' => __('Cancel'),
+                            'style' => 'exitEdit',
                             'route' => [
                                 'name'       => preg_replace('/edit_vol_gr_gift$/', 'show', request()->route()->getName()),
                                 'parameters' => array_values(request()->route()->originalParameters())
