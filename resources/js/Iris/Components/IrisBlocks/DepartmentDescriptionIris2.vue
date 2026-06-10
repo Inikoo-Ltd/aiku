@@ -3,7 +3,7 @@ import { ref, computed, nextTick, onMounted, onUnmounted, watch, inject } from '
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faPlayCircle } from "@fas"
-import { faChevronCircleLeft, faChevronCircleRight, faTimes, faVideoSlash } from '@far'
+import { faChevronCircleLeft, faChevronCircleRight, faChevronDown, faTimes, faVideoSlash } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { getStyles } from "@/Composables/styles"
@@ -91,8 +91,10 @@ const embedUrl = computed(() => {
 
   return v
 })
-const mediaRef = ref<HTMLElement | null>(null)
-const descriptionRef = ref<HTMLElement | null>(null)
+const desktopMediaRef = ref<HTMLElement | null>(null)
+const mobileMediaRef = ref<HTMLElement | null>(null)
+const desktopDescriptionRef = ref<HTMLElement | null>(null)
+const mobileDescriptionRef = ref<HTMLElement | null>(null)
 
 const expanded = ref(false)
 const showReadMore = ref(false)
@@ -101,20 +103,29 @@ let resizeObserver: ResizeObserver | null = null
 
 const calculateDescriptionHeight = async () => {
   await nextTick()
-  console.log(maxDescriptionHeight.value, mediaRef.value.offsetHeight)
 
-  if (!mediaRef.value || !descriptionRef.value) return
+  const media = props.screenType === 'mobile' ? mobileMediaRef.value : desktopMediaRef.value
+  const description = props.screenType === 'mobile' ? mobileDescriptionRef.value : desktopDescriptionRef.value
 
-  maxDescriptionHeight.value = mediaRef.value.offsetHeight
-  showReadMore.value = descriptionRef.value.scrollHeight > mediaRef.value.offsetHeight
+  if (!media || !description) return
+
+  maxDescriptionHeight.value = media.offsetHeight
+  showReadMore.value = description.scrollHeight > media.offsetHeight
 }
 
 onMounted(() => {
   calculateDescriptionHeight()
 
-  if (window.ResizeObserver && mediaRef.value) {
+  if (window.ResizeObserver) {
     resizeObserver = new ResizeObserver(calculateDescriptionHeight)
-    resizeObserver.observe(mediaRef.value)
+
+    if (desktopMediaRef.value) {
+      resizeObserver.observe(desktopMediaRef.value)
+    }
+
+    if (mobileMediaRef.value) {
+      resizeObserver.observe(mobileMediaRef.value)
+    }
   } else {
     window.addEventListener('resize', calculateDescriptionHeight)
   }
@@ -133,6 +144,7 @@ watch(
     props.fieldValue.department.description_extra,
     props.fieldValue.department.showcase_video,
     props.fieldValue.department.showcase_image,
+    props.screenType,
   ],
   calculateDescriptionHeight,
   { immediate: true }
@@ -211,8 +223,8 @@ watch(
               text-slate-700
             " v-html="fieldValue.department.description" />
 
-          <!-- Banner -->
-          <div class="mt-6 overflow-hidden bg-[#E7E7E7]">
+          <!-- Banner Desktop  -->
+          <div class="mt-6 overflow-hidden bg-[#E7E7E7] hidden lg:block">
             <div class="grid grid-cols-1 lg:grid-cols-[46%_54%]">
               <!-- Content -->
               <div class="
@@ -223,7 +235,7 @@ watch(
                   2xl:px-16 2xl:py-14
                 ">
                 <div class="relative">
-                  <div ref="descriptionRef" class="
+                  <div ref="desktopDescriptionRef" class="
       text-[14px]
       md:text-[15px]
       2xl:text-[17px]
@@ -285,9 +297,9 @@ watch(
               <div class="overflow-hidden  h-[220px]
                       md:h-[280px]
                       lg:h-[360px]
-                      2xl:h-[500px]" ref="mediaRef">
+                      2xl:h-[500px]" ref="desktopMediaRef">
                 <template v-if="fieldValue.department.showcase_video && embedUrl">
-                  <div  class="
+                  <div class="
                       video-cover
                       w-full
                       h-[220px]
@@ -295,14 +307,13 @@ watch(
                       lg:h-[360px]
                       2xl:h-[500px]
                     ">
-                    <iframe :src="embedUrl" frameborder="0"
-                     allow="autoplay; fullscreen; picture-in-picture"
+                    <iframe :src="embedUrl" frameborder="0" allow="autoplay; fullscreen; picture-in-picture"
                       allowfullscreen class="video-iframe" @load="calculateDescriptionHeight" />
                   </div>
                 </template>
 
                 <template v-else-if="fieldValue.department.showcase_image">
-                  <Image  :src="fieldValue.department.showcase_image"
+                  <Image :src="fieldValue.department.showcase_image"
                     :alt="fieldValue.department.name || 'showcase image'" class="
                       w-full
                       h-[220px]
@@ -314,7 +325,7 @@ watch(
                 </template>
 
                 <template v-else>
-                  <div  class="
+                  <div class="
                       w-full
                       h-[220px]
                       md:h-[280px]
@@ -329,6 +340,102 @@ watch(
                   </div>
                 </template>
               </div>
+            </div>
+          </div>
+
+          <!-- Banner Mobile  -->
+          <details class="lg:hidden border-y border-gray-300">
+            <summary class="
+              flex items-center justify-between
+              py-5 px-4
+              text-xl font-bold
+              list-none cursor-pointer
+            ">
+              {{ ctrans('Browse By Category:') }}
+
+
+              <FontAwesomeIcon :icon="faChevronDown" class="w-8 h-8 transition-transform details-arrow" />
+            </summary>
+
+            <div class="pb-4 px-4 space-y-3">
+              <LinkIris v-for="item in props.fieldValue.sub_departments" :key="item.url" :href="item.url"
+                type="internal" class="block text-slate-700">
+                {{ item.name }}
+              </LinkIris>
+            </div>
+          </details>
+
+          <!-- Mobile Only -->
+          <div class="lg:hidden bg-[#E7E7E7] overflow-hidden">
+            <!-- Image -->
+            <div class="aspect-[4/3] overflow-hidden" ref="mobileMediaRef">
+              <template v-if="fieldValue.department.showcase_image">
+                <Image :src="fieldValue.department.showcase_image" :alt="fieldValue.department.name"
+                  class="w-full h-full object-cover" />
+              </template>
+
+              <template v-else-if="fieldValue.department.showcase_video">
+                <div class="relative w-full h-full">
+                  <iframe :src="embedUrl" class="absolute inset-0 w-full h-full" frameborder="0"
+                    allow="autoplay; fullscreen; picture-in-picture" allowfullscreen />
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                  <FontAwesomeIcon :icon="faVideoSlash" class="text-5xl text-gray-400" />
+                </div>
+              </template>
+            </div>
+
+            <!-- Content -->
+            <div class="px-6 py-8 text-center">
+              <h2 v-if="fieldValue.department.name" class="text-2xl font-bold text-slate-900 mb-4">
+                {{ fieldValue.department.name }}
+              </h2>
+
+              <div class="relative text-slate-700 text-sm leading-6">
+                <div ref="mobileDescriptionRef" class="overflow-hidden transition-all duration-300" :style="!expanded && showReadMore
+                    ? { maxHeight: '90px' }
+                    : {}
+                  " v-html="fieldValue.department.description_extra" />
+
+                <div v-if="!expanded && showReadMore" class="
+          absolute
+          bottom-0
+          left-0
+          right-0
+          h-10
+          pointer-events-none
+          bg-gradient-to-t
+          from-[#E7E7E7]
+          via-[#E7E7E7]/90
+          to-transparent
+        " />
+              </div>
+
+              <button v-if="showReadMore" type="button" class="
+        mt-3
+        text-xs
+        underline
+        text-slate-700
+      " @click="expanded = !expanded">
+                {{ expanded ? 'Read Less' : 'Read More' }}
+              </button>
+
+              <button v-if="fieldValue.department.showcase_video" class="
+        mt-6
+        w-full
+        bg-slate-900
+        hover:bg-slate-800
+        text-white
+        font-semibold
+        py-3
+        rounded-md
+        transition
+      " @click="videoDialogVisible = true">
+                {{ ctrans('See a video') }}
+              </button>
             </div>
           </div>
         </section>
