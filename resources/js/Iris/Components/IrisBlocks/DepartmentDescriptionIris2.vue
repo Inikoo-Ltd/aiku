@@ -419,6 +419,8 @@ watch(
         text-xs
         underline
         text-slate-700
+        flex
+        jsutfy-start
       " @click="expanded = !expanded">
                 {{ expanded ? 'Read Less' : 'Read More' }}
               </button>
