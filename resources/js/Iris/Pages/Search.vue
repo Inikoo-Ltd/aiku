@@ -498,6 +498,16 @@ console.log("layout", layout)
     top: -47px !important;
 }
 
+.lb-search .lb-active-filters .lb-facet__cancel {
+    position: static !important;
+    flex-shrink: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    // max-width: 45%;
+    font-size: clamp(0.64rem, 1vw, 0.80rem);
+}
+
 .lb-search .lb-checkbox {
     padding: 1px 0 1px 10px !important;
 }

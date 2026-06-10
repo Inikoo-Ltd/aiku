@@ -3,7 +3,7 @@ import { trans } from 'laravel-vue-i18n'
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed } from "vue"
+import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed, watch } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
@@ -27,11 +27,13 @@ import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelect
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
-import { ToggleSwitch } from 'primevue'
+import { InputText, ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
+import { useFormatTime } from '@/Composables/useFormatTime'
+import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
 library.add(faTag, faCheck, faExclamationTriangle)
 
 interface ChargeResource {
@@ -127,6 +129,16 @@ const props = defineProps<{
         }
     }
     missed_offers: Record<string, { label: string }>
+    voucher: {
+        id: number
+        voucher_code: string
+        voucher_amount: number
+        status: string
+        until: string
+        name: string
+        discount: string
+    } | null
+
 }>()
 
 
@@ -241,51 +253,7 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
-// Section: Voucher
-const voucherCode = ref(props?.order?.voucher_code || '')
-const isLoadingVoucher = ref(false)
-const isModalVoucherNotFound = ref(false)
-const voucherNotFoundMessage = ref('')
-const onApplyVoucher = () => {
-    if (!voucherCode.value) {
-        return
-    }
 
-    router.post(
-        route('retina.models.order.store_voucher', { order: props.order.id }),
-        { voucher_code: voucherCode.value },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingVoucher.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Voucher added to your basket."),
-                    type: "success"
-                })
-                layout?.reload_handle?.()
-            },
-            onError: (errors: Record<string, string>) => {
-                if (errors?.voucher_code) {
-                    voucherNotFoundMessage.value = errors.voucher_code
-                    isModalVoucherNotFound.value = true
-                    return
-                }
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the voucher, try again."),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingVoucher.value = false
-            },
-        }
-    )
-}
 
 interface Product {
     historic_asset_id: number
@@ -694,35 +662,14 @@ const onChangeInsurance = async (val: boolean) => {
 
                 <!-- Section: List of charges -->
                 <div class="row-start-1 md:row-auto">
-                    <div class="flex flex-wrap items-stretch gap-x-3 gap-y-2 pl-2 md:pl-6" v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'">
-                        <div class="w-72 shrink-0">
-                            <PureInput
-                                v-model="voucherCode"
-                                :placeholder="trans('Enter voucher code')"
-                                :isLoading="isLoadingVoucher"
-                                :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }"
-                                @onEnter="() => onApplyVoucher()"
-                            >
-                                <template #stateIcon>
-                                    <FontAwesomeIcon :icon="faTag" class="text-gray-400 px-3" fixed-width aria-hidden="true" />
-                                </template>
-                            </PureInput>
-                        </div>
-                        <Transition name="slide-to-right">
-                            <Button
-                                class="shrink-0"
-                                size="xs"
-                                :label="trans('Add voucher')"
-                                icon="fas fa-plus"
-                                type="tertiary"
-                                key=2
-                                :loading="isLoadingVoucher"
-                                @click="() => onApplyVoucher()"
-                                :disabled="!voucherCode || isLoadingVoucher"
-                            />
-                        </Transition>
-                    </div>
+                    <!-- Section: Voucher Code -->
+                    <InputVoucherInBasket
+                        v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'"
+                        :voucher="voucher"
+                        :order="order"
+                    />
 
+                    <!-- Section: Eligible Gifts -->
                     <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
                         <EligibleGift
                             :routeUpdate="{
@@ -899,21 +846,6 @@ const onChangeInsurance = async (val: boolean) => {
                 type="tertiary"
                 full
             />
-        </div>
-    </Modal>
-
-    <Modal :isOpen="isModalVoucherNotFound" @onClose="isModalVoucherNotFound = false" width="w-full max-w-md">
-        <div class="text-center">
-            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-red-500" fixed-width aria-hidden="true" />
-            </div>
-            <h3 class="mt-4 text-lg font-semibold text-gray-900">{{ trans("Voucher not found") }}</h3>
-            <p class="mt-2 text-sm text-gray-500">
-                {{ voucherNotFoundMessage || trans("The voucher code you entered was not found or is no longer available.") }}
-            </p>
-            <div class="mt-6 flex justify-center">
-                <Button :label="trans('OK')" @click="isModalVoucherNotFound = false" />
-            </div>
         </div>
     </Modal>
 </template>

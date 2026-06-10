@@ -218,37 +218,41 @@ const submitVoucherOffer = () => {
         target_id: targetPayload?.target_id ?? null,
     }
 
-    router.post(
+    isLoadingSubmit.value = true
+
+    axios.post(
         route('grp.models.store_voucher', {
             shop: props.shop_data.id,
         }),
-        payload,
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                resetForm()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
-        }
+        payload
     )
+        .then((response) => {
+            notify({
+                title: trans("Success"),
+                text: trans("Successfully submit the data"),
+                type: "success"
+            })
+            closeModal()
+            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+                offer: response.data.slug
+            }))
+            router.reload()
+        })
+        .catch(error => {
+            const errors = error.response?.data?.errors || {}
+            const errMsg = Object.values(errors).flat().join('. ') || trans("Failed to submit the data, please try again")
+            notify({
+                title: trans("Something went wrong"),
+                text: errMsg,
+                type: "error"
+            })
+        })
+        .finally(() => {
+            isLoadingSubmit.value = false
+        })
 }
 
 const nextStep = () => {

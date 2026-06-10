@@ -38,6 +38,7 @@ const props = withDefaults(defineProps<{
         icon?: string
     }
     styleInput?: {}
+    classInput?: string
 }>(), {
     caret: true,
     type: 'text'
@@ -147,12 +148,13 @@ const checkNumber = (event: KeyboardEvent) => {
                     text-gray-600 sm:text-sm placeholder:text-gray-400
                     border-transparent
                     focus:ring-0 focus:ring-gray-500 focus:outline-0 focus:border-transparent
-                    read-only:bg-gray-100 read-only:ring-0 read-only:ring-transparent read-only:focus:border-transparent read-only:focus:border-gray-300 read-only:text-gray-500
+                    rounded-md read-only:bg-gray-100 read-only:ring-0 read-only:ring-transparent read-only:focus:border-transparent read-only:focus:border-gray-300 read-only:text-gray-500
                 "
                 :class="[
                     caret ? '' : '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
                     clear && modelValue?.length ? 'pl-3 pr-7' : 'px-3',
-                    align == 'right' ? 'text-right' : ''
+                    align == 'right' ? 'text-right' : '',
+                    classInput
                 ]"
                 :style="styleInput"
             />
@@ -167,8 +169,8 @@ const checkNumber = (event: KeyboardEvent) => {
                 </div>
             </slot>
 
-            <slot v-if="suffix" name="suffix">
-                <div 
+            <slot name="suffix">
+                <div v-if="suffix" 
                     class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100"
                     @click="useCopyText(modelValue)"
                 >
@@ -192,11 +194,9 @@ const checkNumber = (event: KeyboardEvent) => {
         <div class="absolute inset-y-0 align-middle flex items-center"
             :class="align === 'right' ? 'left-0' : 'right-0'"
         >
-            <Transition name="spin-to-right">
-                <div v-if="isLoading" class="px-1">
-                    <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-xl' fixed-width aria-hidden='true' />
-                </div>
-            </Transition>
+            <div v-if="isLoading" class="px-1">
+                <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin xtext-xl' fixed-width aria-hidden='true' />
+            </div>
 
             <slot name="stateIcon"/>
         </div>

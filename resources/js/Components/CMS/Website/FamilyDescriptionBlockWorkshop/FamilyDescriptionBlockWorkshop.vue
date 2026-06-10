@@ -103,6 +103,7 @@ const onPickTemplate = async (template: any) => {
 
     if (response.data) {
       layoutState.value = response.data
+      debouncedAutosave()
       emits("update:layout", response.data);
     }
   } catch (error) {
@@ -122,7 +123,6 @@ const onChangeFamily = (payload: any) => {
 // AUTOSAVE
 const autosave = () => {
   const payload = cloneDeep(layoutState.value)
-
   router.patch(
     route(
       props.data.autosaveRoute.name,

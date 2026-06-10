@@ -18,6 +18,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartmentDescription;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategoriesFromMaster;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
@@ -32,8 +33,11 @@ trait WithFillWorkshopWebBlocks
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
-        if ($webBlockType == 'department-description-1') {
-            $parsedWebBlocks[$key] = GetWebBlockDepartment::run($webpage, $webBlock);
+        // Old. Commented out
+        // if ($webBlockType == 'department-description-1') {
+        //     $parsedWebBlocks[$key] = GetWebBlockDepartment::run($webpage, $webBlock);
+        if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
+            $parsedWebBlocks[$key] = GetWebBlockDepartmentDescription::run($webpage, $webBlock);
         } elseif ($webBlockType == 'sub-department-description-1') {
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
