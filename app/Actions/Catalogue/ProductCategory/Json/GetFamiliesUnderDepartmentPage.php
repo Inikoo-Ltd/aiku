@@ -37,7 +37,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
                 $join->on('product_categories.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
-            ->leftJoin('product_categories as sub_department', 'product_categories.sub_department_id',  '=', 'sub_department.id')
+            ->leftJoin('product_categories as sub_department', 'product_categories.sub_department_id', '=', 'sub_department.id')
             ->select(
                 [
                     'product_categories.id',
