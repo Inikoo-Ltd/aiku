@@ -10,6 +10,7 @@ namespace App\Actions\Iris\Basket;
 
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\IrisAction;
+use App\Actions\Ordering\Order\GetVoucherData;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -272,6 +273,8 @@ class FetchIrisEcomBasket extends IrisAction
                 'parameters' => [],
             ];
         }
+
+        $orderArr['voucher'] = GetVoucherData::run($order->offer_voucher_id);
 
         return $orderArr;
     }
