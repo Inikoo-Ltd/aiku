@@ -1937,7 +1937,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </div>
                     
                     <div class="flex flex-col sm:flex-row items-center gap-2">
-                        <div v-if="props.box_stats?.voucher && layout?.app?.environment == 'local'"
+                        <div v-if="props.box_stats?.voucher"
                             class="flex items-center gap-x-1.5 rounded bg-indigo-50 px-2 py-1 text-xs text-indigo-700">
                             <span class="font-medium uppercase">{{ trans("Voucher") }}: {{ props.box_stats.voucher.voucher_code }}</span>
                             <button type="button" v-tooltip="trans('Remove voucher')"
@@ -1947,7 +1947,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             </button>
                         </div>
 
-                        <div v-if="layout?.app?.environment == 'local' && isVoucherAllowed && !props.box_stats?.voucher">
+                        <div v-if="isVoucherAllowed && !props.box_stats?.voucher">
                             <Button
                                 :label="trans('Add Voucher')"
                                 size="xs"
