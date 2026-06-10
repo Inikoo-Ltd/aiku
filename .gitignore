@@ -122,3 +122,7 @@ laradumps.yaml
 /nightowl/*
 /local_storage/*
 /devops/haproxy/facebook-bots.lst
+
+skills-lock.json
+/.agents/*
+/.trae/*
