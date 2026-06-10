@@ -100,11 +100,12 @@ const onApplyVoucher = () => {
                 layout?.reload_handle?.()
             },
             onError: (errors: Record<string, string>) => {
-                if (errors?.voucher_code) {
-                    voucherNotFoundMessage.value = errors.voucher_code
-                    isModalVoucherNotFound.value = true
-                    return
+                if (errors?.voucher) {
+                    voucherNotFoundMessage.value = errors.voucher
+                    // isModalVoucherNotFound.value = true
+                    // // return
                 }
+                console.log('errrorr', errors.voucher)
                 notify({
                     title: ctrans("Something went wrong"),
                     text: ctrans("Failed to add the voucher, try again."),
@@ -227,6 +228,7 @@ const onRemoveVoucher = () => {
             <div class="w-72 shrink-0">
                 <PureInput
                     v-model="tempVoucherCode"
+                    @update:model-value="() => voucherNotFoundMessage = null"
                     xisLoading="isLoadingVoucher"
                     @onEnter="() => onApplyVoucher()"
                     :disabled="isLoadingVoucher || hasAttachedVoucher"
@@ -241,6 +243,7 @@ const onRemoveVoucher = () => {
                         xborder: '1px solid rgb(34 197 94 / var(--tw-border-opacity, 1))'
                     }"
                     classInput="!bg-transparent xtext-green-700 "
+                    :isError="!!(voucherNotFoundMessage?.length)"
                 >
                     <template #prefix>
                         <div class="pl-3 -mr-2 whitespace-nowrap xtext-green-700 opacity-50">
@@ -253,18 +256,27 @@ const onRemoveVoucher = () => {
                         </div>
                     </template>
                 </PureInput>
+                <div class="relative w-fit ml-auto">
+                    <Transition name="slide-to-right">
+                        <div v-if="voucherNotFoundMessage?.length" class="text-right text-xs italic opacity-90 mt-0.5 text-red-500 pr-1">
+                            *{{ voucherNotFoundMessage }}
+                        </div>
+                    </Transition>
+                </div>
             </div>
 
-            <Button
-                class="shrink-0"
-                size="xs"
-                xlabel="ctrans('Add voucher')"
-                icon="fas fa-plus"
-                type="dashed"
-                :loading="isLoadingVoucher"
-                @click="() => onApplyVoucher()"
-                :disabled="!tempVoucherCode || isLoadingVoucher || hasAttachedVoucher"
-            />
+            <div class="flex h-8">
+                <Button
+                    class="shrink-0"
+                    size="xs"
+                    xlabel="ctrans('Add voucher')"
+                    icon="fas fa-plus"
+                    type="dashed"
+                    :loading="isLoadingVoucher"
+                    @click="() => onApplyVoucher()"
+                    :disabled="!tempVoucherCode || isLoadingVoucher || hasAttachedVoucher"
+                />
+            </div>
         </div>
 
         <!-- <div v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'" class="mt-2 pr-2 md:pr-6">

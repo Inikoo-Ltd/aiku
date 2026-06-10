@@ -363,7 +363,7 @@ watch(
           allowfullscreen class="w-full h-full" />
       </div>
     </div>
-  </Dialog>>
+  </Dialog>
 
 </template>
 <style scoped>
