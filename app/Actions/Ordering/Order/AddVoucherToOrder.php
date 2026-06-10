@@ -17,8 +17,6 @@ class AddVoucherToOrder extends OrgAction
      */
     public function handle(Order $order, array $modelData): array
     {
-
-
         $voucherCode = Str::lower(trim(data_get($modelData, 'voucher')));
 
         $offer = Offer::where('shop_id', $order->shop_id)
