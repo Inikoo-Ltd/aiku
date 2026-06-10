@@ -44,7 +44,7 @@ class StoreMailshotAsNewTemplate extends OrgAction
         data_set($modelData, 'is_seeded', false);
 
         try {
-            $result = BeefreeExportJsonToHtml::run($this->shop->organisation, ['json' => $modelData['layout']]);
+            $result = BeefreeExportJsonToHtml::run($this->organisation, ['json' => $modelData['layout']]);
             data_set($modelData, 'compiled_layout', $result);
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
