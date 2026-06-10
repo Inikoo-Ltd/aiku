@@ -36,8 +36,8 @@ class FixMiscalculatedTransactionAmounts
         foreach ($transactions as $transaction) {
             $qtyOrdered    = $transaction->quantity_ordered;
             $historicPrice = $transaction->historicAsset->price;
-            $grossAmountExpected   = round($qtyOrdered * $historicPrice,2);
-            $netAmountExpected     = round(($qtyOrdered * $historicPrice) * ($transaction->current_discount_factor ?? 1),2);
+            $grossAmountExpected   = round($qtyOrdered * $historicPrice, 2);
+            $netAmountExpected     = round(($qtyOrdered * $historicPrice) * ($transaction->current_discount_factor ?? 1), 2);
 
 
             if ($grossAmountExpected != $transaction->gross_amount || $netAmountExpected != $transaction->net_amount) {

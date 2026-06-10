@@ -238,7 +238,7 @@ class ShowCustomer extends OrgAction
         ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
         ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
         ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
-        ->table(IndexOffers::make()->tableStructure(parent: $customer->shop, prefix: $tabs::OFFERS->value))
+        // ->table(IndexOffers::make()->tableStructure(parent: $customer->shop, prefix: $tabs::OFFERS->value))
         ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value));
     }
 

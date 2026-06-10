@@ -3,56 +3,27 @@
 /*
  * author Louis Perez
  * created on 06-06-2026-14h-44m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Actions\Web\WebBlock\Iris;
 
-use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Http\Resources\Web\WebBlockFamilyResourceForDepartmentWebpage;
-use App\Models\Catalogue\ProductCategory;
+use App\Actions\Web\WebBlock\Concerns\HasSubDepartmentsThree;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsObject;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetIrisWebBlockSubDepartmentsThree
 {
     use AsObject;
+    use HasSubDepartmentsThree;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $subDepartmentList = DB::table('product_categories')
-            ->where('product_categories.department_id', $webpage->model_id)
-            ->where('product_categories.shop_id', $webpage->shop_id)
-            ->leftJoin('webpages', function ($join) {
-                $join->on('product_categories.id', '=', 'webpages.model_id')
-                    ->where('webpages.model_type', '=', 'ProductCategory');
-            })
-            ->select(
-                [
-                    'product_categories.code',
-                    'product_categories.name',
-                ]
-            )
-            ->orderBy('product_categories.code')
-            ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
-            ->where('product_categories.show_in_website', true)
-            ->whereNotNull('webpages.id')
-            ->where('webpages.state', WebpageStateEnum::LIVE->value)
-            ->whereNull('product_categories.deleted_at')
-            ->get()
-            ->toArray();;
+        $webBlock = $this->getSubDepartmentsThree($webpage, $webBlock);
 
-        $familiesList = GetFamiliesUnderDepartmentPage::run($webpage->model);
-
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue'] ?? []);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.sub_department_list', $subDepartmentList ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.department', $webpage->model);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamilyResourceForDepartmentWebpage::collection($familiesList) ?? []);
 
         return [
            'type' => $webBlock['type'],
@@ -63,5 +34,4 @@ class GetIrisWebBlockSubDepartmentsThree
            ),
         ];
     }
-
 }

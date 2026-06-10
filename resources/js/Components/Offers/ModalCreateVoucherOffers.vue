@@ -93,7 +93,7 @@ watch(offerVoucher, (value) => {
     }
 
     const code = value?.trim()
-    if (!code) {
+    if (!code || /\s/.test(value ?? '')) {
         isCheckingVoucher.value = false
         return
     }
@@ -170,30 +170,40 @@ function formatDate(date: Date | null) {
     return `${year}-${month}-${day}`
 }
 
+const targetTypeMap: Record<TargetType, string> = {
+    shop: 'shop',
+    department: 'department',
+    subdepartment: 'sub_department',
+    family: 'family',
+    collection: 'collection',
+    product: 'product',
+}
+
 const buildTargetPayload = () => {
     const t = target.value
     if (!t) return null
 
+    let id: number | null = null
     if (t === 'shop') {
-        return shopId ? { type: 'shop', id: shopId } : null
+        id = shopId
+    } else if (t === 'product') {
+        id = productFilters.value
+    } else if (t === 'collection') {
+        id = collectionFilters.value
+    } else if (isCategoryTarget(t)) {
+        id = categoryFilters.value
     }
-    if (t === 'product') {
-        return productFilters.value ? { type: 'product', id: productFilters.value } : null
+
+    if (!id) return null
+
+    return {
+        target_type: targetTypeMap[t],
+        target_id: id,
     }
-    if (t === 'collection') {
-        return collectionFilters.value ? { type: 'collection', id: collectionFilters.value } : null
-    }
-    if (isCategoryTarget(t)) {
-        return categoryFilters.value
-            ? { type: t, id: categoryFilters.value }
-            : null
-    }
-    return null
 }
 
 const submitVoucherOffer = () => {
     const targetPayload = buildTargetPayload()
-    const targets = targetPayload ? [targetPayload] : []
 
     const payload = {
         voucher: offerVoucher.value,
@@ -202,42 +212,47 @@ const submitVoucherOffer = () => {
         offer_amount: offerAmount.value,
         start_at: formatDate(startDate.value),
         end_at: formatDate(endDate.value),
-        reuse_customer: reuseCustomer.value,
-        discount_percentage: discountPercentage.value,
-        targets: targets,
+        can_customer_reuse: reuseCustomer.value,
+        percentage_off: discountPercentage.value,
+        target_type: targetPayload?.target_type ?? null,
+        target_id: targetPayload?.target_id ?? null,
     }
 
-    router.post(
+    isLoadingSubmit.value = true
+
+    axios.post(
         route('grp.models.store_voucher', {
             shop: props.shop_data.id,
         }),
-        payload,
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                resetForm()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
-        }
+        payload
     )
+        .then((response) => {
+            notify({
+                title: trans("Success"),
+                text: trans("Successfully submit the data"),
+                type: "success"
+            })
+            closeModal()
+            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+                offer: response.data.slug
+            }))
+            router.reload()
+        })
+        .catch(error => {
+            const errors = error.response?.data?.errors || {}
+            const errMsg = Object.values(errors).flat().join('. ') || trans("Failed to submit the data, please try again")
+            notify({
+                title: trans("Something went wrong"),
+                text: errMsg,
+                type: "error"
+            })
+        })
+        .finally(() => {
+            isLoadingSubmit.value = false
+        })
 }
 
 const nextStep = () => {
@@ -271,7 +286,10 @@ function resetForm() {
     step.value = 1
 }
 
+const hasVoucherWhitespace = computed(() => /\s/.test(offerVoucher.value ?? ''))
+
 const isStep1Invalid = computed(() => {
+    if (hasVoucherWhitespace.value) return true
     if (voucherExists.value !== false) return true
     if (!offerVoucher.value?.trim()) return true
     if (!offerLabel.value?.trim()) return true
@@ -334,7 +352,11 @@ const isFormInvalid = computed(() => {
 
                         <PureInput v-model="offerVoucher" :maxLength="60" :placeholder="trans('Enter Voucher code')" />
 
-                        <p v-if="isCheckingVoucher" class="text-sm text-gray-500 flex items-center gap-x-1">
+                        <p v-if="hasVoucherWhitespace" class="text-sm text-red-500 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
+                            {{ trans('Voucher code cannot contain spaces') }}
+                        </p>
+                        <p v-else-if="isCheckingVoucher" class="text-sm text-gray-500 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-spinner-third" spin class="text-xs" />
                             {{ trans('Checking voucher code') }}…
                         </p>

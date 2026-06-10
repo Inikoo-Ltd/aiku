@@ -129,7 +129,7 @@ class UpdateRetinaPallet extends RetinaAction
 
         return $this->handle($pallet, $this->validatedData);
     }
-    
+
     // Brought back in case there's router.patch
     public function jsonResponse(Pallet $pallet): PalletResource
     {

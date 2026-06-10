@@ -170,7 +170,7 @@ class EditMasterFamily extends OrgAction
                             'icon'   => 'fa-light fa-question-circle',
                             'fields' => [
                                'faq' => [
-                                    'type'  => 'faq',
+                                    'type'  => 'faq-master',
                                     'label' => __('FAQ'),
                                     'value' => $masterProductCategory->faq,
                                 ],
@@ -200,7 +200,7 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toogle'  => [
-                                        'heading2',
+                                     /*    'heading2',
                                         'heading3',
                                         'fontSize',
                                         'bold',
@@ -219,7 +219,7 @@ class EditMasterFamily extends OrgAction
                                         'redo',
                                         'highlight',
                                         'color',
-                                        'clear'
+                                        'clear' */
                                     ],
                                     'value'   => $masterProductCategory->description
                                 ],
@@ -230,7 +230,7 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toogle'  => [
-                                        'heading2',
+                                      /*   'heading2',
                                         'heading3',
                                         'fontSize',
                                         'bold',
@@ -249,7 +249,7 @@ class EditMasterFamily extends OrgAction
                                         'redo',
                                         'highlight',
                                         'color',
-                                        'clear'
+                                        'clear' */
                                     ],
                                     'value'   => $masterProductCategory->description_extra
                                 ],

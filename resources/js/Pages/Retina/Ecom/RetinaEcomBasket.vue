@@ -3,16 +3,17 @@ import { trans } from 'laravel-vue-i18n'
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed } from "vue"
+import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed, watch } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTag, faStar, faBoxHeart, faShieldAlt } from "@fas"
+import { faTag, faStar, faBoxHeart, faShieldAlt,faExclamationTriangle } from "@fas"
 import { faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
 import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -26,12 +27,14 @@ import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelect
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
-import { ToggleSwitch } from 'primevue'
+import { InputText, ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
-library.add(faTag, faCheck)
+import { useFormatTime } from '@/Composables/useFormatTime'
+import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
+library.add(faTag, faCheck, faExclamationTriangle)
 
 interface ChargeResource {
     label: string
@@ -126,6 +129,16 @@ const props = defineProps<{
         }
     }
     missed_offers: Record<string, { label: string }>
+    voucher: {
+        id: number
+        voucher_code: string
+        voucher_amount: number
+        status: string
+        until: string
+        name: string
+        discount: string
+    } | null
+
 }>()
 
 
@@ -240,6 +253,8 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
+
+
 interface Product {
     historic_asset_id: number
     id: number
@@ -308,7 +323,7 @@ const onAddProducts = async (product: Product) => {
                     }
                 }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
-                layout.reload_handle()
+                layout?.reload_handle?.()
             },
             onFinish: () => {
                 isLoadingSubmit.value = false
@@ -386,7 +401,7 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                         ]
                     }
                 })
-                layout.reload_handle()
+                layout?.reload_handle?.()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'
             },
@@ -647,6 +662,14 @@ const onChangeInsurance = async (val: boolean) => {
 
                 <!-- Section: List of charges -->
                 <div class="row-start-1 md:row-auto">
+                    <!-- Section: Voucher Code -->
+                    <InputVoucherInBasket
+                        v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'"
+                        :voucher="voucher"
+                        :order="order"
+                    />
+
+                    <!-- Section: Eligible Gifts -->
                     <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
                         <EligibleGift
                             :routeUpdate="{

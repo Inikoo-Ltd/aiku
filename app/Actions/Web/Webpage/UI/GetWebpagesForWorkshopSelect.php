@@ -9,29 +9,14 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Actions\Web\Webpage\WithWebpageSubNavigation;
-use App\Actions\Web\Website\UI\ShowWebsite;
-use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
-use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\Web\WebpagesForWorkshopSelectResource;
-use App\Http\Resources\Web\WebpagesResource;
-use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
-use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -76,7 +61,7 @@ class GetWebpagesForWorkshopSelect extends OrgAction
             END, webpages.sub_type ASC"
         );
 
-        
+
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');

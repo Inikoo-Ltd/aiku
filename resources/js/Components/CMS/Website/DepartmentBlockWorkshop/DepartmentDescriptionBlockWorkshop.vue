@@ -20,14 +20,13 @@ import { set } from "lodash";
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop);
 
 const props = defineProps<{
-  tab : string
+  tab: string
   data: {
     web_block_types: any;
-    parent_product_category: any[];
+    autosaveRoute: routeType;
     layout: any;
-    auto_save_route: routeType;
-    update_route: routeType;
-    route_get_list:routeType;
+    department: any[];
+    update_department_route: routeType;
   };
 }>();
 
@@ -44,7 +43,7 @@ const emit = defineEmits<{
 }>()
 
 const rootRef = ref<HTMLElement | null>(null)
-const layoutState = ref(JSON.parse(JSON.stringify(props.data.layout)));
+const layoutState = ref(JSON.parse(JSON.stringify(Object.values(props.data.layout)[0])));
 const isLoadingSave = ref(false);
 const visibleDrawer = ref(false);
 const currentView = ref("desktop");
@@ -52,8 +51,8 @@ const iframeClass = ref("w-full h-full");
 const loading = ref(false);
 
 const dataPicked = ref({
-  sub_department: null,
-  families : []
+  sub_departments: null,
+  department: []
 });
 
 provide("currentView", currentView);
@@ -64,16 +63,19 @@ const createSnapshot = () => {
 
   if (snapshot.data?.fieldValue) {
     delete snapshot.data.fieldValue.department;
-    delete snapshot.data.fieldValue.sub_department;
+    delete snapshot.data.fieldValue.sub_departments;
   }
 
-  return snapshot;
+  return { [raw.code] : snapshot};
 };
 
 const autosave = () => {
   const payload = createSnapshot();
   router.patch(
-    route(props.data.auto_save_route.name, props.data.auto_save_route.parameters),
+    route(
+      props.data.autosaveRoute.name,
+      props.data.autosaveRoute.parameters
+    ),
     { layout: payload },
     {
       onStart: () => { isLoadingSave.value = true },
@@ -120,24 +122,24 @@ async function selectProductCategory(subDepartment: any) {
   loading.value = true;
 
   const resetDepartmentState = () => {
-    set(dataPicked.value, 'sub_department',null);
-    set(dataPicked.value, 'families', []);
+    set(dataPicked.value, 'department', null);
+    set(dataPicked.value, 'sub_departments', []);
   };
 
   try {
     const { data } = await axios.get(
       route(
         props.data.route_get_list?.name,
-        { 
-          ...props.data.route_get_list?.parameters, 
-          subDepartment: subDepartment.slug 
+        {
+          ...props.data.route_get_list?.parameters,
+          department: subDepartment.slug
         }
       )
     );
 
     Object.assign(dataPicked.value, {
-      sub_department : subDepartment,
-      families : data?.data ?? [],
+      department: subDepartment,
+      sub_departments: data?.data ?? [],
     });
 
     visibleDrawer.value = false;
@@ -177,28 +179,22 @@ onMounted(() => {
   if (rootRef.value && props.layout_theme?.color) {
     setColorStyleRootByEl(rootRef.value, props.layout_theme.color)
   }
-  if(props?.data?.parent_product_category?.data.length){
-    const initialDept = props.data.parent_product_category.data[0];
+  if (props?.data?.department?.data.length) {
+    const initialDept = props.data.department.data[0];
     selectProductCategory(initialDept);
   }
 })
 
-
+console.log(props)
 </script>
 
 
 <template>
   <div class="pt-4">
     <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-
       <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-        <SideMenuWebsiteWorkshop 
-          :data="layoutState" 
-          :webBlockTypes="props.data.web_block_types"
-          :dataList="props.data.parent_product_category" 
-          @auto-save="debouncedAutosave" 
-          @set-up-template="onPickTemplate" 
-        />
+        <SideMenuWebsiteWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
+          :dataList="props.data.department" @auto-save="debouncedAutosave" @set-up-template="onPickTemplate" />
       </div>
 
       <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
@@ -208,23 +204,20 @@ onMounted(() => {
           </div>
           <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
             <span v-if="layoutState?.data?.fieldValue?.department?.name">
-              {{trans('Preview')}}: <strong>{{ layoutState?.data?.fieldValue?.department?.name }}</strong>
+              {{ trans('Preview') }}: <strong>{{ layoutState?.data?.fieldValue?.department?.name }}</strong>
             </span>
-            <span v-else>{{trans('Pick Catalouge')}}</span>
+            <span v-else>{{ trans('Pick Catalouge') }}</span>
           </div>
         </div>
-        <div v-if="props.data.layout?.code" ref="rootRef" :class="['p-4', iframeClass]">
-          <component 
-            class="flex-1 overflow-auto active-block"
-            :is="getComponent(props.data.layout.code, { shop_type: layout?.shopState?.type })" 
-            :screenType="currentView"
-            :routeEditSubDepartment="props.data.update_route"
-            :modelValue="{
+        <div v-if="props.data.layout" ref="rootRef" :class="['p-4', iframeClass]">
+          <component class="flex-1 overflow-auto active-block"
+            v-for="blockLayout in props.data.layout"
+            :is="getComponent(blockLayout.code, { shop_type: blockLayout?.shopState?.type })" :screenType="currentView"
+            :routeEditSubDepartment="props.data.update_route" :modelValue="{
               ...layoutState?.data?.fieldValue,
-              sub_department: dataPicked.sub_department,
-              families: dataPicked.families,
-            }" 
-          />
+              sub_departments: dataPicked.sub_departments,
+              department: dataPicked.department,
+            }" />
         </div>
         <div v-else
           class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]"
@@ -253,18 +246,19 @@ onMounted(() => {
 
     <div class="mx-auto">
       <ul class="space-y-3">
-        <li v-for="(dept, index) in props.data.parent_product_category.data" :key="dept.slug" @click="() => selectProductCategory(dept)"
+        <li v-for="(dept, index) in props.data.department.data" :key="dept.slug"
+          @click="() => selectProductCategory(dept)"
           class="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow" :class="[
             'rounded-lg shadow-sm transition-shadow',
-            dept.slug == dataPicked.sub_department?.slug
+            dept.slug == dataPicked.department?.slug
               ? 'border border-blue-500 ring-2 ring-blue-300 shadow-md'
               : 'border border-gray-200 hover:shadow-md hover:border-gray-300'
           ]">
           <div class="flex items-center justify-between px-4 py-3 cursor-pointer group hover:bg-gray-50 rounded-t-lg">
             <div class="flex items-center gap-3 text-gray-800 font-medium">
-              <FontAwesomeIcon :icon="faDotCircle" class="w-4 h-4" :class="dept?.slug == dataPicked?.sub_department?.slug
-                  ? 'text-blue-500'
-                  : 'text-gray-400'
+              <FontAwesomeIcon :icon="faDotCircle" class="w-4 h-4" :class="dept?.slug == dataPicked?.department?.slug
+                ? 'text-blue-500'
+                : 'text-gray-400'
                 " />
 
               <span class="group-hover:underline">
@@ -279,5 +273,4 @@ onMounted(() => {
 
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

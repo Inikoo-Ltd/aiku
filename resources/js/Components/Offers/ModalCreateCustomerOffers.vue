@@ -128,35 +128,48 @@ function formatDate(date: Date | null) {
     return `${year}-${month}-${day}`
 }
 
+const targetTypeMap: Record<TargetType, string> = {
+    shop: 'shop',
+    department: 'department',
+    subdepartment: 'sub_department',
+    family: 'family',
+    collection: 'collection',
+    product: 'product',
+}
+
 const buildTargetPayload = () => {
     const t = target.value
     if (!t) return null
 
+    let id: number | null = null
     if (t === 'shop') {
-        return shopId ? { type: 'shop', id: shopId } : null
+        id = shopId
+    } else if (t === 'product') {
+        id = productFilters.value
+    } else if (t === 'collection') {
+        id = collectionFilters.value
+    } else if (isCategoryTarget(t)) {
+        id = categoryFilters.value
     }
-    if (t === 'product') {
-        return productFilters.value ? { type: 'product', id: productFilters.value } : null
+
+    if (!id) return null
+
+    return {
+        target_type: targetTypeMap[t],
+        target_id: id,
     }
-    if (t === 'collection') {
-        return collectionFilters.value ? { type: 'collection', id: collectionFilters.value } : null
-    }
-    if (isCategoryTarget(t)) {
-        return categoryFilters.value ? { type: t, id: categoryFilters.value } : null
-    }
-    return null
 }
 
 const submitCustomerOffer = () => {
     const targetPayload = buildTargetPayload()
-    const targets = targetPayload ? [targetPayload] : []
 
     const payload = {
         customer_id: customerId.value || props.customer_id,
         offer_amount: offerAmount.value,
         discount_percentage: discountPercentage.value,
-        targets: targets,
-        date_type: dateType.value,
+        target_type: targetPayload?.target_type ?? null,
+        target_id: targetPayload?.target_id ?? null,
+        duration: dateType.value,
         start_at: formatDate(startDate.value),
         end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
     }
@@ -282,9 +295,27 @@ const isFormInvalid = computed(() => {
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
                         {{ trans('Select Customer') }}:
                     </label>
-                    <PureMultiselectInfiniteScroll 
+                    <PureMultiselectInfiniteScroll
                     v-model="customerId" :fetchRoute="customerFetchRoute" valueProp="id"
-                        labelProp="name" labelAdditionalProp="reference" :placeholder="trans('Select customer')" />
+                        labelProp="name" labelAdditionalProp="reference" :placeholder="trans('Select customer')">
+                        <template #singlelabel="{ value }">
+                            <div class="w-full text-left pl-4 leading-4 truncate mr-2">
+                                {{ value.name }}
+                                <span class="text-sm text-gray-400">
+                                    ({{ value.reference }}<template v-if="value.email"> · {{ value.email }}</template>)
+                                </span>
+                            </div>
+                        </template>
+
+                        <template #option="{ option }">
+                            <div>
+                                {{ option.name }}
+                                <span class="text-sm text-gray-400">
+                                    ({{ option.reference }}<template v-if="option.email"> · {{ option.email }}</template>)
+                                </span>
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
                 </div>
 
                 <!-- Minimum purchase amount -->
@@ -362,16 +393,24 @@ const isFormInvalid = computed(() => {
                         {{ trans('Offer Duration') }}:
                     </div>
 
-                    <div class="flex gap-x-4">
-                        <div class="flex items-center gap-x-2">
+                    <div class="flex flex-wrap gap-4">
+                        <label for="permanent"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'permanent'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
-                            <label for="permanent">{{ trans('Permanent') }}</label>
-                        </div>
+                            <span>{{ trans('Permanent') }}</span>
+                        </label>
 
-                        <div class="flex items-center gap-x-2">
+                        <label for="interval"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'interval'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
-                            <label for="interval">{{ trans('Interval') }}</label>
-                        </div>
+                            <span>{{ trans('Interval') }}</span>
+                        </label>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
