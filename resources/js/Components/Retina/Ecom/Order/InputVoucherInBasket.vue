@@ -19,10 +19,12 @@ const props = defineProps<{
         id: number
         voucher_code: string
         voucher_amount: number
+        state: string
         status: string
-        until: string
+        start_at: string
+        end_at: string
         name: string
-        discount: string
+        discount: number
     } | null
     order: {
         id: number
@@ -40,9 +42,9 @@ const currentVoucher = ref(props.voucher || {
     voucher_code: '',
     voucher_amount: 0,
     status: '',
-    until: '',
+    end_at: '',
     name: '',
-    discount: ''
+    discount: 0
 })
 const hasAttachedVoucher = computed(() => Boolean(currentVoucher.value?.voucher_code))
 const isVoucherExpired = computed(() => currentVoucher.value?.status === 'expired')
@@ -52,6 +54,16 @@ watch(
     () => props?.voucher?.voucher_code,
     (newVoucherCode) => {
         tempVoucherCode.value = newVoucherCode
+        currentVoucher.value = props.voucher || {
+            id: 0,
+            voucher_code: '',
+            voucher_amount: 0,
+            status: '',
+            start_at: '',
+            end_at: '',
+            name: '',
+            discount: 0
+        }
     },
     { immediate: true }
 )
@@ -109,9 +121,9 @@ const onApplyVoucher = () => {
 const onRemoveVoucher = () => {
     if (!hasAttachedVoucher.value) return
 
-    router.patch(
-        route('retina.models.order.update_voucher', { order: props.order.id }),
-        { voucher_code: null },
+    router.post(
+        route('retina.models.order.remove_voucher', { order: props.order.id }),
+        { voucher: null },
         {
             preserveScroll: true,
             preserveState: true,
@@ -123,10 +135,12 @@ const onRemoveVoucher = () => {
                     id: 0,
                     voucher_code: '',
                     voucher_amount: 0,
+                    state: '',
                     status: '',
-                    until: '',
+                    start_at: '',
+                    end_at: '',
                     name: '',
-                    discount: ''
+                    discount: 0
                 }
                 notify({
                     title: ctrans("Success"),
@@ -159,8 +173,8 @@ const onRemoveVoucher = () => {
                 <div class="w-72 shrink-0">
                     <!-- <InputText type="text" v-model="voucherCode" size="small" /> -->
                     <PureInput
-                        :modelValue="currentVoucher.voucher_code"
-                        :isLoading="isLoadingVoucher"
+                        :modelValue="currentVoucher.voucher_code + (currentVoucher.discount ? ` - ${currentVoucher.discount}` : '')"
+                        xisLoading="isLoadingVoucher"
                         @onEnter="() => onApplyVoucher()"
                         :disabled="isLoadingVoucher || hasAttachedVoucher"
                         class="!bg-green-100 font-bold !border !border-green-500"
@@ -187,7 +201,7 @@ const onRemoveVoucher = () => {
                     </PureInput>
 
                     <div class="text-right text-xs italic opacity-70 mt-0.5 text-green-700 pr-1">
-                        {{ ctrans('Voucher valid until :voucherUntil', { voucherUntil: useFormatTime(currentVoucher.until, { formatTime: 'hm'}) }) }}
+                        {{ ctrans('Voucher valid until :voucherUntil', { voucherUntil: useFormatTime(currentVoucher.end_at, { formatTime: 'hm'}) }) }}
                     </div>
                 </div>
 
@@ -213,7 +227,7 @@ const onRemoveVoucher = () => {
             <div class="w-72 shrink-0">
                 <PureInput
                     v-model="tempVoucherCode"
-                    :isLoading="isLoadingVoucher"
+                    xisLoading="isLoadingVoucher"
                     @onEnter="() => onApplyVoucher()"
                     :disabled="isLoadingVoucher || hasAttachedVoucher"
                     :placeholder="ctrans('Enter voucher code')"

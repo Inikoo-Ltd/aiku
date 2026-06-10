@@ -9,9 +9,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaOrderVoucher extends RetinaAction
 {
-    public function handle(Order $order, array $modelData): array
+    public function handle(Order $order, array $modelData): void
     {
-        return AddVoucherToOrder::run($order,$modelData);
+        AddVoucherToOrder::run($order,$modelData);
+
+        $order;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -29,10 +31,10 @@ class StoreRetinaOrderVoucher extends RetinaAction
     }
 
 
-    public function asController(Order $order, ActionRequest $request): array
+    public function asController(Order $order, ActionRequest $request): void
     {
         $this->initialisation($request);
 
-        return $this->handle($order, $this->validatedData);
+        $this->handle($order, $this->validatedData);
     }
 }
