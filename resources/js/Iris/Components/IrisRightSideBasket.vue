@@ -605,7 +605,7 @@ onUnmounted(() => {
 
         <!-- Section: Voucher Code -->
         <InputVoucherInBasket
-            v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'"
+            v-if="layout.retina.type == 'b2b'"
             :voucher="dataSideBasket?.voucher"
             :order="dataSideBasket?.order_data"
             :routes="{
@@ -629,23 +629,6 @@ onUnmounted(() => {
             <div class="relative isolate">
                 <OrderSummary :order_summary="dataSideBasket?.order_summary"
                     :currency_code="layout.iris?.currency?.code" size="sm" />
-
-                
-                <!-- <div class="mb-2 mt-2" v-if="layout.app.environment == 'local'">
-                    <div class="flex gap-x-4">
-                        <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')" :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }" />
-                        <Button
-                            :label="trans('Add voucher')"
-                            class="shrink-0"
-                                size="xs"
-                            icon="fas fa-plus"
-                            :loading="isLoadingVoucher"
-                            @click="() => onApplyVoucher()"
-                            :disabled="!voucherCode || isLoadingVoucher"
-                        />
-                    </div>
-                </div> -->
-                
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
                     <!-- Section: Eligible Gift -->
                     <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
