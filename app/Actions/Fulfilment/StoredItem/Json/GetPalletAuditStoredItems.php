@@ -10,6 +10,7 @@
 namespace App\Actions\Fulfilment\StoredItem\Json;
 
 use App\Actions\OrgAction;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
@@ -37,6 +38,10 @@ class GetPalletAuditStoredItems extends OrgAction
 
         $queryBuilder = QueryBuilder::for(StoredItem::class);
         $queryBuilder->where('fulfilment_customer_id', $parent->id);
+        $queryBuilder->whereNotIn('stored_items.state', [
+            StoredItemStateEnum::DISCONTINUING->value,
+            StoredItemStateEnum::DISCONTINUED->value,
+        ]);
         $queryBuilder->whereNotIn('id', $storedItemAudit->deltas()->pluck('stored_item_id'));
 
 

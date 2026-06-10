@@ -96,7 +96,7 @@ watch(offerVoucher, (value) => {
 
 // target (single selection)
 type TargetType = "shop" | "department" | "subdepartment" | "family" | "collection" | "product"
-const target = ref<TargetType | null>(null)
+const target = ref<TargetType | null>("shop")
 
 const categoryFilters = ref<number | null>(null)
 const collectionFilters = ref<number | null>(null)
@@ -144,11 +144,11 @@ const productFetchRoute = {
 
 const targetOptions: { value: TargetType; label: string }[] = [
 	{ value: "shop", label: "Shop" },
-	{ value: "department", label: "Department" },
-	{ value: "subdepartment", label: "Sub Department" },
-	{ value: "family", label: "Family" },
-	{ value: "collection", label: "Collection" },
-	{ value: "product", label: "Product" },
+	// { value: "department", label: "Department" },
+	// { value: "subdepartment", label: "Sub Department" },
+	// { value: "family", label: "Family" },
+	// { value: "collection", label: "Collection" },
+	// { value: "product", label: "Product" },
 ]
 
 const today = new Date(new Date().setHours(0, 0, 0, 0))
@@ -269,7 +269,7 @@ function resetForm() {
 	discountPercentage.value = null
 	reuseCustomer.value = false
 	offerAmount.value = 0
-	target.value = null
+	target.value = "shop"
 	categoryFilters.value = null
 	collectionFilters.value = null
 	productFilters.value = null
@@ -440,7 +440,7 @@ const isFormInvalid = computed(() => {
 								v-for="opt in targetOptions"
 								:key="opt.value"
 								:for="`target-${opt.value}`"
-								class="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border cursor-pointer transition-colors text-sm whitespace-nowrap"
+								class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-sm whitespace-nowrap"
 								:class="
 									target === opt.value
 										? 'border-green-500 bg-green-50 text-green-700 font-semibold'

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 10 Jun 2026 10:27:07 Malaysia Time, Kuala Lumpur, Malaysia
@@ -21,16 +22,16 @@ class GetVoucherData
             return null;
         }
 
-        $offer=Offer::find($offerId);
+        $offer = Offer::find($offerId);
         if (!$offer) {
             return null;
         }
 
         /** @var \App\Models\Discounts\OfferAllowance $allowance */
-        $allowance=$offer->offerAllowances()->first();
-        $discount=Arr::get($allowance->data,'percentage_off',0);
+        $allowance = $offer->offerAllowances()->first();
+        $discount = Arr::get($allowance->data, 'percentage_off', 0);
 
-        $discount=percentage($discount,1);
+        $discount = percentage($discount, 1);
 
         return [
             'id'             => $offer->id,
