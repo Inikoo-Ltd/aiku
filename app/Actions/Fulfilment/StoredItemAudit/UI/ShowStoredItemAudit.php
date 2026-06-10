@@ -162,7 +162,8 @@ class ShowStoredItemAudit extends OrgAction
                             'organisation'       => $storedItemAudit->organisation->slug,
                             'fulfilment'         => $storedItemAudit->fulfilment->slug,
                             'fulfilmentCustomer' => $storedItemAudit->fulfilmentCustomer->slug,
-                            'palletDelivery'     => $storedItemAudit->reference
+                            'palletDelivery'     => $storedItemAudit->reference,
+                            'filter'             => ['storable' => 'true'],
                         ]
                     ],
                     'store'  => [
