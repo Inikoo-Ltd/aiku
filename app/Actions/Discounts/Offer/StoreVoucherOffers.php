@@ -9,7 +9,6 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
@@ -36,10 +35,10 @@ class StoreVoucherOffers extends OrgAction
         }
 
         $percentageOff = Arr::pull($modelData, 'percentage_off');
+        $percentageOff = $percentageOff / 100;
 
-
-        $code = Str::lower($offerCampaign->code.'-'.Arr::get($modelData, 'voucher'));
-        data_set($modelData, 'code', $code, false);
+        $code = Arr::get($modelData, 'voucher');
+        data_set($modelData, 'code', $code);
 
         data_set($modelData, 'voucher', Str::lower(Arr::get($modelData, 'voucher')));
 

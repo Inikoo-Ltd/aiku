@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Ordering\Order\GetVoucherData;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
@@ -130,16 +131,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     ],
                 ],
 
-                //'voucher' => null,
-                'voucher' => [
-                    'id'                    => 111,
-                    'voucher_code'          => 'COD12XY-JUN',
-                    'voucher_amount'        => 100, //  30/100 [==     ]
-                    'status'                => 'active', //active or expired,
-                    'until'                 => now()->addDays(10),
-                    'name'                  => 'vouchername vouchername vouchername vouchername',
-                    'discount'              => '20%'
-                ],
+                'voucher' => GetVoucherData::run($order->offer_voucher_id),
                 'order'   => $order ? OrderResource::make($order)->resolve() : null,
                 'summary' => $order
                     ? $this->getOrderBoxStats($order)
