@@ -93,7 +93,7 @@ watch(offerVoucher, (value) => {
     }
 
     const code = value?.trim()
-    if (!code) {
+    if (!code || /\s/.test(value ?? '')) {
         isCheckingVoucher.value = false
         return
     }
@@ -282,7 +282,10 @@ function resetForm() {
     step.value = 1
 }
 
+const hasVoucherWhitespace = computed(() => /\s/.test(offerVoucher.value ?? ''))
+
 const isStep1Invalid = computed(() => {
+    if (hasVoucherWhitespace.value) return true
     if (voucherExists.value !== false) return true
     if (!offerVoucher.value?.trim()) return true
     if (!offerLabel.value?.trim()) return true
@@ -345,7 +348,11 @@ const isFormInvalid = computed(() => {
 
                         <PureInput v-model="offerVoucher" :maxLength="60" :placeholder="trans('Enter Voucher code')" />
 
-                        <p v-if="isCheckingVoucher" class="text-sm text-gray-500 flex items-center gap-x-1">
+                        <p v-if="hasVoucherWhitespace" class="text-sm text-red-500 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
+                            {{ trans('Voucher code cannot contain spaces') }}
+                        </p>
+                        <p v-else-if="isCheckingVoucher" class="text-sm text-gray-500 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-spinner-third" spin class="text-xs" />
                             {{ trans('Checking voucher code') }}…
                         </p>
