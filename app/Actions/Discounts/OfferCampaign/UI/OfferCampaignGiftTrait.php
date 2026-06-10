@@ -40,16 +40,6 @@ trait OfferCampaignGiftTrait
                     'title'     => $offerCampaign->name,
                     'model'     => __('Offer Campaign'),
                     'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
-                    'actions'   => app()->environment('local') ? [
-                        [
-                            'type' => 'button',
-                            'key'  => 'gift_create_discount',
-                            // 'route' => [
-                            //     'name'       => preg_replace('/show$/', 'create_family_offer', request()->route()->getName()),
-                            //     'parameters' => array_values(request()->route()->originalParameters())
-                            // ]
-                        ]
-                    ] : [],
                 ],
                 'tabs'                                 => [
                     'current'    => $this->tab,

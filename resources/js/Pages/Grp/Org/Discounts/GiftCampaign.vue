@@ -63,7 +63,7 @@ const component = computed(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-gift-create-discount>
+        <template #other>
             <ModalCreateGiftOffers :shop_data="props.shop_data" />
         </template>
     </PageHeading>
