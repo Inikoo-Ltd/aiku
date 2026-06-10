@@ -43,7 +43,7 @@ const emit = defineEmits<{
 }>()
 
 const rootRef = ref<HTMLElement | null>(null)
-const layoutState = ref(JSON.parse(JSON.stringify(props.data.layout)));
+const layoutState = ref(JSON.parse(JSON.stringify(Object.values(props.data.layout)[0])));
 const isLoadingSave = ref(false);
 const visibleDrawer = ref(false);
 const currentView = ref("desktop");
@@ -66,7 +66,7 @@ const createSnapshot = () => {
     delete snapshot.data.fieldValue.sub_departments;
   }
 
-  return { [raw.name] : snapshot};
+  return { [raw.code] : snapshot};
 };
 
 const autosave = () => {
@@ -209,9 +209,10 @@ console.log(props)
             <span v-else>{{ trans('Pick Catalouge') }}</span>
           </div>
         </div>
-        <div v-if="props.data.layout?.code" ref="rootRef" :class="['p-4', iframeClass]">
+        <div v-if="props.data.layout" ref="rootRef" :class="['p-4', iframeClass]">
           <component class="flex-1 overflow-auto active-block"
-            :is="getComponent(props.data.layout.code, { shop_type: layout?.shopState?.type })" :screenType="currentView"
+            v-for="blockLayout in props.data.layout"
+            :is="getComponent(blockLayout.code, { shop_type: blockLayout?.shopState?.type })" :screenType="currentView"
             :routeEditSubDepartment="props.data.update_route" :modelValue="{
               ...layoutState?.data?.fieldValue,
               sub_departments: dataPicked.sub_departments,

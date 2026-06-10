@@ -35,7 +35,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
                 'codes'     => WebBlockTemplateEnum::FAMILY_DESCRIPTION->templateCodes()
             ],
             'department_description'    => [
-                'subType'   => 'family',
+                'subType'   => 'department',
                 'codes'     => WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes()
             ],
             default                 => null
@@ -87,7 +87,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
             }
 
             if ($webpage->sub_type === WebpageSubTypeEnum::DEPARTMENT) {
-                $this->reorderDepartmentPageBlocks($webpage, true);
+                $this->reorderDepartmentPageBlocks($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
             }
 
             $webpage->refresh();

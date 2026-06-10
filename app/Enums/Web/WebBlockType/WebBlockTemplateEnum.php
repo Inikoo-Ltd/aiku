@@ -33,6 +33,7 @@ enum WebBlockTemplateEnum: string
             self::SUB_DEPARTMENTS => [
                 'sub-departments-1',
                 'sub-departments-2',
+                'sub-departments-3',
             ],
 
             self::FAMILIES => [
