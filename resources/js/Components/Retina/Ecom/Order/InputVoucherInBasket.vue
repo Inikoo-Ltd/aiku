@@ -72,7 +72,7 @@ const onApplyVoucher = () => {
 
     router.post(
         route('retina.models.order.store_voucher', { order: props.order.id }),
-        { voucher_code: tempVoucherCode.value },
+        { voucher: tempVoucherCode.value },
         {
             preserveScroll: true,
             preserveState: true,
