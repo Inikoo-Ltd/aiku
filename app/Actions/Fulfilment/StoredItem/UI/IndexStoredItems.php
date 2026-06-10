@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Enums\UI\Fulfilment\StoredItemsInWarehouseTabsEnum;
 use App\Http\Resources\Fulfilment\ReturnStoredItemsResource;
@@ -56,6 +57,15 @@ class IndexStoredItems extends OrgAction
             });
         });
 
+        $storableFilter = AllowedFilter::callback('storable', function ($query, $value) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                $query->whereNotIn('stored_items.state', [
+                    StoredItemStateEnum::DISCONTINUING->value,
+                    StoredItemStateEnum::DISCONTINUED->value,
+                ]);
+            }
+        });
+
         return QueryBuilder::for(StoredItem::class)
             ->select(
                 'stored_items.id',
@@ -79,7 +89,7 @@ class IndexStoredItems extends OrgAction
                 }
             })
             ->allowedSorts(['reference', 'total_quantity', 'name', 'number_pallets', 'number_audits', 'pallet_reference'])
-            ->allowedFilters([$globalSearch, 'slug', 'state'])
+            ->allowedFilters([$globalSearch, $storableFilter, 'slug', 'state'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

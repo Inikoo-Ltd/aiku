@@ -19,6 +19,10 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import { printBarcode } from '@/Composables/printBarcode'
 
 import { faEmptySet } from '@fas'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faShare, faSeedling, faInventory, faSignOutAlt, faGhost, faCheck, faTimes, faCheckDouble, faWarehouseAlt, faFragile, faSpellCheck } from "@fal"
+
+library.add(faShare, faSeedling, faInventory, faSignOutAlt, faGhost, faCheck, faTimes, faCheckDouble, faWarehouseAlt, faFragile, faSpellCheck)
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
 
@@ -149,7 +153,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="px-8 py-6 grid grid-cols-2 gap-x-4">
+    <div class="px-4 md:px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
 
         <div class="max-w-xl mt-1 grid grid-cols-1 gap-x-6 gap-y-8 xl:gap-x-8 h-fit ">
             <div class="flex flex-col items-start">
@@ -196,21 +200,6 @@ onMounted(() => {
                     </div>
 
                     <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("State") }}</dt>
-                        <dd class="flex items-center gap-x-2">
-                            <Icon :data="data.stored_item?.state_icon" />
-                            <div class="font-medium">{{ data.stored_item?.state_label || '-' }}</div>
-                        </dd>
-                    </div>
-
-                    <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("Quantity warehouse") }}</dt>
-                        <dd class="flex items-start gap-x-2">
-                            <div class="font-medium">{{ locale.number(data.stored_item?.total_quantity || 0) }}</div>
-                        </dd>
-                    </div>
-
-                    <div class="flex justify-between gap-x-4 py-3">
                         <dt class="text-gray-500">{{ trans("Pallet") }}</dt>
                         <dd class="flex items-start gap-x-2">
                             <Link v-if="generateLinkPallet()" :href="generateLinkPallet()" class="primaryLink">
@@ -244,6 +233,44 @@ onMounted(() => {
         </div>
         <!-- <pre>{{ data.stored_item }}</pre> -->
 
+        <!-- Box: Quantity highlight -->
+        <div class="h-fit flex md:justify-end">
+            <div class="w-full md:max-w-lg rounded-xl border border-gray-300 overflow-hidden">
+                <!-- Total quantity -->
+                <div class="flex flex-col items-center justify-center gap-y-2 border-b border-gray-900/5 bg-gray-50 px-6 py-5">
+                    <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ trans("Quantity in warehouse") }}</div>
+                    <div class="text-4xl font-bold tabular-nums leading-none text-gray-800">
+                        {{ locale.number(data.stored_item?.total_quantity || 0) }}
+                    </div>
+                    <div class="inline-flex items-center gap-x-2 rounded-full border border-gray-200 bg-white px-2.5 py-0.5">
+                        <Icon :data="data.stored_item?.state_icon" />
+                        <span class="text-sm font-medium text-gray-600">{{ data.stored_item?.state_label || '-' }}</span>
+                    </div>
+                </div>
+
+                <!-- Breakdown per pallet / location -->
+                <div class="px-6 py-4">
+                    <div class="mb-2 flex items-center justify-between">
+                        <span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Per pallet / location") }}</span>
+                        <span class="text-xs text-gray-400">{{ locale.number(data.pallets?.length || 0) }} {{ trans("pallets") }}</span>
+                    </div>
+                    <div v-if="data.pallets?.length" class="flex flex-col divide-y divide-gray-100">
+                        <div v-for="pallet in data.pallets" :key="pallet.id" class="flex items-center justify-between gap-x-4 py-2 text-sm">
+                            <div class="flex min-w-0 items-center gap-x-2">
+                                <Icon :data="pallet.state_icon" />
+                                <span class="truncate font-medium text-gray-700">{{ pallet.reference || trans('To be delivered') }}</span>
+                                <span v-if="pallet.location?.code" class="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{{ pallet.location.code }}</span>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-x-3">
+                                <span class="text-xs text-gray-400">{{ pallet.state_label }}</span>
+                                <span class="font-semibold tabular-nums text-gray-800">{{ locale.number(pallet.quantity) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="py-2 text-sm italic text-gray-400">{{ trans("Not stored in any pallet") }}</div>
+                </div>
+            </div>
+        </div>
 
         <!-- Box: Pie chart -->
         <div v-if="false"
