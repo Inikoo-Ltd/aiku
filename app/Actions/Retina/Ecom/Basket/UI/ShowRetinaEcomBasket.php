@@ -132,13 +132,13 @@ class ShowRetinaEcomBasket extends RetinaAction
 
                 //'voucher' => null,
                 'voucher' => [
-                    'id'=>111,
-                    'voucher_code'=>'test',
-                    'voucher_amount'=>100,//  30/100 [==     ]
-                    'status'=>'active',//active or expired,
-                    'until'=>now()->addDays(10),
-                    'name'=>'bla bla bla',
-                    'discount'=>'20%'
+                    'id'                    => 111,
+                    'voucher_code'          => 'COD12XY-JUN',
+                    'voucher_amount'        => 100, //  30/100 [==     ]
+                    'status'                => 'active', //active or expired,
+                    'until'                 => now()->addDays(10),
+                    'name'                  => 'vouchername vouchername vouchername vouchername',
+                    'discount'              => '20%'
                 ],
                 'order'   => $order ? OrderResource::make($order)->resolve() : null,
                 'summary' => $order

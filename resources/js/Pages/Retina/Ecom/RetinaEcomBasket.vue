@@ -3,7 +3,7 @@ import { trans } from 'laravel-vue-i18n'
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed } from "vue"
+import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed, watch } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
@@ -27,11 +27,12 @@ import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelect
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
-import { ToggleSwitch } from 'primevue'
+import { InputText, ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
+import { useFormatTime } from '@/Composables/useFormatTime'
 library.add(faTag, faCheck, faExclamationTriangle)
 
 interface ChargeResource {
@@ -127,6 +128,16 @@ const props = defineProps<{
         }
     }
     missed_offers: Record<string, { label: string }>
+    voucher: {
+        id: number
+        voucher_code: string
+        voucher_amount: number
+        status: string
+        until: string
+        name: string
+        discount: string
+    } | null
+
 }>()
 
 
@@ -242,18 +253,47 @@ const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToS
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
 // Section: Voucher
-const voucherCode = ref(props?.order?.voucher_code || '')
 const isLoadingVoucher = ref(false)
 const isModalVoucherNotFound = ref(false)
 const voucherNotFoundMessage = ref('')
+const currentVoucher = ref(props.voucher || {
+    id: 0,
+    voucher_code: '',
+    voucher_amount: 0,
+    status: '',
+    until: '',
+    name: '',
+    discount: ''
+})
+const hasAttachedVoucher = computed(() => Boolean(currentVoucher.value?.voucher_code))
+const isVoucherExpired = computed(() => currentVoucher.value?.status === 'expired')
+const tempVoucherCode = ref('')
+
+watch(
+    () => props?.voucher?.voucher_code,
+    (newVoucherCode) => {
+        tempVoucherCode.value = newVoucherCode
+    },
+    { immediate: true }
+)
+
 const onApplyVoucher = () => {
-    if (!voucherCode.value) {
+    if (!tempVoucherCode.value.trim()) {
+        return
+    }
+
+    if (hasAttachedVoucher.value && currentVoucher.value.voucher_code !== tempVoucherCode.value) {
+        notify({
+            title: trans("Only one voucher can be attached"),
+            text: trans("Remove current voucher first before adding a new one."),
+            type: "warning"
+        })
         return
     }
 
     router.post(
         route('retina.models.order.store_voucher', { order: props.order.id }),
-        { voucher_code: voucherCode.value },
+        { voucher_code: tempVoucherCode.value },
         {
             preserveScroll: true,
             preserveState: true,
@@ -283,6 +323,49 @@ const onApplyVoucher = () => {
             onFinish: () => {
                 isLoadingVoucher.value = false
             },
+        }
+    )
+}
+
+const onRemoveVoucher = () => {
+    if (!hasAttachedVoucher.value) return
+
+    router.patch(
+        route(props.routes.update_route.name, props.routes.update_route.parameters),
+        { voucher_code: null },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingVoucher.value = true
+            },
+            onSuccess: () => {
+                currentVoucher.value = {
+                    id: 0,
+                    voucher_code: '',
+                    voucher_amount: 0,
+                    status: '',
+                    until: '',
+                    name: '',
+                    discount: ''
+                }
+                notify({
+                    title: trans("Success"),
+                    text: trans("Voucher removed from your basket."),
+                    type: "success"
+                })
+                layout?.reload_handle?.()
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove voucher, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingVoucher.value = false
+            }
         }
     )
 }
@@ -694,35 +777,134 @@ const onChangeInsurance = async (val: boolean) => {
 
                 <!-- Section: List of charges -->
                 <div class="row-start-1 md:row-auto">
-                    <div class="flex flex-wrap items-stretch gap-x-3 gap-y-2 pl-2 md:pl-6" v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'">
-                        <div class="w-72 shrink-0">
-                            <PureInput
-                                v-model="voucherCode"
-                                :placeholder="trans('Enter voucher code')"
-                                :isLoading="isLoadingVoucher"
-                                :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }"
-                                @onEnter="() => onApplyVoucher()"
-                            >
-                                <template #stateIcon>
-                                    <FontAwesomeIcon :icon="faTag" class="text-gray-400 px-3" fixed-width aria-hidden="true" />
-                                </template>
-                            </PureInput>
+                    <!-- Section: Voucher Code -->
+                    <div v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'">
+                        <!-- Voucher: active -->
+                        <div v-if="hasAttachedVoucher">
+                            <div class="flex flex-wrap items-stretch justify-end gap-x-3 gap-y-2 pr-2 md:pr-6">
+                                <div class="w-72 shrink-0">
+                                    <!-- <InputText type="text" v-model="voucherCode" size="small" /> -->
+                                    <PureInput
+                                        :modelValue="currentVoucher.voucher_code"
+                                        :isLoading="isLoadingVoucher"
+                                        @onEnter="() => onApplyVoucher()"
+                                        :disabled="isLoadingVoucher || hasAttachedVoucher"
+                                        class="!bg-green-100 font-bold !border !border-green-500"
+                                        :prefix="{
+                                            icon: 'fas fa-tag'
+                                        }"
+                                        :styleInput="{
+                                            paddingTop: '5px',
+                                            paddingBottom: '5px',
+                                            xborder: '1px solid rgb(34 197 94 / var(--tw-border-opacity, 1))'
+                                        }"
+                                        classInput="!bg-transparent !text-green-700 "
+                                    >
+                                        <template #prefix>
+                                            <div class="pl-3 -mr-2 whitespace-nowrap text-green-700">
+                                                <FontAwesomeIcon icon='fas fa-tag' class='' fixed-width aria-hidden='true' />
+                                            </div>
+                                        </template>
+                                        <template v-if="currentVoucher?.name" #suffix>
+                                            <div class="text-green-700 flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer">
+                                                <InformationIcon :information="currentVoucher?.name" />
+                                            </div>
+                                        </template>
+                                    </PureInput>
+
+                                    <div class="text-right text-xs italic opacity-70 mt-0.5 text-green-700 pr-1">
+                                        {{ ctrans('Voucher valid until :voucherUntil', { voucherUntil: useFormatTime(currentVoucher.until, { formatTime: 'hm'}) }) }}
+                                    </div>
+                                </div>
+
+                                <div class="h-8 flex">
+                                    <Button
+                                        class="shrink-0"
+                                        size="xs"
+                                        xlabel="ctrans('Remove voucher')"
+                                        icon="fal fa-trash-alt"
+                                        type="negative"
+                                        :loading="isLoadingVoucher"
+                                        @click="() => onRemoveVoucher()"
+                                        :disabled="isLoadingVoucher"
+                                    />
+                                </div>
+                            </div>
+
+                            
                         </div>
-                        <Transition name="slide-to-right">
+                        
+                        <!-- Voucher: not active -->
+                        <div v-else class="flex flex-wrap items-stretch justify-end gap-x-3 gap-y-2 pr-2 md:pr-6" v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'">
+                            <div class="w-72 shrink-0">
+                                <PureInput
+                                    v-model="tempVoucherCode"
+                                    :isLoading="isLoadingVoucher"
+                                    @onEnter="() => onApplyVoucher()"
+                                    :disabled="isLoadingVoucher || hasAttachedVoucher"
+                                    :placeholder="ctrans('Enter voucher code')"
+                                    xclass="!bg-green-100 font-bold !border !border-green-500"
+                                    :prefix="{
+                                        icon: 'fas fa-tag'
+                                    }"
+                                    :styleInput="{
+                                        paddingTop: '5px',
+                                        paddingBottom: '5px',
+                                        xborder: '1px solid rgb(34 197 94 / var(--tw-border-opacity, 1))'
+                                    }"
+                                    classInput="!bg-transparent xtext-green-700 "
+                                >
+                                    <template #prefix>
+                                        <div class="pl-3 -mr-2 whitespace-nowrap xtext-green-700 opacity-50">
+                                            <FontAwesomeIcon icon='fas fa-tag' class='' fixed-width aria-hidden='true' />
+                                        </div>
+                                    </template>
+                                    <template v-if="currentVoucher?.name" #suffix>
+                                        <div class="xtext-green-700 flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer">
+                                            <InformationIcon :information="currentVoucher?.name" />
+                                        </div>
+                                    </template>
+                                </PureInput>
+                            </div>
+
                             <Button
                                 class="shrink-0"
                                 size="xs"
-                                :label="trans('Add voucher')"
+                                xlabel="ctrans('Add voucher')"
                                 icon="fas fa-plus"
-                                type="tertiary"
-                                key=2
+                                type="dashed"
                                 :loading="isLoadingVoucher"
                                 @click="() => onApplyVoucher()"
-                                :disabled="!voucherCode || isLoadingVoucher"
+                                :disabled="!tempVoucherCode || isLoadingVoucher || hasAttachedVoucher"
                             />
-                        </Transition>
+                        </div>
+
+                        <!-- <div v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'" class="mt-2 pr-2 md:pr-6">
+                            <div v-if="!hasAttachedVoucher" class="flex items-center justify-end">
+                                <div class="w-full md:w-[540px] border border-dashed border-gray-300 rounded-md px-3 py-2 text-right text-sm text-gray-500">
+                                    {{ trans('No voucher attached') }}
+                                </div>
+                            </div>
+                            <div v-else-if="isVoucherExpired" class="flex items-center justify-end">
+                                <div class="w-full md:w-[540px] border border-red-200 bg-red-50 rounded-md px-3 py-2 text-right text-sm text-red-700">
+                                    <span class="font-medium">{{ trans('Voucher expired') }}</span>
+                                    <span class="ml-1">({{ currentVoucher?.voucher_code }})</span>
+                                    <span class="ml-2 text-red-600">{{ trans('Until') }}: {{ voucherUntilLabel }}</span>
+                                </div>
+                            </div>
+                            <div v-else class="flex items-center justify-end">
+                                <div class="w-full md:w-[540px] border border-green-200 bg-green-50 rounded-md px-3 py-2 text-right text-sm text-green-700">
+                                    <span class="font-medium">{{ trans('Voucher active') }}</span>
+                                    <span class="ml-1">({{ currentVoucher?.voucher_code }})</span>
+                                    <span class="ml-2">{{ currentVoucher?.name }}</span>
+                                    <span class="ml-2">{{ currentVoucher?.discount }}</span>
+                                    <span class="ml-2 text-green-600">{{ trans('Until') }}: {{ voucherUntilLabel }}</span>
+                                </div>
+                            </div>
+                        </div> -->
                     </div>
 
+                    <!-- Section: Eligible Gifts -->
                     <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
                         <EligibleGift
                             :routeUpdate="{
