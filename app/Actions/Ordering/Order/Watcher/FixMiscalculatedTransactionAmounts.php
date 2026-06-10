@@ -52,9 +52,9 @@ class FixMiscalculatedTransactionAmounts
                     'current_discount_factor' => $transaction->current_discount_factor,
                 ]);
 
-                if ($repairAmount) {
-                    $this->repairTransactionAmounts($transaction);
-                    $orderRepaired = true;
+                if ($repairAmount ) {
+                    //$this->repairTransactionAmounts($transaction);
+                    //$orderRepaired = true;
                 }
             }
         }
