@@ -30,9 +30,9 @@ class CleanFinishedVouchers implements ShouldBeUnique
     public function handle(int $offerId): void
     {
         DB::table('orders')
-            ->where('voucher_offer_id', $offerId)
+            ->where('offer_voucher_id', $offerId)
             ->where('state', OrderStateEnum::CREATING)
-            ->update(['voucher_offer_id' => null]);
+            ->update(['offer_voucher_id' => null]);
 
 
     }

@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Order } from "@/types/order"
 import Icon from "@/Components/Icon.vue"
@@ -101,6 +101,12 @@ function returnRouteOffer(offer: any) {
 
 console.log("Curr Route", route().current())
 
+const terminateOffer = (item) => {
+    console.log(item);
+    router.post(route('grp.models.offer.finish', {
+        offer: item.id
+    }))
+}
 
 </script>
 
@@ -145,11 +151,7 @@ console.log("Curr Route", route().current())
                 v-if="item.is_active"
                 v-tooltip="ctrans('Terminate offer immidiately')"
                 :type="'negative'"
-                @click="() => {
-                    router.patch(route('grp.models.offer.finish'), {
-                        offer: item.id
-                    })
-                }"
+                @click="terminateOffer(item)"
             >
                 <FontAwesomeIcon 
                     :icon="faSkull"
