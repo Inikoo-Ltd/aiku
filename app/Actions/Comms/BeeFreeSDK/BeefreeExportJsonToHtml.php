@@ -12,14 +12,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Actions\OrgAction;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\ActionRequest;
 
 class BeefreeExportJsonToHtml extends OrgAction
 {
-    public string $commandSignature = 'beefree:export-json-to-html {organisation} {json}';
-
     public function handle(Organisation $organisation, array $modelData)
     {
         $authResponse = AuthenticateBeefreeAccount::make()->action($organisation, $modelData);
@@ -51,30 +47,10 @@ class BeefreeExportJsonToHtml extends OrgAction
         throw new \Exception('Failed to export BeeFree JSON to HTML');
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request)
-    {
-        $this->initialisation($organisation, $request);
-        return $this->handle($organisation, $this->validatedData);
-    }
-
     public function rules(): array
     {
         return [
             'json' => ['required', 'array'],
         ];
-    }
-
-    public function asCommand(Command $command): void
-    {
-        $organisation = Organisation::where('slug', $command->argument('organisation'))->first();
-        if (!$organisation) {
-            $command->error('Organisation not found');
-            return;
-        }
-        $modelData = ['json' => json_decode($command->argument('json'), true)];
-        $this->initialisation($organisation, $modelData);
-        $result = $this->handle($organisation, $modelData);
-        $command->info('BeeFree JSON to HTML export successful');
-        $command->info(json_encode($result, JSON_PRETTY_PRINT));
     }
 }
