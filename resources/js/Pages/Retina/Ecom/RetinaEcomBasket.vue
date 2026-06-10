@@ -664,9 +664,19 @@ const onChangeInsurance = async (val: boolean) => {
                 <div class="row-start-1 md:row-auto">
                     <!-- Section: Voucher Code -->
                     <InputVoucherInBasket
-                        v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'"
+                        v-if="layout.retina.type == 'b2b'"
                         :voucher="voucher"
                         :order="order"
+                        :routes="{
+                            store: {
+                                name: 'retina.models.order.store_voucher',
+                                parameters: order?.id
+                            },
+                            remove: {
+                                name: 'retina.models.order.remove_voucher',
+                                parameters: order?.id
+                            }
+                        }"
                     />
 
                     <!-- Section: Eligible Gifts -->

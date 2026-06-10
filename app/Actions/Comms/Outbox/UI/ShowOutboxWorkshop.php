@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Outbox\UI;
 
-use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\Comms\Email\EmailBuilderEnum;
@@ -29,6 +28,7 @@ class ShowOutboxWorkshop extends OrgAction
 
 
     private Fulfilment|Shop $parent;
+    private Outbox $outbox;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -55,6 +55,7 @@ class ShowOutboxWorkshop extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Outbox $outbox, ActionRequest $request): Email
     {
         $this->parent = $shop;
+        $this->outbox = $outbox;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($outbox);
@@ -67,6 +68,7 @@ class ShowOutboxWorkshop extends OrgAction
     public function inWebsite(Organisation $organisation, Shop $shop, Website $website, Outbox $outbox, ActionRequest $request): Email
     {
         $this->parent = $shop;
+        $this->outbox = $outbox;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($outbox);
@@ -80,6 +82,7 @@ class ShowOutboxWorkshop extends OrgAction
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Outbox $outbox, ActionRequest $request): Email
     {
         $this->parent = $fulfilment;
+        $this->outbox = $outbox;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($outbox);
@@ -166,7 +169,7 @@ class ShowOutboxWorkshop extends OrgAction
                     ],
                     'method' => 'post'
                 ],
-                'mergeTags' => GetMailshotMergeTags::run(),
+                'mergeTags' => GetOutboxMergeTagByOutbox::run($this->outbox),
                 'status' => $email->outbox->state,
                 'organisationSlug' => $this->organisation->slug
             ]

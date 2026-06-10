@@ -30,7 +30,7 @@ class WebBlockDepartmentResource extends JsonResource
             'description'               => $department->description,
             'description_title'         => $department->description_title,
             'description_extra'         => $department->description_extra,
-            'showcase_image'            => $department->imageSources(720, 480, 'showcase_image'),
+            'showcase_image'            => $department->imageSources(720, 480, 'showcaseImage'),
             'showcase_video'            => $department->desc_video_url,
             'offers_data'               => $department->offers_data,
             'web_images'                => $department->web_images,

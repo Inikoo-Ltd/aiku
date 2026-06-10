@@ -1937,7 +1937,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </div>
                     
                     <div class="flex flex-col sm:flex-row items-center gap-2">
-                        <div v-if="props.box_stats?.voucher && layout?.app?.environment == 'local'"
+                        <div v-if="props.box_stats?.voucher"
                             class="flex items-center gap-x-1.5 rounded bg-indigo-50 px-2 py-1 text-xs text-indigo-700">
                             <span class="font-medium uppercase">{{ trans("Voucher") }}: {{ props.box_stats.voucher.voucher_code }}</span>
                             <button type="button" v-tooltip="trans('Remove voucher')"
@@ -1947,7 +1947,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             </button>
                         </div>
 
-                        <div v-if="layout?.app?.environment == 'local' && isVoucherAllowed && !props.box_stats?.voucher">
+                        <div v-if="isVoucherAllowed && !props.box_stats?.voucher">
                             <Button
                                 :label="trans('Add Voucher')"
                                 size="xs"
@@ -2245,11 +2245,13 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <label class="block text-sm font-medium leading-6">
                     <span class="text-red-500">*</span> {{ trans("Voucher code") }}
                 </label>
-                <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')"
+                <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')" :isError="!!(addVoucherError?.length)"
                     @keyup.enter="submitAddVoucher" />
-                <p v-if="addVoucherError" class="text-sm text-red-500">
-                    {{ addVoucherError }}
-                </p>
+                <Transition name="slide-to-right">
+                    <p v-if="addVoucherError" class="text-sm text-red-500">
+                        *{{ addVoucherError }}
+                    </p>
+                </Transition>
             </div>
 
             <div class="mt-6 flex justify-end gap-x-3">

@@ -54,6 +54,7 @@ enum OfferTypeEnum: string
     case AMOUNT_AND_ORDER_NUMBER = "Amount AND Order Number";
     case ORDER_NUMBER = "Order Number";
     case CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL = "Category Quantity Ordered Order Interval";
+    case GIFT = "Gift";
 
     public function label(): string
     {
@@ -119,6 +120,7 @@ enum OfferTypeEnum: string
             self::CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED
             => $this->catalogueIcon(),
 
+            self::GIFT,
             self::VOL_GR_GIFT
             => $this->giftIcon(),
 

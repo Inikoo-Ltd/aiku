@@ -29,6 +29,22 @@ const props = defineProps<{
     order: {
         id: number
     }
+    routes?: {
+        store: {
+            name: string
+            parameters: number | string
+        }
+        remove: {
+            name: string
+            parameters: number | string
+        }
+    }
+    inIris: boolean
+}>()
+
+const emits = defineEmits<{
+    (e: 'onApply'): void,
+    (e: 'onRemove'): void
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -83,7 +99,7 @@ const onApplyVoucher = () => {
     }
 
     router.post(
-        route('retina.models.order.store_voucher', { order: props.order.id }),
+        route(props.routes?.store.name, { order: props.routes?.store.parameters }),
         { voucher: tempVoucherCode.value },
         {
             preserveScroll: true,
@@ -98,6 +114,7 @@ const onApplyVoucher = () => {
                     type: "success"
                 })
                 layout?.reload_handle?.()
+                emits('onApply')
             },
             onError: (errors: Record<string, string>) => {
                 if (errors?.voucher) {
@@ -123,7 +140,7 @@ const onRemoveVoucher = () => {
     if (!hasAttachedVoucher.value) return
 
     router.post(
-        route('retina.models.order.remove_voucher', { order: props.order.id }),
+        route(props.routes?.remove.name, { order: props.routes?.remove.parameters }),
         { voucher: null },
         {
             preserveScroll: true,
@@ -149,6 +166,7 @@ const onRemoveVoucher = () => {
                     type: "success"
                 })
                 layout?.reload_handle?.()
+                emits('onRemove')
             },
             onError: () => {
                 notify({
@@ -169,9 +187,9 @@ const onRemoveVoucher = () => {
 <template>
     <div>
         <!-- Voucher: active -->
-        <div v-if="hasAttachedVoucher">
-            <div class="flex flex-wrap items-stretch justify-end gap-x-3 gap-y-2 pr-2 md:pr-6">
-                <div class="w-72 shrink-0">
+        <div v-if="hasAttachedVoucher" class="w-full">
+            <div class="flex flex-nowrap items-stretch justify-end gap-x-3 gap-y-2" :class="inIris ? '' : 'pr-2 md:pr-6'">
+                <div class="" :class="inIris ? 'w-full' : 'w-72'">
                     <!-- <InputText type="text" v-model="voucherCode" size="small" /> -->
                     <PureInput
                         :modelValue="currentVoucher.voucher_code + (currentVoucher.discount ? ` - ${currentVoucher.discount}` : '')"
@@ -201,7 +219,9 @@ const onRemoveVoucher = () => {
                         </template>
                     </PureInput>
 
-                    <div class="text-right text-xs italic opacity-70 mt-0.5 text-green-700 pr-1">
+                    <div class="text-xs italic opacity-70 mt-0.5 text-green-700 pr-1"
+                        :class="inIris ? '' : 'text-right'"
+                    >
                         {{ ctrans('Voucher valid until :voucherUntil', { voucherUntil: useFormatTime(currentVoucher.end_at, { formatTime: 'hm'}) }) }}
                     </div>
                 </div>
@@ -224,8 +244,8 @@ const onRemoveVoucher = () => {
         </div>
         
         <!-- Voucher: not active -->
-        <div v-else class="flex flex-wrap items-stretch justify-end gap-x-3 gap-y-2 pr-2 md:pr-6" v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'">
-            <div class="w-72 shrink-0">
+        <div v-else class="flex flex-nowrap items-stretch justify-end gap-x-3 gap-y-2" :class="inIris ? '' : 'pr-2 md:pr-6'">
+            <div class="" :class="inIris ? 'w-full' : 'w-72'">
                 <PureInput
                     v-model="tempVoucherCode"
                     @update:model-value="() => voucherNotFoundMessage = null"
@@ -256,7 +276,7 @@ const onRemoveVoucher = () => {
                         </div>
                     </template>
                 </PureInput>
-                <div class="relative w-fit ml-auto">
+                <div class="relative w-fit" :class="inIris ? '' : 'ml-auto'">
                     <Transition name="slide-to-right">
                         <div v-if="voucherNotFoundMessage?.length" class="text-right text-xs italic opacity-90 mt-0.5 text-red-500 pr-1">
                             *{{ voucherNotFoundMessage }}
@@ -306,7 +326,7 @@ const onRemoveVoucher = () => {
 
     
 
-    <Modal :isOpen="isModalVoucherNotFound" @onClose="isModalVoucherNotFound = false" width="w-full max-w-md">
+    <!-- <Modal :isOpen="isModalVoucherNotFound" @onClose="isModalVoucherNotFound = false" width="w-full max-w-md">
         <div class="text-center">
             <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-xl text-red-500" fixed-width aria-hidden="true" />
@@ -319,5 +339,5 @@ const onRemoveVoucher = () => {
                 <Button :label="ctrans('OK')" @click="isModalVoucherNotFound = false" />
             </div>
         </div>
-    </Modal>
+    </Modal> -->
 </template>

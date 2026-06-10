@@ -27,7 +27,7 @@ class StoreVoucherOffers extends OrgAction
 {
     use AsAction;
 
-    public function handle(Shop $shop, array $modelData)
+    public function handle(Shop $shop, array $modelData): Offer
     {
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::VOUCHERS)->first();
         if (!$offerCampaign) {
