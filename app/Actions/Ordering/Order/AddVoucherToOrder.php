@@ -84,16 +84,6 @@ class AddVoucherToOrder extends OrgAction
         ];
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('voucher')) {
-            $this->set(
-                'voucher',
-                Str::lower(trim($this->get('voucher')))
-            );
-        }
-    }
-
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
