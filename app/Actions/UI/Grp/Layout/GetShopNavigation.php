@@ -191,7 +191,7 @@ class GetShopNavigation
                 "icon"    => ["fal", "fa-badge-percent"],
                 "label"   => __("Offers"),
                 "route"   => [
-                    "name"       => 'grp.org.shops.show.discounts.dashboard',
+                    "name"       => 'grp.org.shops.show.discounts.insights',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "topMenu" => [
