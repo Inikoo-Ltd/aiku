@@ -6,7 +6,10 @@ import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage } from "@far"
 import { getBestOffer } from '@/Composables/useOffers'
-import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
+import { debounce } from 'lodash-es'
 
 interface FamilyImage {
   original: string
@@ -131,8 +134,6 @@ const calculateDescriptionHeight = async () => {
     return
   }
 
-  console.log(descriptionRef.value.scrollHeight,imageRef.value.offsetHeight )
-
   maxDescriptionHeight.value = imageRef.value.offsetHeight
   showReadMore.value = descriptionRef.value.scrollHeight > imageRef.value.offsetHeight - 110
 }
@@ -174,6 +175,23 @@ watch(
   }
 )
 
+// Debounced save function
+const saveDescription = debounce(async (key: string, value: string) => {
+  try {
+    const url = route('grp.models.product_category.update', {
+      productCategory: props.modelValue.family.id,
+    })
+    await axios.patch(url, { [key]: value })
+  } catch (error: any) {
+    console.error('Save failed:', error)
+    notify({
+      title: 'Failed to Save',
+      text: error?.response?.data?.message || 'Please check your input and try again.',
+      type: 'error',
+    })
+  }
+}, 1500)
+
 const contentClass = computed(() =>
   layout.rightbasket?.show
     ? 'flex flex-col gap-6'
@@ -193,8 +211,7 @@ const contentClass = computed(() =>
         <div class="flex shrink-0 justify-center gap-[6px]">
           <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
-            <Image  :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'"
-              class="
+            <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'" class="
                 h-[280px]
                 w-[220px]
                 object-cover
@@ -204,7 +221,7 @@ const contentClass = computed(() =>
               " />
           </template>
 
-          <div v-else  class="
+          <div v-else class="
               flex items-center justify-center
               h-[280px]
               w-[220px]
@@ -307,7 +324,12 @@ const contentClass = computed(() =>
   " ref="descriptionRef" :style="!expanded && showReadMore
     ? { maxHeight: `${maxDescriptionHeight - 110}px` }
     : {}">
-            <div v-html="cleanedDescription"></div>
+           <!--  <div v-html="cleanedDescription"></div> -->
+            <EditorV2 
+              :model-value="props.modelValue?.family?.description" 
+              @update:model-value="(e) => saveDescription('description', e)"
+              :toogle="['bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear']"
+            />
 
             <!-- Fade overlay -->
             <div v-if="!expanded && showReadMore" class="
@@ -386,5 +408,4 @@ const contentClass = computed(() =>
   </section>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -6,6 +6,10 @@ import { ctrans } from "@/Composables/useTrans"
 import Dialog from 'primevue/dialog'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage } from "@far"
+import axios from "axios"
+import { debounce } from "lodash-es"
+import { notify } from "@kyvg/vue3-notification"
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
 const props = defineProps<{
     fieldValue: any
@@ -154,6 +158,22 @@ const layoutClasses = computed(() => ({
             : "col-span-2 h-full",
 }))
 
+const saveDescription = debounce(async (key: string, value: string) => {
+  try {
+    const url = route('grp.models.product_category.update', {
+      productCategory: props.fieldValue.family.id,
+    })
+    await axios.patch(url, { [key]: value })
+  } catch (error: any) {
+    console.error('Save failed:', error)
+    notify({
+      title: 'Failed to Save',
+      text: error?.response?.data?.message || 'Please check your input and try again.',
+      type: 'error',
+    })
+  }
+}, 1500)
+
 </script>
 
 <template>
@@ -161,7 +181,12 @@ const layoutClasses = computed(() => ({
     <div class="grid gap-0 lg:gap-4 items-stretch" :class="layoutClasses.wrapper" :style="containerStyle" >
         <!-- LEFT -->
         <div class="flex flex-col h-full text-center md:text-left" :class="layoutClasses.left">
-            <div :class="layoutClasses.description" class="text-[#334155]" v-html="cleanedDescription" />
+     <!--        <div :class="layoutClasses.description" class="text-[#334155]" v-html="cleanedDescription" /> -->
+             <div :class="layoutClasses.description" class="text-[#334155]">
+                <EditorV2 :model-value="props.fieldValue?.family?.description_extra"
+                    @update:model-value="(e) => saveDescription('description_extra', e)"
+                    :toogle="['bold', 'italic', 'underline', 'bulletList', 'customLink', 'undo', 'redo', 'highlight', 'color', 'clear']" />
+            </div>
 
             <div class="mt-8 md:mt-10">
                 <a href="#family-2">
