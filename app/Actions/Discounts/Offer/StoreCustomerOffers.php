@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 09 Jun 2026 15:44:59 Malaysia Time, Kuala Lumpur, Malaysia
@@ -20,7 +21,7 @@ class StoreCustomerOffers
         // create offer logic
     }
 
-    public function asController(Shop $shop,Request $request)
+    public function asController(Shop $shop, Request $request)
     {
         $data = $request->all();
         dd($data);

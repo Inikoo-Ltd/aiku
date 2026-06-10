@@ -357,14 +357,14 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-//            $this->logSchedule(
-//                $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-//                    monitorSlug: 'CheckShopifyPortfolios',
-//                ),
-//                name: 'CheckShopifyPortfolios',
-//                type: 'command',
-//                scheduledAt: now()->format('H:i')
-//            );
+            //            $this->logSchedule(
+            //                $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+            //                    monitorSlug: 'CheckShopifyPortfolios',
+            //                ),
+            //                name: 'CheckShopifyPortfolios',
+            //                type: 'command',
+            //                scheduledAt: now()->format('H:i')
+            //            );
 
             $this->logSchedule(
                 $schedule->command('shop-external:check-all-shop-connections')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(

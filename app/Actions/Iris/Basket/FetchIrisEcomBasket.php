@@ -55,6 +55,7 @@ class FetchIrisEcomBasket extends IrisAction
             'is_premium_dispatch' => $order->is_premium_dispatch,
             'has_extra_packing'   => $order->has_extra_packing,
             'has_insurance'       => $order->has_insurance,
+            'voucher_code'        => data_get($order->data, 'voucher_code'),
         ];
 
         $charges         = $this->getBasketCharges($order);
