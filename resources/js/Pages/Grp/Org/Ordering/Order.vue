@@ -345,6 +345,44 @@ const isOpenModalPayment = ref(false)
 const isLoadingPayment = ref(false)
 const errorPaymentMethod = ref<null | unknown>(null)
 const _refComponents = ref(null)
+
+const isOpenModalAddVoucher = ref(false)
+const isModalVoucherNotFound = ref(false)
+const voucherNotFoundMessage = ref('')
+const isLoadingAddVoucher = ref(false)
+const voucherCode = ref("")
+const openAddVoucherModal = () => {
+    voucherCode.value = ""
+    isOpenModalAddVoucher.value = true
+}
+const submitAddVoucher = () => {
+    const url = route("grp.models.order.add_voucher" as string, { order: props.data?.data?.id } as any) as string
+    router.post(
+        url,
+        { voucher: voucherCode.value },
+        {
+            preserveScroll: true,
+            onStart: () => (isLoadingAddVoucher.value = true),
+            onSuccess: () => {
+                isOpenModalAddVoucher.value = false
+                voucherCode.value = ""
+            },
+            onError: (errors: Record<string, string>) => {
+                if (errors?.voucher_code) {
+                    voucherNotFoundMessage.value = errors.voucher_code
+                    isModalVoucherNotFound.value = true
+                    return
+                }
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the voucher, please try again"),
+                    type: "error",
+                })
+            },
+            onFinish: () => (isLoadingAddVoucher.value = false),
+        }
+    )
+}
 const onSubmitPayment = (isRefund?: boolean) => {
     try {
         router[props.box_stats.products.payment.routes.submit_payment.method || "post"](
@@ -675,6 +713,10 @@ const isShowProforma = computed(() => {
     return props.proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))
 })
 
+const isVoucherAllowed = computed(() => {
+    const s = props.data?.data?.state_label
+    return s === 'In Basket' || s === 'Submitted' || s === 'In Warehouse'
+})
 
 const labelToBePaid = (toBePaidValue: string) => {
     if (toBePaidValue.toLowerCase() === 'cash_on_delivery') {
@@ -1875,22 +1917,34 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     <div class="font-semibold xmb-2 text-base">
                         {{ trans("Summary") }}
                     </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <div v-if="layout?.app?.environment == 'local' && isVoucherAllowed">
+                            <Button
+                                :label="trans('Add Voucher')"
+                                size="xs"
+                                type="tertiary"
+                                icon="fal fa-plus"
+                                @click="openAddVoucherModal"
+                            />
+                        </div>
 
-                    <div v-if="props.external_shop?.engine_value === 'faire'">
-                        <ButtonWithLink
-                            :label="trans('Refresh Faire data')"
-                            size="xs"
-                            type="tertiary"
-                            key="2"
-                            icon="fal fa-sync-alt"
-                            :routeTarget="{
-                                name: 'grp.models.order.update_faire',
-                                parameters: {
-                                    order: props.data?.data?.id
-                                },
-                                method: 'post'
-                            }"
-                        />
+                        <div v-if="props.external_shop?.engine_value === 'faire'">
+                            <ButtonWithLink
+                                :label="trans('Refresh Faire data')"
+                                size="xs"
+                                type="tertiary"
+                                key="2"
+                                icon="fal fa-sync-alt"
+                                :routeTarget="{
+                                    name: 'grp.models.order.update_faire',
+                                    parameters: {
+                                        order: props.data?.data?.id
+                                    },
+                                    method: 'post'
+                                }"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -2146,6 +2200,50 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             @onDone="() => (isModalAddress = false)" />
     </Modal>
 
+
+    <!-- Modal: Add Voucher -->
+    <Modal :isOpen="isOpenModalAddVoucher" @onClose="isOpenModalAddVoucher = false" width="w-full max-w-md">
+        <div class="bg-white px-2">
+            <div class="text-center mb-4">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ trans("Add Voucher") }}
+                </h2>
+                <p class="text-xs leading-5 text-gray-400">
+                    {{ trans("Enter the voucher code to apply to this order") }}
+                </p>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium leading-6">
+                    <span class="text-red-500">*</span> {{ trans("Voucher code") }}
+                </label>
+                <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')"
+                    @keyup.enter="submitAddVoucher" />
+            </div>
+
+            <div class="mt-6 flex justify-end gap-x-3">
+                <Button :label="trans('Cancel')" type="cancel" @click="isOpenModalAddVoucher = false" />
+                <Button :label="trans('Apply')" icon="fal fa-plus" :loading="isLoadingAddVoucher"
+                    :disabled="!voucherCode.trim() || isLoadingAddVoucher" @click="submitAddVoucher" />
+            </div>
+        </div>
+    </Modal>
+
+    <!-- Modal: Voucher not found -->
+    <Modal :isOpen="isModalVoucherNotFound" @onClose="isModalVoucherNotFound = false" width="w-full max-w-md">
+        <div class="text-center">
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-red-500" fixed-width aria-hidden="true" />
+            </div>
+            <h3 class="mt-4 text-lg font-semibold text-gray-900">{{ trans("Voucher not found") }}</h3>
+            <p class="mt-2 text-sm text-gray-500">
+                {{ voucherNotFoundMessage || trans("The voucher code you entered was not found or is no longer available.") }}
+            </p>
+            <div class="mt-6 flex justify-center">
+                <Button :label="trans('OK')" @click="isModalVoucherNotFound = false" />
+            </div>
+        </div>
+    </Modal>
 
     <!-- Modal: payment Invoice -->
     <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">

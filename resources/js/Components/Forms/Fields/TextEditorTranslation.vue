@@ -126,6 +126,16 @@ const generateTranslateAI = async () => {
     loading.value = false
   }
 }
+
+const countWords = (value?: string | null) => {
+  const text = (value ?? '')
+    .replace(/&nbsp;/gi, ' ')
+    .trim()
+
+  return text
+    ? text.split(' ').length
+    : 0
+}
 </script>
 
 
@@ -188,7 +198,7 @@ const generateTranslateAI = async () => {
               <div class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
                 <p class="">{{ trans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
                 <p class="">
-                  {{ trans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
+                  {{ trans('Words') }}:   {{ countWords(form[fieldName]) }}
                 </p>
               </div>
             </div>

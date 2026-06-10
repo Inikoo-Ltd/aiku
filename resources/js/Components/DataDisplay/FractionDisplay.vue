@@ -181,12 +181,13 @@ export default {
 .fraction-display--strikethrough::after {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
+  left: -2px;
+  right: -2px;
   top: 50%;
+  opacity: 0.5;
   transform: translateY(-50%);
-  rotate: 5deg;
-  height: 1.5px;
+  rotate: 35deg;
+  height: 1px;
   background: currentColor;
   pointer-events: none;
 }

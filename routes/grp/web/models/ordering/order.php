@@ -19,6 +19,7 @@ use App\Actions\GoodsIn\Return\StoreReturn;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
+use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\PayOrder;
@@ -73,6 +74,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
     Route::patch('update-discount', UpdateOrderDiscretionaryDiscount::class)->name('discount.update');
+    Route::post('add-voucher', AddVoucherToOrder::class)->name('add_voucher');
 
     Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
     Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');

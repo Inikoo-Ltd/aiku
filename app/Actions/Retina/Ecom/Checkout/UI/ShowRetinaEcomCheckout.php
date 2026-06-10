@@ -40,7 +40,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
         $paymentMethods = [];
 
         if ($order) {
-            $order=FixMiscalculatedTransactionAmounts::run($order, true);
+            $order = FixMiscalculatedTransactionAmounts::run($order, true);
             $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
         }
 

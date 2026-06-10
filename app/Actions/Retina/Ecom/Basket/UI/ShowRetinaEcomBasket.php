@@ -130,8 +130,16 @@ class ShowRetinaEcomBasket extends RetinaAction
                     ],
                 ],
 
-                'voucher' => [],
-
+                //'voucher' => null,
+                'voucher' => [
+                    'id' => 111,
+                    'voucher_code' => 'test',
+                    'voucher_amount' => 100,//  30/100 [==     ]
+                    'status' => 'active',//active or expired,
+                    'until' => now()->addDays(10),
+                    'name' => 'bla bla bla',
+                    'discount' => '20%'
+                ],
                 'order'   => $order ? OrderResource::make($order)->resolve() : null,
                 'summary' => $order
                     ? $this->getOrderBoxStats($order)

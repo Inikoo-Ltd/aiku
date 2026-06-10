@@ -75,18 +75,24 @@ const updateInterval = (interval_code: string) => {
         isLoadingOnTable.value = true
         router.patch(
             route("grp.models.profile.update"),
-            {
-                settings: {
-                    selected_interval: interval_code,
-                },
-            },
+            { settings: { selected_interval: interval_code } },
             {
                 preserveScroll: true,
                 preserveState: true,
                 only: ['dashboard', 'top_customers'],
-                onFinish: () => {
-                    isLoadingOnTable.value = false
-                },
+                onFinish: () => { isLoadingOnTable.value = false },
+            }
+        )
+    } else if (props.currentTab === 'ordering') {
+        isLoadingOnTable.value = true
+        router.patch(
+            route("grp.models.profile.update"),
+            { settings: { selected_interval: interval_code } },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['stats', 'intervals'],
+                onFinish: () => { isLoadingOnTable.value = false },
             }
         )
     } else {

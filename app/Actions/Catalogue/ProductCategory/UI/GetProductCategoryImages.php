@@ -30,12 +30,12 @@ class GetProductCategoryImages
             'id'                  => $productCategory->id,
             // 'images_category_box' => $this->getSingleImageData($productCategory), // Old One
             'images_category_box' => $productCategory->type == ProductCategoryTypeEnum::DEPARTMENT ? array_merge(
-                    $this->getSingleImageData($productCategory), 
-                    $this->getShowcaseImageData($productCategory), 
-                    $this->getDescriptionImages($productCategory)
+                $this->getSingleImageData($productCategory),
+                $this->getShowcaseImageData($productCategory),
+                $this->getDescriptionImages($productCategory)
             ) : array_merge(
-                    $this->getSingleImageData($productCategory), 
-                    $this->getDescriptionImages($productCategory)
+                $this->getSingleImageData($productCategory),
+                $this->getDescriptionImages($productCategory)
             ),
             'images_update_route' => [
                 'method'     => 'patch',
