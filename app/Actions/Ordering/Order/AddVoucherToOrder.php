@@ -15,7 +15,7 @@ class AddVoucherToOrder extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(Order $order, array $modelData): array
+    public function handle(Order $order, array $modelData): void
     {
         $voucherCode = Str::lower(trim(data_get($modelData, 'voucher')));
 
@@ -72,7 +72,7 @@ class AddVoucherToOrder extends OrgAction
 
         CalculateOrderDiscounts::run($order);
 
-        return GetVoucherData::run($offer->id);
+        GetVoucherData::run($offer->id);
     }
 
     public function rules(): array
@@ -85,8 +85,8 @@ class AddVoucherToOrder extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function asController(Order $order, Request $request): array
+    public function asController(Order $order, Request $request): void
     {
-        return $this->handle($order, $request->validate($this->rules()));
+        $this->handle($order, $request->validate($this->rules()));
     }
 }
