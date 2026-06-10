@@ -20,7 +20,18 @@ class SearchOnWebsite extends IrisAction
 
     public function htmlResponse(array $dataList)
     {
-        return Inertia::render('Search', $dataList);
+        $website = request()->website;
+        $webBlockData = [];
+
+        if ($website) {
+            $layout = $website->liveProductsSnapshot->layout;
+
+            $webBlockData = data_get($layout, 'data');
+        }
+        return Inertia::render('Search', [
+            'web_block_family'  => $webBlockData,
+            ...$dataList,
+        ]);
     }
 
     public function asController(ActionRequest $request)

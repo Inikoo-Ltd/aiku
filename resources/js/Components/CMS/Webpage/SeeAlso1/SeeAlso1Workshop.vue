@@ -11,6 +11,7 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import { Navigation } from 'swiper/modules'
+import { get } from "lodash"
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -69,7 +70,7 @@ const compSwiperOptions = computed(() => {
   <div  :id="modelValue?.id ? modelValue?.id  : 'see-also-1'+indexBlock" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(modelValue.container?.properties, screenType),
-    width: 'auto'
+    width: '100%'
   }" :dropdown-type="props.modelValue?.settings?.products_data?.type">
     <!-- Title -->
     <div class="px-4 py-6 pb-2">
@@ -122,7 +123,7 @@ const compSwiperOptions = computed(() => {
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="flex-1 flex flex-col">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])"  />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
 

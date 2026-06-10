@@ -2,6 +2,7 @@
 
 namespace App\Actions\Ordering\Transaction\Traits;
 
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
 
@@ -20,5 +21,7 @@ trait WithCalculateTransactionDiscount
                     ]
                 );
         }
+
+        CalculateOrderTotalAmounts::run($transaction->order, false, false);
     }
 }

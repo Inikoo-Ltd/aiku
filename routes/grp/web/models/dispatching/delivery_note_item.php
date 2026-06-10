@@ -9,6 +9,7 @@
 use App\Actions\Dispatching\Picking\PickAllItem;
 use App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse;
 use App\Actions\Dispatching\Picking\PickFromMagicPlace;
+use App\Actions\Dispatching\Picking\SendBackWaitingWarehouse;
 use App\Actions\Dispatching\Picking\SetAsWaitingCrm;
 use App\Actions\Dispatching\Picking\SetAsWaitingWarehouse;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
@@ -33,10 +34,12 @@ Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem
     Route::post('not-picking', StoreNotPickPicking::class)->name('not_picking.store')->withoutScopedBindings();
     Route::post('not-picking-from-waiting-warehouse', StoreNotPickPickingFromWaitingWarehouse::class)->name('not_picking_from_waiting_warehouse.store')->withoutScopedBindings();
     Route::post('not-picking-fron-waiting-crm', StoreNotPickPickingFromWaitingCrm::class)->name('not_picking_from_waiting_crm.store')->withoutScopedBindings();
+
     Route::post('set-as-waiting-warehouse', SetAsWaitingWarehouse::class)->name('set_as_waiting_warehouse')->withoutScopedBindings();
     Route::post('undo-set-as-waiting-warehouse', UndoSetAsWaitingWarehouse::class)->name('undo_set_as_waiting_warehouse')->withoutScopedBindings();
 
     Route::post('set-as-waiting-crm', SetAsWaitingCrm::class)->name('set_as_waiting_crm')->withoutScopedBindings();
+    Route::post('send-back-to-waiting-warehouse', SendBackWaitingWarehouse::class)->name('send_back_waiting_warehouse')->withoutScopedBindings();
     Route::post('pick-from-magic-place', PickFromMagicPlace::class)->name('picking.magic_place')->withoutScopedBindings();
 
     Route::post('picking-from-waiting-warehouse', UpsertPickingFromWaitingWarehouse::class)->name('picking.upsert_from_waiting_warehouse');

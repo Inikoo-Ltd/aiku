@@ -36,6 +36,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategor
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Shop\Json\FetchProductReviewThirdParty;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
@@ -100,8 +101,11 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('banner/{banner:id}', GetBanner::class)->name('get_banner')->whereNumber('banner');
 
     // Reviews
-    Route::get('product/{product:id}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review');
+    Route::get('product/{product:id}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review')->whereNumber('product');
 
     // Families Custom Sort
     Route::get('{webpage:slug}/{productCategory}/families', FetchFamilyListCustomSorted::class)->name('website.category.family_list_sorted');
+
+    // Families list under department page
+    Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
 });

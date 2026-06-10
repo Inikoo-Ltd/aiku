@@ -66,7 +66,7 @@ class ProductsResource extends JsonResource
     public function toArray($request): array
     {
         $state = $this->state->stateIcon()[$this->state->value];
-        if ($this->state != ProductStateEnum::DISCONTINUED && !$this->is_for_sale) {
+        if ($this->state != ProductStateEnum::DISCONTINUED && !$this->is_for_sale && !$this->is_bundle) {
             $state = [
                 'tooltip' => __('Not for sale'),
                 'icon'    => 'fas fa-thumbtack',

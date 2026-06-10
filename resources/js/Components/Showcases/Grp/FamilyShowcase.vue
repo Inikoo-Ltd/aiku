@@ -38,6 +38,7 @@ const props = withDefaults(defineProps<{
         }
         is_shop_gr_active?: boolean
         gr_offer_data?: any
+        tags: Array<any>
     },
     master_vol_gr_reward?: {
         show_gr_vol: boolean
@@ -47,6 +48,7 @@ const props = withDefaults(defineProps<{
     salesData?: object
     actions?: any
     isMaster?: boolean
+
 }>(), {
     // Default values
     isMaster: false,
@@ -136,10 +138,11 @@ const saveGROffer = () => {
         }
     )
 }
-
+console.log(props)
 </script>
 
 <template>
+   
     <div v-if="data.webpage_url"
 		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
 		<div class="flex items-center gap-2 text-blue-700 text-sm">
@@ -178,6 +181,12 @@ const saveGROffer = () => {
 
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                <dd v-if="data.tags && data.tags.length > 0" class="font-medium flex flex-wrap gap-1 pb-3">
+                    <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
+                        class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+                        {{ tag.name }}
+                    </span>
+                </dd>
                 <ProductCategoryCard :data="data.family?.data"  />
             </div>
 

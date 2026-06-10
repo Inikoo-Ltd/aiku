@@ -82,25 +82,5 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(sales_grp_currency_external)="{ item: charge }">
             {{ locale.currencyFormat(charge.currency_code, charge.sales_grp_currency_external) }}
         </template>
-        <template #cell(sales_grp_currency_external_delta)="{ item: charge }">
-            <div v-if="charge.sales_grp_currency_external_delta">
-                <span>{{ charge.sales_grp_currency_external_delta.formatted }}</span>
-                <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(charge.sales_grp_currency_external_delta.is_positive)?.icon"
-                    class="text-xxs md:text-sm"
-                    :class="[
-                        getIntervalChangesIcon(charge.sales_grp_currency_external_delta.is_positive).class,
-                        getIntervalStateColor(charge.sales_grp_currency_external_delta.is_positive),
-                    ]"
-                    fixed-width
-                    aria-hidden="true"
-                />
-            </div>
-            <div v-else>
-                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
-            </div>
-        </template>
     </Table>
 </template>

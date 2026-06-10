@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, reactive, inject, onBeforeUnmount } from "vue"
+import { ref, reactive, inject, onBeforeUnmount, computed } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Table from "@/Components/Table/Table.vue"
 import Tag from "@/Components/Tag.vue"
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
-import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt } from "@far"
+import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt, faPlus, faMinus } from "@far"
 import { faBarcode } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
@@ -113,11 +113,17 @@ function onCancel(item: ProductRow) {
 const onUpdateQuantity = (
     routeUpdate: routeType,
     idTransaction: number,
-    value: number
+    value: number,
+    is_cut_view: boolean
 ) => {
+    let sendData = is_cut_view ? {
+        units_ordered: Number(value)
+    } : {
+        quantity_ordered: Number(value)
+    }
     router.patch(
         route(routeUpdate.name, routeUpdate.parameters),
-        { quantity_ordered: Number(value) },
+        sendData,
         {
             onError: (e: any) => {
                 notify({
@@ -136,8 +142,8 @@ const onUpdateQuantity = (
 
 // Debounced update
 const debounceUpdateQuantity = debounce(
-    (routeUpdate: routeType, idTransaction: number, value: number) => {
-        onUpdateQuantity(routeUpdate, idTransaction, value)
+    (routeUpdate: routeType, idTransaction: number, value: number, is_cut_view = false) => {
+        onUpdateQuantity(routeUpdate, idTransaction, value, is_cut_view)
     },
     500
 )
@@ -398,7 +404,10 @@ const isOffersData = (offersData: any): boolean => {
 
             <!-- Column: Quantity Ordered -->
             <template #cell(quantity_ordered)="{ item, proxyItem }">
-
+                <!-- <pre>{{ item.quantity_ordered_fractional }}</pre> -->
+                <div v-if="layout.app.environment == 'local'" class="bg-yellow-400 w-fit">
+                    {{ item.quantity_ordered_fractional }}
+                </div> 
                 <div class="flex items-center justify-end gap-2">
                     <div v-if="item.is_gift">
                         {{ locale.number(item.quantity_bonus) }}
@@ -410,7 +419,7 @@ const isOffersData = (offersData: any): boolean => {
                     <!-- Editable when creating and not in edit mode -->
                     <div v-else-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id) && !is_shop_external"
                         class="w-fit flex gap-x-2">
-                        <NumberWithButtonSave
+                       <!--  <NumberWithButtonSave
                             :modelValue="Number(item.quantity_ordered)"
                             :routeSubmit="item.updateRoute"
                             isWithRefreshModel
@@ -423,11 +432,43 @@ const isOffersData = (offersData: any): boolean => {
                                 max: item.available_quantity,
                             }"
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
-                        />
+                        /> -->
+                        <InputNumber 
+                            :model-value="item.quantity_ordered_fractional[0]" 
+                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
+                            inputId="horizontal-buttons" 
+                            showButtons 
+                            buttonLayout="horizontal"
+                            :step="1" 
+                            min='0',
+                            :max="proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity"
+                            v-bind="bindToTarget" 
+                            :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
+                                ? `/${Number(item.quantity_ordered_fractional[1][1])}`
+                                : undefined
+                                " 
+                            :inputStyle="{
+                                    width: bindToTarget?.fluid
+                                        ? undefined
+                                        : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '75px' : '50px'),
+                                    textAlign: 'center',
+                                }" 
+                            fluid
+                            :key="proxyItem.is_cut_view + item.id"
+                        >
+                            <template #incrementbuttonicon>
+                                <FontAwesomeIcon :icon="faPlus" />
+                            </template>
+
+                            <template #decrementbuttonicon>
+                                  <FontAwesomeIcon :icon="faMinus" />
+                            </template>
+                        </InputNumber>
 
                         <!-- Toggle: is_cut_view -->
                         <span
-                            v-if="layout.app.environment == 'local'"
+                            xv-if="layout.app.environment == 'local'"
+                            v-if="Number(item.product_units) !== 1"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
                             v-tooltip="trans('Cut view')"
                             class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
@@ -440,36 +481,37 @@ const isOffersData = (offersData: any): boolean => {
 
                     <!-- Read-only display -->
                     <div v-else-if="!editingIds.has(item.id)" class="flex flex-wrap items-center gap-x-2">
-                        <span :class="[
-                            (state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered)
-                            || ((state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered)
-                            || item.quantity_not_picked > 0
-                                ? 'line-through'
-                                : '',
-                            item.quantity_not_picked > 0 ? 'text-red-500' : ''
-                        ]"
-                            v-tooltip="item.quantity_not_picked > 0 ? ctrans('Original quantity ordered') : ''"
+                        <span
+                            v-tooltip="item.quantity_not_picked > 0 ? ctrans('Original quantity ordered') : ctrans('Quantity ordered')"
                         >
-                            {{ formatQuantity(item.quantity_ordered) }}
+                            <!-- {{ formatQuantity(item.quantity_ordered) }} -->
+                            <FractionDisplay
+                                :fractionData="item.quantity_ordered_fractional"
+                                :strikethrough="(state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered)
+                                    || ((state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered)
+                                    || item.quantity_not_picked > 0"
+                            />
                         </span>
+
                         <span v-if="item.quantity_not_picked > 0" v-tooltip="ctrans('Quantity ordered (some is not picked)')">
                             {{ formatQuantity(item.quantity_ordered - item.quantity_not_picked) }}
                         </span>
 
                         <template v-if="(state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered">
-                            <span class="pl-3" :class="item.quantity_not_picked > 0 ? 'line-through text-red-500' : ''"
-                                v-tooltip="item.quantity_not_picked > 0 ? ctrans('Original quantity to pick') : ''"
-                            >
-                                {{ formatQuantity(item.quantity_picked) }}
-                            </span>
+                            <FractionDisplay
+                                :fractionData="item.quantity_picked_fractional"
+                                :strikethrough="item.quantity_not_picked > 0"
+                                class="pl-3"
+                                v-tooltip="item.quantity_not_picked > 0 ? ctrans('Original quantity to pick') : ctrans('Quantity picked')"
+                            />
                             <span v-if="item.quantity_not_picked > 0" v-tooltip="item.quantity_not_picked > 0 ? ctrans('Quantity picked (some is not picked)') : ''">
                                 {{ formatQuantity(item.quantity_picked - item.quantity_not_picked) }}
                             </span>
                         </template>
 
-                        <span class="pl-3" v-if="state === 'dispatched'&&  item.quantity_dispatched!=item.quantity_ordered">
-                            {{ formatQuantity(item.quantity_dispatched) }}
-                            <!-- <FractionDisplay :fractionData="item.quantity_dispatched_fractional" /> -->
+                        <span class="pl-3" v-if="state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered">
+                            <!-- {{ formatQuantity(item.quantity_dispatched) }} -->
+                            <FractionDisplay :fractionData="item.quantity_dispatched_fractional" v-tooltip="ctrans('Quantity dispatched')" />
                         </span>
 
                     </div>

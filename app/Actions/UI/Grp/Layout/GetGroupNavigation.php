@@ -111,6 +111,21 @@ class GetGroupNavigation
             ],
         ];
 
+        $groupNavigation['devops'] = [
+            'label'   => __('Devops'),
+            'tooltip' => __('Application Performance Monitoring'),
+            'icon'    => ['fal', 'fa-server'],
+            'root'    => 'grp.devops.',
+            'route'   => [
+                'name' => 'grp.devops.dashboard',
+            ],
+            'topMenu' => [
+                'subSections' => [
+
+
+                ],
+            ],
+        ];
 
         if ($user->hasPermissionTo('sysadmin.view')) {
             $groupNavigation['sysadmin'] = $this->getSysAdminNavs();

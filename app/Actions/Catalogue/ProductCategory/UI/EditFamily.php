@@ -161,6 +161,34 @@ class EditFamily extends OrgAction
                                 ]
                             ],
                             [
+                                'label'  => __('FAQ'),
+                                'icon'   => 'fa-light fa-question-circle',
+                                'fields' => [
+                                    'faq' => $family->masterProductCategory
+                                        ? [
+                                            'type'          => 'faq-shop',
+                                            'label'         => __('FAQ'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'noSaveButton'  => true,
+                                            'main'          => $family->masterProductCategory->faq,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $family->faq,
+                                            'toogle'        => [
+                                                /* 'heading2', 'heading3', 'bold', 'italic', 'underline', 'bulletList',
+                                                'orderedList', 'blockquote', 'alignLeft', 'alignCenter', 'alignRight',
+                                                'undo', 'redo', 'clear' */
+                                            ],
+                                        ]
+                                        : [
+                                            'type'  => 'faq-shop',
+                                            'label' => __('FAQ'),
+                                            'value' => $family->faq,
+                                        ],
+                                ]
+                            ],
+                            [
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
@@ -221,9 +249,9 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                   /*  'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear' */
                                             ],
                                         ]
                                         : [
@@ -242,9 +270,9 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                    /* 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear' */
                                             ],
                                         ],
                                     'description_extra' => $family->masterProductCategory
@@ -267,9 +295,9 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                  /*   'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear' */
                                             ],
                                         ]
                                         : [
@@ -288,9 +316,9 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                  /*   'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear' */
                                             ],
                                         ],
                                 ]

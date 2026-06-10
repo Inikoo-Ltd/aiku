@@ -296,6 +296,24 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function getPackageHandoverTimeslot(string $packageId): array
+    {
+        $path = "/fulfillment/$this->version/packages/$packageId/handover_time_slots";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getTracking(string $orderId): array
+    {
+        $path = "/fulfillment/$this->version/orders/$orderId/tracking";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function cancelFulfilOrder(string $orderId): array
     {
         $path = "/return_refund/$this->version/cancellations";
@@ -305,6 +323,21 @@ trait WithTiktokApiServices
             'cancel_reason' => match ($this->customerSalesChannel?->shop?->country?->code) {
                 'GB' => 'seller_cancel_reason_out_of_stock_uk',
                 default => 'seller_cancel_reason_out_of_stock'
+            }
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function rejectFulfilOrder(string $orderId): array
+    {
+        $path = "/return_refund/$this->version/cancellations";
+
+        return $this->makeApiRequest('POST', $path, [
+            'order_id' => $orderId,
+            'cancel_reason' => match ($this->customerSalesChannel?->shop?->country?->code) {
+                'GB' => 'seller_cancel_paid_reason_address_not_deliver_uk',
+                default => 'seller_cancel_paid_reason_address_not_deliver'
             }
         ], true, [
             'content-type' => 'application/json'

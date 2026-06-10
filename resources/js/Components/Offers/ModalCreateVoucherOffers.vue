@@ -93,7 +93,7 @@ watch(offerVoucher, (value) => {
     }
 
     const code = value?.trim()
-    if (!code) {
+    if (!code || /\s/.test(value ?? '')) {
         isCheckingVoucher.value = false
         return
     }
@@ -170,30 +170,40 @@ function formatDate(date: Date | null) {
     return `${year}-${month}-${day}`
 }
 
+const targetTypeMap: Record<TargetType, string> = {
+    shop: 'shop',
+    department: 'department',
+    subdepartment: 'sub_department',
+    family: 'family',
+    collection: 'collection',
+    product: 'product',
+}
+
 const buildTargetPayload = () => {
     const t = target.value
     if (!t) return null
 
+    let id: number | null = null
     if (t === 'shop') {
-        return shopId ? { type: 'shop', id: shopId } : null
+        id = shopId
+    } else if (t === 'product') {
+        id = productFilters.value
+    } else if (t === 'collection') {
+        id = collectionFilters.value
+    } else if (isCategoryTarget(t)) {
+        id = categoryFilters.value
     }
-    if (t === 'product') {
-        return productFilters.value ? { type: 'product', id: productFilters.value } : null
+
+    if (!id) return null
+
+    return {
+        target_type: targetTypeMap[t],
+        target_id: id,
     }
-    if (t === 'collection') {
-        return collectionFilters.value ? { type: 'collection', id: collectionFilters.value } : null
-    }
-    if (isCategoryTarget(t)) {
-        return categoryFilters.value
-            ? { type: t, id: categoryFilters.value }
-            : null
-    }
-    return null
 }
 
 const submitVoucherOffer = () => {
     const targetPayload = buildTargetPayload()
-    const targets = targetPayload ? [targetPayload] : []
 
     const payload = {
         voucher: offerVoucher.value,
@@ -202,16 +212,15 @@ const submitVoucherOffer = () => {
         offer_amount: offerAmount.value,
         start_at: formatDate(startDate.value),
         end_at: formatDate(endDate.value),
-        reuse_customer: reuseCustomer.value,
-        discount_percentage: discountPercentage.value,
-        targets: targets,
+        can_customer_reuse: reuseCustomer.value,
+        percentage_off: discountPercentage.value,
+        target_type: targetPayload?.target_type ?? null,
+        target_id: targetPayload?.target_id ?? null,
     }
 
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_voucher', {
-            organisation: props.shop_data.organisation,
-            shop: props.shop_data.slug,
-            offerCampaign: props.shop_data.offercampaign,
+        route('grp.models.store_voucher', {
+            shop: props.shop_data.id,
         }),
         payload,
         {
@@ -273,8 +282,11 @@ function resetForm() {
     step.value = 1
 }
 
+const hasVoucherWhitespace = computed(() => /\s/.test(offerVoucher.value ?? ''))
+
 const isStep1Invalid = computed(() => {
-    if(!voucherExists.value) return true
+    if (hasVoucherWhitespace.value) return true
+    if (voucherExists.value !== false) return true
     if (!offerVoucher.value?.trim()) return true
     if (!offerLabel.value?.trim()) return true
     if (!startDate.value) return true
@@ -336,17 +348,21 @@ const isFormInvalid = computed(() => {
 
                         <PureInput v-model="offerVoucher" :maxLength="60" :placeholder="trans('Enter Voucher code')" />
 
-                        <p v-if="isCheckingVoucher" class="text-sm text-gray-500 flex items-center gap-x-1">
+                        <p v-if="hasVoucherWhitespace" class="text-sm text-red-500 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
+                            {{ trans('Voucher code cannot contain spaces') }}
+                        </p>
+                        <p v-else-if="isCheckingVoucher" class="text-sm text-gray-500 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-spinner-third" spin class="text-xs" />
                             {{ trans('Checking voucher code') }}…
                         </p>
-                        <p v-else-if="voucherExists === true" class="text-sm text-green-600 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" />
-                            {{ trans('Voucher code exists') }}
-                        </p>
-                        <p v-else-if="voucherExists === false" class="text-sm text-red-500 flex items-center gap-x-1">
+                        <p v-else-if="voucherExists === true" class="text-sm text-red-500 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
-                            {{ trans('Voucher code not found') }}
+                            {{ trans('Voucher code already exists') }}
+                        </p>
+                        <p v-else-if="voucherExists === false" class="text-sm text-green-600 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" />
+                            {{ trans('Voucher code is available') }}
                         </p>
 
                     </div>
@@ -429,10 +445,14 @@ const isFormInvalid = computed(() => {
                             </label>
 
                             <div class="flex flex-wrap gap-4">
-                                <div v-for="opt in targetOptions" :key="opt.value" class="flex items-center gap-2">
+                                <label v-for="opt in targetOptions" :key="opt.value" :for="`target-${opt.value}`"
+                                    class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                                    :class="target === opt.value
+                                        ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                        : 'border-gray-200 hover:border-gray-300'">
                                     <RadioButton v-model="target" :value="opt.value" :inputId="`target-${opt.value}`" />
-                                    <label :for="`target-${opt.value}`">{{ trans(opt.label) }}</label>
-                                </div>
+                                    <span>{{ trans(opt.label) }}</span>
+                                </label>
                             </div>
 
                         </div>

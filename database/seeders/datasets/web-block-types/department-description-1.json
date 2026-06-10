@@ -3,7 +3,7 @@
 	"scope": "webpage",
 	"code": "department-description-1",
 	"name": "department-description",
-	"category": "",
+	"category": "department_description",
 	"fixed": true,
 	"icon": ["fal", "folder"],
 	"website_type" : ["b2b","b2c","dropshipping"],

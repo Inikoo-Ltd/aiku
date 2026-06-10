@@ -7,6 +7,8 @@ import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
 import About from "@/Components/CMS/Webpage/Family2ExtraDescription/AboutWorkshop.vue"
+import FaqWorkshop from "./FaqWorkshop.vue"
+import MarketingMaterialsWorkshop from "./MarketingMaterialsWorkshop.vue"
 
 library.add(
   faCube,
@@ -30,12 +32,26 @@ const props = defineProps<{
 const layout = inject("layout", {}) as any
 const activeTab = ref("about")
 
-const tabs = [
-  { key: "about", label: ctrans("About the Range") },
-  { key: "retailers", label: ctrans("Notes For Retailers") },
-  { key: "marketing", label: ctrans("Marketing Materials") },
-  { key: "faq", label: ctrans("FAQ") },
-]
+const tabs = computed(() =>
+  [
+    { key: "about", label: ctrans("About the Range") },
+    { key: "marketing", label: ctrans("Marketing Materials") },
+    { key: "faq", label: ctrans("FAQ") },
+  ].filter(tab => {
+    if (tab.key === "marketing") {
+      return layout?.iris?.is_logged_in
+    }
+
+    if (tab.key === "faq") {
+      return (
+        Array.isArray(props.modelValue?.family?.faq) &&
+        props.modelValue.family.faq.length > 0
+      )
+    }
+
+    return true
+  })
+)
 
 const sectionId = computed(
   () => props.modelValue?.id ?? `family-1-iris-${props.indexBlock}`
@@ -54,6 +70,10 @@ const component = (tab: string) => {
   switch (tab) {
     case "about":
       return About
+    case "marketing":
+      return MarketingMaterialsWorkshop
+    case "faq":
+      return FaqWorkshop
     default:
       return null
   }
@@ -99,12 +119,27 @@ const tabButtonClass = computed(() => {
       return "px-2 py-4 text-[12px]"
   }
 })
+
+const sectionStyle = computed(() => {
+  const bg = props.modelValue?.container?.properties?.background[props.screenType]
+
+  return {
+    backgroundColor: bg?.color || undefined,
+    backgroundImage: bg?.image?.original
+      ? `url(${bg.image.original})`
+      : undefined,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }
+})
+
 </script>
 
 <template>
   <section
     class="w-full bg-[#D8D9DB] "
     :id="sectionId"
+     :style="sectionStyle"
   >
     <div
       class="mx-auto w-full  bg-white editor-class"

@@ -86,6 +86,13 @@ class GetShopifyOrders extends OrgAction
                     $orderData = [
                         'external_id' => $externalId,
                         'reference' => Arr::get($shopifyOrder, 'name'), // e.g., #1011
+                        'date' => Arr::get($shopifyOrder, 'createdAt'),
+                        'data' => [
+                            'platform_milestones' => [
+                                'draft_created_at' => Arr::get($shopifyOrder, 'createdAt'),
+                                'placed_at'        => Arr::get($shopifyOrder, 'processedAt'),
+                            ]
+                        ]
                     ];
 
                     // Add shipping address if available

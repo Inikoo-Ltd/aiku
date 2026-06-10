@@ -1,9 +1,9 @@
-import { RelatedProductCategoryWorkshop } from '@/Components/CMS/Webpage/RelatedProductCategory/RealatedProductCategoryWorkshop.vue';
+
 import { blueprint } from './../Components/CMS/Webpage/LuigiLastSeen1/Blueprint';
 import Footer1Blueprint from "@/Components/CMS/Website/Footers/footerTheme1/bluprint"
 import Topbar1Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar1/Blueprint"
 import Topbar2Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar2/Blueprint"
-import Topbar3Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar3/Blueprint"
+
 import Header1Blueprint from "@/Components/CMS/Website/Headers/Header1/Blueprint"
 import Header2Blueprint from "@/Components/CMS/Website/Headers/Header2/Blueprint"
 import BentoGridBlueprint from "@/Components/CMS/Webpage/BentoGrid/Blueprint"
@@ -24,7 +24,7 @@ import TimelineBlueprint from "@/Components/CMS/Webpage/Timeline/Blueprint"
 import TextColumn from "@/Components/CMS/Webpage/TextColumn/Blueprint"
 import Topbar1Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Blueprint"
 import Topbar2Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Blueprint"
-import Topbar3Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Blueprint"
+
 import Button from "@/Components/CMS/Webpage/Button/Blueprint"
 import ColumnLayout2Blueprint from "@/Components/CMS/Webpage/Column/Blueprint"
 import ColumnLayout3Blueprint from "@/Components/CMS/Webpage/Column3/Blueprint"
@@ -37,6 +37,7 @@ import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blueprint"
 import SubDepartment2Blueprint from "@/Components/CMS/Webpage/SubDepartment2/Blueprint"
+import SubDepartment3Blueprint from "@/Components/CMS/Webpage/SubDepartment3/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
 import ProductsList2Blueprint from '@/Components/CMS/Webpage/Products2/Blueprint'
@@ -70,16 +71,15 @@ import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Bluepr
 import Family2ExtraDescriptionBlueprint from "@/Components/CMS/Webpage/Family2ExtraDescription/Blueprint"
 import RecomendationFromMaster from "../Components/CMS/Webpage/RecommendationFromMaster/Blueprint"
 import RelatedProductCategoryBlueprint from "@/Components/CMS/Webpage/RelatedProductCategory/Blueprint"
+import Tabs from "@/Components/CMS/Webpage/Tabs/Blueprint"
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
 		// topbar
 		"top-bar-1-fulfilment": Topbar1Fulfilment.blueprint,
 		"top-bar-2-fulfilment": Topbar2Fulfilment.blueprint,
-		"top-bar-3-fulfilment": Topbar3Fulfilment.blueprint,
 		"top-bar-1": Topbar1Blueprint.blueprint,
 		"top-bar-2": Topbar2Blueprint.blueprint,
-		"top-bar-3": Topbar3Blueprint.blueprint,
 
 		// header
 		"header-1": Header1Blueprint.blueprint,
@@ -91,6 +91,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		// sub-department
 		"sub-departments-1": SubDepartment1Blueprint.blueprint,
 		"sub-departments-2": SubDepartment2Blueprint.blueprint,
+		"sub-departments-3": SubDepartment3Blueprint.blueprint,
 
 		// family
 		'collection-description-1' : CollectionDescription.blueprint,
@@ -170,6 +171,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'slider-1' : SliderBlueprint.blueprint,
 		'recommendation-from-master' : RecomendationFromMaster.blueprint,
 		'relatedProductCategory' : () => RelatedProductCategoryBlueprint(data).blueprint,
+		'tabs' : Tabs.blueprint
 	}
 
 	const blueprint = components[componentName]

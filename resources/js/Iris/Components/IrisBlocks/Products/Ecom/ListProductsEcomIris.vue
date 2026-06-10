@@ -61,7 +61,7 @@ const products = ref<any[]>(
 );
 
 const q = ref("")
-const orderBy = ref(layout.params?.order_by)
+const orderBy = ref(layout.params?.order_by || props.fieldValue?.sub_type == 'family'  ?  'recommended' : '-created_at')
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
@@ -264,7 +264,7 @@ const sortOptions = computed(() => {
     return baseOptions
 })
 
-const sortKey = ref(props.fieldValue.sub_type == 'family' ? 'recommended' : 'code')
+const sortKey = ref(props.fieldValue.sub_type == 'family' ? 'recommended' : 'created_at')
 const isAscending = ref(true)
 
 
@@ -346,8 +346,8 @@ const toggleSort = (key: string) => {
     }
 
     if (props.fieldValue?.sub_type == 'family' && key == 'recommended') orderBy.value = key
-    /* if(key == 'created_at') orderBy.value = `-${key}` */
-    else orderBy.value = isAscending.value ? key : `${key}`
+    if(key == 'created_at') orderBy.value = `-${key}`
+    else orderBy.value = isAscending.value ? key : `-${key}`
     updateQueryParams()
     handleSearch()
 }
@@ -545,6 +545,7 @@ watch(
                 <!-- Product Grid -->
                 <div :class="responsiveGridClass"
                     class="grid gap-x-6 gap-y-10 p-3 px-0 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 2xl:px-[50px]">
+                    <!-- <pre>{{ getStyles(fieldValue?.container?.properties, screenType) }}</pre> -->
                     <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
                             <Skeleton height="200px" class="mb-3" />

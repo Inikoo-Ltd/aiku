@@ -38,9 +38,12 @@ const props = defineProps<{
         offerCampaign: {}
         stats: {}
     }
-     shop_data: {
+    shop_data: {
+        id: number
         slug: string
         currency_code: string
+        organisation: string
+        offercampaign: string
     }
 }>()
 

@@ -24,7 +24,7 @@ import { confetti } from '@tsparticles/confetti'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle, faCheckCircle as falCheckCircle, faHeart, faSparkles, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt, faMedal } from "@fal"
-import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faSparkles as fasSparkles, faInfo, faCircle, faMedal as fasMedal, faCandleHolder } from '@fas'
+import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faSparkles as fasSparkles, faInfo, faCircle, faMedal as fasMedal, faCandleHolder, faCartPlus } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 
 import Modal from "@/Components/Utils/Modal.vue"
@@ -39,7 +39,7 @@ import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
 
-library.add(faMedal, fasMedal, faCandleHolder, fadMedal, faLayerGroup)
+library.add(faMedal, fasMedal, faCandleHolder, faCartPlus, fadMedal, faLayerGroup)
 library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
 

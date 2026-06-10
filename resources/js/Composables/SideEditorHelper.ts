@@ -50,6 +50,7 @@ import ResponsiveText from '@/Components/CMS/Fields/ResponsiveText.vue'
 import { SelectButton } from 'primevue'
 import SelectBanner from '@/Components/CMS/Fields/SelectBanner.vue'
 import SelectProductCategory from '@/Components/Workshop/Properties/SelectProductCategory.vue'
+import TabsInput from '@/Components/CMS/Fields/TabsInput.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -101,7 +102,8 @@ export const getComponent = (componentName: string) => {
         'text-responsive': ResponsiveText,
         'select-button' : SelectButton,
         'select_banner' : SelectBanner,
-        'select_product_category' : SelectProductCategory
+        'select_product_category' : SelectProductCategory,
+        'tabs' : TabsInput
     }
     return components[componentName] ?? NotFoundComponents
 }

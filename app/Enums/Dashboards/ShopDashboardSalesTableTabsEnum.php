@@ -17,8 +17,8 @@ enum ShopDashboardSalesTableTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case BRANDS = 'brands';
     case DS_PLATFORMS = 'ds_platforms';
+    case BRANDS = 'brands';
 
     public function blueprint(): array
     {

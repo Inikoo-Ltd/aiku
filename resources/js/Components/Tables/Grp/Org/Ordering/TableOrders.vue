@@ -13,7 +13,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import DatePicker from '@vuepic/vue-datepicker'
-import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt } from "@fal"
+import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle } from "@fal"
 import { faShieldAlt, faStar, faHighlighter, faPennant } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
@@ -24,7 +24,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import { computed, inject, ref } from "vue"
 
-library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle)
+library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faInfoCircle)
 
 defineProps<{
     data: {
@@ -258,8 +258,22 @@ const setNewMarkerDate = (newVal: Date) => {
 
 
         <template #cell(date)="{ item: order }">
-            <div class="text-right">
-                {{ useFormatTime(order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
+            <div class="text-right flex items-center justify-end gap-1.5">
+                <span v-if="order.platform_milestones?.draft_created_at && order.platform_milestones?.placed_at && order.platform_milestones.draft_created_at !== order.platform_milestones.placed_at"
+                      v-tooltip="
+                          trans('Order Timeline:') + '<br>' +
+                          trans('Draft Initiated:') + ' ' + useFormatTime(order.platform_milestones.draft_created_at, { localeCode: locale.language.code, formatTime: 'aiku' }) + '<br>' +
+                          trans('Paid / Placed:') + ' ' + useFormatTime(order.platform_milestones.placed_at, { localeCode: locale.language.code, formatTime: 'aiku' }) + 
+                          (order.submitted_at ? ('<br>' + trans('Warehouse Submitted:') + ' ' + useFormatTime(order.submitted_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '') +
+                          (order.dispatched_at ? ('<br>' + trans('Dispatched:') + ' ' + useFormatTime(order.dispatched_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '')
+                      "
+                      class="text-gray-400 cursor-help"
+                >
+                    <FontAwesomeIcon :icon="faInfoCircle" size="xs" />
+                </span>
+                <span>
+                    {{ useFormatTime(order.platform_milestones?.placed_at || order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
+                </span>
             </div>
         </template>
 

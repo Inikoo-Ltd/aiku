@@ -23,6 +23,7 @@ import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorksho
 import FamiliesOverviewBlockWorkshop from '@/Components/CMS/Website/FamiliesOverviewBlockWorkshop/FamiliesOverviewWorkshop.vue'
 import FamiliesDescriptionBlockWorkshop from '@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/FamilyDescriptionBlockWorkshop.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import DepartmentDescriptionBlockWorkshop from '@/Components/CMS/Website/DepartmentBlockWorkshop/DepartmentDescriptionBlockWorkshop.vue'
 
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
@@ -38,7 +39,8 @@ const TAB_COMPONENT_MAP = {
   families_description: FamiliesDescriptionBlockWorkshop,
   products: ProductsBlockWorkshop,
   product: ProductBlockWorkshop,
-  history: TableHistories
+  history: TableHistories,
+  department_description: DepartmentDescriptionBlockWorkshop,
 }
 
 const props = defineProps<{

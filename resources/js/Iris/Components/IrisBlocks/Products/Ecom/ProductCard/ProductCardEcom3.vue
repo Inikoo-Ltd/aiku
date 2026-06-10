@@ -5,7 +5,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
-import { faCircle, faHeart as fasHeart } from '@fas'
+import {  faHeart as fasHeart } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from "@/Stores/locale"
@@ -20,8 +20,8 @@ import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import { routeType } from '@/types/route'
-import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import Prices from '@/Iris/Components/BlocksUtils/Prices3.vue'
+/* import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue' */
+import Prices from '@/Iris/Components/BlocksUtils/Prices4.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
@@ -267,6 +267,7 @@ defineExpose({
                         </div>
                     </div>
                 </template>
+          
 
                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
@@ -295,12 +296,12 @@ defineExpose({
             </component>
 
             <div class="mt-2">
-                <div class="flex w-full items-center gap-2">
-                    <!-- Product Code -->
+                <!-- <div class="flex w-full items-center gap-2">
+                     Product Code 
                     <div  class="text-xs">
                         {{ product?.code }}
                     </div>
-                    <!-- Stock / Coming Soon -->
+                    Stock / Coming Soon 
                     <div v-if="layout?.iris?.is_logged_in" class="flex items-center text-xs text-gray-600">
                         <LabelComingSoon v-if="product.is_coming_soon" :product="product" class="text-center" />
                         <div v-else v-tooltip="trans('Available product stocks')"
@@ -310,7 +311,7 @@ defineExpose({
                                 :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                         </div>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Title -->
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
@@ -328,10 +329,10 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <Prices v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton />
+            <Prices v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket/>
             <div v-else class="text-xs leading-tight space-y-1">
 
-                <!-- CODE + RRP -->
+                <!-- CODE + RRP + V2-->
                 <div class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
                     <!-- RRP + UNIT  -->
                     <span class="truncate min-w-0 overflow-hidden text-primary">

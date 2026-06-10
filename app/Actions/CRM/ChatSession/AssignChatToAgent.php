@@ -323,6 +323,84 @@ class AssignChatToAgent
         }
     }
 
+    public function takeOver(string $organisation, ChatSession $chatSession): JsonResponse
+    {
+        $agent = $this->getCurrentAgent();
+
+        if (!$agent) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only authenticated agents can take over chats',
+            ], 403);
+        }
+
+        try {
+            /** @var ChatAssignment|null $activeAssignment */
+            $activeAssignment = $chatSession->assignments()
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+                ->first();
+
+            $previousAgent = $activeAssignment?->chatAgent;
+
+            if ($activeAssignment) {
+                if ($activeAssignment->chat_agent_id === $agent->id) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Chat session already assigned to you',
+                        'data'    => ['session_ulid' => $chatSession->ulid, 'action_type' => 'take_over'],
+                    ]);
+                }
+
+                $activeAssignment->update([
+                    'chat_agent_id' => $agent->id,
+                    'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
+                    'note'          => 'Taken over by agent',
+                    'assigned_at'   => now(),
+                ]);
+
+                $previousAgent?->decrementChatCount();
+                $agent->incrementChatCount();
+            }
+
+            $chatSession->update(['status' => ChatSessionStatusEnum::ACTIVE->value]);
+
+            app(StoreChatEvent::class)->handle(
+                chatSession: $chatSession,
+                eventType: ChatEventTypeEnum::TRANSFER_TO_AGENT,
+                actorType: ChatActorTypeEnum::AGENT,
+                actorId: $agent->id,
+                payload: [
+                    'action_type'     => 'take_over',
+                    'from_agent_id'   => $previousAgent?->id,
+                    'from_agent_name' => $previousAgent?->user?->contact_name,
+                    'to_agent_id'     => $agent->id,
+                    'to_agent_name'   => $agent->user?->contact_name,
+                    'timestamp'       => now()->toISOString(),
+                ]
+            );
+
+            BroadcastChatListEvent::dispatch();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Chat taken over successfully',
+                'data'    => [
+                    'assignment_id'       => $activeAssignment->id,
+                    'session_ulid'        => $chatSession->ulid,
+                    'session_status'      => $chatSession->status->value,
+                    'assigned_agent_id'   => $agent->id,
+                    'assigned_agent_name' => $agent->user?->contact_name ?? 'Unknown',
+                    'action_type'         => 'take_over',
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
     /**
      * @throws \Exception

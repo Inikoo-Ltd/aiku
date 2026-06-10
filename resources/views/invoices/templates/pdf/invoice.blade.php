@@ -218,6 +218,10 @@
             @if($deliveryNote)
                 <div style="text-align: right">{{__('Weight')}}: <b>{{ $deliveryNote->getBestWeight() }}</b></div>
             @endif
+            @if($show_dispatch_totals && $dispatch_total_skos !== null)
+                <div style="text-align: right">{{__('Total SKO')}}: <b>{{ number_format($dispatch_total_skos, 0) }}</b></div>
+                <div style="text-align: right">{{__('Total Units')}}: <b>{{ number_format($dispatch_total_units, 0) }}</b></div>
+            @endif
         </td>
 
     </tr>
@@ -375,7 +379,7 @@
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
-                                @else 
+                                @else
                                     <s>{{ $invoice->currency->symbol . number_format($transaction->gross_amount / $transaction->quantity, 2) }}</s><br>
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
                                 @endif
@@ -389,7 +393,7 @@
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
-                                @else 
+                                @else
                                     <s>{{ $invoice->currency->symbol . number_format($transaction->gross_amount / $transaction->quantity, 2) }}</s><br>
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
                                 @endif
@@ -400,12 +404,61 @@
                     @if ($sameGrossNet)
                         <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
                     @else
-                        <td style="text-align:right"> 
+                        <td style="text-align:right">
                             <s>{{ $invoice->currency->symbol . $transaction->gross_amount }}</s> <br>
                             {{ $invoice->currency->symbol . $transaction->net_amount }}
                         </td>
                     @endif
                 </tr>
+
+                {{-- BUNDLE SUB-ITEMS --}}
+                @if($transaction->model?->is_bundle && $transaction->model->bundle?->items?->count())
+                    @foreach($transaction->model->bundle->items as $bundleItem)
+                        @php($linkedProduct = $bundleItem->item)
+                        @php($quantity = $bundleItem->quantity ?? 1)
+                        @php($unitPrice = $linkedProduct->price)
+                        @php($lineTotal = $unitPrice * $quantity)
+                        <tr style="background-color:#fafafa;">
+                            <td style="text-align:left; padding-left:20px; color:#555; font-size:8pt;">
+                                ↳ {{ $linkedProduct?->code ?? '' }}
+                            </td>
+
+                            <td style="text-align:left; color:#333; font-size:8pt;" colspan="2">
+                                {{ $linkedProduct?->name ?? '' }}
+
+                                @if($commodity_codes && $linkedProduct?->tariff_code)
+                                    <br>
+                                    {{ __('Tariff Code') }}: {{ $linkedProduct->tariff_code }}
+                                @endif
+
+                                @if($country_of_origin && $linkedProduct?->country_of_origin)
+                                    <br>
+                                    {{ __('Country of Origin') }}: {{ $linkedProduct->country_of_origin }}
+                                @endif
+                            </td>
+
+                            @if($pro_mode)
+                                <td style="text-align:right; font-size:8pt; color:#555;">
+                                    {{ $invoice->currency->symbol . number_format($unitPrice, 2) }}
+                                </td>
+                                <td style="text-align:right; font-size:8pt; color:#555;">
+                                    {{ $quantity }}
+                                </td>
+                            @else
+                                <td style="text-align:left; font-size:8pt; color:#555;">
+                                    {{ $invoice->currency->symbol . number_format($unitPrice, 2) }}
+                                </td>
+                                <td style="text-align:right; font-size:8pt; color:#555;">
+                                    {{ $quantity }}
+                                </td>
+                            @endif
+
+                            <td style="text-align:right; font-size:8pt; color:#555;">
+                                {{ $invoice->currency->symbol . number_format($lineTotal, 2) }}
+                            </td>
+                        </tr>
+                    @endforeach
+                @endif
             @endforeach
         @endforeach
 
@@ -418,7 +471,7 @@
                 <td>{{ __('Total Gross') }}</td>
                 <td>{{ $invoice->currency->symbol . $order->gross_amount }}</td>
             </tr>
-            
+
             <tr>
                 <td style="border:none" colspan="4"></td>
                 <td style="color: #16a34a">{{ __('Discounts') }}</td>

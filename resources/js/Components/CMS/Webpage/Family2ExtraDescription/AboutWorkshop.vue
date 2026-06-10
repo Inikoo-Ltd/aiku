@@ -81,7 +81,7 @@ const layoutClasses = computed(() => ({
             ? "grid-cols-1"
             : props.screenType === "tablet"
                 ? "grid-cols-1"
-                : "grid-cols-[48%_52%]",
+                : "grid-cols-[53%_47%]",
 
     left:
         props.screenType === "mobile"
@@ -95,82 +95,80 @@ const layoutClasses = computed(() => ({
             ? "order-1 py-5"
             : props.screenType === "tablet"
                 ? "order-1 py-5"
-                : "order-2 p-[14px]",
+                : "order-2 py-8",
 
     description:
         props.screenType === "mobile"
             ? "max-w-full text-[13px] leading-[1.8]"
             : props.screenType === "tablet"
                 ? "max-w-full text-[14px] leading-[1.8]"
-                : "max-w-[700px] text-[16px] leading-[1.8]",
-
-    buttonWrapper:
-        props.screenType === "desktop"
-            ? "mt-auto"
+                : "max-w-[700px] 2xl:max-w-[860px] text-[16px] leading-[1.8]",
+    galleryWrapper:
+        props.screenType === "mobile"
+            ? `
+            grid
+            w-full
+            gap-3
+            grid-cols-1
+        `
             : props.screenType === "tablet"
-                ? "mt-10"
-                : "mt-8",
+                ? `
+                grid
+                w-full
+                gap-3
+                grid-cols-[1.35fr_1fr]
+                grid-rows-[320px_220px]
+            `
+                : `
+                grid
+                w-full
+                gap-3
+                grid-cols-[1.45fr_1fr]
+                grid-rows-[380px_220px]
+                xl:grid-rows-[420px_240px]
+                2xl:grid-rows-[480px_280px]
+            `,
 
-    button:
+    rightColumn:
         props.screenType === "mobile"
-            ? "rounded-[8px] border border-[#24384d] px-5 py-[8px] text-[12px] text-[#24384d]"
-            : "rounded-[8px] border border-[#24384d] px-7 py-[8px] text-[13px] text-[#24384d]",
-
-    galleryGrid:
-        props.screenType === "mobile"
-            ? "grid-cols-1"
-            : props.screenType === "tablet"
-                ? "grid-cols-[1fr_180px]"
-                : "grid-cols-[1fr_148px]",
-
-    sideGrid:
-        props.screenType === "mobile"
-            ? "grid-cols-2"
-            : "grid-cols-1",
+            ? `
+            grid
+            gap-3
+            grid-cols-2
+            h-[140px]
+        `
+            : `
+            grid
+            gap-3
+            grid-cols-1
+            grid-rows-2
+            h-full
+        `,
 
     mainImage:
         props.screenType === "mobile"
-            ? "h-[250px]"
-            : props.screenType === "tablet"
-                ? "h-[320px]"
-                : "h-[320px]",
-
-    sideImage:
-        props.screenType === "mobile"
-            ? "h-[120px]"
-            : props.screenType === "tablet"
-                ? "h-[155px]"
-                : "h-[155px]",
+            ? "h-[260px]"
+            : "h-full",
 
     bottomImage:
         props.screenType === "mobile"
-            ? "h-[240px]"
-            : props.screenType === "tablet"
-                ? "col-span-2 h-[320px]"
-                : "col-span-2 h-[350px]",
-
-    modalImage:
-        props.screenType === "mobile"
-            ? "h-[300px]"
-            : "h-[500px]",
+            ? "h-[220px]"
+            : "col-span-2 h-full",
 }))
 
 </script>
 
 <template>
     <!-- CONTENT -->
-    <div :class="['grid', layoutClasses.wrapper]">
+    <div class="grid gap-0 lg:gap-4 items-stretch" :class="layoutClasses.wrapper">
         <!-- LEFT -->
-        <div :class="layoutClasses.left">
+        <div class="flex flex-col h-full text-center md:text-left" :class="layoutClasses.left">
             <div :class="layoutClasses.description" class="text-[#334155]" v-html="cleanedDescription" />
 
             <div :class="layoutClasses.buttonWrapper">
                 <a href="#family-2">
                     <button :class="layoutClasses.button" :style="{
-                        ...getStyles(
-                            fieldValue?.button?.container?.properties,
-                            screenType
-                        )
+                        ...getStyles(fieldValue?.button?.container?.properties)
                     }">
                         <span v-if="fieldValue?.button?.text">
                             {{ fieldValue?.button?.text }}
@@ -185,18 +183,13 @@ const layoutClasses = computed(() => ({
         </div>
 
         <!-- RIGHT -->
-        <div :class="layoutClasses.right">
-            <div :class="[
-                'grid gap-[10px]',
-                layoutClasses.galleryGrid
-            ]">
-                <!-- Main Image -->
-                <div :class="[
-                    'overflow-hidden rounded-[8px]',
-                    layoutClasses.mainImage
-                ]">
+
+        <div class="flex h-full" :class="layoutClasses.right">
+            <div :class="layoutClasses.galleryWrapper">
+                <!-- MAIN IMAGE -->
+                <div class="overflow-hidden rounded-[8px]" :class="layoutClasses.mainImage">
                     <template v-if="hasImage(displayImages[0])">
-                        <Image :src="displayImages[0]" :image-cover="true" class="w-full h-full object-cover"
+                        <Image :src="displayImages[0]?.original" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 
@@ -205,47 +198,37 @@ const layoutClasses = computed(() => ({
                     </div>
                 </div>
 
-                <!-- Side Images -->
-                <div :class="[
-                    'grid gap-[10px]',
-                    layoutClasses.sideGrid
-                ]">
-                    <div :class="[
-                        'overflow-hidden rounded-[8px]',
-                        layoutClasses.sideImage
-                    ]">
-                       <template v-if="hasImage(displayImages[1])">
-                        <Image :src="displayImages[1]" :image-cover="true" class="w-full h-full object-cover"
-                            :alt="fieldValue?.family?.name" />
-                    </template>
+                <!-- RIGHT COLUMN -->
+                <div :class="layoutClasses.rightColumn">
+                    <!-- IMAGE 2 -->
+                    <div class="overflow-hidden rounded-[8px] h-full">
+                        <template v-if="hasImage(displayImages[1])">
+                            <Image :src="displayImages[1]?.original" :image-cover="true"
+                                class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
+                        </template>
 
-                    <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                        <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
-                    </div>
+                        <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
+                            <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
+                        </div>
                     </div>
 
-                    <div :class="[
-                        'overflow-hidden rounded-[8px]',
-                        layoutClasses.sideImage
-                    ]">
-                      <template v-if="hasImage(displayImages[2])">
-                        <Image :src="displayImages[2]" :image-cover="true" class="w-full h-full object-cover"
-                            :alt="fieldValue?.family?.name" />
-                    </template>
+                    <!-- IMAGE 3 -->
+                    <div class="overflow-hidden rounded-[8px] h-full">
+                        <template v-if="hasImage(displayImages[2])">
+                            <Image :src="displayImages[2]?.original" :image-cover="true"
+                                class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
+                        </template>
 
-                    <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                        <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
-                    </div>
+                        <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
+                            <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
+                        </div>
                     </div>
                 </div>
 
-                <!-- Bottom Image -->
-                <div :class="[
-                    'relative overflow-hidden rounded-[8px]',
-                    layoutClasses.bottomImage
-                ]">
-                   <template v-if="hasImage(displayImages[3])">
-                        <Image :src="displayImages[3]" :image-cover="true" class="w-full h-full object-cover"
+                <!-- BOTTOM IMAGE -->
+                <div class="relative overflow-hidden rounded-[8px]" :class="layoutClasses.bottomImage">
+                    <template v-if="hasImage(displayImages[3])">
+                        <Image :src="displayImages[3]?.original" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 
@@ -253,8 +236,18 @@ const layoutClasses = computed(() => ({
                         <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
                     </div>
 
-                    <button @click="openGallery(0)"
-                        class="absolute bottom-4 right-4 rounded-md bg-white/90 px-4 py-2 text-[11px] text-gray-700 shadow">
+                    <button @click="openGallery(0)" class="
+                    absolute
+                    bottom-4
+                    right-4
+                    rounded-md
+                    bg-white/90
+                    px-4
+                    py-2
+                    text-[11px]
+                    text-gray-700
+                    shadow
+                ">
                         {{ ctrans('Image Gallery') }}
                     </button>
                 </div>
@@ -277,12 +270,13 @@ const layoutClasses = computed(() => ({
                 ‹
             </button>
 
-            <!-- Preview -->
-            <div :class="[
-                'flex items-center justify-center w-full',
-                layoutClasses.modalImage
-            ]">
-                <Image :src="galleryImages[selectedIndex]" :alt="`Image ${selectedIndex + 1}`"
+            <!-- Fixed Preview Area -->
+            <div class="flex items-center justify-center
+           w-full
+           h-[300px]
+           md:h-[500px]
+           lg:h-[500px]">
+                <Image :src="galleryImages[selectedIndex].original" :alt="`Image ${selectedIndex + 1}`"
                     class="w-full h-full object-contain flex justify-center" :image-cover="false" />
             </div>
 
@@ -292,15 +286,14 @@ const layoutClasses = computed(() => ({
                 ›
             </button>
         </div>
-
         <!-- Thumbnail -->
         <div class="mt-4 flex justify-center gap-2 overflow-x-auto pb-2">
             <button v-for="(image, index) in galleryImages" :key="index" @click="selectedIndex = index"
                 class="h-20 w-20 min-h-20 min-w-20 overflow-hidden rounded border-2 flex-shrink-0" :class="selectedIndex === index
-                        ? 'border-white'
-                        : 'border-transparent'
+                    ? 'border-white'
+                    : 'border-transparent'
                     ">
-                <Image :src="image" class="h-full w-full object-cover" :image-cover="true" />
+                <Image :src="image.original" class="h-full w-full object-cover" :image-cover="true" />
             </button>
         </div>
     </Dialog>

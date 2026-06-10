@@ -35,8 +35,9 @@ class GetLoggedUser
             'username'     => $user->username,
             'contact_name' => (string) $user->contact_name,
             'email'        => $user->email,
-            'is_agent'    => $isAgent,
-            'agent_shops' => $agentShops,
+            'is_agent'     => $isAgent,
+            'agent_id'     => $user->chatAgent?->id,
+            'agent_shops'  => $agentShops,
             'settings' => [
                 'timezones' => Arr::get($user->settings, 'timezones'),
                 'app_theme' => Arr::get($user->settings, 'app_theme'),

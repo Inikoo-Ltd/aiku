@@ -19,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $name
  * @property mixed $id
  * @property mixed $sub_scope
+ * @property mixed $caption
  */
 class ImagesResource extends JsonResource
 {
@@ -39,6 +40,7 @@ class ImagesResource extends JsonResource
             'size'      => NaturalLanguage::make()->fileSize($this->size, 1, 'MB'),
             'image'     => $imageSources,
             'sub_scope' => $this->sub_scope,
+            'alt'       => $this->caption ?? $this->name,
             'dimensions' => [
                 'width'  => $this->width ?? 0,
                 'height' => $this->height ?? 0

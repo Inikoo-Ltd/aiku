@@ -12,25 +12,23 @@ use App\Actions\Discounts\Offer\UI\EditOffer;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Discounts\Offer\UI\ShowOffer;
 use App\Actions\Discounts\Offer\UpdateOffer;
+use App\Actions\Discounts\OfferCampaign\Json\CheckVoucherCodeExistence;
+use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
+use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UI\CreateGrAmnesty;
 use App\Actions\Discounts\OfferCampaign\UI\CreateVolGrGift;
 use App\Actions\Discounts\OfferCampaign\UI\EditVolGrGift;
+use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOffer;
+use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOfferTotal;
+use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOffer;
+use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOfferTotal;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOfferCampaigns;
+use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
+use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOfferTotal;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\Discounts\UI\ShowDiscountsDashboard;
 use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
-use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
-use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
-use App\Actions\Discounts\OfferCampaign\Json\CheckVoucherCodeExistence;
-use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
-use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
-use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOffer;
-use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOffer;
-use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOfferTotal;
-use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOfferTotal;
-use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOfferTotal;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
@@ -71,10 +69,6 @@ Route::name("campaigns.")->prefix('campaigns')
         //todo
         Route::get('{offerCampaign}/edit-gr-amnesty', EditVolGrGift::class)->name('edit_current_gr_amnesty_offer')->withoutScopedBindings();
 
-        Route::post(
-            '{offerCampaign}/voucher',
-            StoreVoucherOffers::class
-        )->name('store_voucher');
 
         Route::get(
             '{offerCampaign}/voucher/check',
@@ -86,10 +80,6 @@ Route::name("campaigns.")->prefix('campaigns')
             StoreDiscountShipping::class
         )->name('store_shipping');
 
-        Route::post(
-            '{offerCampaign}/customer',
-            StoreCustomerOffers::class
-        )->name('store_customer');
 
         Route::post(
             '{offerCampaign}/product',

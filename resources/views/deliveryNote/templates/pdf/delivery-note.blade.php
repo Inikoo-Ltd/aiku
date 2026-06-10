@@ -23,6 +23,24 @@
     <p>Delivery Note No: {{ $deliveryNote->reference }} | Date: {{ \Carbon\Carbon::parse($deliveryNote->date)->format('jS F, Y') }}</p>
 </div>
 
+@php
+    $totalQuantity = $items->sum(fn($i) => $i->quantity_required ?? 0);
+    $totalSkos     = $deliveryNote->total_skos > 0 ? $deliveryNote->total_skos : null;
+    $totalUnits    = $deliveryNote->total_units > 0 ? $deliveryNote->total_units : null;
+@endphp
+
+<!-- Picker / Packer -->
+@if($deliveryNote->pickerUser || $deliveryNote->packerUser)
+<div style="margin-top: 10px;">
+    @if($deliveryNote->pickerUser)
+        <div><strong>Picked by:</strong> {{ $deliveryNote->pickerUser->contact_name }}@if($deliveryNote->picked_at) on {{ $deliveryNote->picked_at->format('jS F') }} at {{ $deliveryNote->picked_at->format('H:i') }}@endif</div>
+    @endif
+    @if($deliveryNote->packerUser)
+        <div><strong>Packed by:</strong> {{ $deliveryNote->packerUser->contact_name }}@if($deliveryNote->packed_at) on {{ $deliveryNote->packed_at->format('jS F') }} at {{ $deliveryNote->packed_at->format('H:i') }}@endif</div>
+    @endif
+</div>
+@endif
+
 <!-- Company and Customer Details -->
 <table>
     <tr>
@@ -42,6 +60,20 @@
             {{ $customer->name ?? 'Customer Name' }}<br>
             {!! nl2br($deliveryAddress ?? 'Delivery Address') !!}<br>
         </td>
+    </tr>
+</table>
+
+<!-- Summary Row -->
+<table>
+    <tr>
+        @if($deliveryNote->getNumberParcels())
+            <td><strong>Boxes:</strong> {{ $deliveryNote->getNumberParcels() }}</td>
+        @endif
+        <td><strong>Weight:</strong> {{ $deliveryNote->getBestWeight() }}</td>
+        @if($totalSkos !== null)
+            <td><strong>Total SKO:</strong> {{ number_format($totalSkos, 0) }}</td>
+            <td><strong>Total Units:</strong> {{ number_format($totalUnits, 0) }}</td>
+        @endif
     </tr>
 </table>
 

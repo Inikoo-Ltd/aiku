@@ -16,8 +16,10 @@ const props = defineProps<{
 
 const componentsMap = {
     'active-inactive-gr': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelGR.vue")),
+    'active-inactive-gr-v2': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelGRV2.vue")),
     'triggers_labels': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue")),
     'products_triggers_label': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/AvailableVolOfferLabel.vue")),
+    'triggers_labels_v2': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscountV2.vue")),
 
 } as const
 

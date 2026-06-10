@@ -15,7 +15,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class GenerateRetinaProductBundleDescription extends RetinaAction
@@ -25,6 +27,14 @@ class GenerateRetinaProductBundleDescription extends RetinaAction
 
     public function handle(array $modelData): string
     {
+        $customer = $this->customer;
+
+        $attempt = Cache::get('ai:description:limit:' . $customer->id, 0);
+
+        if ($attempt >= 3) {
+            throw ValidationException::withMessages(['message' => __('You have reached the limit of 3 attempts.')]);
+        }
+
         $productDescriptions = Product::whereIn('id', Arr::get($modelData, 'products'))
             ->pluck('description');
         $prompt = __("Create an excellent, engaging, and cohesive description for the following products:\n");
@@ -33,7 +43,10 @@ class GenerateRetinaProductBundleDescription extends RetinaAction
             $prompt .= "- " . Str::limit($description) . "\n";
         }
 
-        return GetGeneratedProductDescription::run($prompt, $modelData);
+        $result = GetGeneratedProductDescription::run($prompt, $modelData);
+        Cache::put('ai:description:limit:' . $customer->id, $attempt + 1, now()->addMinutes(5));
+
+        return $result;
     }
 
     public function rules(): array
