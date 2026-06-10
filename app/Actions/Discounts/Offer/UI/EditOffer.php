@@ -139,6 +139,7 @@ class EditOffer extends OrgAction
                             'style' => 'red',
                             'icon'  => 'fal fa-skull',
                             'route' => [
+                                'method'     => 'post',
                                 'name'       => 'grp.models.offer.finish',
                                 'parameters' => $offer->id,
                             ],

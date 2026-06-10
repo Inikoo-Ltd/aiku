@@ -40,6 +40,7 @@ class OffersResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                          => $this->id,
             'created_at'                  => $this->created_at,
             'shop_slug'                   => $this->shop_slug,
             'offer_campaign_slug'         => $this->offer_campaign_slug,
