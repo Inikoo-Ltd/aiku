@@ -240,6 +240,31 @@ test('UI Index offers', function () {
     });
 });
 
+test('UI Offers Insights', function () {
+    $response = get(route('grp.org.shops.show.discounts.insights', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Discounts/OffersInsights')
+            ->has('title')
+            ->has('pageHead')
+            ->has('intervals')
+            ->has('filters')
+            ->has(
+                'insights',
+                fn (AssertableInertia $page) => $page
+                    ->has('offer_counts')
+                    ->has('totals')
+                    ->has('trend')
+                    ->has('top_offers')
+                    ->has('least_offers')
+                    ->etc()
+            )
+            ->has('offers')
+            ->has('breadcrumbs', 3);
+    });
+});
+
 test('UI get section route offer dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.discounts.offers.index', [
         'organisation' => $this->organisation->slug,

@@ -14,7 +14,12 @@ library.add(faChevronDown, faCheckSquare, faSquare, faCalendarAlt);
 
 const props = defineProps<{
     intervals: any;
+    currentTab?: string;
 }>();
+
+const reloadOptions = () => {
+    return props.currentTab === 'insights' ? {} : { only: ['dashboard', 'top_customers'] };
+};
 
 // Method: convert Date to '20250206-20250223'
 const formattedDateRange = (date: string[] | Date[]) => {
@@ -129,7 +134,7 @@ const setQuarterFilter = (quarter: number, year: number) => {
                 isLoadingReload.value = false
             },
             preserveScroll: true,
-            only: ['dashboard', 'top_customers'],
+            ...reloadOptions(),
         }
     );
 };
@@ -176,7 +181,7 @@ const onUpdateDatePicker = (newValue) => {
                 isLoadingReload.value = false
             },
             preserveScroll: true,
-            only: ['dashboard', 'top_customers'],
+            ...reloadOptions(),
         }
     );
 }
@@ -199,7 +204,7 @@ const resetDatePicker = () => {
                 dateFilterValue.value = [new Date(), new Date()]
             },
             preserveScroll: true,
-            only: ['dashboard', 'top_customers'],
+            ...reloadOptions(),
         }
     );
 }
