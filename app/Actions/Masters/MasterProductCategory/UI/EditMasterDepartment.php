@@ -84,6 +84,17 @@ class EditMasterDepartment extends OrgAction
                             ]
                         ],
                         [
+                            'label'  => __('FAQ'),
+                            'icon'   => 'fa-light fa-question-circle',
+                            'fields' => [
+                               'faq' => [
+                                    'type'  => 'faq-master',
+                                    'label' => __('FAQ'),
+                                    'value' => $masterProductCategory->faq,
+                                ],
+                            ]
+                        ],
+                        [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
                             'fields' => [

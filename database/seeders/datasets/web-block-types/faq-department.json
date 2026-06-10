@@ -1,0 +1,15 @@
+{
+	"slug": "faq-department",
+	"code": "faq-department",
+	"name": "faq-department",
+	"scope": "block",
+	"icon": ["fal", "rectangle-wide"],
+	"category": "block",
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : true,
+	"data": {
+		"fieldValue": {
+			"value": []
+        }
+	}
+}
