@@ -51,7 +51,7 @@ enum WebBlockTemplateEnum: string
                 'product-2'
             ],
 
-            self::FAMILY_DESCRIPTION => [
+            self::DEPARTMENT_DESCRIPTION => [
                 'department-description-1',
                 'department-description-2',
             ],
