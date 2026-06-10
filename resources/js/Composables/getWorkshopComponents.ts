@@ -72,6 +72,7 @@ import Column4Workshop from '@/Components/CMS/Webpage/Column4/Column4Workshop.vu
 import Slider1Workshop from '@/Components/CMS/Webpage/Slider-1/Slider1Workshop.vue'
 import CollectionDescriptionWorkshop from '@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionWorkshop.vue'
 import DepartmentDescriptionWorkshop from '@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionWorkshop.vue'
+import DepartmentDescriptionWorkshop2 from '@/Components/CMS/Webpage/DepartmentDescription2/DepartmentDescription2Workshop.vue'
 import SubDepartmentDescriptionWorkshop from '../Components/CMS/Webpage/SubDepartmentDescription/SubDepartmentDescriptionWorkshop.vue'
 import Family2ExtraDescriptionWorkshop from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue'
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Families1OverviewWorkshop.vue'
@@ -101,6 +102,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         //description catalouge
         'collection-description-1' : CollectionDescriptionWorkshop,
         'department-description-1' : DepartmentDescriptionWorkshop,
+        'department-description-2' : DepartmentDescriptionWorkshop2,
         'sub-department-description-1' : SubDepartmentDescriptionWorkshop,
 
         //sub-department
