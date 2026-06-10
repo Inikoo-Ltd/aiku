@@ -1947,7 +1947,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             </button>
                         </div>
 
-                        <div v-if="layout?.app?.environment == 'local' && isVoucherAllowed">
+                        <div v-if="layout?.app?.environment == 'local' && isVoucherAllowed && !props.box_stats?.voucher">
                             <Button
                                 :label="trans('Add Voucher')"
                                 size="xs"

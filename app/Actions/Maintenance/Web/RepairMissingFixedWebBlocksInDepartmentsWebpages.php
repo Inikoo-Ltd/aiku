@@ -109,6 +109,8 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 }
             }
 
+            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes(), WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION);
+
             // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
             $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
 
@@ -147,21 +149,13 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
 
             $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
-
-            $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
-            if (count($countDepartmentDescriptionBlock) == 0) {
-                $this->createWebBlock($webpage, 'department-description-1');
-            }
         } else {
             $this->deleteWebBlocksByCode($webpage, 'families-2');
             // Layout for Overview Page
-            $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
-            if (count($countDepartmentDescriptionBlock) == 0) {
-                $this->createWebBlock($webpage, 'department-description-1');
-            }
+            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes(), WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION);
 
-            $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'families-1-overview');
-            if (count($countDepartmentDescriptionBlock) == 0) {
+            $countFamiliesOverviewBlock = $this->getWebpageBlocksByType($webpage, 'families-1-overview');
+            if (count($countFamiliesOverviewBlock) == 0) {
                 $this->createWebBlock($webpage, 'families-1-overview');
             }
         }
@@ -173,7 +167,9 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         $webpage->refresh();
 
-        $this->reorderDepartmentPageBlocks($webpage, (bool) $command->option('set-description-top'));
+        if ($command->option('set-description-top')) {
+            $this->reorderDepartmentPageBlocks($webpage);
+        }
 
         if ($command->option('hide-description')) {
             $this->setDescriptionWebBlockHidden($webpage);

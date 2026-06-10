@@ -440,6 +440,22 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
     }
 
+    public function getDepartmentsRelation(): HasMany
+    {
+        return $this->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT);
+    }
+
+    public function getSubDepartmentsRelation(): HasMany
+    {
+        return $this->productCategories()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
+    }
+
+
+    public function getFamiliesRelation(): HasMany
+    {
+        return $this->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);

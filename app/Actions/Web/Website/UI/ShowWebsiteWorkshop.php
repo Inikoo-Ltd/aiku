@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Website\GetWebsiteWorkshopDepartmentDescriptionWebBlock;
 use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartmentWebBlock;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamiliesOverviewWebBlock;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamilyDescriptionWebBlock;
@@ -65,28 +66,68 @@ class ShowWebsiteWorkshop extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-
         $product = $website->shop->productsInStock()->first();
-
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();
 
         if ($this->scope instanceof Fulfilment) {
-            unset($navigation[WebsiteWorkshopTabsEnum::PRODUCT->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::PRODUCT->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::PRODUCTS->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::HISTORY->value]);
+            $navigation = WebsiteWorkshopTabsEnum::navigationExcept([
+                WebsiteWorkshopTabsEnum::PRODUCT,
+                WebsiteWorkshopTabsEnum::PRODUCTS,
+                WebsiteWorkshopTabsEnum::SUB_DEPARTMENT,
+                WebsiteWorkshopTabsEnum::FAMILY,
+                WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW,
+                WebsiteWorkshopTabsEnum::HISTORY,
+            ]);
         }
 
         $tabs = [
             WebsiteWorkshopTabsEnum::WEBSITE_LAYOUT->value => $this->tab == WebsiteWorkshopTabsEnum::WEBSITE_LAYOUT->value ?
                 fn () => GetWebsiteWorkshopLayout::run($this->scope, $website)
                 : Inertia::lazy(fn () => GetWebsiteWorkshopLayout::run($this->scope, $website)),
-
         ];
+
+        $tabs[WebsiteWorkshopTabsEnum::DEPARTMENT_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::DEPARTMENT_DESCRIPTION->value
+            ? 
+            fn () => GetWebsiteWorkshopDepartmentDescriptionWebBlock::run($website)
+            : Inertia::lazy(
+                fn () => GetWebsiteWorkshopDepartmentDescriptionWebBlock::run($website)
+            );
+        
+        $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
+            ?
+            fn () => GetWebsiteWorkshopSubDepartmentWebBlock::run($website)
+            : Inertia::lazy(
+                fn () => GetWebsiteWorkshopSubDepartmentWebBlock::run($website)
+            );
+
+        $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
+            ?
+            fn () => GetWebsiteWorkshopFamilyWebBlock::run($website)
+            : Inertia::lazy(
+                fn () => GetWebsiteWorkshopFamilyWebBlock::run($website)
+            );
+
+        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value
+            ?
+            fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
+            : Inertia::lazy(
+                fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
+            );
+
+        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value
+            ?
+            fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
+            : Inertia::lazy(
+                fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
+            );
+
+        $tabs[WebsiteWorkshopTabsEnum::PRODUCTS->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value
+            ?
+            fn () => GetWebsiteWorkshopProductListWebBlock::run($website)
+            : Inertia::lazy(
+                fn () => GetWebsiteWorkshopProductListWebBlock::run($website)
+            );
 
         if ($product) {
             $tabs[WebsiteWorkshopTabsEnum::PRODUCT->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCT->value
@@ -96,37 +137,6 @@ class ShowWebsiteWorkshop extends OrgAction
                     fn () => GetWebsiteWorkshopProduct::run($website, $product)
                 );
         }
-        $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
-            ?
-            fn () => GetWebsiteWorkshopFamilyWebBlock::run($website)
-            : Inertia::lazy(
-                fn () => GetWebsiteWorkshopFamilyWebBlock::run($website)
-            );
-        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value
-            ?
-            fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
-            : Inertia::lazy(
-                fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
-            );
-        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value
-            ?
-            fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
-            : Inertia::lazy(
-                fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
-            );
-        $tabs[WebsiteWorkshopTabsEnum::PRODUCTS->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value
-            ?
-            fn () => GetWebsiteWorkshopProductListWebBlock::run($website)
-            : Inertia::lazy(
-                fn () => GetWebsiteWorkshopProductListWebBlock::run($website)
-            );
-
-        $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
-            ?
-            fn () => GetWebsiteWorkshopSubDepartmentWebBlock::run($website)
-            : Inertia::lazy(
-                fn () => GetWebsiteWorkshopSubDepartmentWebBlock::run($website)
-            );
 
         $tabs[WebsiteWorkshopTabsEnum::HISTORY->value] = $this->tab == WebsiteWorkshopTabsEnum::HISTORY->value
             ?
@@ -134,8 +144,6 @@ class ShowWebsiteWorkshop extends OrgAction
             : Inertia::lazy(
                 fn () => HistoryResource::collection(IndexHistory::run($website, WebsiteWorkshopTabsEnum::HISTORY->value, ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))
             );
-
-        // dd(IndexHistory::run($website, WebsiteWorkshopTabsEnum::HISTORY->value, ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']));
 
         $publishRoute = [
             'method'     => 'patch',
@@ -231,6 +239,13 @@ class ShowWebsiteWorkshop extends OrgAction
                         'method'     => 'patch',
                        /*  'name'       => 'grp.models.website.update', */
                         'name'       => 'grp.models.website.update.theme',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
+                    'department_description' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.department_description',
                         'parameters' => [
                             'website' => $website->id
                         ]

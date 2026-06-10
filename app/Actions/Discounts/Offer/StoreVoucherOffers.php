@@ -42,13 +42,7 @@ class StoreVoucherOffers extends OrgAction
 
         data_set($modelData, 'voucher', Str::lower(Arr::get($modelData, 'voucher')));
 
-        if (Arr::get($modelData, 'can_customer_reuse', false)) {
-            if (Arr::get($modelData, 'offer_amount', 0) == 0) {
-                $type = OfferTypeEnum::REUSABLE_VOUCHER_ANY_ORDER;
-            } else {
-                $type = OfferTypeEnum::REUSABLE_VOUCHER_AMOUNT_ORDERED;
-            }
-        } elseif (Arr::get($modelData, 'offer_amount', 0) == 0) {
+        if (Arr::get($modelData, 'offer_amount', 0) == 0) {
             $type = OfferTypeEnum::VOUCHER_ANY_ORDER;
         } else {
             $type = OfferTypeEnum::VOUCHER_AMOUNT_ORDERED;

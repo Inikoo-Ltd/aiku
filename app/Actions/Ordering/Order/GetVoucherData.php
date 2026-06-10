@@ -35,7 +35,7 @@ class GetVoucherData
         return [
             'id'             => $offer->id,
             'voucher_code'   => $offer->code,
-            'voucher_amount' => Arr::get($offer->trigger_data, '{"item_amount": 100}'),
+            'voucher_amount' => Arr::get($offer->trigger_data, 'item_amount'),
             'state'          => $offer->state->value,
             'status'         => $offer->status,
             'start_at'       => $offer->start_at,

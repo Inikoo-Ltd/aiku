@@ -17,7 +17,7 @@ library.add(faCube, faLink, faInfoCircle, faStar, faCircle, faBadgePercent, faCh
 const props = defineProps<{
   screenType: 'mobile' | 'tablet' | 'desktop'
   indexBlock: number
-  fieldValue: {
+  modelValue: {
     department: {
       name: string
       description_title?: string
@@ -54,7 +54,7 @@ const videoDialogVisible = ref(false)
 
 
 const embedUrl = computed(() => {
-  const v = props.fieldValue?.department?.showcase_video
+  const v = props.modelValue?.department?.showcase_video
   if (!v) return null
 
   try {
@@ -129,9 +129,9 @@ onUnmounted(() => {
 
 watch(
   () => [
-    props.fieldValue.department.description_extra,
-    props.fieldValue.department.showcase_video,
-    props.fieldValue.department.showcase_image,
+    props.modelValue.department.description_extra,
+    props.modelValue.department.showcase_video,
+    props.modelValue.department.showcase_image,
   ],
   calculateDescriptionHeight,
   { immediate: true }
@@ -140,10 +140,10 @@ watch(
 </script>
 
 <template>
-  <div :id="fieldValue?.id ? fieldValue?.id : 'department-1-iris' + indexBlock" component="department-1-iris">
+  <div :id="modelValue?.id ? modelValue?.id : 'department-1-iris' + indexBlock" component="department-1-iris">
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue?.container?.properties),
+      ...getStyles(modelValue?.container?.properties),
       width: 'auto'
     }" class="py-6 md:py-8 lg:py-10 2xl:py-14 px-4 md:px-8 2xl:px-12">
       <div class="
@@ -156,7 +156,7 @@ watch(
           2xl:gap-14
         ">
         <!-- Sidebar -->
-        <aside class="hidden lg:block border-r border-gray-300 pr-4 2xl:pr-8">
+        <aside class="hidden lg:block border-r border-gray-300 ">
           <h3 class="font-bold text-lg 2xl:text-xl mb-6">
             {{ ctrans('Browse By Category:') }}
           </h3>
@@ -170,7 +170,7 @@ watch(
               space-y-4
               2xl:space-y-5
             ">
-            <LinkIris v-for="item of props.fieldValue.sub_departments" :key="item.url" :type="'internal'"
+            <LinkIris v-for="item of props.modelValue.sub_departments" :key="item.url" :type="'internal'"
               :href="item.url" class="
                 block
                 text-[15px]
@@ -196,8 +196,8 @@ watch(
               text-slate-900
             ">
             {{
-              props.fieldValue.department.description_title ||
-              props.fieldValue.department.name
+              props.modelValue.department.description_title ||
+              props.modelValue.department.name
             }}
           </h1>
 
@@ -208,7 +208,7 @@ watch(
               2xl:text-[17px]
               leading-7
               text-slate-700
-            " v-html="fieldValue.department.description" />
+            " v-html="modelValue.department.description" />
 
           <!-- Banner -->
           <div class="mt-6 overflow-hidden bg-[#E7E7E7]">
@@ -238,7 +238,7 @@ watch(
     " :style="!expanded && showReadMore
       ? { maxHeight: `${maxDescriptionHeight - 190}px` }
       : {}
-      " v-html="fieldValue.department.description_extra" />
+      " v-html="modelValue.department.description_extra" />
 
                   <!-- Fade Overlay -->
                   <div v-if="!expanded && showReadMore" class="
@@ -262,7 +262,7 @@ watch(
                 </div>
 
                 <div class="flex justify-center mt-5">
-                  <button v-if="fieldValue.department.showcase_video" class="
+                  <button v-if="modelValue.department.showcase_video" class="
     bg-slate-900
     hover:bg-slate-800
     text-white
@@ -282,7 +282,7 @@ watch(
 
               <!-- Image / Video / Placeholder -->
               <div class="overflow-hidden">
-                <template v-if="fieldValue.department.showcase_video && embedUrl">
+                <template v-if="modelValue.department.showcase_video && embedUrl">
                   <div ref="mediaRef" class="
                       video-cover
                       w-full
@@ -297,9 +297,9 @@ watch(
                   </div>
                 </template>
 
-                <template v-else-if="fieldValue.department.showcase_image">
-                  <Image ref="mediaRef" :src="fieldValue.department.showcase_image"
-                    :alt="fieldValue.department.name || 'showcase image'" class="
+                <template v-else-if="modelValue.department.showcase_image">
+                  <Image ref="mediaRef" :src="modelValue.department.showcase_image"
+                    :alt="modelValue.department.name || 'showcase image'" class="
                       w-full
                       h-[220px]
                       md:h-[280px]
@@ -363,7 +363,7 @@ watch(
           allowfullscreen class="w-full h-full" />
       </div>
     </div>
-  </Dialog>>
+  </Dialog>
 
 </template>
 <style scoped>
