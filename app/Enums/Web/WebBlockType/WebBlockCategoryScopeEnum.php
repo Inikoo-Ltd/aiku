@@ -19,6 +19,7 @@ enum WebBlockCategoryScopeEnum: string
     case PRODUCT  = 'product';
     case LIST_PRODUCTS  = 'list_products';
     case DEPARTMENT  = 'department';
+    case DEPARTMENT_DESCRIPTION  = 'department_description';
     case SUB_DEPARTMENT  = 'sub_department';
     case COLLECTION  = 'collection';
     case FAMILIES_OVERVIEW = 'families-overview';
