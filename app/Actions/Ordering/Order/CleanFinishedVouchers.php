@@ -15,8 +15,9 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 
-class RecalculateTotalsOrdersInBasketUsingVouchers implements ShouldBeUnique
+class CleanFinishedVouchers implements ShouldBeUnique
 {
     use WithActionUpdate;
     use WithFixedAddressActions;
@@ -28,16 +29,12 @@ class RecalculateTotalsOrdersInBasketUsingVouchers implements ShouldBeUnique
 
     public function handle(int $offerId): void
     {
-        $offer = Offer::find($offerId);
-        if (!$offer) {
-            return;
-        }
+        DB::table('orders')
+            ->where('voucher_offer_id', $offerId)
+            ->where('state', OrderStateEnum::CREATING)
+            ->update(['voucher_offer_id' => null]);
 
-        $shop = $offer->shop;
 
-        foreach ($shop->orders()->where('state', OrderStateEnum::CREATING)->where('offer_voucher_id', $offer->id)->get() as $order) {
-            CalculateOrderTotalAmounts::dispatch($order, true, true, false, true);
-        }
     }
 
 }

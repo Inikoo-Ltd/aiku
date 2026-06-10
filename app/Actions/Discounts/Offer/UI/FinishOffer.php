@@ -11,11 +11,10 @@ namespace App\Actions\Discounts\Offer\UI;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
-use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasketUsingVouchers;
+use App\Actions\Ordering\Order\CleanFinishedVouchers;
 use App\Actions\OrgAction;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Discounts\Offer;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,6 +26,10 @@ class FinishOffer extends OrgAction
 
     public function handle(Offer $offer): Offer
     {
+        if ($offer->state == OfferStateEnum::FINISHED) {
+            return $offer;
+        }
+
         $currentStatus = $offer->status;
 
         $offer->update(
@@ -47,14 +50,14 @@ class FinishOffer extends OrgAction
 
         ShopHydrateOffersData::run($offer->shop_id);
         if ($currentStatus != $offer->status) {
-            if ($offer->offerCampaign->type == OfferCampaignTypeEnum::VOUCHERS) {
-                RecalculateTotalsOrdersInBasketUsingVouchers::dispatch($offer->id)->delay(now()->addSeconds(10));
-            } else {
-                if ($offer->trigger_type == 'ProductCategory') {
-                    UpdateProductCategoryOffersData::run($offer);
-                }
-                RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
+            if ($offer->voucher) {
+                CleanFinishedVouchers::run($offer->id);
             }
+
+            if ($offer->trigger_type == 'ProductCategory') {
+                UpdateProductCategoryOffersData::run($offer);
+            }
+            RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
         }
 
         return $offer;
