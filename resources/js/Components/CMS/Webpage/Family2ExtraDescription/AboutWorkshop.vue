@@ -71,9 +71,7 @@ const hasImage = (image: any) => {
     return image?.original && String(image?.original).trim() !== ""
 }
 
-const isMobile = computed(() => props.screenType === "mobile")
-const isTablet = computed(() => props.screenType === "tablet")
-const isDesktop = computed(() => props.screenType === "desktop")
+const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.container?.properties)))
 
 const layoutClasses = computed(() => ({
     wrapper:
@@ -160,18 +158,22 @@ const layoutClasses = computed(() => ({
 
 <template>
     <!-- CONTENT -->
-    <div class="grid gap-0 lg:gap-4 items-stretch" :class="layoutClasses.wrapper">
+    <div class="grid gap-0 lg:gap-4 items-stretch" :class="layoutClasses.wrapper" :style="containerStyle" >
         <!-- LEFT -->
         <div class="flex flex-col h-full text-center md:text-left" :class="layoutClasses.left">
             <div :class="layoutClasses.description" class="text-[#334155]" v-html="cleanedDescription" />
 
-            <div :class="layoutClasses.buttonWrapper">
+            <div class="mt-8 md:mt-10">
                 <a href="#family-2">
-                    <button :class="layoutClasses.button" :style="{
-                        ...getStyles(fieldValue?.button?.container?.properties)
-                    }">
-                        <span v-if="fieldValue?.button?.text">
-                            {{ fieldValue?.button?.text }}
+                    <button class="rounded-[8px] border border-[#24384d]
+                px-5 md:px-7
+                py-[8px]
+                text-[12px] md:text-[13px]
+                text-[#24384d]" :style="{
+                    ...getStyles(fieldValue?.about.button?.container?.properties)
+                }">
+                        <span v-if="fieldValue?.about?.button?.text">
+                            {{ fieldValue?.about?.button?.text }}
                         </span>
 
                         <span v-else>

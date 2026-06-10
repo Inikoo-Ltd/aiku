@@ -123,6 +123,9 @@ class CalculateOrderDiscounts
 
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
+        $this->getGiftsMeters($order);
+
+
         $order->update(
             [
                 'offer_meters' => $this->offerMeters
@@ -131,6 +134,30 @@ class CalculateOrderDiscounts
 
 
         return $order;
+    }
+
+    public function getGiftsMeters(Order $order): void
+    {
+        foreach (
+            DB::table('offers')
+                ->select(['id',  'trigger_data', 'allowance_signature', 'name'])
+                ->where('shop_id', $order->shop_id)
+                ->where('type', OfferTypeEnum::GIFT->value)
+                ->where('status', true)->get() as $giftOfferData
+        ) {
+            $triggerData = json_decode($giftOfferData->trigger_data, true);
+
+            $this->offerMeters[$giftOfferData->allowance_signature] = [
+                'offer_id' => $giftOfferData->id,
+                'label'    => $giftOfferData->name,
+                'metadata' => [
+                        'current' => $order->gross_amount,
+                        'target'  => Arr::get($triggerData, 'min_order_amount', 0),
+
+                ]
+            ];
+
+        }
     }
 
     private function setEnabledOffers(Order $order): void
