@@ -308,6 +308,8 @@ const isFormInvalid = computed(() => {
 					{{ trans("Create Voucher") }}
 				</h2>
 
+				<!-- Section: Voucher code -->
+				 <!-- TODO: make the voucher code like a real input in Basket -->
 				<div class="space-y-2">
 					<label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
 						<FontAwesomeIcon
@@ -354,10 +356,14 @@ const isFormInvalid = computed(() => {
 							icon="fas fa-asterisk"
 							class="font-light text-xs text-red-400 align-middle" />
 
-						{{ trans("Offer name") }}:
+						{{ trans("Offer name") }}
+						<InformationIcon
+							:information="ctrans('This will be shown to customers to describe the voucher, e.g. “10% off for orders above $100”')"
+						/>
+						:
 					</label>
 
-					<PureInput v-model="offerLabel" :placeholder="trans('Enter offer name')" />
+					<PureInput v-model="offerLabel" :placeholder="ctrans('Enter offer name, e.g. “10% off for orders above $100”')" />
 				</div>
 
 				<!-- amount -->
@@ -449,7 +455,7 @@ const isFormInvalid = computed(() => {
 						</div>
 					</div>
 
-					<div v-if="activeCategoryRoute" class="space-y-2">
+					<div v-if="activeCategoryRoute" class="space-y-2 !mt-3">
 						<label class="font-medium">
 							{{ trans("Select Item") }}
 						</label>
@@ -496,7 +502,7 @@ const isFormInvalid = computed(() => {
 						<InputNumber
 							v-model="discountPercentage"
 							inputId="offer_discount"
-							:placeholder="trans('Enter percentage')"
+							:placeholder="ctrans('Enter percentage 0-99')" 
 							suffix="%"
 							:min="0"
 							:max="100"
