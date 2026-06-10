@@ -340,7 +340,6 @@ const irisOffersData = computed(() => {
             
         </div>
     </div>
-    <pre>{{ data.offer }}</pre>
 
     <!-- Tabs: Customers / Orders -->
     <div class="">
