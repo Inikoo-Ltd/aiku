@@ -347,41 +347,59 @@ const errorPaymentMethod = ref<null | unknown>(null)
 const _refComponents = ref(null)
 
 const isOpenModalAddVoucher = ref(false)
-const isModalVoucherNotFound = ref(false)
-const voucherNotFoundMessage = ref('')
 const isLoadingAddVoucher = ref(false)
+const isLoadingRemoveVoucher = ref(false)
+const addVoucherError = ref("")
 const voucherCode = ref("")
 const openAddVoucherModal = () => {
     voucherCode.value = ""
+    addVoucherError.value = ""
     isOpenModalAddVoucher.value = true
 }
-const submitAddVoucher = () => {
-    const url = route("grp.models.order.add_voucher" as string, { order: props.data?.data?.id } as any) as string
-    router.post(
-        url,
-        { voucher: voucherCode.value },
-        {
-            preserveScroll: true,
-            onStart: () => (isLoadingAddVoucher.value = true),
-            onSuccess: () => {
-                isOpenModalAddVoucher.value = false
-                voucherCode.value = ""
-            },
-            onError: (errors: Record<string, string>) => {
-                if (errors?.voucher_code) {
-                    voucherNotFoundMessage.value = errors.voucher_code
-                    isModalVoucherNotFound.value = true
-                    return
-                }
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the voucher, please try again"),
-                    type: "error",
-                })
-            },
-            onFinish: () => (isLoadingAddVoucher.value = false),
-        }
-    )
+const submitAddVoucher = async () => {
+    addVoucherError.value = ""
+    isLoadingAddVoucher.value = true
+    try {
+        await axios.post(
+            route("grp.models.order.add_voucher", { order: props.data?.data?.id }),
+            { voucher: voucherCode.value }
+        )
+        isOpenModalAddVoucher.value = false
+        voucherCode.value = ""
+        router.reload()
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully Add Voucher"),
+            type: "success",
+        })
+    } catch (error: any) {
+        addVoucherError.value =
+            error?.response?.data?.errors?.voucher?.[0]
+            || error?.response?.data?.message
+            || trans("Failed to add the voucher, please try again")
+    } finally {
+        isLoadingAddVoucher.value = false
+    }
+}
+const submitRemoveVoucher = async () => {
+    isLoadingRemoveVoucher.value = true
+    try {
+        await axios.post(route("grp.models.order.remove_voucher", { order: props.data?.data?.id }))
+        router.reload()
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully Remove Voucher"),
+            type: "success",
+        })
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error?.response?.data?.message || trans("Failed to remove the voucher, please try again"),
+            type: "error",
+        })
+    } finally {
+        isLoadingRemoveVoucher.value = false
+    }
 }
 const onSubmitPayment = (isRefund?: boolean) => {
     try {
@@ -1918,7 +1936,17 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         {{ trans("Summary") }}
                     </div>
                     
-                    <div class="flex flex-col sm:flex-row gap-2">
+                    <div class="flex flex-col sm:flex-row items-center gap-2">
+                        <div v-if="props.box_stats?.voucher && layout?.app?.environment == 'local'"
+                            class="flex items-center gap-x-1.5 rounded bg-indigo-50 px-2 py-1 text-xs text-indigo-700">
+                            <span class="font-medium uppercase">{{ trans("Voucher") }}: {{ props.box_stats.voucher.voucher_code }}</span>
+                            <button type="button" v-tooltip="trans('Remove voucher')"
+                                :class="{ 'opacity-50 pointer-events-none': isLoadingRemoveVoucher }"
+                                class="text-indigo-400 hover:text-red-500" @click="submitRemoveVoucher">
+                                <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+
                         <div v-if="layout?.app?.environment == 'local' && isVoucherAllowed">
                             <Button
                                 :label="trans('Add Voucher')"
@@ -2219,28 +2247,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 </label>
                 <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')"
                     @keyup.enter="submitAddVoucher" />
+                <p v-if="addVoucherError" class="text-sm text-red-500">
+                    {{ addVoucherError }}
+                </p>
             </div>
 
             <div class="mt-6 flex justify-end gap-x-3">
                 <Button :label="trans('Cancel')" type="cancel" @click="isOpenModalAddVoucher = false" />
                 <Button :label="trans('Apply')" icon="fal fa-plus" :loading="isLoadingAddVoucher"
                     :disabled="!voucherCode.trim() || isLoadingAddVoucher" @click="submitAddVoucher" />
-            </div>
-        </div>
-    </Modal>
-
-    <!-- Modal: Voucher not found -->
-    <Modal :isOpen="isModalVoucherNotFound" @onClose="isModalVoucherNotFound = false" width="w-full max-w-md">
-        <div class="text-center">
-            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-red-500" fixed-width aria-hidden="true" />
-            </div>
-            <h3 class="mt-4 text-lg font-semibold text-gray-900">{{ trans("Voucher not found") }}</h3>
-            <p class="mt-2 text-sm text-gray-500">
-                {{ voucherNotFoundMessage || trans("The voucher code you entered was not found or is no longer available.") }}
-            </p>
-            <div class="mt-6 flex justify-center">
-                <Button :label="trans('OK')" @click="isModalVoucherNotFound = false" />
             </div>
         </div>
     </Modal>
