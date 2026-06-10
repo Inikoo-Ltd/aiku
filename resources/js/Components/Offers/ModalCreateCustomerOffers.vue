@@ -58,7 +58,7 @@ const endDate = ref<Date | null>(
 )
 
 type TargetType = 'shop' | 'department' | 'subdepartment' | 'family' | 'collection' | 'product'
-const target = ref<TargetType | null>(null)
+const target = ref<TargetType | null>("shop")
 
 const categoryFilters = ref<number | null>(null)
 const collectionFilters = ref<number | null>(null)
@@ -108,11 +108,11 @@ const productFetchRoute = {
 
 const targetOptions: { value: TargetType; label: string }[] = [
     { value: 'shop', label: 'Shop' },
-    { value: 'department', label: 'Department' },
-    { value: 'subdepartment', label: 'Sub Department' },
-    { value: 'family', label: 'Family' },
-    { value: 'collection', label: 'Collection' },
-    { value: 'product', label: 'Product' },
+    // { value: 'department', label: 'Department' },
+    // { value: 'subdepartment', label: 'Sub Department' },
+    // { value: 'family', label: 'Family' },
+    // { value: 'collection', label: 'Collection' },
+    // { value: 'product', label: 'Product' },
 ]
 
 const today = new Date(new Date().setHours(0, 0, 0, 0))
@@ -247,7 +247,7 @@ const resetForm = () => {
     customerId.value = null
     offerAmount.value = 0
     discountPercentage.value = null
-    target.value = null
+    target.value = "shop"
     categoryFilters.value = null
     collectionFilters.value = null
     productFilters.value = null
