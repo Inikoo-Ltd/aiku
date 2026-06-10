@@ -185,7 +185,7 @@ const updateCollection = (value: boolean) => {
                         class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
                     >
                         <FontAwesomeIcon icon='fal fa-gift' class='opacity-60 mr-1' fixed-width aria-hidden='true' />
-                        <span class="font-bold">{{ ctrans('Free gift') }}</span>:
+                        <span class="font-bold">{{ ctrans('Complimentary gift') }}</span>:
 
                         <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
                         <!-- <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" /> -->
