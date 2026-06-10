@@ -71,7 +71,8 @@ class CalculateOrderDiscounts
             ->where('quantity_ordered', '>', 0)
             ->update([
                 'net_amount'  => DB::raw('gross_amount'),
-                'offers_data' => []
+                'offers_data' => [],
+                'current_discount_factor' => 1,
             ]);
 
         foreach ($this->transactions as $transaction) {
