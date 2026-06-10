@@ -46,7 +46,7 @@ function formatDate(date: Date | null) {
 }
 
 const isLoadingSubmit = ref(false)
-const submitCategoryOffer = () => {
+const submitGiftOffer = () => {
     // Section: Submit
     router.post(
         route('grp.models.gift_offer.store', {
@@ -187,16 +187,24 @@ resetForm()
                         {{ trans('Offer Duration') }}:
                     </div>
 
-                    <div class="flex gap-x-4">
-                        <div class="flex items-center gap-x-2">
+                    <div class="flex flex-wrap gap-4">
+                        <label for="permanent"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'permanent'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
-                            <label for="permanent">{{ trans('Permanent') }}</label>
-                        </div>
+                            <span>{{ trans('Permanent') }}</span>
+                        </label>
 
-                        <div class="flex items-center gap-x-2">
+                        <label for="interval"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'interval'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
-                            <label for="interval">{{ trans('Interval') }}</label>
-                        </div>
+                            <span>{{ trans('Interval') }}</span>
+                        </label>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -232,7 +240,7 @@ resetForm()
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitCategoryOffer"
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitGiftOffer"
                         :loading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit">
                     </Button>
                 </div>

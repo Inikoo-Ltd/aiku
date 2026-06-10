@@ -2245,11 +2245,13 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <label class="block text-sm font-medium leading-6">
                     <span class="text-red-500">*</span> {{ trans("Voucher code") }}
                 </label>
-                <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')"
+                <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')" :isError="!!(addVoucherError?.length)"
                     @keyup.enter="submitAddVoucher" />
-                <p v-if="addVoucherError" class="text-sm text-red-500">
-                    {{ addVoucherError }}
-                </p>
+                <Transition name="slide-to-right">
+                    <p v-if="addVoucherError" class="text-sm text-red-500">
+                        *{{ addVoucherError }}
+                    </p>
+                </Transition>
             </div>
 
             <div class="mt-6 flex justify-end gap-x-3">
