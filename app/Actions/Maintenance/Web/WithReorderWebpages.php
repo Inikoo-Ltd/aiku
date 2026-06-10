@@ -33,7 +33,7 @@ trait WithReorderWebpages
         foreach ($webBlocks as $key => $position) {
             if ($key == $departmentWebBlock) {
                 $webBlocks[$key] = 1;
-            }elseif ($key == $subDepartmentBlock) {
+            } elseif ($key == $subDepartmentBlock) {
                 $webBlocks[$key] = 2;
             } elseif ($key == $departmentExtraDesc) {
                 $webBlocks[$key] = 3;

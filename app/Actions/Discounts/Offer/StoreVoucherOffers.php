@@ -113,7 +113,7 @@ class StoreVoucherOffers extends OrgAction
                 'max:16',
                 Rule::unique('offers', 'voucher')
                     ->where('shop_id', $this->shop->id)
-                    ->where(fn($query) => $query->whereRaw('LOWER(voucher) = ?', [Str::lower($this->get('voucher'))]))
+                    ->where(fn ($query) => $query->whereRaw('LOWER(voucher) = ?', [Str::lower($this->get('voucher'))]))
             ],
             'name'               => ['required', 'string', 'max:255'],
             'offer_amount'       => ['nullable', 'required', 'numeric', 'min:0'],

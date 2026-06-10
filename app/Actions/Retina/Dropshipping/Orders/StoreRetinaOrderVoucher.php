@@ -11,7 +11,7 @@ class StoreRetinaOrderVoucher extends RetinaAction
 {
     public function handle(Order $order, array $modelData): void
     {
-        AddVoucherToOrder::run($order,$modelData);
+        AddVoucherToOrder::run($order, $modelData);
 
         $order;
     }

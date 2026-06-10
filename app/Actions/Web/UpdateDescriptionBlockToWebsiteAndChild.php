@@ -69,9 +69,9 @@ class UpdateDescriptionBlockToWebsiteAndChild
                     if ($code == 'department-description-1') {
                         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
                         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
-                        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);                    
+                        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
                     } elseif ($code == 'department-description-2') {
-                        foreach(WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes() as $productCode) {
+                        foreach (WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes() as $productCode) {
                             $this->deleteWebBlocksByCode($webpage, $productCode);
                         }
                         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
@@ -135,7 +135,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
         $usedWebBlockTemplateCodes = data_get($liveProductsSnapshot?->layout, 'code', data_get($unpublishedProductsSnapshot?->layout, 'code', array_first(WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes())));
 
         $productList = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes)->first()?->model_has_web_blocks_id;
-        
+
         $recommendationFromMaster   = $this->getWebpageBlocksByType($webpage, 'recommendation-from-master')->first()?->model_has_web_blocks_id;
         $relatedProductCategory     = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')->first()?->model_has_web_blocks_id;
 
