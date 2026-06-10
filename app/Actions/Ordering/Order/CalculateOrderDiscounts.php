@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
@@ -122,6 +123,9 @@ class CalculateOrderDiscounts
 
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
+        $this->getGiftsMeters($order);
+
+
         $order->update(
             [
                 'offer_meters' => $this->offerMeters
@@ -132,9 +136,61 @@ class CalculateOrderDiscounts
         return $order;
     }
 
+    public function getGiftsMeters(Order $order): void
+    {
+        foreach (
+            DB::table('offers')
+                ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
+                ->where('shop_id', $order->shop_id)
+                ->where('type', OfferTypeEnum::GIFT->value)
+                ->where('status', true)->get() as $giftOfferData
+        ) {
+            $triggerData = json_decode($giftOfferData->trigger_data, true);
+
+            $this->offerMeters[$giftOfferData->allowance_signature] = [
+                'offer_id' => $giftOfferData->id,
+                'label'    => $giftOfferData->name,
+                'is_gift'  => true,
+                'metadata' => [
+                    'current' => $order->gross_amount,
+                    'target'  => Arr::get($triggerData, 'min_order_amount', 0),
+
+                ]
+            ];
+        }
+    }
+
     private function setEnabledOffers(Order $order): void
     {
         $enabledOffers = [];
+
+        if ($order->offer_voucher_id) {
+            $voucherData = DB::table('offers')
+                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
+                ->where('shop_id', $order->shop_id)
+                ->where('status', true)
+                ->where('id', $order->offer_voucher_id)
+                ->first();
+
+            if ($voucherData) {
+                if ($voucherData->type == OfferTypeEnum::VOUCHER_ANY_ORDER->value) {
+                    $enabledOffers[$voucherData->allowance_signature] = [
+                        'offer_id'    => $voucherData->id,
+                        'offer_label' => $voucherData->name,
+                    ];
+                } elseif ($voucherData->type == OfferTypeEnum::VOUCHER_AMOUNT_ORDERED->value) {
+                    $triggerData = json_decode($voucherData->trigger_data, true);
+
+                    if ($order->gross_amount >= Arr::get($triggerData, 'item_amount', 0)) {
+                        $enabledOffers[$voucherData->allowance_signature] = [
+                            'offer_id'    => $voucherData->id,
+                            'offer_label' => $voucherData->name,
+                        ];
+                    }
+                }
+            }
+        }
+
 
         $offersData = DB::table('offers')
             ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
@@ -159,6 +215,7 @@ class CalculateOrderDiscounts
                     $this->offerMeters[$offerData->allowance_signature] = [
                         'offer_id' => $offerData->id,
                         'label'    => $offerData->name,
+                        'is_gift'  => false,
                         'metadata' => $metadata,
                     ];
                 }

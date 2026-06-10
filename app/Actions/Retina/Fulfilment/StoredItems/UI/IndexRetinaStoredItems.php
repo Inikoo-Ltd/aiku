@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Fulfilment\StoredItems\UI;
 use App\Actions\Retina\Fulfilment\UI\ShowRetinaStorageDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -34,6 +35,15 @@ class IndexRetinaStoredItems extends RetinaAction
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('slug', $value);
             });
+        });
+
+        $storableFilter = AllowedFilter::callback('storable', function ($query, $value) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                $query->whereNotIn('stored_items.state', [
+                    StoredItemStateEnum::DISCONTINUING->value,
+                    StoredItemStateEnum::DISCONTINUED->value,
+                ]);
+            }
         });
 
         if ($prefix) {
@@ -61,7 +71,7 @@ class IndexRetinaStoredItems extends RetinaAction
                 }
             })
             ->allowedSorts(['reference', 'total_quantity', 'name', 'number_pallets', 'number_audits', 'pallet_reference'])
-            ->allowedFilters([$globalSearch, 'slug', 'state'])
+            ->allowedFilters([$globalSearch, $storableFilter, 'slug', 'state'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -89,6 +99,7 @@ class IndexRetinaStoredItems extends RetinaAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_pallets', label: __("Pallets"), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'state_label', label: __("State"), canBeHidden: false, align: 'right')
                 ->column(key: 'total_quantity', label: __("Quantity"), canBeHidden: false, sortable: true, align: 'right');
 
             $table->defaultSort('reference');

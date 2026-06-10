@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Enums\UI\Fulfilment\StoredItemsInWarehouseTabsEnum;
 use App\Http\Resources\Fulfilment\ReturnStoredItemsResource;
@@ -56,6 +57,15 @@ class IndexStoredItems extends OrgAction
             });
         });
 
+        $storableFilter = AllowedFilter::callback('storable', function ($query, $value) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                $query->whereNotIn('stored_items.state', [
+                    StoredItemStateEnum::DISCONTINUING->value,
+                    StoredItemStateEnum::DISCONTINUED->value,
+                ]);
+            }
+        });
+
         return QueryBuilder::for(StoredItem::class)
             ->select(
                 'stored_items.id',
@@ -79,7 +89,7 @@ class IndexStoredItems extends OrgAction
                 }
             })
             ->allowedSorts(['reference', 'total_quantity', 'name', 'number_pallets', 'number_audits', 'pallet_reference'])
-            ->allowedFilters([$globalSearch, 'slug', 'state'])
+            ->allowedFilters([$globalSearch, $storableFilter, 'slug', 'state'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -116,8 +126,11 @@ class IndexStoredItems extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_pallets', label: __("Pallets"), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'total_quantity', label: __("Quantity"), canBeHidden: false, sortable: true, align: 'right');
+                ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true, align: 'right');
+            if ($parent instanceof FulfilmentCustomer) {
+                $table->column(key: 'state_label', label: __('State'), canBeHidden: false);
+            }
+            $table->column(key: 'total_quantity', label: __("Quantity"), canBeHidden: false, sortable: true, align: 'right');
             if (class_basename($parent) == 'Group') {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'customer_name', label: __('Customer Name'), canBeHidden: false, sortable: true, searchable: true);

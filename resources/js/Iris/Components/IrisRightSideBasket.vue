@@ -27,6 +27,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import MissedOfferFOB from '@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue'
+import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle, faExclamationTriangle)
 
 interface DataSideBasket {
@@ -602,28 +603,32 @@ onUnmounted(() => {
             </div>
         </Transition>
 
+        <!-- Section: Voucher Code -->
+        <InputVoucherInBasket
+            v-if="layout.retina.type == 'b2b'"
+            :voucher="dataSideBasket?.voucher"
+            :order="dataSideBasket?.order_data"
+            :routes="{
+                store: {
+                    name: 'iris.models.order.store_voucher',
+                    parameters: dataSideBasket?.order_data?.id
+                },
+                remove: {
+                    name: 'iris.models.order.remove_voucher',
+                    parameters: dataSideBasket?.order_data?.id
+                }
+            }"
+            @onRemove="fetchDataSideBasket(true)"
+            @onApply="fetchDataSideBasket(true)"
+            inIris
+            class="py-2 w-full flex px-6"
+        />
+
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 pt-3 pb-6 sm:px-6">
             <div class="relative isolate">
                 <OrderSummary :order_summary="dataSideBasket?.order_summary"
                     :currency_code="layout.iris?.currency?.code" size="sm" />
-
-                
-                <div class="mb-2 mt-2" v-if="layout.app.environment == 'local'">
-                    <div class="flex gap-x-4">
-                        <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')" :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }" />
-                        <Button
-                            :label="trans('Add voucher')"
-                            class="shrink-0"
-                                size="xs"
-                            icon="fas fa-plus"
-                            :loading="isLoadingVoucher"
-                            @click="() => onApplyVoucher()"
-                            :disabled="!voucherCode || isLoadingVoucher"
-                        />
-                    </div>
-                </div>
-                
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
                     <!-- Section: Eligible Gift -->
                     <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">

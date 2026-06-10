@@ -23,6 +23,7 @@ use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\PayOrder;
+use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
 use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -75,6 +76,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
     Route::patch('update-discount', UpdateOrderDiscretionaryDiscount::class)->name('discount.update');
     Route::post('add-voucher', AddVoucherToOrder::class)->name('add_voucher');
+    Route::post('remove-voucher', RemoveVoucherFromOrder::class)->name('remove_voucher');
 
     Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
     Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');

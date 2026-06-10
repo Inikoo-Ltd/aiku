@@ -26,6 +26,10 @@ class ActivateOffer extends OrgAction
 
     public function handle(Offer $offer, ?int $hydratorDelay = null): Offer
     {
+        if ($offer->start_at && $offer->start_at->isFuture()) {
+            return $offer;
+        }
+
         if ($hydratorDelay !== null) {
             $this->hydratorsDelay = $hydratorDelay;
         }

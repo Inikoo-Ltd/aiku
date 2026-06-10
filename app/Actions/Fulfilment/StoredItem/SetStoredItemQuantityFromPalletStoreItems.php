@@ -22,15 +22,15 @@ class SetStoredItemQuantityFromPalletStoreItems extends OrgAction
             $quantity += $pallet->pivot->quantity;
         }
 
-        if ($storedItem->state == StoredItemStateEnum::DISCONTINUING && $quantity === 0) {
-            //todo: if state=Discontinuing and $quantity=0  call action to set state to Discontinued
-        }
-
         $storedItem->update(
             [
                 'total_quantity' => $quantity
             ]
         );
+
+        if ($storedItem->state == StoredItemStateEnum::DISCONTINUING && $quantity == 0) {
+            $storedItem = SetStoredItemAsDiscontinued::run($storedItem);
+        }
 
         return $storedItem;
     }

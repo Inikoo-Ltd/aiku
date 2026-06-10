@@ -27,9 +27,6 @@ enum OfferTypeEnum: string
 
     case VOUCHER_ANY_ORDER = "Voucher Any Order";
     case VOUCHER_AMOUNT_ORDERED = "Voucher Amount Ordered";
-    case REUSABLE_VOUCHER_ANY_ORDER = "Reusable Voucher Any Order";
-    case REUSABLE_VOUCHER_AMOUNT_ORDERED = "Reusable Voucher Amount Ordered";
-
 
     case GR_AMNESTY = "GR Amnesty";
     case PRODUCT_FOR_EVERY_QUANTITY_ORDERED = "Product For Every Quantity Ordered";
@@ -57,6 +54,7 @@ enum OfferTypeEnum: string
     case AMOUNT_AND_ORDER_NUMBER = "Amount AND Order Number";
     case ORDER_NUMBER = "Order Number";
     case CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL = "Category Quantity Ordered Order Interval";
+    case GIFT = "Gift";
 
     public function label(): string
     {
@@ -96,8 +94,6 @@ enum OfferTypeEnum: string
 
             self::VOUCHER_ANY_ORDER,
             self::VOUCHER_AMOUNT_ORDERED,
-            self::REUSABLE_VOUCHER_ANY_ORDER,
-            self::REUSABLE_VOUCHER_AMOUNT_ORDERED
 
             => $this->voucherIcon(),
 
@@ -124,6 +120,7 @@ enum OfferTypeEnum: string
             self::CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED
             => $this->catalogueIcon(),
 
+            self::GIFT,
             self::VOL_GR_GIFT
             => $this->giftIcon(),
 

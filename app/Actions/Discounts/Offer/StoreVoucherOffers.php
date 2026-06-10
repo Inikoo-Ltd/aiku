@@ -9,7 +9,6 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
@@ -28,7 +27,7 @@ class StoreVoucherOffers extends OrgAction
 {
     use AsAction;
 
-    public function handle(Shop $shop, array $modelData)
+    public function handle(Shop $shop, array $modelData): Offer
     {
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::VOUCHERS)->first();
         if (!$offerCampaign) {
@@ -36,20 +35,14 @@ class StoreVoucherOffers extends OrgAction
         }
 
         $percentageOff = Arr::pull($modelData, 'percentage_off');
+        $percentageOff = $percentageOff / 100;
 
-
-        $code = Str::lower($offerCampaign->code.'-'.Arr::get($modelData, 'voucher'));
-        data_set($modelData, 'code', $code, false);
+        $code = Arr::get($modelData, 'voucher');
+        data_set($modelData, 'code', $code);
 
         data_set($modelData, 'voucher', Str::lower(Arr::get($modelData, 'voucher')));
 
-        if (Arr::get($modelData, 'can_customer_reuse', false)) {
-            if (Arr::get($modelData, 'offer_amount', 0) == 0) {
-                $type = OfferTypeEnum::REUSABLE_VOUCHER_ANY_ORDER;
-            } else {
-                $type = OfferTypeEnum::REUSABLE_VOUCHER_AMOUNT_ORDERED;
-            }
-        } elseif (Arr::get($modelData, 'offer_amount', 0) == 0) {
+        if (Arr::get($modelData, 'offer_amount', 0) == 0) {
             $type = OfferTypeEnum::VOUCHER_ANY_ORDER;
         } else {
             $type = OfferTypeEnum::VOUCHER_AMOUNT_ORDERED;

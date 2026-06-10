@@ -61,6 +61,12 @@ trait OfferCampaignGiftTrait
                     'id'            => $offerCampaign->shop_id,
                     'slug'          => $offerCampaign->shop->slug,
                     'currency_code' => $offerCampaign->shop->currency->code,
+                    'organisation'  => $offerCampaign->shop->organisation->slug,
+                    'offercampaign' => $offerCampaign->slug,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                        'end'   => now()->addDays(7)->toDateString(),
+                    ],
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)
