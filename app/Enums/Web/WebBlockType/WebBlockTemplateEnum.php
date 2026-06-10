@@ -21,6 +21,8 @@ enum WebBlockTemplateEnum: string
     case PRODUCT    = 'Product';
     case FAMILIES  = 'Family';
 
+    case DEPARTMENT_DESCRIPTION = 'DepartmentDescription';
+
     case FAMILY_DESCRIPTION = 'FamilyDescription';
     case FAMILY_OVERVIEW = 'FamiliesOverview';
 
@@ -31,6 +33,7 @@ enum WebBlockTemplateEnum: string
             self::SUB_DEPARTMENTS => [
                 'sub-departments-1',
                 'sub-departments-2',
+                'sub-departments-3',
             ],
 
             self::FAMILIES => [
@@ -47,6 +50,11 @@ enum WebBlockTemplateEnum: string
             self::PRODUCT => [
                 'product-1',
                 'product-2'
+            ],
+
+            self::DEPARTMENT_DESCRIPTION => [
+                'department-description-1',
+                'department-description-2',
             ],
 
             self::FAMILY_DESCRIPTION => [
