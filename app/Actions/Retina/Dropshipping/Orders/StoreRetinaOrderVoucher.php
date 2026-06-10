@@ -2,27 +2,20 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\RetinaAction;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaOrderVoucher extends RetinaAction
 {
-    public function handle(Order $order, array $modelData): Order
+    public function handle(Order $order, array $modelData): array
     {
-        dd([
-            'order_id'     => $order->id,
-            'voucher_code' => $modelData['voucher_code'],
-            'modelData'    => $modelData,
-        ]);
 
-        $order->update([
-            'data' => array_merge($order->data ?? [], [
-                'voucher_code' => $modelData['voucher_code'],
-            ]),
-        ]);
+        return AddVoucherToOrder::run($order, $modelData['voucher']);
 
-        return $order;
+
     }
 
     public function authorize(ActionRequest $request): bool
@@ -35,11 +28,21 @@ class StoreRetinaOrderVoucher extends RetinaAction
     public function rules(): array
     {
         return [
-            'voucher_code' => ['required', 'string', 'max:255'],
+            'voucher' => ['required', 'string', 'max:32']
         ];
     }
 
-    public function asController(Order $order, ActionRequest $request): Order
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('voucher')) {
+            $this->set(
+                'voucher',
+                Str::lower(trim($this->get('voucher')))
+            );
+        }
+    }
+
+    public function asController(Order $order, ActionRequest $request): array
     {
         $this->initialisation($request);
 
