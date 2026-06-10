@@ -245,7 +245,7 @@ const contentClass = computed(() =>
     }">
       <div :class="contentClass">
         <!-- IMAGE SECTION -->
-        <div class="flex shrink-0 justify-center gap-[6px]">
+        <div class="flex shrink-0 items-start justify-center gap-[6px]">
           <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
             <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'"

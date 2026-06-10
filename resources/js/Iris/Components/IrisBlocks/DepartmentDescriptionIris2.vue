@@ -225,7 +225,7 @@ watch(
 
           <!-- Banner Desktop  -->
           <div class="mt-6 overflow-hidden bg-[#E7E7E7] hidden lg:block">
-            <div class="grid grid-cols-1 lg:grid-cols-[46%_54%]">
+            <div class="grid grid-cols-1 lg:grid-cols-[46%_54%] items-start">
               <!-- Content -->
               <div class="
                   flex flex-col justify-center
