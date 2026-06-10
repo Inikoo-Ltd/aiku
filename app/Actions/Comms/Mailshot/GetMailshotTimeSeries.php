@@ -32,21 +32,22 @@ class GetMailshotTimeSeries
     public function handle(Mailshot $mailshot, ?string $frequency = null): AnonymousResourceCollection
     {
         $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
+        $statData = $mailshot->stats;
 
         $timeSeries = MailshotTimeSeries::where('mailshot_id', $mailshot->id)
             ->where('frequency', $frequencyEnum)
             ->first();
 
         if (!$timeSeries) {
-            // For DAILY frequency, create time series from start_sending_at to current date
-            if ($frequencyEnum === TimeSeriesFrequencyEnum::DAILY) {
-                $timeSeries = $this->createDailyTimeSeries($mailshot);
-            } else {
-                return MailshotTimeSeriesResource::collection([]);
-            }
+            return MailshotTimeSeriesResource::collection([]);
         }
 
-        return MailshotTimeSeriesResource::collection($timeSeries->records);
+        $records = $timeSeries->records->map(function ($record) use ($statData) {
+            $record->mailshot_stats = $statData;
+            return $record;
+        });
+
+        return MailshotTimeSeriesResource::collection($records);
     }
 
     protected function createDailyTimeSeries(Mailshot $mailshot): ?MailshotTimeSeries

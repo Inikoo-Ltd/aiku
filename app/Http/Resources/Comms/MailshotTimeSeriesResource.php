@@ -33,7 +33,7 @@ class MailshotTimeSeriesResource extends JsonResource
             'spam' => (int) $this->number_dispatched_emails_state_spam,
             'unsubscribed' => (int) $this->number_dispatched_emails_state_unsubscribed,
             'delay' => (int) $this->number_dispatched_emails_state_sent_to_provider,
-            'open_rate' => (float) $this->openRate(),
+            'open_rate' => (float) $this->calculateOpenRate(),
             'clicked_rate' => (float) $this->clickedRate(),
             'spam_rate' => (float) $this->spamRate(),
             'unsubscribe_rate' => (float) $this->unsubscribeRate(),
@@ -62,5 +62,14 @@ class MailshotTimeSeriesResource extends JsonResource
         }
 
         return $from->format('Ymd') . '-' . $to->format('Ymd');
+    }
+
+    protected function calculateOpenRate(): float
+    {
+        if ($this->resource->mailshot_stats && isset($this->resource->mailshot_stats->number_dispatched_emails_state_delivered) && $this->resource->mailshot_stats->number_dispatched_emails_state_delivered > 0) {
+            return round($this->number_dispatched_emails_state_opened / $this->resource->mailshot_stats->number_dispatched_emails_state_delivered * 100, 2);
+        }
+
+        return $this->openRate();
     }
 }
