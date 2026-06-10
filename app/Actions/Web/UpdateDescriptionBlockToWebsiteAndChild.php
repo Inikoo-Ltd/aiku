@@ -65,7 +65,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
                 Log::info("Code: [$code]", $layout);
                 $this->createWebBlock($webpage, $code, $layout);
 
-                if ($marginal == 'department-description') {
+                if ($marginal == 'department_description') {
                     if ($code == 'department-description-1') {
                         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
                         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
