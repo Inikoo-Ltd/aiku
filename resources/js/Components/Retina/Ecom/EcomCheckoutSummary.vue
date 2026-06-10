@@ -180,7 +180,22 @@ const updateCollection = (value: boolean) => {
             <!-- Section: Offer meters -->
             <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
                 <div v-for="offer in layout?.offer_meters" class="grid grid-cols-2 mb-3 gap-x-4">
-                    <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                    <!-- Title: is gift -->
+                    <div v-if="offer.is_gift" :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
+                    >
+                        <FontAwesomeIcon icon='fal fa-gift' class='opacity-60 mr-1' fixed-width aria-hidden='true' />
+                        <span class="font-bold">{{ ctrans('Free gift') }}</span>:
+
+                        <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
+                        <!-- <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" /> -->
+
+                        <span class="ml-2 xopacity-70">
+                            {{ offer.label }}
+                        </span>
+                    </div>
+
+                    <div v-else :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                         class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
                     >
                         <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-base text-ellipsis truncate">
