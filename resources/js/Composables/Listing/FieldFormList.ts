@@ -83,7 +83,8 @@ import EmergencyContact from '@/Components/Forms/Fields/EmergencyContact.vue'
 import WebsiteReview from '@/Components/Forms/Fields/WebsiteReview.vue'
 import InputTranslationWithOptionLanguages from '@/Components/Forms/Fields/InputTranslationWithOptionLanguages.vue'
 import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQrExpiry.vue'
-import InputFaq from '@/Components/Forms/Fields/InputFaq.vue'
+import InputFaqMaster from '@/Components/Forms/Fields/InputFaqMaster.vue'
+import InputFaqShop from '@/Components/Forms/Fields/InputFaqShop.vue'
 import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
 
 
@@ -170,7 +171,8 @@ export const componentsList: { [key: string]: Component } = {
     'input_translation_use_option' : InputTranslationWithOptionLanguages,
     'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
     'job_title_select_create': JobTitleSelectCreate,
-    'faq' : InputFaq,
+    'faq-master' : InputFaqMaster,
+    'faq-shop' : InputFaqShop,
     'tags': TagsInput,
 }
 

@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Ordering\Order\GetVoucherData;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -371,7 +372,7 @@ trait IsOrder
                 ],
                 'estimated_weight' => $estWeight,
             ],
-
+            'voucher' => GetVoucherData::run($order->offer_voucher_id),
             'order_summary' => $orderSummary,
             'currency'      => CurrencyResource::make($order->currency),
             'external_shop' => $order->shop->type == ShopTypeEnum::EXTERNAL ? [

@@ -41,6 +41,7 @@ const props = defineProps<{
 }>()
 
 const isLoading = ref(false)
+const isLoadingTemplate = ref(false)
 const inProgress = ref(false)
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
@@ -93,7 +94,7 @@ const onSaveTemplate = (data: any) => {
 }
 
 const saveTemplate = async (data: any) => {
-    isLoading.value = true;
+    isLoadingTemplate.value = true;
     axios
         .post(
             route(props.storeTemplateRoute.name, props.storeTemplateRoute.parameters),
@@ -120,7 +121,7 @@ const saveTemplate = async (data: any) => {
             visibleSAveEmailTemplateModal.value = false;
             templateName.value = '';
             temporaryData.value = null;
-            isLoading.value = false;
+            isLoadingTemplate.value = false;
         });
 }
 
@@ -257,10 +258,13 @@ const handleDelete = async () => {
         :style="{ width: '25rem' }">
         <div class="pt-4">
             <div class="font-semibold mb-3">Template Name</div>
-            <PureInput v-model="templateName" placeholder="Template Name" />
+            <PureInput v-model="templateName" placeholder="Template Name" :disabled="isLoadingTemplate" />
+            <div v-if="isLoadingTemplate" class="text-left text-black mt-3 text-sm w-full">
+                Please wait a moment. This may take a few seconds while the content is being converted to HTML ...
+            </div>
             <div class="flex justify-end mt-3 gap-3">
-                <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false"></Button>
-                <Button type="save" @click="saveTemplate"></Button>
+                <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false" :disabled="isLoadingTemplate"></Button>
+                <Button type="save" @click="saveTemplate" :loading="isLoadingTemplate" :disabled="isLoadingTemplate"></Button>
             </div>
         </div>
     </Dialog>

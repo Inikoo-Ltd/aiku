@@ -69,6 +69,11 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
                 : null;
 
             if ($existingStoredItem && !$existingStoredItemInPallet) {
+                if (!$existingStoredItem->state->canBeStored()) {
+                    $this->setRecordAsFailed($uploadRecord, [__('The SKU ":reference" is :state and cannot be stored.', ['reference' => $existingStoredItem->reference, 'state' => $existingStoredItem->state->labelGenerated()])]);
+
+                    return;
+                }
                 AttachStoredItemToPallet::run($prevPallet, $existingStoredItem, $convertedData['quantity']);
             } elseif (!$existingStoredItem) {
                 $storedItemData = [
@@ -107,6 +112,11 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
                     : null;
 
                 if ($existingStoredItem && !$existingStoredItemInPallet) {
+                    if (!$existingStoredItem->state->canBeStored()) {
+                        $this->setRecordAsFailed($uploadRecord, [__('The SKU ":reference" is :state and cannot be stored.', ['reference' => $existingStoredItem->reference, 'state' => $existingStoredItem->state->labelGenerated()])]);
+
+                        return;
+                    }
                     AttachStoredItemToPallet::run($pallet, $existingStoredItem, $convertedData['quantity']);
                 } elseif (!$existingStoredItem) {
                     $storedItemData = [

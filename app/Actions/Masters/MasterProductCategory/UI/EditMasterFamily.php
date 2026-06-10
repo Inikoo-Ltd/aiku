@@ -170,7 +170,7 @@ class EditMasterFamily extends OrgAction
                             'icon'   => 'fa-light fa-question-circle',
                             'fields' => [
                                'faq' => [
-                                    'type'  => 'faq',
+                                    'type'  => 'faq-master',
                                     'label' => __('FAQ'),
                                     'value' => $masterProductCategory->faq,
                                 ],
@@ -200,26 +200,7 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toogle'  => [
-                                        'heading2',
-                                        'heading3',
-                                        'fontSize',
-                                        'bold',
-                                        'italic',
-                                        'underline',
-                                        'bulletList',
-                                        "fontFamily",
-                                        'orderedList',
-                                        'blockquote',
-                                        'divider',
-                                        'alignLeft',
-                                        'alignRight',
-                                        "link",
-                                        'alignCenter',
-                                        'undo',
-                                        'redo',
-                                        'highlight',
-                                        'color',
-                                        'clear'
+                                        'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description
                                 ],
@@ -230,26 +211,7 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toogle'  => [
-                                        'heading2',
-                                        'heading3',
-                                        'fontSize',
-                                        'bold',
-                                        'italic',
-                                        'underline',
-                                        'bulletList',
-                                        "fontFamily",
-                                        'orderedList',
-                                        'blockquote',
-                                        'divider',
-                                        'alignLeft',
-                                        'alignRight',
-                                        "link",
-                                        'alignCenter',
-                                        'undo',
-                                        'redo',
-                                        'highlight',
-                                        'color',
-                                        'clear'
+                                        'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description_extra
                                 ],

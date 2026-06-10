@@ -549,7 +549,7 @@ onMounted(async () => {
 
                 <div class="bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate">
 
-                    <div class="relative bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate py-3">
+                    <div v-if="props.toogle.length" class="relative bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate py-3">
                         <button type="button" class="absolute top-[-1px] right-0  z-10 text-gray-500 hover:text-gray-800"
                             @click="closeBubble" aria-label="Close toolbar">
                             <FontAwesomeIcon :icon="faTimes" class="h-4 w-4 text-red-500" />
@@ -597,7 +597,7 @@ onMounted(async () => {
                         </TiptapToolbarGroup>
 
                         <!-- Section: Font size -->
-                        <div class="my-1.5 inline-flex flex-row flex-wrap items-center space-x-1 px-2">
+                        <div  v-if="toogle.includes('fontSize')" class="my-1.5 inline-flex flex-row flex-wrap items-center space-x-1 px-2">
                             <div :class="[
                                 'inline-flex h-8 shrink-0 flex-row items-center justify-center rounded-md disabled:bg-transparent disabled:text-gray-300',
                                 'text-gray-600 hover:bg-blue-50',
@@ -784,13 +784,13 @@ onMounted(async () => {
                     </section>
 
                     <!-- 2nd row -->
-                    <section id="tiptap-toolbar"
+                    <section  id="tiptap-toolbar"
                         class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-0 overflow-x-auto sm:overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
                         <Select v-if="toogle.includes('query')" @change="(e) => setVariabel(e.value.value)"
                             :options="irisVariable" optionLabel="label" size="small"
                             :placeholder="trans('Select a variable to put')" class="w-full md:w-56 max-w-56 mr-2" />
 
-                        <div class="my-1.5 inline-flex flex-row flex-wrap items-center space-x-1 px-2">
+                        <div v-if="toogle.includes('fontFamily')" class="my-1.5 inline-flex flex-row flex-wrap items-center space-x-1 px-2">
                             <div :class="[
                                 'inline-flex h-8 shrink-0 flex-row items-center justify-center rounded-md disabled:bg-transparent disabled:text-gray-300',
                                 'text-gray-600 hover:bg-blue-50',
@@ -951,8 +951,8 @@ onMounted(async () => {
                             </TiptapToolbarButton>
                         </TiptapToolbarGroup>
 
-                        <TiptapToolbarGroup>
-                            <TiptapToolbarButton @click="editorInstance?.chain().focus().unsetAllMarks().run()"
+                        <TiptapToolbarGroup >
+                            <TiptapToolbarButton  v-if="toogle.includes('clear')" @click="editorInstance?.chain().focus().unsetAllMarks().run()"
                                 label="Unset Style">
                                 <FontAwesomeIcon :icon="faEraser" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>

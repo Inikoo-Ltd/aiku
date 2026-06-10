@@ -62,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $trigger_sub_type
  * @property \Illuminate\Support\Carbon|null $last_suspended_at
  * @property string|null $label
+ * @property string|null $voucher
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions

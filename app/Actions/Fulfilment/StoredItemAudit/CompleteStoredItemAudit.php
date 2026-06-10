@@ -15,6 +15,7 @@ use App\Actions\Fulfilment\Pallet\Hydrators\PalletHydrateStoredItems;
 use App\Actions\Fulfilment\PalletStoredItem\RunPalletStoredItemQuantity;
 use App\Actions\Fulfilment\StoredItem\AttachStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\Hydrators\StoreItemHydratePallets;
+use App\Actions\Fulfilment\StoredItem\SetStoredItemQuantityFromPalletStoreItems;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -69,16 +70,24 @@ class CompleteStoredItemAudit extends OrgAction
 
             }
 
-            $palletStoredItem->storedItem->update(
-                [
-                    'state' => StoredItemStateEnum::ACTIVE
-                ]
-            );
+            $storedItem = $palletStoredItem->storedItem;
+
+            if ($storedItem->state->canBeStored()) {
+                $storedItem->update(
+                    [
+                        'state' => StoredItemStateEnum::ACTIVE
+                    ]
+                );
+            }
 
             PalletHydrateStoredItems::run($palletStoredItem->pallet);
-            StoreItemHydratePallets::run($palletStoredItem->storedItem);
+            StoreItemHydratePallets::run($storedItem);
             StoreStoredItemMovement::run($storedItemAuditDelta);
             RunPalletStoredItemQuantity::run($palletStoredItem);
+
+            if (in_array($storedItem->state, [StoredItemStateEnum::DISCONTINUING, StoredItemStateEnum::DISCONTINUED], true)) {
+                SetStoredItemQuantityFromPalletStoreItems::run($storedItem);
+            }
         }
 
         $modelData['state'] = StoredItemAuditStateEnum::COMPLETED;

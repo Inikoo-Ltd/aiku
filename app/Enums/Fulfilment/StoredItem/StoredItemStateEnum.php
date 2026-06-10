@@ -38,6 +38,14 @@ enum StoredItemStateEnum: string
         ];
     }
 
+    public function canBeStored(): bool
+    {
+        return match ($this) {
+            self::SUBMITTED, self::IN_PROCESS, self::ACTIVE => true,
+            self::DISCONTINUING, self::DISCONTINUED         => false,
+        };
+    }
+
     public function labelGenerated(): string
     {
         return match($this) {
