@@ -226,13 +226,19 @@ const submitVoucherOffer = () => {
         }),
         payload
     )
-        .then(() => {
+        .then((response) => {
             notify({
                 title: trans("Success"),
                 text: trans("Successfully submit the data"),
                 type: "success"
             })
             closeModal()
+            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+                offer: response.data.slug
+            }))
             router.reload()
         })
         .catch(error => {
