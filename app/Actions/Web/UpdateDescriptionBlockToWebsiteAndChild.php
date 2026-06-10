@@ -80,7 +80,6 @@ class UpdateDescriptionBlockToWebsiteAndChild
                 }
             }
 
-
             $webpage->refresh();
             if ($webpage->sub_type === WebpageSubTypeEnum::FAMILY) {
                 $this->setFamilyDescriptionIndex($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
@@ -91,6 +90,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
             }
 
             $webpage->refresh();
+            UpdateWebpageContent::run($webpage);
             $webpage->liveSnapshot?->updateQuietly(
                 [
                     'layout'    => $webpage->unpublishedSnapshot->layout
