@@ -135,7 +135,8 @@ const hasTrigger = computed(() => {
         t?.item_quantity !== undefined ||
         t?.min_amount !== undefined ||
         t?.order_number !== undefined ||
-        t?.item_amount !== undefined
+        t?.item_amount !== undefined ||
+        t?.min_order_amount !== undefined
     )
 })
 
@@ -338,6 +339,14 @@ const irisOffersData = computed(() => {
                             <dt class="text-gray-500">{{ ctrans("Minimum order") }}</dt>
                             <dd class="font-medium text-right">
                                 {{ data.offer.trigger_data.order_number }}
+                            </dd>
+                        </div>
+
+                        <!-- Minimum Order Amount -->
+                        <div v-if="data.offer.trigger_data?.min_order_amount !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Min. order amount") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ locale.currencyFormat(currency_code, data.offer.trigger_data.min_order_amount) }}
                             </dd>
                         </div>
 
