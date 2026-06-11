@@ -199,7 +199,7 @@ console.log(props)
   <div class="pt-4">
     <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
       <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-        <SideMenuWebsiteWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
+        <SideMenuWebsiteWorkshop :data="layoutState" :webBlockTypes="props?.data?.web_block_types"
           :dataList="props.data.department" @auto-save="debouncedAutosave" @set-up-template="onPickTemplate" />
       </div>
 
