@@ -27,7 +27,8 @@ class GetTopFamilies
             ->limit(6)
             ->get();
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue.top-families', WebBlockFamiliesResource::collection($families)->resolve());
+        data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->resolve());
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title',$webpage->model->name);
 
         return $webBlock;
     }
