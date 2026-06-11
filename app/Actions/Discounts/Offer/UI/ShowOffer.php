@@ -66,7 +66,12 @@ class ShowOffer extends OrgAction
         } else {
             $editRoute = [
                 'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit',
-                'parameters' => $request->route()->parameters()
+                'parameters' => [
+                    'organisation'      => $offer->shop->organisation->slug,
+                    'shop'              => $offer->shop->slug,
+                    'offerCampaign'     => $offer->offerCampaign->slug,
+                    'offer'             => $offer->slug,
+                ]
             ];
         }
 

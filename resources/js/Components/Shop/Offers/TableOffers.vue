@@ -113,9 +113,15 @@ const terminateOffer = (item) => {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(name)="{ item: offer }">
-            <!-- {{ route().current() }}
-            {{ offerRoute(offer) }} -->
-            <Link :href="offerRoute(offer)" class="primaryLink">
+            <div v-if="offer.code">
+                <Link :href="offerRoute(offer)" class="primaryLink">
+                    {{ offer.code }}
+                </Link>
+                <div class="text-xs opacity-60 italic">
+                    {{ offer.name }}
+                </div>
+            </div>
+            <Link v-else :href="offerRoute(offer)" class="primaryLink">
                 {{ offer.name }}
             </Link>
         </template>
@@ -125,7 +131,7 @@ const terminateOffer = (item) => {
         </template>
 
         <template #cell(duration)="{ item: offer }">
-            <div v-if="offer.duration == 'interval'" class="grid">
+            <div v-if="offer.duration == 'interval'" class="grid text-left">
                 <div>
                     <span class="font-medium">
                         {{ trans("Start Date") }}

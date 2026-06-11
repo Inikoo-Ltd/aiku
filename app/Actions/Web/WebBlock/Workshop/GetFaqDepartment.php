@@ -17,7 +17,7 @@ class GetFaqDepartment
     use AsObject;
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        data_set($webBlock, 'web_block.layout.data.fieldValue.faq', $webpage->model->faq);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.faqs', $webpage->model->faq);
         return $webBlock;
     }
 }
