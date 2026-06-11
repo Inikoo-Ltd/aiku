@@ -98,6 +98,7 @@ import RealatedProductCategoryIris from "@/Iris/Components/IrisBlocks/RealatedPr
 import RelatedProductcategoryFormMaster from '@/Iris/Components/IrisBlocks/RecommendationProductCategoryFromMasterIris.vue'
 import TabsIris from "@/Iris/Components/IrisBlocks/TabsIris.vue"
 import FaqDepartment from "@/Iris/Components/IrisBlocks/FaqDepartment.vue"
+import TopFamiliesIris from "@/Iris/Components/IrisBlocks/TopFamiliesIris.vue"
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({
@@ -213,6 +214,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'recommendation-product-category-from-master' : RelatedProductcategoryFormMaster,
 		'tabs' : TabsIris,
 		'faq-department' : FaqDepartment,
+		'top-families' : TopFamiliesIris
 	}
 }
 

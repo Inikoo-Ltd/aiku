@@ -24,6 +24,6 @@ const layout: any = inject("layout", {})
 
 <template>
     <div :id="fieldValue?.id ? fieldValue?.id  : 'faq'+ indexBlock" class="w-full" component="cta1">
-        <Faq :fieldValue="fieldValue" :screen-type="screenType" />
+        <Faq :fieldValue="fieldValue" :screen-type="screenType" :faq="fieldValue.faq"/>
     </div>
 </template>

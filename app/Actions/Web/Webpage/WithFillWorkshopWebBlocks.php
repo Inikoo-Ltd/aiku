@@ -25,6 +25,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartmentsThree;
+use App\Actions\Web\WebBlock\Workshop\GetFaqDepartment;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks
@@ -70,6 +71,8 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'faq-department') {
+            $parsedWebBlocks[$key] = GetFaqDepartment::run($webpage, $webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

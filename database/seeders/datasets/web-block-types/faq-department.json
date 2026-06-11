@@ -2,7 +2,7 @@
 	"slug": "faq-department",
 	"code": "faq-department",
 	"name": "faq-department",
-	"scope": "block",
+	"scope": "webpage",
 	"icon": ["fal", "rectangle-wide"],
 	"category": "block",
 	"website_type" : ["b2b","b2c","dropshipping"],

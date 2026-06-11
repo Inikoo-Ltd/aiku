@@ -26,6 +26,7 @@ use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Iris\GetIrisRelatedProductCategory;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartmentsThree;
+use App\Actions\Web\WebBlock\Iris\GetIrisFaqDepartment;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
@@ -76,6 +77,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = SanitiseImagesWebBlock::run($webBlock);
         } elseif ($webBlockType == 'relatedProductCategory') {
             $parsedWebBlocks[$key] = GetIrisRelatedProductCategory::run($webBlock);
+        } elseif ($webBlockType == 'faq-department') {
+            $parsedWebBlocks[$key] = GetIrisFaqDepartment::run($webpage, $webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

@@ -74,6 +74,7 @@ import RecomendationFromMaster from "../Components/CMS/Webpage/RecommendationFro
 import RelatedProductCategoryBlueprint from "@/Components/CMS/Webpage/RelatedProductCategory/Blueprint"
 import Tabs from "@/Components/CMS/Webpage/Tabs/Blueprint"
 import FaqDepartmentBlueprint from '@/Components/CMS/Webpage/FaqDepartment/Blueprint'
+import TopFamiliesWorkshop from '@/Components/CMS/Webpage/TopFamilies/Blueprint';
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
@@ -176,6 +177,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'relatedProductCategory' : () => RelatedProductCategoryBlueprint(data).blueprint,
 		'tabs' : Tabs.blueprint,
 		'faq-department' : FaqDepartmentBlueprint.blueprint,
+		'top-families' : TopFamiliesWorkshop.blueprint
 	}
 
 	const blueprint = components[componentName]
