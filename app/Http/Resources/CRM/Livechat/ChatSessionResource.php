@@ -3,6 +3,7 @@
 namespace App\Http\Resources\CRM\Livechat;
 
 use App\Http\Resources\HasSelfCall;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ChatSessionResource extends JsonResource
@@ -43,11 +44,19 @@ class ChatSessionResource extends JsonResource
             'shop_name'     => $chatSession->relationLoaded('shop') && $chatSession->shop ? $chatSession->shop->name : null,
             'contact_name'  => $contactName,
             'assigned_agent' => $activeAssignment?->chatAgent?->user?->contact_name,
+            'ai_summary'    => Arr::get($chatSession->metadata ?? [], 'ai_summary'),
             'route'         => [
                 'name'       => 'grp.org.shops.show.crm.chat_sessions.show',
                 'parameters' => [
                     'organisation' => request()->route()?->originalParameters()['organisation'] ?? null,
                     'shop'         => request()->route()?->originalParameters()['shop'] ?? null,
+                    'chatSession'  => $chatSession->id,
+                ],
+            ],
+            'conversation_route' => [
+                'name'       => 'grp.org.chat.conversations.detail',
+                'parameters' => [
+                    'organisation' => request()->route()?->originalParameters()['organisation'] ?? null,
                     'chatSession'  => $chatSession->id,
                 ],
             ],

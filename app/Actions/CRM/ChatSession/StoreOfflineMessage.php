@@ -59,6 +59,7 @@ class StoreOfflineMessage
 
         $session->update([
             'status' => ChatSessionStatusEnum::ACTIVE,
+            'closed_at' => null,
         ]);
 
         /** @var \App\Models\CRM\Livechat\ChatAssignment|null $lastAssignment */
