@@ -39,7 +39,7 @@ trait OfferCampaignVoucherOffersTrait
                     ],
                     'title'     => $offerCampaign->name,
                     'model'     => __('Offer Campaign'),
-                    'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],                   
+                    'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

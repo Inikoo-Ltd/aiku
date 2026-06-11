@@ -12,8 +12,6 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Catalogue\Shop;
-use App\Models\Discounts\Offer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 

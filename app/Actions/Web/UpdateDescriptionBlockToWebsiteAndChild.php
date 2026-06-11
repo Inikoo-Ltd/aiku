@@ -77,7 +77,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
 
                     if ($code == 'department-description-1') {
                         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
-                    }else{
+                    } else {
                         $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS);
                     }
 

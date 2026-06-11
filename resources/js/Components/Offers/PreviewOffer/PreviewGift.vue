@@ -79,7 +79,7 @@ const meterTooltip = computed(() => {
 
 <template>
     <div class="w-full min-w-[340px] ">
-        <div class="mb-3 text-xs text-gray-500">
+        <div class="mb-2 text-xs text-gray-500">
             {{ ctrans('Gift meter preview') }}
         </div>
 
