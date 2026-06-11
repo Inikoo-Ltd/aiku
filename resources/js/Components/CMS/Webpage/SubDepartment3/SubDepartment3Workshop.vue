@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { routeType } from "@/types/route";
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { ctrans } from "@/Composables/useTrans";
 import Image from "@/Common/Components/Image.vue";
+import axios from "axios";
 
 interface Department {
   id: number
@@ -74,6 +75,38 @@ const meta = ref(
 )
 
 
+
+const getData = async () => {
+  if (props?.modelValue?.department?.id) {
+    try {
+      const response = await axios.get(
+        route(
+          'grp.json.website.category.family_under_department',
+          {
+            productCategory: props?.modelValue?.department?.id
+          }
+        )
+
+      )
+      console.log('response', response)
+    } catch (error) {
+      console.error(
+        'Failed loading families:',
+        error
+      )
+    } finally {
+      loading.value = false
+      loadingMore.value = false
+    }
+  }
+
+}
+
+onMounted(() => {
+  getData()
+
+})
+
 /* const getFamilies = () => {
      try {
         if (append) {
@@ -113,11 +146,18 @@ const meta = ref(
       }
 } */
 
-console.log('sdfsdf',subDepartmentList.value)
+console.log('sdfsdf', subDepartmentList.value)
 
+watch(
+  () => props.modelValue?.department,
+  (newDepartment, oldDepartment) => {
+   getData()
+  }
+)
 </script>
 
 <template>
+  {{ props?.modelValue?.department?.id }}
   <section
     class="editor-class mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14">
     <!-- Header -->
@@ -163,8 +203,7 @@ console.log('sdfsdf',subDepartmentList.value)
               {{ ctrans('All') }}
             </option>
 
-            <option v-for="department in subDepartmentList" :key="department.code"
-              :value="department.code">
+            <option v-for="department in subDepartmentList" :key="department.code" :value="department.code">
               {{ department.name }}
             </option>
           </select>
@@ -197,10 +236,9 @@ console.log('sdfsdf',subDepartmentList.value)
     </div>
 
     <!-- Load More -->
-    <div  class="mt-8 flex justify-center">
-      <Button
-         type="tertiary"  :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }" :label="ctrans('Load More')">
-        </Button>
+    <div class="mt-8 flex justify-center">
+      <Button type="tertiary" :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }" :label="ctrans('Load More')">
+      </Button>
     </div>
   </section>
 </template>
