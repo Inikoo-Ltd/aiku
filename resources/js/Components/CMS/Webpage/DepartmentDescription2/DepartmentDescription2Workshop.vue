@@ -103,7 +103,6 @@ let resizeObserver: ResizeObserver | null = null
 
 const calculateDescriptionHeight = async () => {
 	await nextTick()
-	console.log(maxDescriptionHeight.value, mediaRef.value.offsetHeight)
 
 	if (!mediaRef.value || !descriptionRef.value) return
 

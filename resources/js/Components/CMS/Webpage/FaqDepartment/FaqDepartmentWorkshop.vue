@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { inject, computed  } from 'vue'
-import FaqWorkshop from '@/Components/CMS/Webpage/Family2ExtraDescription/FaqWorkshop.vue';
+import { inject, computed } from "vue"
+import FaqWorkshop from "@/Components/CMS/Webpage/Family2ExtraDescription/FaqWorkshop.vue"
 import { getStyles } from "@/Composables/styles"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
 
 const props = defineProps<{
 	modelValue: any
@@ -11,20 +12,28 @@ const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
-
 const layout: any = inject("layout", {})
-
-const containerStyle = computed(() => ({
-    ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-    ...getStyles(props.modelValue?.faq?.container?.properties),
-    width: "auto",
-}))
-
 </script>
 
 <template>
-	 <div class="mx-auto w-full max-w-[1700px]  px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
-        :style="containerStyle" :id="modelValue?.id ? modelValue?.id : 'faq' + indexBlock" component="faq-department">
-		<FaqWorkshop :fieldValue="modelValue" :screen-type="screenType" :faqs="modelValue.faqs" />
+	<div
+		v-if="modelValue?.faqs?.length"
+		:id="modelValue?.id ? modelValue?.id : 'faq' + indexBlock"
+		component="faq-department"
+		class="bg-[#F3F3F3]">
+		<div class="mx-auto max-w-[1600px] px-6 py-12 lg:px-12">
+			<h2 class="mb-8 text-4xl font-bold tracking-tight text-[#0F1E2E] lg:text-5xl">FAQ</h2>
+
+			<FaqWorkshop
+				:modelValue="modelValue"
+				:screen-type="screenType"
+				:faqs="modelValue.faqs" />
+		</div>
 	</div>
+	<EmptyState
+		v-else
+		:data="{
+			title: ctrans('There is no FAQ for this department'),
+			description: ctrans('Please edit it on the department page'),
+		}" />
 </template>
