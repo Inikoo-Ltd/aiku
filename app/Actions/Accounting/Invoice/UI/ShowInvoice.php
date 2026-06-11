@@ -248,6 +248,10 @@ class ShowInvoice extends OrgAction
                 'label' => __('Show Dispatch Totals (SKO & Units)'),
                 'value' => 'show_dispatch_totals',
             ],
+            [
+                'label' => __('Batch Code'),
+                'value' => 'show_batch_code',
+            ],
         ];
 
         return array_map(function (array $column) use ($savedColumns) {

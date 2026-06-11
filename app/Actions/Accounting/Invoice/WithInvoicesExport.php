@@ -16,6 +16,7 @@ use App\Models\Fulfilment\Pallet;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Sentry;
 
@@ -52,6 +53,19 @@ trait WithInvoicesExport
 
                 if (!empty($transaction->data['date'])) {
                     $transaction->handling_date = Carbon::parse($transaction->data['date'])->format('d M Y');
+                }
+
+               if ($transaction->transaction_id) {
+                    $transaction->batch_codes = DB::table('delivery_note_items')
+                        ->join('pickings', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+                        ->join('batch_codes', 'batch_codes.id', '=', 'pickings.batch_code_id')
+                        ->where('delivery_note_items.transaction_id', $transaction->transaction_id)
+                        ->whereNotNull('pickings.batch_code_id')
+                        ->distinct()
+                        ->pluck('batch_codes.code')
+                        ->implode(', ');
+                } else {
+                    $transaction->batch_codes = null;
                 }
 
                 return $transaction;
@@ -143,6 +157,7 @@ trait WithInvoicesExport
                 'hide_payment_status'  => Arr::get($options, 'hide_payment_status', false),
                 'group_by_tariff_code' => Arr::get($options, 'group_by_tariff_code', false),
                 'show_dispatch_totals' => Arr::get($options, 'show_dispatch_totals', false),
+                'show_batch_code'      => Arr::get($options, 'show_batch_code', false),
                 'dispatch_total_skos'     => $deliveryNote?->total_skos > 0 ? $deliveryNote->total_skos : null,
                 'dispatch_total_units'    => $deliveryNote?->total_units > 0 ? $deliveryNote->total_units : null,
                 'dispatch_total_quantity' => $transactions->sum(fn ($t) => $t->quantity ?? 0),
