@@ -73,6 +73,7 @@ import Family2ExtraDescriptionBlueprint from "@/Components/CMS/Webpage/Family2Ex
 import RecomendationFromMaster from "../Components/CMS/Webpage/RecommendationFromMaster/Blueprint"
 import RelatedProductCategoryBlueprint from "@/Components/CMS/Webpage/RelatedProductCategory/Blueprint"
 import Tabs from "@/Components/CMS/Webpage/Tabs/Blueprint"
+import FaqDepartmentBlueprint from '@/Components/CMS/Webpage/FaqDepartment/Blueprint'
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
@@ -173,7 +174,8 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'slider-1' : SliderBlueprint.blueprint,
 		'recommendation-from-master' : RecomendationFromMaster.blueprint,
 		'relatedProductCategory' : () => RelatedProductCategoryBlueprint(data).blueprint,
-		'tabs' : Tabs.blueprint
+		'tabs' : Tabs.blueprint,
+		'faq-department' : FaqDepartmentBlueprint.blueprint,
 	}
 
 	const blueprint = components[componentName]
