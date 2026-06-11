@@ -157,7 +157,13 @@ const chartOptions = computed(() => ({
             titleColor: '#fff',
             bodyColor: '#fff',
             borderColor: '#36a2eb',
-            borderWidth: 1
+            borderWidth: 1,
+            callbacks: {
+                label: function(context: any) {
+                    const value = context.parsed.y;
+                    return `${value}%`
+                }
+            }
         }
     },
     scales: {
