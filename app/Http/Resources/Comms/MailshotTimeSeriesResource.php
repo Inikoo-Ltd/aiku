@@ -72,4 +72,13 @@ class MailshotTimeSeriesResource extends JsonResource
 
         return $this->openRate();
     }
+
+    protected function calculateClickedRate(): float
+    {
+        if ($this->resource->mailshot_stats && isset($this->resource->mailshot_stats->number_dispatched_emails_state_delivered) && $this->resource->mailshot_stats->number_dispatched_emails_state_delivered > 0) {
+            return round($this->number_dispatched_emails_state_clicked / $this->resource->mailshot_stats->number_dispatched_emails_state_delivered * 100, 2);
+        }
+
+        return $this->clickedRate();
+    }
 }
