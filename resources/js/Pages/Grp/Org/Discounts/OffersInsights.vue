@@ -19,10 +19,8 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { Table as TableTS } from "@/types/Table"
 import { Intervals } from "@/types/Components/Dashboard"
 import { RouteParams } from "@/types/route-params"
-
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler } from "chart.js"
 import { Line } from "vue-chartjs"
-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faAnalytics, faBadgePercent, faShoppingCart, faUsers, faCoin, faPiggyBank, faPercent, faTrophy, faThumbsDown, faTags } from "@fal"
@@ -41,16 +39,9 @@ interface OfferPerformance {
     discounted_amount: number
 }
 
-const props = defineProps<{
-    title: string
-    pageHead: PageHeadingTypes
+interface OffersInsightsSuperBlock {
+    id: string
     intervals: Intervals
-    filters: {
-        campaigns: { slug: string, name: string, type: string }[]
-        types: string[]
-        campaign: string | null
-        type: string | null
-    }
     insights: {
         currency_code: string
         offer_counts: {
@@ -81,8 +72,24 @@ const props = defineProps<{
         top_offers: OfferPerformance[]
         least_offers: OfferPerformance[]
     }
+}
+
+const props = defineProps<{
+    title: string
+    pageHead: PageHeadingTypes
+    filters: {
+        campaigns: { slug: string, name: string, type: string }[]
+        types: string[]
+        campaign: string | null
+        type: string | null
+    }
     offers: TableTS
+    dashboard: { super_blocks: OffersInsightsSuperBlock[] }
 }>()
+
+const superBlock = computed(() => props.dashboard.super_blocks[0])
+const insights = computed(() => superBlock.value.insights)
+const intervals = computed(() => superBlock.value.intervals)
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -111,67 +118,67 @@ const applyFilters = () => {
     )
 }
 
-const currency = (value: number) => locale.currencyFormat(props.insights.currency_code, value || 0)
+const currency = (value: number) => locale.currencyFormat(insights.value.currency_code, value || 0)
 
 const kpis = computed(() => [
     {
         label: trans("Redemptions (orders)"),
         icon: "fal fa-shopping-cart",
         color: "#6366f1",
-        value: locale.number(props.insights.totals.redemptions),
+        value: locale.number(insights.value.totals.redemptions),
         tooltip: trans("Orders where a coupon or voucher discount was actually applied"),
     },
     {
         label: trans("Customers redeeming"),
         icon: "fal fa-users",
         color: "#10b981",
-        value: locale.number(props.insights.totals.customers),
-        subtitle: trans("Avg savings per customer") + ": " + currency(props.insights.totals.avg_savings_per_customer),
+        value: locale.number(insights.value.totals.customers),
+        subtitle: trans("Avg savings per customer") + ": " + currency(insights.value.totals.avg_savings_per_customer),
     },
     {
         label: trans("Revenue influenced (net)"),
         icon: "fal fa-coin",
         color: "#f59e0b",
-        value: currency(props.insights.totals.revenue_net_amount),
-        subtitle: trans("Gross") + ": " + currency(props.insights.totals.revenue_gross_amount),
+        value: currency(insights.value.totals.revenue_net_amount),
+        subtitle: trans("Gross") + ": " + currency(insights.value.totals.revenue_gross_amount),
     },
     {
         label: trans("Discount given"),
         icon: "fal fa-piggy-bank",
         color: "#ef4444",
-        value: currency(props.insights.totals.discounted_amount),
-        subtitle: trans("Avg per redemption") + ": " + currency(props.insights.totals.avg_discount),
+        value: currency(insights.value.totals.discounted_amount),
+        subtitle: trans("Avg per redemption") + ": " + currency(insights.value.totals.avg_discount),
     },
     {
         label: trans("Margin impact"),
         icon: "fal fa-percent",
         color: "#8b5cf6",
-        value: props.insights.totals.discount_rate + "%",
+        value: insights.value.totals.discount_rate + "%",
         tooltip: trans("Discount given as percentage of revenue before discount"),
     },
     {
         label: trans("Conversion rate"),
         icon: "fal fa-badge-percent",
         color: "#3b82f6",
-        value: props.insights.totals.conversion_rate + "%",
-        subtitle: `${locale.number(props.insights.offer_counts.redeemed)} / ${locale.number(props.insights.offer_counts.total)} ` + trans("coupons redeemed"),
+        value: insights.value.totals.conversion_rate + "%",
+        subtitle: `${locale.number(insights.value.offer_counts.redeemed)} / ${locale.number(insights.value.offer_counts.total)} ` + trans("coupons redeemed"),
         tooltip: trans("Coupons redeemed at least once divided by total coupons"),
     },
 ])
 
 const statusBreakdown = computed(() => [
-    { label: trans("Active"), value: props.insights.offer_counts.active, class: "text-green-600" },
-    { label: trans("Not yet started"), value: props.insights.offer_counts.in_process, class: "text-amber-500" },
-    { label: trans("Expired / finished"), value: props.insights.offer_counts.finished, class: "text-gray-500" },
-    { label: trans("Suspended"), value: props.insights.offer_counts.suspended, class: "text-red-500" },
+    { label: trans("Active"), value: insights.value.offer_counts.active, class: "text-green-600" },
+    { label: trans("Not yet started"), value: insights.value.offer_counts.in_process, class: "text-amber-500" },
+    { label: trans("Expired / finished"), value: insights.value.offer_counts.finished, class: "text-gray-500" },
+    { label: trans("Suspended"), value: insights.value.offer_counts.suspended, class: "text-red-500" },
 ])
 
 const chartData = computed(() => ({
-    labels: props.insights.trend.map(record => record.period),
+    labels: insights.value.trend.map(record => record.period),
     datasets: [
         {
             label: trans("Redemptions"),
-            data: props.insights.trend.map(record => record.redemptions),
+            data: insights.value.trend.map(record => record.redemptions),
             borderColor: "#6366f1",
             backgroundColor: "#6366f133",
             fill: true,
@@ -180,7 +187,7 @@ const chartData = computed(() => ({
         },
         {
             label: trans("Discount given"),
-            data: props.insights.trend.map(record => record.discounted_amount),
+            data: insights.value.trend.map(record => record.discounted_amount),
             borderColor: "#ef4444",
             backgroundColor: "#ef444433",
             fill: false,

@@ -13,6 +13,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Discounts\OfferCampaign;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -20,7 +21,54 @@ class GetOffersInsightsData
 {
     use AsObject;
 
-    public function handle(Shop $shop, ?OfferCampaign $offerCampaign = null, ?string $offerType = null, ?string $fromDate = null, ?string $toDate = null): array
+    public function handle(Shop $shop, ?OfferCampaign $offerCampaign = null, ?string $offerType = null, ?string $fromDate = null, ?string $toDate = null, ?bool $useCache = null): array
+    {
+        $useCache = $useCache ?? true;
+
+        if (!$useCache) {
+            return $this->fetchData($shop, $offerCampaign, $offerType, $fromDate, $toDate);
+        }
+
+        $cacheKey = $this->getCacheKey($shop, $offerCampaign, $offerType, $fromDate, $toDate);
+
+        return Cache::tags(["dashboard-shop-{$shop->id}"])
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($shop, $offerCampaign, $offerType, $fromDate, $toDate) {
+                return $this->fetchData($shop, $offerCampaign, $offerType, $fromDate, $toDate);
+            });
+    }
+
+    protected function getCacheKey(Shop $shop, ?OfferCampaign $offerCampaign, ?string $offerType, ?string $fromDate, ?string $toDate): string
+    {
+        [$normalizedFrom, $normalizedTo] = $this->normalizeDateBounds($fromDate, $toDate);
+
+        return sprintf(
+            'dashboard:offers_insights:%s:%s:%s:%s:%s',
+            $shop->id,
+            $offerCampaign?->id ?? 'all',
+            $offerType ?? 'all',
+            $normalizedFrom,
+            $normalizedTo
+        );
+    }
+
+    protected function normalizeDateBounds(?string $fromDate, ?string $toDate): array
+    {
+        if (empty($fromDate) && empty($toDate)) {
+            return ['all', 'all'];
+        }
+
+        return [
+            empty($fromDate) ? 'open' : Carbon::parse($fromDate)->toDateString(),
+            empty($toDate) ? 'open' : Carbon::parse($toDate)->toDateString(),
+        ];
+    }
+
+    public static function clearCache(Shop $shop): void
+    {
+        Cache::tags(["dashboard-shop-{$shop->id}"])->flush();
+    }
+
+    protected function fetchData(Shop $shop, ?OfferCampaign $offerCampaign, ?string $offerType, ?string $fromDate, ?string $toDate): array
     {
         $offerCounts = $this->getOfferCounts($shop, $offerCampaign, $offerType);
 

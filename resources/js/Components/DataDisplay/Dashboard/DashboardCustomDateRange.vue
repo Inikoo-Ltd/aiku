@@ -18,7 +18,9 @@ const props = defineProps<{
 }>();
 
 const reloadOptions = () => {
-    return props.currentTab === 'insights' ? {} : { only: ['dashboard', 'top_customers'] };
+    return props.currentTab === 'insights'
+        ? { only: ['dashboard', 'offers'], preserveState: true }
+        : { only: ['dashboard', 'top_customers'] };
 };
 
 // Method: convert Date to '20250206-20250223'
