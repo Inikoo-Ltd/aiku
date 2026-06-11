@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
@@ -85,6 +86,14 @@ class IndexOffers extends OrgAction
         $query->leftjoin('shops', 'offers.shop_id', '=', 'shops.id');
         $query->leftjoin('offer_campaigns', 'offers.offer_campaign_id', '=', 'offer_campaigns.id');
 
+        $firstAllowance = DB::table('offer_allowances')
+            ->selectRaw("DISTINCT ON (offer_id) offer_id, type AS allowance_type, class AS allowance_class, target_type AS allowance_target_type, (data->>'percentage_off')::numeric AS allowance_percentage_off, (data->>'category_id')::integer AS allowance_category_id")
+            ->where('type', '!=', 'unknown')
+            ->orderByRaw('offer_id, id');
+
+        $query->leftJoinSub($firstAllowance, 'fa', 'fa.offer_id', '=', 'offers.id');
+        $query->leftJoin('product_categories', DB::raw('product_categories.id'), '=', DB::raw('fa.allowance_category_id'));
+
         if ($this->bucket == 'active') {
             $query->where('offers.state', OfferStateEnum::ACTIVE);
         } elseif ($this->bucket == 'finished') {
@@ -112,6 +121,7 @@ class IndexOffers extends OrgAction
             'offers.code',
             'offers.name',
             'offers.type',
+            'offers.trigger_data',
             'offer_campaigns.slug as offer_campaign_slug',
             'shops.slug as shop_slug',
             'shops.name as shop_name',
@@ -120,6 +130,11 @@ class IndexOffers extends OrgAction
             'offers.duration',
             'offers.start_at',
             'offers.end_at',
+            'fa.allowance_type',
+            'fa.allowance_class',
+            'fa.allowance_target_type',
+            'fa.allowance_percentage_off',
+            'product_categories.name as allowance_category_name',
         ];
 
         $timeSeriesData = $query->withTimeSeriesAggregation(
@@ -187,6 +202,7 @@ class IndexOffers extends OrgAction
 
             $table->column(key: 'state', label: '', type: 'icon', sortable: false);
             $table->column(key: 'name', label: __('Name'), sortable: true);
+            $table->column(key: 'label', label: __('Label'), sortable: false);
             if ($parent instanceof ProductCategory) {
                 $table->column(key: 'type_icon', label: __('Type'), sortable: true, type: 'icon', );
             } else {
