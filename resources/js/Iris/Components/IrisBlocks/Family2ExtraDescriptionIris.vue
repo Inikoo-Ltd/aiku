@@ -118,7 +118,7 @@ console.log('family-extra-des',props)
       </div>
 
       <!-- CONTENT -->
-      <component :is="component(activeTab)" :field-value="fieldValue" :screen-type="screenType" />
+      <component :is="component(activeTab)" :field-value="fieldValue" :screen-type="screenType" :faqs="fieldValue?.family?.faq"/>
     </div>
   </section>
 </template>

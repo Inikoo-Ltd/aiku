@@ -114,7 +114,7 @@ const submitGiftOffer = () => {
 }
 
 const productFetchRoute = {
-    name: 'grp.json.shop.products',
+    name: 'grp.json.shop.products_including_not_for_sale',
     parameters: {
         shop: (route().params as any).shop
     }

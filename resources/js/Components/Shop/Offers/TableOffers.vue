@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Order } from "@/types/order"
 import Icon from "@/Components/Icon.vue"
@@ -20,6 +20,8 @@ import { faAbacus } from "@fad"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import Offer from "@/Pages/Grp/Org/Discounts/Offer.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import { faSkull } from "@fal"
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -99,6 +101,12 @@ function returnRouteOffer(offer: any) {
 
 console.log("Curr Route", route().current())
 
+const terminateOffer = (item) => {
+    console.log(item);
+    router.post(route('grp.models.offer.finish', {
+        offer: item.id
+    }))
+}
 
 </script>
 
@@ -136,6 +144,19 @@ console.log("Curr Route", route().current())
 
         <template #cell(sales_grp_currency_external)="{ item: collection }">
             <span class="tabular-nums">{{ locale.currencyFormat('GBP', collection.sales_grp_currency_external) }}</span>
+        </template>
+
+        <template #cell(actions)="{ item }">
+            <Button
+                v-if="item.is_active"
+                v-tooltip="ctrans('Terminate offer immidiately')"
+                :type="'negative'"
+                @click="terminateOffer(item)"
+            >
+                <FontAwesomeIcon 
+                    :icon="faSkull"
+                />
+            </Button>
         </template>
     </Table>
 </template>

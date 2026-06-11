@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer\UI;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\CleanFinishedVouchers;
 use App\Actions\OrgAction;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
@@ -25,7 +26,12 @@ class FinishOffer extends OrgAction
 
     public function handle(Offer $offer): Offer
     {
+        if ($offer->state == OfferStateEnum::FINISHED) {
+            return $offer;
+        }
+
         $currentStatus = $offer->status;
+
         $offer->update(
             [
                 'state'  => OfferStateEnum::FINISHED,
@@ -33,6 +39,7 @@ class FinishOffer extends OrgAction
                 'end_at' => now()
             ]
         );
+
         foreach ($offer->offerAllowances as $offerAllowance) {
             $offerAllowance->update([
                 'state'  => OfferAllowanceStateEnum::FINISHED,
@@ -40,8 +47,13 @@ class FinishOffer extends OrgAction
                 'end_at' => now()
             ]);
         }
+
         ShopHydrateOffersData::run($offer->shop_id);
         if ($currentStatus != $offer->status) {
+            if ($offer->voucher) {
+                CleanFinishedVouchers::run($offer->id);
+            }
+
             if ($offer->trigger_type == 'ProductCategory') {
                 UpdateProductCategoryOffersData::run($offer);
             }

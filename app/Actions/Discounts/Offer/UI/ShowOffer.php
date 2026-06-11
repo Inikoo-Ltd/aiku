@@ -63,6 +63,11 @@ class ShowOffer extends OrgAction
                 'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit_vol_gr_gift',
                 'parameters' => $request->route()->parameters()
             ];
+        } else {
+            $editRoute = [
+                'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit',
+                'parameters' => $request->route()->parameters()
+            ];
         }
 
         if ($editRoute) {

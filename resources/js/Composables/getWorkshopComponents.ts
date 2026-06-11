@@ -80,6 +80,8 @@ import RecommendationFromMasterWorkshop from '../Components/CMS/Webpage/Recommen
 import RelatedProductCategoryWorkshop from '@/Components/CMS/Webpage/RelatedProductCategory/RealatedProductCategoryWorkshop.vue'
 import Tabs from '@/Components/CMS/Webpage/Tabs/TabsWorkshop.vue'
 import RecommendationProductCategoryFromMasterWorkshop from '@/Components/CMS/Webpage/RecommendationProductCategoryFromMaster/RecommendationProductCategoryFromMasterWorkshop.vue'
+import FaqDepartmentWorkshop from '@/Components/CMS/Webpage/FaqDepartment/FaqDepartmentWorkshop.vue'
+import TopFamiliesWorkshop from '@/Components/CMS/Webpage/TopFamilies/TopFamiliesWorkshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -181,7 +183,9 @@ const components = (shop_type?: string): Record<string, Component> => {
         'recommendation-from-master' : RecommendationFromMasterWorkshop,
         'relatedProductCategory' : RelatedProductCategoryWorkshop,
         'recommendation-product-category-from-master' : RecommendationProductCategoryFromMasterWorkshop,
-        'tabs' : Tabs
+        'tabs' : Tabs,
+        'faq-department' : FaqDepartmentWorkshop,
+        'top-families' : TopFamiliesWorkshop
     }
 }
 

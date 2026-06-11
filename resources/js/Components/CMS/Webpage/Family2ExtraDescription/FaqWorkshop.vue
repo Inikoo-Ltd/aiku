@@ -7,6 +7,7 @@ import { getStyles } from "@/Composables/styles"
 const props = defineProps<{
     fieldValue: any
     screenType: "mobile" | "tablet" | "desktop"
+    faqs:any
 }>()
 
 const openIndex = ref<number | null>(0)
@@ -29,7 +30,7 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.faq?.containe
             class="mx-auto w-full"
         >
             <div
-                v-for="(item, index) in fieldValue.family.faq"
+                v-for="(item, index) in faqs"
                 :key="index"
                 class="border-b border-[#B8BCC1]"
             >
