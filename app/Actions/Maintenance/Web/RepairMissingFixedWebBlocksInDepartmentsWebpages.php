@@ -193,7 +193,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         if ($layout_style == 'main_page') {
             if ($command->option('set-description-top')) {
-                $usedWebBlockTemplateCodes = array_key_first($liveWebBlockSnapshot?->layout); // Get published WebBlock layout code
+                $usedWebBlockTemplateCodes = array_key_first($liveWebBlockSnapshot?->layout ?? []); // Get published WebBlock layout code
                 if (!in_array($usedWebBlockTemplateCodes, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes())) {
                     $usedWebBlockTemplateCodes = array_first(WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes());
                 }
