@@ -10,7 +10,6 @@ import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
-import axios from 'axios'
 
 const props = defineProps<{
     shop_data: {
@@ -164,7 +163,7 @@ const submitCustomerOffer = () => {
 
     const payload = {
         customer_id: customerId.value || props.customer_id,
-        offer_amount: offerAmount.value,
+        min_order_amount: offerAmount.value,
         discount_percentage: discountPercentage.value,
         target_type: targetPayload?.target_type ?? null,
         target_id: targetPayload?.target_id ?? null,
