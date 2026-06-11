@@ -28,6 +28,7 @@ import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 import PreviewVoucher from '@/Components/Offers/PreviewOffer/PreviewVoucher.vue'
+import PreviewGift from '@/Components/Offers/PreviewOffer/PreviewGift.vue'
 
 library.add(faFlagCheckered)
 
@@ -228,6 +229,12 @@ const irisOffersData = computed(() => {
                     v-else-if="data.offer.type == 'Voucher Amount Ordered'"
                     :offer="data.offer"
                     class="scale-[120%] mt-3"
+                />
+                <PreviewGift
+                    v-else-if="data.offer.type == 'Gift'"
+                    :offer="data.offer"
+                    :currencyCode="currency_code"
+                    class="xscale-[120%] mt-3"
                 />
                 <Coupon v-else :offer="data.offer" :currency_code="currency_code" />    
             </div>
