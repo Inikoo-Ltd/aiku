@@ -60,7 +60,7 @@ class FinishOffer extends OrgAction
             }
 
             if ($offer->customer_id) {
-                RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay($this->hydratorsDelay);
+                RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay(now()->addSeconds(10));
             } else {
                 RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
             }
