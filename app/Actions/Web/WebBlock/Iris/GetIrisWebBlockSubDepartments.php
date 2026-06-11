@@ -62,7 +62,7 @@ class GetIrisWebBlockSubDepartments
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', WebBlockSubDepartmentsResource::collection($subDepartments)->toArray(request()));
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));
-
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $webpage->model->name);
         return [
            'type' => $webBlock['type'],
            'structure' => Arr::get(

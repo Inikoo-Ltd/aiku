@@ -226,9 +226,9 @@ class ShowCustomer extends OrgAction
                     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
                     : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
 
-                // $tabs::OFFERS->value   => $this->tab == $tabs::OFFERS->value ?
-                //     fn () => OffersResource::collection(IndexOffers::run($customer->shop, $tabs::OFFERS->value))
-                //     : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($customer->shop, $tabs::OFFERS->value))),
+                $tabs::OFFERS->value   => $this->tab == $tabs::OFFERS->value ?
+                    fn () => OffersResource::collection(IndexOffers::run($customer, $tabs::OFFERS->value))
+                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($customer, $tabs::OFFERS->value))),
             ]
         )
         ->table(IndexOrders::make()->tableStructure($customer))
@@ -238,7 +238,7 @@ class ShowCustomer extends OrgAction
         ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
         ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
         ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
-        // ->table(IndexOffers::make()->tableStructure(parent: $customer->shop, prefix: $tabs::OFFERS->value))
+        ->table(IndexOffers::make()->tableStructure(parent: $customer, prefix: $tabs::OFFERS->value))
         ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value));
     }
 

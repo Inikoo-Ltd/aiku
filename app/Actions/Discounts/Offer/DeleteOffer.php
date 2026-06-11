@@ -11,7 +11,7 @@ namespace App\Actions\Discounts\Offer;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
@@ -50,7 +50,7 @@ class DeleteOffer extends OrgAction
         OrganisationHydrateOffers::dispatch($offer->organisation)->delay($this->hydratorsDelay);
         ShopHydrateOffers::dispatch($offer->shop)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffers::dispatch($offer->offerCampaign)->delay($this->hydratorsDelay);
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id);
+        RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id);
 
         return $offer;
     }

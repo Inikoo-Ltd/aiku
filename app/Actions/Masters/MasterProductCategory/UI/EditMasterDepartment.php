@@ -17,7 +17,6 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterDepartment extends OrgAction
 {
@@ -83,17 +82,7 @@ class EditMasterDepartment extends OrgAction
                                 ],
                             ]
                         ],
-                        [
-                            'label'  => __('FAQ'),
-                            'icon'   => 'fa-light fa-question-circle',
-                            'fields' => [
-                               'faq' => [
-                                    'type'  => 'faq-master',
-                                    'label' => __('FAQ'),
-                                    'value' => $masterProductCategory->faq,
-                                ],
-                            ]
-                        ],
+
                         [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
@@ -103,14 +92,6 @@ class EditMasterDepartment extends OrgAction
                                     'label' => __('Name'),
                                     'value' => $masterProductCategory->name
                                 ],
-//                                'description_title' => [
-//                                    'type'  => 'input',
-//                                    'label' => __('Description title'),
-//                                    'options'   => [
-//                                        'counter'   => true,
-//                                    ],
-//                                    'value' => $masterProductCategory->description_title
-//                                ],
                                 'description' => [
                                     'type'  => 'textEditor',
                                     'label' => __('Description'),
@@ -139,48 +120,6 @@ class EditMasterDepartment extends OrgAction
                                 ],
                             ]
                         ],
-//                        [
-//                            'label'  => __('Translations'),
-//                            'icon'   => 'fa-light fa-language',
-//                            'fields' => [
-//                                'name_i8n' => [
-//                                    'type'  => 'input_translation',
-//                                    'label' => __('translate name'),
-//                                    'language_from' => 'en',
-//                                    'full' => true,
-//                                    'main' => $masterProductCategory->name,
-//                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-//                                    'value' => $masterProductCategory->getTranslations('name_i8n')
-//                                ],
-//                                'description_title_i8n' => [
-//                                    'type'  => 'input_translation',
-//                                    'label' => __('translate description title'),
-//                                    'language_from' => 'en',
-//                                    'full' => true,
-//                                    'main' => $masterProductCategory->description_title,
-//                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-//                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
-//                                ],
-//                                'description_i8n' => [
-//                                    'type'  => 'textEditor_translation',
-//                                    'label' => __('translate description'),
-//                                    'language_from' => 'en',
-//                                    'full' => true,
-//                                    'main' => $masterProductCategory->description,
-//                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-//                                    'value' => $masterProductCategory->getTranslations('description_i8n')
-//                                ],
-//                                'description_extra_i8n' => [
-//                                    'type'  => 'textEditor_translation',
-//                                    'label' => __('translate description extra'),
-//                                    'language_from' => 'en',
-//                                    'full' => true,
-//                                    'main' => $masterProductCategory->description_extra,
-//                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-//                                    'value' => $masterProductCategory->getTranslations('description_extra_i8n')
-//                                ],
-//                            ]
-//                        ],
                         [
                             'label'  => __('Pricing'),
                             'icon'   => 'fa-light fa-money-bill',
@@ -209,6 +148,17 @@ class EditMasterDepartment extends OrgAction
                                     "required" => false,
                                     'noSaveButton' => true,
                                     "full"         => true
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('FAQ'),
+                            'icon'   => 'fa-light fa-question-circle',
+                            'fields' => [
+                                'faq' => [
+                                    'type'  => 'faq-master',
+                                    'label' => __('FAQ'),
+                                    'value' => $masterProductCategory->faq,
                                 ],
                             ]
                         ],

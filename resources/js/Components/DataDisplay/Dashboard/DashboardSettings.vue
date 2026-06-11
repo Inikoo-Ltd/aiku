@@ -102,6 +102,8 @@ const updateInterval = (interval_code: string) => {
             { settings: { selected_interval: interval_code } },
             {
                 preserveScroll: true,
+                preserveState: true,
+                only: ['dashboard', 'offers'],
                 onFinish: () => { isLoadingOnTable.value = false },
             }
         )

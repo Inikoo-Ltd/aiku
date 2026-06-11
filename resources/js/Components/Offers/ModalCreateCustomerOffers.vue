@@ -160,12 +160,13 @@ const buildTargetPayload = () => {
 }
 
 const submitCustomerOffer = () => {
+    isLoadingSubmit.value = true
     const targetPayload = buildTargetPayload()
 
     const payload = {
         customer_id: customerId.value || props.customer_id,
-        offer_amount: offerAmount.value,
-        discount_percentage: discountPercentage.value,
+        min_order_amount: offerAmount.value,
+        percentage_off: discountPercentage.value,
         target_type: targetPayload?.target_type ?? null,
         target_id: targetPayload?.target_id ?? null,
         duration: dateType.value,
@@ -173,74 +174,43 @@ const submitCustomerOffer = () => {
         end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
     }
 
-    // axios.post(
-    //     route('grp.models.store_customer_offer', {
-    //         shop: props.shop_data.id,
-    //     }),
-    //     payload
-    // )
-    // .then((response) => {
-    //     notify({
-    //         title: trans("Success"),
-    //         text: trans("Successfully submit the data"),
-    //         type: "success"
-    //     })
-    //     resetForm();
-    //     isOpenModal.value = false
-
-    //     if (!props.customer_id) {
-    //         router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
-    //             organisation: props.shop_data.organisation,
-    //             shop: props.shop_data.slug,
-    //             offerCampaign: props.shop_data.offercampaign,
-    //             offer: response.data.slug
-    //         }))
-    //     }
-    //     router.reload()
-    // })
-    // .catch((error) => {
-    //     const errors = error.response?.data?.errors || {}
-    //     const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
-    //     notify({
-    //         title: trans("Something went wrong"),
-    //         text: errMsg,
-    //         type: "error"
-    //     })
-    // })
-    // .finally(() => {
-    //     isLoadingSubmit.value = false
-    // })
-    router.post(
+    axios.post(
         route('grp.models.store_customer_offer', {
             shop: props.shop_data.id,
         }),
-        payload,
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                closeModal()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: () => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
-        }
+        payload
     )
+    .then((response) => {
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully submit the data"),
+            type: "success"
+        })
+        resetForm();
+        isOpenModal.value = false
+
+        if (!props.customer_id) {
+            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+                offer: response.data.slug
+            }))
+        }
+        router.reload()
+    })
+    .catch((error) => {
+        const errors = error.response?.data?.errors || {}
+        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+        notify({
+            title: trans("Something went wrong"),
+            text: errMsg,
+            type: "error"
+        })
+    })
+    .finally(() => {
+        isLoadingSubmit.value = false
+    })
 }
 
 const resetForm = () => {
