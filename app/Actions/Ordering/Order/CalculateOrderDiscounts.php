@@ -12,14 +12,16 @@ use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsObject;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class CalculateOrderDiscounts
+class CalculateOrderDiscounts implements ShouldBeUnique
 {
-    use AsObject;
+    use AsAction;
+    public string $jobQueue = 'urgent';
 
     private \Illuminate\Support\Collection $transactions;
 
@@ -32,6 +34,11 @@ class CalculateOrderDiscounts
 
 
     private Order $order;
+
+    public function getJobUniqueId(Order $order): string
+    {
+        return $order->id;
+    }
 
     public function handle(Order $order): Order
     {
