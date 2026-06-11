@@ -43,8 +43,14 @@ class SendEmailDeliveryChannel
 
     public string $jobQueue = 'ses-send';
 
-    public function handle(EmailDeliveryChannel $emailDeliveryChannel, bool $runOnlyInReady = true): void
+    public function handle($emailDeliveryChannelId, bool $runOnlyInReady = true): void
     {
+
+        $emailDeliveryChannel = EmailDeliveryChannel::on('aiku_no_sticky')->find($emailDeliveryChannelId);
+        if (!$emailDeliveryChannel) {
+            return;
+        }
+
         if ($runOnlyInReady && ($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY)) {
             return;
         }
@@ -123,7 +129,7 @@ class SendEmailDeliveryChannel
             };
 
             if ($tag) {
-                $unsubscribeUrl .= '?tag=' . $tag;
+                $unsubscribeUrl .= '?tag='.$tag;
             }
 
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
@@ -135,12 +141,12 @@ class SendEmailDeliveryChannel
             if ($recipient->recipient_name) {
                 $additionalData['customer_name'] = $recipient->recipient_name;
             } elseif ($recipient->recipient_type == 'Customer') {
-                $recipientData = DB::table('customers')->select('name')->where('id', $recipient->recipient_id)->first();
+                $recipientData = DB::connection('aiku_no_sticky')->table('customers')->select('name')->where('id', $recipient->recipient_id)->first();
                 if ($recipientData) {
                     $additionalData['customer_name'] = $recipientData->name;
                 }
             } elseif ($recipient->recipient_type == 'Prospect') {
-                $recipientData = DB::table('prospects')->select('name')->where('id', $recipient->recipient_id)->first();
+                $recipientData = DB::connection('aiku_no_sticky')->table('prospects')->select('name')->where('id', $recipient->recipient_id)->first();
                 if ($recipientData) {
                     $additionalData['customer_name'] = $recipientData->name;
                 }

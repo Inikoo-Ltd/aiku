@@ -88,7 +88,7 @@ class ProcessBackInStockRecipient
         );
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
 
         if (!empty($reminderIdsArray)) {
             BulkDeleteBackInStockReminder::run($reminderIdsArray);
