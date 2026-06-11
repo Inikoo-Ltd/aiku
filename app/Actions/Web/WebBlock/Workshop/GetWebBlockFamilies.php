@@ -78,7 +78,7 @@ class GetWebBlockFamilies
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.show_overview_button', $hasOverviewPage);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->resolve());
         data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_data.webpage_type', $model->type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_data.overview_url', $overview_url);
 

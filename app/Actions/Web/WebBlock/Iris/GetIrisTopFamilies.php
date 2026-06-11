@@ -10,6 +10,7 @@
 namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Web\WebBlock\Traits\WithFamiliesQuery;
+use App\Http\Resources\Web\WebBlockFamiliesResource;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -26,7 +27,7 @@ class GetIrisTopFamilies
             ->limit(6)
             ->get();
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue.top-families', $families);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.top-families', WebBlockFamiliesResource::collection($families)->resolve());
 
         return [
             'type' => $webBlock['type'],
