@@ -142,7 +142,7 @@ const layout = inject('layout')
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <ModalCreateCustomerOffers v-if="currentTab === 'offers' && layout?.app.environment == 'local'" :shop_data="shop_data" :customer_id="props.shop_data.customer_id"/>
+            <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
             <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"

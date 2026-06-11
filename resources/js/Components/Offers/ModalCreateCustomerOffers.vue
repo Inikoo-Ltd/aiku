@@ -160,6 +160,7 @@ const buildTargetPayload = () => {
 }
 
 const submitCustomerOffer = () => {
+    isLoadingSubmit.value = true
     const targetPayload = buildTargetPayload()
 
     const payload = {
