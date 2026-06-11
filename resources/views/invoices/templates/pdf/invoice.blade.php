@@ -340,6 +340,10 @@
                                 <br>
                                 {{ __('Date') }}: {{ $transaction->handling_date }}
                             @endif
+                            @if(!empty($show_batch_code) && !empty($transaction->batch_codes))
+                                <br>
+                                {{ __('Batch Codes') }}: {{ $transaction->batch_codes }}
+                            @endif
                             @if($rrp && $transaction->model?->rrp)
                                 <br>
                                 RRP: {{ $transaction->model->rrp }}

@@ -182,6 +182,7 @@ class ShowFulfilmentInvoice extends OrgAction
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
+                'download_pdf_column'  => ShowInvoice::make()->getDownloadPdfColumns($invoice),
 
                 FulfilmentInvoiceTabsEnum::REFUNDS->value => $this->tab == FulfilmentInvoiceTabsEnum::REFUNDS->value
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))
