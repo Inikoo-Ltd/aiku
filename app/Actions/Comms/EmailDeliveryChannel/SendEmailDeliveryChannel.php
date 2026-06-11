@@ -201,7 +201,8 @@ class SendEmailDeliveryChannel
             return 0;
         }
 
-        foreach (EmailDeliveryChannel::where('state', EmailDeliveryChannelStateEnum::READY) as $emailDeliveryChannel) {
+        /** @var EmailDeliveryChannel $emailDeliveryChannel */
+        foreach (EmailDeliveryChannel::where('state', EmailDeliveryChannelStateEnum::READY)->get() as $emailDeliveryChannel) {
             SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id);
         }
 
