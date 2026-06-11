@@ -186,6 +186,11 @@ class Mailshot extends Model implements Auditable
         return $this->morphOne(Email::class, 'parent');
     }
 
+    public function requiresUnsubscribeLink(): bool
+    {
+        return $this->type->requiresUnsubscribeLink();
+    }
+
     public function sender(): string
     {
         if (app()->environment('production')) {
