@@ -161,7 +161,7 @@ const chartOptions = computed(() => ({
             callbacks: {
                 label: function(context: any) {
                     const value = context.parsed.y;
-                    return `${value}%`
+                    return isRateMetric(selectedMetric.value) ? `${value}%` : `${value}`
                 }
             }
         }
