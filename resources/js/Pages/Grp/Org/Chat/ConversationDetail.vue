@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3'
-import { ref, inject, onMounted, watch } from 'vue'
+import { ref, inject, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -121,6 +121,13 @@ const saveInternalNote = () => {
 
 const layout: any = inject('layout', {})
 const baseUrl = layout?.appUrl ?? ''
+
+// Theme colors (fallback to previous green so look is preserved if no theme)
+const themePrimary = computed<string>(() => layout?.app?.theme?.[0] ?? '#16a34a')
+const themePrimaryText = computed<string>(() => layout?.app?.theme?.[1] ?? '#ffffff')
+const avatarStyle = computed(() => ({ backgroundColor: themePrimary.value + '1A', color: themePrimary.value }))
+const badgeStyle = computed(() => ({ backgroundColor: themePrimary.value + '1A', color: themePrimary.value }))
+const agentBubbleStyle = computed(() => ({ backgroundColor: themePrimary.value, color: themePrimaryText.value }))
 
 const showContactDetail = ref(true)
 const activeTab = ref<SidePanelTab>('profile')
@@ -320,7 +327,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
             <div class="border-b border-gray-200 bg-white">
                 <div class="flex items-center justify-between px-4 py-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-bold shrink-0">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0" :style="avatarStyle">
                             {{ getInitials(chatSession.contact_name) }}
                         </div>
                         <div>
@@ -427,8 +434,9 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                         <div
                             class="max-w-[70%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm"
                             :class="isFromAgent(msg)
-                                ? 'bg-green-600 text-white rounded-br-sm'
+                                ? 'rounded-br-sm'
                                 : 'bg-white text-gray-800 rounded-bl-sm'"
+                            :style="isFromAgent(msg) ? agentBubbleStyle : {}"
                         >
                             <div class="text-[11px] font-semibold mb-0.5 opacity-70">
                                 {{ senderLabel(msg) }}
@@ -443,7 +451,8 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                     :href="msg.download_route.url"
                                     target="_blank"
                                     class="flex items-center gap-x-2 text-sm underline"
-                                    :class="isFromAgent(msg) ? 'text-white/90' : 'text-green-700'"
+                                    :class="isFromAgent(msg) ? 'text-white/90' : ''"
+                                    :style="!isFromAgent(msg) ? { color: themePrimary } : {}"
                                 >
                                     <FontAwesomeIcon :icon="['fal', 'fa-paperclip']" />
                                     <span>{{ msg.file_name || 'Download file' }}</span>
@@ -492,13 +501,14 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
             <div v-if="showContactDetail" class="w-96 shrink-0 flex flex-col border-l border-gray-200 bg-white overflow-hidden">
                 <!-- Contact Header -->
                 <div class="flex flex-col items-center px-4 py-4 border-b border-gray-100 text-center shrink-0">
-                    <div class="w-12 h-12 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-base font-bold mb-2">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold mb-2" :style="avatarStyle">
                         {{ getInitials(chatSession.contact_name) }}
                     </div>
                     <p class="text-sm font-semibold text-gray-800">{{ chatSession.contact_name }}</p>
                     <span
                         class="mt-1 inline-flex items-center justify-center px-2 py-0.5 rounded-sm text-[11px] font-medium"
-                        :class="chatSession.is_guest ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'"
+                        :class="chatSession.is_guest ? 'bg-blue-100 text-blue-800' : ''"
+                        :style="!chatSession.is_guest ? badgeStyle : {}"
                     >
                         {{ chatSession.is_guest ? 'Guest' : 'Customer' }}
                     </span>
@@ -511,8 +521,9 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                             v-if="!tab.onlyRegistered || !chatSession.is_guest"
                             class="flex-1 py-2.5 font-medium transition-colors"
                             :class="activeTab === tab.key
-                                ? 'text-green-700 border-b-2 border-green-600'
+                                ? 'border-b-2'
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+                            :style="activeTab === tab.key ? { color: themePrimary, borderBottomColor: themePrimary } : {}"
                             @click="activeTab = tab.key"
                         >
                             {{ tab.label }}
