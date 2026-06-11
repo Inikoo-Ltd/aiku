@@ -2,10 +2,11 @@
 import Image from '@/Common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import axios from 'axios'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from "@/Composables/useTrans";
+import { getStyles } from "@/Composables/styles"
 
 const props = defineProps<{
   fieldValue: {
@@ -106,12 +107,24 @@ const loadFamilies = async (
 watch(selectedSubDepartment, () => {
   loadFamilies(1)
 })
+
+const perRow = computed(() => ({
+	mobile: props.fieldValue?.settings?.per_row?.mobile ?? 2,
+	tablet: props.fieldValue?.settings?.per_row?.tablet ?? 3,
+	desktop: props.fieldValue?.settings?.per_row?.desktop ?? 5,
+}))
+
 console.log(props)
 </script>
 
 <template>
   <section :id="'sub-department'"
-    class="editor-class pt-12 mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14">
+    class="editor-class pt-12 mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14"
+    	:style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			...getStyles(fieldValue.container?.properties, screenType),
+		}"
+    >
     <!-- Header -->
     <div class="mb-10">
       <span :style="{ fontSize: '2rem' }" class="font-medium text-[#1d2d44]">
@@ -175,7 +188,17 @@ console.log(props)
     </div>
 
     <!-- Family Grid -->
-    <div v-else class="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-5">
+    <div v-else
+			class="grid gap-5"
+			:style="{
+				gridTemplateColumns: `repeat(${
+					screenType === 'mobile'
+						? perRow.mobile
+						: screenType === 'tablet'
+							? perRow.tablet
+							: perRow.desktop
+				}, minmax(0, 1fr))`,
+			}">
       <LinkIris v-for="family in families" :key="family.id" :href="family.url" class="group block" type="internal">
         <div class="aspect-square overflow-hidden bg-gray-100">
           <Image :src="family.image" :alt="family.name"
