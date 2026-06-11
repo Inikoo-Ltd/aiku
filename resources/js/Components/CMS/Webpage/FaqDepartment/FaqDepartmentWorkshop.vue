@@ -1,16 +1,7 @@
 <script setup lang="ts">
-import { inject, computed } from "vue"
-import { faCube, faLink, faImage } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import Blueprint from "@/Components/CMS/Webpage/Cta1/Blueprint"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import { inject, computed  } from 'vue'
+import FaqWorkshop from '@/Components/CMS/Webpage/Family2ExtraDescription/FaqWorkshop.vue';
 import { getStyles } from "@/Composables/styles"
-import { sendMessageToParent } from "@/Composables/Workshop"
-import Image from "@common/Components/Image.vue"
-import { get, isPlainObject } from 'lodash-es'
-
-library.add(faCube, faLink, faImage)
 
 const props = defineProps<{
 	modelValue: any
@@ -20,91 +11,20 @@ const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
-const emits = defineEmits<{
-	(e: "update:modelValue", value: string): void
-	(e: "autoSave"): void
-	(e: "uploadImage", value: any): void
-}>()
-
-const imageSettings = {
-	key: ["image", "source"],
-	stencilProps: {
-		aspectRatio: [16 / 9, null],
-		movable: true,
-		scalable: true,
-		resizable: true,
-	},
-}
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
-const valueForField = computed(() => {
-	const rawVal = get(props.modelValue, ['column_position'])
-	if (!isPlainObject(rawVal)) return rawVal
-
-	const view = props.screenType!
-	return rawVal?.[view] ?? rawVal?.desktop ?? 'Image-left'
-})
-
-const isImageLeft = computed(() => valueForField.value === 'Image-left')
-
+const containerStyle = computed(() => ({
+    ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+    ...getStyles(props.modelValue?.faq?.container?.properties),
+    width: "auto",
+}))
 
 </script>
 
 <template>
-	<div :id="modelValue?.id ? modelValue?.id  : 'cta1' + indexBlock" class="w-full">
-		<div :style="{
-			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-			...getStyles(modelValue.container?.properties, screenType),
-		}">
-			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
-
-				<!-- IMAGE -->
-				<div class="relative cursor-pointer overflow-hidden w-full" :class="[
-					!modelValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]',
-					isImageLeft ? 'order-1' : 'order-2'
-				]" @click.stop="() => {
-					sendMessageToParent('activeBlock', indexBlock)
-					sendMessageToParent('activeChildBlock', bKeys[0])
-				}" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
-					:style="getStyles(modelValue?.image?.container?.properties, screenType)">
-					<Image :src="modelValue.image.source" :imageCover="true"
-						:alt="modelValue.image.alt || 'Image preview'"
-						class="absolute inset-0 w-full h-full object-fill"
-						:imgAttributes="modelValue.image.attributes" 
-						:height="getStyles(modelValue?.image?.container?.properties, screenType, false)?.height"
-						:width="getStyles(modelValue?.image?.container?.properties, screenType, false)?.width"
-						/>
-				</div>
-
-				<!-- TEXT -->
-				<div class="flex flex-col justify-center m-auto p-4" :class="isImageLeft ? 'order-2' : 'order-1'"
-					:style="getStyles(modelValue?.text_block?.properties, screenType)">
-					<div class="max-w-xl w-full" @click="() => {
-						sendMessageToParent('activeBlock', indexBlock)
-						sendMessageToParent('activeChildBlock', bKeys[1])
-					}">
-						<Editor v-if="modelValue?.text" v-model="modelValue.text"
-							@focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-							@update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
-								name: webpageData.images_upload_route.name,
-								parameters: {
-									...webpageData.images_upload_route.parameters,
-									modelHasWebBlocks: blockData?.id,
-								},
-							}" />
-
-						<div class="flex justify-center">
-							<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
-								:label="modelValue?.button?.text" @click.stop="() => {
-									sendMessageToParent('activeBlock', indexBlock)
-									sendMessageToParent('activeChildBlock', bKeys[2])
-								}" />
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+	 <div class="mx-auto w-full max-w-[1700px]  px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
+        :style="containerStyle" :id="modelValue?.id ? modelValue?.id : 'faq' + indexBlock" component="faq-department">
+		<FaqWorkshop :fieldValue="modelValue" :screen-type="screenType" :faqs="modelValue.faqs" />
 	</div>
 </template>
