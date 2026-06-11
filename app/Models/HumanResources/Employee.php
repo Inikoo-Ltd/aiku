@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -271,7 +272,38 @@ class Employee extends Model implements HasMedia, Auditable
 
     public function leaveBalance()
     {
-        return $this->hasOne(EmployeeLeaveBalance::class)->where('year', now()->year);
+        return $this->currentLeaveBalance();
+    }
+
+    public function leaveBalances(): HasMany
+    {
+        return $this->hasMany(EmployeeLeaveBalance::class);
+    }
+
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(EmployeeContract::class)->orderBy('contract_number');
+    }
+
+    public function activeContract(): HasOne
+    {
+        return $this->hasOne(EmployeeContract::class)
+            ->where('start_date', '<=', now()->toDateString())
+            ->where(function ($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
+            })
+            ->orderByDesc('contract_number');
+    }
+
+    public function currentLeaveBalance(): HasOne
+    {
+        return $this->hasOne(EmployeeLeaveBalance::class)
+            ->whereHas('contract', function ($q) {
+                $q->where('start_date', '<=', now()->toDateString())
+                  ->where(function ($q2) {
+                      $q2->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
+                  });
+            });
     }
 
     public function latestAnalytics(): HasOne
