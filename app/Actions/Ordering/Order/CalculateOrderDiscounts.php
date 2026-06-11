@@ -70,8 +70,8 @@ class CalculateOrderDiscounts
         DB::table('transactions')->where('order_id', $order->id)
             ->where('quantity_ordered', '>', 0)
             ->update([
-                'net_amount'  => DB::raw('gross_amount'),
-                'offers_data' => [],
+                'net_amount'              => DB::raw('gross_amount'),
+                'offers_data'             => [],
                 'current_discount_factor' => 1,
             ]);
 
@@ -164,6 +164,32 @@ class CalculateOrderDiscounts
     private function setEnabledOffers(Order $order): void
     {
         $enabledOffers = [];
+
+
+        foreach (
+            DB::table('offers')
+                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])
+                ->where('customer_id', $order->customer_id)
+                ->where('status', true)
+                ->get() as $customerExclusiveOfferData
+        ) {
+            if ($customerExclusiveOfferData->type == OfferTypeEnum::CUSTOMER_ANY_ORDER->value) {
+                $enabledOffers[$customerExclusiveOfferData->allowance_signature] = [
+                    'offer_id'    => $customerExclusiveOfferData->id,
+                    'offer_label' => $customerExclusiveOfferData->name,
+                ];
+            } elseif ($customerExclusiveOfferData->type == OfferTypeEnum::CUSTOMER_AMOUNT_ORDERED->value) {
+                $triggerData = json_decode($customerExclusiveOfferData->trigger_data, true);
+
+                if ($order->gross_amount >= Arr::get($triggerData, 'min_order_amount', 0)) {
+                    $enabledOffers[$customerExclusiveOfferData->allowance_signature] = [
+                        'offer_id'    => $customerExclusiveOfferData->id,
+                        'offer_label' => $customerExclusiveOfferData->name,
+                    ];
+                }
+            }
+        }
+
 
         if ($order->offer_voucher_id) {
             $voucherData = DB::table('offers')
