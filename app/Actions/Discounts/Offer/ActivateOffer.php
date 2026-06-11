@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Discounts\OfferAllowance\ActivateOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
+use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
 use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -57,7 +58,14 @@ class ActivateOffer extends OrgAction
             UpdateProductCategoryOffersData::run($offer);
         }
 
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay($this->hydratorsDelay);
+        // If not voucher, recalculate
+        if (!$offer->voucher) {
+            if ($offer->customer_id) {
+                RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay($this->hydratorsDelay);
+            } else {
+                RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay($this->hydratorsDelay);
+            }
+        }
 
         return $offer;
     }

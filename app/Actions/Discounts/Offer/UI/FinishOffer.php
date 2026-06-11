@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\Ordering\Order\CleanFinishedVouchers;
+use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
@@ -57,7 +58,12 @@ class FinishOffer extends OrgAction
             if ($offer->trigger_type == 'ProductCategory') {
                 UpdateProductCategoryOffersData::run($offer);
             }
-            RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
+
+            if ($offer->customer_id) {
+                RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay($this->hydratorsDelay);
+            } else {
+                RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
+            }
         }
 
         return $offer;

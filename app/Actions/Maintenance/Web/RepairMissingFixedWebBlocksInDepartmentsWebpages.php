@@ -193,7 +193,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         if ($layout_style == 'main_page') {
             if ($command->option('set-description-top')) {
-                $usedWebBlockTemplateCodes = array_key_first($liveWebBlockSnapshot?->layout); // Get published WebBlock layout code
+                $usedWebBlockTemplateCodes = array_key_first($liveWebBlockSnapshot?->layout ?? []); // Get published WebBlock layout code
                 if (!in_array($usedWebBlockTemplateCodes, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes())) {
                     $usedWebBlockTemplateCodes = array_first(WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes());
                 }
@@ -245,10 +245,18 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         UpdateWebpageContent::run($webpage);
     }
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {--website_id=} {--hide-description} {--set-description-top} {--build-overview-page}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {--website_id=} {--webpage_id=} {--hide-description} {--set-description-top} {--build-overview-page}';
 
     public function asCommand(Command $command): void
     {
+        if ($command->option('webpage_id')) {
+            $webpage = Webpage::where('id', $command->option('webpage_id'))->first();
+            if ($webpage && $webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
+                $this->processDepartmentWebpages($webpage, $command, $webpage->layout_style);
+                return;
+            }
+        }
+
         $shop = null;
         if ($command->option('website_id')) {
             $website   = Website::where('id', $command->option('website_id'))->first();
