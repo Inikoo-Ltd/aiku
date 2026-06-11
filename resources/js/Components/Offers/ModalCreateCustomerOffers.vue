@@ -10,6 +10,7 @@ import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 
 const props = defineProps<{
     shop_data: {
@@ -172,74 +173,43 @@ const submitCustomerOffer = () => {
         end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
     }
 
-    // axios.post(
-    //     route('grp.models.store_customer_offer', {
-    //         shop: props.shop_data.id,
-    //     }),
-    //     payload
-    // )
-    // .then((response) => {
-    //     notify({
-    //         title: trans("Success"),
-    //         text: trans("Successfully submit the data"),
-    //         type: "success"
-    //     })
-    //     resetForm();
-    //     isOpenModal.value = false
-
-    //     if (!props.customer_id) {
-    //         router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
-    //             organisation: props.shop_data.organisation,
-    //             shop: props.shop_data.slug,
-    //             offerCampaign: props.shop_data.offercampaign,
-    //             offer: response.data.slug
-    //         }))
-    //     }
-    //     router.reload()
-    // })
-    // .catch((error) => {
-    //     const errors = error.response?.data?.errors || {}
-    //     const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
-    //     notify({
-    //         title: trans("Something went wrong"),
-    //         text: errMsg,
-    //         type: "error"
-    //     })
-    // })
-    // .finally(() => {
-    //     isLoadingSubmit.value = false
-    // })
-    router.post(
+    axios.post(
         route('grp.models.store_customer_offer', {
             shop: props.shop_data.id,
         }),
-        payload,
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                closeModal()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: () => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
-        }
+        payload
     )
+    .then((response) => {
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully submit the data"),
+            type: "success"
+        })
+        resetForm();
+        isOpenModal.value = false
+
+        if (!props.customer_id) {
+            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+                offer: response.data.slug
+            }))
+        }
+        router.reload()
+    })
+    .catch((error) => {
+        const errors = error.response?.data?.errors || {}
+        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+        notify({
+            title: trans("Something went wrong"),
+            text: errMsg,
+            type: "error"
+        })
+    })
+    .finally(() => {
+        isLoadingSubmit.value = false
+    })
 }
 
 const resetForm = () => {
