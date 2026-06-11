@@ -202,7 +202,7 @@ class SendEmailDeliveryChannel
         }
 
         foreach (EmailDeliveryChannel::where('state', EmailDeliveryChannelStateEnum::READY) as $emailDeliveryChannel) {
-            $this->handle($emailDeliveryChannel->id);
+            SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id);
         }
 
         return 0;
