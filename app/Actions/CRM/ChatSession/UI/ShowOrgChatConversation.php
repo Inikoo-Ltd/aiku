@@ -47,6 +47,8 @@ class ShowOrgChatConversation extends OrgAction
             ?? $chatSession->guest_identifier
             ?? __('Guest');
 
+        $customer = $chatSession->webUser?->customer;
+
         return Inertia::render(
             'Org/Chat/ConversationDetail',
             [
@@ -73,6 +75,13 @@ class ShowOrgChatConversation extends OrgAction
                     ],
                 ],
                 'chatSession'      => (new ChatSessionResource($chatSession))->resolve(),
+                'customerNote'     => $customer ? [
+                    'internal_notes' => $customer->internal_notes,
+                    'update_route'   => [
+                        'name'       => 'grp.models.customer.update',
+                        'parameters' => ['customer' => $customer->id],
+                    ],
+                ] : null,
                 'messages'         => $this->resolveMessagesWithSenderNames($chatSession),
                 'slackConfigured'  => !empty(Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_token'))
                     && !empty(Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_channels')),

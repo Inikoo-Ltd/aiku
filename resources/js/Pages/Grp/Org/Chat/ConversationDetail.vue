@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import { ref, inject, onMounted, watch } from 'vue'
 import axios from 'axios'
+import { notify } from '@kyvg/vue3-notification'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import CustomerTimeline from '@/Components/Showcases/Grp/CustomerTimeline.vue'
 import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
@@ -94,7 +95,29 @@ const props = defineProps<{
     slackConfigured: boolean
     slackCurrentConfig?: { token: string; channels: string[] }
     slackUpdateRoute: { name: string; parameters: Record<string, string | number> }
+    customerNote?: {
+        internal_notes: string | null
+        update_route: { name: string; parameters: Record<string, string | number> }
+    } | null
 }>()
+
+const internalNote = ref(props.customerNote?.internal_notes ?? '')
+const isSavingNote = ref(false)
+const saveInternalNote = () => {
+    if (!props.customerNote) return
+    router.patch(
+        route(props.customerNote.update_route.name, props.customerNote.update_route.parameters),
+        { internal_notes: internalNote.value },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => (isSavingNote.value = true),
+            onSuccess: () => notify({ title: 'Saved', text: 'Internal note updated.', type: 'success' }),
+            onError: () => notify({ title: 'Something went wrong', text: 'Failed to save note.', type: 'error' }),
+            onFinish: () => (isSavingNote.value = false),
+        }
+    )
+}
 
 const layout: any = inject('layout', {})
 const baseUrl = layout?.appUrl ?? ''
@@ -605,6 +628,27 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                     </li>
                                 </ul>
                             </template>
+                        </div>
+
+                        <!-- Customer Internal Note -->
+                        <div v-if="customerNote" class="px-4 py-3 border-t border-gray-100">
+                            <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Internal Note</p>
+                            <textarea
+                                v-model="internalNote"
+                                rows="3"
+                                placeholder="Add an internal note about this customer..."
+                                class="w-full text-xs rounded-md border border-gray-200 px-2.5 py-2 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 resize-y"
+                            ></textarea>
+                            <div class="mt-2 flex justify-end">
+                                <button
+                                    type="button"
+                                    :disabled="isSavingNote"
+                                    @click="saveInternalNote"
+                                    class="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                                >
+                                    {{ isSavingNote ? 'Saving...' : 'Save note' }}
+                                </button>
+                            </div>
                         </div>
 
                     </div>
