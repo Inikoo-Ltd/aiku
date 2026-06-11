@@ -73,6 +73,15 @@ function offerRoute(offer: {}) {
                     offerCampaign: props.offerCampaign?.slug ?? offer.offer_campaign_slug,
                     offer: offer.slug
                 })
+        case "grp.org.shops.show.crm.customers.show":
+            return route(
+                returnRouteOffer(offer),
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: (route().params as RouteParams).shop,
+                    offerCampaign: props.offerCampaign?.slug ?? offer.offer_campaign_slug,
+                    offer: offer.slug
+                })
         case "grp.org.shops.show.discounts.offers.index":
             return route(
                 "grp.org.shops.show.discounts.offers.show",
