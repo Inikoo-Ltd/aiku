@@ -25,6 +25,15 @@ class SuspendOffer extends OrgAction
 
     public function handle(Offer $offer): Offer
     {
+        if ($offer->state == OfferStateEnum::SUSPENDED || $offer->state == OfferStateEnum::FINISHED) {
+            return $offer;
+        }
+
+        if ($offer->state != OfferStateEnum::ACTIVE) {
+            abort(422);
+        }
+
+
         $modelData = [
             'state'             => OfferStateEnum::SUSPENDED,
             'status'            => false,
