@@ -33,7 +33,8 @@ import {
     faTruck,
     faGlobeEurope,
     faIslandTropical,
-    faGift
+    faGift,
+    faBadgePercent
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -62,7 +63,7 @@ import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimelin
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { PDRNotes } from "@/types/Pallet"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent)
 
 interface Customer {
     slug: string
@@ -154,6 +155,18 @@ const props = defineProps<{
             state: string
             submitted_at: string | null
         } | null
+        offers: Array<{
+            id: number
+            code: string
+            name: string | null
+            label: string
+            state_value: string
+            is_active: boolean
+            start_at: string | null
+            end_at: string | null
+            type: string
+            type_icon?: { icon: string, tooltip: string, class: string }
+        }>
     },
     gr_data: {
         gr_label: string
@@ -300,6 +313,15 @@ function tagColorClass(scope?: string) {
         default:
             return "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
     }
+}
+
+function getAccentLabel(label: string): string {
+    if (!label) return ''
+    if (label.startsWith('[')) {
+        const match = label.match(/\[([^\]]+)\]/)
+        return match ? match[1] : label
+    }
+    return label.split(' ').slice(0, 2).join(' ')
 }
 
 const isLoadingGiftOptOut = ref(false)
@@ -706,6 +728,74 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
                         </div>
                     </div>
                 </dd>
+            </div>
+            <!-- Offers Section -->
+            <div v-if="data.offers?.length" class="mt-6">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                        <FontAwesomeIcon icon="fal fa-badge-percent" class="text-indigo-400" />
+                        {{ trans("Offers") }}
+                    </span>
+                    <button
+                        v-if="handleTabUpdate"
+                        @click="() => handleTabUpdate('offers')"
+                        class="text-xs text-indigo-500 hover:text-indigo-700 transition-colors"
+                    >
+                        {{ trans("View all") }} →
+                    </button>
+                </div>
+                <div class="space-y-2">
+                    <div
+                        v-for="offer in data.offers"
+                        :key="offer.id"
+                        class="flex items-stretch overflow-hidden rounded-lg border bg-white shadow-sm"
+                        :class="offer.is_active ? 'border-indigo-200' : 'border-gray-200 opacity-80'"
+                    >
+                        <!-- Left: colored accent band -->
+                        <div
+                            class="w-14 flex-shrink-0 flex flex-col items-center justify-center gap-1.5 py-3 px-1.5"
+                            :class="offer.is_active ? 'bg-gradient-to-b from-indigo-500 to-violet-600' : 'bg-gray-400'"
+                        >
+                            <FontAwesomeIcon
+                                :icon="offer.type_icon?.icon || 'fal fa-badge-percent'"
+                                class="text-white text-sm"
+                            />
+                            <span class="text-white font-bold text-center leading-tight" style="font-size: 9px;">
+                                {{ getAccentLabel(offer.label) }}
+                            </span>
+                        </div>
+                        <!-- Perforated divider -->
+                        <div class="relative flex-shrink-0 w-3.5">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-gray-100 border border-gray-200 z-10"></div>
+                            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3 h-3 rounded-full bg-gray-100 border border-gray-200 z-10"></div>
+                            <div class="absolute inset-y-3 left-1/2 border-l border-dashed border-gray-300"></div>
+                        </div>
+                        <!-- Right: offer details -->
+                        <div class="flex-1 px-2.5 py-2.5 min-w-0">
+                            <div class="flex items-start justify-between gap-1">
+                                <span class="text-xs font-semibold text-gray-800 leading-tight truncate">{{ offer.name || offer.code }}</span>
+                                <span
+                                    class="flex-shrink-0 px-1.5 py-0.5 rounded-full font-medium"
+                                    style="font-size: 10px;"
+                                    :class="offer.is_active ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'"
+                                >
+                                    {{ offer.is_active ? trans('Active') : offer.state_value }}
+                                </span>
+                            </div>
+                            <div class="text-xs text-indigo-500 font-medium mt-0.5 truncate">{{ offer.label }}</div>
+                            <div class="mt-1.5 flex items-center gap-1.5" style="font-size: 10px; color: #9ca3af;">
+                                <span class="font-mono">{{ offer.code }}</span>
+                                <template v-if="offer.start_at || offer.end_at">
+                                    <span>·</span>
+                                    <span>
+                                        {{ offer.start_at ? useFormatTime(offer.start_at, { formatTime: 'dd MMM yy' }) : '' }}
+                                        {{ offer.end_at ? ' → ' + useFormatTime(offer.end_at, { formatTime: 'dd MMM yy' }) : '' }}
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
