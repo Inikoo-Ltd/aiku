@@ -31,7 +31,7 @@ const props = defineProps<{
 }>()
 
 const showExportModal = ref(false)
-const exportFormat = ref<'jsonl' | 'csv'>('jsonl')
+const exportFormat = ref<'jsonl' | 'csv'>('csv')
 const exportShopId = ref<number | null>(null)
 const exportStatus = ref('closed')
 const exportSentiment = ref<string | null>(null)
@@ -57,9 +57,9 @@ const sentimentOptions = [
     { label: 'Negative only', value: 'negative' },
 ]
 
-const formats: { value: 'jsonl' | 'csv'; label: string; desc: string }[] = [
-    { value: 'jsonl', label: 'JSONL', desc: 'OpenAI / Fine-tuning' },
-    { value: 'csv', label: 'CSV', desc: 'Spreadsheet' },
+const formats: { value: 'csv' | 'jsonl'; label: string; desc: string }[] = [
+     { value: 'csv', label: 'CSV', desc: 'Spreadsheet' },
+     { value: 'jsonl', label: 'JSONL', desc: 'OpenAI / Fine-tuning' },
 ]
 
 function formatDate(date: Date | null): string {
@@ -193,11 +193,6 @@ function triggerExport(): void {
                 <p class="text-[11px] text-gray-400">Skip conversations with fewer than this many messages</p>
             </div>
 
-            <!-- Info -->
-            <div class="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5 text-[11px] text-blue-700 leading-relaxed">
-                Only <strong>closed</strong> conversations with ≥ {{ exportMinTurns }} turns are exported.
-                Output is ready for OpenAI fine-tuning, Llama, or Mistral instruction tuning.
-            </div>
         </div>
 
         <template #footer>
