@@ -159,7 +159,7 @@ const irisOffersData = computed(() => {
 </script>
 
 <template>
-    <Head :title="capitalize(title)" />
+    <Head :title />
     <PageHeading :data="pageHead">
         <template #afterTitle2>
             <div class="whitespace-nowrap">

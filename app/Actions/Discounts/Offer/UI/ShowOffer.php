@@ -148,9 +148,9 @@ class ShowOffer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'         => __('Offer').' '.$offer->code,
+                'title'         => '(' . __('Offer') . ') '.$offer->code,
                 'pageHead'      => [
-                    'title'     => $offer->name,
+                    'title'     => $offer->code,
                     'model'     => __('Offer'),
                     'iconRight' => OfferStateEnum::from($offer->state->value)->stateIcon()[$offer->state->value],
                     'icon'      => $icon,
