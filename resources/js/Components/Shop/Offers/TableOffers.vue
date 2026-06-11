@@ -142,7 +142,7 @@ const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(name)="{ item: offer }">
-            <div v-if="offer.code">
+            <div v-if="['Voucher Any Order', 'Voucher Amount Ordered'].includes(offer.type)">
                 <Link :href="offerRoute(offer)" class="primaryLink">
                     {{ offer.code }}
                 </Link>
