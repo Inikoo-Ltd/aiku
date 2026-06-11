@@ -211,7 +211,7 @@ watch(
 					<FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" />
 				</button>
 
-				<div class="swiper-mask px-12">
+				<div class="swiper-mask lg:px-12 px-0">
 					<Swiper
 						@swiper="
 							(s: any) => {
