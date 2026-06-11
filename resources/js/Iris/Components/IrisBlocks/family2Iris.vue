@@ -184,7 +184,7 @@ const calculateDescriptionHeight = async () => {
   await nextTick()
 
   if (!imageRef.value || !descriptionRef.value) {
-    return
+    showReadMore.value  = true
   }
 
   maxDescriptionHeight.value = imageRef.value.offsetHeight
