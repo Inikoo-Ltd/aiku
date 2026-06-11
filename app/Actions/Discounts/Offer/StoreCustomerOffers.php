@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 11 Jun 2026 10:27:35 Malaysia Time, Kuala Lumpur, Malaysia
@@ -24,7 +25,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreCustomerOffers extends OrgAction
 {
-
     public function handle(Shop $shop, array $modelData): Offer
     {
         $customer = Customer::where('shop_id', $shop->id)->where('id', Arr::pull($modelData, 'customer_id'))->first();
@@ -49,6 +49,8 @@ class StoreCustomerOffers extends OrgAction
 
         data_set($modelData, 'trigger_type', 'Customer');
         data_set($modelData, 'trigger_id', $customer->id);
+        data_set($modelData, 'customer_id', $customer->id);
+
 
         if (Arr::get($modelData, 'min_order_amount', 0) == 0) {
             $type = OfferTypeEnum::CUSTOMER_ANY_ORDER;
@@ -67,6 +69,7 @@ class StoreCustomerOffers extends OrgAction
 
 
         $targetId = Arr::pull($modelData, 'target_id');
+
 
         $targetType = match (Arr::pull($modelData, 'target_type')) {
             'shop' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
@@ -97,6 +100,7 @@ class StoreCustomerOffers extends OrgAction
             ]
         );
 
+
         $offer = StoreOffer::run($offerCampaign, $modelData);
         ActivateOffer::run($offer, 30);
 
@@ -113,7 +117,8 @@ class StoreCustomerOffers extends OrgAction
                 Rule::exists('customers', 'id')->where('shop_id', $this->shop->id)
             ],
             'min_order_amount' => ['required', 'numeric', 'min:0'],
-            'name'             => ['sometimes','required', 'string', 'max:255'],
+            'percentage_off'   => ['required', 'numeric', 'min:0', 'max:100'],
+            'name'             => ['sometimes', 'required', 'string', 'max:255'],
             'duration'         => ['required', 'string', 'in:interval,permanent'],
             'start_at'         => [
                 'required',
@@ -124,6 +129,8 @@ class StoreCustomerOffers extends OrgAction
                 )
             ],
             'end_at'           => ['nullable', 'required_if:duration,interval', 'date'],
+            'target_type'      => ['required', 'string', 'in:shop,department,sub_department,family,collection,product'],
+            'target_id'        => ['required', 'integer'],
 
         ];
     }
