@@ -28,6 +28,9 @@ enum OfferTypeEnum: string
     case VOUCHER_ANY_ORDER = "Voucher Any Order";
     case VOUCHER_AMOUNT_ORDERED = "Voucher Amount Ordered";
 
+    case CUSTOMER_ANY_ORDER = "Customer Any Order";
+    case CUSTOMER_AMOUNT_ORDERED = "Customer Amount Ordered";
+
     case GR_AMNESTY = "GR Amnesty";
     case PRODUCT_FOR_EVERY_QUANTITY_ORDERED = "Product For Every Quantity Ordered";
     case EVERY_ORDER = "Every Order";
@@ -124,12 +127,21 @@ enum OfferTypeEnum: string
             self::VOL_GR_GIFT
             => $this->giftIcon(),
 
+            self::CUSTOMER_ANY_ORDER,
+            self::CUSTOMER_AMOUNT_ORDERED
+            => $this->customerIcon(),
+
             self::GR_AMNESTY
             => $this->amnestyIcon(),
 
             self::DISCRETIONARY
             => $this->defaultIcon(),
         };
+    }
+
+    private function customerIcon(): array
+    {
+        return $this->iconData('fal fa-customer');
     }
 
     private function quantityIcon(): array

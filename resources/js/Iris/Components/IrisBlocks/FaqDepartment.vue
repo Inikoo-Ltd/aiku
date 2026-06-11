@@ -6,9 +6,9 @@
 
 <script setup lang="ts">
 import { FieldValue } from "@/types/webpageTypes"
-import { inject, computed } from 'vue'
+import { inject } from 'vue'
 import Faq from '@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Faq.vue'
-import { getStyles } from "@/Composables/styles"
+
 
 
 const props = defineProps<{
@@ -22,17 +22,29 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {})
 
-const containerStyle = computed(() => ({
-    ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-    ...getStyles(props.fieldValue?.faq?.container?.properties),
-    width: "auto",
-}))
+
 
 </script>
 
 <template>
-    <div class="mx-auto w-full max-w-[1700px]  px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
-        :style="containerStyle" :id="fieldValue?.id ? fieldValue?.id : 'faq' + indexBlock" component="faq-department">
-        <Faq :fieldValue="fieldValue" :screen-type="screenType" :faqs="fieldValue.faqs" />
+  <div
+    v-if="fieldValue?.faqs?.length"
+    :id="fieldValue?.id ? fieldValue?.id : 'faq' + indexBlock"
+    component="faq-department"
+    class="bg-[#F3F3F3]"
+  >
+    <div class="mx-auto max-w-[1600px] px-6 py-12 lg:px-12">
+      <h2
+        class="mb-8 text-4xl font-bold tracking-tight text-[#0F1E2E] lg:text-5xl"
+      >
+        FAQ
+      </h2>
+
+      <Faq
+        :fieldValue="fieldValue"
+        :screen-type="screenType"
+        :faqs="fieldValue.faqs"
+      />
     </div>
+  </div>
 </template>

@@ -58,7 +58,7 @@ trait WithRepairWebpages
         $liveWebBlockSnapshot = $website->{"live{$scope}Snapshot"};
         $unpublishedWebBlockSnapshot = $website->{"unpublished{$scope}Snapshot"};
 
-        if (in_array($webBlockTemplateType, [WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, WebBlockTemplateEnum::FAMILY_DESCRIPTION])){
+        if (in_array($webBlockTemplateType, [WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, WebBlockTemplateEnum::FAMILY_DESCRIPTION])) {
             $usedWebBlockTemplateCodes = array_key_first($liveWebBlockSnapshot?->layout); // Get published WebBlock layout code
             if (!in_array($usedWebBlockTemplateCodes, $webBlockTemplateType->templateCodes())) {
                 $usedWebBlockTemplateCodes = array_first($webBlockTemplateType->templateCodes());

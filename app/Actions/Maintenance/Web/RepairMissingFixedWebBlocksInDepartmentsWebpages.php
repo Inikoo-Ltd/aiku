@@ -147,7 +147,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', array_first($scope->templateCodes())); // Get published WebBlock layout code
 
             $countTopFamilies = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes());
-            
+
             $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
 
             $countTopFamilies = $this->getWebpageBlocksByType($webpage, 'top-families');
@@ -190,7 +190,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         $webpage->refresh();
 
-        
+
         if ($layout_style == 'main_page') {
             if ($command->option('set-description-top')) {
                 $usedWebBlockTemplateCodes = array_key_first($liveWebBlockSnapshot?->layout); // Get published WebBlock layout code
@@ -200,11 +200,11 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
                 $this->reorderDepartmentPageBlocks($webpage, $usedWebBlockTemplateCodes);
             }
-    
+
             if ($command->option('hide-description')) {
                 $this->setDescriptionWebBlockHidden($webpage);
             }
-    
+
             $webpage->refresh();
         }
 
