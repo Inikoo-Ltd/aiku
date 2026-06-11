@@ -75,51 +75,6 @@ class EditMasterFamily extends OrgAction
             ];
         }
 
-        // todo for tag product category,
-
-        /*  $tagRoute = [
-          'index_tag' => [
-              'name'       => 'grp.json.trade_units.tags.index',
-              'parameters' => [
-                  'tradeUnit' => 34102,
-              ]
-          ],
-          'store_tag' => [
-              'name'       => 'grp.models.trade-unit.tags.store',
-              'parameters' => [
-                  'tradeUnit' => 34102,
-              ]
-          ],
-          'update_tag' => [
-              'name'       => 'grp.models.trade-unit.tags.update',
-              'parameters' => [
-                  'tradeUnit' => 34102,
-              ],
-              'method'    => 'patch'
-          ],
-          'delete_tag' => [
-              'name'       => 'grp.models.trade-unit.tags.delete',
-              'parameters' => [
-                  'tradeUnit' => 34102,
-              ],
-              'method'    => 'delete'
-          ],
-          'attach_tag' => [
-              'name'       => 'grp.models.trade-unit.tags.attach',
-              'parameters' => [
-                  'tradeUnit' => 34102,
-              ],
-              'method'    => 'post'
-          ],
-          'detach_tag' => [
-              'name'       => 'grp.models.trade-unit.tags.detach',
-              'parameters' => [
-                  'tradeUnit' => 34102,
-              ],
-              'method'    => 'delete'
-          ],
-        ]; */
-
         return Inertia::render(
             'EditModel',
             [
@@ -166,17 +121,6 @@ class EditMasterFamily extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('FAQ'),
-                            'icon'   => 'fa-light fa-question-circle',
-                            'fields' => [
-                               'faq' => [
-                                    'type'  => 'faq-master',
-                                    'label' => __('FAQ'),
-                                    'value' => $masterProductCategory->faq,
-                                ],
-                            ]
-                        ],
-                        [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
                             'fields' => [
@@ -217,48 +161,6 @@ class EditMasterFamily extends OrgAction
                                 ],
                             ]
                         ],
-                        // [
-                        //     'label'  => __('Translations'),
-                        //     'icon'   => 'fa-light fa-language',
-                        //     'fields' => [
-                        //         'name_i8n' => [
-                        //             'type'  => 'input_translation',
-                        //             'label' => __('translate name'),
-                        //             'language_from' => 'en',
-                        //             'full' => true,
-                        //             'main' => $masterProductCategory->name,
-                        //             'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                        //             'value' => $masterProductCategory->getTranslations('name_i8n')
-                        //         ],
-                        //                                'description_title_i8n' => [
-                        //                                    'type'  => 'input_translation',
-                        //                                    'label' => __('translate description title'),
-                        //                                    'language_from' => 'en',
-                        //                                    'full' => true,
-                        //                                    'main' => $masterProductCategory->description_title,
-                        //                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                        //                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
-                        //                                ],
-                        //         'description_i8n' => [
-                        //             'type'  => 'textEditor_translation',
-                        //             'label' => __('translate description'),
-                        //             'language_from' => 'en',
-                        //             'full' => true,
-                        //             'main' => $masterProductCategory->description,
-                        //             'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                        //             'value' => $masterProductCategory->getTranslations('description_i8n')
-                        //         ],
-                        //         'description_extra_i8n' => [
-                        //             'type'  => 'textEditor_translation',
-                        //             'label' => __('translate description extra'),
-                        //             'language_from' => 'en',
-                        //             'full' => true,
-                        //             'main' => $masterProductCategory->description_extra,
-                        //             'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                        //             'value' => $masterProductCategory->getTranslations('description_extra_i8n')
-                        //         ],
-                        //     ]
-                        // ],
                         [
                             'label'  => __('Pricing'),
                             'title'  => __('id'),
@@ -340,6 +242,17 @@ class EditMasterFamily extends OrgAction
                                 ],
                             ],
                         ] : [],
+                        [
+                            'label'  => __('FAQ'),
+                            'icon'   => 'fa-light fa-question-circle',
+                            'fields' => [
+                                'faq' => [
+                                    'type'  => 'faq-master',
+                                    'label' => __('FAQ'),
+                                    'value' => $masterProductCategory->faq,
+                                ],
+                            ]
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [
