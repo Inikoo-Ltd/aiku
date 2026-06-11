@@ -24,6 +24,7 @@ class GetIrisWebBlockSubDepartmentsThree
         $webBlock = $this->getSubDepartmentsThree($webpage, $webBlock);
 
         data_set($webBlock, 'web_block.layout.data.fieldValue.department', $webpage->model);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title',$webpage->model->name);
 
         return [
            'type' => $webBlock['type'],

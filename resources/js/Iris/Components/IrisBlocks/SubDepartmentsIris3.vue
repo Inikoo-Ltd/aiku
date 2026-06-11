@@ -106,15 +106,17 @@ const loadFamilies = async (
 watch(selectedSubDepartment, () => {
   loadFamilies(1)
 })
+console.log(props)
 </script>
 
 <template>
   <section
-    class="editor-class mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14">
+    :id="'sub-department'" 
+    class="editor-class pt-12 mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14">
     <!-- Header -->
     <div class="mb-10">
-      <h3 class="mb-4 text-4xl font-bold text-slate-900">
-        {{ ctrans('All Family') }} :
+      <h3 :style="{ fontSize: '2.5rem' }" class="mb-4 text-4xl font-bold text-slate-900">
+        {{ ctrans('All') }} {{ fieldValue.product_category_title || 'famlies' }} :
       </h3>
 
       <!-- Mobile -->

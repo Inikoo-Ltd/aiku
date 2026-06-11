@@ -213,18 +213,24 @@ resetForm();
 
                     <div class="flex gap-4">
                         <div class="flex items-center gap-2">
-                            <RadioButton v-model="categoryType" value="department" inputId="category-type-department" />
-                            <label for="category-type-department">{{ trans('Department') }}</label>
+                            <label for="category-type-department" class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors" :class="categoryType ==='department' ? 'border-green-500 bg-green-50 text-green-700 font-semibold': 'border-gray-200 hover:border-gray-300'">
+                                <RadioButton v-model="categoryType" value="department" inputId="category-type-department" />
+                                <span>{{ trans('Department') }}</span>
+                            </label>
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <RadioButton v-model="categoryType" value="subdepartment" inputId="category-type-subdepartment" />
-                            <label for="category-type-subdepartment">{{ trans('Sub Department') }}</label>
+                            <label for="category-type-subdepartment" class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors" :class="categoryType ==='subdepartment' ? 'border-green-500 bg-green-50 text-green-700 font-semibold': 'border-gray-200 hover:border-gray-300'">
+                                <RadioButton v-model="categoryType" value="subdepartment" inputId="category-type-subdepartment" />
+                                <span>{{ trans('Sub Department') }}</span>
+                            </label>
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <RadioButton v-model="categoryType" value="family" inputId="category-type-family" />
-                            <label for="category-type-family">{{ trans('Family') }}</label>
+                            <label for="category-type-family" class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors" :class="categoryType ==='family' ? 'border-green-500 bg-green-50 text-green-700 font-semibold': 'border-gray-200 hover:border-gray-300'">
+                                <RadioButton v-model="categoryType" value="family" inputId="category-type-family" />
+                                <span>{{ trans('Family') }}</span>
+                            </label>
                         </div>
                     </div>
 
@@ -300,16 +306,24 @@ resetForm();
                         {{ trans('Offer Duration') }}:
                     </div>
 
-                    <div class="flex gap-x-4">
-                        <div class="flex items-center gap-x-2">
+                    <div class="flex flex-wrap gap-4">
+                        <label for="permanent"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'permanent'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
-                            <label for="permanent">{{ trans('Permanent') }}</label>
-                        </div>
+                            <span>{{ trans('Permanent') }}</span>
+                        </label>
 
-                        <div class="flex items-center gap-x-2">
+                        <label for="interval"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'interval'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
-                            <label for="interval">{{ trans('Interval') }}</label>
-                        </div>
+                            <span>{{ trans('Interval') }}</span>
+                        </label>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -332,7 +346,7 @@ resetForm();
                             <label class="font-medium mb-2 block">
                                 {{ trans('End Date') }}
                                 <InformationIcon
-                                    :information="trans('If end date is empty, will treat as permanent')" />:
+                                    :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
