@@ -375,13 +375,22 @@ watch(
 								@click="expanded = !expanded">
 								{{ expanded ? "Read Less" : "Read More" }}
 							</button>
-
-							<button
-								v-if="fieldValue.department.showcase_video"
-								class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md transition"
-								@click="videoDialogVisible = true">
-								{{ ctrans("See a video") }}
-							</button>
+							<div>
+								<button
+									v-if="fieldValue.department.showcase_video"
+									class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md transition"
+									@click="videoDialogVisible = true">
+									{{ ctrans("See a video") }}
+								</button>
+								<a
+									v-else-if="fieldValue.department.showcase_image"
+									href="#sub-department">
+									<button
+										class="mt-6  bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 md:px-8 lg:px-10 2xl:px-12 2xl:py-4 rounded-md transition">
+										{{ ctrans("Browse All") }}
+									</button>
+								</a>
+							</div>
 						</div>
 					</div>
 				</section>
