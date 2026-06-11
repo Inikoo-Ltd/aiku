@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ActivateScheduledOffers
@@ -26,5 +27,13 @@ class ActivateScheduledOffers
         foreach ($scheduledOffers as $offer) {
             ActivateOffer::run($offer);
         }
+    }
+
+    public string $commandSignature = 'activate:scheduled_offers';
+
+    public function asCommand(Command $command)
+    {
+        $this->handle();
+        $command->info('Ran!');
     }
 }
