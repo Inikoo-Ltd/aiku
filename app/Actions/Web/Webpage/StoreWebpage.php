@@ -163,16 +163,26 @@ class StoreWebpage extends OrgAction
                         $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
                         if (data_get($modelData, 'layout_style') == 'families-overview') {
-                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, $usedDepartmentDescriptionTemplateCode);
+                            foreach ($usedDepartmentDescriptionTemplateCode as $code) {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, $code);
+                            }
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILY_OVERVIEW, $usedFamiliesOverviewTemplateCode);
                         } else {
-                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, $usedDepartmentDescriptionTemplateCode);
+                            foreach ($usedDepartmentDescriptionTemplateCode as $code) {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, $code);
+                            }
+
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
-                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
-                            if ($usedDepartmentDescriptionTemplateCode == 'department-description-1')  {
+
+                            if ($usedDepartmentDescriptionTemplateCode == 'department-description-1') {
                                 $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                             }
+
+                            $this->createWebBlock($webpage, 'top-families');
+                            $this->createWebBlock($webpage, 'luigi-trends-1');
                             $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+
+                            $this->createWebBlock($webpage, 'faq-department');
                         }
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
                         foreach ($usedFamilyDescriptionTemplateCode as $code) {

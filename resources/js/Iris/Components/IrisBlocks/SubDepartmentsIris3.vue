@@ -106,16 +106,17 @@ const loadFamilies = async (
 watch(selectedSubDepartment, () => {
   loadFamilies(1)
 })
+console.log(props)
 </script>
 
 <template>
-  <section
-    class="editor-class mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14">
+  <section :id="'sub-department'"
+    class="editor-class pt-12 mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14">
     <!-- Header -->
     <div class="mb-10">
-      <h3 class="mb-4 text-4xl font-bold text-slate-900">
-        {{ ctrans('All Family') }} :
-      </h3>
+      <span :style="{ fontSize: '2rem' }" class="font-medium text-[#1d2d44]">
+        {{ ctrans('All') }} {{ fieldValue.product_category_title || 'famlies' }} :
+      </span>
 
       <!-- Mobile -->
       <div class="flex items-center justify-between gap-4 lg:hidden">
@@ -176,9 +177,9 @@ watch(selectedSubDepartment, () => {
     <!-- Family Grid -->
     <div v-else class="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-5">
       <LinkIris v-for="family in families" :key="family.id" :href="family.url" class="group block" type="internal">
-        <div class="overflow-hidden bg-gray-100">
+        <div class="aspect-square overflow-hidden bg-gray-100">
           <Image :src="family.image" :alt="family.name"
-            class="aspect-square w-full object-cover transition duration-300 group-hover:scale-105" />
+            class="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
         </div>
 
         <span class="mt-2 line-clamp-2 text-lg leading-snug text-slate-900 font-semibold">
@@ -188,12 +189,13 @@ watch(selectedSubDepartment, () => {
     </div>
 
     <!-- Load More -->
-    <div v-if="!loading && meta.current_page < meta.last_page " class="mt-8 flex justify-center">
-      <Button @click="loadFamilies(meta.current_page + 1,true )" type="tertiary"  :disabled="loadingMore" :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
+    <div v-if="!loading && meta.current_page < meta.last_page" class="mt-8 flex justify-center">
+      <Button @click="loadFamilies(meta.current_page + 1, true)" type="tertiary" :disabled="loadingMore"
+        :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
         <template v-if="loadingMore">
           <LoadingText />
         </template>
-        <template v-else>{{ "Load More"}}</template>
+        <template v-else>{{ "Load More" }}</template>
       </Button>
     </div>
   </section>

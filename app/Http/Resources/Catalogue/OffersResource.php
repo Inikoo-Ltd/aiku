@@ -40,11 +40,13 @@ class OffersResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                          => $this->id,
             'created_at'                  => $this->created_at,
             'shop_slug'                   => $this->shop_slug,
             'offer_campaign_slug'         => $this->offer_campaign_slug,
             'slug'                        => $this->slug,
             'state'                       => OfferStateEnum::stateIcon()[$this->state->value],
+            'state_value'                 => $this->state,
             'code'                        => $this->code,
             'name'                        => $this->name,
             'type_icon'                   => OfferTypeEnum::from($this->type)?->icons(),
@@ -58,6 +60,7 @@ class OffersResource extends JsonResource
             'duration'                    => $this->duration,
             'start_at'                    => $this->start_at,
             'end_at'                      => $this->end_at,
+            'is_active'                   => $this->state == OfferStateEnum::ACTIVE,
         ];
     }
 }

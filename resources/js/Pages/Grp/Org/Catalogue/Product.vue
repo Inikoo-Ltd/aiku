@@ -274,7 +274,7 @@ const goToEdit = () => {
         <template #otherBefore>
             
             <ModalCreateGiftOffers 
-                v-if="currentTab === 'offers' && layout.app.environment === 'local'"
+                v-if="currentTab === 'offers'"
                 v-tooltip="'Create New Offer'"
                 :shop_data="props.shop_data"
                 :product_id="props.product_id"

@@ -43,7 +43,13 @@ const emit = defineEmits<{
 }>()
 
 const rootRef = ref<HTMLElement | null>(null)
-const layoutState = ref(JSON.parse(JSON.stringify(Object.values(props.data.layout)[0])));
+const layoutState = ref(
+  JSON.parse(
+    JSON.stringify(
+      Object.values(props.data.layout ?? {})[0] ?? null
+    )
+  )
+)
 const isLoadingSave = ref(false);
 const visibleDrawer = ref(false);
 const currentView = ref("desktop");

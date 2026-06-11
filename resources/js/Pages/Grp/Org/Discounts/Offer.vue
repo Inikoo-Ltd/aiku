@@ -27,6 +27,8 @@ import { faFlagCheckered } from "@fortawesome/free-solid-svg-icons"
 import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import PreviewVoucher from '@/Components/Offers/PreviewOffer/PreviewVoucher.vue'
+import PreviewGift from '@/Components/Offers/PreviewOffer/PreviewGift.vue'
 
 library.add(faFlagCheckered)
 
@@ -133,7 +135,8 @@ const hasTrigger = computed(() => {
         t?.item_quantity !== undefined ||
         t?.min_amount !== undefined ||
         t?.order_number !== undefined ||
-        t?.item_amount !== undefined
+        t?.item_amount !== undefined ||
+        t?.min_order_amount !== undefined
     )
 })
 
@@ -158,7 +161,7 @@ const irisOffersData = computed(() => {
 </script>
 
 <template>
-    <Head :title="capitalize(title)" />
+    <Head :title />
     <PageHeading :data="pageHead">
         <template #afterTitle2>
             <div class="whitespace-nowrap">
@@ -223,6 +226,17 @@ const irisOffersData = computed(() => {
                     template="max_discount"
                     class="scale-[200%] mt-6"
                 />
+                <PreviewVoucher
+                    v-else-if="data.offer.type == 'Voucher Amount Ordered'"
+                    :offer="data.offer"
+                    class="scale-[120%] mt-3"
+                />
+                <PreviewGift
+                    v-else-if="data.offer.type == 'Gift'"
+                    :offer="data.offer"
+                    :currencyCode="currency_code"
+                    class="xscale-[120%] mt-3"
+                />
                 <Coupon v-else :offer="data.offer" :currency_code="currency_code" />    
             </div>
 
@@ -269,6 +283,20 @@ const irisOffersData = computed(() => {
                             </dd>
                         </div>
 
+                        <div v-if="data.offer.settings?.can_customer_reuse !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Customer can reuse") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%]">
+                                <span v-if="data.offer.settings?.can_customer_reuse" v-tooltip="ctrans('Voucher are allowed to reuse')">
+                                    <FontAwesomeIcon icon='fas fa-check-circle' class='text-green-500' fixed-width aria-hidden='true' />
+                                </span>
+                                <span v-else v-tooltip="ctrans('Voucher not allowed to reuse')">
+                                    <FontAwesomeIcon icon='fas fa-times-circle' class='text-red-500' fixed-width aria-hidden='true' />
+                                </span>
+                            </dd>
+                        </div>
+
                     </div>
                 </div>
 
@@ -311,6 +339,14 @@ const irisOffersData = computed(() => {
                             <dt class="text-gray-500">{{ ctrans("Minimum order") }}</dt>
                             <dd class="font-medium text-right">
                                 {{ data.offer.trigger_data.order_number }}
+                            </dd>
+                        </div>
+
+                        <!-- Minimum Order Amount -->
+                        <div v-if="data.offer.trigger_data?.min_order_amount !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Min. order amount") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ locale.currencyFormat(currency_code, data.offer.trigger_data.min_order_amount) }}
                             </dd>
                         </div>
 

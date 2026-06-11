@@ -1,16 +1,11 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { Link } from '@inertiajs/vue3'
-// import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
 import { inject, onBeforeUnmount, onMounted, ref } from 'vue'
-
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay } from 'swiper/modules'
-
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -18,7 +13,6 @@ import { reactive } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { RecommendationCollector } from '@/Composables/Unique/LuigiDataCollector'
 import { debounce } from 'lodash-es'
-// import { Carousel } from 'primevue'
 library.add(faCircle)
 
 interface ProductHits {
@@ -233,7 +227,7 @@ onBeforeUnmount(() => {
                             <component
                                 :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
                                 :href="product.attributes.web_url?.[0]"
-                                class="xfont-bold text-xs md:text-sm !mt-2 md:mt-2 md:mb-1 text-justify line-clamp-3 overflow-hidden"
+                                class="xfont-bold text-xs md:text-sm !mt-2 md:mt-2 md:mb-1 text-justify line-clamp-3 overflow-hidden min-h-[3rem] md:min-h-[3.75rem]"
                                 :class="product.attributes.web_url?.[0] ? 'hover:underline' : ''"
                             >
                                 {{ product.attributes.title }}

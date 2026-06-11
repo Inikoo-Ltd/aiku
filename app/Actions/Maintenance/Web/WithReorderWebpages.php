@@ -14,45 +14,47 @@ trait WithReorderWebpages
         $departmentWebBlock = $this->getWebpageBlocksByType($webpage, $departmentWebBlockCode)->first()?->model_has_web_blocks_id;
         $departmentExtraDesc = null;
 
-        // if ($departmentWebBlockCode == 'department-2') {
-        //     $departmentExtraDesc = $this->getWebpageBlocksByType($webpage, 'department-2-extra-description')->first()->model_has_web_blocks_id;
-        // }
+        if ($departmentWebBlockCode == 'department-2') {
+            $departmentExtraDesc = $this->getWebpageBlocksByType($webpage, 'department-2-extra-description')->first()?->model_has_web_blocks_id;
+        }
 
         $subDepartmentBlock             = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes())->first()?->model_has_web_blocks_id;
-        $familiesBlock                  = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes())->first()?->model_has_web_blocks_id;
+        $listProductBlock               = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes())->first()?->model_has_web_blocks_id;
+
+        $familiesBlock                  = $this->getWebpageBlocksByType($webpage, 'top-families')->first()?->model_has_web_blocks_id;
+
         $relatedProductCategoryBlock    = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')->first()?->model_has_web_blocks_id;
+        $luigiTrends                    = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()?->model_has_web_blocks_id;
+        $faqBlock                       = $this->getWebpageBlocksByType($webpage, 'faq-department')->first()?->model_has_web_blocks_id;
         $webBlocks                      = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
-        $reorderFamily = $subDepartmentBlock && $familiesBlock;
-        $familyPosition = null;
-
         $count = $webpage->webBlocks()->count();
-        $relatedProductCategoryPosition     = $count + 101;
 
-        $runningPosition = 4;
+        $relatedProductCategoryPosition     = $count + 101;
+        $faqPosition                        = $count + 102;
+
+        $runningPosition = 7;
         foreach ($webBlocks as $key => $position) {
             if ($key == $departmentWebBlock) {
                 $webBlocks[$key] = 1;
-            }elseif ($key == $subDepartmentBlock) {
+            } elseif ($key == $familiesBlock) {
                 $webBlocks[$key] = 2;
-            } elseif ($key == $departmentExtraDesc) {
+            } elseif ($key == $luigiTrends) {
                 $webBlocks[$key] = 3;
+            } elseif ($key == $subDepartmentBlock) {
+                $webBlocks[$key] = 4;
+            } elseif ($key == $listProductBlock) {
+                $webBlocks[$key] = 5;
+            } elseif ($key == $departmentExtraDesc) {
+                $webBlocks[$key] = 6;
             } elseif ($key == $relatedProductCategoryBlock) {
                 $webBlocks[$key] = $relatedProductCategoryPosition;
+            } elseif ($key == $faqBlock) {
+                $webBlocks[$key] = $faqPosition;
             } else {
                 $webBlocks[$key] = $runningPosition;
-
-                if ($key == $subDepartmentBlock && $reorderFamily) {
-                    $runningPosition++;
-                    $familyPosition = $runningPosition;
-                }
-
                 $runningPosition++;
             }
-        }
-
-        if ($familyPosition) {
-            $webBlocks[$familiesBlock] = $familyPosition;
         }
 
         foreach ($webBlocks as $key => $position) {

@@ -63,6 +63,16 @@ class ShowOffer extends OrgAction
                 'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit_vol_gr_gift',
                 'parameters' => $request->route()->parameters()
             ];
+        } else {
+            $editRoute = [
+                'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit',
+                'parameters' => [
+                    'organisation'      => $offer->shop->organisation->slug,
+                    'shop'              => $offer->shop->slug,
+                    'offerCampaign'     => $offer->offerCampaign->slug,
+                    'offer'             => $offer->slug,
+                ]
+            ];
         }
 
         if ($editRoute) {
@@ -138,9 +148,9 @@ class ShowOffer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'         => __('Offer').' '.$offer->code,
+                'title'         => '(' . __('Offer') . ') '.$offer->code,
                 'pageHead'      => [
-                    'title'     => $offer->name,
+                    'title'     => $offer->code,
                     'model'     => __('Offer'),
                     'iconRight' => OfferStateEnum::from($offer->state->value)->stateIcon()[$offer->state->value],
                     'icon'      => $icon,

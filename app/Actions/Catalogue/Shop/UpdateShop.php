@@ -153,7 +153,7 @@ class UpdateShop extends OrgAction
                     'faire_is_shipping_by_external' => 'settings.faire.is_shipping_by_external',
                     'faire_dont_send_first_orders_automatically_to_warehouse' => 'settings.faire.dont_send_first_orders_automatically_to_warehouse',
                     'wix_access_token' => 'settings.wix.access_token',
-                    'enable_chat' => 'settings.chat.enable_chat',
+                    'enable_chat'          => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'reviews' => 'settings.reviews',
                     'bank_transfer_instructions_for_email' => 'settings.bank_transfer_instructions_for_email',
@@ -183,6 +183,24 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'reviews');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
+        if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
+            $settings = $shop->settings ?? [];
+
+            if (Arr::exists($modelData, 'chat_slack_token')) {
+                $token = Arr::pull($modelData, 'chat_slack_token');
+                if (!empty($token)) {
+                    data_set($settings, 'chat.slack_token', $token);
+                }
+            }
+
+            if (Arr::exists($modelData, 'chat_slack_channels')) {
+                $channels = array_values(array_filter((array) Arr::pull($modelData, 'chat_slack_channels')));
+                data_set($settings, 'chat.slack_channels', $channels);
+            }
+
+            $shop->settings = $settings;
+            $shop->saveQuietly();
+        }
 
         if (Arr::exists($modelData, 'enable_chat')) {
             $enableChat = Arr::pull($modelData, 'enable_chat');
@@ -396,6 +414,9 @@ class UpdateShop extends OrgAction
             'faire_dont_send_first_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
             'wix_access_token'                                        => ['sometimes', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
+            'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
+            'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
+            'chat_slack_channels.*'                                   => ['string'],
             'is_shipping_by_external'                                 => ['sometimes', 'boolean'],
             'portal_link'                                             => ['sometimes', 'nullable', 'string'],
             'widget_key'                                              => ['sometimes', 'nullable', 'string'],

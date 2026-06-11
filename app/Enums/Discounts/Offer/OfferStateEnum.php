@@ -11,6 +11,7 @@ namespace App\Enums\Discounts\Offer;
 use App\Enums\EnumHelperTrait;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Group;
 
@@ -70,7 +71,7 @@ enum OfferStateEnum: string
         ];
     }
 
-    public static function count(Group|Shop|OfferCampaign|ProductCategory $parent): array
+    public static function count(Group|Shop|OfferCampaign|ProductCategory|Customer $parent): array
     {
         return [
             'in_process' => null,

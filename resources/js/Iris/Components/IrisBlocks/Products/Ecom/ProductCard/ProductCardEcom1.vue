@@ -20,7 +20,7 @@ import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import Prices3 from '@/Iris/Components/BlocksUtils/Prices3.vue'
+import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -345,8 +345,7 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <Prices3 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton />
-            <!-- <Prices :product="product" :currency="currency" /> -->
+            <Prices4 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket />
             <div v-else-if="!hideLogin"  class="mt-2">
                 <a :href="urlLoginWithRedirect()" class="w-full">
                     <Button :label="trans('Login or Register for Wholesale Prices')" class="rounded-none" full

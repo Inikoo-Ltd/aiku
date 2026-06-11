@@ -176,9 +176,7 @@ class EditFamily extends OrgAction
                                             'mode'          => 'single',
                                             'value'         => $family->faq,
                                             'toogle'        => [
-                                                /* 'heading2', 'heading3', 'bold', 'italic', 'underline', 'bulletList',
-                                                'orderedList', 'blockquote', 'alignLeft', 'alignCenter', 'alignRight',
-                                                'undo', 'redo', 'clear' */
+                                               'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
                                         : [
@@ -249,9 +247,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                   /*  'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear' */
+                                                  'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
                                         : [
@@ -270,9 +266,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    /* 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear' */
+                                                  'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
                                     'description_extra' => $family->masterProductCategory
@@ -295,9 +289,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                  /*   'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear' */
+                                               'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
                                         : [
@@ -316,9 +308,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                  /*   'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear' */
+                                                 'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
                                 ]

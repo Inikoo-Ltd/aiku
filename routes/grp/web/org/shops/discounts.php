@@ -27,10 +27,12 @@ use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOfferTotal;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\Discounts\UI\ShowDiscountsDashboard;
+use App\Actions\Discounts\UI\ShowOffersInsights;
 use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
+Route::get('insights', ShowOffersInsights::class)->name('insights');
 Route::name("campaigns.")->prefix('campaigns')
     ->group(function () {
         Route::get('', IndexOfferCampaigns::class)->name('index');

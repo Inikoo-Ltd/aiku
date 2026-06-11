@@ -34,7 +34,7 @@ class CreateNewBulkPortfoliosToTiktok extends OrgAction implements ShouldBeUniqu
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        if(!$customerSalesChannel->user) {
+        if (!$customerSalesChannel->user) {
             throw ValidationException::withMessages(['message' => __('No authenticated TikTok channel found.')]);
         }
 
