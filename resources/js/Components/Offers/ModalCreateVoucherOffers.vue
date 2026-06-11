@@ -14,6 +14,7 @@ import InformationIcon from "../Utils/InformationIcon.vue"
 import Toggle from "../Pure/Toggle.vue"
 import PureMultiselectInfiniteScroll from "../Pure/PureMultiselectInfiniteScroll.vue"
 import { faSpinnerThird, faCheckCircle, faTimesCircle } from "@fas"
+import LoadingIcon from "../Utils/LoadingIcon.vue"
 library.add(faSpinnerThird, faCheckCircle, faTimesCircle)
 const props = defineProps<{
 	shop_data: {
@@ -328,25 +329,25 @@ const isFormInvalid = computed(() => {
 						v-if="hasVoucherWhitespace"
 						class="text-sm text-red-500 flex items-center gap-x-1">
 						<FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
-						{{ trans("Voucher code cannot contain spaces") }}
+						{{ ctrans("Voucher code cannot contain spaces") }}
 					</p>
 					<p
 						v-else-if="isCheckingVoucher"
 						class="text-sm text-gray-500 flex items-center gap-x-1">
-						<FontAwesomeIcon icon="fas fa-spinner-third" spin class="text-xs" />
-						{{ trans("Checking voucher code") }}…
+						<LoadingIcon class="text-xs" />
+						{{ ctrans("Checking voucher code") }}…
 					</p>
 					<p
 						v-else-if="voucherExists === true"
 						class="text-sm text-red-500 flex items-center gap-x-1">
 						<FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
-						{{ trans("Voucher code already exists") }}
+						{{ ctrans("Voucher code already exists") }}
 					</p>
 					<p
 						v-else-if="voucherExists === false"
 						class="text-sm text-green-600 flex items-center gap-x-1">
 						<FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" />
-						{{ trans("Voucher code is available") }}
+						{{ ctrans("Voucher code is available") }}
 					</p>
 				</div>
 				<!-- offer name -->
