@@ -12,10 +12,12 @@ const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', irisLocaleStructure)
 
 const props = defineProps<{
-    web_block_family?: {}
+    web_block_family?: {
+        fieldValue?: Record<string, any>
+    }
 }>()
 
-console.log("PROP web_block_family", props.web_block_family);
+// console.log("PROP web_block_family", props.web_block_family);
 
 // Init: Search result
 const LBInitSearchResult = async () => {
@@ -204,7 +206,9 @@ onBeforeMount(() => {
 
 })
 
-const createCssClassFromStyleObject = (className: string, styleObj: Record<string, string>) => {
+const createCssClassFromStyleObject = (className: string, styleObj?: Record<string, string> | null) => {
+    if (!styleObj) return
+
     const styleId = `style-${className}`
 
     // Avoid multiple inject with same name
@@ -227,12 +231,12 @@ const createCssClassFromStyleObject = (className: string, styleObj: Record<strin
 
 onMounted(() => {
     
-    createCssClassFromStyleObject('lb-product-card', getStyles(props.web_block_family.fieldValue?.card_product?.properties, 'desktop'))
+    createCssClassFromStyleObject('lb-product-card', getStyles(props.web_block_family?.fieldValue?.card_product?.properties, 'desktop'))
     // createCssClassFromStyleObject('render-product-button-login', getStyles(props.web_block_family.fieldValue?.buttonLogin?.properties, 'desktop'))
 })
 
 // const inputValue = ref('')
-console.log("layout", layout)
+// console.log("layout", layout)
 </script>
 <template>
     <div class="xmd:py-16 w-full mx-auto px-8">

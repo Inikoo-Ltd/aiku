@@ -206,20 +206,28 @@ watch(
     }
 )
 
+const savingCell = ref<string | null>(null)
+const isCellSaving = (index: number, key: "question" | "answer"): boolean =>
+    savingCell.value === `${index}-${key}`
+
 const addFaq = () => {
     ensureItem(items.value.length)
 }
 
-const submitFaq = () => {
+const submitFaq = (cellKey: string | null = null) => {
     isSyncingToForm.value = true
     set(props.form, props.fieldName, serialiseFaqItems(items.value))
     isSyncingToForm.value = false
 
     if (props.updateRoute?.name && typeof props.form.post === "function") {
+        savingCell.value = cellKey
         props.form.post(route(props.updateRoute.name, props.updateRoute.parameters), {
             preserveScroll: true,
             onSuccess: () => {
                 savedSnapshot.value = cloneItems()
+            },
+            onFinish: () => {
+                savingCell.value = null
             },
         })
         return
@@ -290,8 +298,8 @@ const translateField = async (index: number, key: "question" | "answer") => {
     }
 }
 
-const onSave = () => {
-    submitFaq()
+const onSave = (index: number, key: "question" | "answer") => {
+    submitFaq(`${index}-${key}`)
 }
 
 const isLoadingFollowMaster = ref(false)
@@ -423,11 +431,11 @@ const changeValue = async () => {
                         <button
                             type="button"
                             :disabled="form.processing || !isCellDirty(index, 'question')"
-                            @click="onSave"
+                            @click="onSave(index, 'question')"
                             class="h-8 w-8 flex items-center justify-center shrink-0"
                             v-tooltip="trans('Save')"
                         >
-                            <FontAwesomeIcon v-if="form.processing" :icon="faSpinnerThird" class="text-xl animate-spin" />
+                            <FontAwesomeIcon v-if="isCellSaving(index, 'question')" :icon="faSpinnerThird" class="text-xl animate-spin" />
                             <FontAwesomeIcon
                                 v-else-if="isCellDirty(index, 'question')"
                                 :icon="fadSave"
@@ -524,11 +532,11 @@ const changeValue = async () => {
                             <button
                                 type="button"
                                 :disabled="form.processing || !isCellDirty(index, 'answer')"
-                                @click="onSave"
+                                @click="onSave(index, 'answer')"
                                 class="h-8 w-8 flex items-center justify-center"
                                 v-tooltip="trans('Save')"
                             >
-                                <FontAwesomeIcon v-if="form.processing" :icon="faSpinnerThird" class="text-xl animate-spin" />
+                                <FontAwesomeIcon v-if="isCellSaving(index, 'answer')" :icon="faSpinnerThird" class="text-xl animate-spin" />
                                 <FontAwesomeIcon
                                     v-else-if="isCellDirty(index, 'answer')"
                                     :icon="fadSave"

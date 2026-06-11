@@ -187,8 +187,17 @@ const calculateDescriptionHeight = async () => {
     return
   }
 
-  maxDescriptionHeight.value = imageRef.value.offsetHeight
-  showReadMore.value = descriptionRef.value.scrollHeight > imageRef.value.offsetHeight - 110
+  const availableHeight = imageRef.value.offsetHeight - 110
+  console.log(imageRef.value,descriptionRef.value)
+
+  maxDescriptionHeight.value = availableHeight
+  const shouldShowReadMore = descriptionRef.value.scrollHeight > availableHeight
+
+  showReadMore.value = shouldShowReadMore
+
+  if (!shouldShowReadMore) {
+    expanded.value = false
+  }
 }
 
 onMounted(() => {
@@ -206,6 +215,10 @@ onMounted(() => {
 
   if (imageRef.value) {
     resizeObserver.observe(imageRef.value)
+  }
+
+  if (descriptionRef.value) {
+    resizeObserver.observe(descriptionRef.value)
   }
 })
 
@@ -388,7 +401,7 @@ const contentClass = computed(() =>
     2xl:text-[19px]
     overflow-hidden
   " ref="descriptionRef" :style="!expanded && showReadMore
-    ? { maxHeight: `${maxDescriptionHeight - 110}px` }
+    ? { maxHeight: `${maxDescriptionHeight}px` }
     : {}">
             <div v-html="cleanedDescription"></div>
 

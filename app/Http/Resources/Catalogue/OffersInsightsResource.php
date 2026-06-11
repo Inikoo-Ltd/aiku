@@ -27,6 +27,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $revenue_net_amount
  * @property string $discounted_amount
  * @property mixed $last_used_at
+ * @property string|null $created_by
  */
 class OffersInsightsResource extends JsonResource
 {
@@ -50,6 +51,7 @@ class OffersInsightsResource extends JsonResource
             'discounted_amount'    => $this->discounted_amount,
             'avg_discount'         => $this->redemptions > 0 ? round((float) $this->discounted_amount / (int) $this->redemptions, 2) : 0,
             'last_used_at'         => $this->last_used_at,
+            'created_by'           => $this->created_by,
         ];
     }
 }
