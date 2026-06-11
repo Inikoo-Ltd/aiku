@@ -80,6 +80,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
                     } else {
                         $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS);
                     }
+                    $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
 
                     if (count($this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')) == 0) {
                         $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
