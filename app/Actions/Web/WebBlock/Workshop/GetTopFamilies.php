@@ -11,7 +11,6 @@ namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Web\WebBlock\Traits\WithFamiliesQuery;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetTopFamilies
