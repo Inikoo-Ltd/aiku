@@ -17,6 +17,7 @@ use App\Http\Resources\Catalogue\OffersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Group;
@@ -32,9 +33,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOffers extends OrgAction
 {
-    protected Group|Shop|OfferCampaign|ProductCategory $parent;
+    protected Group|Shop|OfferCampaign|ProductCategory|Customer $parent;
 
-    protected function getElementGroups(Group|Shop|OfferCampaign|ProductCategory $parent): array
+    protected function getElementGroups(Group|Shop|OfferCampaign|ProductCategory|Customer $parent): array
     {
         return [
             'state' => [
@@ -50,7 +51,7 @@ class IndexOffers extends OrgAction
         ];
     }
 
-    public function handle(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null, $filterByOfferType = null): LengthAwarePaginator
+    public function handle(Group|Shop|OfferCampaign|ProductCategory|Customer $parent, $prefix = null, $filterByOfferType = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -74,6 +75,9 @@ class IndexOffers extends OrgAction
         } elseif ($parent instanceof ProductCategory) {
             $query->where('offers.trigger_id', $parent->id);
             $query->where('offers.trigger_type', class_basename(ProductCategory::class));
+        } elseif ($parent instanceof Customer) {
+            $query->where('offers.trigger_id', $parent->id);
+            $query->where('offers.trigger_type', class_basename(Customer::class));
         } else {
             $query->where('offers.shop_id', $parent->id);
         }
@@ -152,7 +156,7 @@ class IndexOffers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null, $modelOperations = [], bool $showActions = false): Closure
+    public function tableStructure(Group|Shop|OfferCampaign|ProductCategory|Customer $parent, $prefix = null, $modelOperations = [], bool $showActions = false): Closure
     {
         return function (InertiaTable $table) use ($prefix, $modelOperations, $parent, $showActions) {
             if ($prefix) {
