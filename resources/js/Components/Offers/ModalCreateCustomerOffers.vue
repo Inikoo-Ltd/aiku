@@ -165,7 +165,7 @@ const submitCustomerOffer = () => {
     const payload = {
         customer_id: customerId.value || props.customer_id,
         min_order_amount: offerAmount.value,
-        discount_percentage: discountPercentage.value,
+        percentage_off: discountPercentage.value,
         target_type: targetPayload?.target_type ?? null,
         target_id: targetPayload?.target_id ?? null,
         duration: dateType.value,
