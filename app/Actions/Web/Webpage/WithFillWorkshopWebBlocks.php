@@ -26,6 +26,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartmentsThree;
 use App\Actions\Web\WebBlock\Workshop\GetFaqDepartment;
+use App\Actions\Web\WebBlock\Workshop\GetTopFamilies;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks
@@ -73,6 +74,8 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } elseif ($webBlockType == 'faq-department') {
             $parsedWebBlocks[$key] = GetFaqDepartment::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'top-families') {
+            $parsedWebBlocks[$key] = GetTopFamilies::run($webpage, $webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }
