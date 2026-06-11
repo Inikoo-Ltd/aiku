@@ -8,20 +8,19 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { Order } from "@/types/order"
 import Icon from "@/Components/Icon.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { RouteParams } from "@/types/route-params"
-import { inject } from "vue"
+import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faAbacus } from "@fad"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
-import Offer from "@/Pages/Grp/Org/Discounts/Offer.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { faSkull } from "@fal"
+import { notify } from "@kyvg/vue3-notification"
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -99,13 +98,43 @@ function returnRouteOffer(offer: any) {
     }
 }
 
-console.log("Curr Route", route().current())
+const terminateOfferLoading = ref<Record<number, boolean>>({})
 
-const terminateOffer = (item) => {
-    console.log(item);
-    router.post(route('grp.models.offer.finish', {
-        offer: item.id
-    }))
+const getFirstErrorMessage = (errors: Record<string, unknown> = {}) => {
+    const firstError = Object.values(errors)[0]
+    if (Array.isArray(firstError) && firstError.length > 0) return String(firstError[0])
+    if (typeof firstError === "string") return firstError
+    return trans("Failed to terminate offer")
+}
+
+const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
+    if (terminateOfferLoading.value[item.id]) return
+
+    router.post(route("grp.models.offer.finish", { offer: item.id }), {}, {
+        preserveScroll: true,
+        onStart: () => {
+            terminateOfferLoading.value[item.id] = true
+        },
+        onSuccess: () => {
+            notify({
+                title: trans("Success"),
+                text: trans("Offer :offer has been terminated", {
+                    offer: item.code || item.name || `#${item.id}`
+                }),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: getFirstErrorMessage(errors),
+                type: "error"
+            })
+        },
+        onFinish: () => {
+            delete terminateOfferLoading.value[item.id]
+        }
+    })
 }
 
 </script>
@@ -154,15 +183,13 @@ const terminateOffer = (item) => {
 
         <template #cell(actions)="{ item }">
             <Button
-                v-if="item.is_active"
-                v-tooltip="ctrans('Terminate offer immidiately')"
+                v-if="['in_process', 'active'].includes(item.state_value)"
+                v-tooltip="ctrans('Terminate offer immediately')"
                 :type="'negative'"
+                :loading="Boolean(terminateOfferLoading[item.id])"
                 @click="terminateOffer(item)"
-            >
-                <FontAwesomeIcon 
-                    :icon="faSkull"
-                />
-            </Button>
+                icon="fal fa-skull"
+            />
         </template>
     </Table>
 </template>
