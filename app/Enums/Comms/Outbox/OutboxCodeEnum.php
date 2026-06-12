@@ -304,7 +304,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::INVITE,
             OutboxCodeEnum::TEST,
-            OutboxCodeEnum::INVOICE_DATE_CHANGED
+            OutboxCodeEnum::INVOICE_DATE_CHANGED,
+            OutboxCodeEnum::NEW_OFFER
             => OutboxStateEnum::ACTIVE,
             default => OutboxStateEnum::IN_PROCESS
         };
