@@ -91,6 +91,7 @@ class SubmitOrder extends OrgAction
                     data_set($transactionData, 'submitted_gross_amount', $transaction->gross_amount);
                     data_set($transactionData, 'submitted_net_amount', $transaction->net_amount);
                     data_set($transactionData, 'submitted_discount_factor', $transaction->current_discount_factor);
+                    data_set($transactionData, 'submitted_offers_data', $transaction->offers_data); // TODO only take needed data later
                 }
 
                 $transaction->update($transactionData);
