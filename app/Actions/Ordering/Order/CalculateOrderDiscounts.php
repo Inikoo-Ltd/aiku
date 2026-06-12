@@ -44,6 +44,14 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function handle(Order $order): Order
     {
+        if (in_array($order->state, [
+            OrderStateEnum::CANCELLED,
+            OrderStateEnum::DISPATCHED,
+            OrderStateEnum::FINALISED,
+        ])) {
+            return $order;
+        }
+
         $this->order        = $order;
         $this->transactions = collect();
 
@@ -155,10 +163,6 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function regenerateSubmittedTransactionDiscounts(Order $order): void
     {
-        if (app()->environment('production')) {
-            return;
-        }
-
         /** @var Transaction $transactionWithSubmittedDiscount */
         foreach (
             $order->transactions()
