@@ -77,7 +77,7 @@ class RepairLayoutJsonMissingAlts
             $changes++;
 
             $command?->line(
-                "Webblock: {$item->id} || Webpage ID: " . ($webpageId ?? 'N/A') . " || Image index: {$key} || Webpage type : " . ($webpage?->type?->value ?? 'N/A') . " || Model: " . ($webpage?->model?->name ?? 'N/A') . " || Alt: {$alt}"
+                "Webblock: {$item->id} || Webpage ID: " . ($webpageId ?? 'N/A') . " || Image index: {$key} || Webpage subtype : " . ($webpage?->sub_type?->value ?? 'N/A') . " || Alt: {$alt}"
             );
 
             data_set(
@@ -183,7 +183,7 @@ class RepairLayoutJsonMissingAlts
         return false;
     }
 
-    public string $commandSignature = 'repair:layout_json_missing_alts';
+    public string $commandSignature = 'repair:layout_json_missing_alts {website}';
 
     public function asCommand(Command $command): void
     {

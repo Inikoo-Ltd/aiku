@@ -9,6 +9,8 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Collection as CollectionModel;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -31,11 +33,11 @@ class GetWebpageAlt
 
         $alt = null;
 
-        if ($this->canUseWebpageModelForAlt($webpage)) {
+        if ($this->canResolveWebpageAlt($webpage)) {
             $title = $webpage->title;
             if (!blank($title)) {
                 $alt = $title;
-                dd($alt);
+                // dd($alt);
             }
         }
 
@@ -55,8 +57,13 @@ class GetWebpageAlt
         return $alt;
     }
 
-    private function canUseWebpageModelForAlt(Webpage $webpage): bool
+    private function canResolveWebpageAlt(Webpage $webpage): bool
     {
+        // Allow storefront pages
+        if ($webpage->type === WebpageTypeEnum::STOREFRONT || $webpage->sub_type === WebpageSubTypeEnum::STOREFRONT) {
+            return true;
+        }
+
         $model = $webpage->model;
 
         if ($model instanceof Product || $model instanceof CollectionModel) {
