@@ -18,13 +18,13 @@ use Illuminate\Support\Carbon;
  * @property int|null $employee_contract_id
  * @property Carbon|null $period_start
  * @property Carbon|null $period_end
- * @property int $annual_days
  * @property float $annual_used
  * @property float $medical_used
  * @property float $unpaid_used
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read \App\Models\HumanResources\Employee|null $employee
+ * @property-read \App\Models\HumanResources\EmployeeContract|null $contract
  * @property-read float $annual_remaining
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newQuery()
@@ -55,6 +55,8 @@ class EmployeeLeaveBalance extends Model
 
     public function getAnnualRemainingAttribute(): float
     {
-        return max(0, $this->annual_days - $this->annual_used);
+        $annualDays = $this->contract?->annual_leave_days ?? 0;
+
+        return max(0, $annualDays - $this->annual_used);
     }
 }

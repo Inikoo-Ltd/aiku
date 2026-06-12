@@ -8,10 +8,12 @@
 
 namespace App\Actions\HumanResources\EmployeeContract;
 
+use App\Actions\HumanResources\EmployeeContract\LinkLeaveBalanceToContract;
 use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
 use App\Actions\OrgAction;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeContract;
+use App\Models\HumanResources\EmployeeLeaveBalance;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -21,13 +23,20 @@ class StoreEmployeeContract extends OrgAction
     public function handle(Employee $employee, array $data): EmployeeContract
     {
         $contract = $employee->contracts()->create([
-            'start_date'         => $data['start_date'],
-            'end_date'           => $data['end_date'] ?? null,
-            'annual_leave_days'  => $data['annual_leave_days'] ?? 10.0,
-            'notes'              => $data['notes'] ?? null,
+            'start_date'        => $data['start_date'],
+            'end_date'          => $data['end_date'] ?? null,
+            'annual_leave_days' => $data['annual_leave_days'] ?? 10.0,
+            'notes'             => $data['notes'] ?? null,
         ]);
 
-        GenerateEmployeeLeaveBalance::run($contract);
+        if (!empty($data['link_balance_id'])) {
+            $balance = EmployeeLeaveBalance::find($data['link_balance_id']);
+            if ($balance && $balance->employee_id === $employee->id) {
+                LinkLeaveBalanceToContract::run($balance, $contract);
+            }
+        } else {
+            GenerateEmployeeLeaveBalance::run($contract);
+        }
 
         return $contract;
     }
@@ -35,10 +44,11 @@ class StoreEmployeeContract extends OrgAction
     public function rules(): array
     {
         return [
-            'start_date'          => ['required', 'date'],
-            'end_date'            => ['sometimes', 'nullable', 'date', 'after:start_date'],
-            'annual_leave_days'   => ['sometimes', 'numeric', 'min:0', 'max:365'],
-            'notes'               => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'start_date'        => ['required', 'date'],
+            'end_date'          => ['sometimes', 'nullable', 'date', 'after:start_date'],
+            'annual_leave_days' => ['sometimes', 'numeric', 'min:0', 'max:365'],
+            'notes'             => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'link_balance_id'   => ['sometimes', 'nullable', 'integer', 'exists:employee_leave_balances,id'],
         ];
     }
 

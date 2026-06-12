@@ -13,11 +13,12 @@ const props = defineProps<{
     title: string
     pageHead: {}
     data: {}
+    unlinked_balances: {}
 }>()
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <TableEmployeeContracts :data="data" />
+    <TableEmployeeContracts :data="data" :unlinkedBalances="unlinked_balances" />
 </template>

@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeContract;
+use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -45,9 +46,9 @@ class EditEmployeeContract extends OrgAction
                 'title'       => __('Edit Contract'),
                 'breadcrumbs' => $this->getBreadcrumbs($employee, $contract, $request->route()->originalParameters()),
                 'pageHead'    => [
-                    'model'         => __('Contract #:number', ['number' => $contract->contract_number]),
+                    'model'         => __('Contract :date', ['date' => $contract->start_date->format('d M Y')]),
                     'title'         => $employee->contact_name,
-                    'icon'          => ['title' => __('Edit Contract'), 'icon' => 'fal fa-file-contract'],
+                    'icon'          => ['title' => __('Edit Contract'), 'icon' => 'fal fa-file-certificate'],
                     'subNavigation' => $this->getEmployeeSubNavigation($employee, $request),
                     'actions'       => [
                         [
@@ -64,30 +65,7 @@ class EditEmployeeContract extends OrgAction
                     'blueprint' => [
                         [
                             'label'  => __('Contract details'),
-                            'fields' => [
-                                'start_date' => [
-                                    'type'     => 'date',
-                                    'label'    => __('Start date'),
-                                    'required' => true,
-                                    'value'    => $contract->start_date->toDateString()
-                                ],
-                                'end_date' => [
-                                    'type'  => 'date',
-                                    'label' => __('End date'),
-                                    'value' => $contract->end_date?->toDateString()
-                                ],
-                                'annual_leave_days' => [
-                                    'type'      => 'input',
-                                    'inputType' => 'number',
-                                    'label'     => __('Annual leave days'),
-                                    'value'     => $contract->annual_leave_days
-                                ],
-                                'notes' => [
-                                    'type'  => 'textarea',
-                                    'label' => __('Notes'),
-                                    'value' => $contract->notes
-                                ]
-                            ]
+                            'fields' => $this->buildFields($contract, $employee),
                         ]
                     ],
                     'args' => [
@@ -99,6 +77,57 @@ class EditEmployeeContract extends OrgAction
                 ]
             ]
         );
+    }
+
+    private function buildFields(EmployeeContract $contract, Employee $employee): array
+    {
+        $fields = [
+            'start_date' => [
+                'type'     => 'date',
+                'label'    => __('Start date'),
+                'required' => true,
+                'value'    => $contract->start_date->toDateString(),
+            ],
+            'end_date' => [
+                'type'  => 'date',
+                'label' => __('End date'),
+                'value' => $contract->end_date?->toDateString(),
+            ],
+            'annual_leave_days' => [
+                'type'      => 'input',
+                'inputType' => 'number',
+                'label'     => __('Annual leave days'),
+                'value'     => $contract->annual_leave_days,
+            ],
+            'notes' => [
+                'type'  => 'textarea',
+                'label' => __('Notes'),
+                'value' => $contract->notes,
+            ],
+        ];
+
+        $unlinkedBalances = EmployeeLeaveBalance::where('employee_id', $employee->id)
+            ->whereNull('employee_contract_id')
+            ->get(['id', 'annual_used', 'medical_used', 'unpaid_used']);
+
+        if ($unlinkedBalances->isNotEmpty()) {
+            $fields['link_balance_id'] = [
+                'type'        => 'select',
+                'label'       => __('Link existing leave balance'),
+                'placeholder' => __('Keep current balance (default)'),
+                'value'       => null,
+                'options'     => $unlinkedBalances->map(fn (EmployeeLeaveBalance $b) => [
+                    'value' => $b->id,
+                    'label' => __('Balance: :annual annual used, :medical medical used', [
+                        'annual'  => $b->annual_used,
+                        'medical' => $b->medical_used,
+                    ]),
+                ])->toArray(),
+                'mode' => 'single',
+            ];
+        }
+
+        return $fields;
     }
 
     public function getBreadcrumbs(Employee $employee, EmployeeContract $contract, array $routeParameters): array
@@ -113,7 +142,7 @@ class EditEmployeeContract extends OrgAction
                             'name'       => 'grp.org.hr.employees.show.contracts.edit',
                             'parameters' => $routeParameters
                         ],
-                        'label' => __('Contract #:number', ['number' => $contract->contract_number]),
+                        'label' => __('Contract :date', ['date' => $contract->start_date->format('d M Y')]),
                     ]
                 ]
             ]

@@ -8,14 +8,19 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('employee_leave_balances', function (Blueprint $table) {
-            $table->dropColumn('year');
+            $table->dropColumn(['year', 'annual_days']);
         });
     }
 
     public function down(): void
     {
         Schema::table('employee_leave_balances', function (Blueprint $table) {
-            $table->unsignedSmallInteger('year')->nullable();
+            if (!Schema::hasColumn('employee_leave_balances', 'year')) {
+                $table->unsignedSmallInteger('year')->nullable();
+            }
+            if (!Schema::hasColumn('employee_leave_balances', 'annual_days')) {
+                $table->unsignedSmallInteger('annual_days')->default(0);
+            }
         });
     }
 };

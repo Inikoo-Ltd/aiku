@@ -282,7 +282,7 @@ class Employee extends Model implements HasMedia, Auditable
 
     public function contracts(): HasMany
     {
-        return $this->hasMany(EmployeeContract::class)->orderBy('contract_number');
+        return $this->hasMany(EmployeeContract::class)->orderBy('start_date');
     }
 
     public function activeContract(): HasOne
@@ -292,7 +292,7 @@ class Employee extends Model implements HasMedia, Auditable
             ->where(function ($q) {
                 $q->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
             })
-            ->orderByDesc('contract_number');
+            ->orderByDesc('start_date');
     }
 
     public function currentLeaveBalance(): HasOne

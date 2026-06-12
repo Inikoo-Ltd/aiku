@@ -26,7 +26,6 @@ use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Http\Resources\HumanResources\EmployeeResource;
 use App\Models\HumanResources\Employee;
-use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Rules\PinRule;
@@ -96,31 +95,6 @@ class UpdateEmployee extends OrgAction
             $jobPositions = Arr::pull($modelData, 'job_positions', []);
             $jobPositions = $this->reorganisePositionsSlugsToIds($jobPositions);
             SyncEmployeeJobPositions::run($employee, $jobPositions);
-        }
-
-        if (Arr::has($modelData, 'annual_days')) {
-            $annualDays = Arr::pull($modelData, 'annual_days');
-
-            $leaveBalance = EmployeeLeaveBalance::firstOrCreate(
-                [
-                    'employee_id' => $employee->id,
-                    'year'        => now()->year,
-                ],
-                [
-                    'annual_days' => $employee->organisation->getDefaultAnnualLeaveDays(),
-                    'annual_used' => 0,
-                    'unpaid_days' => 0,
-                    'unpaid_used' => 0,
-                ]
-            );
-
-            $updateData = [];
-            if ($annualDays !== null) {
-                $updateData['annual_days'] = $annualDays;
-            }
-            if (!empty($updateData)) {
-                $leaveBalance->update($updateData);
-            }
         }
 
         $credentials = Arr::only($modelData, ['username', 'password', 'auth_type', 'user_model_status']);
@@ -235,7 +209,6 @@ class UpdateEmployee extends OrgAction
             'bank_account_number'                       => ['sometimes', 'nullable', 'string', 'max:50'],
             'bank_account_name'                         => ['sometimes', 'nullable', 'string', 'max:100'],
             'insurance_number'                          => ['sometimes', 'nullable', 'string', 'max:50'],
-            'annual_days'                               => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
             'gender'                                    => ['sometimes', 'nullable', 'string', 'max:20'],
             'probation_period_days'                     => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
 

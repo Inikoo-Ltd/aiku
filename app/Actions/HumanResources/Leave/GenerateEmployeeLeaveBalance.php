@@ -17,6 +17,10 @@ use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeContract;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use Illuminate\Console\Command;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GenerateEmployeeLeaveBalance
@@ -31,12 +35,41 @@ class GenerateEmployeeLeaveBalance
                 'employee_id'  => $contract->employee_id,
                 'period_start' => $contract->start_date->toDateString(),
                 'period_end'   => $contract->end_date?->toDateString(),
-                'annual_days'  => $contract->annual_leave_days,
                 'annual_used'  => 0,
                 'medical_used' => 0,
                 'unpaid_used'  => 0,
             ]
         );
+    }
+
+    public function asController(EmployeeContract $contract, ActionRequest $request): EmployeeLeaveBalance
+    {
+        return $this->handle($contract);
+    }
+
+    public function htmlResponse(EmployeeLeaveBalance $balance, ActionRequest $request): RedirectResponse
+    {
+        return Redirect::back()->with('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Leave balance generated successfully.'),
+        ]);
+    }
+
+    public function jsonResponse(EmployeeLeaveBalance $balance): JsonResponse
+    {
+        $contract = $balance->contract;
+
+        return new JsonResponse([
+            'created' => $balance->wasRecentlyCreated,
+            'balance' => [
+                'id'           => $balance->id,
+                'annual_days'  => $contract?->annual_leave_days,
+                'annual_used'  => $balance->annual_used,
+                'medical_used' => $balance->medical_used,
+                'unpaid_used'  => $balance->unpaid_used,
+            ],
+        ]);
     }
 
     public string $commandSignature = 'leave:generate-balances';

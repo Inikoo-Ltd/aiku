@@ -12,6 +12,7 @@ use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,6 +37,52 @@ class CreateEmployeeContract extends OrgAction
 
     public function htmlResponse(Employee $employee, ActionRequest $request): Response
     {
+        $unlinkedBalances = EmployeeLeaveBalance::where('employee_id', $employee->id)
+            ->whereNull('employee_contract_id')
+            ->get(['id', 'annual_used', 'medical_used', 'unpaid_used']);
+
+        $contractFields = [
+            'start_date' => [
+                'type'     => 'date',
+                'label'    => __('Start date'),
+                'required' => true,
+                'value'    => '',
+            ],
+            'end_date' => [
+                'type'  => 'date',
+                'label' => __('End date'),
+                'value' => '',
+            ],
+            'annual_leave_days' => [
+                'type'      => 'input',
+                'inputType' => 'number',
+                'label'     => __('Annual leave days'),
+                'value'     => $employee->organisation->getDefaultAnnualLeaveDays(),
+            ],
+            'notes' => [
+                'type'  => 'textarea',
+                'label' => __('Notes'),
+                'value' => '',
+            ],
+        ];
+
+        if ($unlinkedBalances->isNotEmpty()) {
+            $contractFields['link_balance_id'] = [
+                'type'        => 'select',
+                'label'       => __('Link existing leave balance'),
+                'placeholder' => __('Create new balance (default)'),
+                'value'       => null,
+                'options'     => $unlinkedBalances->map(fn (EmployeeLeaveBalance $b) => [
+                    'value' => $b->id,
+                    'label' => __('Balance: :annual annual used, :medical medical used', [
+                        'annual'  => $b->annual_used,
+                        'medical' => $b->medical_used,
+                    ]),
+                ])->toArray(),
+                'mode'        => 'single',
+            ];
+        }
+
         return Inertia::render(
             'CreateModel',
             [
@@ -44,7 +91,7 @@ class CreateEmployeeContract extends OrgAction
                 'pageHead'    => [
                     'model'         => __('Employee'),
                     'title'         => $employee->contact_name,
-                    'icon'          => ['title' => __('New Contract'), 'icon' => 'fal fa-file-contract'],
+                    'icon'          => ['title' => __('New Contract'), 'icon' => 'fal fa-file-certificate'],
                     'subNavigation' => $this->getEmployeeSubNavigation($employee, $request),
                     'actions'       => [
                         [
@@ -52,46 +99,23 @@ class CreateEmployeeContract extends OrgAction
                             'style' => 'cancel',
                             'route' => [
                                 'name'       => 'grp.org.hr.employees.show.contracts.index',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
                         ]
-                    ]
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
                             'label'  => __('Contract details'),
-                            'fields' => [
-                                'start_date' => [
-                                    'type'     => 'date',
-                                    'label'    => __('Start date'),
-                                    'required' => true,
-                                    'value'    => ''
-                                ],
-                                'end_date' => [
-                                    'type'  => 'date',
-                                    'label' => __('End date'),
-                                    'value' => ''
-                                ],
-                                'annual_leave_days' => [
-                                    'type'    => 'input',
-                                    'inputType' => 'number',
-                                    'label'   => __('Annual leave days'),
-                                    'value'   => $employee->organisation->getDefaultAnnualLeaveDays()
-                                ],
-                                'notes' => [
-                                    'type'  => 'textarea',
-                                    'label' => __('Notes'),
-                                    'value' => ''
-                                ]
-                            ]
+                            'fields' => $contractFields,
                         ]
                     ],
                     'route' => [
                         'name'       => 'grp.models.employee.contracts.store',
-                        'parameters' => ['employee' => $employee->id]
-                    ]
-                ]
+                        'parameters' => ['employee' => $employee->id],
+                    ],
+                ],
             ]
         );
     }

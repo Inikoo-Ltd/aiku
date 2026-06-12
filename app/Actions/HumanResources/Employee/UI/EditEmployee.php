@@ -396,7 +396,8 @@ class EditEmployee extends OrgAction
                 'annual_days' => [
                     'type' => 'input',
                     'label' => __('Annual Leave Balance'),
-                    'value' => $employee->leaveBalance?->annual_days ?? $employee->organisation->getDefaultAnnualLeaveDays(),
+                    'value' => $employee->leaveBalance?->contract?->annual_leave_days ?? $employee->organisation->getDefaultAnnualLeaveDays(),
+                    'disabled' => true,
                 ],
                 'annual_used' => [
                     'type' => 'input',

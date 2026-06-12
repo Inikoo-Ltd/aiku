@@ -10,10 +10,11 @@ namespace App\Actions\HumanResources\EmployeeContract;
 
 use App\Actions\OrgAction;
 use App\Models\HumanResources\EmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\LinkLeaveBalanceToContract;
 use App\Models\HumanResources\EmployeeLeaveBalance;
-use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateEmployeeContract extends OrgAction
 {
@@ -33,9 +34,11 @@ class UpdateEmployeeContract extends OrgAction
             ]);
         }
 
-        if (isset($data['annual_leave_days'])) {
-            EmployeeLeaveBalance::where('employee_contract_id', $contract->id)
-                ->update(['annual_days' => $data['annual_leave_days']]);
+        if (!empty($data['link_balance_id'])) {
+            $balance = EmployeeLeaveBalance::find($data['link_balance_id']);
+            if ($balance && $balance->employee_id === $contract->employee_id) {
+                LinkLeaveBalanceToContract::run($balance, $contract);
+            }
         }
 
         return $contract->fresh();
@@ -44,10 +47,11 @@ class UpdateEmployeeContract extends OrgAction
     public function rules(): array
     {
         return [
-            'start_date'          => ['sometimes', 'date'],
-            'end_date'            => ['sometimes', 'nullable', 'date'],
-            'annual_leave_days'   => ['sometimes', 'numeric', 'min:0', 'max:365'],
-            'notes'               => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'start_date'        => ['sometimes', 'date'],
+            'end_date'          => ['sometimes', 'nullable', 'date'],
+            'annual_leave_days' => ['sometimes', 'numeric', 'min:0', 'max:365'],
+            'notes'             => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'link_balance_id'   => ['sometimes', 'nullable', 'integer', 'exists:employee_leave_balances,id'],
         ];
     }
 
