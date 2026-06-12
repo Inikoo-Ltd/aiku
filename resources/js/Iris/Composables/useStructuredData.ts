@@ -252,40 +252,42 @@ const mergeAutoVariants = (productNode: StructuredDataNode, autoVariants: Struct
     productNode.hasVariant = Array.from(variantMap.values())
 }
 
+// Method: build structured data based on the Page type ('family', 'product', etc)
 export const buildStructuredData = ({
     webpageData,
     webBlocks,
     currencyCode,
     websiteName,
 }: BuildStructuredDataOptions): StructuredDataValue | null => {
-    if (webpageData?.model_type !== "ProductCategory" || webpageData?.sub_type !== "family") {
-        return null
-    }
-
-    const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
-
-    const autoVariants = generateProductsStructureFromProductsList({
-        webBlocks,
-        categoryName: webpageData?.title ?? null,
-        currencyCode,
-    })
-
-    if (!autoVariants.length) {
-        return baseStructuredData
-    }
-
-    const structuredData =
-        normalizeStructuredDataForGraph(baseStructuredData) ?? {
-            "@context": "https://schema.org",
+    if (webpageData?.model_type === "ProductCategory" || webpageData?.sub_type === "family") {
+        const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
+    
+        const autoVariants = generateProductsStructureFromProductsList({
+            webBlocks,
+            categoryName: webpageData?.title ?? null,
+            currencyCode,
+        })
+    
+        if (!autoVariants.length) {
+            return baseStructuredData
         }
+    
+        const structuredData =
+            normalizeStructuredDataForGraph(baseStructuredData) ?? {
+                "@context": "https://schema.org",
+            }
+    
+        const productNode = findOrCreateProductGroupNode(structuredData, () =>
+            buildFamilyProductNode({ webpageData, websiteName })
+        )
+    
+        mergeAutoVariants(productNode, autoVariants)
+    
+        return structuredData
+    }
 
-    const productNode = findOrCreateProductGroupNode(structuredData, () =>
-        buildFamilyProductNode({ webpageData, websiteName })
-    )
+    return null
 
-    mergeAutoVariants(productNode, autoVariants)
-
-    return structuredData
 }
 
 export const useStructuredData = () => {
