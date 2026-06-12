@@ -64,6 +64,8 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {})
 const videoDialogVisible = ref(false)
+const _sidebar = ref()
+const _content = ref()
 
 const embedUrl = computed(() => {
 	const v = props.fieldValue?.department?.showcase_video
@@ -106,6 +108,7 @@ const mobileDescriptionRef = ref<HTMLElement | null>(null)
 const expanded = ref(false)
 const showReadMore = ref(false)
 const maxDescriptionHeight = ref(0)
+const maxSideBarHeight = ref(0)
 let resizeObserver: ResizeObserver | null = null
 
 const calculateDescriptionHeight = async () => {
@@ -121,11 +124,35 @@ const calculateDescriptionHeight = async () => {
 	showReadMore.value = description.scrollHeight > media.offsetHeight
 }
 
-onMounted(() => {
+const calculateSidebarHeight = async () => {
+	await nextTick()
+
+	if (!_content.value) {
+		return
+	}
+
+	const newHeight = _content.value.offsetHeight - 80
+
+	if (newHeight !== maxSideBarHeight.value) {
+		maxSideBarHeight.value = newHeight
+	}
+}
+
+onMounted(async () => {
+	await nextTick()
+
 	calculateDescriptionHeight()
+	calculateSidebarHeight()
 
 	if (window.ResizeObserver) {
-		resizeObserver = new ResizeObserver(calculateDescriptionHeight)
+		resizeObserver = new ResizeObserver(() => {
+			calculateDescriptionHeight()
+			calculateSidebarHeight()
+		})
+
+		if (_content.value) {
+			resizeObserver.observe(_content.value)
+		}
 
 		if (desktopMediaRef.value) {
 			resizeObserver.observe(desktopMediaRef.value)
@@ -134,8 +161,6 @@ onMounted(() => {
 		if (mobileMediaRef.value) {
 			resizeObserver.observe(mobileMediaRef.value)
 		}
-	} else {
-		window.addEventListener("resize", calculateDescriptionHeight)
 	}
 })
 
@@ -162,7 +187,8 @@ watch(
 <template>
 	<div
 		:id="fieldValue?.id ? fieldValue?.id : 'department-1-iris' + indexBlock"
-		component="department-1-iris" class="pt-7 pb-4">
+		component="department-1-iris"
+		class="pt-7 pb-4">
 		<div
 			:style="{
 				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
@@ -179,7 +205,9 @@ watch(
 					</h3>
 
 					<div
-						class="category-scroll max-h-[360px] 2xl:max-h-[500px] overflow-y-auto pr-4 space-y-4 2xl:space-y-5">
+						ref="_sidebar"
+						class="overflow-y-auto pr-4 space-y-4"
+						:style="{ maxHeight: `${maxSideBarHeight}px` }">
 						<LinkIris
 							v-for="item of props.fieldValue.sub_departments"
 							:key="item.url"
@@ -192,7 +220,7 @@ watch(
 				</aside>
 
 				<!-- Main Content -->
-				<section>
+				<div ref="_content">
 					<h1
 						class="text-[28px] md:text-[36px] lg:text-[46px] 2xl:text-[60px] font-bold leading-tight text-slate-900">
 						{{
@@ -245,9 +273,7 @@ watch(
 										{{ ctrans("See a video") }}
 									</button>
 
-									<a
-										v-else-if="fieldValue.department.showcase_image"
-										href="#sub-department">
+									<a v-else href="#sub-department">
 										<button
 											class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 md:px-8 lg:px-10 2xl:px-12 2xl:py-4 rounded-md transition">
 											{{ ctrans("Browse All") }}
@@ -382,18 +408,16 @@ watch(
 									@click="videoDialogVisible = true">
 									{{ ctrans("See a video") }}
 								</button>
-								<a
-									v-else-if="fieldValue.department.showcase_image"
-									href="#sub-department">
+								<a v-else href="#sub-department">
 									<button
-										class="mt-6  bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 md:px-8 lg:px-10 2xl:px-12 2xl:py-4 rounded-md transition">
+										class="mt-6 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 md:px-8 lg:px-10 2xl:px-12 2xl:py-4 rounded-md transition">
 										{{ ctrans("Browse All") }}
 									</button>
 								</a>
 							</div>
 						</div>
 					</div>
-				</section>
+				</div>
 			</div>
 		</div>
 	</div>
