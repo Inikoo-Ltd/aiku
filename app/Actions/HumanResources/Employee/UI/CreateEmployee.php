@@ -252,6 +252,27 @@ class CreateEmployee extends OrgAction
                             ]
                         ],
                         [
+                            'title'  => __('Contract'),
+                            'fields' => [
+                                'contract_start_date' => [
+                                    'type'  => 'date',
+                                    'label' => __('Contract start date'),
+                                    'value' => '',
+                                ],
+                                'contract_end_date'   => [
+                                    'type'  => 'date',
+                                    'label' => __('Contract end date'),
+                                    'value' => '',
+                                ],
+                                'annual_leave_days'   => [
+                                    'type'      => 'input',
+                                    'inputType' => 'number',
+                                    'label'     => __('Annual leave days'),
+                                    'value'     => '',
+                                ],
+                            ]
+                        ],
+                        [
                             'title'  => __('User credentials'),
                             'fields' => [
 
