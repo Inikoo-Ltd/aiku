@@ -389,38 +389,6 @@ class EditEmployee extends OrgAction
             ]
         ];
 
-        $sections['contract'] = [
-            'label' => __('Contract'),
-            'icon' => 'fal fa-file-invoice',
-            'fields' => [
-                'contract_start_date' => [
-                    'type' => 'date',
-                    'label' => __('Contract Start Date'),
-                    'value' => $employee->contract_start_date,
-                ],
-                'contract_end_date' => [
-                    'type' => 'date',
-                    'label' => __('Contract End Date'),
-                    'value' => $employee->contract_end_date,
-                ],
-                'contract_document' => [
-                    'type' => 'file_upload',
-                    'label' => __('Contract Document'),
-                    'accept' => 'application/pdf',
-                    'warning' => $latestContract ? __('Current file: :file', ['file' => $latestContract->file_name]) : null,
-                    'preview_url' => $latestContract ? route('grp.media.show', ['media' => $latestContract->ulid]) : null,
-                    'preview_label' => __('Preview current contract'),
-                    'value' => null,
-                    'updateRoute' => [
-                        'name' => 'grp.models.employee.contract.upload',
-                        'parameters' => [
-                            'employee' => $employee->id
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
         $sections['Leave Balance'] = [
             'label' => __('Leave Balance'),
             'icon' => 'fal fa-clock',
