@@ -162,7 +162,9 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
         /** @var Transaction $transactionWithSubmittedDiscount */
         foreach (
-            $order->transactions()->where('has_discount_when_submitted', true)
+            $order->transactions()
+                ->where('has_discount_when_submitted', true)
+                ->whereRaw("submitted_offers_data <> '{}'::jsonb") // If this isn't present due to the bug you told me previously Raul, but submitted_discount_factor is indeed less than 1, would throw error.
                 ->where('submitted_discount_factor', '<', DB::raw('current_discount_factor'))
                 ->get() as $transactionWithSubmittedDiscount
         ) {
