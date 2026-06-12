@@ -56,6 +56,8 @@ class RepairLayoutJsonMissingAlts
 
                     if ($webpage) {
 
+                        $alt=GetWebpageAlt::run($webpage->id);
+
 
                         if ($this->canUseWebpageModelForAlt($webpage)) {
                             $modelName = $webpage->model?->name;
