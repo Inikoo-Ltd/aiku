@@ -1,3 +1,5 @@
+import { ctrans } from "@/Composables/useTrans"
+
 type StructuredDataNode = Record<string, any>
 type StructuredDataValue = StructuredDataNode | StructuredDataNode[]
 
@@ -242,7 +244,7 @@ const buildAdditionalProperties = (
         .map(([name, value]) => ({
             "@type": "PropertyValue",
             name,
-            value: String(value),
+            value: name === 'country_of_origin' ? String(value?.name ?? ctrans('No country')) : String(value),
         }))
 
     return properties.length ? properties : undefined
