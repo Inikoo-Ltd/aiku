@@ -119,7 +119,7 @@
     "deployer/deployer": "^7.3",
     "fakerphp/faker": "^1.9.1",
     "laradumps/laradumps": "^4.0",
-    "laravel/boost": "^1.8",
+    "laravel/boost": "^2.4",
     "laravel/pint": "^1.0",
     "league/flysystem-sftp-v3": "^3.26",
     "mockery/mockery": "^1.4.4",
