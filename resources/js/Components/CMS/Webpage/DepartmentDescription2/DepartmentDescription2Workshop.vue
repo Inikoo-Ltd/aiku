@@ -296,7 +296,7 @@ const responsiveClasses = computed(() => ({
 									<div ref="desktopDescriptionRef"
 										:class="['leading-7 text-slate-700 mx-auto overflow-hidden transition-all duration-300', responsiveClasses.descriptionSize, responsiveClasses.maxWidth]"
 										:style="!expanded && showReadMore
-												? { maxHeight: `${maxDescriptionHeight - 190}px` }
+												? { maxHeight: `${maxDescriptionHeight}px` }
 												: {}
 											">
 										<EditorV2 v-model="modelValue.department.description_extra"
