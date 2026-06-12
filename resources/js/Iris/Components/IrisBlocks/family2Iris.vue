@@ -187,7 +187,7 @@ const calculateDescriptionHeight = async () => {
     return
   }
 
-  const availableHeight = imageRef.value.offsetHeight - 110
+  const availableHeight = imageRef.value.offsetHeight - 120
   console.log(imageRef.value,descriptionRef.value)
 
   maxDescriptionHeight.value = availableHeight
