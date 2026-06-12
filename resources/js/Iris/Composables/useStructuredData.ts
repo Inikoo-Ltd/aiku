@@ -7,6 +7,7 @@ type StructuredDataWebpageData = {
     }
     title?: string
     description?: string
+    canonical_url?: string
     model_type?: string
     sub_type?: string
 }
@@ -24,7 +25,8 @@ type BuildStructuredDataOptions = {
     websiteName?: string | null
 }
 
-const PRODUCT_BLOCK_TYPES = ["products-1", "products-2"]
+const PRODUCT_BLOCK_TYPES = ["products-1", "products-2"]  // Family page
+const PRODUCT_PAGE_BLOCK_TYPES = ["product-1", "product-2"]  // Product page
 
 const normalizeWebBlocks = (webBlocks: GenerateProductsStructureOptions["webBlocks"]): any[] => {
     if (Array.isArray(webBlocks)) return webBlocks
@@ -154,6 +156,223 @@ export const generateProductsStructureFromProductsList = ({
     return variants
 }
 
+const isFilledValue = (value: unknown): boolean => {
+    return value !== null && value !== undefined && value !== ""
+}
+
+const isPlainObject = (value: unknown): value is Record<string, any> => {
+    return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+const stripHtml = (value: unknown): string | undefined => {
+    if (typeof value !== "string") return undefined
+
+    const sanitized = value
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+
+    return sanitized || undefined
+}
+
+const getEntityImageUrls = (entity: Record<string, any> | null | undefined): string[] => {
+    const candidates = [
+        entity?.web_images?.main?.original?.original,
+        entity?.web_images?.main?.original,
+        entity?.web_images?.main?.gallery?.original,
+        entity?.web_images?.main?.gallery,
+        entity?.web_images?.all?.[0]?.original?.original,
+        entity?.web_images?.all?.[0]?.original,
+        entity?.web_images?.all?.[0]?.gallery?.original,
+        entity?.web_images?.all?.[0]?.gallery,
+        entity?.image?.source?.original,
+        entity?.image,
+    ]
+
+    return [...new Set(candidates.filter((candidate): candidate is string => typeof candidate === "string" && candidate.length > 0))]
+}
+
+const buildOfferNode = ({
+    product,
+    currencyCode,
+    websiteName,
+    pageUrl,
+}: {
+    product: Record<string, any>
+    currencyCode?: string | null
+    websiteName?: string | null
+    pageUrl?: string | null
+}): StructuredDataNode | null => {
+    if (!isFilledValue(product?.price)) return null
+
+    const offerNode: StructuredDataNode = {
+        "@type": "Offer",
+        price: product.price,
+        availability:
+            product?.stock > 0
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+    }
+
+    if (currencyCode || product?.currency_code) {
+        offerNode.priceCurrency = currencyCode ?? product.currency_code
+    }
+
+    if (pageUrl) {
+        offerNode.url = pageUrl
+    }
+
+    if (websiteName) {
+        offerNode.seller = {
+            "@type": "Organization",
+            name: websiteName,
+        }
+    }
+
+    return offerNode
+}
+
+const buildAdditionalProperties = (
+    specifications: Record<string, any> | null | undefined
+): StructuredDataNode[] | undefined => {
+    if (!isPlainObject(specifications)) return undefined
+
+    const properties = Object.entries(specifications)
+        .filter(([, value]) => isFilledValue(value))
+        .map(([name, value]) => ({
+            "@type": "PropertyValue",
+            name,
+            value: String(value),
+        }))
+
+    return properties.length ? properties : undefined
+}
+
+const findProductPageSourceData = (
+    webBlocks: BuildStructuredDataOptions["webBlocks"]
+): {
+    product: Record<string, any> | null
+    variant: Record<string, any> | null
+} => {
+    for (const block of normalizeWebBlocks(webBlocks)) {
+        if (!PRODUCT_PAGE_BLOCK_TYPES.includes(block?.type)) continue
+
+        const fieldValue = block?.web_block?.layout?.data?.fieldValue ?? block?.structure ?? {}
+
+        return {
+            product: isPlainObject(fieldValue?.product) ? fieldValue.product : null,
+            variant: isPlainObject(fieldValue?.variant) ? fieldValue.variant : null,
+        }
+    }
+
+    return {
+        product: null,
+        variant: null,
+    }
+}
+
+const buildProductNode = ({
+    webpageData,
+    webBlocks,
+    currencyCode,
+    websiteName,
+}: BuildStructuredDataOptions): StructuredDataNode | null => {
+    const { product, variant } = findProductPageSourceData(webBlocks)
+
+    if (!product) return null
+
+    const pageUrl = webpageData?.canonical_url ?? null
+    const description =
+        stripHtml(product.description) ??
+        stripHtml(product.description_extra) ??
+        stripHtml(webpageData?.description)
+
+    const productNode: StructuredDataNode = {
+        "@type": "Product",
+        name: stripHtml(product.name) ?? webpageData?.title,
+    }
+
+    if (pageUrl) {
+        productNode["@id"] = pageUrl
+        productNode.url = pageUrl
+        productNode.mainEntityOfPage = pageUrl
+    }
+
+    if (isFilledValue(product?.id)) {
+        productNode.productID = String(product.id)
+    }
+
+    if (isFilledValue(product?.code)) {
+        productNode.sku = product.code
+        productNode.mpn = product.code
+    }
+
+    if (description) {
+        productNode.description = description
+    }
+
+    const imageUrls = getEntityImageUrls(product)
+    if (imageUrls.length) {
+        productNode.image = imageUrls
+    }
+
+    if (isFilledValue(product?.brand_name)) {
+        productNode.brand = {
+            "@type": "Brand",
+            name: product.brand_name,
+        }
+    }
+
+    if (isFilledValue(product?.barcode)) {
+        productNode.gtin = String(product.barcode)
+    }
+
+    const additionalProperties = buildAdditionalProperties(product.specifications)
+    if (additionalProperties) {
+        productNode.additionalProperty = additionalProperties
+    }
+
+    const offerNode = buildOfferNode({
+        product,
+        currencyCode,
+        websiteName,
+        pageUrl,
+    })
+    if (offerNode) {
+        productNode.offers = offerNode
+    }
+
+    if (isFilledValue(product?.rating) && isFilledValue(product?.rating_count)) {
+        productNode.aggregateRating = {
+            "@type": "AggregateRating",
+            ratingValue: product.rating,
+            reviewCount: product.rating_count,
+            bestRating: 5,
+            worstRating: 1,
+        }
+    }
+
+    const variantDimensions = Array.isArray(variant?.data?.variants)
+        ? variant.data.variants
+            .map((item: Record<string, any>) => item?.label)
+            .filter((label: unknown): label is string => typeof label === "string" && label.length > 0)
+        : []
+
+    if (variant?.id) {
+        productNode.isVariantOf = {
+            "@type": "ProductGroup",
+            productGroupID: String(variant.id),
+            name: stripHtml(product.name) ?? webpageData?.title,
+        }
+
+        if (variantDimensions.length) {
+            productNode.isVariantOf.variesBy = variantDimensions
+        }
+    }
+
+    return productNode
+}
+
 const buildFamilyProductNode = ({
     webpageData,
     websiteName,
@@ -234,6 +453,33 @@ const findOrCreateProductGroupNode = (
     return newNode
 }
 
+const findOrCreateProductNode = (
+    data: StructuredDataNode,
+    buildNode: () => StructuredDataNode
+): StructuredDataNode => {
+    if (Array.isArray(data["@graph"])) {
+        const existingNode =
+            data["@graph"].find((node: StructuredDataNode) => node?.["@type"] === "Product") ?? null
+
+        if (existingNode) return existingNode
+
+        const newNode = buildNode()
+        data["@graph"].push(newNode)
+        return newNode
+    }
+
+    if (data["@type"] === "Product") {
+        return data
+    }
+
+    const newNode = buildNode()
+
+    data["@context"] = data["@context"] ?? "https://schema.org"
+    data["@graph"] = [newNode]
+
+    return newNode
+}
+
 const mergeAutoVariants = (productNode: StructuredDataNode, autoVariants: StructuredDataNode[]): void => {
     const variantMap = new Map<string, StructuredDataNode>()
 
@@ -250,6 +496,31 @@ const mergeAutoVariants = (productNode: StructuredDataNode, autoVariants: Struct
     }
 
     productNode.hasVariant = Array.from(variantMap.values())
+}
+
+const mergeStructuredDataNode = (
+    targetNode: StructuredDataNode,
+    sourceNode: StructuredDataNode
+): StructuredDataNode => {
+    for (const [key, sourceValue] of Object.entries(sourceNode)) {
+        const targetValue = targetNode[key]
+
+        if (!isFilledValue(targetValue)) {
+            targetNode[key] = sourceValue
+            continue
+        }
+
+        if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
+            mergeStructuredDataNode(targetValue, sourceValue)
+            continue
+        }
+
+        if (Array.isArray(targetValue) && Array.isArray(sourceValue) && targetValue.length === 0) {
+            targetNode[key] = sourceValue
+        }
+    }
+
+    return targetNode
 }
 
 // Method: build structured data based on the Page type ('family', 'product', etc)
@@ -283,6 +554,40 @@ export const buildStructuredData = ({
     
         mergeAutoVariants(productNode, autoVariants)
     
+        return structuredData
+    }
+
+    if (webpageData?.model_type === "Product" || webpageData?.sub_type === "product") {
+        const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
+        const autoProductNode = buildProductNode({
+            webpageData,
+            webBlocks,
+            currencyCode,
+            websiteName,
+        })
+
+        if (!autoProductNode) {
+            return baseStructuredData
+        }
+
+        if (!baseStructuredData) {
+            return {
+                "@context": "https://schema.org",
+                ...autoProductNode,
+            }
+        }
+
+        const structuredData =
+            normalizeStructuredDataForGraph(baseStructuredData) ?? {
+                "@context": "https://schema.org",
+            }
+
+        const productNode = findOrCreateProductNode(structuredData, () => ({
+            ...autoProductNode,
+        }))
+
+        mergeStructuredDataNode(productNode, autoProductNode)
+
         return structuredData
     }
 
