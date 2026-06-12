@@ -167,7 +167,7 @@
   },
   {
     "outboxes": [
-      "new_order"
+      "new_offer"
     ],
     "name": "New offer",
     "content": "new_offer.blade.php",
