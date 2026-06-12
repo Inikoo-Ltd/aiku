@@ -44,60 +44,7 @@ const cleanedDescription = computed(() => {
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
 
-/* const trimmedDescription = computed(() => {
-  const html = cleanedDescription.value
 
-  if (typeof DOMParser === "undefined") {
-        return html
-  }
-
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(html, "text/html")
-
-  let count = 0
-  const limit = 400
-
-  const walk = (node: Node): boolean => {
-    if (count >= limit) {
-      node.parentNode?.removeChild(node)
-      return true
-    }
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || ""
-      const remaining = limit - count
-
-      if (text.length > remaining) {
-        node.textContent = text.slice(0, remaining) + "..."
-        count = limit
-        return true
-      }
-
-      count += text.length
-    }
-
-    const children = [...node.childNodes]
-
-    for (const child of children) {
-      if (walk(child)) {
-        const siblings = [...node.childNodes]
-        const index = siblings.indexOf(child)
-
-        siblings.slice(index + 1).forEach((sibling) => {
-          sibling.parentNode?.removeChild(sibling)
-        })
-
-        return true
-      }
-    }
-
-    return false
-  }
-
-  walk(doc.body)
-
-  return doc.body.innerHTML
-}) */
 
 const images = computed<FamilyImage[]>(() => {
   const data = props.fieldValue?.family?.description_image
@@ -183,19 +130,21 @@ const updateTitleSize = () => {
 const calculateDescriptionHeight = async () => {
   await nextTick()
 
-  if (!imageRef.value || !descriptionRef.value) {
-    return
+  if (!imageRef.value || !descriptionRef.value) return
+
+  const availableHeight = imageRef.value.offsetHeight - 125
+  const shouldShowReadMore =
+    descriptionRef.value.scrollHeight > availableHeight
+
+  if (maxDescriptionHeight.value !== availableHeight) {
+    maxDescriptionHeight.value = availableHeight
   }
 
-  const availableHeight = imageRef.value.offsetHeight - 120
-  console.log(imageRef.value,descriptionRef.value)
+  if (showReadMore.value !== shouldShowReadMore) {
+    showReadMore.value = shouldShowReadMore
+  }
 
-  maxDescriptionHeight.value = availableHeight
-  const shouldShowReadMore = descriptionRef.value.scrollHeight > availableHeight
-
-  showReadMore.value = shouldShowReadMore
-
-  if (!shouldShowReadMore) {
+  if (!shouldShowReadMore && expanded.value) {
     expanded.value = false
   }
 }
@@ -217,9 +166,9 @@ onMounted(() => {
     resizeObserver.observe(imageRef.value)
   }
 
-  if (descriptionRef.value) {
+ /*  if (descriptionRef.value) {
     resizeObserver.observe(descriptionRef.value)
-  }
+  } */
 })
 
 onUnmounted(() => {
