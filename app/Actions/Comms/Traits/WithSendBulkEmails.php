@@ -202,9 +202,10 @@ trait WithSendBulkEmails
             'end-date' => Arr::get($additionalData, 'end_date'),
             'discount-type' => Arr::get($additionalData, 'discount_type'),
             'blade-discount-details' => Arr::get($additionalData, 'blade_discount_details'),
-            'is-discretionary' => Arr::get($additionalData, 'is_discretionary'),
-            'is-locked' => Arr::get($additionalData, 'is_locked'),
             'trigger-type' => Arr::get($additionalData, 'trigger_type'),
+            'voucher' => Arr::get($additionalData, 'voucher'),
+            'customer-id' => Arr::get($additionalData, 'customer_id'),
+
 
             'low-stock-items-in-basket' => Arr::get($additionalData, 'low_stock_items_in_basket'),
             'payment-reason' => Arr::get($additionalData, 'payment_reason'),

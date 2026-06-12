@@ -62,9 +62,9 @@ class SendNewOfferEmailToSubscribers extends OrgAction
                 'end_date'               => $offer->end_at?->format('F jS, Y') ?? 'N/A',
                 'discount_type'          => $offer->offerAllowances->first()?->type->value ?? 'N/A',
                 'blade_discount_details' => '', // reserved for future rendering
-                'is_discretionary'       => $offer->is_discretionary ? 'Yes' : 'No',
-                'is_locked'              => $offer->is_locked ? 'Yes' : 'No',
                 'trigger_type'           => $offer->trigger_type ?? 'N/A',
+                'voucher'                => $offer->voucher ?? 'N/A',
+                'customer_id'            => $offer->customer_id ?? 'N/A'
             ]
         );
     }

@@ -166,47 +166,27 @@
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">End Date</td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">[End Date]</td>
                           </tr>
-                      </table>
 
-                      <!-- Discount Details Section -->
-                      <table width="100%" cellpadding="4" cellspacing="0" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 20px 0 0 0;">
-                          <tr style="background-color: #f9f9f9; border-bottom: 1px solid #e9e9e9;">
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 13px; font-weight: bold; padding: 10px 0; text-align: center;">Discount Details</td>
+                           <tr style="border-bottom: 1px solid #f0f0f0;">
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">Discount Type</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">[Discount Type]</td>
                           </tr>
-                          <tr style="border-bottom: 1px solid #f0f0f0;">
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0;">
-                                  <strong>Discount Type:</strong> [Discount Type]
-                              </td>
-                          </tr>
-                          <tr style="border-bottom: 1px solid #f0f0f0;">
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0;">
-                                  [Blade Discount Details]
-                              </td>
-                          </tr>
-                      </table>
 
-                      <!-- Additional Settings -->
-                      <table width="100%" cellpadding="4" cellspacing="0" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 20px 0 0 0;">
-                          <tr style="background-color: #f9f9f9; border-bottom: 1px solid #e9e9e9;">
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 13px; font-weight: bold; padding: 10px 0; text-align: center;">Settings</td>
+                           <tr style="border-bottom: 1px solid #f0f0f0;">
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">Trigger Type</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">[Trigger Type]</td>
                           </tr>
-                          <tr style="border-bottom: 1px solid #f0f0f0;">
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0;">
-                                  <strong>Discretionary:</strong> [Is Discretionary]
-                              </td>
-                          </tr>
-                          <tr style="border-bottom: 1px solid #f0f0f0;">
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0;">
-                                  <strong>Locked:</strong> [Is Locked]
-                              </td>
-                          </tr>
-                          <tr>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0;">
-                                  <strong>Trigger Type:</strong> [Trigger Type]
-                              </td>
-                          </tr>
-                      </table>
 
+                           <tr style="border-bottom: 1px solid #f0f0f0;">
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">Voucher</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">[Voucher]</td>
+                            </tr>
+                            
+                            <tr style="border-bottom: 1px solid #f0f0f0;">
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">Customer ID</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">[Customer Id]</td>
+                            </tr>
+                      </table>
                   </td>
               </tr>
         </table>
