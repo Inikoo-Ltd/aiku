@@ -29,6 +29,7 @@ import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 import PreviewVoucher from '@/Components/Offers/PreviewOffer/PreviewVoucher.vue'
 import PreviewGift from '@/Components/Offers/PreviewOffer/PreviewGift.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 library.add(faFlagCheckered)
 
@@ -46,6 +47,7 @@ const props = defineProps<{
     }
     customers?: object
     orders?: object
+    history?: object
     url_master?: routeType
 }>()
 
@@ -125,6 +127,7 @@ const tabComponent = computed(() => {
     const components: Record<string, unknown> = {
         customers: TableCustomers,
         orders: TableOrders,
+        history: TableHistories
     }
     return components[currentTab.value]
 })

@@ -128,6 +128,10 @@ class Offer extends Model implements Auditable
         'type',
         'status',
         'state',
+        'voucher',
+        'customer_id',
+        'start_at',
+        'end_at'
     ];
 
 
