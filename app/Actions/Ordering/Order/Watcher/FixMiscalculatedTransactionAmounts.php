@@ -39,20 +39,19 @@ class FixMiscalculatedTransactionAmounts
             $grossAmountExpected = round($qtyOrdered * $historicPrice, 2);
             $netAmountExpected   = round(($qtyOrdered * $historicPrice) * ($transaction->current_discount_factor ?? 1), 2);
 
-            if ($grossAmountExpected != $transaction->gross_amount || (abs($netAmountExpected - $transaction->net_amount) > 0.01)) {
+            if ((abs($grossAmountExpected - $transaction->gross_amount) > 0.01) || (abs($netAmountExpected - $transaction->net_amount) > 0.01)) {
                 data_set($miscalculatedTransactionsDebugData, $transaction->id, [
-                    'transaction_id'        => $transaction->id,
-                    'item_code'             => $transaction->historicAsset->code,
-                    'historic_asset_id'     => $transaction->historicAsset->id,
-                    'gross_amount'          => $transaction->gross_amount,
-                    'net_amount'            => $transaction->net_amount,
-                    'gross_amount_expected' => $grossAmountExpected,
-                    'net_amount_expected'   => $netAmountExpected,
-                    'quantity_ordered'      => $qtyOrdered,
-                    'historic_price'        => $historicPrice,
-
-                    'offer_data'              => $transaction->offers_data,
-                    'current_discount_factor' => $transaction->current_discount_factor,
+                    'transaction_id'            => $transaction->id,
+                    'item_code'                 => $transaction->historicAsset->code,
+                    'historic_asset_id'         => $transaction->historicAsset->id,
+                    'gross_amount'              => $transaction->gross_amount,
+                    'net_amount'                => $transaction->net_amount,
+                    'gross_amount_expected'     => $grossAmountExpected,
+                    'net_amount_expected'       => $netAmountExpected,
+                    'quantity_ordered'          => $qtyOrdered,
+                    'historic_price'            => $historicPrice,
+                    'offer_data'                => $transaction->offers_data,
+                    'current_discount_factor'   => $transaction->current_discount_factor,
                 ]);
 
                 if ($repairAmount) {
@@ -65,7 +64,7 @@ class FixMiscalculatedTransactionAmounts
         if (!empty($miscalculatedTransactionsDebugData)) {
             Sentry::withScope(function (Scope $scope) use ($miscalculatedTransactionsDebugData, $order) {
                 $scope->setContext('miscalculated_items', $miscalculatedTransactionsDebugData);
-                Sentry::captureMessage("Order $order->id: Pricing mismatch detected V3");
+                Sentry::captureMessage("Order $order->id: Pricing mismatch detected V4");
             });
         }
 

@@ -12,6 +12,7 @@ use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CalculateOrderDiscounts implements ShouldBeUnique
 {
     use AsAction;
+
     public string $jobQueue = 'urgent';
 
     private \Illuminate\Support\Collection $transactions;
@@ -102,7 +104,9 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                                     'p'   => percentage($transaction->discounted_percentage, 1),
                                     'l'   => $transaction->offer_label,
                                     'st'  => $transaction->sub_trigger,
-                                    'sto' => $transaction->sub_trigger_offer_id
+                                    'sto' => $transaction->sub_trigger_offer_id,
+                                    'f'   => $transaction->free_items_value ?? 0,
+                                    'nf'  => $transaction->number_of_free_items ?? 0
 
                                 ]
                             ]
@@ -129,6 +133,11 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             }
         }
 
+
+        if ($order->state != OrderStateEnum::CREATING) {
+            $this->regenerateSubmittedTransactionDiscounts($order);
+        }
+
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
         $this->getGiftsMeters($order);
@@ -143,6 +152,59 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
         return $order;
     }
+
+    public function regenerateSubmittedTransactionDiscounts(Order $order): void
+    {
+        if (app()->environment('production')) {
+            return;
+        }
+
+        /** @var Transaction $transactionWithSubmittedDiscount */
+        foreach (
+            $order->transactions()
+                ->where('has_discount_when_submitted', true)
+                ->whereRaw("submitted_offers_data <> '{}'::jsonb") // If this isn't present due to the bug you told me previously Raul, but submitted_discount_factor is indeed less than 1, would throw error.
+                ->where('submitted_discount_factor', '<', DB::raw('current_discount_factor'))
+                ->get() as $transactionWithSubmittedDiscount
+        ) {
+            DB::table('transaction_has_offer_allowances')->where('is_gift', false)->where('transaction_id', $transactionWithSubmittedDiscount->id)->delete();
+
+
+            $percentageOff    = 1 - $transactionWithSubmittedDiscount->submitted_discount_factor;
+            $discountedAmount = round((float)$transactionWithSubmittedDiscount->gross_amount * $percentageOff, 2);
+
+
+            DB::table('transactions')->where('id', $transactionWithSubmittedDiscount->id)
+                ->update(
+                    [
+
+                        'net_amount'              => $transactionWithSubmittedDiscount->gross_amount - $discountedAmount,
+                        'current_discount_factor' => $transactionWithSubmittedDiscount->submitted_discount_factor,
+                        'offers_data'             => $transactionWithSubmittedDiscount->submitted_offers_data
+                    ]
+                );
+
+
+            DB::table('transaction_has_offer_allowances')->insert([
+                'order_id'              => $order->id,
+                'transaction_id'        => $transactionWithSubmittedDiscount->id,
+                'model_type'            => $transactionWithSubmittedDiscount->model_type,
+                'model_id'              => $transactionWithSubmittedDiscount->model_id,
+                'offer_campaign_id'     => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.oc'),
+                'offer_id'              => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.o'),
+                'offer_allowance_id'    => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.oa'),
+                'discounted_amount'     => $discountedAmount,
+                'discounted_percentage' => $percentageOff,
+                'free_items_value'      => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.f', 0),
+                'number_of_free_items'  => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.nf', 0),
+                'created_at'            => now(),
+                'updated_at'            => now(),
+                'data'                  => '{}'
+
+            ]);
+        }
+    }
+
 
     public function getGiftsMeters(Order $order): void
     {
