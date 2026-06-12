@@ -159,7 +159,6 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
-
         /** @var Transaction $transactionWithSubmittedDiscount */
         foreach (
             $order->transactions()
