@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTag } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Modal from '@/Components/Utils/Modal.vue'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 library.add(faTag)
 
 const props = defineProps<{
@@ -40,6 +41,7 @@ const props = defineProps<{
         }
     }
     inIris: boolean
+    currentGrossAmount: number
 }>()
 
 const emits = defineEmits<{
@@ -48,6 +50,7 @@ const emits = defineEmits<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
 
 // Section: Voucher
 const isLoadingVoucher = ref(false)
@@ -64,7 +67,7 @@ const currentVoucher = ref(props.voucher || {
 })
 const hasAttachedVoucher = computed(() => Boolean(currentVoucher.value?.voucher_code))
 const isVoucherExpired = computed(() => currentVoucher.value?.status === 'expired')
-const tempVoucherCode = ref('')
+const tempVoucherCode = ref<string | undefined>('')
 
 watch(
     () => props?.voucher?.voucher_code,
@@ -85,7 +88,7 @@ watch(
 )
 
 const onApplyVoucher = () => {
-    if (!tempVoucherCode.value.trim()) {
+    if (!tempVoucherCode.value?.trim()) {
         return
     }
 
@@ -99,7 +102,7 @@ const onApplyVoucher = () => {
     }
 
     router.post(
-        route(props.routes?.store.name, { order: props.routes?.store.parameters }),
+        route(props.routes?.store.name ?? '', { order: props.routes?.store.parameters }),
         { voucher: tempVoucherCode.value },
         {
             preserveScroll: true,
@@ -140,7 +143,7 @@ const onRemoveVoucher = () => {
     if (!hasAttachedVoucher.value) return
 
     router.post(
-        route(props.routes?.remove.name, { order: props.routes?.remove.parameters }),
+        route(props.routes?.remove.name ?? '', { order: props.routes?.remove.parameters }),
         { voucher: null },
         {
             preserveScroll: true,
@@ -196,33 +199,46 @@ const onRemoveVoucher = () => {
                         xisLoading="isLoadingVoucher"
                         @onEnter="() => onApplyVoucher()"
                         :disabled="isLoadingVoucher || hasAttachedVoucher"
-                        class="!bg-green-100 font-bold !border !border-green-500"
+                        class="font-bold !border"
+                        :class="
+                            currentGrossAmount >= currentVoucher.voucher_amount ? '!bg-green-100 !border-green-500' : '!bg-gray-100 !border-gray-500'
+                        "
                         :prefix="{
                             icon: 'fas fa-tag'
                         }"
                         :styleInput="{
                             paddingTop: '5px',
                             paddingBottom: '5px',
-                            xborder: '1px solid rgb(34 197 94 / var(--tw-border-opacity, 1))'
                         }"
-                        classInput="!bg-transparent !text-green-700 "
+                        :classInput="
+                            currentGrossAmount >= currentVoucher.voucher_amount ? '!bg-transparent !text-green-700' : '!bg-transparent !text-gray-700'
+                        "
                     >
                         <template #prefix>
-                            <div class="pl-3 -mr-2 whitespace-nowrap text-green-700">
+                            <div class="pl-3 -mr-2 whitespace-nowrap "
+                                :class="currentGrossAmount >= currentVoucher.voucher_amount ? 'opacity-100 text-green-700' : 'opacity-70'"
+                            >
                                 <FontAwesomeIcon icon='fas fa-tag' class='' fixed-width aria-hidden='true' />
                             </div>
                         </template>
                         <template v-if="currentVoucher?.name" #suffix>
-                            <div class="text-green-700 flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer">
+                            <div class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer"
+                                :class="currentGrossAmount >= currentVoucher.voucher_amount ? 'text-green-700 opacity-100' : 'opacity-70'"
+                            >
                                 <InformationIcon :information="currentVoucher?.name" />
                             </div>
                         </template>
                     </PureInput>
 
-                    <div class="text-xs italic opacity-70 mt-0.5 text-green-700 pr-1"
+                    <div v-if="currentGrossAmount >= currentVoucher.voucher_amount" class="text-xs italic opacity-70 mt-0.5 text-green-700 pr-1"
                         :class="inIris ? '' : 'text-right'"
                     >
                         {{ ctrans('Voucher valid until :voucherUntil', { voucherUntil: useFormatTime(currentVoucher.end_at, { formatTime: 'hm'}) }) }}
+                    </div>
+                    <div v-else class="text-xs italic opacity-70 mt-0.5 text-gray-700 pr-1"
+                        :class="inIris ? '' : 'text-right'"
+                    >
+                        {{ ctrans('Add :amountToActive to your basket to activate the voucher.', { amountToActive: locale.currencyFormat(layout.iris?.currency?.code, currentVoucher.voucher_amount - currentGrossAmount) }) }}
                     </div>
                 </div>
 
@@ -239,8 +255,6 @@ const onRemoveVoucher = () => {
                     />
                 </div>
             </div>
-
-            
         </div>
         
         <!-- Voucher: not active -->
