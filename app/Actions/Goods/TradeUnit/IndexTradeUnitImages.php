@@ -13,6 +13,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use App\Services\QueryBuilder;
+use Spatie\QueryBuilder\AllowedSort;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -36,9 +37,13 @@ class IndexTradeUnitImages extends OrgAction
                 'media.*',
                 'model_has_media.sub_scope as sub_scope',
                 'model_has_media.caption as caption',
-            ]);
+            ])
+            ->selectRaw('? as trade_unit_name', [$tradeUnit->name]);
 
-        return $queryBuilder->allowedSorts(['size', 'name'])
+        return $queryBuilder->allowedSorts([
+                AllowedSort::field('size', 'media.size'),
+                AllowedSort::field('name', 'media.name'),
+            ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

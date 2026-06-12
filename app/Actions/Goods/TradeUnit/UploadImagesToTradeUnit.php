@@ -24,6 +24,12 @@ class UploadImagesToTradeUnit extends GrpAction
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
 
+        foreach ($medias as $media) {
+            $model->images()->updateExistingPivot($media->id, [
+                'caption' => $model->name,
+            ]);
+        }
+
         if ($updateDependants) {
             UpdateTradeUnitImages::make()->updateDependencies($model);
         }
