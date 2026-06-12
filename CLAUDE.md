@@ -29,7 +29,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/envoy (ENVOY) - v2
 - laravel/mcp (MCP) - v0
 - laravel/pint (PINT) - v1
-- laravel/sail (SAIL) - v1
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
 - @inertiajs/vue3 (INERTIA) - v2
