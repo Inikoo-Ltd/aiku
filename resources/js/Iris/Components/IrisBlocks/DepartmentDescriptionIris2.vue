@@ -120,7 +120,7 @@ const calculateDescriptionHeight = async () => {
 
 	if (!media || !description) return
 
-	maxDescriptionHeight.value = media.offsetHeight
+	maxDescriptionHeight.value = media.offsetHeight - 190
 	showReadMore.value = description.scrollHeight > media.offsetHeight
 }
 
@@ -252,7 +252,7 @@ watch(
 										class="text-[14px] md:text-[15px] 2xl:text-[17px] leading-7 2xl:leading-8 text-slate-700 max-w-[520px] 2xl:max-w-[650px] mx-auto overflow-hidden transition-all duration-300"
 										:style="
 											!expanded && showReadMore
-												? { maxHeight: `${maxDescriptionHeight - 190}px` }
+												? { maxHeight: `${maxDescriptionHeight}px` }
 												: {}
 										"
 										v-html="fieldValue.department.description_extra" />
