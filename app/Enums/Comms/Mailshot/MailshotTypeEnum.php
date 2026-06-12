@@ -19,5 +19,8 @@ enum MailshotTypeEnum: string
     case INVITE = 'invite';
     case ABANDONED_CART = 'abandoned_cart';
 
-
+    public function requiresUnsubscribeLink(): bool
+    {
+        return $this !== self::INVITE;
+    }
 }

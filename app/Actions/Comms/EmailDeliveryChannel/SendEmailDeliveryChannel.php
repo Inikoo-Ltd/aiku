@@ -21,8 +21,6 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
-use App\Enums\Comms\Mailshot\MailshotTypeEnum;
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailBulkRunRecipient;
@@ -43,8 +41,13 @@ class SendEmailDeliveryChannel
 
     public string $jobQueue = 'ses-send';
 
-    public function handle(EmailDeliveryChannel $emailDeliveryChannel, bool $runOnlyInReady = true): void
+    public function handle(int $emailDeliveryChannelId, bool $runOnlyInReady = true): void
     {
+        $emailDeliveryChannel = EmailDeliveryChannel::find($emailDeliveryChannelId);
+        if (!$emailDeliveryChannel) {
+            return;
+        }
+
         if ($runOnlyInReady && ($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY)) {
             return;
         }
@@ -61,17 +64,7 @@ class SendEmailDeliveryChannel
 
         $emailHtmlBody = GetHtmlLayout::run($model);
 
-        $emailBulkRunHasUnsubscribeLink = [
-            OutboxCodeEnum::REORDER_REMINDER,
-            OutboxCodeEnum::REORDER_REMINDER_2ND,
-            OutboxCodeEnum::REORDER_REMINDER_3RD,
-            OutboxCodeEnum::BASKET_LOW_STOCK,
-            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
-        ];
-
-        if ($model instanceof Mailshot && $model->type !== MailshotTypeEnum::INVITE) {
-            $emailHtmlBody = EnsureEmailHasUnsubscribeLink::run($emailHtmlBody);
-        } elseif ($model instanceof EmailBulkRun && in_array($model->outbox->code, $emailBulkRunHasUnsubscribeLink)) {
+        if ($model->requiresUnsubscribeLink()) {
             $emailHtmlBody = EnsureEmailHasUnsubscribeLink::run($emailHtmlBody);
         }
 
@@ -123,7 +116,7 @@ class SendEmailDeliveryChannel
             };
 
             if ($tag) {
-                $unsubscribeUrl .= '?tag=' . $tag;
+                $unsubscribeUrl .= '?tag='.$tag;
             }
 
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
@@ -135,12 +128,12 @@ class SendEmailDeliveryChannel
             if ($recipient->recipient_name) {
                 $additionalData['customer_name'] = $recipient->recipient_name;
             } elseif ($recipient->recipient_type == 'Customer') {
-                $recipientData = DB::table('customers')->select('name')->where('id', $recipient->recipient_id)->first();
+                $recipientData = DB::connection('aiku_no_sticky')->table('customers')->select('name')->where('id', $recipient->recipient_id)->first();
                 if ($recipientData) {
                     $additionalData['customer_name'] = $recipientData->name;
                 }
             } elseif ($recipient->recipient_type == 'Prospect') {
-                $recipientData = DB::table('prospects')->select('name')->where('id', $recipient->recipient_id)->first();
+                $recipientData = DB::connection('aiku_no_sticky')->table('prospects')->select('name')->where('id', $recipient->recipient_id)->first();
                 if ($recipientData) {
                     $additionalData['customer_name'] = $recipientData->name;
                 }
@@ -196,14 +189,21 @@ class SendEmailDeliveryChannel
     }
 
 
-    public string $commandSignature = 'mailshot:send-channel {channel}';
+    public string $commandSignature = 'mailshot:send-channel {channel?}';
 
 
     public function asCommand(Command $command): int
     {
-        $emailDeliveryChannel = EmailDeliveryChannel::findOrFail($command->argument('channel'));
-        $this->handle($emailDeliveryChannel, false);
+        if ($command->argument('channel')) {
+            $emailDeliveryChannel = EmailDeliveryChannel::findOrFail($command->argument('channel'));
+            $this->handle($emailDeliveryChannel->id, false);
 
+            return 0;
+        }
+
+        foreach (EmailDeliveryChannel::where('state', EmailDeliveryChannelStateEnum::READY) as $emailDeliveryChannel) {
+            SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id);
+        }
 
         return 0;
     }

@@ -87,7 +87,7 @@ class ProcessOutOfStockInOrderRecipients
         );
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(5);
     }
 
     public function generateProductLinks(string $productIds): string

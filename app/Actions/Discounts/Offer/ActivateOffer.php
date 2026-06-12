@@ -11,7 +11,7 @@ namespace App\Actions\Discounts\Offer;
 use App\Actions\Discounts\OfferAllowance\ActivateOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
 use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -63,7 +63,7 @@ class ActivateOffer extends OrgAction
             if ($offer->customer_id) {
                 RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay($this->hydratorsDelay);
             } else {
-                RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay($this->hydratorsDelay);
+                RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id)->delay($this->hydratorsDelay);
             }
         }
 

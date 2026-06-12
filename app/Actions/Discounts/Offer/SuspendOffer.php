@@ -12,7 +12,7 @@ use App\Actions\Discounts\OfferAllowance\SuspendOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
 use App\Actions\Ordering\Order\CleanFinishedVouchers;
 use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -65,7 +65,7 @@ class SuspendOffer extends OrgAction
             if ($offer->customer_id) {
                 RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay(now()->addSeconds(10));
             } else {
-                RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
+                RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
             }
         }
 

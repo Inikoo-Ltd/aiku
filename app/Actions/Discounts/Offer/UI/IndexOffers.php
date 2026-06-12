@@ -86,6 +86,15 @@ class IndexOffers extends OrgAction
         $query->leftjoin('shops', 'offers.shop_id', '=', 'shops.id');
         $query->leftjoin('offer_campaigns', 'offers.offer_campaign_id', '=', 'offer_campaigns.id');
 
+        $offerCreators = DB::table('audits')
+            ->join('users', 'users.id', '=', 'audits.user_id')
+            ->where('audits.auditable_type', 'Offer')
+            ->where('audits.event', 'created')
+            ->where('audits.user_type', 'User')
+            ->select('audits.auditable_id as offer_id', 'users.username as created_by');
+
+        $query->leftJoinSub($offerCreators, 'offer_creators', 'offer_creators.offer_id', '=', 'offers.id');
+
         $firstAllowance = DB::table('offer_allowances')
             ->selectRaw("DISTINCT ON (offer_id) offer_id, type AS allowance_type, class AS allowance_class, target_type AS allowance_target_type, (data->>'percentage_off')::numeric AS allowance_percentage_off, (data->>'category_id')::integer AS allowance_category_id")
             ->where('type', '!=', 'unknown')
@@ -135,6 +144,7 @@ class IndexOffers extends OrgAction
             'fa.allowance_target_type',
             'fa.allowance_percentage_off',
             'product_categories.name as allowance_category_name',
+            'offer_creators.created_by',
         ];
 
         $timeSeriesData = $query->withTimeSeriesAggregation(
@@ -217,6 +227,8 @@ class IndexOffers extends OrgAction
                 $table->column(key: 'organisation_name', label: __('organisation'), sortable: true);
                 $table->column(key: 'shop_name', label: __('Shop'), sortable: true);
             }
+
+            $table->column(key: 'created_by', label: __('Created by'), sortable: false);
 
             if ($showActions) {
                 $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
