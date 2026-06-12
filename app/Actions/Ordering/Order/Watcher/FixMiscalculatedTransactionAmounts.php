@@ -42,7 +42,7 @@ class FixMiscalculatedTransactionAmounts
             $diffGross = abs($grossAmountExpected - $transaction->gross_amount);
             $diffNet   = abs($netAmountExpected - $transaction->net_amount);
 
-            if (($diffGross > 0.01) || ($diffNet > 0.01)) {
+            if (($diffGross > 0.016) || ($diffNet > 0.016)) {
                 data_set($miscalculatedTransactionsDebugData, $transaction->id, [
                     'transaction_id'          => $transaction->id,
                     'item_code'               => $transaction->historicAsset->code,
@@ -69,7 +69,7 @@ class FixMiscalculatedTransactionAmounts
         if (!empty($miscalculatedTransactionsDebugData)) {
             Sentry::withScope(function (Scope $scope) use ($miscalculatedTransactionsDebugData, $order) {
                 $scope->setContext('miscalculated_items', $miscalculatedTransactionsDebugData);
-                Sentry::captureMessage("Order $order->id: Pricing mismatch detected V4");
+                Sentry::captureMessage("Order $order->id: Pricing mismatch detected V5");
             });
         }
 
