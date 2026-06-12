@@ -16,6 +16,7 @@ import "floating-vue/dist/style.css"
 import PrimeVue from "primevue/config"
 import Aura from "@primevue/themes/aura"
 import { definePreset } from "@primevue/themes"
+import { ctrans } from "@/Composables/useTrans"
 
 const pinia = createPinia()
 
@@ -61,7 +62,11 @@ createServer(
 				return page.default ?? page
 			},
 			setup({ App, props, plugin }) {
-				return createSSRApp({ render: () => h(App, props) })
+				const app = createSSRApp({ render: () => h(App, props) })
+
+				app.config.globalProperties.ctrans = ctrans
+
+				return app
 					.use(Notifications)
 					.use(FloatingVue)
 					.use(PrimeVue, {

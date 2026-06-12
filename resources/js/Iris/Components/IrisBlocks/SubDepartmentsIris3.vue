@@ -2,7 +2,7 @@
 import Image from '@/Common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import axios from 'axios'
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, inject } from 'vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from "@/Composables/useTrans";
@@ -36,7 +36,7 @@ const props = defineProps<{
 
 const loading = ref(false)
 const loadingMore = ref(false)
-
+const layout: any = inject("layout", {})
 const selectedSubDepartment = ref<number | null>(null)
 
 const families = ref(props.fieldValue?.families?.data ?? [])

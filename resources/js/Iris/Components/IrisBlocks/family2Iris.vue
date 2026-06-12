@@ -253,7 +253,7 @@ const contentClass = computed(() =>
   <section :id="`family-2`" component="family-2-iris">
     <div class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1800px] 2xl:px-14" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue?.container?.properties),
+      ...getStyles(fieldValue?.container?.properties, screenType),
       width: 'auto'
     }">
       <div :class="contentClass">
@@ -451,7 +451,7 @@ const contentClass = computed(() =>
           2xl:px-12
           2xl:text-base
         " :style="{
-          ...getStyles(fieldValue?.button?.container?.properties)
+          ...getStyles(fieldValue?.button?.container?.properties, screenType)
         }">
                 {{ fieldValue?.button?.text || ctrans('Learn more') }}
               </button>

@@ -192,14 +192,17 @@ watch(
 		<div
 			:style="{
 				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-				...getStyles(fieldValue?.container?.properties),
+				...getStyles(fieldValue?.container?.properties, screenType),
 				width: 'auto',
 			}"
 			class="py-6 md:py-8 lg:py-10 2xl:py-14 px-4 md:px-8 2xl:px-12">
 			<div
 				class="grid grid-cols-1 lg:grid-cols-[260px_1fr] 2xl:grid-cols-[320px_1fr] gap-6 lg:gap-10 2xl:gap-14">
 				<!-- Sidebar -->
-				<aside class="hidden lg:block border-r border-gray-300 pr-4 2xl:pr-8">
+				<aside class="hidden lg:block border-r border-gray-300 pr-4 2xl:pr-8"
+				:style="{
+						...getStyles(fieldValue?.sidebar?.properties, screenType),
+					}">
 					<h3 class="font-bold text-lg 2xl:text-xl mb-6">
 						{{ ctrans("Browse By Category:") }}
 					</h3>
@@ -220,7 +223,9 @@ watch(
 				</aside>
 
 				<!-- Main Content -->
-				<div ref="_content">
+				<div ref="_content" 	:style="{
+						...getStyles(fieldValue?.description?.properties, screenType),
+					}">
 					<h1
 						class="text-[28px] md:text-[36px] lg:text-[46px] 2xl:text-[60px] font-bold leading-tight text-slate-900">
 						{{
@@ -234,7 +239,9 @@ watch(
 						v-html="fieldValue.department.description" />
 
 					<!-- Banner Desktop  -->
-					<div class="mt-6 overflow-hidden bg-[#E7E7E7] hidden lg:block">
+					<div class="mt-6 overflow-hidden bg-[#E7E7E7] hidden lg:block" :style="{
+							...getStyles(fieldValue?.cta?.properties,screenType),
+						}">
 						<div class="grid grid-cols-1 lg:grid-cols-[46%_54%] items-start">
 							<!-- Content -->
 							<div
@@ -320,7 +327,9 @@ watch(
 					</div>
 
 					<!-- Banner Mobile  -->
-					<details class="lg:hidden border-y border-gray-300">
+					<details class="lg:hidden border-y border-gray-300" :style="{
+						...getStyles(fieldValue?.sidebar?.properties,screenType),
+					}">
 						<summary
 							class="flex items-center justify-between py-5 px-4 text-xl font-bold list-none cursor-pointer">
 							{{ ctrans("Browse By Category:") }}
@@ -343,7 +352,9 @@ watch(
 					</details>
 
 					<!-- Mobile Only -->
-					<div class="lg:hidden bg-[#E7E7E7] overflow-hidden">
+					<div class="lg:hidden bg-[#E7E7E7] overflow-hidden" :style="{
+						...getStyles(fieldValue?.cta?.properties, screenType),
+					}">
 						<!-- Image -->
 						<div class="aspect-[4/3] overflow-hidden" ref="mobileMediaRef">
 							<template v-if="fieldValue.department.showcase_image">

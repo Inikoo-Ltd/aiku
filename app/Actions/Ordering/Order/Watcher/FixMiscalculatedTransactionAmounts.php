@@ -39,8 +39,7 @@ class FixMiscalculatedTransactionAmounts
             $grossAmountExpected = round($qtyOrdered * $historicPrice, 2);
             $netAmountExpected   = round(($qtyOrdered * $historicPrice) * ($transaction->current_discount_factor ?? 1), 2);
 
-
-            if ($grossAmountExpected != $transaction->gross_amount || $netAmountExpected != $transaction->net_amount) {
+            if ($grossAmountExpected != $transaction->gross_amount || (abs($netAmountExpected - $transaction->net_amount) > 0.01)) {
                 data_set($miscalculatedTransactionsDebugData, $transaction->id, [
                     'transaction_id'        => $transaction->id,
                     'item_code'             => $transaction->historicAsset->code,
@@ -66,7 +65,7 @@ class FixMiscalculatedTransactionAmounts
         if (!empty($miscalculatedTransactionsDebugData)) {
             Sentry::withScope(function (Scope $scope) use ($miscalculatedTransactionsDebugData, $order) {
                 $scope->setContext('miscalculated_items', $miscalculatedTransactionsDebugData);
-                Sentry::captureMessage("Order $order->id: Pricing mismatch detected V2");
+                Sentry::captureMessage("Order $order->id: Pricing mismatch detected V3");
             });
         }
 

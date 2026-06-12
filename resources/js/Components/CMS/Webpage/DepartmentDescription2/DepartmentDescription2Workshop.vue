@@ -3,7 +3,13 @@ import { ref, computed, nextTick, onMounted, onUnmounted, watch, inject } from "
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faPlayCircle } from "@fas"
-import { faChevronCircleLeft, faChevronCircleRight, faTimes, faVideoSlash,faChevronDown } from "@far"
+import {
+	faChevronCircleLeft,
+	faChevronCircleRight,
+	faTimes,
+	faVideoSlash,
+	faChevronDown,
+} from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { getStyles } from "@/Composables/styles"
@@ -56,9 +62,10 @@ const props = defineProps<{
 	}
 }>()
 
-console.log("department", props)
 const layout: any = inject("layout", {})
 const videoDialogVisible = ref(false)
+const _sidebar = ref()
+const _content = ref()
 
 const embedUrl = computed(() => {
 	const v = props.modelValue?.department?.showcase_video
@@ -93,31 +100,70 @@ const embedUrl = computed(() => {
 
 	return v
 })
-const mediaRef = ref<HTMLElement | null>(null)
-const descriptionRef = ref<HTMLElement | null>(null)
+
+const desktopMediaRef = ref<HTMLElement | null>(null)
+const mobileMediaRef = ref<HTMLElement | null>(null)
+const desktopDescriptionRef = ref<HTMLElement | null>(null)
+const mobileDescriptionRef = ref<HTMLElement | null>(null)
 
 const expanded = ref(false)
 const showReadMore = ref(false)
 const maxDescriptionHeight = ref(0)
+const maxSideBarHeight = ref(0)
 let resizeObserver: ResizeObserver | null = null
 
 const calculateDescriptionHeight = async () => {
 	await nextTick()
 
-	if (!mediaRef.value || !descriptionRef.value) return
+	const media = props.screenType === "mobile" ? mobileMediaRef.value : desktopMediaRef.value
+	const description =
+		props.screenType === "mobile" ? mobileDescriptionRef.value : desktopDescriptionRef.value
 
-	maxDescriptionHeight.value = mediaRef.value.offsetHeight
-	showReadMore.value = descriptionRef.value.scrollHeight > mediaRef.value.offsetHeight
+	if (!media || !description) return
+
+
+
+	maxDescriptionHeight.value = media.offsetHeight - 190
+	showReadMore.value = description.scrollHeight > media.offsetHeight
 }
 
-onMounted(() => {
-	calculateDescriptionHeight()
+const calculateSidebarHeight = async () => {
+	await nextTick()
 
-	if (window.ResizeObserver && mediaRef.value) {
-		resizeObserver = new ResizeObserver(calculateDescriptionHeight)
-		resizeObserver.observe(mediaRef.value)
-	} else {
-		window.addEventListener("resize", calculateDescriptionHeight)
+	if (!_content.value) {
+		return
+	}
+
+	const newHeight = _content.value.offsetHeight - 80
+
+	if (newHeight !== maxSideBarHeight.value) {
+		maxSideBarHeight.value = newHeight
+	}
+}
+
+onMounted(async () => {
+	await nextTick()
+
+	calculateDescriptionHeight()
+	calculateSidebarHeight()
+
+	if (window.ResizeObserver) {
+		resizeObserver = new ResizeObserver(() => {
+			calculateDescriptionHeight()
+			calculateSidebarHeight()
+		})
+
+		if (_content.value) {
+			resizeObserver.observe(_content.value)
+		}
+
+		if (desktopMediaRef.value) {
+			resizeObserver.observe(desktopMediaRef.value)
+		}
+
+		if (mobileMediaRef.value) {
+			resizeObserver.observe(mobileMediaRef.value)
+		}
 	}
 })
 
@@ -134,6 +180,7 @@ watch(
 		props.modelValue.department.description_extra,
 		props.modelValue.department.showcase_video,
 		props.modelValue.department.showcase_image,
+		props.screenType,
 	],
 	calculateDescriptionHeight,
 	{ immediate: true }
@@ -143,24 +190,31 @@ watch(
 <template>
 	<div
 		:id="modelValue?.id ? modelValue?.id : 'department-1-iris' + indexBlock"
-		component="department-1-iris">
+		component="department-1-iris"
+		class="pt-7 pb-4">
 		<div
 			:style="{
 				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-				...getStyles(modelValue?.container?.properties),
+				...getStyles(modelValue?.container?.properties, screenType),
 				width: 'auto',
 			}"
 			class="py-6 md:py-8 lg:py-10 2xl:py-14 px-4 md:px-8 2xl:px-12">
 			<div
 				class="grid grid-cols-1 lg:grid-cols-[260px_1fr] 2xl:grid-cols-[320px_1fr] gap-6 lg:gap-10 2xl:gap-14">
 				<!-- Sidebar -->
-				<aside class="hidden lg:block border-r border-gray-300 pr-4 2xl:pr-8">
+				<aside
+					class="hidden lg:block border-r border-gray-300 pr-4 2xl:pr-8"
+					:style="{
+						...getStyles(modelValue?.sidebar?.properties, screenType),
+					}">
 					<h3 class="font-bold text-lg 2xl:text-xl mb-6">
 						{{ ctrans("Browse By Category:") }}
 					</h3>
 
 					<div
-						class="category-scroll max-h-[360px] 2xl:max-h-[500px] overflow-y-auto pr-4 space-y-4 2xl:space-y-5">
+						ref="_sidebar"
+						class="overflow-y-auto pr-4 space-y-4"
+						:style="{ maxHeight: `${maxSideBarHeight}px` }">
 						<LinkIris
 							v-for="item of props.modelValue.sub_departments"
 							:key="item.url"
@@ -173,7 +227,11 @@ watch(
 				</aside>
 
 				<!-- Main Content -->
-				<section>
+				<div
+					ref="_content"
+					:style="{
+						...getStyles(modelValue?.description?.properties, screenType),
+					}">
 					<h1
 						class="text-[28px] md:text-[36px] lg:text-[46px] 2xl:text-[60px] font-bold leading-tight text-slate-900">
 						{{
@@ -187,7 +245,11 @@ watch(
 						v-html="modelValue.department.description" />
 
 					<!-- Banner Desktop  -->
-					<div class="mt-6 overflow-hidden bg-[#E7E7E7] hidden lg:block">
+					<div
+						:style="{
+							...getStyles(modelValue?.cta?.properties, screenType),
+						}"
+						class="mt-6 overflow-hidden bg-[#E7E7E7] hidden lg:block">
 						<div class="grid grid-cols-1 lg:grid-cols-[46%_54%] items-start">
 							<!-- Content -->
 							<div
@@ -198,7 +260,7 @@ watch(
 										class="text-[14px] md:text-[15px] 2xl:text-[17px] leading-7 2xl:leading-8 text-slate-700 max-w-[520px] 2xl:max-w-[650px] mx-auto overflow-hidden transition-all duration-300"
 										:style="
 											!expanded && showReadMore
-												? { maxHeight: `${maxDescriptionHeight - 190}px` }
+												? { maxHeight: `${maxDescriptionHeight}px` }
 												: {}
 										"
 										v-html="modelValue.department.description_extra" />
@@ -226,9 +288,7 @@ watch(
 										{{ ctrans("See a video") }}
 									</button>
 
-									<a
-										v-else-if="modelValue.department.showcase_image"
-										href="#sub-department">
+									<a v-else href="#sub-department">
 										<button
 											class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 md:px-8 lg:px-10 2xl:px-12 2xl:py-4 rounded-md transition">
 											{{ ctrans("Browse All") }}
@@ -275,7 +335,9 @@ watch(
 					</div>
 
 					<!-- Banner Mobile  -->
-					<details class="lg:hidden border-y border-gray-300">
+					<details class="lg:hidden border-y border-gray-300" 	:style="{
+							...getStyles(modelValue?.sidebar?.properties, screenType),
+						}">
 						<summary
 							class="flex items-center justify-between py-5 px-4 text-xl font-bold list-none cursor-pointer">
 							{{ ctrans("Browse By Category:") }}
@@ -286,19 +348,19 @@ watch(
 						</summary>
 
 						<div class="pb-4 px-4 space-y-3">
-							<LinkIris
+							<div
 								v-for="item in props.modelValue.sub_departments"
 								:key="item.url"
-								:href="item.url"
-								type="internal"
 								class="block text-slate-700">
 								{{ item.name }}
-							</LinkIris>
+							</div>
 						</div>
 					</details>
 
 					<!-- Mobile Only -->
-					<div class="lg:hidden bg-[#E7E7E7] overflow-hidden">
+					<div class="lg:hidden bg-[#E7E7E7] overflow-hidden" 	:style="{
+							...getStyles(modelValue?.cta?.properties, screenType),
+						}">
 						<!-- Image -->
 						<div class="aspect-[4/3] overflow-hidden" ref="mobileMediaRef">
 							<template v-if="modelValue.department.showcase_image">
@@ -356,16 +418,23 @@ watch(
 								@click="expanded = !expanded">
 								{{ expanded ? "Read Less" : "Read More" }}
 							</button>
-
-							<button
-								v-if="modelValue.department.showcase_video"
-								class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md transition"
-								@click="videoDialogVisible = true">
-								{{ ctrans("See a video") }}
-							</button>
+							<div>
+								<button
+									v-if="modelValue.department.showcase_video"
+									class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md transition"
+									@click="videoDialogVisible = true">
+									{{ ctrans("See a video") }}
+								</button>
+								<a v-else href="#sub-department">
+									<button
+										class="mt-6 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 md:px-8 lg:px-10 2xl:px-12 2xl:py-4 rounded-md transition">
+										{{ ctrans("Browse All") }}
+									</button>
+								</a>
+							</div>
 						</div>
 					</div>
-				</section>
+				</div>
 			</div>
 		</div>
 	</div>
