@@ -26,7 +26,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/telescope (TELESCOPE) - v5
 - tightenco/ziggy (ZIGGY) - v2
 - laravel/breeze (BREEZE) - v2
-- laravel/envoy (ENVOY) - v2
 - laravel/mcp (MCP) - v0
 - laravel/pint (PINT) - v1
 - pestphp/pest (PEST) - v4
