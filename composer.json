@@ -122,7 +122,6 @@
     "fakerphp/faker": "^1.9.1",
     "laradumps/laradumps": "^4.0",
     "laravel/boost": "^1.8",
-    "laravel/breeze": "^2",
     "laravel/envoy": "^2.8",
     "laravel/pint": "^1.0",
     "laravel/sail": "^1.18",
