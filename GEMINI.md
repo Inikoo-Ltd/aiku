@@ -23,7 +23,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/prompts (PROMPTS) - v0
 - laravel/sanctum (SANCTUM) - v4
 - laravel/scout (SCOUT) - v10
-- laravel/socialite (SOCIALITE) - v5
 - laravel/telescope (TELESCOPE) - v5
 - tightenco/ziggy (ZIGGY) - v2
 - laravel/breeze (BREEZE) - v2
