@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "854a7147dbf24a586c7b215cc7083c25",
+    "content-hash": "61dd32a6f24f5dd2ed31b2cb8543f315",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -4374,139 +4374,6 @@
                 "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.21"
             },
             "time": "2026-02-24T20:21:28+00:00"
-        },
-        {
-            "name": "inspector-apm/inspector-laravel",
-            "version": "4.19.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/inspector-apm/inspector-laravel.git",
-                "reference": "f7a7bc1fcc45b54938707588ca8736f63cbbb873"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/inspector-apm/inspector-laravel/zipball/f7a7bc1fcc45b54938707588ca8736f63cbbb873",
-                "reference": "f7a7bc1fcc45b54938707588ca8736f63cbbb873",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/console": "^9.0|^10.0|^11.0|^12.0|^13.0",
-                "illuminate/contracts": "^9.0|^10.0|^11.0|^12.0|^13.0",
-                "illuminate/support": "^9.0|^10.0|^11.0|^12.0|^13.0",
-                "inspector-apm/inspector-php": "^3.17.0",
-                "php": "^8.1"
-            },
-            "require-dev": {
-                "friendsofphp/php-cs-fixer": "^3.75",
-                "larastan/larastan": "^2.0|^3.0",
-                "livewire/livewire": "^2.0|^3.7|^4.0",
-                "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0",
-                "rector/rector": "^1.0|^2.2",
-                "tomasvotruba/type-coverage": "^0.2|^2.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "Inspector": "Inspector\\Laravel\\Facades\\Inspector"
-                    },
-                    "providers": [
-                        "Inspector\\Laravel\\InspectorServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "files": [
-                    "src/helpers.php"
-                ],
-                "psr-4": {
-                    "Inspector\\Laravel\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Valerio Barbera",
-                    "email": "valerio@inspector.dev"
-                }
-            ],
-            "description": "Code Execution Monitoring, built for developers.",
-            "keywords": [
-                "inspector",
-                "laravel",
-                "monitoring",
-                "php"
-            ],
-            "support": {
-                "issues": "https://github.com/inspector-apm/inspector-laravel/issues",
-                "source": "https://github.com/inspector-apm/inspector-laravel/tree/4.19.3"
-            },
-            "time": "2026-05-18T14:58:44+00:00"
-        },
-        {
-            "name": "inspector-apm/inspector-php",
-            "version": "3.17.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/inspector-apm/inspector-php.git",
-                "reference": "43ce00c8d32f50ef9b2ef30a9e0469ab829fad16"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/inspector-apm/inspector-php/zipball/43ce00c8d32f50ef9b2ef30a9e0469ab829fad16",
-                "reference": "43ce00c8d32f50ef9b2ef30a9e0469ab829fad16",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.1"
-            },
-            "require-dev": {
-                "ext-curl": "*",
-                "friendsofphp/php-cs-fixer": "^3.75",
-                "neuron-core/neuron-ai": "^3.0",
-                "phpstan/phpstan": "^2.1",
-                "phpunit/phpunit": "^9.0",
-                "rector/rector": "^2.2",
-                "tomasvotruba/type-coverage": "^2.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "3.17.x-dev",
-                    "dev-develop": "3.17.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Inspector\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Valerio Barbera",
-                    "email": "valerio@inspector.dev"
-                }
-            ],
-            "description": "Inspector monitoring for PHP applications.",
-            "keywords": [
-                "inspector",
-                "monitoring",
-                "observability",
-                "php",
-                "telemetry"
-            ],
-            "support": {
-                "issues": "https://github.com/inspector-apm/inspector-php/issues",
-                "source": "https://github.com/inspector-apm/inspector-php/tree/3.17.1"
-            },
-            "time": "2026-04-10T12:22:10+00:00"
         },
         {
             "name": "jaybizzle/crawler-detect",
@@ -9119,16 +8986,16 @@
         },
         {
             "name": "owen-it/laravel-auditing",
-            "version": "v14.0.3",
+            "version": "v14.0.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/owen-it/laravel-auditing.git",
-                "reference": "34e8a21890082a7a353894a4acdeb2d301dbe0d4"
+                "reference": "4268b7abab1d24cb6b188fc72773fde3ea6b1c0b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/owen-it/laravel-auditing/zipball/34e8a21890082a7a353894a4acdeb2d301dbe0d4",
-                "reference": "34e8a21890082a7a353894a4acdeb2d301dbe0d4",
+                "url": "https://api.github.com/repos/owen-it/laravel-auditing/zipball/4268b7abab1d24cb6b188fc72773fde3ea6b1c0b",
+                "reference": "4268b7abab1d24cb6b188fc72773fde3ea6b1c0b",
                 "shasum": ""
             },
             "require": {
@@ -9199,7 +9066,7 @@
                 "issues": "https://github.com/owen-it/laravel-auditing/issues",
                 "source": "https://github.com/owen-it/laravel-auditing"
             },
-            "time": "2026-03-27T13:27:17+00:00"
+            "time": "2026-06-12T13:27:20+00:00"
         },
         {
             "name": "paragonie/constant_time_encoding",
@@ -13161,16 +13028,16 @@
         },
         {
             "name": "spatie/crawler",
-            "version": "9.3.1",
+            "version": "9.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/crawler.git",
-                "reference": "0c0b6e4928040d90c1d0508fd6e5655e8a51067c"
+                "reference": "3b3a9a1a8c750b0240c2b7c9e2ef22e84092416e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/crawler/zipball/0c0b6e4928040d90c1d0508fd6e5655e8a51067c",
-                "reference": "0c0b6e4928040d90c1d0508fd6e5655e8a51067c",
+                "url": "https://api.github.com/repos/spatie/crawler/zipball/3b3a9a1a8c750b0240c2b7c9e2ef22e84092416e",
+                "reference": "3b3a9a1a8c750b0240c2b7c9e2ef22e84092416e",
                 "shasum": ""
             },
             "require": {
@@ -13224,7 +13091,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/crawler/issues",
-                "source": "https://github.com/spatie/crawler/tree/9.3.1"
+                "source": "https://github.com/spatie/crawler/tree/9.3.2"
             },
             "funding": [
                 {
@@ -13236,7 +13103,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-05-18T13:26:09+00:00"
+            "time": "2026-06-12T15:45:15+00:00"
         },
         {
             "name": "spatie/db-dumper",
