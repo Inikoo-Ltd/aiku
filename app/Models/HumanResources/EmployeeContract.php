@@ -9,6 +9,7 @@ namespace App\Models\HumanResources;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
@@ -42,6 +43,11 @@ class EmployeeContract extends Model
     public function leaveBalance(): HasOne
     {
         return $this->hasOne(EmployeeLeaveBalance::class);
+    }
+
+    public function leaveBalances(): HasMany
+    {
+        return $this->hasMany(EmployeeLeaveBalance::class);
     }
 
     public function isActive(): bool

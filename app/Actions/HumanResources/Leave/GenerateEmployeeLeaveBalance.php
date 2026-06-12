@@ -6,35 +6,34 @@
  * @Copyright: Copyright (c) 2026, andiferdiawan
  */
 
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Copyright (c) 2026, Raul A Perusquia Flores
- */
-
 namespace App\Actions\HumanResources\Leave;
 
-use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeContract;
 use App\Models\HumanResources\EmployeeLeaveBalance;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GenerateEmployeeLeaveBalance
 {
     use AsAction;
 
-    public function handle(EmployeeContract $contract): EmployeeLeaveBalance
+    public function handle(EmployeeContract $contract, ?Carbon $periodStart = null): EmployeeLeaveBalance
     {
+        $start = $periodStart ?? $contract->start_date;
+        $end   = $this->resolvePeriodEnd($contract, $start);
+
         return EmployeeLeaveBalance::firstOrCreate(
-            ['employee_contract_id' => $contract->id],
+            [
+                'employee_contract_id' => $contract->id,
+                'period_start'         => $start->toDateString(),
+            ],
             [
                 'employee_id'  => $contract->employee_id,
-                'period_start' => $contract->start_date->toDateString(),
-                'period_end'   => $contract->end_date?->toDateString(),
+                'period_end'   => $end?->toDateString(),
                 'annual_used'  => 0,
                 'medical_used' => 0,
                 'unpaid_used'  => 0,
@@ -42,12 +41,23 @@ class GenerateEmployeeLeaveBalance
         );
     }
 
-    public function asController(EmployeeContract $contract, ActionRequest $request): EmployeeLeaveBalance
+    private function resolvePeriodEnd(EmployeeContract $contract, Carbon $start): ?Carbon
+    {
+        if ($contract->end_date === null) {
+            return $start->copy()->addYear()->subDay();
+        }
+
+        $oneYearOut = $start->copy()->addYear()->subDay();
+
+        return $contract->end_date->lt($oneYearOut) ? $contract->end_date : $oneYearOut;
+    }
+
+    public function asController(EmployeeContract $contract): EmployeeLeaveBalance
     {
         return $this->handle($contract);
     }
 
-    public function htmlResponse(EmployeeLeaveBalance $balance, ActionRequest $request): RedirectResponse
+    public function htmlResponse(): RedirectResponse
     {
         return Redirect::back()->with('notification', [
             'status'      => 'success',
@@ -76,29 +86,39 @@ class GenerateEmployeeLeaveBalance
 
     public function asCommand(Command $command): int
     {
-        $today = now()->toDateString();
+        $today     = now();
         $generated = 0;
 
-        Employee::query()
-            ->with(['contracts.leaveBalance'])
-            ->whereHas('contracts', function ($q) use ($today) {
-                $q->where('start_date', '<=', $today)
-                  ->where(function ($q2) use ($today) {
-                      $q2->whereNull('end_date')->orWhere('end_date', '>=', $today);
-                  })
-                  ->whereDoesntHave('leaveBalance');
-            })
-            ->each(function (Employee $employee) use (&$generated) {
-                $employee->contracts
-                    ->filter(fn (EmployeeContract $c) => $c->leaveBalance === null)
-                    ->each(function (EmployeeContract $contract) use (&$generated) {
-                        $this->handle($contract);
-                        $generated++;
-                    });
+        EmployeeContract::query()
+            ->where('start_date', '<=', $today->toDateString())
+            ->whereNull('end_date')
+            ->with('leaveBalances')
+            ->each(function (EmployeeContract $contract) use ($today, &$generated) {
+                $periodStart = $this->currentPeriodStart($contract, $today);
+
+                $exists = $contract->leaveBalances
+                    ->where('period_start', $periodStart->toDateString())
+                    ->isNotEmpty();
+
+                if (!$exists) {
+                    $this->handle($contract, $periodStart);
+                    $generated++;
+                }
             });
 
         $command->info("Generated {$generated} leave balance(s).");
 
         return 0;
+    }
+
+    private function currentPeriodStart(EmployeeContract $contract, Carbon $today): \Carbon\Carbon
+    {
+        $start = $contract->start_date->copy();
+
+        while ($start->copy()->addYear()->subDay()->lt($today)) {
+            $start->addYear();
+        }
+
+        return $start;
     }
 }
