@@ -23,7 +23,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { Line } from "vue-chartjs"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faAnalytics, faBadgePercent, faShoppingCart, faUsers, faCoin, faPiggyBank, faPercent, faTrophy, faThumbsDown, faTags } from "@fal"
+import { faAnalytics, faBadgePercent, faShoppingCart, faUsers, faCoin, faPiggyBank, faPercent, faTrophy, faThumbsDown, faTags, faClock } from "@fal"
 
 library.add(faAnalytics, faBadgePercent, faShoppingCart, faUsers, faCoin, faPiggyBank, faPercent, faTrophy, faThumbsDown, faTags)
 
@@ -236,12 +236,13 @@ const chartOptions = computed(() => ({
     },
 }))
 
-const offerRoute = (offer: { slug: string }) => {
-    return route("grp.org.shops.show.discounts.offers.show", [
-        (route().params as RouteParams).organisation,
-        (route().params as RouteParams).shop,
-        offer.slug,
-    ])
+const offerRoute = (offer: { slug: string }, extraParams?: {}) => {
+    return route("grp.org.shops.show.discounts.offers.show", {
+        organisation: (route().params as RouteParams).organisation,
+        shop: (route().params as RouteParams).shop,
+        offer: offer.slug,
+        ...extraParams
+    })
 }
 </script>
 
@@ -394,6 +395,15 @@ const offerRoute = (offer: { slug: string }) => {
             <template #cell(last_used_at)="{ item: offer }">
                 <span v-if="offer.last_used_at">{{ useFormatTime(offer.last_used_at, { localeCode: locale.language.code, formatTime: "aiku" }) }}</span>
                 <span v-else class="text-gray-400">-</span>
+            </template>
+            
+            <template #cell(created_by)="{ item }">
+                <Link :href="offerRoute(item, {tab: 'history'})" class="hover:opacity-80 transition text-black primaryLink">
+                    <FontAwesomeIcon 
+                        :icon="faClock"
+                    />
+                </Link>
+                {{ item.created_by ?? ctrans('System') }}
             </template>
         </Table>
     </div>

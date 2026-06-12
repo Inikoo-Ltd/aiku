@@ -8,11 +8,12 @@
 import { inject, ref, onMounted, onBeforeUnmount, computed, provide } from "vue"
 import { faCheck, faPlus, faMinus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { Head } from "@inertiajs/vue3"
+import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
 import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
-import { usePage } from "@inertiajs/vue3"
+import { useStructuredData } from "@/Iris/Composables/useStructuredData"
 import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
+library.add(faCheck, faPlus, faMinus)
 
 const props = defineProps<{
     webpage_data: {  // ShowIrisWebpage
@@ -31,12 +32,13 @@ const props = defineProps<{
 }>()
 
 defineOptions({ layout: LayoutIris })
-library.add(faCheck, faPlus, faMinus)
 
 const layout: any = inject("layout", {})
 const review = ref(usePage().props?.iris?.website?.reviews_settings)
 const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
 const currentUrl = ref("")
+const structuredDataScript = ref<HTMLScriptElement | null>(null)
+const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
 
 provide('webpage_data', props.webpage_data)
 
@@ -53,201 +55,15 @@ const robotsContent = computed(() => {
     return `${index}, ${follow}`
 })
 
-const PRODUCT_BLOCK_TYPES = ['products-1', 'products-2']
-
-const generateProductsStructureFromProductsList = (webBlocks: any[]): any[] => {
-    const variants: any[] = []
-    const categoryName = (props.webpage_data as any)?.title ?? null  // "Bath & Body > Bath Salts"
-
-    const webBlocksArray = Array.isArray(webBlocks) ? webBlocks : Object.values(webBlocks ?? {}).flat()
-
-    for (const block of webBlocksArray) {
-        if (!PRODUCT_BLOCK_TYPES.includes(block.type)) continue
-
-        const fieldValue = block?.web_block?.layout?.data?.fieldValue ?? block?.structure
-        const products: any[] = fieldValue?.products?.data ?? []
-
-        for (const product of products) {
-            if (!product.url) continue
-
-            const variant: Record<string, any> = {
-                '@type': 'Product',
-                '@id': product.url,
-                'name': product.name,
-                'sku': product.code,
-                'url': product.url,
-            }
-
-            if (product.description) {
-                variant['description'] = product.description
-            }
-
-            const brandName = product.brand_name || undefined
-            if (brandName) {
-                variant['brand'] = { '@type': 'Brand', 'name': brandName }
-            }
-
-            if (categoryName) {
-                variant['category'] = categoryName
-            }
-
-            const imageUrl = product.web_images?.main?.original?.original
-                ?? product.web_images?.main?.gallery?.original
-                ?? product.image?.source?.original
-
-            if (imageUrl) {
-                variant['image'] = [imageUrl]
-            }
-
-            if (product.rating && product.rating_count) {
-                variant['aggregateRating'] = {
-                    '@type': 'AggregateRating',
-                    'ratingValue': product.rating,
-                    'reviewCount': product.rating_count,
-                    'bestRating': 5,
-                    'worstRating': 1,
-                }
-            }
-
-            if (product.price) {
-                variant['offers'] = {
-                    '@type': 'Offer',
-                    'price': product.price,
-                    'priceCurrency': layout.iris?.currency?.code,
-                    'availability': product.stock > 0
-                        ? 'https://schema.org/InStock'
-                        : 'https://schema.org/OutOfStock',
-                    'url': product.url,
-                }
-            }
-
-            variants.push(variant)
-        }
-    }
-
-    return variants
-}
-
-const blablabla = ref("")
-
-const parseStructuredData = (raw: any): Record<string, any> | null => {
-    if (!raw) return null
-    if (typeof raw === 'object') return raw
-    if (typeof raw !== 'string') return null
-    try {
-        return JSON.parse(raw)
-    } catch {
-        return null
-    }
-}
-
-const buildFamilyProductNode = (): Record<string, any> => {
-    const node: Record<string, any> = {
-        '@type': 'ProductGroup',
-        'name': props.webpage_data.title,
-    }
-
-    if (props.webpage_data.description) {
-        node['description'] = props.webpage_data.description
-    }
-
-    const websiteName = layout?.iris?.website?.name
-
-    node['aggregateRating'] = {
-        '@type': 'AggregateRating',
-        'ratingValue': 4.8,
-        'reviewCount': 524,
-    }
-
-    if (websiteName) {
-        node['review'] = {
-            '@type': 'Review',
-            'reviewRating': {
-                '@type': 'Rating',
-                'ratingValue': 5,
-                'bestRating': 5,
-            },
-            'author': {
-                '@type': 'Organization',
-                'name': websiteName,
-            },
-        }
-    }
-
-    return node
-}
-
-const findOrCreateProductGroupNode = (data: Record<string, any>): Record<string, any> => {
-    console.log('aaa')
-    console.log('aa1', data['@graph'])
-    if (Array.isArray(data['@graph'])) {
-        console.log('aa2', data['@graph'])
-        const existing = data['@graph'].find((node: any) => node['@type'] === 'ProductGroup') ?? null
-        if (existing) return existing
-
-        const newNode = buildFamilyProductNode()
-        data['@graph'].push(newNode)
-        return newNode
-    }
-
-    if (data['@type'] === 'ProductGroup') {
-        return data
-    }
-
-    const newNode = buildFamilyProductNode()
-    data['@context'] = 'https://schema.org'
-    data['@graph'] = [newNode]
-    return newNode
-}
-
-const mergeAutoVariants = (productNode: Record<string, any>, autoVariants: any[]): void => {
-    const variantMap = new Map<string, any>(
-        (productNode.hasVariant ?? []).map((v: any) => [v['@id'], v])
-    )
-
-    for (const variant of autoVariants) {
-        if (!variantMap.has(variant['@id'])) {
-            variantMap.set(variant['@id'], variant)
-        }
-    }
-
-    productNode.hasVariant = Array.from(variantMap.values())
-}
-
-const injectStructuredDataScript = (data: Record<string, any>): void => {
-    try {
-        const script = document.createElement('script')
-        script.type = 'application/ld+json'
-        script.textContent = JSON.stringify(data)
-        document.head.appendChild(script)
-    } catch (e) {
-        console.error('Failed to inject structured data:', e)
-    }
-}
-
 onMounted(() => {
     currentUrl.value = window.location.href
 
-    if (props.webpage_data.model_type === 'ProductCategory' && props.webpage_data.sub_type === 'family') {
-        let structuredData = parseStructuredData((props.webpage_data?.seo_data as any)?.structured_data)
-
-        const autoVariants = generateProductsStructureFromProductsList(props.web_blocks)
-        console.log('autoVariants', autoVariants)
-
-        if (autoVariants.length) {
-            if (!structuredData || typeof structuredData !== 'object') {
-                structuredData = { '@context': 'https://schema.org' }
-            }
-
-            const productNode = findOrCreateProductGroupNode(structuredData)
-            mergeAutoVariants(productNode, autoVariants)
-        }
-
-        if (structuredData) {
-            blablabla.value = structuredData
-            injectStructuredDataScript(structuredData)
-        }
-    }
+    structuredDataScript.value = mountStructuredData({
+        webpageData: props.webpage_data,
+        webBlocks: props.web_blocks,
+        currencyCode: layout.iris?.currency?.code,
+        websiteName: layout.iris?.website?.name,
+    })
 
     checkScreenType()
     window.addEventListener('resize', checkScreenType)
@@ -257,6 +73,7 @@ onMounted(() => {
 
 
 onBeforeUnmount(() => {
+    removeStructuredDataScript(structuredDataScript.value)
     window.removeEventListener("resize", checkScreenType)
 })
 

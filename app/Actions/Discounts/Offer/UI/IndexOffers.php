@@ -91,7 +91,10 @@ class IndexOffers extends OrgAction
             ->where('audits.auditable_type', 'Offer')
             ->where('audits.event', 'created')
             ->where('audits.user_type', 'User')
-            ->select('audits.auditable_id as offer_id', 'users.username as created_by');
+            ->select([
+                'audits.auditable_id as offer_id', 
+                'users.contact_name as created_by'
+            ]);
 
         $query->leftJoinSub($offerCreators, 'offer_creators', 'offer_creators.offer_id', '=', 'offers.id');
 

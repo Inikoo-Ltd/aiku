@@ -2,11 +2,12 @@
 import Image from '@/Common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import axios from 'axios'
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, inject } from 'vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from "@/Composables/useTrans";
 import { getStyles } from "@/Composables/styles"
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const props = defineProps<{
   fieldValue: {
@@ -35,7 +36,7 @@ const props = defineProps<{
 
 const loading = ref(false)
 const loadingMore = ref(false)
-
+const layout: any = inject("layout", {})
 const selectedSubDepartment = ref<number | null>(null)
 
 const families = ref(props.fieldValue?.families?.data ?? [])
@@ -200,9 +201,14 @@ console.log(props)
 				}, minmax(0, 1fr))`,
 			}">
       <LinkIris v-for="family in families" :key="family.id" :href="family.url" class="group block" type="internal">
-        <div class="aspect-square overflow-hidden bg-gray-100">
+        <div class="aspect-square overflow-hidden bg-gray-100 relative xflex items-center justify-center">
+          <div v-if="!family.image" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <FontAwesomeIcon icon="fal fa-image" class="text-5xl opacity-30" fixed-width aria-hidden="true" />
+          </div>
           <Image :src="family.image" :alt="family.name"
-            class="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+            class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            :class="!family.image ? 'opacity-0' : ''"
+          />
         </div>
 
         <span class="mt-2 line-clamp-2 text-lg leading-snug text-slate-900 font-semibold">

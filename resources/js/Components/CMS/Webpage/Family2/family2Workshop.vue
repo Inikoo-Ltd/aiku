@@ -203,7 +203,7 @@ const contentClass = computed(() =>
   <section :id="`family-2`" component="family-2-iris" class="editor-class">
     <div class="mx-auto w-full  bg-white  py-4 sm:px-8  " :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(modelValue?.container?.properties),
+      ...getStyles(modelValue?.container?.properties,screenType),
       width: 'auto'
     }">
       <div :class="contentClass">
@@ -373,7 +373,7 @@ const contentClass = computed(() =>
           transition
           hover:bg-gray-50
         " :style="{
-          ...getStyles(modelValue?.button?.container?.properties)
+          ...getStyles(modelValue?.button?.container?.properties, screenType)
         }">
                 {{ modelValue?.button?.text || ctrans('Learn more') }}
               </button>
