@@ -9,13 +9,10 @@
 
 namespace App\Actions\Ordering\Order\Watcher;
 
-use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\Concerns\AsAction;
-use OwenIt\Auditing\Events\AuditCustom;
 use Sentry;
 use Sentry\State\Scope;
 
@@ -60,8 +57,7 @@ class FixMiscalculatedTransactionAmounts
                 ]);
 
                 if ($repairAmount) {
-                    //$this->repairTransactionAmounts($transaction);
-                    //$orderRepaired = true;
+                    $orderRepaired = true;
                 }
             }
         }
@@ -74,46 +70,9 @@ class FixMiscalculatedTransactionAmounts
         }
 
         if ($orderRepaired) {
-            CalculateOrderTotalAmounts::run($order);
+            CalculateOrderDiscounts::run($order);
             $order->refresh();
         }
-
-        return $order;
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function repairTransactionAmounts(Transaction $transaction): Order
-    {
-        $order = $transaction->order;
-
-        DB::transaction(function () use ($order, $transaction) {
-            $grossAmount = $transaction->quantity_ordered * $transaction->historicAsset->price;
-            $netAmount   = $grossAmount * ($transaction->current_discount_factor ?? 1);
-
-            $order->auditEvent    = 'miscalculated_total_amount_repair';
-            $order->isCustomEvent = true;
-
-            $order->auditCustomOld = [
-                'item_code'    => '',
-                'gross_amount' => $transaction->gross_amount,
-                'net_amount'   => $transaction->net_amount,
-            ];
-
-            $order->auditCustomNew = [
-                'item_code'    => $transaction->historicAsset->code,
-                'gross_amount' => $grossAmount,
-                'net_amount'   => $netAmount,
-            ];
-
-            $transaction->update([
-                'gross_amount' => $grossAmount,
-                'net_amount'   => $netAmount,
-            ]);
-
-            Event::dispatch(new AuditCustom($order));
-        });
 
         return $order;
     }
