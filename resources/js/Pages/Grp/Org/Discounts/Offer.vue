@@ -185,9 +185,9 @@ const irisOffersData = computed(() => {
                         <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("Start") }}</span>
                         <span class="font-medium">{{ useFormatTime(data.offer.start_at ?? undefined, { formatTime: 'hm' }) }}</span>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div v-if="data.offer.end_at"  class="flex items-center gap-2">
                         <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("End") }}</span>
-                        <span class="font-medium">{{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm' }) : ctrans('Permanent') }}</span>
+                        <span class="font-medium">{{ useFormatTime(data.offer.end_at, { formatTime: 'hm' }) }}</span>
                     </div>
                 </div>
 
@@ -368,12 +368,3 @@ const irisOffersData = computed(() => {
 </template>
 
 
-<style scoped>
-.offer :deep(.background-primary) {
-    background-color: #ff862f;
-}
-
-.offer :deep(.text-primary) {
-    color: #ff862f;
-}
-</style>
