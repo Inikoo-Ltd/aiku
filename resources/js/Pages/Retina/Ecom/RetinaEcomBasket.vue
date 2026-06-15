@@ -97,6 +97,7 @@ const props = defineProps<{
     }
     balance: string
     total_to_pay: string
+    cart_gross_amount: number
     routes: {
         update_route: routeType
         submit_route: routeType
@@ -285,7 +286,7 @@ const onAddProducts = async (product: Product) => {
 
     // return
 
-    const onlyProps = product?.transaction_id ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
+    const onlyProps = product?.transaction_id ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay', 'summary'] : {}
 
     router[routePost.method](
         routePost.route_post,
@@ -360,7 +361,7 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
         }
     } : storeRoute
 
-    const onlyProps = existingTransaction ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
+    const onlyProps = existingTransaction ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay', 'summary'] : {}
 
     router[routePost.method](
         routePost.route_post,
@@ -677,6 +678,7 @@ const onChangeInsurance = async (val: boolean) => {
                                 parameters: order?.id
                             }
                         }"
+                        :currentGrossAmount="summary.cart_gross_amount"
                     />
 
                     <!-- Section: Eligible Gifts -->

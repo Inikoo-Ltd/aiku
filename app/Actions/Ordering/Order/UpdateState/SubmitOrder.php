@@ -84,14 +84,14 @@ class SubmitOrder extends OrgAction
         if ($transactions->isNotEmpty()) {
             foreach ($transactions as $transaction) {
                 $transactionData = ['state' => TransactionStateEnum::SUBMITTED];
-                if ($transaction->submitted_at == null) {
-                    data_set($transactionData, 'submitted_at', $date);
-                    data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
-                    data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered);
-                    data_set($transactionData, 'submitted_gross_amount', $transaction->gross_amount);
-                    data_set($transactionData, 'submitted_net_amount', $transaction->net_amount);
-                    data_set($transactionData, 'submitted_discount_factor', $transaction->current_discount_factor);
-                }
+                data_set($transactionData, 'submitted_at', $date);
+                data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
+                data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered);
+                data_set($transactionData, 'submitted_gross_amount', $transaction->gross_amount);
+                data_set($transactionData, 'submitted_net_amount', $transaction->net_amount);
+                data_set($transactionData, 'submitted_discount_factor', $transaction->current_discount_factor);
+                data_set($transactionData, 'submitted_offers_data', $transaction->offers_data); // TODO only take needed data later
+                data_set($transactionData, 'has_discount_when_submitted', $transaction->current_discount_factor < 1);
 
                 $transaction->update($transactionData);
             }

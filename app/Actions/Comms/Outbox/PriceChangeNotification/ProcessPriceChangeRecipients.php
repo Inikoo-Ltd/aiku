@@ -84,7 +84,7 @@ class ProcessPriceChangeRecipients
         );
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
     }
 
     public function generateProductLinks(string $productIds): string
