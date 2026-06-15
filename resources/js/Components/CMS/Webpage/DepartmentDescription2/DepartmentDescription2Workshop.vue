@@ -63,6 +63,14 @@ const props = defineProps<{
 				}
 			}
 		}
+		sub_departments: {
+			name: string
+			url: string
+		}[]
+		collections: {
+			name: string
+			url: string
+		}[]
 	}
 }>()
 
@@ -267,7 +275,7 @@ const responsiveClasses = computed(() => ({
 							{{ item.name }}
 						</LinkIris>
 						<LinkIris
-							v-for="(collection, idxCol) of props.fieldValue.collections"
+							v-for="(collection, idxCol) of props.modelValue.collections"
 							:key="collection.url"
 							:type="'internal'"
 							:href="collection.url"

@@ -58,10 +58,15 @@ class IndexFamiliesGR extends OrgAction
 
         $currentTab = $this->tab ?? MasterGoldRewardTabsEnum::WITH->value;
 
-        return $this->handle(shop: $shop, prefix: $currentTab, isGR: $currentTab === MasterGoldRewardTabsEnum::WITH->value);
+        return $this->handle(
+            shop: $shop,
+            prefix: $currentTab,
+            isGR: $currentTab !== MasterGoldRewardTabsEnum::WITHOUT->value ? true : false,
+            notFollowMaster: $currentTab === MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value,
+        );
     }
 
-    public function handle(Shop $shop, ?string $prefix = null, ?bool $isGR = null): LengthAwarePaginator
+    public function handle(Shop $shop, ?string $prefix = null, ?bool $isGR = null, bool $notFollowMaster = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -93,7 +98,10 @@ class IndexFamiliesGR extends OrgAction
             );
         }
 
-        if ($isGR !== null) {
+        if ($notFollowMaster) {
+            $queryBuilder->where('product_categories.has_gr_vol_discount', true)
+                ->where('product_categories.follow_master_gr', false);
+        } elseif ($isGR !== null) {
             $queryBuilder->where('product_categories.has_gr_vol_discount', $isGR);
         }
 
@@ -189,10 +197,16 @@ class IndexFamiliesGR extends OrgAction
                     : Inertia::lazy(fn () => FamiliesResource::collection(
                         $this->handle(shop: $this->parent, prefix: MasterGoldRewardTabsEnum::WITHOUT->value, isGR: false)
                     )),
+                MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value => $this->tab === MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value
+                    ? fn () => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                        $this->handle(shop: $this->parent, prefix: MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value, notFollowMaster: true)
+                    )),
             ]
         )
         ->table($this->tableStructure($this->parent, prefix: MasterGoldRewardTabsEnum::WITH->value))
-        ->table($this->tableStructure($this->parent, prefix: MasterGoldRewardTabsEnum::WITHOUT->value));
+        ->table($this->tableStructure($this->parent, prefix: MasterGoldRewardTabsEnum::WITHOUT->value))
+        ->table($this->tableStructure($this->parent, prefix: MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
