@@ -9,7 +9,7 @@ import { computed, inject } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCubes, faFolderDownload, faMailBulk, faSeedling } from "@fal"
+import { faCubes, faFolderDownload, faMailBulk, faMedal, faSeedling } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle, faExclamationTriangle, faHatCowboy } from "@fas"
 import Image from "@common/Components/Image.vue"
@@ -28,7 +28,8 @@ library.add(
     faExclamationTriangle,
     faFolderDownload,
     faMailBulk,
-    faHatCowboy
+    faHatCowboy,
+    faMedal
 )
 
 interface TopSelling {
