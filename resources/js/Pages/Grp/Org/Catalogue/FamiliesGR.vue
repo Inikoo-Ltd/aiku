@@ -17,6 +17,7 @@ const props = defineProps<{
     }
     with?: {}
     without?: {}
+    not_follow_master?: {}
 }>()
 
 const currentTab = ref<string>(props.tabs.current)

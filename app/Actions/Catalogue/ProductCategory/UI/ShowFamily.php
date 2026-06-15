@@ -169,6 +169,22 @@ class ShowFamily extends OrgAction
 
         $isRelatedProductFollowMaster = (bool) data_get($family->shop->settings, 'catalog.related_product_follow_master', false);
 
+        $iconLinks = [];
+        if ($family->has_gr_vol_discount) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-medal',
+                'tooltip' => __('Gold Reward Volume Discount'),
+                'color'   => '#D97706',
+            ];
+            if (!$family->follow_master_gr) {
+                $iconLinks[] = [
+                    'icon'    => 'fal fa-starfighter',
+                    'tooltip' => __('Not following master GR'),
+                    'color'   => '#DC2626',
+                ];
+            }
+        }
+
         $tabs = [
             FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
                 fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))
@@ -263,9 +279,10 @@ class ShowFamily extends OrgAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('Department')
                     ],
-                    'iconRight' => $family->state->stateIcon()[$family->state->value],
-                    'actions'   => $this->getActions($family, $request),
-                    'parentTag' => $parentTag,
+                    'iconRight'  => $family->state->stateIcon()[$family->state->value],
+                    'iconLinks'  => $iconLinks,
+                    'actions'    => $this->getActions($family, $request),
+                    'parentTag'  => $parentTag,
 
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
                 ],

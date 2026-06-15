@@ -5,7 +5,7 @@ import { faInfoCircle, faSave, faExclamationTriangle } from "@fas";
 import Message from "primevue/message";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAlbumCollection, faEdit } from "@fal";
+import { faAlbumCollection, faEdit, faStarfighter } from "@fal";
 import { faPlus } from "@far";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
@@ -19,7 +19,7 @@ import { ref } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue';
 
-library.add(faAlbumCollection);
+library.add(faAlbumCollection, faStarfighter);
 
 const props = withDefaults(defineProps<{
     data: {
@@ -38,6 +38,7 @@ const props = withDefaults(defineProps<{
         }
         is_shop_gr_active?: boolean
         gr_offer_data?: any
+        follow_master_gr?: boolean
         tags: Array<any>
     },
     master_vol_gr_reward?: {
@@ -259,7 +260,17 @@ console.log(props)
                             {{ data.gr_offer_data?.label }}
                         </Link>
                     </div>
-                    <FamilyOfferLabelDiscount :offer="data.gr_offer_data" />
+                    <div class="flex items-center gap-x-2">
+                        <FamilyOfferLabelDiscount :offer="data.gr_offer_data" :not-follow-master="data.follow_master_gr === false" />
+                        <FontAwesomeIcon
+                            v-if="data.follow_master_gr === false"
+                            :icon="faStarfighter"
+                            v-tooltip="trans('Not following master GR')"
+                            class="text-xl text-red-500"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                    </div>
                 </template>
             </div>
 
