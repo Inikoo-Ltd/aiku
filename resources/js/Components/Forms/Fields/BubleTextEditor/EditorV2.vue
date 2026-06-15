@@ -394,8 +394,8 @@ function updateLink(value?: string) {
 }
 
 
-function insertImage(url: string) {
-    editorInstance.value?.chain().focus().setImage({ src: url, alt: "image" }).run()
+function insertImage(url: string, alt?: string) {
+    editorInstance.value?.chain().focus().setImage({ src: url, alt: alt || "image" }).run()
 }
 
 function insertYoutubeVideo(url: string) {

@@ -95,7 +95,7 @@ class IndexFamiliesInMasterFamilies extends OrgAction
         return $this->handle(parent: $masterFamily, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
-    public function handle(MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(MasterProductCategory $parent, $prefix = null, bool $missingGr = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -115,6 +115,10 @@ class IndexFamiliesInMasterFamilies extends OrgAction
 
         $queryBuilder->where('product_categories.master_product_category_id', $parent->id)
             ->where('shops.state', '!=', ShopStateEnum::CLOSED->value);
+
+        if ($missingGr) {
+            $queryBuilder->where('product_categories.has_gr_vol_discount', false);
+        }
 
         $selects = [
             'product_categories.id',
@@ -293,10 +297,15 @@ class IndexFamiliesInMasterFamilies extends OrgAction
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
                     : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+
+                ProductCategoryTabsEnum::MISSING_GR->value => $this->tab == ProductCategoryTabsEnum::MISSING_GR->value
+                    ? fn () => FamiliesResource::collection($this->handle($this->parent, ProductCategoryTabsEnum::MISSING_GR->value, missingGr: true))
+                    : Inertia::lazy(fn () => FamiliesResource::collection($this->handle($this->parent, ProductCategoryTabsEnum::MISSING_GR->value, missingGr: true))),
             ]
         )
         ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value))
-        ->table(IndexFamiliesNeedReviews::make()->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value));
+        ->table(IndexFamiliesNeedReviews::make()->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
+        ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::MISSING_GR->value));
     }
 
     public function getBreadcrumbs(MasterProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array

@@ -87,8 +87,7 @@ class UpdateVolumeGrOfferFromMaster extends OrgAction
                     UpdateOfferAllowanceSignature::run($offer);
                 }
 
-
-
+                $productCategory->updateQuietly(['has_gr_vol_discount' => true]);
                 $this->updatedOffersCount++;
             }
         });
