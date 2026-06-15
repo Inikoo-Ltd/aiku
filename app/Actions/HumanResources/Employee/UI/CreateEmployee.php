@@ -85,10 +85,14 @@ class CreateEmployee extends OrgAction
                                     'label' => __('personal email'),
                                     'value' => ''
                                 ],
-                                'phone'         => [
-                                    'type'  => 'input',
-                                    'label' => __('Contact number'),
-                                    'value' => ''
+                                'phone' => [
+                                    'type' => 'phone',
+                                    'label' => __('Phone'),
+                                    'placeholder' => __('Phone number'),
+                                    'value' => '',
+                                    'options' => [
+                                        'defaultCountry' => $this->organisation->country?->code ?? null,
+                                    ],
                                 ],
                                 'contact_address'      => [
                                     'type'    => 'address',
@@ -229,7 +233,7 @@ class CreateEmployee extends OrgAction
                             'title'  => __('job'),
                             'fields' => [
                                 'job_title' => [
-                                    'type' => 'job_title_select_create',
+                                    'type' => 'select_create',
                                     'label' => __('Job Title'),
                                     'placeholder' => __('Job Title'),
                                     'searchable' => true,

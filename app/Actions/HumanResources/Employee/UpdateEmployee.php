@@ -211,6 +211,7 @@ class UpdateEmployee extends OrgAction
             'insurance_number'                          => ['sometimes', 'nullable', 'string', 'max:50'],
             'gender'                                    => ['sometimes', 'nullable', 'string', 'max:20'],
             'probation_period_days'                     => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
+            'phone'                                     => ['sometimes', 'nullable', 'string', 'max:50'],
 
         ];
 

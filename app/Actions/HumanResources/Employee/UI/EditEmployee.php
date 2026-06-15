@@ -75,6 +75,21 @@ class EditEmployee extends OrgAction
             ->values()
             ->all();
 
+        $bankAccountNameOptions = Employee::query()
+            ->where('organisation_id', $employee->organisation_id)
+            ->whereNotNull('bank_account_name')
+            ->where('bank_account_name', '!=', '')
+            ->select('bank_account_name')
+            ->distinct()
+            ->orderBy('bank_account_name')
+            ->pluck('bank_account_name')
+            ->map(fn (string $name): array => [
+                'label' => $name,
+                'value' => $name,
+            ])
+            ->values()
+            ->all();
+
         $sections['properties'] = [
             'label' => __('Properties'),
             'icon' => 'fal fa-sliders-h',
@@ -132,7 +147,7 @@ class EditEmployee extends OrgAction
                 ],
 
                 'job_title' => [
-                    'type' => 'job_title_select_create',
+                    'type' => 'select_create',
                     'label' => __('Job Title'),
                     'placeholder' => __('Job Title'),
                     'searchable' => true,
@@ -254,6 +269,15 @@ class EditEmployee extends OrgAction
                     'value' => $employee->contact_name,
                     'required' => true
                 ],
+                'phone' => [
+                    'type' => 'phone',
+                    'label' => __('Phone'),
+                    'placeholder' => __('Phone number'),
+                    'value' => $employee->phone,
+                    'options' => [
+                        'defaultCountry' => $this->organisation->country?->code ?? null,
+                    ],
+                ],
                 'date_of_birth' => [
                     'type' => 'date',
                     'label' => __('Date Of Birth'),
@@ -293,9 +317,12 @@ class EditEmployee extends OrgAction
                     'value' => $employee->insurance_number,
                 ],
                 'bank_account_name' => [
-                    'type' => 'input',
+                    'type' => 'select_create',
                     'label' => __('Bank Account Name'),
-                    'value' => $employee->bank_account_name,
+                    'placeholder' => __('Bank Account Name'),
+                    'searchable' => true,
+                    'options' => $bankAccountNameOptions,
+                    'value' => $employee->bank_account_name ?? '',
                 ],
                 'bank_account_number' => [
                     'type' => 'input',
