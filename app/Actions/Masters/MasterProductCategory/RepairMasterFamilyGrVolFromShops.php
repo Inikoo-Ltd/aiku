@@ -28,18 +28,20 @@ class RepairMasterFamilyGrVolFromShops
 
     private const array PRIORITY_SHOP_CODES = ['eu', 'uk', 'sk', 'es'];
 
-    public string $commandSignature = 'repair:master_family_gr_vol_from_shops {master_shop : MasterShop slug)}';
+    private bool $dryRun = false;
 
-    public function handle(MasterShop $masterShop, Command $command): void
+    public string $commandSignature = 'repair:master_family_gr_vol_from_shops {master_shop? : MasterShop slug (omit to repair all)} {--dry-run : Preview changes without updating}';
+
+    public function handle(MasterShop $masterShop, Command $command, bool $dryRun = false): void
     {
+        $this->dryRun = $dryRun;
+
         $query = MasterProductCategory::where('master_shop_id', $masterShop->id)
             ->where('type', ProductCategoryTypeEnum::FAMILY->value);
 
-
-        $shopsIds=Shop::where('master_shop_id', $masterShop->id)->pluck('id')->toArray();
+        $shopsIds = Shop::where('master_shop_id', $masterShop->id)->pluck('id')->toArray();
 
         $offerCampaignIds = OfferCampaign::whereIn('shop_id', $shopsIds)->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->pluck('id')->toArray();
-
 
         $total = (clone $query)->count();
 
@@ -49,9 +51,9 @@ class RepairMasterFamilyGrVolFromShops
 
         $foundAnyOffer = false;
 
-        $query->chunkById(200, function (Collection $masterFamilies) use ($bar, &$foundAnyOffer,$offerCampaignIds) {
+        $query->chunkById(200, function (Collection $masterFamilies) use ($bar, &$foundAnyOffer, $offerCampaignIds, $command) {
             foreach ($masterFamilies as $masterFamily) {
-                if ($this->repairFamily($masterFamily,$offerCampaignIds)) {
+                if ($this->repairFamily($masterFamily, $offerCampaignIds, $command)) {
                     $foundAnyOffer = true;
                 }
                 $bar->advance();
@@ -60,6 +62,12 @@ class RepairMasterFamilyGrVolFromShops
 
         $bar->finish();
         $command->newLine();
+
+        if ($this->dryRun) {
+            $command->line('<fg=cyan>Dry run completed — no changes were written.</>');
+            return;
+        }
+
         $command->info('Completed.');
 
         if ($foundAnyOffer && !$masterShop->gold_reward_eligible) {
@@ -69,11 +77,8 @@ class RepairMasterFamilyGrVolFromShops
         MasterShopHydrateMasterFamiliesWithVolGrDiscount::run($masterShop);
     }
 
-    private function repairFamily(MasterProductCategory $masterFamily, array $offerCampaignIds): bool
+    private function repairFamily(MasterProductCategory $masterFamily, array $offerCampaignIds, Command $command): bool
     {
-
-
-
         $children = $masterFamily->productCategories()->with('shop')->get();
 
         if ($children->isEmpty()) {
@@ -81,7 +86,7 @@ class RepairMasterFamilyGrVolFromShops
         }
 
         $activeOffers = Offer::whereIn('trigger_id', $children->pluck('id'))
-            ->whereIn('offer_campaign_id',$offerCampaignIds)
+            ->whereIn('offer_campaign_id', $offerCampaignIds)
             ->where('trigger_type', class_basename(ProductCategory::class))
             ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
             ->where('state', OfferStateEnum::ACTIVE)
@@ -98,19 +103,23 @@ class RepairMasterFamilyGrVolFromShops
             $child->has_gr_vol_discount = $activeOffers->has($child->id);
         }
 
-        ProductCategory::whereIn('id', $children->where('has_gr_vol_discount', true)->pluck('id'))
-            ->update(['has_gr_vol_discount' => true]);
-        ProductCategory::whereIn('id', $children->where('has_gr_vol_discount', false)->pluck('id'))
-            ->update(['has_gr_vol_discount' => false]);
+        if (!$this->dryRun) {
+            ProductCategory::whereIn('id', $children->where('has_gr_vol_discount', true)->pluck('id'))
+                ->update(['has_gr_vol_discount' => true]);
+            ProductCategory::whereIn('id', $children->where('has_gr_vol_discount', false)->pluck('id'))
+                ->update(['has_gr_vol_discount' => false]);
+        }
 
         $sourceChild = $this->resolveSourceChild($children);
 
         /** @var Offer $sourceOffer */
         $sourceOffer = $activeOffers->get($sourceChild->id);
 
+        $this->updateMasterFamily($masterFamily, $sourceOffer, $sourceChild, $command);
 
-        $this->updateMasterFamily($masterFamily, $sourceOffer);
-        $this->syncFollowMasterGr($children, (bool)$sourceChild->has_gr_vol_discount);
+        if (!$this->dryRun) {
+            $this->syncFollowMasterGr($children, (bool) $sourceChild->has_gr_vol_discount);
+        }
 
         return true;
     }
@@ -129,11 +138,11 @@ class RepairMasterFamilyGrVolFromShops
         return $childrenWithOffer->first();
     }
 
-    private function updateMasterFamily(MasterProductCategory $masterFamily, ?Offer $sourceOffer): void
+    private function updateMasterFamily(MasterProductCategory $masterFamily, ?Offer $sourceOffer, ProductCategory $sourceChild, Command $command): void
     {
         $quantity      = data_get($sourceOffer?->trigger_data, 'item_quantity');
         $percentageOff = data_get($sourceOffer?->offerAllowances->first()?->data, 'percentage_off');
-        $percentage    = $percentageOff !== null ? (float)$percentageOff * 100 : null;
+        $percentage    = $percentageOff !== null ? (float) $percentageOff * 100 : null;
 
         $changes = [];
 
@@ -141,20 +150,53 @@ class RepairMasterFamilyGrVolFromShops
             $changes['has_gr_vol_discount'] = $sourceOffer !== null;
         }
 
-        if ($quantity !== null && $masterFamily->gr_vol_discount_quantity !== (int)$quantity) {
-            $changes['gr_vol_discount_quantity'] = (int)$quantity;
+        if ($quantity !== null && $masterFamily->gr_vol_discount_quantity !== (int) $quantity) {
+            $changes['gr_vol_discount_quantity'] = (int) $quantity;
         }
 
-        if ($percentage !== null && (float)$masterFamily->gr_vol_discount_percentage !== $percentage) {
+        if ($percentage !== null && (float) $masterFamily->gr_vol_discount_percentage !== $percentage) {
             $changes['gr_vol_discount_percentage'] = $percentage;
         }
 
-        if (!empty($changes)) {
-
-
-
-            $masterFamily->updateQuietly($changes);
+        if (empty($changes)) {
+            return;
         }
+
+        if ($this->dryRun) {
+            $shopCode = $sourceChild->shop?->code ?? '?';
+            $command->newLine();
+            $command->line("  <fg=yellow;options=bold>■ {$masterFamily->slug}</> <fg=gray>(source: <fg=cyan>{$shopCode}</>)</>");
+
+            foreach ($changes as $field => $newValue) {
+                $oldRaw = $masterFamily->{$field};
+                $label  = match ($field) {
+                    'has_gr_vol_discount'      => 'has_gr_vol_discount',
+                    'gr_vol_discount_quantity' => 'quantity           ',
+                    'gr_vol_discount_percentage' => 'percentage         ',
+                    default                    => $field,
+                };
+                $old = $this->formatValue($field, $oldRaw);
+                $new = $this->formatValue($field, $newValue);
+                $command->line("    <fg=gray>{$label}:</> <fg=red>{$old}</> <fg=gray>→</> <fg=green>{$new}</>");
+            }
+
+            return;
+        }
+
+        $masterFamily->updateQuietly($changes);
+    }
+
+    private function formatValue(string $field, mixed $value): string
+    {
+        if ($value === null) {
+            return '—';
+        }
+
+        return match ($field) {
+            'has_gr_vol_discount'        => $value ? 'true' : 'false',
+            'gr_vol_discount_percentage' => number_format((float) $value, 2) . '%',
+            default                      => (string) $value,
+        };
     }
 
     private function syncFollowMasterGr(Collection $children, bool $masterValue): void
@@ -173,17 +215,33 @@ class RepairMasterFamilyGrVolFromShops
 
     public function asCommand(Command $command): void
     {
-        $slug = $command->argument('master_shop');
+        $dryRun = (bool) $command->option('dry-run');
+        $slug   = $command->argument('master_shop');
 
-        $masterShop = MasterShop::where('slug', $slug)->firstOrFail();
+        if ($slug) {
+            $masterShop = MasterShop::where('slug', $slug)->first();
 
-        if (!$masterShop) {
-            $command->error('Master shop not found.');
+            if (!$masterShop) {
+                $command->error('Master shop not found.');
+                return;
+            }
+
+            $command->info("Repairing: {$masterShop->slug}");
+            $this->handle($masterShop, $command, $dryRun);
 
             return;
         }
 
-        $command->info("Repairing: {$masterShop->slug}");
-        $this->handle($masterShop, $command);
+        $masterShops = MasterShop::all();
+
+        if ($masterShops->isEmpty()) {
+            $command->warn('No master shops found.');
+            return;
+        }
+
+        foreach ($masterShops as $masterShop) {
+            $command->info("Repairing: {$masterShop->slug}");
+            $this->handle($masterShop, $command, $dryRun);
+        }
     }
 }
