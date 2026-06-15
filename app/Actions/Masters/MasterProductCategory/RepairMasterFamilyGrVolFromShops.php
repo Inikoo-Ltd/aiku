@@ -174,7 +174,7 @@ class RepairMasterFamilyGrVolFromShops
             return;
         }
 
-        if ($this->dryRun) {
+
             $shopCode = $sourceChild->shop?->code ?? '?';
             $command->newLine();
             $command->line("  <fg=yellow;options=bold>■ {$masterFamily->slug}</> <fg=gray>(source: <fg=cyan>$shopCode</>)</> $sourceOffer->id  ");
@@ -192,10 +192,12 @@ class RepairMasterFamilyGrVolFromShops
                 $command->line("    <fg=gray>{$label}:</> <fg=red>{$old}</> <fg=gray>→</> <fg=green>{$new}</>");
             }
 
-            return;
+        if(!$this->dryRun){
+
+            $masterFamily->updateQuietly($changes);
         }
 
-        $masterFamily->updateQuietly($changes);
+
     }
 
     private function formatValue(string $field, mixed $value): string
