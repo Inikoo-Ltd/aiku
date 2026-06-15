@@ -82,6 +82,7 @@ class IndexClockingEmployees extends OrgAction
         $medicalRequestCount = null;
         $unpaidRequestCount = null;
         $leaveTypeOptions = [];
+        $holidayDates = collect();
         $adjustmentsData = collect();
         $overtimeData = collect();
         $todayTimesheet = null;
@@ -251,6 +252,24 @@ class IndexClockingEmployees extends OrgAction
                 ]);
                 $balance->refresh();
             }
+
+            $upcomingHolidays = Holiday::where('organisation_id', $this->employee->organisation_id)
+                ->where('to', '>=', now()->toDateString())
+                ->get();
+
+            foreach ($upcomingHolidays as $holiday) {
+                $current = Carbon::parse($holiday->from);
+                $end = Carbon::parse($holiday->to);
+                while ($current->lte($end)) {
+                    $holidayDates->push([
+                        'date'  => $current->toDateString(),
+                        'label' => $holiday->label ?? '',
+                    ]);
+                    $current->addDay();
+                }
+            }
+
+            $holidayDates = $holidayDates->unique('date')->values();
         }
 
         if ($this->tab == ClockingEmployeesTabsEnum::ADJUSTMENTS->value && $this->employee) {
@@ -343,6 +362,7 @@ class IndexClockingEmployees extends OrgAction
             'medical_request_count' => $medicalRequestCount,
             'unpaid_request_count' => $unpaidRequestCount,
             'leave_type_options' => $leaveTypeOptions,
+            'holiday_dates' => $holidayDates,
             'adjustments' => $adjustmentsData,
             'overtime' => $overtimeData,
             'organisation' => $this->employee?->organisation?->slug,
@@ -595,6 +615,7 @@ class IndexClockingEmployees extends OrgAction
                         'medical_request_count' => $data['medical_request_count'],
                         'unpaid_request_count' => $data['unpaid_request_count'],
                         'organisation' => $data['organisation'],
+                        'holidays' => $data['holiday_dates'],
                     ]
                     : Inertia::lazy(fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
@@ -605,6 +626,7 @@ class IndexClockingEmployees extends OrgAction
                         'medical_request_count' => $data['medical_request_count'],
                         'unpaid_request_count' => $data['unpaid_request_count'],
                         'organisation' => $data['organisation'],
+                        'holidays' => $data['holiday_dates'],
                     ]),
 
                 ClockingEmployeesTabsEnum::ADJUSTMENTS->value =>
