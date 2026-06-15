@@ -2,8 +2,12 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithVolGrDiscount;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Discounts\Offer;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
@@ -16,114 +20,160 @@ class RepairMasterFamilyGrVolFromShops
 
     private const PRIORITY_SHOP_CODES = ['eu', 'uk', 'sk', 'es'];
 
+    public string $commandSignature = 'repair:master_family_gr_vol_from_shops {master_shop? : MasterShop slug (omit to repair all)}';
+
     public function handle(MasterShop $masterShop, Command $command): void
     {
-        MasterProductCategory::where('master_shop_id', $masterShop->id)
-            ->where('type', ProductCategoryTypeEnum::FAMILY->value)
-            ->chunkById(200, function (Collection $masterFamilies) use ($command) {
-                foreach ($masterFamilies as $masterFamily) {
-                    $this->repairFamily($masterFamily, $command);
-                }
-            });
+        $query = MasterProductCategory::where('master_shop_id', $masterShop->id)
+            ->where('type', ProductCategoryTypeEnum::FAMILY->value);
 
-        $command->info('Repair completed.');
+        $total = (clone $query)->count();
+
+        $bar = $command->getOutput()->createProgressBar($total);
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $bar->start();
+
+        $foundAnyOffer = false;
+
+        $query->chunkById(200, function (Collection $masterFamilies) use ($bar, &$foundAnyOffer) {
+            foreach ($masterFamilies as $masterFamily) {
+                if ($this->repairFamily($masterFamily)) {
+                    $foundAnyOffer = true;
+                }
+                $bar->advance();
+            }
+        });
+
+        $bar->finish();
+        $command->newLine();
+        $command->info('Completed.');
+
+        if ($foundAnyOffer && !$masterShop->gold_reward_eligible) {
+            $masterShop->updateQuietly(['gold_reward_eligible' => true]);
+        }
+
+        MasterShopHydrateMasterFamiliesWithVolGrDiscount::run($masterShop);
     }
 
-    private function repairFamily(MasterProductCategory $masterFamily, Command $command): void
+    private function repairFamily(MasterProductCategory $masterFamily): bool
     {
-        $children = $masterFamily->productCategories()
-            ->with('shop')
-            ->get();
+        $children = $masterFamily->productCategories()->with('shop')->get();
 
         if ($children->isEmpty()) {
-            $command->line("[{$masterFamily->code}] No children found, skipping.");
-            return;
+            return false;
         }
 
-        $this->fillNullChildrenFromMaster($children, $masterFamily);
+        $activeOffers = Offer::whereIn('trigger_id', $children->pluck('id'))
+            ->where('trigger_type', class_basename(ProductCategory::class))
+            ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
+            ->where('state', OfferStateEnum::ACTIVE)
+            ->with('offerAllowances')
+            ->get()
+            ->keyBy('trigger_id');
 
-        $masterValue = $this->determineMasterValue($children, $masterFamily, $command);
-
-        if ($masterFamily->has_gr_vol_discount !== $masterValue) {
-            $masterFamily->updateQuietly(['has_gr_vol_discount' => $masterValue]);
-            $command->info("[{$masterFamily->code}] Master updated to: " . ($masterValue ? 'true' : 'false'));
+        if ($activeOffers->isEmpty()) {
+            return false;
         }
 
-        $this->syncFollowMasterGr($children, $masterValue, $command, $masterFamily->code);
+        foreach ($children as $child) {
+            $child->has_gr_vol_discount = $activeOffers->has($child->id);
+        }
+
+        ProductCategory::whereIn('id', $children->where('has_gr_vol_discount', true)->pluck('id'))
+            ->update(['has_gr_vol_discount' => true]);
+        ProductCategory::whereIn('id', $children->where('has_gr_vol_discount', false)->pluck('id'))
+            ->update(['has_gr_vol_discount' => false]);
+
+        $sourceChild = $this->resolveSourceChild($children);
+        $sourceOffer = $activeOffers->get($sourceChild->id);
+
+        $this->updateMasterFamily($masterFamily, $sourceOffer);
+        $this->syncFollowMasterGr($children, (bool) $sourceChild->has_gr_vol_discount);
+
+        return true;
     }
 
-    private function fillNullChildrenFromMaster(Collection $children, MasterProductCategory $masterFamily): void
+    private function resolveSourceChild(Collection $children): ProductCategory
     {
-        $nullChildren = $children->whereNull('has_gr_vol_discount');
-
-        if ($nullChildren->isEmpty()) {
-            return;
-        }
-
-        ProductCategory::whereIn('id', $nullChildren->pluck('id'))
-            ->update([
-                'has_gr_vol_discount' => $masterFamily->has_gr_vol_discount,
-                'follow_master_gr'    => true,
-            ]);
-
-        foreach ($nullChildren as $child) {
-            $child->has_gr_vol_discount = $masterFamily->has_gr_vol_discount;
-            $child->follow_master_gr    = true;
-        }
-    }
-
-    private function determineMasterValue(Collection $children, MasterProductCategory $masterFamily, Command $command): bool
-    {
-        $distinctValues = $children->pluck('has_gr_vol_discount')->unique();
-
-        if ($distinctValues->count() === 1) {
-            return (bool) $distinctValues->first();
-        }
-
-        $command->warn("[{$masterFamily->code}] Children disagree on GR/VOL — resolving by priority shop.");
+        $childrenWithOffer = $children->where('has_gr_vol_discount', true);
 
         foreach (self::PRIORITY_SHOP_CODES as $shopCode) {
-            $child = $children->first(fn ($c) => $c->shop?->code === $shopCode);
+            $child = $childrenWithOffer->first(fn ($c) => $c->shop?->code === $shopCode);
             if ($child) {
-                $command->info("[{$masterFamily->code}] Using shop [{$shopCode}] value: " . ($child->has_gr_vol_discount ? 'true' : 'false'));
-                return (bool) $child->has_gr_vol_discount;
+                return $child;
             }
         }
 
-        $fallback = $children->first();
-        $command->warn("[{$masterFamily->code}] No priority shop found, falling back to [{$fallback->shop?->code}].");
-
-        return (bool) $fallback->has_gr_vol_discount;
+        return $childrenWithOffer->first();
     }
 
-    private function syncFollowMasterGr(Collection $children, bool $masterValue, Command $command, string $familyCode): void
+    private function updateMasterFamily(MasterProductCategory $masterFamily, ?Offer $sourceOffer): void
     {
-        $matching    = $children->where('has_gr_vol_discount', $masterValue)->pluck('id');
-        $notMatching = $children->where('has_gr_vol_discount', '!=', $masterValue)->pluck('id');
+        $quantity      = data_get($sourceOffer?->trigger_data, 'item_quantity');
+        $percentageOff = data_get($sourceOffer?->offerAllowances->first()?->data, 'percentage_off');
+        $percentage    = $percentageOff !== null ? (float) $percentageOff * 100 : null;
 
-        if ($matching->isNotEmpty()) {
-            ProductCategory::whereIn('id', $matching)->update(['follow_master_gr' => true]);
+        $changes = [];
+
+        if ($masterFamily->has_gr_vol_discount !== ($sourceOffer !== null)) {
+            $changes['has_gr_vol_discount'] = $sourceOffer !== null;
         }
 
-        if ($notMatching->isNotEmpty()) {
-            ProductCategory::whereIn('id', $notMatching)->update(['follow_master_gr' => false]);
-            $command->warn("[{$familyCode}] {$notMatching->count()} child(ren) marked follow_master_gr = false.");
+        if ($quantity !== null && $masterFamily->gr_vol_discount_quantity !== (int) $quantity) {
+            $changes['gr_vol_discount_quantity'] = (int) $quantity;
+        }
+
+        if ($percentage !== null && (float) $masterFamily->gr_vol_discount_percentage !== $percentage) {
+            $changes['gr_vol_discount_percentage'] = $percentage;
+        }
+
+        if (!empty($changes)) {
+            $masterFamily->updateQuietly($changes);
         }
     }
 
-    public string $commandSignature = 'repair:master_family_gr_vol_from_shops {master_shop : MasterShop slug}';
+    private function syncFollowMasterGr(Collection $children, bool $masterValue): void
+    {
+        $followIds = $children->where('has_gr_vol_discount', $masterValue)->pluck('id');
+        $optOutIds = $children->where('has_gr_vol_discount', '!=', $masterValue)->pluck('id');
+
+        if ($followIds->isNotEmpty()) {
+            ProductCategory::whereIn('id', $followIds)->update(['follow_master_gr' => true]);
+        }
+
+        if ($optOutIds->isNotEmpty()) {
+            ProductCategory::whereIn('id', $optOutIds)->update(['follow_master_gr' => false]);
+        }
+    }
 
     public function asCommand(Command $command): void
     {
-        $masterShop = MasterShop::where('slug', $command->argument('master_shop'))->first();
+        $slug = $command->argument('master_shop');
 
-        if (!$masterShop) {
-            $command->error('Master shop not found.');
+        if ($slug) {
+            $masterShop = MasterShop::where('slug', $slug)->first();
+
+            if (!$masterShop) {
+                $command->error('Master shop not found.');
+                return;
+            }
+
+            $command->info("Repairing: {$masterShop->slug}");
+            $this->handle($masterShop, $command);
+
             return;
         }
 
-        $command->info("Repairing GR/VOL for master shop: {$masterShop->slug}");
+        $masterShops = MasterShop::all();
 
-        $this->handle($masterShop, $command);
+        if ($masterShops->isEmpty()) {
+            $command->warn('No master shops found.');
+            return;
+        }
+
+        foreach ($masterShops as $masterShop) {
+            $command->info("Repairing: {$masterShop->slug}");
+            $this->handle($masterShop, $command);
+        }
     }
 }
