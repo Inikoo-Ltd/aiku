@@ -45,6 +45,8 @@ class UpdateVolumeGrOfferFromMaster extends OrgAction
             $percentageOff = (float) ($masterProductCategory->gr_vol_discount_percentage / 100);
 
             foreach ($masterProductCategory->productCategories as $productCategory) {
+                // todo. Aldo . $productCategory->followMasterGr.  (create UI in EditFamily )
+
                 $offer = Offer::where('shop_id', $productCategory->shop_id)->where('type', 'Category Quantity Ordered Order Interval')->where('trigger_id', $productCategory->id)->first();
 
                 if (!$offer) {
