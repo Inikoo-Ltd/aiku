@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 15 Jun 2026 15:48:16 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Masters\MasterProductCategory;
 
@@ -6,8 +11,11 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWith
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferCampaign;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
@@ -18,14 +26,20 @@ class RepairMasterFamilyGrVolFromShops
 {
     use AsAction;
 
-    private const PRIORITY_SHOP_CODES = ['eu', 'uk', 'sk', 'es'];
+    private const array PRIORITY_SHOP_CODES = ['eu', 'uk', 'sk', 'es'];
 
-    public string $commandSignature = 'repair:master_family_gr_vol_from_shops {master_shop? : MasterShop slug (omit to repair all)}';
+    public string $commandSignature = 'repair:master_family_gr_vol_from_shops {master_shop : MasterShop slug)}';
 
     public function handle(MasterShop $masterShop, Command $command): void
     {
         $query = MasterProductCategory::where('master_shop_id', $masterShop->id)
             ->where('type', ProductCategoryTypeEnum::FAMILY->value);
+
+
+        $shopsIds=Shop::where('master_shop_id', $masterShop->id)->pluck('id')->toArray();
+
+        $offerCampaignIds = OfferCampaign::whereIn('shop_id', $shopsIds)->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->pluck('id')->toArray();
+
 
         $total = (clone $query)->count();
 
@@ -35,9 +49,9 @@ class RepairMasterFamilyGrVolFromShops
 
         $foundAnyOffer = false;
 
-        $query->chunkById(200, function (Collection $masterFamilies) use ($bar, &$foundAnyOffer) {
+        $query->chunkById(200, function (Collection $masterFamilies) use ($bar, &$foundAnyOffer,$offerCampaignIds) {
             foreach ($masterFamilies as $masterFamily) {
-                if ($this->repairFamily($masterFamily)) {
+                if ($this->repairFamily($masterFamily,$offerCampaignIds)) {
                     $foundAnyOffer = true;
                 }
                 $bar->advance();
@@ -55,8 +69,11 @@ class RepairMasterFamilyGrVolFromShops
         MasterShopHydrateMasterFamiliesWithVolGrDiscount::run($masterShop);
     }
 
-    private function repairFamily(MasterProductCategory $masterFamily): bool
+    private function repairFamily(MasterProductCategory $masterFamily, array $offerCampaignIds): bool
     {
+
+
+
         $children = $masterFamily->productCategories()->with('shop')->get();
 
         if ($children->isEmpty()) {
@@ -64,6 +81,7 @@ class RepairMasterFamilyGrVolFromShops
         }
 
         $activeOffers = Offer::whereIn('trigger_id', $children->pluck('id'))
+            ->whereIn('offer_campaign_id',$offerCampaignIds)
             ->where('trigger_type', class_basename(ProductCategory::class))
             ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
             ->where('state', OfferStateEnum::ACTIVE)
@@ -75,6 +93,7 @@ class RepairMasterFamilyGrVolFromShops
             return false;
         }
 
+        /** @var ProductCategory $child */
         foreach ($children as $child) {
             $child->has_gr_vol_discount = $activeOffers->has($child->id);
         }
@@ -85,10 +104,13 @@ class RepairMasterFamilyGrVolFromShops
             ->update(['has_gr_vol_discount' => false]);
 
         $sourceChild = $this->resolveSourceChild($children);
+
+        /** @var Offer $sourceOffer */
         $sourceOffer = $activeOffers->get($sourceChild->id);
 
+
         $this->updateMasterFamily($masterFamily, $sourceOffer);
-        $this->syncFollowMasterGr($children, (bool) $sourceChild->has_gr_vol_discount);
+        $this->syncFollowMasterGr($children, (bool)$sourceChild->has_gr_vol_discount);
 
         return true;
     }
@@ -98,7 +120,7 @@ class RepairMasterFamilyGrVolFromShops
         $childrenWithOffer = $children->where('has_gr_vol_discount', true);
 
         foreach (self::PRIORITY_SHOP_CODES as $shopCode) {
-            $child = $childrenWithOffer->first(fn ($c) => $c->shop?->code === $shopCode);
+            $child = $childrenWithOffer->first(fn($c) => $c->shop?->code === $shopCode);
             if ($child) {
                 return $child;
             }
@@ -111,7 +133,7 @@ class RepairMasterFamilyGrVolFromShops
     {
         $quantity      = data_get($sourceOffer?->trigger_data, 'item_quantity');
         $percentageOff = data_get($sourceOffer?->offerAllowances->first()?->data, 'percentage_off');
-        $percentage    = $percentageOff !== null ? (float) $percentageOff * 100 : null;
+        $percentage    = $percentageOff !== null ? (float)$percentageOff * 100 : null;
 
         $changes = [];
 
@@ -119,15 +141,18 @@ class RepairMasterFamilyGrVolFromShops
             $changes['has_gr_vol_discount'] = $sourceOffer !== null;
         }
 
-        if ($quantity !== null && $masterFamily->gr_vol_discount_quantity !== (int) $quantity) {
-            $changes['gr_vol_discount_quantity'] = (int) $quantity;
+        if ($quantity !== null && $masterFamily->gr_vol_discount_quantity !== (int)$quantity) {
+            $changes['gr_vol_discount_quantity'] = (int)$quantity;
         }
 
-        if ($percentage !== null && (float) $masterFamily->gr_vol_discount_percentage !== $percentage) {
+        if ($percentage !== null && (float)$masterFamily->gr_vol_discount_percentage !== $percentage) {
             $changes['gr_vol_discount_percentage'] = $percentage;
         }
 
         if (!empty($changes)) {
+
+
+
             $masterFamily->updateQuietly($changes);
         }
     }
@@ -150,30 +175,15 @@ class RepairMasterFamilyGrVolFromShops
     {
         $slug = $command->argument('master_shop');
 
-        if ($slug) {
-            $masterShop = MasterShop::where('slug', $slug)->first();
+        $masterShop = MasterShop::where('slug', $slug)->firstOrFail();
 
-            if (!$masterShop) {
-                $command->error('Master shop not found.');
-                return;
-            }
-
-            $command->info("Repairing: {$masterShop->slug}");
-            $this->handle($masterShop, $command);
+        if (!$masterShop) {
+            $command->error('Master shop not found.');
 
             return;
         }
 
-        $masterShops = MasterShop::all();
-
-        if ($masterShops->isEmpty()) {
-            $command->warn('No master shops found.');
-            return;
-        }
-
-        foreach ($masterShops as $masterShop) {
-            $command->info("Repairing: {$masterShop->slug}");
-            $this->handle($masterShop, $command);
-        }
+        $command->info("Repairing: {$masterShop->slug}");
+        $this->handle($masterShop, $command);
     }
 }
