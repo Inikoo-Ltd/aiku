@@ -9,8 +9,10 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Actions\Web\WebBlock\GetWebBlockCollections;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Http\Resources\Web\WebBlockDepartmentResource;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
@@ -59,6 +61,7 @@ class GetIrisWebBlockDepartmentDescription
         data_set($webBlock, 'web_block.layout.data.fieldValue.id', data_get($webBlock, 'type'));
         data_set($webBlock, 'web_block.layout.data.fieldValue.department', WebBlockDepartmentResource::make($webpage->model)->resolve());
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', $subDepartmentList);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));
 
         return [
             'type' => $webBlock['type'],

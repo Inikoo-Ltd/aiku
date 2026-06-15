@@ -137,7 +137,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $families, ActionRequest $request): Response
     {
-        $navigation = ProductCategoryTabsEnum::navigation();
+        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
 
         unset($navigation[ProductCategoryTabsEnum::SALES->value]);
 

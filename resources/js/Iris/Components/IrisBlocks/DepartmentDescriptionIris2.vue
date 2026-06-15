@@ -32,7 +32,7 @@ library.add(
 const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 	indexBlock: number
-	fieldValue: {
+	fieldValue: {  // GetIrisWebBlockDepartmentDescription
 		department: {
 			name: string
 			description_title?: string
@@ -59,6 +59,14 @@ const props = defineProps<{
 				}
 			}
 		}
+		sub_departments: {
+			name: string
+			url: string
+		}[]
+		collections: {
+			name: string
+			url: string
+		}[]
 	}
 }>()
 
@@ -218,6 +226,14 @@ watch(
 							:href="item.url"
 							class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
 							{{ item.name }}
+						</LinkIris>
+						<LinkIris
+							v-for="(collection, idxCol) of props.fieldValue.collections"
+							:key="collection.url"
+							:type="'internal'"
+							:href="collection.url"
+							class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
+							{{ collection.name }}
 						</LinkIris>
 					</div>
 				</aside>
