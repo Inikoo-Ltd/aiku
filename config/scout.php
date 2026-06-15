@@ -89,9 +89,9 @@ return [
     |
     */
 
-    'queue' => [
-        'queue' => 'search'
-    ],
+    'queue' => env('SCOUT_QUEUE_ENABLED', true)
+        ? ['queue' => env('SCOUT_QUEUE_NAME', 'search')]
+        : false,
 
     /*
     |--------------------------------------------------------------------------
