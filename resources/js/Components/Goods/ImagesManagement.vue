@@ -347,8 +347,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         :class="{ ' cursor-not-allowed': !editable }" :draggable="editable && !!categoryBox.images"
                         @dragstart="(e) =>  editable && categoryBox.images ?  onStartDrag(e, categoryBox) : null"
                         @dragend="(e)=> editable ? onEndDrag(e) : null">
-                        
-                        <Image v-if="categoryBox.images" :src="categoryBox.images" :style="{ objectFit: 'contain' }" />
+                        <Image v-if="categoryBox.images" :src="categoryBox.images" :alt="categoryBox.label" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
                             <span class="text-[12px] font-medium">{{ trans('Drop image here') }}</span>
@@ -434,7 +433,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center
                overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
-                                <Image v-if="item?.image" :src="item?.image"
+                                <Image v-if="item?.image" :src="item?.image" :alt="item.alt"
                                     class="max-h-full max-w-full object-contain" />
                                 <div v-else class="text-gray-400">
                                     <FontAwesomeIcon :icon="faImage" class="text-base" />
