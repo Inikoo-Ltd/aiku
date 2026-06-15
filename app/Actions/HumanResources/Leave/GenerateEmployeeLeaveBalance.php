@@ -2,8 +2,8 @@
 
 /*
  * @Author: andiferdiawan (https://github.com/andiferdiawan)
- * @Created: YYYY-MM-DD HH:mm:ss
- * @Copyright: Copyright (c) 2026, andiferdiawan
+ * @Created: 2026-06-12
+ * * @Copyright: Copyright (c) 2026, andiferdiawan
  */
 
 namespace App\Actions\HumanResources\Leave;
