@@ -164,6 +164,9 @@ class Offer extends Model implements Auditable
         return $this->belongsTo(OfferCampaign::class);
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Discounts\OfferAllowance>|\Illuminate\Database\Eloquent\Builder
+     */
     public function offerAllowances(): HasMany
     {
         return $this->hasMany(OfferAllowance::class);
