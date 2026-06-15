@@ -392,6 +392,16 @@ class EditEmployee extends OrgAction
                     'label' => __('Identity Document Number'),
                     'value' => $employee->identity_document_number
                 ],
+                'identity_documents' => [
+                    'type'     => 'dynamic_list',
+                    'label'    => __('Other Identity Documents'),
+                    'value'    => $employee->data['identity_documents'] ?? [],
+                    'fields'   => [
+                        ['key' => 'type', 'placeholder' => __('Document type')],
+                        ['key' => 'number', 'placeholder' => __('Document number')],
+                    ],
+                    'addLabel' => __('Add document'),
+                ],
                 'notes' => [
                     'type' => 'textarea',
                     'label' => __('notes'),
