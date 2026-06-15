@@ -26,7 +26,7 @@ class RepairMasterFamilyGrVolFromShops
 {
     use AsAction;
 
-    private const array PRIORITY_SHOP_CODES = ['EU', 'UK', 'ES'];
+    private const array PRIORITY_SHOP_CODES = ['AEU'];
 
     private bool $dryRun = false;
 
