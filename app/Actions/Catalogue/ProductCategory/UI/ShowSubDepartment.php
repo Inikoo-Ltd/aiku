@@ -8,16 +8,18 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProductCategories\GetRelatedProductCategories;
+use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
+use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
@@ -28,8 +30,6 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Catalogue\OffersResource;
-use App\Actions\Discounts\Offer\UI\IndexOffers;
 
 class ShowSubDepartment extends OrgAction
 {

@@ -1,12 +1,13 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 05 May 2026 11:22:07 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
- */
+ * author Louis Perez
+ * created on 29-05-2026-11h-11m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
-namespace App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProducts;
+namespace App\Actions\Catalogue\ProductCategory\RelatedProductCategories;
 
 use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;
@@ -14,23 +15,23 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class SyncProductCategoryRelatedProducts extends OrgAction
+class SyncProductCategoryRelatedProductCategories extends OrgAction
 {
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
-        $productIds = array_unique(Arr::get($modelData, 'product_ids', []));
+        $productCategoriesId = array_unique(Arr::get($modelData, 'related_product_categories_id', []));
 
-        $relatedProducts = [];
+        $relatedProductCategories = [];
         $position        = 0;
-        foreach ($productIds as $productId) {
+        foreach ($productCategoriesId as $productCategoryId) {
             $position++;
-            $relatedProducts[$productId] = [
+            $relatedProductCategories[$productCategoryId] = [
                 'position' => $position
             ];
         }
 
 
-        $productCategory->relatedProducts()->sync($relatedProducts);
+        $productCategory->relatedProductCategories()->sync($relatedProductCategories);
 
         return $productCategory;
     }
@@ -38,10 +39,10 @@ class SyncProductCategoryRelatedProducts extends OrgAction
     public function rules(): array
     {
         return [
-            'product_ids'   => ['sometimes', 'array'],
-            'product_ids.*' => [
+            'related_product_categories_id'   => ['sometimes', 'array'],
+            'related_product_categories_id.*' => [
                 'integer',
-                Rule::exists('products', 'id')->where('shop_id', $this->shop->id)
+                Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)
             ],
         ];
     }

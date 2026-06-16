@@ -8,16 +8,16 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProductCategories\GetRelatedProductCategories;
-use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProducts\GetRelatedProducts;
-use App\Actions\OrgAction;
+use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
+use App\Actions\Catalogue\ProductCategory\RelatedProducts\GetRelatedProducts;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Catalogue\Variant\IndexVariant;
+use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
