@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 22-05-2025-15h-44m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Inventory\PickingSession;
+use Illuminate\Console\Command;
 
 class AutoFinishPackingPickingSession extends OrgAction
 {
@@ -23,7 +24,10 @@ class AutoFinishPackingPickingSession extends OrgAction
     {
         $numberPacked = $pickingSession->deliveryNotes->whereIn('state', [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED, DeliveryNoteStateEnum::DISPATCHED])->count();
 
-        if ($numberPacked == $pickingSession->number_delivery_notes) {
+        $totalNumberDeliveryNotes = $pickingSession->deliveryNotes->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->count();
+
+
+        if ($numberPacked == $totalNumberDeliveryNotes) {
             $this->update($pickingSession, [
                 'state' => PickingSessionStateEnum::PACKING_FINISHED,
                 'end_at' => now()
@@ -33,10 +37,17 @@ class AutoFinishPackingPickingSession extends OrgAction
         return $pickingSession;
     }
 
-    public function action(PickingSession $pickingSession): PickingSession
-    {
-        $this->initialisationFromWarehouse($pickingSession->warehouse, []);
 
+    public function getCommandSignature():string
+    {
+        return 'auto-finish-packing-picking-session {picking_session}';
+    }
+
+    public function asCommand(Command $command): PickingSession
+    {
+        $pickingSession = PickingSession::where('slug',$command->argument('picking_session'))->firstOrFail();
         return $this->handle($pickingSession);
     }
+
+
 }
