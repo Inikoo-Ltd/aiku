@@ -167,7 +167,6 @@ class ShowFamily extends OrgAction
             ];
         }
 
-        $isRelatedProductFollowMaster = (bool) data_get($family->shop->settings, 'catalog.related_product_follow_master', false);
 
         $iconLinks = [];
         if ($family->has_gr_vol_discount) {
