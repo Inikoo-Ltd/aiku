@@ -20,6 +20,7 @@ use Illuminate\Console\Command;
 class AutoFinishPackingPickingSession extends OrgAction
 {
     use WithActionUpdate;
+
     public function handle(PickingSession $pickingSession): PickingSession
     {
         $numberPacked = $pickingSession->deliveryNotes->whereIn('state', [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED, DeliveryNoteStateEnum::DISPATCHED])->count();
@@ -29,24 +30,27 @@ class AutoFinishPackingPickingSession extends OrgAction
 
         if ($numberPacked == $totalNumberDeliveryNotes) {
             $this->update($pickingSession, [
-                'state' => PickingSessionStateEnum::PACKING_FINISHED,
+                'state'  => PickingSessionStateEnum::PACKING_FINISHED,
                 'end_at' => now()
             ]);
             WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }
+
         return $pickingSession;
     }
 
 
-    public function getCommandSignature():string
+    public function getCommandSignature(): string
     {
         return 'auto-finish-packing-picking-session {picking_session}';
     }
 
-    public function asCommand(Command $command): PickingSession
+    public function asCommand(Command $command): int
     {
-        $pickingSession = PickingSession::where('slug',$command->argument('picking_session'))->firstOrFail();
-        return $this->handle($pickingSession);
+        $pickingSession = PickingSession::where('slug', $command->argument('picking_session'))->firstOrFail();
+        $this->handle($pickingSession);
+
+        return 0;
     }
 
 

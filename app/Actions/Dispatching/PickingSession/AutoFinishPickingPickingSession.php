@@ -30,6 +30,8 @@ class AutoFinishPickingPickingSession extends OrgAction
             ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
             ->where('is_handled', true)
             ->count();
+
+
         if ($numberHandled == $numberItems) {
             $this->update($pickingSession, [
                 'state' => PickingSessionStateEnum::PICKING_FINISHED
@@ -40,15 +42,17 @@ class AutoFinishPickingPickingSession extends OrgAction
         return $pickingSession;
     }
 
-    public function getCommandSignature():string
+    public function getCommandSignature(): string
     {
         return 'auto-finish-picking-picking-session {picking_session}';
     }
 
-    public function asCommand(Command $command): PickingSession
+    public function asCommand(Command $command): int
     {
-        $pickingSession = PickingSession::where('slug',$command->argument('picking_session'))->firstOrFail();
-        return $this->handle($pickingSession);
+        $pickingSession = PickingSession::where('slug', $command->argument('picking_session'))->firstOrFail();
+        $this->handle($pickingSession);
+
+        return 0;
     }
 
 
