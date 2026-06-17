@@ -317,7 +317,7 @@ class EditShop extends OrgAction
                             'saveConfirmation'  => [
                                 'title'     => __('Are you sure want to update currency exchange?'),
                                 'description'   => __("This will affect all products in the shop, including the product that in customer's basket. Products that already purchased in Order will not affected."),
-                                'yesLabel'  => __('Yes, update currency exchane')
+                                'yesLabel'  => __('Yes, update currency exchange')
                             ],
                             'label'       => __('Product Currency Exchange'),
                             'placeholder' => __('Product Currency Exchange'),
