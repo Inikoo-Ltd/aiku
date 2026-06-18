@@ -36,29 +36,28 @@ class ExportCustomers extends OrgAction
         $recipe = $modelData['filters'] ?? [];
         $states = $this->getStateFilter($modelData['state'] ?? []);
         $statuses = $this->getStatusFilter($modelData['status'] ?? []);
+        $fields = $modelData['columns'] ?? [];
 
-        $export = new CustomersExport($parent, $recipe, $states, $statuses);
+        $export = new CustomersExport($parent, $recipe, $states, $statuses, $fields);
 
         if ($type === ExportTypeEnum::XLSX->value && $export->query()->toBase()->count() < self::STREAM_THRESHOLD) {
             return $this->export($export, 'customers', $type);
         }
 
-        $query = $export->query()->toBase()
-            ->select($export->exportColumns())
-            ->orderBy('customers.id');
-
-        return $this->streamCsv($query, $export->headings(), 'customers');
+        return $this->streamCsv($export->dataQuery(), $export->headings(), 'customers');
     }
 
     public function rules(): array
     {
         return [
-            'type'     => ['required', 'string', Rule::in('csv', 'xlsx')],
-            'filters'  => ['sometimes', 'nullable', 'array'],
-            'state'    => ['sometimes', 'nullable', 'array'],
-            'state.*'  => ['string'],
-            'status'   => ['sometimes', 'nullable', 'array'],
-            'status.*' => ['string'],
+            'type'      => ['required', 'string', Rule::in('csv', 'xlsx')],
+            'filters'   => ['sometimes', 'nullable', 'array'],
+            'state'     => ['sometimes', 'nullable', 'array'],
+            'state.*'   => ['string'],
+            'status'    => ['sometimes', 'nullable', 'array'],
+            'status.*'  => ['string'],
+            'columns'   => ['sometimes', 'nullable', 'array'],
+            'columns.*' => ['string', Rule::in(array_keys(CustomersExport::fieldDefinitions()))],
         ];
     }
 
