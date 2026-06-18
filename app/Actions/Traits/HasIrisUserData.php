@@ -35,7 +35,7 @@ trait HasIrisUserData
             if ($orderInBasket) {
                 $cartCount                    = $orderInBasket->number_item_transactions;
                 $cartAmount                   = $orderInBasket->total_amount;
-                $grossAmount                  = $orderInBasket->gross_amount;
+                $grossAmount                  = (float) $orderInBasket->gross_amount;
                 $cardItemsAmountAfterDiscount = $orderInBasket->goods_amount;
                 $offerMeters                  = $orderInBasket->offer_meters;
             }

@@ -2,7 +2,7 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -51,6 +51,28 @@ const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(today)
 const endDate = ref<Date | null>(null)
 
+const quickIntervalDays = ref<number | null>(null)
+
+const quickIntervalPresets = [1, 2, 3, 7]
+
+let isApplyingPreset = false
+
+const applyQuickInterval = (days: number) => {
+    isApplyingPreset = true
+    dateType.value = 'interval'
+
+    const start = new Date(today)
+    const end = new Date(today)
+    end.setDate(end.getDate() + days)
+
+    startDate.value = start
+    endDate.value = end
+    quickIntervalDays.value = days
+
+    nextTick(() => {
+        isApplyingPreset = false
+    })
+}
 
 function formatDate(date: Date | null) {
     if (!date) return null
@@ -78,7 +100,7 @@ const submitGiftOffer = () => {
             min_order_amount: offerAmount.value,
             duration: dateType.value,
             start_at: formatDate(startDate.value),
-            end_at: formatDate(endDate.value)
+            end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null
         }
     )
         .then((response) => {
@@ -133,7 +155,22 @@ const resetForm = () => {
     dateType.value = 'permanent'
     startDate.value = today
     endDate.value = null
+    quickIntervalDays.value = null
+    isLoadingSubmit.value = false
 }
+
+watch(dateType, (val) => {
+    if (val === 'permanent') {
+        endDate.value = null
+        quickIntervalDays.value = null
+    }
+})
+
+watch([startDate, endDate], () => {
+    if (!isApplyingPreset) {
+        quickIntervalDays.value = null
+    }
+})
 
 const isFormInvalid = computed(() => {
     if (!offerLabel.value) return true
@@ -233,7 +270,7 @@ resetForm()
                         {{ trans('Offer Duration') }}:
                     </div>
 
-                    <div class="flex flex-wrap gap-4">
+                    <div class="flex flex-wrap items-center gap-4">
                         <label for="permanent"
                             class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
                             :class="dateType === 'permanent'
@@ -251,6 +288,14 @@ resetForm()
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
                             <span>{{ trans('Interval') }}</span>
                         </label>
+                        <button v-if="dateType === 'interval'" v-for="days in quickIntervalPresets" :key="days" type="button"
+                            @click="applyQuickInterval(days)"
+                            class="px-3.5 py-2.5 rounded-lg border text-sm cursor-pointer transition-colors"
+                            :class="quickIntervalDays === days
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
+                            {{ trans(':count day', { count: String(days) }) }}
+                        </button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
