@@ -148,6 +148,9 @@ class ShowDepartment extends OrgAction
                     'id'            => $department->shop->id,
                     'slug'          => $department->shop->slug,
                     'currency_code' => $department->shop->currency->code,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                    ],
                 ],
                 'product_category_id' => $department->id,
 
