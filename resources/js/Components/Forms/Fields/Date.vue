@@ -22,11 +22,17 @@ const props = defineProps<{
     fieldName: string
     options: any  // to avoid warning
     fieldData: {
-        required: boolean
+        required?: boolean
+        readonly?: boolean
+        extraInformation?: string
+        minDate?: Date
     }
 }>()
 
 const _datePicker: any = ref(null)
+
+
+console.log('Picker Props: ', props.fieldName, props);
 
 </script>
 
@@ -37,8 +43,12 @@ const _datePicker: any = ref(null)
         :enable-time-picker="false"
         :format="'dd MMMM yyyy'" auto-apply
         :clearable="!fieldData.required || true"
+        :readonly="fieldData.readonly"
+        :ui="{
+            input: fieldData.readonly ? '!text-gray-500' : ''
+        }"
+        :minDate="fieldData.minDate"
         keepActionRow
-        
         @update:modelValue="() => form.clearErrors()"
     >
         <template #action-row="{ internalModelValue, selectDate }">
@@ -46,8 +56,11 @@ const _datePicker: any = ref(null)
                 <Button @click="() => _datePicker?.closeMenu()" label="cancel" size="xs" type="tertiary" />
             </div>
         </template>
-
     </DatePicker>
+
+    <div v-if="fieldData.extraInformation" class="italic text-gray-500 text-xs mt-1">
+        <span class="text-red-500">*</span> {{ fieldData.extraInformation }}
+    </div>
 
     <div v-if="form.errors[fieldName] || form.recentlySuccessful"
         class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
