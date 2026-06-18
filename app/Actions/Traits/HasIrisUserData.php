@@ -25,6 +25,7 @@ trait HasIrisUserData
         $cartCount                    = 0;
         $cartAmount                   = 0;
         $cardItemsAmountAfterDiscount = 0;
+        $grossAmount                  = 0;
         $customerSalesChannels        = [];
         $offerMeters                  = null;
 
@@ -34,6 +35,7 @@ trait HasIrisUserData
             if ($orderInBasket) {
                 $cartCount                    = $orderInBasket->number_item_transactions;
                 $cartAmount                   = $orderInBasket->total_amount;
+                $grossAmount                  = $orderInBasket->gross_amount;
                 $cardItemsAmountAfterDiscount = $orderInBasket->goods_amount;
                 $offerMeters                  = $orderInBasket->offer_meters;
             }
@@ -83,6 +85,7 @@ trait HasIrisUserData
                 'back_in_stock_count'  => $this->customer->backInStockReminder->count(),
                 'cart_count'           => $cartCount, // products in the basket count
                 'cart_amount'          => $cartAmount, // order total amount (including shipping, tax, etc.)
+                'cart_amount_gross'    => $grossAmount, // order total amount gross (before discount)
                 'cart_products_amount' => $cardItemsAmountAfterDiscount,  // order total items amount after discount
             ],
             'gr_data'      => $grData,

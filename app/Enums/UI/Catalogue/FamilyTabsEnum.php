@@ -68,11 +68,11 @@ enum FamilyTabsEnum: string
                 'icon'  => 'fal fa-shapes',
             ],
             FamilyTabsEnum::RELATED_PRODUCTS => [
-                'title' => __('Related Products'),
+                'title' => __('Related products'),
                 'icon'  => 'fal fa-repeat',
             ],
             FamilyTabsEnum::RELATED_PRODUCT_CATEGORY => [
-                'title' => __('Related Product Category'),
+                'title' => __('Related families'),
                 'icon'  => 'fal fa-folder-tree',
             ],
         };

@@ -16,8 +16,9 @@ enum MasterGoldRewardTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case WITH     = 'with';
-    case WITHOUT  = 'without';
+    case WITH              = 'with';
+    case WITHOUT           = 'without';
+    case NOT_FOLLOW_MASTER = 'not_follow_master';
 
     public function blueprint(): array
     {
@@ -29,7 +30,12 @@ enum MasterGoldRewardTabsEnum: string
             MasterGoldRewardTabsEnum::WITHOUT => [
                 'title' => __('Without GR'),
                 'icon'  => 'fal fa-times-circle',
-            ]
+            ],
+            MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER => [
+                'title' => __('Not Follow Master'),
+                'icon'  => 'fal fa-starfighter',
+                'iconColor' => '#DC2626',
+            ],
         };
     }
 }

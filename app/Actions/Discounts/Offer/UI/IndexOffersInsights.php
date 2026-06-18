@@ -100,7 +100,7 @@ class IndexOffersInsights extends OrgAction
             ->where('audits.auditable_type', 'Offer')
             ->where('audits.event', 'created')
             ->where('audits.user_type', 'User')
-            ->select('audits.auditable_id as offer_id', 'users.username as created_by');
+            ->select('audits.auditable_id as offer_id', 'users.contact_name as created_by');
 
         $query->leftJoin('offer_campaigns', 'offers.offer_campaign_id', '=', 'offer_campaigns.id');
         $query->leftJoinSub($offerRedemptions, 'offer_redemptions', 'offer_redemptions.offer_id', '=', 'offers.id');

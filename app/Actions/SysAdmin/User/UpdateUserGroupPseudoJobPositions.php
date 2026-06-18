@@ -34,6 +34,7 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
 
     public function handle(User $user, array $modelData): User
     {
+        setPermissionsTeamId($user->group->id);
         $jobPositionsIds = $this->getJobPositionsFromCodes($this->group, Arr::get($modelData, 'job_position_codes', []));
 
         $currentJobPositions = $user->pseudoJobPositions()->where('scope', 'group')->pluck('job_positions.id')->all();
@@ -70,7 +71,7 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
                 'grp-first-load-props:'.$user->id.':*'
             ]
         );
-        BreakUserUiProps::dispatch($user);
+        BreakUserUiProps::run($user);
         return $user;
     }
 

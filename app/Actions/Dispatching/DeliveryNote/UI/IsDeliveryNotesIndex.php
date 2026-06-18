@@ -354,13 +354,13 @@ trait IsDeliveryNotesIndex
 
             if ($bucket == 'dispatched' && $parent instanceof Warehouse) {
                 $weightBracketOptions = [
-                    'up_to_1kg'  => __('Up to 1 kg'),
-                    '1_to_3kg'   => __('1 - 3 kg'),
-                    '3_to_6kg'   => __('3 - 6 kg'),
-                    '6_to_10kg'  => __('6 - 10 kg'),
-                    '10_to_20kg' => __('10 - 20 kg'),
-                    '20_to_31kg' => __('20 - 31 kg'),
-                    'over_31kg'  => __('Over 31 kg'),
+                    'up_to_1kg'  => __('Up to').' 1 kg',
+                    '1_to_3kg'   => '1-3 kg',
+                    '3_to_6kg'   => '3-6 kg',
+                    '6_to_10kg'  => '6-10 kg',
+                    '10_to_20kg' => '10-20 kg',
+                    '20_to_31kg' => '10-31 kg',
+                    'over_31kg'  => __('Over').' 31 kg',
                 ];
 
                 $countryOptions = DB::table('delivery_notes')

@@ -132,27 +132,40 @@ class EditOffer extends OrgAction
                     'model'     => __('Edit Offer'),
                     'icon'      => 'fal fa-pencil',
                     'iconRight' => $offer->state->stateIcon()[$offer->state->value],
-                    'actions'   => array_filter([
-                        $offer->state == OfferStateEnum::ACTIVE ? [
-                            'type'  => 'button',
-                            'label' => __('Finish Now'),
-                            'style' => 'red',
-                            'icon'  => 'fal fa-skull',
-                            'route' => [
-                                'method'     => 'post',
-                                'name'       => 'grp.models.offer.finish',
-                                'parameters' => $offer->id,
-                            ],
-                        ] : null,
+                    'actions'   => array_filter(
                         [
-                            'type'  => 'button',
-                            'style' => 'exitEdit',
-                            'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters()),
+                            $offer->state == OfferStateEnum::ACTIVE ? [
+                                'type'  => 'button',
+                                'label' => __('Finish Now'),
+                                'style' => 'red',
+                                'icon'  => 'fal fa-skull',
+                                'route' => [
+                                    'method'     => 'post',
+                                    'name'       => 'grp.models.offer.finish',
+                                    'parameters' => $offer->id,
+                                ],
+                            ] : null,
+                            $offer->state == OfferStateEnum::IN_PROCESS ? [
+                                'type'  => 'button',
+                                'label' => __('Delete Offer'),
+                                'style' => 'red',
+                                'icon'  => 'fal fa-trash-alt',
+                                'route' => [
+                                    'method'     => 'post',
+                                    'name'       => 'grp.models.offer.delete',
+                                    'parameters' => $offer->id,
+                                ],
+                            ] : null,
+                            [
+                                'type'  => 'button',
+                                'style' => 'exitEdit',
+                                'route' => [
+                                    'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                    'parameters' => array_values($request->route()->originalParameters()),
+                                ]
                             ]
                         ]
-                    ]),
+                    ),
                 ],
                 'warning'     => $warning,
                 'formData'    => [

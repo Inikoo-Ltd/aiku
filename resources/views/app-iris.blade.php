@@ -84,6 +84,164 @@
             margin-bottom: 44px !important;
             margin-right: 22px !important;
         }
+
+        .lb-iris-product-action {
+            pointer-events: auto;
+        }
+
+        .lb-iris-product-action button {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .lb-iris-cart-trigger,
+        .lb-iris-back-in-stock,
+        .lb-iris-cart-quantity {
+            border: 0;
+            cursor: pointer;
+            height: 2.5rem;
+            min-height: 2.5rem;
+            min-width: 2.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .lb-iris-cart-trigger {
+            align-items: center;
+            background: #1f2937;
+            border-radius: 9999px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            color: #d1d5db;
+            display: inline-flex;
+            justify-content: center;
+            width: 2.5rem;
+        }
+
+        .lb-iris-cart-trigger:hover {
+            background: #374151;
+        }
+
+        .lb-iris-back-in-stock {
+            align-items: center;
+            background: #e5e7eb;
+            border-radius: 9999px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            color: #4b5563;
+            display: inline-flex;
+            justify-content: center;
+            width: 2.5rem;
+        }
+
+        .lb-iris-back-in-stock:hover {
+            background: #d1d5db;
+        }
+
+        .lb-iris-back-in-stock.is-active {
+            color: #16a34a;
+        }
+
+        .lb-iris-cart-quantity {
+            align-items: center;
+            background: #e5e7eb;
+            border-radius: 9999px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            color: #111827;
+            display: inline-flex;
+            justify-content: space-between;
+            overflow: hidden;
+            padding: 0 0.25rem;
+            width: 6rem;
+        }
+
+        .lb-iris-cart-quantity:hover {
+            background: #d1d5db;
+        }
+
+        .lb-iris-cart-quantity.is-loading,
+        .lb-iris-cart-trigger:disabled,
+        .lb-iris-back-in-stock:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .lb-iris-quantity-button {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 9999px;
+            color: inherit;
+            display: inline-flex;
+            height: 2rem;
+            justify-content: center;
+            transition: background 0.2s ease-in-out, color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+            width: 2rem;
+        }
+
+        .lb-iris-quantity-button:hover:not(:disabled) {
+            background: rgb(255 255 255 / 0.8);
+            color: #111827;
+        }
+
+        .lb-iris-quantity-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.3;
+        }
+
+        .lb-iris-quantity-value {
+            cursor: default;
+            display: inline-flex;
+            font-size: 0.875rem;
+            font-weight: 500;
+            justify-content: center;
+            min-width: 1rem;
+        }
+
+        .lb-iris-icon {
+            display: inline-flex;
+            height: 1rem;
+            width: 1rem;
+        }
+
+        .lb-iris-spinner {
+            animation: lb-iris-spin 0.8s linear infinite;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 9999px;
+            display: inline-flex;
+            height: 1rem;
+            width: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .lb-iris-cart-quantity {
+                justify-content: center;
+                padding: 0;
+                width: 2.5rem;
+            }
+
+            .lb-iris-product-action:hover .lb-iris-cart-quantity,
+            .lb-iris-cart-quantity.is-loading {
+                justify-content: space-between;
+                padding: 0 0.25rem;
+                width: 6rem;
+            }
+
+            .lb-iris-quantity-button {
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .lb-iris-product-action:hover .lb-iris-quantity-button,
+            .lb-iris-cart-quantity.is-loading .lb-iris-quantity-button {
+                opacity: 1;
+                pointer-events: auto;
+            }
+        }
+
+        @keyframes lb-iris-spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 <body class="font-sans antialiased h-full">
@@ -145,6 +303,34 @@
     document.addEventListener('DOMContentLoaded', function () {
         lbPriceObserver.observe(document.body, { childList: true, subtree: true });
     });
+</script>
+
+@php
+    $shopType = request()->input('shop_type');
+    $supportsBasket = !in_array($shopType, ['dropshipping', 'fulfilment'], true);
+    $oosNotificationActive = request()->input('website')
+        ?->shop
+        ?->outboxes()
+        ?->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::OOS_NOTIFICATION)
+        ?->where('state', 'active')
+        ?->exists() ?? false;
+    $lbIrisConfig = [
+        'isLoggedIn' => (bool) request()->user(),
+        'shopType' => $shopType,
+        'supportsBasket' => $supportsBasket,
+        'oosNotificationActive' => $oosNotificationActive,
+        'currencyCode' => Arr::get(request()->input('currency_data', []), 'code'),
+        'basketTransactionDataUrl' => route('iris.json.basket.transaction_data'),
+        'productOrderingUrlTemplate' => route('iris.json.product.ecom_ordering_data', ['product' => '__PRODUCT__']),
+        'basketTransactionProductDataUrlTemplate' => route('iris.json.basket_transaction_product_data', ['transaction' => '__TRANSACTION__']),
+        'addToBasketUrlTemplate' => route('iris.models.transaction.store', ['product' => '__PRODUCT__']),
+        'updateBasketUrlTemplate' => route('iris.models.transaction.update', ['transaction' => '__TRANSACTION__']),
+        'addBackInStockUrlTemplate' => route('iris.models.remind_back_in_stock.store', ['product' => '__PRODUCT__']),
+        'removeBackInStockUrlTemplate' => route('iris.models.remind_back_in_stock.delete', ['product' => '__PRODUCT__']),
+    ];
+@endphp
+<script>
+    window.lbIrisConfig = {{ \Illuminate\Support\Js::from($lbIrisConfig) }};
 </script>
 
 @verbatim
@@ -218,8 +404,14 @@
     </div>
 </script>
 
+<!-- Template: each product -->
 <script type="text/x-template" id="template-result-item">
-    <a :href="attributes?.web_url" class="text-gray-800 isolate h-full flex flex-col flex-grow no-underline">
+    <a :href="attributes?.web_url"
+        :data-lb-product-card="Array.isArray(attributes.product_id) ? attributes.product_id[0] : attributes.product_id"
+        :data-product-id="Array.isArray(attributes.product_id) ? attributes.product_id[0] : attributes.product_id"
+        :data-product-stock="Array.isArray(attributes.stock_qty) ? attributes.stock_qty[0] : attributes.stock_qty"
+        :data-product-availability="Array.isArray(attributes.availability) ? attributes.availability[0] : attributes.availability"
+        class="text-gray-800 isolate h-full flex flex-col flex-grow no-underline">
 
         <!-- Image Area -->
         <div class="relative block w-full mb-1 rounded overflow-hidden aspect-square bg-white">
@@ -231,7 +423,7 @@
                     :src="attributes.image_link"
                     :alt="attributes.title || ''"
                     class="w-full h-full object-contain object-center select-none pointer-events-none"
-                    :style="{ opacity: attributes.availability == 1 ? 1 : 0.4 }"
+                    :style="{ opacity: attributes.stock_qty[0] >= 1 ? 1 : 0.4 }"
                     loading="lazy"
                 />
 
@@ -243,9 +435,17 @@
                 </div>
 
                 <!-- Out of Stock Overlay -->
-                <div v-if="attributes.availability != 1" class="absolute inset-0 bg-white/40 flex items-end justify-center pb-2">
+                <div v-if="!(attributes.stock_qty[0] >= 1)" class="absolute inset-0 bg-white/40 flex items-end justify-center pb-2">
                     <span class="bg-red-50 text-red-600 text-xs font-medium px-2 py-1 rounded">Out of Stock</span>
                 </div>
+
+                <div
+                    class="absolute right-2 bottom-2 z-10 lb-iris-product-action"
+                    :data-lb-product-actions="Array.isArray(attributes.product_id) ? attributes.product_id[0] : attributes.product_id"
+                    :data-product-id="Array.isArray(attributes.product_id) ? attributes.product_id[0] : attributes.product_id"
+                    :data-product-stock="Array.isArray(attributes.stock_qty) ? attributes.stock_qty[0] : attributes.stock_qty"
+                    :data-product-availability="Array.isArray(attributes.availability) ? attributes.availability[0] : attributes.availability"
+                ></div>
 
             </div>
         </div>
@@ -258,13 +458,18 @@
                 <span v-if="attributes.product_code" class="text-xs text-gray-500">{{ attributes.product_code[0] }}</span>
                 <span
                     class="shrink-0 font-medium leading-snug"
-                    :class="attributes.availability == 1 ? 'text-green-600' : 'text-red-600'"
-                    style="font-size:0.55rem"
+                    :class="attributes.stock_qty[0] > 0 ? 'text-green-600' : 'text-red-600'"
+                    style="font-size:0.85rem"
                 >●</span>
             </div>
 
             <!-- Product Title -->
-            <h3 class="font-bold !text-sm leading-4 mt-1 line-clamp-2 text-justify">{{ attributes.title }}</h3>
+            <h3 class="font-bold !text-sm leading-4 mt-1 line-clamp-2 text-justify">
+                <span v-if="attributes.units?.[0] != undefined && Number(attributes.units?.[0]) != 1" class="inline-block bg-blue-50 text-blue-600 text-xs font-medium px-1 rounded mr-1">
+                    {{ Number(attributes.units?.[0]) }}x
+                </span>
+                {{ attributes.title }}
+            </h3>
 
             <!-- HEADER: RRP + Profit -->
             <div v-if="attributes.price_rrp"
@@ -408,6 +613,553 @@
 
         el.innerHTML = base.innerHTML;
         });
+    })();
+</script>
+
+
+<!-- Script: handle button 'add to basket' and button 'remind me when in stock' email' -->
+<script>
+    (function () {
+        const config = window.lbIrisConfig;
+
+        if (!config) {
+            return;
+        }
+
+        const state = {
+            basketLoaded: false,
+            basketPromise: null,
+            basketByProductId: {},
+            orderingByProductId: {},
+            orderingPromises: {},
+            updateTimers: {},
+            loadingProductIds: new Set(),
+        };
+
+        const icon = {
+            cart: '<svg viewBox="0 0 576 512" class="lb-iris-icon" fill="currentColor" aria-hidden="true"><path d="M528.12 301.319l47.273-208A24 24 0 0 0 552 64H128l-9.401-44.447A24 24 0 0 0 95.104 0H24A24 24 0 0 0 0 24v16a24 24 0 0 0 24 24h39.104l70.395 332.447A63.997 63.997 0 1 0 215.271 416h209.458a64 64 0 1 0 62.482-80H181.817l-6.545-32h328.848a24 24 0 0 0 24-18.681z"></path></svg>',
+            plus: '<svg viewBox="0 0 448 512" class="lb-iris-icon" fill="currentColor" aria-hidden="true"><path d="M256 80c0-17.673-14.327-32-32-32s-32 14.327-32 32V208H64c-17.673 0-32 14.327-32 32s14.327 32 32 32H192V400c0 17.673 14.327 32 32 32s32-14.327 32-32V272H384c17.673 0 32-14.327 32-32s-14.327-32-32-32H256V80z"></path></svg>',
+            minus: '<svg viewBox="0 0 448 512" class="lb-iris-icon" fill="currentColor" aria-hidden="true"><path d="M416 240c0 17.673-14.327 32-32 32H64c-17.673 0-32-14.327-32-32s14.327-32 32-32H384c17.673 0 32 14.327 32 32z"></path></svg>',
+            envelope: '<svg viewBox="0 0 512 512" class="lb-iris-icon" fill="currentColor" aria-hidden="true"><path d="M502.3 190.8 327.4 338c-15.3 12.8-37.5 12.8-52.8 0L9.7 190.8C3.9 186 0 178.8 0 171V112c0-26.5 21.5-48 48-48h416c26.5 0 48 21.5 48 48v59c0 7.8-3.9 15-9.7 19.8zM0 214.7l163.5 137.6a144 144 0 0 0 185 0L512 214.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V214.7z"></path></svg>',
+            envelopeCheck: '<svg viewBox="0 0 640 512" class="lb-iris-icon" fill="currentColor" aria-hidden="true"><path d="M320 352c-15.9 0-31.3-5.7-43.4-15.9L32 144.1V400c0 8.8 7.2 16 16 16h288c0 17.7 2.8 34.8 8 50.9c-7.8 1.9-15.9 3.1-24 3.1H48C21.5 470 0 448.5 0 422V102C0 75.5 21.5 54 48 54H464c26.5 0 48 21.5 48 48V237.4c-10.2-5-21-9-32-11.8V144.1L363.4 240.1C351.3 250.3 335.9 256 320 256zm0-64c8.2 0 16.2-2.8 22.6-8.1L480 166.3V102c0-8.8-7.2-16-16-16H48c-8.8 0-16 7.2-16 16v64.3L297.4 279.9c6.4 5.3 14.4 8.1 22.6 8.1zM616 352c13.3 0 24 10.7 24 24s-10.7 24-24 24H483.9l35 35c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-76-76c-9.4-9.4-9.4-24.6 0-33.9l76-76c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-35 35H616z"></path></svg>',
+        };
+
+        const spinner = '<span class="lb-iris-spinner" aria-hidden="true"></span>';
+
+        const toNumber = (value) => {
+            const number = Number(value);
+
+            return Number.isFinite(number) ? number : 0;
+        };
+
+        const productIdOf = (element) => {
+            const productId = parseInt(element.dataset.productId || element.dataset.lbProductActions || '', 10);
+
+            return Number.isFinite(productId) ? productId : null;
+        };
+
+        const stockOf = (element) => {
+            const stock = parseInt(element.dataset.productStock || '0', 10);
+
+            return Number.isFinite(stock) ? stock : 0;
+        };
+
+        const getBasketState = (productId) => {
+            if (!state.basketByProductId[productId]) {
+                state.basketByProductId[productId] = {
+                    transaction_id: null,
+                    quantity_ordered: 0,
+                    quantity_ordered_new: 0,
+                };
+            }
+
+            return state.basketByProductId[productId];
+        };
+
+        const getOrderingState = (productId) => {
+            if (!state.orderingByProductId[productId]) {
+                state.orderingByProductId[productId] = {
+                    back_in_stock: false,
+                };
+            }
+
+            return state.orderingByProductId[productId];
+        };
+
+        const productMounts = (productId) => (
+            document.querySelectorAll('[data-lb-product-actions][data-product-id="' + productId + '"]')
+        );
+
+        const updateMountStock = (productId, stock) => {
+            productMounts(productId).forEach((mount) => {
+                mount.dataset.productStock = String(stock);
+                const card = mount.closest('[data-lb-product-card]');
+
+                if (card) {
+                    card.dataset.productStock = String(stock);
+                }
+            });
+        };
+
+        const routeFor = (template, token, value) => template.replace(token, String(value));
+
+        const refreshExternalCustomerData = () => {
+            if (window.aikuIris && typeof window.aikuIris.refreshCustomerData === 'function') {
+                window.aikuIris.refreshCustomerData();
+            }
+        };
+
+        const syncTransactionProductData = async (productId, transactionId) => {
+            if (!transactionId) {
+                return;
+            }
+
+            try {
+                const response = await window.axios.get(
+                    routeFor(config.basketTransactionProductDataUrlTemplate, '__TRANSACTION__', transactionId)
+                );
+                const basket = getBasketState(productId);
+
+                basket.transaction_id = response.data?.transaction_id ?? transactionId;
+                basket.quantity_ordered = toNumber(response.data?.quantity_ordered);
+                basket.quantity_ordered_new = toNumber(response.data?.quantity_ordered_new ?? response.data?.quantity_ordered);
+
+                if (typeof response.data?.stock !== 'undefined') {
+                    updateMountStock(productId, toNumber(response.data.stock));
+                }
+            } catch (error) {
+                console.error(error);
+            } finally {
+                refreshProductMounts(productId);
+            }
+        };
+
+        const ensureBasketLoaded = async () => {
+            if (!config.isLoggedIn || state.basketLoaded || state.basketPromise) {
+                return state.basketPromise;
+            }
+
+            state.basketPromise = window.axios.get(config.basketTransactionDataUrl)
+                .then((response) => {
+                    Object.entries(response.data || {}).forEach(([productId, basket]) => {
+                        state.basketByProductId[productId] = {
+                            transaction_id: basket?.transaction_id ?? null,
+                            quantity_ordered: toNumber(basket?.quantity_ordered),
+                            quantity_ordered_new: toNumber(basket?.quantity_ordered_new ?? basket?.quantity_ordered),
+                        };
+                    });
+                    state.basketLoaded = true;
+                })
+                .catch((error) => {
+                    console.error(error);
+                })
+                .finally(() => {
+                    state.basketPromise = null;
+                    refreshAllProductMounts();
+                });
+
+            return state.basketPromise;
+        };
+
+        const ensureOrderingLoaded = async (productId) => {
+            if (!config.isLoggedIn || !productId || state.orderingPromises[productId]) {
+                return state.orderingPromises[productId];
+            }
+
+            if (state.orderingByProductId[productId] && typeof state.orderingByProductId[productId].back_in_stock !== 'undefined' && state.orderingByProductId[productId].loaded) {
+                return Promise.resolve(state.orderingByProductId[productId]);
+            }
+
+            state.orderingPromises[productId] = window.axios.get(
+                routeFor(config.productOrderingUrlTemplate, '__PRODUCT__', productId)
+            ).then((response) => {
+                const data = response.data || {};
+                const ordering = getOrderingState(productId);
+                const basket = getBasketState(productId);
+
+                ordering.back_in_stock = Boolean(data.back_in_stock ?? data.is_back_in_stock);
+                ordering.loaded = true;
+
+                if (typeof data.stock !== 'undefined') {
+                    updateMountStock(productId, toNumber(data.stock));
+                }
+
+                if (data.transaction_id || data.quantity_ordered) {
+                    basket.transaction_id = data.transaction_id ?? basket.transaction_id;
+                    basket.quantity_ordered = toNumber(data.quantity_ordered);
+                    basket.quantity_ordered_new = toNumber(data.quantity_ordered_new ?? data.quantity_ordered);
+                }
+
+                return ordering;
+            }).catch((error) => {
+                console.error(error);
+            }).finally(() => {
+                delete state.orderingPromises[productId];
+                refreshProductMounts(productId);
+            });
+
+            return state.orderingPromises[productId];
+        };
+
+        const setLoading = (productId, value) => {
+            if (value) {
+                state.loadingProductIds.add(productId);
+            } else {
+                state.loadingProductIds.delete(productId);
+            }
+
+            refreshProductMounts(productId);
+        };
+
+        const commitBasketState = async (productId) => {
+            const basket = getBasketState(productId);
+            const nextQuantity = toNumber(basket.quantity_ordered_new);
+            const currentQuantity = toNumber(basket.quantity_ordered);
+
+            if (nextQuantity === currentQuantity || state.loadingProductIds.has(productId)) {
+                return;
+            }
+
+            setLoading(productId, true);
+
+            try {
+                if (!currentQuantity && nextQuantity > 0) {
+                    const response = await window.axios.post(
+                        routeFor(config.addToBasketUrlTemplate, '__PRODUCT__', productId),
+                        {
+                            quantity: nextQuantity,
+                        }
+                    );
+
+                    basket.transaction_id = response.data?.transaction_id ?? basket.transaction_id;
+                    basket.quantity_ordered = toNumber(response.data?.quantity_ordered ?? nextQuantity);
+                    basket.quantity_ordered_new = toNumber(response.data?.quantity_ordered ?? nextQuantity);
+
+                    refreshExternalCustomerData();
+
+                    if (basket.transaction_id) {
+                        syncTransactionProductData(productId, basket.transaction_id);
+                    }
+                } else {
+                    if (!basket.transaction_id) {
+                        await ensureOrderingLoaded(productId);
+                    }
+
+                    if (!basket.transaction_id) {
+                        throw new Error('Missing basket transaction');
+                    }
+
+                    await window.axios.post(
+                        routeFor(config.updateBasketUrlTemplate, '__TRANSACTION__', basket.transaction_id),
+                        {
+                            quantity_ordered: nextQuantity,
+                            quantity: nextQuantity,
+                        }
+                    );
+
+                    basket.quantity_ordered = nextQuantity;
+                    basket.quantity_ordered_new = nextQuantity;
+
+                    if (!nextQuantity) {
+                        basket.transaction_id = null;
+                    }
+
+                    refreshExternalCustomerData();
+
+                    if (basket.transaction_id) {
+                        syncTransactionProductData(productId, basket.transaction_id);
+                    }
+                }
+            } catch (error) {
+                basket.quantity_ordered_new = currentQuantity;
+                console.error(error);
+            } finally {
+                setLoading(productId, false);
+                refreshProductMounts(productId);
+            }
+        };
+
+        const scheduleBasketCommit = (productId) => {
+            if (state.updateTimers[productId]) {
+                window.clearTimeout(state.updateTimers[productId]);
+            }
+
+            state.updateTimers[productId] = window.setTimeout(() => {
+                delete state.updateTimers[productId];
+                commitBasketState(productId);
+            }, 900);
+        };
+
+        const updateQuantity = (productId, stock, quantity) => {
+            const basket = getBasketState(productId);
+            const clampedQuantity = Math.max(0, Math.min(quantity, stock));
+
+            basket.quantity_ordered_new = clampedQuantity;
+            refreshProductMounts(productId);
+
+            if (basket.quantity_ordered_new !== toNumber(basket.quantity_ordered)) {
+                scheduleBasketCommit(productId);
+            }
+        };
+
+        const instantAddToBasket = (productId, stock) => {
+            const basket = getBasketState(productId);
+
+            basket.quantity_ordered_new = Math.max(0, Math.min(1, stock));
+            refreshProductMounts(productId);
+            commitBasketState(productId);
+        };
+
+        const toggleBackInStock = async (productId, addReminder) => {
+            if (!productId || state.loadingProductIds.has(productId)) {
+                return;
+            }
+
+            setLoading(productId, true);
+
+            try {
+                const url = addReminder
+                    ? routeFor(config.addBackInStockUrlTemplate, '__PRODUCT__', productId)
+                    : routeFor(config.removeBackInStockUrlTemplate, '__PRODUCT__', productId);
+
+                if (addReminder) {
+                    await window.axios.post(url, {});
+                } else {
+                    await window.axios.delete(url);
+                }
+
+                getOrderingState(productId).back_in_stock = addReminder;
+                getOrderingState(productId).loaded = true;
+                refreshExternalCustomerData();
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(productId, false);
+                refreshProductMounts(productId);
+            }
+        };
+
+        const bindCartTrigger = (mount, productId, stock) => {
+            const button = mount.querySelector('[data-lb-cart-trigger]');
+
+            if (!button) {
+                return;
+            }
+
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                instantAddToBasket(productId, stock);
+            });
+        };
+
+        const bindQuantityControls = (mount, productId, stock) => {
+            const decrement = mount.querySelector('[data-lb-qty-decrement]');
+            const increment = mount.querySelector('[data-lb-qty-increment]');
+
+            if (decrement) {
+                decrement.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const basket = getBasketState(productId);
+                    updateQuantity(productId, stock, toNumber(basket.quantity_ordered_new) - 1);
+                });
+            }
+
+            if (increment) {
+                increment.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const basket = getBasketState(productId);
+                    updateQuantity(productId, stock, toNumber(basket.quantity_ordered_new) + 1);
+                });
+            }
+        };
+
+        const bindBackInStock = (mount, productId, isBackInStock) => {
+            const button = mount.querySelector('[data-lb-back-in-stock]');
+
+            if (!button) {
+                return;
+            }
+
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleBackInStock(productId, !isBackInStock);
+            });
+        };
+
+        const collectActionMounts = (root, productIds) => {
+            if (!(root instanceof HTMLElement)) {
+                return;
+            }
+
+            if (root.matches('[data-lb-product-actions]')) {
+                const productId = productIdOf(root);
+
+                if (productId) {
+                    productIds.add(productId);
+                }
+            }
+
+            root.querySelectorAll('[data-lb-product-actions]').forEach((mount) => {
+                const productId = productIdOf(mount);
+
+                if (productId) {
+                    productIds.add(productId);
+                }
+            });
+        };
+
+        const cartTriggerMarkup = (isLoading) => (
+            '<button type="button" data-lb-cart-trigger class="lb-iris-cart-trigger" title="Add to basket" ' + (isLoading ? 'disabled' : '') + '>' +
+                (isLoading ? spinner : icon.cart) +
+            '</button>'
+        );
+
+        const cartQuantityMarkup = (currentQuantity, stock, isLoading) => (
+            '<div class="lb-iris-cart-quantity' + (isLoading ? ' is-loading' : '') + '">' +
+                '<button type="button" data-lb-qty-decrement class="lb-iris-quantity-button" ' + ((isLoading || currentQuantity <= 0) ? 'disabled' : '') + '>' + icon.minus + '</button>' +
+                '<span class="lb-iris-quantity-value">' + currentQuantity + '</span>' +
+                '<button type="button" data-lb-qty-increment class="lb-iris-quantity-button" ' + ((isLoading || currentQuantity >= stock) ? 'disabled' : '') + '>' + icon.plus + '</button>' +
+            '</div>'
+        );
+
+        const backInStockMarkup = (isBackInStock, isLoading) => (
+            '<button type="button" data-lb-back-in-stock class="lb-iris-back-in-stock' + (isBackInStock ? ' is-active' : '') + '" title="' + (isBackInStock ? 'You will be notified' : 'Remind me when back in stock') + '" ' + (isLoading ? 'disabled' : '') + '>' +
+                (isLoading ? spinner : (isBackInStock ? icon.envelopeCheck : icon.envelope)) +
+            '</button>'
+        );
+
+        const refreshActionMount = (mount) => {
+            const productId = productIdOf(mount);
+
+            mount.onclick = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+            };
+
+            if (!config.isLoggedIn || !productId) {
+                mount.innerHTML = '';
+                return;
+            }
+
+            const stock = stockOf(mount);
+            const basket = getBasketState(productId);
+            const ordering = getOrderingState(productId);
+            const isLoading = state.loadingProductIds.has(productId);
+            const hasQuantity = toNumber(basket.quantity_ordered) > 0 || toNumber(basket.quantity_ordered_new) > 0;
+            const renderKey = [
+                config.isLoggedIn ? '1' : '0',
+                config.supportsBasket ? '1' : '0',
+                config.oosNotificationActive ? '1' : '0',
+                productId,
+                stock,
+                toNumber(basket.quantity_ordered),
+                toNumber(basket.quantity_ordered_new),
+                ordering.back_in_stock ? '1' : '0',
+                isLoading ? '1' : '0',
+            ].join(':');
+
+            if (stock <= 0) {
+                if (!config.oosNotificationActive) {
+                    if (mount.innerHTML !== '') {
+                        mount.innerHTML = '';
+                    }
+                    delete mount.dataset.renderKey;
+                    return;
+                }
+
+                if (mount.dataset.renderKey !== renderKey) {
+                    mount.innerHTML = backInStockMarkup(Boolean(ordering.back_in_stock), isLoading);
+                    mount.dataset.renderKey = renderKey;
+                    bindBackInStock(mount, productId, Boolean(ordering.back_in_stock));
+                }
+
+                if (!ordering.loaded) {
+                    ensureOrderingLoaded(productId);
+                }
+
+                return;
+            }
+
+            if (!config.supportsBasket) {
+                if (mount.innerHTML !== '') {
+                    mount.innerHTML = '';
+                }
+                delete mount.dataset.renderKey;
+                return;
+            }
+
+            if (!hasQuantity) {
+                if (mount.dataset.renderKey !== renderKey) {
+                    mount.innerHTML = cartTriggerMarkup(isLoading);
+                    mount.dataset.renderKey = renderKey;
+                    bindCartTrigger(mount, productId, stock);
+                }
+                return;
+            }
+
+            if (mount.dataset.renderKey !== renderKey) {
+                mount.innerHTML = cartQuantityMarkup(toNumber(basket.quantity_ordered_new), stock, isLoading);
+                mount.dataset.renderKey = renderKey;
+                bindQuantityControls(mount, productId, stock);
+            }
+        };
+
+        const refreshProductMounts = (productId) => {
+            productMounts(productId).forEach((mount) => {
+                refreshActionMount(mount);
+            });
+        };
+
+        const refreshAllProductMounts = () => {
+            document.querySelectorAll('[data-lb-product-actions]').forEach((mount) => {
+                refreshActionMount(mount);
+            });
+        };
+
+        const boot = () => {
+            if (!window.axios) {
+                window.setTimeout(boot, 50);
+                return;
+            }
+
+            if (config.isLoggedIn && config.supportsBasket) {
+                ensureBasketLoaded();
+            }
+
+            refreshAllProductMounts();
+
+            const observer = new MutationObserver((mutations) => {
+                const productIds = new Set();
+
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        collectActionMounts(node, productIds);
+                    });
+                });
+
+                if (!productIds.size) {
+                    return;
+                }
+
+                productIds.forEach((productId) => {
+                    refreshProductMounts(productId);
+                });
+            });
+
+            observer.observe(document.body, { childList: true, subtree: true });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', boot, { once: true });
+        } else {
+            boot();
+        }
     })();
 </script>
 @endverbatim

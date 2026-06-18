@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, watch, onMounted, onUnmounted } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { debounce, get, set } from 'lodash-es'
 import { faChevronRight, faTrashAlt } from "@fal"
 import { faCheckCircle, faExclamationTriangle } from "@fas"
@@ -28,6 +27,7 @@ import { routeType } from '@/types/route'
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import MissedOfferFOB from '@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue'
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle, faExclamationTriangle)
 
 interface DataSideBasket {
@@ -39,6 +39,9 @@ interface DataSideBasket {
         has_extra_packing: boolean
         has_insurance: boolean
         voucher_code?: string | null
+    }
+    voucher: {
+        
     }
 }
 
@@ -55,11 +58,11 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout', retinaLayoutStructure)
 
 const open = ref(true)
 
 // Set the rightbasket value to local storage
-const layout = inject('layout', layoutStructure)
 const handleToggleLeftBar = () => {
     const xxx = layout.rightbasket?.show ?? false
     if (typeof window !== "undefined") {
@@ -629,6 +632,7 @@ onUnmounted(() => {
                     parameters: dataSideBasket?.order_data?.id
                 }
             }"
+            :currentGrossAmount="layout.iris_variables?.cart_amount_gross"
             @onRemove="fetchDataSideBasket(true)"
             @onApply="fetchDataSideBasket(true)"
             inIris

@@ -67,7 +67,7 @@ defineProps<{
                     v-for="user in results.users"
                     :key="user.username"
                     :href="route('grp.sysadmin.users.show', { user: user.username })"
-                    class="group p-4 rounded-xl border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer transition-all duration-150 mb-3"
+                    class="block group p-4 rounded-xl border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer transition-all duration-150 mb-3"
                 >
                     <div class="flex items-center justify-between">
                         <p class="text-sm font-semibold text-slate-900">{{ user.contact_name }}</p>
@@ -100,7 +100,7 @@ defineProps<{
                     v-for="guest in results.guests"
                     :key="guest.id"
                     :href="route('grp.sysadmin.guests.show', { guest: guest.slug })"
-                    class="group p-4 rounded-xl border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer transition-all duration-150 mb-3"
+                    class="block group p-4 rounded-xl border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer transition-all duration-150 mb-3"
                 >
                     <p class="text-sm font-semibold text-slate-900">{{ guest.contact_name }}</p>
                     <p class="text-xs text-gray-500 mt-1">{{ guest.email }}</p>

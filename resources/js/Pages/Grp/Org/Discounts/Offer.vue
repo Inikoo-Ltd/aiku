@@ -29,6 +29,7 @@ import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 import PreviewVoucher from '@/Components/Offers/PreviewOffer/PreviewVoucher.vue'
 import PreviewGift from '@/Components/Offers/PreviewOffer/PreviewGift.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 library.add(faFlagCheckered)
 
@@ -46,6 +47,7 @@ const props = defineProps<{
     }
     customers?: object
     orders?: object
+    history?: object
     url_master?: routeType
 }>()
 
@@ -125,6 +127,7 @@ const tabComponent = computed(() => {
     const components: Record<string, unknown> = {
         customers: TableCustomers,
         orders: TableOrders,
+        history: TableHistories
     }
     return components[currentTab.value]
 })
@@ -182,9 +185,9 @@ const irisOffersData = computed(() => {
                         <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("Start") }}</span>
                         <span class="font-medium">{{ useFormatTime(data.offer.start_at ?? undefined, { formatTime: 'hm' }) }}</span>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div v-if="data.offer.end_at"  class="flex items-center gap-2">
                         <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("End") }}</span>
-                        <span class="font-medium">{{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm' }) : ctrans('Permanent') }}</span>
+                        <span class="font-medium">{{ useFormatTime(data.offer.end_at, { formatTime: 'hm' }) }}</span>
                     </div>
                 </div>
 
@@ -365,12 +368,3 @@ const irisOffersData = computed(() => {
 </template>
 
 
-<style scoped>
-.offer :deep(.background-primary) {
-    background-color: #ff862f;
-}
-
-.offer :deep(.text-primary) {
-    color: #ff862f;
-}
-</style>

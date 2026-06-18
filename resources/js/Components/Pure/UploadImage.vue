@@ -15,12 +15,17 @@ import { router } from "@inertiajs/vue3"
 
 library.add(faImage, faPhotoVideo, faTrashAlt)
 
-const props = defineProps<{ modelValue: any; uploadRoutes: routeType; description?: string, content?: any }>()
+const props = defineProps<{ modelValue: any; uploadRoutes: routeType; description?: string, content?: any, altKey?: string | string[] }>()
 const emits = defineEmits<{
-    (e: "update:modelValue", value: any): void
+    (e: "update:modelValue", value: any, path?: string | string[]): void
     (e: "onUpload", value: Files[]): void
     (e: "autoSave"): void
 }>()
+
+const deriveAltFromFileName = (fileName?: string): string => {
+    if (!fileName) return ""
+    return fileName.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ").trim()
+}
 
 
 const isOpenGalleryImages = ref(false)
@@ -40,7 +45,7 @@ const setAlt = async (imageFile) => {
             },
         });
 
-        console.log("Alt text request successful:", response.data);
+        // console.log("Alt text request successful:", response.data);
         // emits("update:modelValue",response.data.content,['alt'])  // This will make the image src replaced with alt string
 
     } catch (error) {
@@ -59,9 +64,14 @@ const handleUpload = async () => {
         const response = await axios.post(route(props.uploadRoutes.name, props.uploadRoutes.parameters), formData, {
             headers: { "Content-Type": "multipart/form-data" },
         })
-        
-        const updatedModelValue = { ...props.modelValue, ...cloneDeep(response.data.data[0].source) }
+        const uploaded = response.data.data[0]
+        const updatedModelValue = { ...props.modelValue, ...cloneDeep(uploaded.source) }
         emits("update:modelValue", updatedModelValue)
+        if (props.altKey) {
+            const altValue = uploaded?.alt || deriveAltFromFileName(addedFiles.value[0]?.name)            
+            emits("update:modelValue", altValue, props.altKey)
+        }
+
         emits("autoSave")
         if (addedFiles.value.length > 0) {
             setAlt(addedFiles.value[0]);
@@ -101,7 +111,13 @@ const drop = (event: DragEvent) => {
 
 const onPickImage = (selectedImages: any[]) => {
     isOpenGalleryImages.value = false
-    emits("update:modelValue", cloneDeep(selectedImages[0].source))
+    const picked = selectedImages[0]
+    emits("update:modelValue", cloneDeep(picked.source))
+
+    if (props.altKey) {        
+        emits("update:modelValue", picked?.alt || picked?.name, props.altKey)
+    }
+
     emits("autoSave")
 }
 

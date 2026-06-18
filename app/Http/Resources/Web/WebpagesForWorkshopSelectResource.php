@@ -39,8 +39,8 @@ class WebpagesForWorkshopSelectResource extends JsonResource
     public function toArray($request): array
     {
         $imageAlt = $this->title;
+        //todo replace this for: $imageAlt=GetWebpageAlt::run($this->id)
 
-        //todo try to get a better alt
 
         return [
             "id"            => $this->id,

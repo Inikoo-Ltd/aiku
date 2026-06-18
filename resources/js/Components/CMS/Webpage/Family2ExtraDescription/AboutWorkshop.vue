@@ -195,7 +195,7 @@ const saveDescription = debounce(async (key: string, value: string) => {
                 py-[8px]
                 text-[12px] md:text-[13px]
                 text-[#24384d]" :style="{
-                    ...getStyles(fieldValue?.about.button?.container?.properties)
+                    ...getStyles(fieldValue?.about?.button?.container?.properties)
                 }">
                         <span v-if="fieldValue?.about?.button?.text">
                             {{ fieldValue?.about?.button?.text }}
