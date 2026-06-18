@@ -19,7 +19,7 @@ import { faAbacus } from "@fad"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { faClock, faSkull } from "@fal"
+import { faClock, faInfinity, faSkull } from "@fal"
 import { notify } from "@kyvg/vue3-notification"
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -179,22 +179,17 @@ const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
             <Icon :data="offer.type_icon" />
         </template>
 
-        <template #cell(duration)="{ item: offer }">
-            <div v-if="offer.duration == 'interval'" class="grid text-left">
-                <div>
-                    <span class="font-medium">
-                        {{ trans("Start Date") }}
-                    </span>:  {{ useFormatTime(offer.start_at, { localeCode: locale.language.code, formatTime: "aiku" }) }}
-                </div>
-                <div>
-                    <span class="font-medium">
-                        {{ trans("End Date") }}
-                    </span>:  {{ useFormatTime(offer.end_at, { localeCode: locale.language.code, formatTime: "aiku" }) }} 
-                </div>
-            </div>
-            <div v-else>
-                {{ useFormatTime(offer.start_at, { localeCode: locale.language.code, formatTime: "aiku" }) }} 
-            </div>
+        <template #cell(start_at)="{ item: offer }">
+            {{ useFormatTime(offer.start_at, { localeCode: locale.language.code, formatTime: "hm" }) }}    
+        </template>
+
+        <template #cell(end_at)="{ item: offer }">
+            <span v-if="offer.duration == 'permanent'" class="">
+                <FontAwesomeIcon :icon="faInfinity" v-tooltip="ctrans('Permanent Offer')" />
+            </span>
+            <span v-else class="">
+                {{ useFormatTime(offer.end_at, { localeCode: locale.language.code, formatTime: "hm" }) }}
+            </span>
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: collection }">

@@ -82,6 +82,7 @@ class IndexClockingEmployees extends OrgAction
         $medicalRequestCount = null;
         $unpaidRequestCount = null;
         $leaveTypeOptions = [];
+        $holidayDates = collect();
         $adjustmentsData = collect();
         $overtimeData = collect();
         $todayTimesheet = null;
@@ -183,20 +184,41 @@ class IndexClockingEmployees extends OrgAction
 
             $organisation = $this->employee->organisation;
             $leaveTypeOptions = LeaveTypeResolver::optionsForOrganisation($organisation->id, true, $organisation->country?->code);
-            $leaveRequestsThisYear = Leave::query()
-                ->where('employee_id', $this->employee->id)
-                ->whereYear('start_date', now()->year)
-                ->with('leaveType')
-                ->get();
+            $today = now()->toDateString();
 
-            $leaveRequestsThisMonth = $leaveRequestsThisYear->filter(function (Leave $leave) {
-                return $leave->start_date->month === now()->month;
+            $balance = EmployeeLeaveBalance::where('employee_id', $this->employee->id)
+                ->where(function ($q) use ($today) {
+                    $q->where('period_start', '<=', $today)
+                      ->where(function ($q2) use ($today) {
+                          $q2->whereNull('period_end')
+                             ->orWhere('period_end', '>=', $today);
+                      });
+                })
+                ->whereNotNull('employee_contract_id')
+                ->first();
+
+            $leavesQuery = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->with('leaveType');
+
+            if ($balance?->period_start) {
+                $leavesQuery->where('start_date', '>=', $balance->period_start->toDateString());
+            }
+            if ($balance?->period_end) {
+                $leavesQuery->where('start_date', '<=', $balance->period_end->toDateString());
+            }
+
+            $leaveRequestsInPeriod = $leavesQuery->get();
+
+            $leaveRequestsThisMonth = $leaveRequestsInPeriod->filter(function (Leave $leave) {
+                return $leave->start_date->month === now()->month
+                    && $leave->start_date->year === now()->year;
             });
 
-            $submittedLeaves = $leaveRequestsThisYear->filter(function (Leave $leave) {
+            $submittedLeaves = $leaveRequestsInPeriod->filter(function (Leave $leave) {
                 return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
             });
-            $approvedLeaves = $leaveRequestsThisYear->filter(function (Leave $leave) {
+            $approvedLeaves = $leaveRequestsInPeriod->filter(function (Leave $leave) {
                 return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
             });
             $submittedLeavesThisMonth = $leaveRequestsThisMonth->filter(function (Leave $leave) {
@@ -208,33 +230,21 @@ class IndexClockingEmployees extends OrgAction
 
             $medicalRequestCount = $this->sumLeaveDaysByBucket($submittedLeavesThisMonth, 'medical');
             $unpaidRequestCount = $this->sumLeaveDaysByBucket($submittedLeavesThisMonth, 'unpaid');
-            $balance = EmployeeLeaveBalance::firstOrCreate(
-                [
-                    'employee_id' => $this->employee->id,
-                    'year'        => now()->year,
-                ],
-                [
-                    'annual_days'   => $organisation->getDefaultAnnualLeaveDays(),
-                    'annual_used'   => 0,
-                    'medical_days'  => 0,
-                    'medical_used'  => 0,
-                    'unpaid_days'   => 0,
-                    'unpaid_used'   => 0,
-                ]
-            );
 
             $annualSubmittedDays = $this->sumLeaveDaysByBucket($submittedLeaves, 'annual');
 
-            $annualRemainingAfterSubmission = max(0, (float) $balance->annual_days - (float) $annualSubmittedDays);
+            $annualDays = (float) ($balance?->contract?->annual_leave_days ?? 0);
+            $annualRemainingAfterSubmission = max(0, $annualDays - (float) $annualSubmittedDays);
 
             $approvedAnnualDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'annual');
             $approvedMedicalDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'medical');
             $approvedUnpaidDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'unpaid');
 
-            if ((float) $balance->annual_used !== $approvedAnnualDays
+            if ($balance && (
+                (float) $balance->annual_used !== $approvedAnnualDays
                 || (float) $balance->medical_used !== $approvedMedicalDays
                 || (float) $balance->unpaid_used !== $approvedUnpaidDays
-            ) {
+            )) {
                 $balance->updateQuietly([
                     'annual_used' => $approvedAnnualDays,
                     'medical_used' => $approvedMedicalDays,
@@ -242,6 +252,24 @@ class IndexClockingEmployees extends OrgAction
                 ]);
                 $balance->refresh();
             }
+
+            $upcomingHolidays = Holiday::where('organisation_id', $this->employee->organisation_id)
+                ->where('to', '>=', now()->toDateString())
+                ->get();
+
+            foreach ($upcomingHolidays as $holiday) {
+                $current = Carbon::parse($holiday->from);
+                $end = Carbon::parse($holiday->to);
+                while ($current->lte($end)) {
+                    $holidayDates->push([
+                        'date'  => $current->toDateString(),
+                        'label' => $holiday->label ?? '',
+                    ]);
+                    $current->addDay();
+                }
+            }
+
+            $holidayDates = $holidayDates->unique('date')->values();
         }
 
         if ($this->tab == ClockingEmployeesTabsEnum::ADJUSTMENTS->value && $this->employee) {
@@ -334,6 +362,7 @@ class IndexClockingEmployees extends OrgAction
             'medical_request_count' => $medicalRequestCount,
             'unpaid_request_count' => $unpaidRequestCount,
             'leave_type_options' => $leaveTypeOptions,
+            'holiday_dates' => $holidayDates,
             'adjustments' => $adjustmentsData,
             'overtime' => $overtimeData,
             'organisation' => $this->employee?->organisation?->slug,
@@ -586,6 +615,7 @@ class IndexClockingEmployees extends OrgAction
                         'medical_request_count' => $data['medical_request_count'],
                         'unpaid_request_count' => $data['unpaid_request_count'],
                         'organisation' => $data['organisation'],
+                        'holidays' => $data['holiday_dates'],
                     ]
                     : Inertia::lazy(fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
@@ -596,6 +626,7 @@ class IndexClockingEmployees extends OrgAction
                         'medical_request_count' => $data['medical_request_count'],
                         'unpaid_request_count' => $data['unpaid_request_count'],
                         'organisation' => $data['organisation'],
+                        'holidays' => $data['holiday_dates'],
                     ]),
 
                 ClockingEmployeesTabsEnum::ADJUSTMENTS->value =>

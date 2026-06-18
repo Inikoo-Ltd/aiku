@@ -7,12 +7,16 @@ use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
+use App\Models\HumanResources\LeaveApprover;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -85,8 +89,48 @@ class IndexLeavesAdmin extends OrgAction
                 'leaves' => LeaveResource::collection($leaves),
                 'type_options' => LeaveTypeResolver::optionsForOrganisation($this->organisation->id, false, $this->organisation->country?->code),
                 'status_options' => LeaveStatusEnum::labels(),
+                'can_edit_admin' => Auth::check() && LeaveApprover::query()
+                    ->where('organisation_id', $this->organisation->id)
+                    ->where('user_id', Auth::id())
+                    ->where('is_active', true)
+                    ->exists(),
+                'holidays' => $this->getHolidayDates(),
             ]
         )->table($this->tableStructure());
+    }
+
+    private function getHolidayDates(): array
+    {
+        $now = Carbon::now();
+        $holidays = Holiday::query()
+            ->where('organisation_id', $this->organisation->id)
+            ->where('to', '>=', $now->copy()->startOfYear())
+            ->where('from', '<=', $now->copy()->addYear()->endOfYear())
+            ->get();
+
+        $dates = [];
+
+        foreach ($holidays as $holiday) {
+            $current = $holiday->from->copy();
+            while ($current->lte($holiday->to)) {
+                $dateKey = $current->format('Y-m-d');
+                if (!isset($dates[$dateKey])) {
+                    $dates[$dateKey] = ['date' => $dateKey, 'labels' => []];
+                }
+                if ($holiday->label) {
+                    $dates[$dateKey]['labels'][] = $holiday->label;
+                }
+                $current->addDay();
+            }
+        }
+
+        return array_values(array_map(
+            fn (array $item): array => [
+                'date'  => $item['date'],
+                'label' => implode(', ', $item['labels']),
+            ],
+            $dates
+        ));
     }
 
     public function tableStructure(?string $prefix = null): Closure

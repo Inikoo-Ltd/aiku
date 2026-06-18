@@ -8,7 +8,7 @@
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faLink } from "@far"
+import { faIdCard as farIdCard, faLink } from "@far"
 import {
     faSync,
     faCalendarAlt,
@@ -34,7 +34,8 @@ import {
     faGlobeEurope,
     faIslandTropical,
     faGift,
-    faBadgePercent
+    faBadgePercent,
+    faIdCard
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -729,6 +730,51 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
                     </div>
                 </dd>
             </div>
+
+            <!-- Field: IDN (Identity Document Number) -->
+            <div v-if="data?.customer.identity_document_number"
+                 class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
+                <dt v-tooltip="data.customer.identity_document_number?.label" class="flex-none">
+                    <span class="sr-only">{{ data.customer.identity_document_number?.label }}</span>
+                    <FontAwesomeIcon :icon="farIdCard" class="text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
+                <dd class="w-full text-gray-500">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-x-2">
+                            <div class="text-gray-900 font-medium">{{ data.customer.identity_document_number?.number }}</div>
+                            <button @click="copyToClipboard(data.customer.identity_document_number?.number, data.customer.identity_document_number?.label)"
+                                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                                    v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
+                            <span class="text-xs text-gray-400 ml-1">{{ data.customer.identity_document_number?.label }}</span>
+                        </div>
+                    </div>
+                </dd>
+            </div>
+
+            <!-- Field: IDN (Identity Document Number Alt) -->
+            <div v-if="data?.customer.identity_document_number_alt"
+                 class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
+                <dt v-tooltip="data.customer.identity_document_number_alt?.label" class="flex-none">
+                    <span class="sr-only">{{ data.customer.identity_document_number_alt?.label }}</span>
+                    <FontAwesomeIcon :icon="faIdCard" class="text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
+                <dd class="w-full text-gray-500">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-x-2">
+                            <div class="text-gray-900 font-medium">{{ data.customer.identity_document_number_alt?.number }}</div>
+                            <button @click="copyToClipboard(data.customer.identity_document_number_alt?.number, data.customer.identity_document_number_alt?.label)"
+                                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                                    v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
+                            <span class="text-xs text-gray-400 ml-1">{{ data.customer.identity_document_number_alt?.label }}</span>
+                        </div>
+                    </div>
+                </dd>
+            </div>
+
             <!-- Offers Section -->
             <div v-if="data.offers?.length" class="mt-6">
                 <div class="flex items-center justify-between mb-3">

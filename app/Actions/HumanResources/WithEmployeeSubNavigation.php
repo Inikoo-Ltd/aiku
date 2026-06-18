@@ -69,6 +69,19 @@ trait WithEmployeeSubNavigation
 
         ];
 
+        $subNavigation[] = [
+            'route' => [
+                'name'       => 'grp.org.hr.employees.show.contracts.index',
+                'parameters' => $request->route()->originalParameters()
+            ],
+            'label'    => __('Contracts'),
+            'leftIcon' => [
+                'icon'    => 'fal fa-file-certificate',
+                'tooltip' => __('Employment contracts'),
+            ],
+            'number'   => $employee->contracts()->count()
+        ];
+
         return $subNavigation;
     }
 

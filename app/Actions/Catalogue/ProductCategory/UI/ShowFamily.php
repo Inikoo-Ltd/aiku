@@ -294,6 +294,9 @@ class ShowFamily extends OrgAction
                     'id'       => $family->shop->id,
                     'slug'          => $family->shop->slug,
                     'currency_code' => $family->shop->currency->code,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                    ],
                 ],
                 'product_category_id'   =>  $family->id,
                 'is_orphan'             => !$family->department_id,
