@@ -134,9 +134,14 @@ class ShowRetinaAccountManagement extends RetinaAction
 
                                     ],
                                     'identity_document_number' => [
-                                        'type'  => 'input',
-                                        'label' => __('Identity document number').'/'.__('Registration number'),
-                                        'value' => $customer->identity_document_number
+                                        'type'          => 'input',
+                                        'label'         => data_get($customer->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),
+                                        'value'         => $customer->identity_document_number
+                                    ],
+                                    'identity_document_number_alt' => [
+                                        'type'          => 'input',
+                                        'label'         => data_get($customer->shop->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt').'/'.__('Registration number Alt'),
+                                        'value'         => $customer->identity_document_number_alt
                                     ],
                                 ]
                             ],

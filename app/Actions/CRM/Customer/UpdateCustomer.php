@@ -325,6 +325,7 @@ class UpdateCustomer extends OrgAction
                 $this->strict ? new Phone() : 'string:255',
             ],
             'identity_document_number'                              => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt'                          => ['sometimes', 'nullable', 'string'],
             'contact_website'                                       => ['sometimes', 'nullable', 'active_url'],
             'contact_address'                                       => ['sometimes', 'required', new ValidAddress()],
             'delivery_address'                                      => ['sometimes', 'nullable', new ValidAddress()],

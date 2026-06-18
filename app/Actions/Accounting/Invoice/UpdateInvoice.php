@@ -261,7 +261,7 @@ class UpdateInvoice extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'                => [
+            'reference'                     => [
                 'sometimes',
                 'string',
                 'max:64',
@@ -273,23 +273,24 @@ class UpdateInvoice extends OrgAction
                     ]
                 ),
             ],
-            'payment_amount'           => ['sometimes', 'numeric'],
-            'date'                     => ['sometimes', 'date'],
-            'tax_liability_at'         => ['sometimes', 'date'],
-            'footer'                   => ['sometimes', 'string'],
-            'billing_address'          => ['sometimes', 'required', new ValidAddress()],
-            'invoice_billing_address'  => ['sometimes', 'required', new ValidAddress()], // TODO: consolidate(rename) this fields names after aurora migration
-            'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
-            'sales_channel_id'         => [
+            'payment_amount'                => ['sometimes', 'numeric'],
+            'date'                          => ['sometimes', 'date'],
+            'tax_liability_at'              => ['sometimes', 'date'],
+            'footer'                        => ['sometimes', 'string'],
+            'billing_address'               => ['sometimes', 'required', new ValidAddress()],
+            'invoice_billing_address'       => ['sometimes', 'required', new ValidAddress()], // TODO: consolidate(rename) this fields names after aurora migration
+            'delivery_address'              => ['sometimes', 'required', new ValidAddress()],
+            'sales_channel_id'              => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
-            'shipping_zone_schema_id'  => ['sometimes', 'nullable'],
-            'shipping_zone_id'         => ['sometimes', 'nullable'],
-            'identity_document_number' => ['sometimes', 'nullable', 'string'],
+            'shipping_zone_schema_id'       => ['sometimes', 'nullable'],
+            'shipping_zone_id'              => ['sometimes', 'nullable'],
+            'identity_document_number'      => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt'  => ['sometimes', 'nullable', 'string'],
 
         ];
 
@@ -322,6 +323,7 @@ class UpdateInvoice extends OrgAction
             $rules['tax_number_valid']                   = ['sometimes', 'nullable', 'boolean'];
             $rules['identity_document_type']             = ['sometimes', 'nullable', 'string'];
             $rules['identity_document_number']           = ['sometimes', 'nullable', 'string'];
+            $rules['identity_document_number_alt']       = ['sometimes', 'nullable', 'string'];
 
 
             $rules['reference'] = [
