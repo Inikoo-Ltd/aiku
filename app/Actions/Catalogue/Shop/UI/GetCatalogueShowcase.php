@@ -267,15 +267,29 @@ class GetCatalogueShowcase
 
     private function buildFamiliesStat(Shop $shop, string $orgSlug, string $shopSlug): array
     {
+        $familiesWithGr = $shop->productCategories()
+            ->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)
+            ->where('has_gr_vol_discount', true)
+            ->count();
+
         return [
-            'label' => __('Families'),
-            'route' => [
+            'label'     => __('Families'),
+            'route'     => [
                 'name'       => 'grp.org.shops.show.catalogue.families.index',
                 'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
             ],
-            'icon'  => 'fal fa-folder',
-            'color' => '#e879f9',
-            'value' => $shop->stats->number_current_families,
+            'icon'      => 'fal fa-folder',
+            'color'     => '#e879f9',
+            'value'     => $shop->stats->number_current_families,
+            'metaRight' => $shop->masterShop?->gold_reward_eligible ? [
+                'tooltip' => __('With Gold Reward'),
+                'icon'    => ['icon' => 'fal fa-medal', 'class' => 'text-amber-500'],
+                'count'   => $familiesWithGr,
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.catalogue.families.gr.index',
+                    'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                ],
+            ] : null,
             'metas' => [
                 [
                     'tooltip' => __('Active families'),

@@ -7,7 +7,7 @@
  * copyright 2026
 */
 
-namespace App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProducts;
+namespace App\Actions\Catalogue\ProductCategory\RelatedProducts;
 
 use App\Actions\Catalogue\ProductCategory\UI\GetProductCategoryRecomendation;
 use App\Http\Resources\Masters\RelatedMasterProductsResource;

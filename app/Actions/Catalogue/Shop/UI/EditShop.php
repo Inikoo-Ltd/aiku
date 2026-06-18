@@ -267,7 +267,7 @@ class EditShop extends OrgAction
                         'related_product_categories_follow_master' => [
                             'label'         => __('Related Product Category Follow Master'),
                             'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.related_product_categories_follow_master', false),
+                            'value'         => data_get($shop->settings, 'catalog.related_product_categories_follow_master', true),
                             'information'   => __('This would force related product categories under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
@@ -317,7 +317,7 @@ class EditShop extends OrgAction
                             'saveConfirmation'  => [
                                 'title'     => __('Are you sure want to update currency exchange?'),
                                 'description'   => __("This will affect all products in the shop, including the product that in customer's basket. Products that already purchased in Order will not affected."),
-                                'yesLabel'  => __('Yes, update currency exchane')
+                                'yesLabel'  => __('Yes, update currency exchange')
                             ],
                             'label'       => __('Product Currency Exchange'),
                             'placeholder' => __('Product Currency Exchange'),

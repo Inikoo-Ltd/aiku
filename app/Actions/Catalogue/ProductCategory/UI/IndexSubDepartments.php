@@ -256,7 +256,7 @@ class IndexSubDepartments extends OrgAction
             $subNavigation = $this->getDepartmentSubNavigation($this->parent);
         }
 
-        $navigation = ProductCategoryTabsEnum::navigation();
+        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
 
         $title      = __('Sub-departments');
         $model      = '';

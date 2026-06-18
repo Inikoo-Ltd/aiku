@@ -156,11 +156,7 @@ const formProducts = useForm({
 })
 
 const notifySuccessProduct = (abc: string) => {
-	// notify({
-	// 	title: trans("Success!"),
-	// 	text: abc + trans("Product successfully axxxdded or updated."),
-	// 	type: "success",
-	// })
+
 }
 
 const notifyFailedProduct = () => {

@@ -3,6 +3,7 @@ import { Head, router } from '@inertiajs/vue3'
 import { ref, inject, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
+import Image from 'primevue/image'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import CustomerTimeline from '@/Components/Showcases/Grp/CustomerTimeline.vue'
 import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
@@ -79,7 +80,7 @@ interface MessageProp {
     is_system: boolean
     is_ai: boolean
     is_read: boolean
-    media_url: string | null
+    media_url: { original: string; webp?: string } | null
     file_name: string | null
     file_size: number | null
     file_mime: string | null
@@ -443,7 +444,12 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                             </div>
 
                             <template v-if="msg.message_type === 'image' && msg.media_url">
-                                <img :src="msg.media_url" class="rounded-lg max-w-full max-h-64 object-contain" alt="image" />
+                                <Image
+                                    :src="msg.media_url.webp ?? msg.media_url.original"
+                                    preview
+                                    imageClass="rounded-lg max-w-full max-h-64 object-contain cursor-pointer"
+                                    class="mt-1"
+                                />
                             </template>
 
                             <template v-else-if="msg.message_type === 'file' && msg.download_route">

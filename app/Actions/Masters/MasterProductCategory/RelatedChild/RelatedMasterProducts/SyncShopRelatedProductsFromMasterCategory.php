@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts;
 
-use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProducts\SyncProductCategoryRelatedProducts;
+use App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRelatedProducts;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsAction;

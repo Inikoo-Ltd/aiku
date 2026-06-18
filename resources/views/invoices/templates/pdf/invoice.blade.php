@@ -468,7 +468,7 @@
 
     </tbody>
     <tbody class="totals">
-        @if ($order && ($order?->goods_amount != $order?->gross_amount))
+        @if ($order && ($order?->goods_amount != $order->gross_amount))
 
             <tr>
                 <td style="border:none" colspan="4"></td>
@@ -479,7 +479,7 @@
             <tr>
                 <td style="border:none" colspan="4"></td>
                 <td style="color: #16a34a">{{ __('Discounts') }}</td>
-                <td style="color: #16a34a">- {{ $invoice->currency->symbol . ($order->gross_amount - $order->goods_amount) }}</td>
+                <td style="color: #16a34a">- {{ $invoice->currency->symbol . number_format($order->gross_amount - $order->goods_amount, 2) }}</td>
             </tr>
 
             <tr>

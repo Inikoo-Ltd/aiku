@@ -63,6 +63,14 @@ const props = defineProps<{
 				}
 			}
 		}
+		sub_departments: {
+			name: string
+			url: string
+		}[]
+		collections: {
+			name: string
+			url: string
+		}[]
 	}
 }>()
 
@@ -259,10 +267,20 @@ const responsiveClasses = computed(() => ({
 
 					<div ref="_sidebar" class="overflow-y-auto pr-4 space-y-4"
 						:style="{ maxHeight: `${maxSideBarHeight}px` }">
-						<LinkIris v-for="item of props.modelValue.sub_departments" :key="item.url" :type="'internal'"
+						<LinkIris v-for="item of props.modelValue.sub_departments"
+							:key="item.url"
+							:type="'internal'"
 							:href="item.url"
 							:class="['block text-slate-700 hover:underline', responsiveClasses.categoryItemSize]">
 							{{ item.name }}
+						</LinkIris>
+						<LinkIris
+							v-for="(collection, idxCol) of props.modelValue.collections"
+							:key="collection.url"
+							:type="'internal'"
+							:href="collection.url"
+							:class="['block text-slate-700 hover:underline', responsiveClasses.categoryItemSize]">
+							{{ collection.name }}
 						</LinkIris>
 					</div>
 				</aside>
