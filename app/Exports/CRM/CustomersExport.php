@@ -2,6 +2,7 @@
 
 namespace App\Exports\CRM;
 
+use App\Actions\CRM\Customer\GetCustomersQueryByRecipe;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
@@ -14,18 +15,28 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class CustomersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
 {
-    public Organisation|Shop $parent;
-
-    public function __construct(Organisation|Shop $parent)
+    public function __construct(public Organisation|Shop $parent, public array $recipe = [])
     {
-        $this->parent = $parent;
     }
 
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Customer|Builder
     {
         $key = $this->parent instanceof Shop ? 'shop_id' : 'organisation_id';
 
-        return Customer::where($key, $this->parent->id);
+        $query = Customer::where($key, $this->parent->id);
+
+        if ($this->parent instanceof Shop && $this->recipeHasFilters()) {
+            $recipeQuery = GetCustomersQueryByRecipe::run($this->parent->id, $this->recipe);
+
+            $query->whereIn('customers.id', $recipeQuery->select('customers.id'));
+        }
+
+        return $query;
+    }
+
+    protected function recipeHasFilters(): bool
+    {
+        return count(array_diff_key($this->recipe, ['all_customers' => true])) > 0;
     }
 
     /** @var Customer $row */

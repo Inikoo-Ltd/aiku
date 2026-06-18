@@ -27,14 +27,16 @@ class ExportCustomers extends OrgAction
     public function handle(Organisation|Shop $parent, array $modelData): BinaryFileResponse
     {
         $type = $modelData['type'];
+        $recipe = $modelData['filters'] ?? [];
 
-        return $this->export(new CustomersExport($parent), 'customers', $type);
+        return $this->export(new CustomersExport($parent, $recipe), 'customers', $type);
     }
 
     public function rules(): array
     {
         return [
-            'type' => ['required', 'string', Rule::in('csv', 'xlsx')],
+            'type'    => ['required', 'string', Rule::in('csv', 'xlsx')],
+            'filters' => ['sometimes', 'nullable', 'array'],
         ];
     }
 
