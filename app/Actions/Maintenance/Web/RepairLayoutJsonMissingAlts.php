@@ -183,7 +183,7 @@ class RepairLayoutJsonMissingAlts
         return false;
     }
 
-    public string $commandSignature = 'repair:layout_json_missing_alts {website}';
+    public string $commandSignature = 'repair:layout_json_missing_alts {website} {--apply-changes}';
 
     public function asCommand(Command $command): void
     {
@@ -196,11 +196,13 @@ class RepairLayoutJsonMissingAlts
             return;
         }
 
+        $applyChanges = (bool) $command->option('apply-changes');
+
         ModelHasWebBlocks::where('website_id', $website->id)
             ->with(['webBlock', 'webpage'])
-            ->chunk(100, function ($items) use ($command, &$total) {
+            ->chunk(100, function ($items) use ($command, &$total, $applyChanges) {
                 foreach ($items as $item) {
-                    $total += $this->handle($item, false, $command);
+                    $total += $this->handle($item, $applyChanges, $command);
                 }
             });
 
