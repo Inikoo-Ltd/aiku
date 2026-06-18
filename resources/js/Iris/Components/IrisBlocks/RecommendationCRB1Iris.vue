@@ -54,24 +54,21 @@ const layout = inject('layout', retinaLayoutStructure)
 const listProducts = ref<LastOrderedProduct[] | null>()
 const isLoadingFetch = ref(false)
 
-
-const isFetched = ref(false)
 const fetchRecommenders = async () => {
     if (route().has('iris.json.product_category.last-ordered-products.index')) {
         try {
             isLoadingFetch.value = true
             const response = await axios.get(
-                route('iris.json.product_category.last-ordered-products.index', {  // GetLastOrderedProducts
+                route('iris.json.product_category.last-ordered-products.index',
+                {  // GetLastOrderedProducts
                     productCategory: props.fieldValue.family.id,
                     ignoredProductId: props.fieldValue?.product?.id
                 })
             )
-
             listProducts.value = response.data.data
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         } finally {
-            isFetched.value = true
             isLoadingFetch.value = false
         }
     }
@@ -88,15 +85,18 @@ onMounted(() => {
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
     }">
-        <template v-if="!isFetched || listProducts?.length > 3">
+        <div v-if="isLoadingFetch" class="py-4 px-3 md:px-12 grid grid-cols-4 gap-x-4">
+            <div v-for="xx in 4" :key="xx" class="skeleton w-full h-64 rounded"></div>
+        </div>
+
+        <template v-else-if="listProducts && listProducts.length > 3">
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-2xl md:text-3xl font-semibold">
-                    <!-- <div v-html="fieldValue.title"></div> -->
                     <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
                 </div>
             </div>
-            
+
             <div class="py-4 px-3 md:px-12" id="recommendation-crb-1-iris">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
@@ -107,22 +107,15 @@ onMounted(() => {
                     spaceBetween="12"
                     autoHeight
                 >
-                    <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                        <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
-                        </div>
-                    </div>
-
-                    <template v-else>
-                        <SwiperSlide
-                            v-for="(product, index) in listProducts"
-                            :key="index"
-                            class="p-[1px] w-full cursor-grab relative !grid h-full min-h-full"
-                        >
-                            <RecommendationCRBSlideIris
-                                :product
-                            />
-                        </SwiperSlide>
-                    </template>
+                    <SwiperSlide
+                        v-for="(product, index) in listProducts"
+                        :key="index"
+                        class="p-[1px] w-full cursor-grab relative !grid h-full min-h-full"
+                    >
+                        <RecommendationCRBSlideIris
+                            :product
+                        />
+                    </SwiperSlide>
                 </Swiper>
             </div>
         </template>
