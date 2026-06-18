@@ -70,7 +70,7 @@ const fetchRecommenders = async () => {
             listProducts.value = response.data.data
             
             if (!(listProducts.value > 3)) {
-                console.error('Block CRB are less than 3, will not showed.')
+                console.warn('Block CRB are less than 3, will not showed.')
             }
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
