@@ -24,6 +24,7 @@ enum OutboxCodeEnum: string
     case DELIVERY_NOTE_UNDISPATCHED = 'delivery_note_undispatched';
     case INVOICE_DELETED = 'invoice_deleted';
     case NEW_ORDER = 'new_order';
+    case NEW_OFFER = 'new_offer';
     case ABANDONED_CART = 'abandoned_cart';
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
     case SEND_INVOICE_TO_CUSTOMER = 'send_invoice_to_customer';
@@ -106,6 +107,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
+            OutboxCodeEnum::NEW_OFFER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED
             => OutboxTypeEnum::USER_NOTIFICATION,
@@ -125,6 +127,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED => 'Delivery note undispatched',
             OutboxCodeEnum::INVOICE_DELETED => 'Invoice deleted',
             OutboxCodeEnum::NEW_ORDER => 'New order',
+            OutboxCodeEnum::NEW_OFFER => 'New offer',
             OutboxCodeEnum::ABANDONED_CART => 'Abandoned cart',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery confirmation',
             OutboxCodeEnum::REORDER_REMINDER => '1st Reorder reminder',
@@ -171,6 +174,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED => 'Delivery note undispatched',
             OutboxCodeEnum::INVOICE_DELETED => 'Invoice deleted',
             OutboxCodeEnum::NEW_ORDER => 'New order',
+            OutboxCodeEnum::NEW_OFFER => 'New offer',
             OutboxCodeEnum::ABANDONED_CART => 'Abandoned cart',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery conformation',
             OutboxCodeEnum::REORDER_REMINDER => 'Reorder reminder',
@@ -270,6 +274,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::WEB_USER_REGISTRATION => ['b2b', 'dropshipping', 'fulfilment'],
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::NEW_ORDER,
+            OutboxCodeEnum::NEW_OFFER,
             OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
@@ -299,7 +304,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::INVITE,
             OutboxCodeEnum::TEST,
-            OutboxCodeEnum::INVOICE_DATE_CHANGED
+            OutboxCodeEnum::INVOICE_DATE_CHANGED,
+            OutboxCodeEnum::NEW_OFFER
             => OutboxStateEnum::ACTIVE,
             default => OutboxStateEnum::IN_PROCESS
         };
@@ -318,6 +324,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
+            OutboxCodeEnum::NEW_OFFER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED
             => OutboxBuilderEnum::BLADE,
@@ -338,6 +345,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
+            OutboxCodeEnum::NEW_OFFER,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::PASSWORD_REMINDER,
@@ -386,6 +394,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
+            OutboxCodeEnum::NEW_OFFER,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::PASSWORD_REMINDER,
@@ -452,6 +461,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
+            OutboxCodeEnum::NEW_OFFER,
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED
