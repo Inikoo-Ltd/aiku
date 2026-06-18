@@ -105,13 +105,28 @@ const {
     saveFilters,
     getPostalCodeModel,
     hydrateSavedFilters,
-    filtersPayload,
 } = useFilterRecipients(props)
 
 const exportUrl = (type: 'csv' | 'xlsx') => {
     const r = props.exportRoutes?.[type]
     if (!r?.name) return ''
-    return route(r.name, { ...r.parameters, type, filters: filtersPayload.value }) as unknown as string
+
+    const base = route(r.name, { ...r.parameters, type }) as unknown as string
+
+    const current = new URLSearchParams(window.location.search)
+    const filterQuery = new URLSearchParams()
+    current.forEach((value, key) => {
+        if (key === 'filters' || key.startsWith('filters[')) {
+            filterQuery.append(key, value)
+        }
+    })
+
+    const query = filterQuery.toString()
+    if (!query) {
+        return base
+    }
+
+    return base + (base.includes('?') ? '&' : '?') + query
 }
 
 const filterMenu = ref()

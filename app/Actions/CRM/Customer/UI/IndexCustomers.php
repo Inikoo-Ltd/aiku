@@ -162,6 +162,8 @@ class IndexCustomers extends OrgAction
                 $queryBuilder->whereIn('customers.id', (clone $recipeQuery)->select('customers.id'));
 
                 $this->estimatedRecipients = (clone $recipeQuery)->count('customers.id');
+            } else {
+                $this->estimatedRecipients = Customer::where('shop_id', $parent->id)->count();
             }
         }
 
