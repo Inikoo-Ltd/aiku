@@ -113,7 +113,7 @@ class StoreEbayProduct extends RetinaAction
                 $descriptions = $portfolio->item->name;
             }
 
-            $descriptions = $ebayUser->getFormattedDescriptions($descriptions);
+            // $descriptions = $ebayUser->getFormattedDescriptions($descriptions);
 
             $family = $product->family?->name;
 
@@ -145,7 +145,7 @@ class StoreEbayProduct extends RetinaAction
                 $categoryName = Arr::get($categories, 'itemSummaries.0.categories.0.categoryName');
             }
 
-            if (in_array($categoryId, ['261186', '116113'])) {
+            if (in_array($categoryId, ['261186', '116113', '180924'])) {
                 // This force not to use book category
                 $categoryId = '29511';
             }
