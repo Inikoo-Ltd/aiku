@@ -7,6 +7,7 @@ import Popover from "primevue/popover"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInfoCircle } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faMedal } from "@fas";
 
 library.add(faInfoCircle)
 
@@ -38,11 +39,13 @@ const webpage_data = inject("webpage_data", null)
         // 'gap-0': !active,
         'opacity-60': !active,
     }">
-        <img :src="active
+       <!--  <img :src="active
             ? `/assets/promo/gr-aw.png`
             // : `/assets/promo/gr-inactive.png`
             : `/assets/promo/gr-inactive-2.png`
-            " alt="Gold Reward" v-tooltip="ctrans('Gold Reward')" class="h-7 w-auto shrink-0" />
+            " alt="Gold Reward" v-tooltip="ctrans('Gold Reward')" class="h-7 w-auto shrink-0" /> -->
+
+        <FontAwesomeIcon :icon="faMedal" v-tooltip="ctrans('Gold Reward')" class="text-xl w-auto shrink-0" :class="active ? 'text-[#E87928]' : 'text-[#b3b3b3]'"/>
 
         <div class="flex items-center gap-2 rounded px-2 py-[3px] text-[10px] 2xl:text-xs font-semibold leading-none text-white"
         :class="active ? 'bg-[#E87928]' : 'bg-[#b3b3b3]'">
