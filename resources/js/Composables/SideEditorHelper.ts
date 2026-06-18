@@ -51,6 +51,7 @@ import { SelectButton } from 'primevue'
 import SelectBanner from '@/Components/CMS/Fields/SelectBanner.vue'
 import SelectProductCategory from '@/Components/Workshop/Properties/SelectProductCategory.vue'
 import TabsInput from '@/Components/CMS/Fields/TabsInput.vue'
+import RelatedProductsBlockSettings from '@/Components/Workshop/Properties/RelatedProductsBlockSettings.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -103,7 +104,8 @@ export const getComponent = (componentName: string) => {
         'select-button' : SelectButton,
         'select_banner' : SelectBanner,
         'select_product_category' : SelectProductCategory,
-        'tabs' : TabsInput
+        'tabs' : TabsInput,
+        'related-products-block-settings' : RelatedProductsBlockSettings
     }
     return components[componentName] ?? NotFoundComponents
 }
