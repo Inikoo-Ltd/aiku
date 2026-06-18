@@ -25,6 +25,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Contracts\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\HumanResources\Employee\GenerateEmployeeLeaveBalance;
 
 class StoreLeave extends OrgAction
 {
@@ -129,11 +130,17 @@ class StoreLeave extends OrgAction
             ->whereDate('from', '<=', $endDate->toDateString())
             ->whereDate('to', '>=', $startDate->toDateString())
             ->get()
-            ->pluck('from', 'to')
-            ->flatMap(fn ($date, $to) => [
-                $date->toDateString() => true,
-                $to->toDateString() => true,
-            ]);
+            ->flatMap(function ($holiday) {
+                $dates = [];
+                $day = Carbon::parse($holiday->from);
+                $end = Carbon::parse($holiday->to);
+                while ($day->lte($end)) {
+                    $dates[$day->toDateString()] = true;
+                    $day->addDay();
+                }
+
+                return $dates;
+            });
 
         while ($current->lte($endDate)) {
             if ($current->isWeekday() && !isset($holidays[$current->toDateString()])) {
@@ -316,32 +323,58 @@ class StoreLeave extends OrgAction
             }
         }
 
+        $hasActiveContract = $this->employee->contracts()
+            ->where('start_date', '<=', $startDate->toDateString())
+            ->where(function ($q) use ($startDate) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>=', $startDate->toDateString());
+            })
+            ->exists();
+
+        if (!$hasActiveContract) {
+            $validator->errors()->add(
+                'start_date',
+                __('You do not have an active contract for the requested leave period.')
+            );
+
+            return;
+        }
+
         $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
         $requestedDays = (float) $durationDays * $this->leaveTypeValue($this->selectedLeaveType);
         if ($isHalfDay && $requestedDays === (float) $durationDays) {
             $requestedDays = 0.5;
         }
-        $balanceYear = $startDate->year;
         $bucket = LeaveTypeResolver::bucketFromLeaveType($this->selectedLeaveType, (string) $type);
 
-        $balance = EmployeeLeaveBalance::firstOrCreate(
-            [
-                'employee_id' => $this->employee->id,
-                'year'        => $balanceYear,
-            ],
-            [
-                'annual_days'   => $this->employee->organisation->getDefaultAnnualLeaveDays(),
-                'annual_used'   => 0,
-                'medical_days'  => 0,
-                'medical_used'  => 0,
-                'unpaid_days'   => 0,
-                'unpaid_used'   => 0,
-            ]
-        );
+        $balance = EmployeeLeaveBalance::where('employee_id', $this->employee->id)
+            ->where('period_start', '<=', $startDate->toDateString())
+            ->where(function ($q) use ($startDate) {
+                $q->whereNull('period_end')
+                  ->orWhere('period_end', '>=', $startDate->toDateString());
+            })
+            ->whereNotNull('employee_contract_id')
+            ->first();
+
+        if (!$balance) {
+            $contract = $this->employee->contracts()
+                ->where('start_date', '<=', $startDate->toDateString())
+                ->where(function ($q) use ($startDate) {
+                    $q->whereNull('end_date')
+                      ->orWhere('end_date', '>=', $startDate->toDateString());
+                })
+                ->orderByDesc('id')
+                ->first();
+
+            if ($contract) {
+                $balance = GenerateEmployeeLeaveBalance::run($contract);
+            }
+        }
 
         $submittedDaysByBucket = Leave::query()
             ->where('employee_id', $this->employee->id)
-            ->whereYear('start_date', $balanceYear)
+            ->when($balance?->period_start, fn ($q) => $q->where('start_date', '>=', $balance->period_start->toDateString()))
+            ->when($balance?->period_end, fn ($q) => $q->where('start_date', '<=', $balance->period_end->toDateString()))
             ->with('leaveType')
             ->get()
             ->filter(function (Leave $leave) {
@@ -356,7 +389,7 @@ class StoreLeave extends OrgAction
             });
 
         $bucketAllowance = match ($bucket) {
-            'annual' => (float) $balance->annual_days,
+            'annual' => (float) ($balance?->contract?->annual_leave_days ?? 0),
             default => null,
         };
 
@@ -374,7 +407,7 @@ class StoreLeave extends OrgAction
 
         if ($bucket === 'annual' && !$validator->errors()->has('duration_days')) {
             $leaveTypeMaxDays = (float) ($this->selectedLeaveType->max_days_per_year ?? PHP_INT_MAX);
-            $annualAllowance = min((float) $balance->annual_days, $leaveTypeMaxDays);
+            $annualAllowance = min((float) ($balance?->contract?->annual_leave_days ?? 0), $leaveTypeMaxDays);
             $annualRemaining = max(0, $annualAllowance - (float) $submittedDaysByBucket);
 
             if ($annualRemaining < $requestedDays) {
@@ -392,7 +425,8 @@ class StoreLeave extends OrgAction
             $leaveTypeSubmittedDays = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->where('leave_type_id', $this->selectedLeaveType->id)
-                ->whereYear('start_date', $balanceYear)
+                ->when($balance->period_start, fn ($q) => $q->where('start_date', '>=', $balance->period_start->toDateString()))
+                ->when($balance->period_end, fn ($q) => $q->where('start_date', '<=', $balance->period_end->toDateString()))
                 ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
                 ->get()
                 ->sum(function (Leave $leave) {

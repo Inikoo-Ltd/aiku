@@ -115,7 +115,6 @@ class UpdateOrganisation extends OrgAction
 
         $organisation->refresh();
 
-        $this->updateEmployeeLeaveBalances($organisation);
 
         return $organisation;
     }
@@ -176,22 +175,6 @@ class UpdateOrganisation extends OrgAction
         }
 
         return $rules;
-    }
-
-    protected function updateEmployeeLeaveBalances(Organisation $organisation): void
-    {
-        $newAnnualDays = $organisation->getDefaultAnnualLeaveDays();
-
-        $organisation->employees()->each(function ($employee) use ($newAnnualDays) {
-            $balance = \App\Models\HumanResources\EmployeeLeaveBalance::where('employee_id', $employee->id)
-                ->where('year', now()->year)
-                ->first();
-
-            if ($balance && $balance->annual_days != $newAnnualDays) {
-                $balance->annual_days = $newAnnualDays;
-                $balance->saveQuietly();
-            }
-        });
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
