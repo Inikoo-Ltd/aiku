@@ -101,6 +101,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Ordering\SalesChannel;
 use App\Models\HumanResources\WorkSchedule;
+use App\Models\CRM\Livechat\ChatAutomation;
 
 /**
  * App\Models\Catalogue\Shop
@@ -388,6 +389,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function customers(): HasMany
     {
         return $this->hasMany(Customer::class);
+    }
+
+    public function chatAutomations(): HasMany
+    {
+        return $this->hasMany(ChatAutomation::class);
     }
 
     public function prospects(): HasMany

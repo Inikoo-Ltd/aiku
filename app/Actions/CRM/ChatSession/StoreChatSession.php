@@ -16,6 +16,8 @@ use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\Models\CRM\WebUser;
+use App\Actions\CRM\ChatAutomation\ResolveChatAutomations;
+use App\Enums\CRM\Livechat\ChatAutomationTriggerEnum;
 
 class StoreChatSession
 {
@@ -86,6 +88,8 @@ class StoreChatSession
 
             DB::commit();
 
+            $this->fireWelcomeAutomations($chatSession);
+
             return $chatSession;
         } catch (Exception $e) {
             DB::rollBack();
@@ -96,6 +100,21 @@ class StoreChatSession
             ]);
 
             throw $e;
+        }
+    }
+
+    private function fireWelcomeAutomations(ChatSession $chatSession): void
+    {
+        try {
+            ResolveChatAutomations::run(
+                $chatSession,
+                ChatAutomationTriggerEnum::WELCOME
+            );
+        } catch (Exception $e) {
+            Log::warning('Welcome automation failed', [
+                'chat_session_id' => $chatSession->id,
+                'error'           => $e->getMessage(),
+            ]);
         }
     }
 

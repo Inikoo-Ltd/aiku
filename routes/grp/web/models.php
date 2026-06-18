@@ -68,6 +68,10 @@ use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\CRM\ChatAutomation\StoreChatAutomation;
+use App\Actions\CRM\ChatAutomation\UpdateChatAutomation;
+use App\Actions\CRM\ChatAutomation\DeleteChatAutomation;
+use App\Actions\CRM\ChatAutomation\ToggleChatAutomation;
 use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
@@ -619,6 +623,13 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::prefix('boxes')->name('boxes.')->group(function () {
         Route::post('/', StoreBox::class)->name('store');
         Route::patch('{box:id}', UpdateBox::class)->name('update')->withoutScopedBindings();
+    });
+
+    Route::prefix('chat/automation')->name('chat.automation.')->group(function () {
+        Route::post('/', StoreChatAutomation::class)->name('store');
+        Route::patch('{chatAutomation:id}', UpdateChatAutomation::class)->name('update')->withoutScopedBindings();
+        Route::delete('{chatAutomation:id}', DeleteChatAutomation::class)->name('delete')->withoutScopedBindings();
+        Route::patch('{chatAutomation:id}/toggle', ToggleChatAutomation::class)->name('toggle')->withoutScopedBindings();
     });
 
     Route::prefix('fulfilment/{fulfilment:id}/rentals')->name('fulfilment.rentals.')->group(function () {
