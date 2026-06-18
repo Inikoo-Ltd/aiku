@@ -8,16 +8,16 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProductCategories\GetRelatedProductCategories;
-use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProducts\GetRelatedProducts;
-use App\Actions\OrgAction;
+use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
+use App\Actions\Catalogue\ProductCategory\RelatedProducts\GetRelatedProducts;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Catalogue\Variant\IndexVariant;
+use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
@@ -167,7 +167,22 @@ class ShowFamily extends OrgAction
             ];
         }
 
-        $isRelatedProductFollowMaster = (bool) data_get($family->shop->settings, 'catalog.related_product_follow_master', false);
+
+        $iconLinks = [];
+        if ($family->has_gr_vol_discount) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-medal',
+                'tooltip' => __('Gold Reward Volume Discount'),
+                'color'   => '#D97706',
+            ];
+            if (!$family->follow_master_gr) {
+                $iconLinks[] = [
+                    'icon'    => 'fal fa-starfighter',
+                    'tooltip' => __('Not following master GR'),
+                    'color'   => '#DC2626',
+                ];
+            }
+        }
 
         $tabs = [
             FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
@@ -263,9 +278,10 @@ class ShowFamily extends OrgAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('Department')
                     ],
-                    'iconRight' => $family->state->stateIcon()[$family->state->value],
-                    'actions'   => $this->getActions($family, $request),
-                    'parentTag' => $parentTag,
+                    'iconRight'  => $family->state->stateIcon()[$family->state->value],
+                    'iconLinks'  => $iconLinks,
+                    'actions'    => $this->getActions($family, $request),
+                    'parentTag'  => $parentTag,
 
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
                 ],

@@ -80,9 +80,8 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $department = $webpage->model;
 
         if ($layout_style == 'main_page') {
-
             // Layout for Main Page
-
+            // Clean up old department-desc
             $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'department');
             if (count($countFamilyWebBlock) > 0) {
                 foreach ($countFamilyWebBlock as $webBlockData) {
@@ -95,7 +94,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                     DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
                 }
             }
-
+            // Clean up old collections block
             $collectionsWebBlock = $this->getWebpageBlocksByType($webpage, 'collections-1');
             if (count($collectionsWebBlock) > 0) {
                 foreach ($collectionsWebBlock as $webBlockData) {
@@ -108,16 +107,10 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                     DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
                 }
             }
-
-            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes(), WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION);
-
-            // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
-            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
-
-            $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
-
-            if (count($countFamilyWebBlock) > 0) {
-                foreach ($countFamilyWebBlock as $webBlockData) {
+            // Clean up old overview_aurora block
+            $countOverViewAurora = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
+            if (count($countOverViewAurora) > 0) {
+                foreach ($countOverViewAurora as $webBlockData) {
                     $layout       = json_decode($webBlockData->layout, true);
                     $descriptions = Arr::get($layout, 'data.fieldValue.texts.values');
 
@@ -146,9 +139,44 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 }
             }
 
-            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
+            // Starts repairing
+            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes(), WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION);
 
-            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
+            $scope = WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION;
+            $liveWebBlockSnapshot = $webpage->website->{"live{$scope->value}Snapshot"};
+            $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', array_first($scope->templateCodes())); // Get published WebBlock layout code
+
+            $countTopFamilies = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes());
+
+            $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
+
+            $countTopFamilies = $this->getWebpageBlocksByType($webpage, 'top-families');
+            if (count($countTopFamilies) == 0) {
+                $this->createWebBlock($webpage, 'top-families');
+            }
+
+            $countLuigiTrends = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
+            if (count($countLuigiTrends) == 0) {
+                $this->createWebBlock($webpage, 'luigi-trends-1');
+            }
+
+            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
+
+            if ($usedWebBlockTemplateCodes == 'department-description-1') {
+                $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
+            } else {
+                $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS);
+            }
+
+            $countRelatedProductCategoryBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master');
+            if (count($countRelatedProductCategoryBlock) == 0) {
+                $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+            }
+
+            $countFaqDepartment = $this->getWebpageBlocksByType($webpage, 'faq-department');
+            if (count($countFaqDepartment) == 0) {
+                $this->createWebBlock($webpage, 'faq-department');
+            }
         } else {
             $this->deleteWebBlocksByCode($webpage, 'families-2');
             // Layout for Overview Page
@@ -160,22 +188,25 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             }
         }
 
-        $countRelatedProductCategoryBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master');
-        if (count($countRelatedProductCategoryBlock) == 0) {
-            $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
-        }
-
         $webpage->refresh();
 
-        if ($command->option('set-description-top')) {
-            $this->reorderDepartmentPageBlocks($webpage);
-        }
 
-        if ($command->option('hide-description')) {
-            $this->setDescriptionWebBlockHidden($webpage);
-        }
+        if ($layout_style == 'main_page') {
+            if ($command->option('set-description-top')) {
+                $usedWebBlockTemplateCodes = array_key_first($liveWebBlockSnapshot?->layout ?? []); // Get published WebBlock layout code
+                if (!in_array($usedWebBlockTemplateCodes, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes())) {
+                    $usedWebBlockTemplateCodes = array_first(WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes());
+                }
 
-        $webpage->refresh();
+                $this->reorderDepartmentPageBlocks($webpage, $usedWebBlockTemplateCodes);
+            }
+
+            if ($command->option('hide-description')) {
+                $this->setDescriptionWebBlockHidden($webpage);
+            }
+
+            $webpage->refresh();
+        }
 
         UpdateWebpageContent::run($webpage);
 
@@ -214,10 +245,18 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         UpdateWebpageContent::run($webpage);
     }
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {--website_id=} {--hide-description} {--set-description-top} {--build-overview-page}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {--website_id=} {--webpage_id=} {--hide-description} {--set-description-top} {--build-overview-page}';
 
     public function asCommand(Command $command): void
     {
+        if ($command->option('webpage_id')) {
+            $webpage = Webpage::where('id', $command->option('webpage_id'))->first();
+            if ($webpage && $webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
+                $this->processDepartmentWebpages($webpage, $command, $webpage->layout_style);
+                return;
+            }
+        }
+
         $shop = null;
         if ($command->option('website_id')) {
             $website   = Website::where('id', $command->option('website_id'))->first();

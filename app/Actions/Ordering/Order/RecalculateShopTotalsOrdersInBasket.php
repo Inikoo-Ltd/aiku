@@ -34,11 +34,12 @@ class RecalculateShopTotalsOrdersInBasket implements ShouldBeUnique
         }
         /** @var Order $order */
         foreach ($shop->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
-            if ($order->updated_by_customer_at && $order->updated_by_customer_at->isAfter(Carbon::now()->subDay())) {
+
+            if ($order->updated_by_customer_at && $order->updated_by_customer_at->isAfter(Carbon::now()->subHours(3))) {
                 CalculateOrderTotalAmounts::dispatch($order, true, true, false, true);
             } else {
                 $randomDelay = rand(300, 7200);
-                CalculateOrderTotalAmounts::dispatch($order, true, true, false, false)->delay($randomDelay)->onQueue('hydrators-slave');
+                CalculateOrderTotalAmounts::dispatch($order, true, true, false, false)->delay($randomDelay)->onQueue('hydrators-slave-low-priority');
             }
         }
     }

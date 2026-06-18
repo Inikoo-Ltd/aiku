@@ -85,6 +85,7 @@ import InputTranslationWithOptionLanguages from '@/Components/Forms/Fields/Input
 import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQrExpiry.vue'
 import InputFaqMaster from '@/Components/Forms/Fields/InputFaqMaster.vue'
 import InputFaqShop from '@/Components/Forms/Fields/InputFaqShop.vue'
+import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -172,6 +173,7 @@ export const componentsList: { [key: string]: Component } = {
     'job_title_select_create': JobTitleSelectCreate,
     'faq-master' : InputFaqMaster,
     'faq-shop' : InputFaqShop,
+    'tags': TagsInput,
 }
 
 export const getComponent = (componentName: string) => {

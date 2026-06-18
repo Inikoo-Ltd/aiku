@@ -28,6 +28,7 @@ export interface OfferResource {
         item_quantity?: number
         item_amount?: number
         interval?: number
+        min_order_amount?: number
     }
     percentage_off?: number
     created_at: string

@@ -113,7 +113,6 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
 
@@ -122,7 +121,6 @@ class Kernel extends HttpKernel
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
             ApiBindGroupInstance::class,
-            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
 
@@ -160,7 +158,6 @@ class Kernel extends HttpKernel
             LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
         'two_fa'      => [
@@ -191,7 +188,7 @@ class Kernel extends HttpKernel
             AddFrameOptionsHeader::class
 
         ],
-        'analytics'        => [
+        'analytics'   => [
             DetectIrisWebsite::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
@@ -212,7 +209,6 @@ class Kernel extends HttpKernel
             SetWebsiteLocale::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
             AddFrameOptionsHeader::class
         ],
@@ -229,7 +225,6 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
             AddFrameOptionsHeader::class
         ],
@@ -257,7 +252,6 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandleCorneaInertiaRequests::class,
             //AddLinkHeadersForPreloadedAssets::class,
-            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
 

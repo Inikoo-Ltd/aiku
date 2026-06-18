@@ -474,4 +474,16 @@ enum OutboxCodeEnum: string
             => PostRoomCodeEnum::TEST,
         };
     }
+
+    public function requiresUnsubscribeLink(): bool
+    {
+        return match ($this) {
+            self::REORDER_REMINDER,
+            self::REORDER_REMINDER_2ND,
+            self::REORDER_REMINDER_3RD,
+            self::BASKET_LOW_STOCK,
+            self::PRICE_CHANGE_NOTIFICATION => true,
+            default => false,
+        };
+    }
 }

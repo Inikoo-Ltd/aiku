@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -38,7 +39,6 @@ class EditOffer extends OrgAction
 
         $offerResource  = OfferResource::make($offer)->resolve();
         $percentage_off = $offerResource['data_allowance_signature']['percentage_off'] * 100;
-
 
         $warning = null;
         if ($productCategory) {
@@ -80,14 +80,14 @@ class EditOffer extends OrgAction
                             'required'    => true,
                             'value'       => $offer->name,
                         ],
-                        'label'               => [
+                        'label'               => $offer->offerCampaign->type !== OfferCampaignTypeEnum::VOUCHERS ? [
                             'type'        => 'input',
                             'information' => __('Label to put on the discount coupon, if empty will take offer name'),
                             'label'       => __('Label'),
                             'placeholder' => __('Label'),
                             'required'    => true,
                             'value'       => $offer->label,
-                        ],
+                        ] : null,
                         'date'                => app()->environment('local') ? [
                             'type'        => 'date',
                             'information' => __('The date until which the offer is valid. After this date, the offer will no longer be applicable.'),
@@ -132,26 +132,40 @@ class EditOffer extends OrgAction
                     'model'     => __('Edit Offer'),
                     'icon'      => 'fal fa-pencil',
                     'iconRight' => $offer->state->stateIcon()[$offer->state->value],
-                    'actions'   => array_filter([
-                        $offer->state == OfferStateEnum::ACTIVE ? [
-                            'type'  => 'button',
-                            'label' => __('Finish Now'),
-                            'style' => 'red',
-                            'icon'  => 'fal fa-skull',
-                            'route' => [
-                                'name'       => 'grp.models.offer.finish',
-                                'parameters' => $offer->id,
-                            ],
-                        ] : null,
+                    'actions'   => array_filter(
                         [
-                            'type'  => 'button',
-                            'style' => 'exitEdit',
-                            'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters()),
+                            $offer->state == OfferStateEnum::ACTIVE ? [
+                                'type'  => 'button',
+                                'label' => __('Finish Now'),
+                                'style' => 'red',
+                                'icon'  => 'fal fa-skull',
+                                'route' => [
+                                    'method'     => 'post',
+                                    'name'       => 'grp.models.offer.finish',
+                                    'parameters' => $offer->id,
+                                ],
+                            ] : null,
+                            $offer->state == OfferStateEnum::IN_PROCESS ? [
+                                'type'  => 'button',
+                                'label' => __('Delete Offer'),
+                                'style' => 'red',
+                                'icon'  => 'fal fa-trash-alt',
+                                'route' => [
+                                    'method'     => 'post',
+                                    'name'       => 'grp.models.offer.delete',
+                                    'parameters' => $offer->id,
+                                ],
+                            ] : null,
+                            [
+                                'type'  => 'button',
+                                'style' => 'exitEdit',
+                                'route' => [
+                                    'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                    'parameters' => array_values($request->route()->originalParameters()),
+                                ]
                             ]
                         ]
-                    ]),
+                    ),
                 ],
                 'warning'     => $warning,
                 'formData'    => [

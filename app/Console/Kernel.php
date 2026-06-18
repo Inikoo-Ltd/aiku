@@ -23,6 +23,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Discounts\Offer\ActivateScheduledOffers;
 use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
@@ -467,6 +468,16 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->job(ActivateScheduledOffers::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'ActivateScheduledOffers',
+                ),
+                name: 'ActivateScheduledOffers',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
 
             $this->logSchedule(
                 $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(

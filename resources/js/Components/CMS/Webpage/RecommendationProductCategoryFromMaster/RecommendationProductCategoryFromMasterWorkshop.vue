@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from "vue"
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount, inject } from "vue"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
@@ -42,7 +42,7 @@ const nextEl = ref<HTMLElement | null>(null)
 const swiperInstance = ref<any>(null)
 const refreshTrigger = ref(0)
 const containerRef = ref<HTMLElement | null>(null)
-
+const layout: any = inject("layout", {})
 const allItems = computed(() => [
   ...(props.modelValue?.product_category_recommended || [])
 ])

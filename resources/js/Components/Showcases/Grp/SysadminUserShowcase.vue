@@ -181,11 +181,11 @@ const force2FA = async () => {
 
         </dl>
 
-        <div class="w-48 py-6">
+        <div v-if="twoFAStatus" class="w-48 py-6">
             <div class="mb-3 w-full">
                 <dt class="text-sm font-medium">{{ trans('Has 2FA') }}: </dt>
                 <dd class="pt-1 inline-grid w-full">
-                    <div v-if="twoFAStatus.has_2fa" class="w-full">
+                    <div v-if="twoFAStatus?.has_2fa" class="w-full">
                         <span class="border rounded-md border-green-500 px-2 py-1">
                             <FontAwesomeIcon :icon="faCheck" class="text-green-500"/> {{ trans('Enabled') }}
                         </span>

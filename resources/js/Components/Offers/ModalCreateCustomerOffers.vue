@@ -58,7 +58,7 @@ const endDate = ref<Date | null>(
 )
 
 type TargetType = 'shop' | 'department' | 'subdepartment' | 'family' | 'collection' | 'product'
-const target = ref<TargetType | null>(null)
+const target = ref<TargetType | null>("shop")
 
 const categoryFilters = ref<number | null>(null)
 const collectionFilters = ref<number | null>(null)
@@ -108,11 +108,11 @@ const productFetchRoute = {
 
 const targetOptions: { value: TargetType; label: string }[] = [
     { value: 'shop', label: 'Shop' },
-    { value: 'department', label: 'Department' },
-    { value: 'subdepartment', label: 'Sub Department' },
-    { value: 'family', label: 'Family' },
-    { value: 'collection', label: 'Collection' },
-    { value: 'product', label: 'Product' },
+    // { value: 'department', label: 'Department' },
+    // { value: 'subdepartment', label: 'Sub Department' },
+    // { value: 'family', label: 'Family' },
+    // { value: 'collection', label: 'Collection' },
+    // { value: 'product', label: 'Product' },
 ]
 
 const today = new Date(new Date().setHours(0, 0, 0, 0))
@@ -160,12 +160,13 @@ const buildTargetPayload = () => {
 }
 
 const submitCustomerOffer = () => {
+    isLoadingSubmit.value = true
     const targetPayload = buildTargetPayload()
 
     const payload = {
         customer_id: customerId.value || props.customer_id,
-        offer_amount: offerAmount.value,
-        discount_percentage: discountPercentage.value,
+        min_order_amount: offerAmount.value,
+        percentage_off: discountPercentage.value,
         target_type: targetPayload?.target_type ?? null,
         target_id: targetPayload?.target_id ?? null,
         duration: dateType.value,
@@ -173,81 +174,50 @@ const submitCustomerOffer = () => {
         end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
     }
 
-    // axios.post(
-    //     route('grp.models.store_customer_offer', {
-    //         shop: props.shop_data.id,
-    //     }),
-    //     payload
-    // )
-    // .then((response) => {
-    //     notify({
-    //         title: trans("Success"),
-    //         text: trans("Successfully submit the data"),
-    //         type: "success"
-    //     })
-    //     resetForm();
-    //     isOpenModal.value = false
-
-    //     if (!props.customer_id) {
-    //         router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
-    //             organisation: props.shop_data.organisation,
-    //             shop: props.shop_data.slug,
-    //             offerCampaign: props.shop_data.offercampaign,
-    //             offer: response.data.slug
-    //         }))
-    //     }
-    //     router.reload()
-    // })
-    // .catch((error) => {
-    //     const errors = error.response?.data?.errors || {}
-    //     const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
-    //     notify({
-    //         title: trans("Something went wrong"),
-    //         text: errMsg,
-    //         type: "error"
-    //     })
-    // })
-    // .finally(() => {
-    //     isLoadingSubmit.value = false
-    // })
-    router.post(
+    axios.post(
         route('grp.models.store_customer_offer', {
             shop: props.shop_data.id,
         }),
-        payload,
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                closeModal()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: () => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
-        }
+        payload
     )
+    .then((response) => {
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully submit the data"),
+            type: "success"
+        })
+        resetForm();
+        isOpenModal.value = false
+
+        if (!props.customer_id) {
+            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+                offer: response.data.slug
+            }))
+        }
+        router.reload()
+    })
+    .catch((error) => {
+        const errors = error.response?.data?.errors || {}
+        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+        notify({
+            title: trans("Something went wrong"),
+            text: errMsg,
+            type: "error"
+        })
+    })
+    .finally(() => {
+        isLoadingSubmit.value = false
+    })
 }
 
 const resetForm = () => {
     customerId.value = null
     offerAmount.value = 0
     discountPercentage.value = null
-    target.value = null
+    target.value = "shop"
     categoryFilters.value = null
     collectionFilters.value = null
     productFilters.value = null

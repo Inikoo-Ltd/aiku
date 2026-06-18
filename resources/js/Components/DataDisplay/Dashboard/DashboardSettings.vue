@@ -95,6 +95,18 @@ const updateInterval = (interval_code: string) => {
                 onFinish: () => { isLoadingOnTable.value = false },
             }
         )
+    } else if (props.currentTab === 'insights') {
+        isLoadingOnTable.value = true
+        router.patch(
+            route("grp.models.profile.update"),
+            { settings: { selected_interval: interval_code } },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['dashboard', 'offers'],
+                onFinish: () => { isLoadingOnTable.value = false },
+            }
+        )
     } else {
         storeIntervalCode(interval_code)
     }
@@ -235,7 +247,7 @@ onMounted(() => {
                     class="isolate rounded border py-1 px-1 sm:px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
                     aria-label="Tabs">
                     <div>
-                        <DashboardCustomDateRange :intervals="intervals" />
+                        <DashboardCustomDateRange :intervals="intervals" :currentTab="currentTab" />
                     </div>
 
                     <div

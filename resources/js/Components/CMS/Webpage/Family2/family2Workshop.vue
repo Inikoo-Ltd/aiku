@@ -203,12 +203,12 @@ const contentClass = computed(() =>
   <section :id="`family-2`" component="family-2-iris" class="editor-class">
     <div class="mx-auto w-full  bg-white  py-4 sm:px-8  " :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(modelValue?.container?.properties),
+      ...getStyles(modelValue?.container?.properties,screenType),
       width: 'auto'
     }">
       <div :class="contentClass">
         <!-- IMAGE SECTION -->
-        <div class="flex shrink-0 justify-center gap-[6px]">
+        <div class="flex shrink-0 items-start justify-center gap-[6px]">
           <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
             <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'" class="
@@ -373,13 +373,13 @@ const contentClass = computed(() =>
           transition
           hover:bg-gray-50
         " :style="{
-          ...getStyles(modelValue?.button?.container?.properties)
+          ...getStyles(modelValue?.button?.container?.properties, screenType)
         }">
                 {{ modelValue?.button?.text || ctrans('Learn more') }}
               </button>
             </a>
 
-            <div v-for="data in modelValue.family.tags" :key="data.name" class="
+            <div v-for="data in modelValue?.family?.tags" :key="data.name" class="
         flex
         items-center
         px-3

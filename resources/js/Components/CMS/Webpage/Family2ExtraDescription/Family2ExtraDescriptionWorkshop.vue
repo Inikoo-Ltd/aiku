@@ -160,6 +160,7 @@ const sectionStyle = computed(() => {
         :is="component(activeTab)"
         :field-value="modelValue"
         :screen-type="screenType"
+        :faqs="modelValue.family.faq"
       />
     </div>
   </section>

@@ -7,6 +7,7 @@ import { getStyles } from "@/Composables/styles"
 const props = defineProps<{
     fieldValue: any
     screenType: "mobile" | "tablet" | "desktop"
+    faqs:any
 }>()
 
 const openIndex = ref<number | null>(0)
@@ -21,7 +22,7 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.faq?.containe
 <template>
   
     <section
-        v-if="fieldValue?.family?.faq?.length"
+        v-if="faqs"
         class="w-full" :style="containerStyle"
     >
     
@@ -29,7 +30,7 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.faq?.containe
             class="mx-auto w-full"
         >
             <div
-                v-for="(item, index) in fieldValue.family.faq"
+                v-for="(item, index) in faqs"
                 :key="index"
                 class="border-b border-[#B8BCC1]"
             >
@@ -64,9 +65,8 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.faq?.containe
                         class="overflow-hidden"
                     >
                         <div
-                            class="pb-5 pr-8 text-sm leading-6 text-neutral-700 "
+                            class="pb-5 pr-8 text-sm leading-6 text-neutral-700 " v-html="item.answer"
                         >
-                            {{ item.answer }}
                         </div>
                     </div>
                 </Transition>

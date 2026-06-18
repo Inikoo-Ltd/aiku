@@ -41,7 +41,6 @@ class WebpagesForWorkshopSelectResource extends JsonResource
     {
         $imageAlt = GetWebpageAlt::run($this->id);
 
-        //todo try to get a better alt
 
         return [
             "id"            => $this->id,

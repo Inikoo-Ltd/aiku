@@ -22,7 +22,8 @@ import {
     faEnvelope,
     faBan,
     faUsers,
-    faSpinner
+    faSpinner,
+    faDownload
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { reactive, computed, watch, ref, onMounted, nextTick } from "vue";
@@ -67,18 +68,23 @@ library.add(
     faFilter,
     faTimes,
     faPlus,
-    faSpinner
+    faSpinner,
+    faDownload
 );
 
-const props = defineProps<{
-    recipientFilterRoute: routeType
+const props = withDefaults(defineProps<{
+    recipientFilterRoute?: routeType
     filters: Record<string, any>,
     filtersStructure: Record<string, any>
     recipientsRecipe: any,
     shopId: number,
     estimatedRecipients: number,
     shopSlug: string
-}>();
+    showSave?: boolean
+    exportRoutes?: { xlsx: routeType, csv: routeType }
+}>(), {
+    showSave: true,
+});
 
 const {
     isByOrderValueInvalid,
@@ -99,7 +105,14 @@ const {
     saveFilters,
     getPostalCodeModel,
     hydrateSavedFilters,
+    filtersPayload,
 } = useFilterRecipients(props)
+
+const exportUrl = (type: 'csv' | 'xlsx') => {
+    const r = props.exportRoutes?.[type]
+    if (!r?.name) return ''
+    return route(r.name, { ...r.parameters, type, filters: filtersPayload.value }) as unknown as string
+}
 
 const filterMenu = ref()
 
@@ -322,8 +335,17 @@ watch(
             <!-- right side -->
             <div class="flex items-center gap-3">
 
-                <Button :label="trans('Save')" type="positive" icon="save" @click="saveFilters" class="h-10 px-4"
-                    :disabled="isByOrderValueInvalid" />
+                <div v-if="exportRoutes" class="rounded-md">
+                    <a :href="exportUrl('csv')" target="_blank" rel="noopener">
+                        <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
+                    </a>
+                    <a :href="exportUrl('xlsx')" target="_blank" rel="noopener">
+                        <Button :icon="faDownload" label="XLSX" type="tertiary" class="border-l-0 rounded-l-none" />
+                    </a>
+                </div>
+
+                <Button v-if="showSave" :label="trans('Save')" type="positive" icon="save" @click="saveFilters"
+                    class="h-10 px-4" :disabled="isByOrderValueInvalid" />
             </div>
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">

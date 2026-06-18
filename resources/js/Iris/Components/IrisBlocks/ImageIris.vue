@@ -23,6 +23,7 @@ library.add(faCube, faStar, faImage, faPencil)
 interface LinkData {
   url?: string
   workshop_url?: string
+  image_alt?: string
 }
 
 interface ImageData {
@@ -30,6 +31,7 @@ interface ImageData {
   properties?: Record<string, any>
   attributes?: Record<string, any>
   link_data?: LinkData
+  alt?: string
 }
 
 interface LayoutData {
@@ -150,7 +152,7 @@ const imgAttrsFor = (image: any, index: number) => {
             <template #default>
                 <Image
                     :src="image?.source"
-                    :alt="image?.properties?.alt || `image ${index + 1}`"
+                    :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`"
                     :imageCover="true"
                     :height="getStyles(image.properties, screenType, false)?.height"
 						        :width="getStyles(image.properties, screenType, false)?.width" 
@@ -169,7 +171,7 @@ const imgAttrsFor = (image: any, index: number) => {
           <div v-else class="block w-full h-full">
             <Image 
               :src="image?.source" 
-              :alt="image?.properties?.alt || `image ${index + 1}`" 
+              :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`" 
               :imageCover="true" :style="{
               ...getStyles(fieldValue?.value?.layout?.properties, screenType),
               ...getStyles(image?.properties, screenType)
@@ -244,7 +246,7 @@ const imgAttrsFor = (image: any, index: number) => {
             <Image 
               v-if="image?.source" 
               :src="image.source" 
-              :alt="image.properties?.alt || `image ${index + 1}`"
+              :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`"
               :imageCover="true" 
               class="w-full h-full aspect-square object-cover rounded-lg"
               :height="getStyles(image.properties, screenType, false)?.height"

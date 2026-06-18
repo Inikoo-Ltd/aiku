@@ -39,7 +39,7 @@ trait OfferCampaignVoucherOffersTrait
                     ],
                     'title'     => $offerCampaign->name,
                     'model'     => __('Offer Campaign'),
-                    'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],                   
+                    'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -68,7 +68,8 @@ trait OfferCampaignVoucherOffersTrait
                     fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
+        )
+        ->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value, showActions: $offerCampaign->shop->is_aiku))
+        ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
     }
 }

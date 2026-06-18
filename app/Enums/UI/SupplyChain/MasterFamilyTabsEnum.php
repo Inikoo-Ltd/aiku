@@ -54,15 +54,15 @@ enum MasterFamilyTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             MasterFamilyTabsEnum::VARIANTS => [
-                 'title' => __('Master Variants'),
+                 'title' => __('Master variants'),
                  'icon'  => 'fal fa-shapes',
              ],
             MasterFamilyTabsEnum::RELATED_PRODUCTS => [
-                'title' => __('Related Products'),
+                'title' => __('Related products'),
                 'icon'  => 'fal fa-repeat',
             ],
             MasterFamilyTabsEnum::RELATED_PRODUCT_CATEGORY => [
-              'title' => __('Related product category'),
+              'title' => __('Related families'),
               'icon'  => 'fal fa-folder-tree',
             ],
         };

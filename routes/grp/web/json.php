@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
+use App\Actions\Catalogue\Product\Json\GetProductsIncludingNotForSaleInShop;
 use App\Actions\Dispatching\BatchCode\Json\GetBatchCodes;
 use App\Actions\Accounting\Payment\Json\GetRefundOriginalInvoicePayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
@@ -40,6 +41,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInDepartmentInWorkshop
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategories;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryForRelatedWebBlock;
@@ -155,6 +157,8 @@ Route::get('email/dispatched-email/{dispatchedEmail:id}/copy', GetEmailCopy::cla
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
 Route::get('shop/{shop}/products-for-website-workshop', GetProductsInWorkshop::class)->name('shop.products_for_website_workshop');
 Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.products');
+Route::get('shop/{shop}/products-including-not-for-sale', GetProductsIncludingNotForSaleInShop::class)->name('shop.products_including_not_for_sale');
+
 Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
 
@@ -318,3 +322,6 @@ Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('cr
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
 
 Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
+
+// Families list under department page
+Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');

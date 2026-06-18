@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3'
 import Skeleton from 'primevue/skeleton'
 
 type User = {
@@ -62,10 +63,11 @@ defineProps<{
                 </div>
             </div>
             <div v-else-if="results?.users?.length">
-                <div
+                <Link
                     v-for="user in results.users"
                     :key="user.username"
-                    class="group p-4 rounded-xl border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer transition-all duration-150 mb-3"
+                    :href="route('grp.sysadmin.users.show', { user: user.username })"
+                    class="block group p-4 rounded-xl border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer transition-all duration-150 mb-3"
                 >
                     <div class="flex items-center justify-between">
                         <p class="text-sm font-semibold text-slate-900">{{ user.contact_name }}</p>
@@ -78,7 +80,7 @@ defineProps<{
                     </div>
                     <p class="text-xs text-gray-500 mt-1">{{ user.email }}</p>
                     <p class="text-xs text-gray-400 mt-2">@{{ user.username }}</p>
-                </div>
+                </Link>
             </div>
             <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">No users</div>
         </div>
@@ -94,15 +96,16 @@ defineProps<{
                 </div>
             </div>
             <div v-else-if="results?.guests?.length">
-                <div
+                <Link
                     v-for="guest in results.guests"
                     :key="guest.id"
-                    class="group p-4 rounded-xl border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer transition-all duration-150 mb-3"
+                    :href="route('grp.sysadmin.guests.show', { guest: guest.slug })"
+                    class="block group p-4 rounded-xl border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer transition-all duration-150 mb-3"
                 >
                     <p class="text-sm font-semibold text-slate-900">{{ guest.contact_name }}</p>
                     <p class="text-xs text-gray-500 mt-1">{{ guest.email }}</p>
                     <p class="text-xs text-gray-400 mt-2">Code: {{ guest.code }}</p>
-                </div>
+                </Link>
             </div>
             <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">No guests</div>
         </div>

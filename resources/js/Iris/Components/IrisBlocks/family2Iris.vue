@@ -44,60 +44,7 @@ const cleanedDescription = computed(() => {
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
 
-/* const trimmedDescription = computed(() => {
-  const html = cleanedDescription.value
 
-  if (typeof DOMParser === "undefined") {
-        return html
-  }
-
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(html, "text/html")
-
-  let count = 0
-  const limit = 400
-
-  const walk = (node: Node): boolean => {
-    if (count >= limit) {
-      node.parentNode?.removeChild(node)
-      return true
-    }
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || ""
-      const remaining = limit - count
-
-      if (text.length > remaining) {
-        node.textContent = text.slice(0, remaining) + "..."
-        count = limit
-        return true
-      }
-
-      count += text.length
-    }
-
-    const children = [...node.childNodes]
-
-    for (const child of children) {
-      if (walk(child)) {
-        const siblings = [...node.childNodes]
-        const index = siblings.indexOf(child)
-
-        siblings.slice(index + 1).forEach((sibling) => {
-          sibling.parentNode?.removeChild(sibling)
-        })
-
-        return true
-      }
-    }
-
-    return false
-  }
-
-  walk(doc.body)
-
-  return doc.body.innerHTML
-}) */
 
 const images = computed<FamilyImage[]>(() => {
   const data = props.fieldValue?.family?.description_image
@@ -183,12 +130,23 @@ const updateTitleSize = () => {
 const calculateDescriptionHeight = async () => {
   await nextTick()
 
-  if (!imageRef.value || !descriptionRef.value) {
-    return
+  if (!imageRef.value || !descriptionRef.value) return
+
+  const availableHeight = imageRef.value.offsetHeight - 125
+  const shouldShowReadMore =
+    descriptionRef.value.scrollHeight > availableHeight
+
+  if (maxDescriptionHeight.value !== availableHeight) {
+    maxDescriptionHeight.value = availableHeight
   }
 
-  maxDescriptionHeight.value = imageRef.value.offsetHeight
-  showReadMore.value = descriptionRef.value.scrollHeight > imageRef.value.offsetHeight - 110
+  if (showReadMore.value !== shouldShowReadMore) {
+    showReadMore.value = shouldShowReadMore
+  }
+
+  if (!shouldShowReadMore && expanded.value) {
+    expanded.value = false
+  }
 }
 
 onMounted(() => {
@@ -207,6 +165,10 @@ onMounted(() => {
   if (imageRef.value) {
     resizeObserver.observe(imageRef.value)
   }
+
+ /*  if (descriptionRef.value) {
+    resizeObserver.observe(descriptionRef.value)
+  } */
 })
 
 onUnmounted(() => {
@@ -240,12 +202,12 @@ const contentClass = computed(() =>
   <section :id="`family-2`" component="family-2-iris">
     <div class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1800px] 2xl:px-14" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue?.container?.properties),
+      ...getStyles(fieldValue?.container?.properties, screenType),
       width: 'auto'
     }">
       <div :class="contentClass">
         <!-- IMAGE SECTION -->
-        <div class="flex shrink-0 justify-center gap-[6px]">
+        <div class="flex shrink-0 items-start justify-center gap-[6px]">
           <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
             <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'"
@@ -388,7 +350,7 @@ const contentClass = computed(() =>
     2xl:text-[19px]
     overflow-hidden
   " ref="descriptionRef" :style="!expanded && showReadMore
-    ? { maxHeight: `${maxDescriptionHeight - 110}px` }
+    ? { maxHeight: `${maxDescriptionHeight}px` }
     : {}">
             <div v-html="cleanedDescription"></div>
 
@@ -438,7 +400,7 @@ const contentClass = computed(() =>
           2xl:px-12
           2xl:text-base
         " :style="{
-          ...getStyles(fieldValue?.button?.container?.properties)
+          ...getStyles(fieldValue?.button?.container?.properties, screenType)
         }">
                 {{ fieldValue?.button?.text || ctrans('Learn more') }}
               </button>

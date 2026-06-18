@@ -13,10 +13,12 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Group;
@@ -32,9 +34,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOffers extends OrgAction
 {
-    protected Group|Shop|OfferCampaign|ProductCategory $parent;
+    protected Group|Shop|OfferCampaign|ProductCategory|Customer $parent;
 
-    protected function getElementGroups(Group|Shop|OfferCampaign|ProductCategory $parent): array
+    protected function getElementGroups(Group|Shop|OfferCampaign|ProductCategory|Customer $parent): array
     {
         return [
             'state' => [
@@ -50,7 +52,7 @@ class IndexOffers extends OrgAction
         ];
     }
 
-    public function handle(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null, $filterByOfferType = null): LengthAwarePaginator
+    public function handle(Group|Shop|OfferCampaign|ProductCategory|Customer $parent, $prefix = null, $filterByOfferType = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -74,12 +76,35 @@ class IndexOffers extends OrgAction
         } elseif ($parent instanceof ProductCategory) {
             $query->where('offers.trigger_id', $parent->id);
             $query->where('offers.trigger_type', class_basename(ProductCategory::class));
+        } elseif ($parent instanceof Customer) {
+            $query->where('offers.trigger_id', $parent->id);
+            $query->where('offers.trigger_type', class_basename(Customer::class));
         } else {
             $query->where('offers.shop_id', $parent->id);
         }
 
         $query->leftjoin('shops', 'offers.shop_id', '=', 'shops.id');
         $query->leftjoin('offer_campaigns', 'offers.offer_campaign_id', '=', 'offer_campaigns.id');
+
+        $offerCreators = DB::table('audits')
+            ->join('users', 'users.id', '=', 'audits.user_id')
+            ->where('audits.auditable_type', 'Offer')
+            ->where('audits.event', 'created')
+            ->where('audits.user_type', 'User')
+            ->select([
+                'audits.auditable_id as offer_id', 
+                'users.contact_name as created_by'
+            ]);
+
+        $query->leftJoinSub($offerCreators, 'offer_creators', 'offer_creators.offer_id', '=', 'offers.id');
+
+        $firstAllowance = DB::table('offer_allowances')
+            ->selectRaw("DISTINCT ON (offer_id) offer_id, type AS allowance_type, class AS allowance_class, target_type AS allowance_target_type, (data->>'percentage_off')::numeric AS allowance_percentage_off, (data->>'category_id')::integer AS allowance_category_id")
+            ->where('type', '!=', 'unknown')
+            ->orderByRaw('offer_id, id');
+
+        $query->leftJoinSub($firstAllowance, 'fa', 'fa.offer_id', '=', 'offers.id');
+        $query->leftJoin('product_categories', DB::raw('product_categories.id'), '=', DB::raw('fa.allowance_category_id'));
 
         if ($this->bucket == 'active') {
             $query->where('offers.state', OfferStateEnum::ACTIVE);
@@ -108,6 +133,7 @@ class IndexOffers extends OrgAction
             'offers.code',
             'offers.name',
             'offers.type',
+            'offers.trigger_data',
             'offer_campaigns.slug as offer_campaign_slug',
             'shops.slug as shop_slug',
             'shops.name as shop_name',
@@ -116,6 +142,12 @@ class IndexOffers extends OrgAction
             'offers.duration',
             'offers.start_at',
             'offers.end_at',
+            'fa.allowance_type',
+            'fa.allowance_class',
+            'fa.allowance_target_type',
+            'fa.allowance_percentage_off',
+            'product_categories.name as allowance_category_name',
+            'offer_creators.created_by',
         ];
 
         $timeSeriesData = $query->withTimeSeriesAggregation(
@@ -152,9 +184,9 @@ class IndexOffers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null, $modelOperations = []): Closure
+    public function tableStructure(Group|Shop|OfferCampaign|ProductCategory|Customer $parent, $prefix = null, $modelOperations = [], bool $showActions = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $modelOperations, $parent) {
+        return function (InertiaTable $table) use ($prefix, $modelOperations, $parent, $showActions) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -183,6 +215,7 @@ class IndexOffers extends OrgAction
 
             $table->column(key: 'state', label: '', type: 'icon', sortable: false);
             $table->column(key: 'name', label: __('Name'), sortable: true);
+            $table->column(key: 'label', label: __('Label'), sortable: false);
             if ($parent instanceof ProductCategory) {
                 $table->column(key: 'type_icon', label: __('Type'), sortable: true, type: 'icon', );
             } else {
@@ -196,6 +229,12 @@ class IndexOffers extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), sortable: true);
                 $table->column(key: 'shop_name', label: __('Shop'), sortable: true);
+            }
+
+            $table->column(key: 'created_by', label: __('Created by'), sortable: false);
+
+            if ($showActions) {
+                $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
             }
 
             $table->defaultSort('id');

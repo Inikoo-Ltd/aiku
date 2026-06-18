@@ -1425,6 +1425,23 @@ trait WithEbayApiRequest
         }
     }
 
+    public function deleteFulfilmentPolicies($fulfilmentPolicyId)
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        try {
+            $endpoint = "/sell/account/v1/fulfillment_policy/$fulfilmentPolicyId";
+
+            return $this->makeEbayRequest('delete', $endpoint, [], [
+                'marketplace_id' => $marketplaceId
+            ]);
+        } catch (Exception $e) {
+            Log::error('Delete Fulfilment Policy Error: '.$e->getMessage());
+
+            return ['error' => $e->getMessage()];
+        }
+    }
+
     /**
      * Create a user's eBay payment policy
      *

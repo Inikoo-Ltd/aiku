@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, watch, onMounted, onUnmounted } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { debounce, get, set } from 'lodash-es'
 import { faChevronRight, faTrashAlt } from "@fal"
 import { faCheckCircle, faExclamationTriangle } from "@fas"
@@ -28,6 +27,7 @@ import { routeType } from '@/types/route'
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import MissedOfferFOB from '@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue'
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle, faExclamationTriangle)
 
 interface DataSideBasket {
@@ -39,6 +39,9 @@ interface DataSideBasket {
         has_extra_packing: boolean
         has_insurance: boolean
         voucher_code?: string | null
+    }
+    voucher: {
+        
     }
 }
 
@@ -55,11 +58,11 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout', retinaLayoutStructure)
 
 const open = ref(true)
 
 // Set the rightbasket value to local storage
-const layout = inject('layout', layoutStructure)
 const handleToggleLeftBar = () => {
     const xxx = layout.rightbasket?.show ?? false
     if (typeof window !== "undefined") {
@@ -409,7 +412,18 @@ onUnmounted(() => {
                 </div>
 
                 <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3 gap-x-3">
-                    <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                    <div v-if="offer.is_gift" :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full">
+                        <FontAwesomeIcon icon='fal fa-gift' class='opacity-60 mr-1' fixed-width aria-hidden='true' />
+                        <span class="font-bold">{{ ctrans('Gift') }}</span>:
+
+                        <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
+
+                        <span class="ml-2 xopacity-70">
+                            {{ offer.label }}
+                        </span>
+                    </div>
+                    <div v-else :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                         class="flex items-center whitespace-nowrap text-ellipsis truncate w-full">
                         <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)"
                             v-tooltip="offer.label" class="text-ellipsis truncate text-base">
@@ -427,8 +441,8 @@ onUnmounted(() => {
 
                     <!-- Section: meter -->
                     <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
-                        ? trans(`:xcurrent of :xtarget products amount`, { xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
-                        : trans('Bonus secured')" class="w-full flex items-center">
+                        ? trans(`:xcurrentx / :xtargetx  (Spend at least :xtargetx to get the offer)`, { xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
+                        : trans('Offer activated')" class="w-full flex items-center">
                         <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
                                 :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
@@ -618,6 +632,7 @@ onUnmounted(() => {
                     parameters: dataSideBasket?.order_data?.id
                 }
             }"
+            :currentGrossAmount="layout.iris_variables?.cart_amount_gross"
             @onRemove="fetchDataSideBasket(true)"
             @onApply="fetchDataSideBasket(true)"
             inIris

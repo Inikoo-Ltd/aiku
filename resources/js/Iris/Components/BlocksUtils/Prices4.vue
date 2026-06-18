@@ -106,7 +106,7 @@ const hasOffer =
 
 const showIntervalOffer = computed(() => {
     return getBestOfferfromComposable(props.product?.product_offers_data)?.type
-        === 'Category Quantity Ordered Order Interval' && webpage_data.sub_type != 'family'
+        === 'Category Quantity Ordered Order Interval' && webpage_data?.sub_type != 'family'
 })
 
 const quantityOrdered = computed(() =>
@@ -161,11 +161,11 @@ const _popoverProfit = ref(null)
 
 <template>
     <div
-        class="font-sans border-gray-200 mt-2 mb-1 px-0 tabular-nums leading-none text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
+    class="font-sans border-gray-200 mt-1 mb-[-2px] px-0 tabular-nums leading-none text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
 
         <!-- HEADER -->
         <div v-if="product?.rrp_per_unit ?? 0 > 0"
-            class="mb-2 flex items-center justify-between border-b border-gray-200 pb-2 text-[11px]">
+            class="mb-1 flex items-center justify-between border-b border-gray-200 pb-1 text-[11px]">
             <div class="flex items-center gap-2">
                 <span class="font-medium text-[#333]">
                     {{ product?.code }}
@@ -187,7 +187,7 @@ const _popoverProfit = ref(null)
                     <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
                 </span>
 
-                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-orange-600 border-orange-600">
+                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-[#E87928] border-[#E87928]">
                     {{ trans('RRP') }}:
                     <span class="font-medium">
                         {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
@@ -202,12 +202,12 @@ const _popoverProfit = ref(null)
 
 
         <!-- PRICE -->
-        <div class="flex flex-col gap-y-[0.2rem] 2xl:gap-y-0 ">
+       <div class="flex flex-col gap-y-0 2xl:gap-y-0 zoom-75">
 
-            <div class="relative grid items-center gap-x-2 w-full"
+            <div class="relative grid items-center gap-x-1 w-full"
                 :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                    ? 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,43%)] 2xl:grid-cols-[1fr_minmax(0,43%)]'
-                    : 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,43%)] 2xl:grid-cols-[1fr_minmax(0,43%)]'">
+                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'
+                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'">
 
                 <div class="font-semibold whitespace-nowrap">
                     <span>{{ trans("Price") }}</span>
@@ -248,7 +248,7 @@ const _popoverProfit = ref(null)
                         </div>
                     </template>
 
-                    <div v-if="!showMemberPrice" class="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2">
+                    <div v-if="!showMemberPrice" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
                         <div class="flex text-xs items-center justify-center rounded-full ">
                             <FontAwesomeIcon :icon="faCheck" />
                         </div>
@@ -258,10 +258,10 @@ const _popoverProfit = ref(null)
 
 
             <!-- GR PRICE -->
-            <div v-if="product.discounted_price" class="relative grid items-center gap-x-2 w-full"
+            <div v-if="product.discounted_price" class="relative grid items-center gap-x-2 w-full mt-2"
                 :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                    ? 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,43%)] 2xl:grid-cols-[1fr_minmax(0,43%)]'
-                    : 'grid-cols-[1fr_minmax(0,78px)] lg:grid-cols-[1fr_minmax(0,43%)] 2xl:grid-cols-[1fr_minmax(0,43%)]'">
+                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'
+                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'">
                 <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'">
                     <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" />
                 </div>
@@ -288,8 +288,8 @@ const _popoverProfit = ref(null)
 
 
                 <div v-if="bestOffer" class="font-medium text-right  min-w-0" :class="bestOfferClass">
-                    <div class="flex items-baseline justify-end gap-1 min-w-0">
-                        <div class="min-w-0 flex-1 truncate text-orange-600 border-orange-600">
+                    <div class="flex items-baseline justify-end gap-0.5 min-w-0">
+                        <div class="min-w-0 flex-1 truncate text-[#E87928] border-[#E87928]">
                             <span v-if="product.units == 1">{{ locale.currencyFormat(currency?.code,
                                 product.discounted_price) }}
                                 /{{ product.unit }}</span>
@@ -303,29 +303,57 @@ const _popoverProfit = ref(null)
                     </div>
                 </div>
 
-                <div v-if="showMemberPrice" class="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2">
+                <div v-if="showMemberPrice" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
                     <div class="flex text-xs items-center justify-center rounded-full text-primary">
                         <FontAwesomeIcon :icon="faCheck" />
                     </div>
                 </div>
             </div>
+
+
+            <!-- MEMBER -->
+            <div v-if="showIntervalOffer && !showMemberPrice"
+                class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] discount">
+                <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
+                    template="products_triggers_label" />
+            </div>
         </div>
     </div>
 
-    <!-- MEMBER -->
-    <div v-if="showIntervalOffer && !showMemberPrice"
-        class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] discount">
-        <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
-            template="products_triggers_label" />
-    </div>
+
 </template>
 
 
 <style scoped>
+.zoom-75 {
+    transform-origin: 0 0;
+    transform: scale(.9);
+    display: block;
+    width: calc(100% / .9);
+    height: calc(100% / .9);
+    box-sizing: border-box;
+}
+
+/* tablet ke atas */
+@media (min-width: 640px) {
+    .zoom-75 {
+        transform: scale(.75);
+        width: calc(100% / .75);
+        height: calc(100% / .75);
+    }
+}
+
+/* 2xl */
+@media (min-width: 1536px) {
+    .zoom-75 {
+        transform: scale(1);
+        width: 100%;
+        height: auto;
+    }
+}
+
 .discount :deep(.offer-trigger-label) {
-    @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs text-orange-600 border-orange-600;
-    /* border-color: var(--theme-color-4);
-    color: var(--theme-color-4); */
+    @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs text-[#E87928] border-[#E87928];    
 }
 
 .break-safe {

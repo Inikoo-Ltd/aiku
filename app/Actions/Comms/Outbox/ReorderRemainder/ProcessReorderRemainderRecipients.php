@@ -75,6 +75,6 @@ class ProcessReorderRemainderRecipients implements ShouldQueue
         );
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
     }
 }

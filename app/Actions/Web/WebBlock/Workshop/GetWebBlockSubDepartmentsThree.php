@@ -20,6 +20,7 @@ class GetWebBlockSubDepartmentsThree
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $webpage->model->name);
         return $this->getSubDepartmentsThree($webpage, $webBlock);
     }
 }
