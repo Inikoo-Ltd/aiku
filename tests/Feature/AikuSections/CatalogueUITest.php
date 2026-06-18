@@ -14,6 +14,9 @@ use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
+use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
@@ -585,6 +588,46 @@ test('UI edit Charges', function () {
             ->has('breadcrumbs', 3)
             ->has('pageHead')
             ->has('formData');
+    });
+});
+
+test('UI edit shop with related products description link', function () {
+    $masterShop = StoreMasterShop::make()->action($this->group, [
+        'code' => 'MS-'.uniqid(),
+        'name' => 'Master Shop',
+        'type' => ShopTypeEnum::DROPSHIPPING,
+    ]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'MD-'.uniqid(),
+        'name' => 'Master Department',
+    ]);
+
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'MF-'.uniqid(),
+        'name' => 'Master Family',
+    ]);
+
+    $this->shop->update([
+        'master_shop_id' => $masterShop->id,
+    ]);
+
+    $response = get(route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterShop, $masterFamily) {
+        $page
+            ->component('EditModel')
+            ->has(
+                'formData.blueprint.2.fields.related_product_follow_master',
+                fn (AssertableInertia $field) => $field
+                    ->where('type', 'toggle')
+                    ->where('description.2', 'You can setup the products listed in @manage_related_products@')
+                    ->where('descriptionLinks.manage_related_products.label', 'related products tab')
+                    ->where('descriptionLinks.manage_related_products.route.name', 'grp.masters.master_shops.show.master_families.show')
+                    ->where('descriptionLinks.manage_related_products.route.parameters.masterShop', $masterShop->slug)
+                    ->where('descriptionLinks.manage_related_products.route.parameters.masterFamily', $masterFamily->slug)
+                    ->where('descriptionLinks.manage_related_products.route.parameters.tab', 'related_products')
+            );
     });
 });
 
