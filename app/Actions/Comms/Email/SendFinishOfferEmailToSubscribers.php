@@ -60,7 +60,7 @@ class SendFinishOfferEmailToSubscribers extends OrgAction
                 'duration'               => $offer->duration->value,
                 'start_date'             => $offer->start_at?->format('F jS, Y') ?? 'N/A',
                 'end_date'               => $offer->end_at?->format('F jS, Y') ?? 'N/A',
-                'discount_type'          => $offer->offerAllowances->first()?->type->value ?? 'N/A',
+                'discount_type'          => $offer->offerAllowances->first()?->type->label() ?? 'N/A',
                 'blade_discount_details' => '',
                 'trigger_type'           => $offer->trigger_type ?? 'N/A',
                 'voucher'                => $offer->voucher ?? 'N/A',
