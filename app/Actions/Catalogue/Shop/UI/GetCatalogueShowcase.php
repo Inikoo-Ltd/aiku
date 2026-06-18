@@ -42,6 +42,7 @@ class GetCatalogueShowcase
                 $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug),
                 $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
                 $this->buildMissingDescriptionProductsStat($shop, $orgSlug, $shopSlug),
+                $this->buildProductsNotOnlineStat($shop, $orgSlug, $shopSlug),
             ];
         }
 
@@ -451,6 +452,26 @@ class GetCatalogueShowcase
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
             'value'           => $shop->stats->number_products_with_rrp_violation,
+        ];
+    }
+
+    private function buildProductsNotOnlineStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products not online'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.not_online_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-globe',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->products() // Todo: make stats
+                ->where('is_main', true)
+                ->whereNull('exclusive_for_customer_id')
+                ->where('is_for_sale', true)
+                ->where('has_live_webpage', false)
+                ->count(),
         ];
     }
 }
