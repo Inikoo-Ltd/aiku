@@ -717,6 +717,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('leave:generate-balances')->dailyAt('01:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'LeaveGenerateBalances',
+                ),
+                name: 'LeaveGenerateBalances',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 

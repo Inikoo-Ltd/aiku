@@ -164,6 +164,7 @@ const component = computed(() => {
 		:annualRemainingAfterSubmission="leaves?.annual_remaining_after_submission"
 		:medicalRequestCount="leaves?.medical_request_count"
 		:unpaidRequestCount="leaves?.unpaid_request_count"
+		:holidays="currentTab === 'leaves' ? (leaves?.holidays ?? []) : undefined"
 		:organisation="
 			currentTab === 'leaves'
 				? leaves?.organisation

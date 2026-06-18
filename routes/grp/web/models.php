@@ -276,6 +276,11 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockin
 use App\Actions\HumanResources\Employee\DeleteEmployee;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
+use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\LinkLeaveBalanceToContract;
+use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
+use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
 use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\JobPosition\DeleteJobPosition;
 use App\Actions\HumanResources\JobPosition\StoreJobPosition;
@@ -429,6 +434,17 @@ Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
     Route::patch('contract/upload', UploadEmployeeContract::class)->name('contract.upload');
     Route::patch('', UpdateEmployee::class)->name('update');
     Route::delete('', DeleteEmployee::class)->name('.delete');
+    Route::post('contracts', StoreEmployeeContract::class)->name('contracts.store');
+});
+
+Route::prefix('employee-contract/{contract:id}')->name('employee.contracts.')->group(function () {
+    Route::patch('', UpdateEmployeeContract::class)->name('update');
+    Route::delete('', DeleteEmployeeContract::class)->name('delete');
+    Route::post('generate-balance', GenerateEmployeeLeaveBalance::class)->name('generate_balance');
+});
+
+Route::prefix('employee-leave-balance/{balance:id}')->name('employee.leave_balance.')->group(function () {
+    Route::patch('link', LinkLeaveBalanceToContract::class)->name('link');
 });
 
 Route::prefix('workplace/{workplace:id}')->name('workplace.')->group(function () {

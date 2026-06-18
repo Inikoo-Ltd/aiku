@@ -373,6 +373,26 @@ test('UI Index catalogue product in discontinued', function () {
 });
 
 
+test('UI Index catalogue products not online', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.catalogue.products.not_online_products.index', [
+        $this->organisation->slug,
+        $this->shop->slug
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Catalogue/Products')
+            ->has('title')
+            ->has('pageHead')
+            ->has('data')
+            ->has('tabs')
+            ->has('index')
+            ->has('breadcrumbs', 4);
+    });
+});
+
+
 test('UI show product in department', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.catalogue.departments.show.products.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->product->slug]));

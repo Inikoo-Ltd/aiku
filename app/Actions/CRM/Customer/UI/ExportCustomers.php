@@ -10,26 +10,40 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
+use App\Enums\Helpers\Export\ExportTypeEnum;
 use App\Exports\CRM\CustomersExport;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportCustomers extends OrgAction
 {
     use WithExportData;
 
+    private const STREAM_THRESHOLD = 20000;
+
     /**
      * @throws \Throwable
      */
-    public function handle(Organisation|Shop $parent, array $modelData): BinaryFileResponse
+    public function handle(Organisation|Shop $parent, array $modelData): BinaryFileResponse|StreamedResponse
     {
         $type = $modelData['type'];
         $recipe = $modelData['filters'] ?? [];
 
-        return $this->export(new CustomersExport($parent, $recipe), 'customers', $type);
+        $export = new CustomersExport($parent, $recipe);
+
+        if ($type === ExportTypeEnum::XLSX->value && $export->query()->toBase()->count() < self::STREAM_THRESHOLD) {
+            return $this->export($export, 'customers', $type);
+        }
+
+        $query = $export->query()->toBase()
+            ->select($export->exportColumns())
+            ->orderBy('customers.id');
+
+        return $this->streamCsv($query, $export->headings(), 'customers');
     }
 
     public function rules(): array
@@ -44,7 +58,7 @@ class ExportCustomers extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
+    public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse|StreamedResponse
     {
         $this->initialisation($organisation, $request);
         return $this->handle($organisation, $this->validatedData);
@@ -53,7 +67,7 @@ class ExportCustomers extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): BinaryFileResponse
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): BinaryFileResponse|StreamedResponse
     {
         $this->initialisation($organisation, $request);
         return $this->handle($shop, $this->validatedData);
