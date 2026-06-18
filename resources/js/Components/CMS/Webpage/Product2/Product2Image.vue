@@ -14,7 +14,7 @@ import Image from "@common/Components/Image.vue"
 import Dialog from 'primevue/dialog'
 
 const props = defineProps<{
-  images: { source: string; thumbnail: string }[]
+  images: { source: string; thumbnail: string; alt: string }[]
   video?: string
 }>()
 
@@ -141,7 +141,7 @@ onBeforeUnmount(() => {
         >
           <Image
             :src="image.source"
-            :alt="`Image ${index + 1}`"
+            :alt="image.alt"
             class="w-full h-full object-cover"
           />
         </div>
@@ -202,7 +202,7 @@ onBeforeUnmount(() => {
         <div class="aspect-square bg-gray-100">
           <Image
             :src="image.source"
-            :alt="`Thumbnail ${index + 1}`"
+            :alt="image.alt || `Thumbnail ${index + 1}`"
             class="w-full h-full object-contain"
           />
         </div>
@@ -221,6 +221,7 @@ onBeforeUnmount(() => {
         <div v-if="!showVideoModal" class="w-full max-h-[80vh]">
           <Image
             :src="props.images[selectedIndex]?.source"
+            :alt="props.images[selectedIndex]?.alt || `Image ${selectedIndex + 1}`"
             :imageCover="true"
             :style="{ objectFit: 'contain' }"
           />

@@ -29,11 +29,15 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
             $order = StoreEcomOrder::make()->action($customer);
         }
 
-        $itemInBasket = $order->transactions->where('model_type', 'Product')->where('model_id', $product->id)->where('is_gift', false)->first();
-        if ($itemInBasket) {
-            return RetinaEcomUpdateTransaction::make()->action($itemInBasket, $customer, [
-                'quantity_ordered' => data_get($modelData, 'quantity')
-            ]);
+        $transaction = $order->transactions->where('model_type', 'Product')->where('model_id', $product->id)->where('is_gift', false)->first();
+        if ($transaction) {
+            return RetinaEcomUpdateTransaction::make()->action(
+                $transaction,
+                $customer,
+                [
+                    'quantity_ordered' => data_get($modelData, 'quantity')
+                ]
+            );
         }
 
         $historicAsset = $product->currentHistoricProduct;
@@ -59,7 +63,11 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
      */
     public function asController(Product $product, ActionRequest $request): Transaction
     {
-        $customer = $request->user()->customer;
+        $user = $request->user();
+        if (!$user) {
+            abort('422');
+        }
+        $customer = $user->customer;
         $this->initialisation($request);
 
         return $this->handle($customer, $product, $this->validatedData);
@@ -73,7 +81,7 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
     public function jsonResponse(Transaction $transaction): array
     {
         return [
-            'transaction_id'   => $transaction->id,
+            'transaction_id' => $transaction->id,
             'quantity_ordered' => (int)$transaction->quantity_ordered
         ];
     }

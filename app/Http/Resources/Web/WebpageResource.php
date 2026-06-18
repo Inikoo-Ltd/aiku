@@ -36,6 +36,7 @@ class WebpageResource extends JsonResource
 
         $productData           = null;
         $availabilityChecklist = null;
+        $department            = null;
         if ($webpage->model_type == 'Product') {
             /** @var Product $product */
             $product     = $webpage->model;
@@ -46,6 +47,9 @@ class WebpageResource extends JsonResource
                 'code'           => $product->code,
                 'name'           => $product->name,
                 'luigi_identity' => $product->getLuigiIdentity(),
+            ];
+            $department = [
+                'webpage_title' => $webpage->model?->family?->department?->webpage?->title,
             ];
 
             $availabilityChecklist = $this->getLuigiAvailabilityChecklist($product);
@@ -66,6 +70,7 @@ class WebpageResource extends JsonResource
             'url'                          => $webpage->getUrl(),
             'canonical_url'                => $webpage->canonical_url,
             'canonical_url_without_domain' => $webpage->getCanonicalUrl(),
+            'department'                   => $department,
             'type'                         => $webpage->type,
             'typeIcon'                     => match ($webpage->type) {
                 WebpageTypeEnum::STOREFRONT => ['fal', 'fa-home'],

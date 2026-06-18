@@ -97,6 +97,6 @@ class ProcessSendProspectMailshot
         UpdateMailshotRecipientsStoredAt::run($mailshot);
         MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds(5));
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
     }
 }

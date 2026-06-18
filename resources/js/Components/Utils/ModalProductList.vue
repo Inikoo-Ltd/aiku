@@ -156,11 +156,7 @@ const formProducts = useForm({
 })
 
 const notifySuccessProduct = (abc: string) => {
-	// notify({
-	// 	title: trans("Success!"),
-	// 	text: abc + trans("Product successfully axxxdded or updated."),
-	// 	type: "success",
-	// })
+
 }
 
 const notifyFailedProduct = () => {
@@ -420,7 +416,7 @@ watch(() => model.value, async (newValue) => {
 												</InputIcon>
 												<InputText
 													v-model="searchQuery"
-													placeholder="Search products"
+													:placeholder="trans('Search products')"
 													@input="onSearchQuery(searchQuery)"
 													class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
 											</IconField>

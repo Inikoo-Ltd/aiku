@@ -84,7 +84,6 @@ class IndexTransactions extends OrgAction
                 'transactions.discretionary_offer',
                 'transactions.discretionary_offer_label',
                 'transactions.is_cut_view',
-                // 'delivery_note_items.quantity_not_picked as dni_quantity_not_picked',
                 'assets.code as asset_code',
                 'assets.name as asset_name',
                 'assets.type as asset_type',

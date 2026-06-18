@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Tiktok\Order;
 use App\Actions\Dropshipping\Tiktok\Fulfilment\StoreTiktokFulfilmentOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\StoredItem;
@@ -79,17 +80,27 @@ class ValidateIncomingTiktokOrder extends RetinaAction
         }
 
         $lineItems = collect(Arr::get($order, 'line_items', []))
-            ->pluck('product_id')
+            ->pluck('sku_id')
             ->filter()
             ->toArray();
 
-        $hasOutProducts = DB::table('portfolios')
+        $portfolios = Portfolio::with('item')
             ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
-            ->whereIn('platform_product_id', $lineItems)
+            ->whereIn('platform_product_variant_id', $lineItems)
             ->where('item_type', class_basename(StoredItem::class))
-            ->exists();
+            ->get();
 
-        if ($hasOutProducts) {
+        $hasPallet = false;
+        foreach ($portfolios as $portfolio) {
+            /** @var StoredItem $storedItem */
+            $storedItem = $portfolio->item;
+
+            if ($storedItem->pallets->count() > 0) {
+                $hasPallet = true;
+            }
+        }
+
+        if (!blank($portfolios) && $hasPallet) {
             StoreTiktokFulfilmentOrder::run($tiktokUser, $order);
         }
     }

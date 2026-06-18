@@ -18,12 +18,10 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class PickAllItem extends OrgAction
 {
-    use AsAction;
     use WithAttributes;
 
     protected DeliveryNoteItem $deliveryNoteItem;
@@ -72,7 +70,7 @@ class PickAllItem extends OrgAction
             ],
             'picker_user_id'        => [
                 'required',
-                Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
+                Rule::Exists('users', 'id')->where('group_id', $this->group->id)
             ],
         ];
     }
@@ -91,14 +89,5 @@ class PickAllItem extends OrgAction
 
         $this->handle($deliveryNoteItem, $this->validatedData);
     }
-
-    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
-    {
-        $this->deliveryNoteItem = $deliveryNoteItem;
-        $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
-
-        return $this->handle($deliveryNoteItem, $this->validatedData);
-    }
-
 
 }

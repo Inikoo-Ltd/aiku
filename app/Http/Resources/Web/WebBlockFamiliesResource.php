@@ -27,7 +27,13 @@ class WebBlockFamiliesResource extends JsonResource
 
     public function toArray($request): array
     {
-        $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
+        $webImages = [];
+
+        if (is_array($this->web_images)) {
+            $webImages = $this->web_images;
+        } elseif (is_string($this->web_images)) {
+            $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
+        }
 
 
         return [

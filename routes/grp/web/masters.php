@@ -24,6 +24,7 @@ use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithMismatch;
 use App\Actions\Masters\MasterAsset\UI\UpdateMasterProductsBulkEdit;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterProductCategory\UI\ShowCreateMasterVariant;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithMissingChildDescription;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithNoFamily;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithNoPriceRRP;
 use App\Actions\Masters\MasterCollection\GetMasterCollectionsInMasterCollection;
@@ -321,6 +322,7 @@ Route::name("master_shops")->prefix('master-shops')
 
             Route::get('/master-products-orphan', [IndexMasterProductsWithNoFamily::class, 'inMasterShop'])->name('.master_products_orphan');
             Route::get('/master-products-no-price-rrp', [IndexMasterProductsWithNoPriceRRP::class, 'inMasterShop'])->name('.master_products_no_price_rrp');
+            Route::get('/master-products-missing-child-description', [IndexMasterProductsWithMissingChildDescription::class, 'inMasterShop'])->name('.master_products_missing_child_description');
 
             Route::prefix('master-collections')->as('.master_collections.')->group(function () {
                 Route::get('', IndexMasterCollections::class)->name('index');

@@ -84,7 +84,7 @@ console.log(props)
                     </thead>
 
                     <tbody class="divide-y">
-                        <tr v-for="tradeUnit in data.trade_units" :key="tradeUnit.id" class="hover:bg-gray-50">
+                        <tr v-for="tradeUnit in data?.trade_units || []" :key="tradeUnit.id" class="hover:bg-gray-50">
                             <td class="px-3 py-2">
                                 <Image v-if="tradeUnit.images?.[0]?.images" :src="tradeUnit.images[0].images"
                                     class="w-16 h-16 object-cover rounded" />

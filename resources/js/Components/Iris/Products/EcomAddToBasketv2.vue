@@ -252,6 +252,32 @@ const onManualInput = (e: Event) => {
     debouncedSync()
 }
 
+const isDecimalQty = computed(() => {
+    const qty = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
+    return qty % 1 !== 0
+})
+
+const numerator = computed(() => {
+    const qty = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
+    return Math.round(qty * (product.value.units ?? 1))
+})
+
+const onNumeratorInput = (e: Event) => {
+    const value = Number((e.target as HTMLInputElement).value)
+    if (Number.isNaN(value) || value < 0) return
+
+    const units = product.value.units ?? 1
+    const next = value / units
+
+    if (next > customer.value.stock) {
+        showWarning()
+        set(customer.value, ['quantity_ordered_new'], customer.value.stock)
+    } else {
+        set(customer.value, ['quantity_ordered_new'], next)
+    }
+    debouncedSync()
+}
+
 
 
 const disableDecrement = computed(() => {
@@ -274,7 +300,14 @@ watch(
                 <FontAwesomeIcon icon="fas fa-minus" />
             </button>
 
-            <input type="number" class="qty-input" :disabled="isLoadingSubmitQuantityProduct"
+            <!-- Fix this UI: make the denominator inside the same box with input -->
+            <template v-if="isDecimalQty">
+                <input type="number" class="qty-input" :disabled="isLoadingSubmitQuantityProduct"
+                    :value="numerator" @input="onNumeratorInput" />
+                <span class="opacity-70 xtext-sm select-none px-1">/{{ product.units }}</span>
+            </template>
+
+            <input v-else type="number" class="qty-input" :disabled="isLoadingSubmitQuantityProduct"
                 :value="customer.quantity_ordered_new ?? customer.quantity_ordered ?? 0" @input="onManualInput" />
 
             <button class="qty-btn" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
@@ -341,7 +374,7 @@ input[type='number'] {
 } */
 
 .qty-control {
-  @apply flex items-center border border-gray-200 rounded-lg overflow-hidden min-w-28 max-w-32;
+  @apply flex items-center border border-gray-200 rounded-lg overflow-hidden min-w-28 max-w-36;
 }
 
 .qty-btn {

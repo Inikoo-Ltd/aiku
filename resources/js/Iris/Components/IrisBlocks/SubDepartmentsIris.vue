@@ -220,8 +220,7 @@ const textVisible = computed<boolean>(() => {
 </script>
 
 <template>
-  <div v-if="mergedItems.length" class="mx-auto" :class="screenClass"
-    :id="fieldValue?.id ? fieldValue?.id : 'sub-department-1' + indexBlock" component="sub-department-1"
+  <div v-if="mergedItems.length" class="mx-auto" :id="'sub-department'"  :class="screenClass"
     :style="containerStyle">
     <div v-if="textVisible" v-html="title"></div>
     <div>

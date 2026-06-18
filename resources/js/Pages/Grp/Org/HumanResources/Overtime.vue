@@ -449,6 +449,12 @@ const submitRequest = () => {
                 </span>
             </template>
 
+            <template #cell(recorded_end_at)="{ item }">
+                <span class="whitespace-nowrap">
+                    {{ item.recorded_end_at ? useFormatTime(item.recorded_end_at, { formatTime: 'hm' }) : '—' }}
+                </span>
+            </template>
+
             <template #cell(requested_duration_minutes)="{ item }">
                 <span class="whitespace-nowrap">
                     {{ formatDuration(item.requested_duration_minutes) }}

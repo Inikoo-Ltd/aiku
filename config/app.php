@@ -313,5 +313,6 @@ return [
     ],
     'master'  => env('MASTER_SERVER', true),
     'slave'   => env('SLAVE_SERVER', true),
+    'devops_token' => env('DEVOPS_TOKEN')
 
 ];

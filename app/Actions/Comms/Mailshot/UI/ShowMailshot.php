@@ -12,6 +12,7 @@ use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
+use App\Actions\Helpers\TimeZone\UI\GetTimeZoneSelectOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Actions\UI\Marketing\MarketingHub;
@@ -301,6 +302,8 @@ class ShowMailshot extends OrgAction
                         'mailshot' => $mailshot->slug
                     ]
                 ],
+                'timeZoneOptions' => GetTimeZoneSelectOptions::run(),
+                'defaultShopTimezone' => $this->shop->timezone->name,
 
             ]
         )->table(

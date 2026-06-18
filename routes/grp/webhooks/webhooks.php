@@ -21,9 +21,10 @@ use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
+use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::name('webhooks.')->group(function () {
-    Route::post('sns', GetSnsNotification::class)->name('sns');
+    Route::post('sns', GetSnsNotification::class)->name('sns')->middleware(Sample::never());
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
 });
 
@@ -34,9 +35,7 @@ Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(func
     Route::post('app-uninstalled', WebhookUninstalledShopifyUser::class)->name('app_uninstalled');
     Route::any('products-deleted', CallbackProductDelete::class)->name('products_deleted');
     Route::any('products-updated', CallbackProductChanged::class)->name('products_updated');
-
 });
-
 
 
 Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {

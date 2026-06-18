@@ -10,10 +10,10 @@ namespace App\Http;
 
 use App\Http\Middleware\AcceptClientHintsMiddleware;
 use App\Http\Middleware\AddSentryBrowserProfilingHeader;
-use App\Http\Middleware\AddVaryHeader;
 use App\Http\Middleware\AddFrameOptionsHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
 use App\Http\Middleware\CorneaAuthenticate;
+use App\Http\Middleware\DevOpsAuthenticationMiddleware;
 use App\Http\Middleware\DisableSSR;
 use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\HandleCorneaInertiaRequests;
@@ -42,8 +42,6 @@ use App\Http\Middleware\HandleInertiaGrpRequests;
 use App\Http\Middleware\IrisRelaxAuthenticate;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
-use App\Http\Middleware\SetGrpApiTreblle;
-use App\Http\Middleware\SetRetinaApiTreblle;
 use App\Http\Middleware\SetWebUserLocale;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
@@ -70,7 +68,6 @@ use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Osiset\ShopifyApp\Http\Middleware\VerifyShopify;
-use Treblle\Laravel\Middlewares\TreblleMiddleware;
 
 class Kernel extends HttpKernel
 {
@@ -97,6 +94,14 @@ class Kernel extends HttpKernel
             AddFrameOptionsHeader::class
         ],
 
+        'devops' => [
+            ForceJsonResponse::class,
+            EnsureFrontendRequestsAreStateful::class,
+            SubstituteBindings::class,
+            AddFrameOptionsHeader::class,
+            DevOpsAuthenticationMiddleware::class
+        ],
+
         'bk-api' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
@@ -105,21 +110,17 @@ class Kernel extends HttpKernel
         ],
 
         'retina-api' => [
-            SetRetinaApiTreblle::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
 
         'grp-api' => [
-            SetGrpApiTreblle::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
             ApiBindGroupInstance::class,
-            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
 
@@ -157,7 +158,6 @@ class Kernel extends HttpKernel
             LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
         'two_fa'      => [
@@ -188,10 +188,17 @@ class Kernel extends HttpKernel
             AddFrameOptionsHeader::class
 
         ],
+        'analytics'   => [
+            DetectIrisWebsite::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            VerifyCsrfToken::class,
+        ],
         'iris'        => [
             DetectIrisWebsite::class,
             CheckWebsiteState::class,
-            //AddVaryHeader::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -202,7 +209,6 @@ class Kernel extends HttpKernel
             SetWebsiteLocale::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
             AddFrameOptionsHeader::class
         ],
@@ -210,7 +216,6 @@ class Kernel extends HttpKernel
             DisableSSR::class,
             DetectWebsite::class,
             CheckWebsiteState::class,
-            //AddVaryHeader::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -220,7 +225,6 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
             AddFrameOptionsHeader::class
         ],
@@ -248,7 +252,6 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandleCorneaInertiaRequests::class,
             //AddLinkHeadersForPreloadedAssets::class,
-            //InspectorOctaneMiddleware::class,
             AddFrameOptionsHeader::class
         ],
 
@@ -300,6 +303,5 @@ class Kernel extends HttpKernel
         'abilities'              => CheckAbilities::class,
         'ability'                => CheckForAnyAbility::class,
         'verify.shopify.webhook' => VerifyShopifyWebhook::class,
-        'treblle'                => TreblleMiddleware::class,
     ];
 }

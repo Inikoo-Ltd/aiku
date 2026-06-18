@@ -147,7 +147,7 @@ const isMobile = computed(() => isMobileRef.value)
                             icon="fa-regular fa-chevron-right" aria-hidden="true" />
                         <span> {{
                             breadcrumbs[breadcrumbs.length - 2].type === 'simple'
-                                ? breadcrumbs[breadcrumbs.length - 2].simple.short_label || breadcrumbs[breadcrumbs.length -
+                                ? breadcrumbs[breadcrumbs.length - 2].simple.label || breadcrumbs[breadcrumbs.length -
                                     2].simple.label
                             : breadcrumbs[breadcrumbs.length - 2].simple?.label
                             }}</span>
@@ -164,7 +164,7 @@ const isMobile = computed(() => isMobileRef.value)
                             </Transition>
         
                             <Transition name="spin-to-down">
-                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 sm:w-auto">{{ isMobile ?  breadcrumb.simple.short_label  :  breadcrumb.simple.label }}</div>
+                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 sm:w-auto">{{ breadcrumb.simple.label }}</div>
                             </Transition>
                         </component>
                     </template>

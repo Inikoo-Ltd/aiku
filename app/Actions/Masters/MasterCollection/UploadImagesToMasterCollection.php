@@ -22,6 +22,13 @@ class UploadImagesToMasterCollection extends GrpAction
     public function handle(MasterCollection $model, string $scope, array $modelData, bool $updateDependants = false): array
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
+
+        foreach ($medias as $media) {
+            $model->images()->updateExistingPivot($media->id, [
+                'caption' => $model->name,
+            ]);
+        }
+
         if ($updateDependants) {
             $this->updateDependants($model, $medias, $scope);
         }

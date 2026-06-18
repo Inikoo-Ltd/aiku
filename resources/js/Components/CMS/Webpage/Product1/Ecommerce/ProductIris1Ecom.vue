@@ -9,7 +9,6 @@ import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
-import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -305,13 +304,6 @@ console.log(props)
                 </div>       
 
                 <!-- PRICE -->
-                <!-- <ProductPrices
-                    :field-value="fieldValue"
-                    :key="product.code"
-                    :offers_data="customerData?.offers_data"
-                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
-                    :offer_price_per_unit="customerData?.offer_price_per_unit"
-                /> -->
 
                 <ProductPrices2
                     v-if="layout?.iris?.is_logged_in"

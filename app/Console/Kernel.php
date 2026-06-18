@@ -23,6 +23,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Discounts\Offer\ActivateScheduledOffers;
 use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
@@ -322,10 +323,19 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                $schedule->command('woo:update-inventory')->everyThreeHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'UpdateWooStockInventories',
                 ),
                 name: 'UpdateWooStockInventories',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('dropshipping:tiktok:product:inventory:update')->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'UpdateTiktokInventory',
+                ),
+                name: 'UpdateTiktokInventory',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
@@ -348,14 +358,14 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            $this->logSchedule(
-                $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'CheckShopifyPortfolios',
-                ),
-                name: 'CheckShopifyPortfolios',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
+            //            $this->logSchedule(
+            //                $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+            //                    monitorSlug: 'CheckShopifyPortfolios',
+            //                ),
+            //                name: 'CheckShopifyPortfolios',
+            //                type: 'command',
+            //                scheduledAt: now()->format('H:i')
+            //            );
 
             $this->logSchedule(
                 $schedule->command('shop-external:check-all-shop-connections')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
@@ -458,6 +468,16 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->job(ActivateScheduledOffers::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'ActivateScheduledOffers',
+                ),
+                name: 'ActivateScheduledOffers',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
 
             $this->logSchedule(
                 $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
@@ -677,6 +697,32 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'HydratePalletStoredItems',
                 ),
                 name: 'HydratePalletStoredItems',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+            $this->logSchedule(
+                $schedule->command('charge:hydrate-stats')->dailyAt('02:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ChargeHydrateStats',
+                ),
+                name: 'ChargeHydrateStats',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:outboxes')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydrateOutboxes',
+                ),
+                name: 'HydrateOutboxes',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('leave:generate-balances')->dailyAt('01:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'LeaveGenerateBalances',
+                ),
+                name: 'LeaveGenerateBalances',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

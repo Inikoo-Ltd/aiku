@@ -12,7 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
 use App\Actions\Discounts\OfferAllowance\SetOfferAllowanceAsPermanent;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
@@ -54,7 +54,7 @@ class SetOfferAsPermanent extends OrgAction
         ShopHydrateOffers::dispatch($offerCampaign->shop)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffers::dispatch($offerCampaign)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffersState::run($offer->offerCampaign);
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id);
+        RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id);
 
         return $offer;
     }

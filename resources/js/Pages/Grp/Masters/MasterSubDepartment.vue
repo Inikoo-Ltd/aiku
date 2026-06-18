@@ -36,6 +36,7 @@ import Breadcrumb from "primevue/breadcrumb"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
+import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 
 library.add(
     faFolder,
@@ -76,6 +77,7 @@ const props = defineProps<{
     images?: object
     sales?: object
     salesData?: object
+    related_product_category : object
     mini_breadcrumbs: any
 }>()
 
@@ -92,7 +94,8 @@ const component: Component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         images: ImagesManagement,
-        sales: ProductCategoryTimeSeriesTable
+        sales: ProductCategoryTimeSeriesTable,
+        related_product_category: RelatedProductCategory,
     }
     return components[currentTab.value]
 

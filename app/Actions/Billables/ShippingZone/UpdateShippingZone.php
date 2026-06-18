@@ -24,13 +24,13 @@ class UpdateShippingZone extends OrgAction
 
     public function handle(ShippingZone $shippingZone, array $modelData): ShippingZone
     {
-        return $this->update($shippingZone, $modelData, ['territories', 'price']);
+        return $this->update($shippingZone, $modelData, ['price']);
     }
 
     public function rules(): array
     {
         $rules = [
-            'code'        => [
+            'code'                                => [
                 'sometimes',
                 new IUnique(
                     table: 'shipping_zones',
@@ -43,12 +43,15 @@ class UpdateShippingZone extends OrgAction
                 'between:2,16',
                 'alpha_dash'
             ],
-            'name'        => ['sometimes', 'max:250', 'string'],
-            'status'      => ['sometimes', 'required', 'boolean'],
-            'price'       => ['sometimes', 'array'],
-            'territories' => ['sometimes', 'array'],
-            'position'    => ['sometimes', 'integer'],
-            'is_failover' => ['sometimes', 'boolean'],
+            'name'                                => ['sometimes', 'max:250', 'string'],
+            'status'                              => ['sometimes', 'required', 'boolean'],
+            'price'                               => ['sometimes', 'array'],
+            'territories'                         => ['sometimes', 'array'],
+            'territories.*.country_code'          => ['sometimes', 'string', 'exists:countries,code'],
+            'territories.*.included_postal_codes' => ['sometimes', 'string', 'nullable'],
+            'territories.*.excluded_postal_codes' => ['sometimes', 'string', 'nullable'],
+            'position'                            => ['sometimes', 'integer'],
+            'is_failover'                         => ['sometimes', 'boolean'],
 
         ];
 

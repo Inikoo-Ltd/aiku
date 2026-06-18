@@ -165,7 +165,7 @@ onMounted(() => {
             <input
                 v-model="search"
                 type="text"
-                placeholder="Search tags..."
+                :placeholder="trans('Search tags...')"
                 class="w-full px-3 py-1.5 text-xs rounded-md bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
             />
         </div>

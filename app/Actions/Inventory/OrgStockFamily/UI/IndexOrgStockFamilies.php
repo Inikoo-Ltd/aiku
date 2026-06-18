@@ -208,7 +208,7 @@ class IndexOrgStockFamilies extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'code', label: 'Code', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($sales) {
@@ -222,7 +222,7 @@ class IndexOrgStockFamilies extends OrgAction
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
-                    ->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
+                    ->column(key: 'number_current_org_stocks', label: __('SKUs'), canBeHidden: false, sortable: true)
                     ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKU)'), canBeHidden: false)
                     ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                     ->defaultSort('code');

@@ -24,6 +24,7 @@ use App\Actions\Ordering\Purge\UI\CreatePurge;
 use App\Actions\Ordering\Purge\UI\EditPurge;
 use App\Actions\Ordering\Purge\UI\IndexPurges;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
+use App\Actions\Ordering\UI\IndexTopCountriesInShop;
 use App\Actions\Ordering\UI\IndexWaitingCrmItemsGrouped;
 use App\Actions\Ordering\WaitingCrmItem\SetWaitingCrmItemAsNotPick;
 use App\Actions\Ordering\UI\ShowOrderingDashboard;
@@ -43,6 +44,7 @@ Route::get('/orders/', IndexOrders::class)->name('orders.index');
 
 Route::get('/orders/delivery_notes', IndexDeliveryNotesInOrdering::class)->name('delivery-notes.index');
 Route::get('/orders/couriers', IndexCouriersInShop::class)->name('couriers.index');
+Route::get('/orders/countries', IndexTopCountriesInShop::class)->name('countries.index');
 Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderingInShop'])->name('delivery-notes.show');
 Route::patch('delivery-note/{deliveryNote}/set-temp-picker', SetTempPickerToDeliveryNote::class)->name('orders.show.delivery-note.temp-picker');
 
@@ -71,6 +73,5 @@ Route::prefix('purges/{purge:id}')->group(function () {
 
 Route::name('return_delivery_notes.')->prefix('returns-dn')->group(function () {
     Route::get('/', [IndexReturnDeliveryNotes::class, 'inShop'])->name('index');
-
     Route::get('/{returnDeliveryNote}', [ShowReturnDeliveryNote::class, 'inShop'])->name('show');
 });

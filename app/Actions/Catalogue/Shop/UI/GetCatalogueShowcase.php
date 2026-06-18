@@ -41,6 +41,8 @@ class GetCatalogueShowcase
                 $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug),
                 $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
+                $this->buildMissingDescriptionProductsStat($shop, $orgSlug, $shopSlug),
+                $this->buildProductsNotOnlineStat($shop, $orgSlug, $shopSlug),
             ];
         }
 
@@ -135,27 +137,24 @@ class GetCatalogueShowcase
             'label' => __('Current Bundles'),
             'route' => [
                 'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
-                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'is_bundle' => true],
             ],
             'icon'  => 'fal fa-layer-group',
             "color" => "#4f46e5",
             'value'     => $shop->stats->number_bundles,
             'metas' => [
                 [
-                    "icon"    => [
-                        "tooltip" => "active",
-                        "icon"    => "fas fa-check-circle",
-                        "class"   => "text-green-500"
-                    ],
+                    "icon"    => ["icon"    => "fas fa-check-circle", "class"   => "text-green-500"],
                     "count"   => $shop->stats->number_bundles_state_active,
                     "tooltip" => "Active"
                 ],
                 [
-                    "icon"    => [
-                        "tooltip" => "discontinuing",
-                        "icon"    => "fas fa-times-circle",
-                        "class"   => "text-amber-500"
-                    ],
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
+                    'count'   => $shop->stats->number_bundles_state_inactive,
+                    'tooltip' => "Inactive"
+                ],
+                [
+                    "icon"    => ["icon"    => "fas fa-times-circle", "class"   => "text-amber-500"],
                     "count"   => $shop->stats->number_bundles_state_discontinuing,
                     "tooltip" => "Discontinuing"
                 ],
@@ -269,15 +268,29 @@ class GetCatalogueShowcase
 
     private function buildFamiliesStat(Shop $shop, string $orgSlug, string $shopSlug): array
     {
+        $familiesWithGr = $shop->productCategories()
+            ->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)
+            ->where('has_gr_vol_discount', true)
+            ->count();
+
         return [
-            'label' => __('Families'),
-            'route' => [
+            'label'     => __('Families'),
+            'route'     => [
                 'name'       => 'grp.org.shops.show.catalogue.families.index',
                 'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
             ],
-            'icon'  => 'fal fa-folder',
-            'color' => '#e879f9',
-            'value' => $shop->stats->number_current_families,
+            'icon'      => 'fal fa-folder',
+            'color'     => '#e879f9',
+            'value'     => $shop->stats->number_current_families,
+            'metaRight' => $shop->masterShop?->gold_reward_eligible ? [
+                'tooltip' => __('With Gold Reward'),
+                'icon'    => ['icon' => 'fal fa-medal', 'class' => 'text-amber-500'],
+                'count'   => $familiesWithGr,
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.catalogue.families.gr.index',
+                    'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                ],
+            ] : null,
             'metas' => [
                 [
                     'tooltip' => __('Active families'),
@@ -410,6 +423,23 @@ class GetCatalogueShowcase
         ];
     }
 
+    private function buildMissingDescriptionProductsStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products without description'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.missing_description_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-align-left',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->products()->where('is_main', true)->where(function ($q) {
+                $q->whereNull('description')->orWhere('description', '');
+            })->count(),
+        ];
+    }
+
     private function buildRRPViolationStat(Shop $shop, string $orgSlug, string $shopSlug): array
     {
         return [
@@ -422,6 +452,26 @@ class GetCatalogueShowcase
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
             'value'           => $shop->stats->number_products_with_rrp_violation,
+        ];
+    }
+
+    private function buildProductsNotOnlineStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products not online'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.not_online_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-globe',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->products() // Todo: make stats
+                ->where('is_main', true)
+                ->whereNull('exclusive_for_customer_id')
+                ->where('is_for_sale', true)
+                ->where('has_live_webpage', false)
+                ->count(),
         ];
     }
 }

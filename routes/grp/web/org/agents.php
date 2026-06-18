@@ -23,6 +23,8 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('assign.self');
     Route::patch('{chatSession:ulid}/assign', AssignChatToAgent::class)
         ->name('assign');
+    Route::patch('{chatSession:ulid}/takeover', [AssignChatToAgent::class, 'takeOver'])
+        ->name('takeover');
     Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
     Route::patch('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
 });

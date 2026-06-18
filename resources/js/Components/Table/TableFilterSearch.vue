@@ -56,7 +56,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
     <div class="rounded-md group relative h-7 flex" v-tooltip="label">
         <input
             id="tableinput"
-            placeholder="Type something.."
+            :placeholder="trans('Start typing...')"
             :value="querySearch"
             :xxxdisabled="isVisiting"
             type="text"

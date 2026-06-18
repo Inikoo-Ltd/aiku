@@ -92,7 +92,7 @@ class GetProductShowcase
                 OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'org_stocks'          => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'stats'               => $product->stats,
-            'images'              => $this->getImagesData($product),
+            'images'              => $this->getImagesData($product, true),
             'brand'               => $product->brand(),
             'tags'                => TagsResource::collection($product->tags)->toArray(request()),
             'main_image'          => $product->imageSources(),

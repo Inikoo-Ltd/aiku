@@ -98,6 +98,14 @@ class StoreOffer extends OrgAction
                     table: 'offers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
+                        [
+                            'column' => 'state',
+                            'value' => [
+                                OfferStateEnum::ACTIVE->value,
+                                OfferStateEnum::IN_PROCESS->value,
+                                OfferStateEnum::SUSPENDED->value,
+                            ],
+                        ],
                     ]
                 ),
 

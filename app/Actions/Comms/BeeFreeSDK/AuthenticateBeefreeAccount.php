@@ -85,4 +85,11 @@ class AuthenticateBeefreeAccount extends OrgAction
         $command->info('BeeFree authentication successful');
         $command->info(json_encode($result, JSON_PRETTY_PRINT));
     }
+
+    public function action(Organisation $organisation, array $modelData = []): array
+    {
+        $this->asAction = true;
+        $this->initialisation($organisation, $modelData);
+        return $this->handle($organisation, $modelData);
+    }
 }

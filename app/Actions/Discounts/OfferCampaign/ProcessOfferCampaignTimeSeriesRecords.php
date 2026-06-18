@@ -61,6 +61,8 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(OfferCampaignTimeSeries $timeSeries, string $from, string $to, int $offerCampaignId): void
     {
+        $processedPeriods = [];
+
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->join('invoice_transaction_has_offer_allowances as itoha', function ($join) use ($offerCampaignId) {
                 $join->on('itoha.invoice_transaction_id', '=', 'invoice_transactions.id')
@@ -100,6 +102,39 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
                     'discount_amount_external'       => $result->discount_amount_external,
                     'discount_org_currency_external' => $result->discount_org_currency_external,
                     'discount_grp_currency_external' => $result->discount_grp_currency_external,
+                ]
+            );
+
+            $processedPeriods[] = $period;
+        }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+    }
+
+    protected function processPeriodsWithoutInvoices(OfferCampaignTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'offer_campaign_time_series_id' => $timeSeries->id,
+                    'period'                        => $periodData['period'],
+                    'frequency'                     => $timeSeries->frequency->singleLetter()
+                ],
+                [
+                    'from'                           => $periodData['from'],
+                    'to'                             => $periodData['to'],
+                    'sales_external'                 => 0,
+                    'sales_org_currency_external'    => 0,
+                    'sales_grp_currency_external'    => 0,
+                    'customers_invoiced'             => 0,
+                    'invoices'                       => 0,
+                    'refunds'                        => 0,
+                    'orders'                         => 0,
+                    'discount_amount_external'       => 0,
+                    'discount_org_currency_external' => 0,
+                    'discount_grp_currency_external' => 0,
                 ]
             );
         }

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 27 May 2026 23:01:00 Indochina Time, Kuala Lumpur, Malaysia
@@ -13,7 +14,6 @@ use Laravel\Nightwatch\Http\Middleware\Sample;
 
 class BroadcastServiceProvider extends ServiceProvider
 {
-
     public function boot(): void
     {
         Broadcast::routes([

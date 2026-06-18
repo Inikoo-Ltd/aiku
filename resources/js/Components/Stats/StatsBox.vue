@@ -59,6 +59,8 @@ const isLoadingMetaRight = ref(false)
                 }' />
         </dd>
 
+        <div v-if="stat.subtitle" class="mt-1 text-sm font-medium text-gray-600 truncate">{{ stat.subtitle }}</div>
+
         <!-- Meta right -->
         <component
             v-if="stat.metaRight"
@@ -107,7 +109,7 @@ const isLoadingMetaRight = ref(false)
                 </template>
             </component>
         </div>
-        <div v-else class="mt-3">
+        <div v-else-if="!stat.subtitle" class="mt-3">
 
         </div>
     </component>

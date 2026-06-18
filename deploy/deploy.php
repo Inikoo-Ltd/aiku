@@ -257,7 +257,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
 
 set('keep_releases', 25);
 
-set('shared_dirs', ['storage', 'private']);
+set('shared_dirs', ['storage', 'private','local_storage']);
 set('shared_files', [
     'isdoc-pdf',
     'rgb.icc',

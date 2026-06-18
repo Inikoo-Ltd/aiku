@@ -163,7 +163,7 @@ const submitForm = () => {
                 :loading="isDownloadingCsv"
                 @click="downloadCsv"
             />
-            <Button type="create" label="Redirect" @click="openModal = true" />
+            <Button type="create" :label="trans('Redirect')" @click="openModal = true" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
@@ -177,13 +177,13 @@ const submitForm = () => {
         <slot name="modal" :closeModal="() => openModal = false">
             <div class="space-y-2">
                 <!-- Modal Title -->
-                <h2 class="text-xl font-semibold pb-2 border-b">Create Redirect</h2>
+                <h2 class="text-xl font-semibold pb-2 border-b">{{ trans("Create Redirect") }}</h2>
 
                 <!-- Form -->
                 <form @submit.prevent="submitForm" class="space-y-3">
                     <!-- From URL -->
                     <div>
-                        <div class="block text-sm font-medium py-2">From URL:</div>
+                        <div class="block text-sm font-medium py-2">{{ trans("From URL:") }}</div>
                         <PureInput
                             v-model="form.from_url"
                             placeholder="e.g. /old-page"
@@ -197,7 +197,7 @@ const submitForm = () => {
 
                     <!-- To URL -->
                     <div>
-                        <div class="block text-sm font-medium py-2">Target URL:</div>
+                        <div class="block text-sm font-medium py-2">{{ trans("Target URL:") }}</div>
                         <PureMultiselectInfiniteScroll
                             v-model="form.to_url"
                             :fetchRoute="route_redirects.fetch_live_webpages"

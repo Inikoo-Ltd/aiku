@@ -26,6 +26,9 @@ use App\Actions\HumanResources\Employee\GetEmployeesByBirthMonth;
 use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
 use App\Actions\HumanResources\Employee\GetEmployeeContract;
 use App\Actions\HumanResources\Employee\UI\CreateEmployee;
+use App\Actions\HumanResources\EmployeeContract\UI\CreateEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\UI\EditEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\UI\IndexEmployeeContracts;
 use App\Actions\HumanResources\Employee\UI\EditEmployee;
 use App\Actions\HumanResources\Employee\UI\IndexEmployees;
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
@@ -75,7 +78,6 @@ use App\Actions\HumanResources\HolidayYear\UI\IndexHolidayYears;
 use App\Actions\HumanResources\HolidayYear\StoreHolidayYear;
 use App\Actions\HumanResources\HolidayYear\UpdateHolidayYear;
 use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
-
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
 Route::prefix('employees')->as('employees.')->group(function () {
@@ -100,6 +102,10 @@ Route::prefix('employees')->as('employees.')->group(function () {
             Route::get('timesheets', [IndexTimesheets::class,'inEmployee'])->name('timesheets.index');
             Route::get('timesheets/export', ExportEmployeeTimesheets::class)->name('timesheets.export');
             Route::get('timesheets/{timesheet}', [ShowTimesheet::class, 'inEmployee'])->name('timesheets.show');
+
+            Route::get('contracts', IndexEmployeeContracts::class)->name('contracts.index');
+            Route::get('contracts/create', CreateEmployeeContract::class)->name('contracts.create');
+            Route::get('contracts/{contract}/edit', EditEmployeeContract::class)->name('contracts.edit');
         });
     });
 });
@@ -193,6 +199,7 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('print', [PrintCalendar::class, 'asController'])->name('print');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
+    Route::patch('{leave}/admin', UpdateLeave::class)->name('admin.update');
     Route::post('{leave}', UpdateLeave::class)->name('update');
     Route::delete('{leave}', DeleteLeave::class)->name('delete');
 });

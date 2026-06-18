@@ -322,7 +322,8 @@ export function useBundle(routes?: any) {
             ...baseParams,
             ...(bundleParamOverride ?? { bundle: bundleId })
         }
-
+        
+        if (!bundleId) return
         const { data } = await axios.get(route(routeConfig.name, routeParams))
         const payload = data?.data || data
         if (!payload) return

@@ -40,6 +40,7 @@ import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVarian
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
+import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 
 library.add(
     faFolder,
@@ -84,10 +85,12 @@ const props = defineProps<{
     price_rrp_warning_ratio : number
     mismatch_detected?: boolean
     related_products : object
+    related_product_category : object
     vol_gr_reward?: {
         show_gr_vol: boolean
         gr_vol_discount_quantity?: number
         gr_vol_discount_percentage?: number
+        missing_gr_children_count?: number
     }
 }>()
 const layout = inject("layout")
@@ -109,13 +112,13 @@ const component = computed(() => {
         images : ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
         variants: TableMasterVariants,
-        related_products: ProductCategoryRecomendation
+        related_products: ProductCategoryRecomendation,
+        related_product_category: RelatedProductCategory,
     }
     return components[currentTab.value] ?? ModelDetails
 })
 
 const showDialog = ref(false);
-
 
 </script>
 
@@ -188,9 +191,9 @@ const showDialog = ref(false);
             </template>
         </Breadcrumb>
         <Message v-if="mismatch_detected" :severity="'error'">
-            <FontAwesomeIcon 
-                :icon="faWarning" 
-                class="text-red-500 mr-1" 
+            <FontAwesomeIcon
+                :icon="faWarning"
+                class="text-red-500 mr-1"
             />
             {{ trans("One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units.") }}
         </Message>

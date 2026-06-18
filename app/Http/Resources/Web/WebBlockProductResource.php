@@ -109,7 +109,7 @@ class WebBlockProductResource extends JsonResource
             'web_images'        => $product->web_images,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
-            'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
+            'images'            => $product->bucket_images ? $this->getImagesData($product, true) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $product->is_on_demand,

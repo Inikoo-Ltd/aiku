@@ -40,6 +40,8 @@ class IndexEmailTemplates extends OrgAction
             ->where('email_templates.is_seeded', false)
             ->where('email_templates.builder', EmailTemplateBuilderEnum::BEEFREE->value)
             ->where('email_templates.state', EmailTemplateStateEnum::ACTIVE->value);
+        // ->whereNotNull('email_templates.compiled_layout')
+        // ->where('email_templates.compiled_layout', '!=', '');
         $queryBuilder
             ->select([
                 'email_templates.id',
@@ -50,6 +52,7 @@ class IndexEmailTemplates extends OrgAction
 
         return $queryBuilder
             ->allowedSorts(['created_at', 'name'])
+            ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -64,8 +67,8 @@ class IndexEmailTemplates extends OrgAction
                     ->pageName($prefix . 'Page');
             }
             $table->withGlobalSearch();
-            $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true);
-            $table->column(key: 'title', label: __('Title'), canBeHidden: false, sortable: true);
+            $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: false);
+            $table->column(key: 'name', label: __('Title'), canBeHidden: false, sortable: true);
             $table->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true);
             $table->column(key: 'actions', label: __('Action'));
             $table->defaultSort('-created_at');

@@ -41,6 +41,7 @@ const dataWebpage = usePage().props.webpage_data as {
     product_page?: {
         department?: {
             name: string
+            webpage_title: string
         }
     }
 }
@@ -67,7 +68,7 @@ const isProductLoading = (productId: string) => {
 const isFetched = ref(false)
 
 // if subType is 'department'
-const luigiTrendsDepartment = async (departmentName?: string) => {
+const luigiTrendsDepartment = async (departmentWebpageTitle?: string) => {
     const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
 
     const response = await axios.post(
@@ -75,11 +76,11 @@ const luigiTrendsDepartment = async (departmentName?: string) => {
         [
             {
                 size: 25,
-                widget_id: departmentName ? "product_recommendation" : "department_recommendation",
+                widget_id: departmentWebpageTitle ? "product_recommendation" : "department_recommendation",
                 auth_user_id: userId,
                 recommendation_context: [{
                     attribute: "department",
-                    values: [departmentName ?? usePage().props.webpage_data?.title],
+                    values: [departmentWebpageTitle ?? usePage().props.webpage_data?.title],
                     operator: "or"
                 }],
                 model: "department"
@@ -125,30 +126,30 @@ const luigiTrendsSubDepartment = async () => {
 }
 
 // If subType is 'family'
-const luigiTrendsCategory = async () => {
-    const urlWithoutDomain = new URL(dataWebpage?.canonical_url ?? '').pathname
-    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+// const luigiTrendsCategory = async () => {
+//     const urlWithoutDomain = new URL(dataWebpage?.canonical_url ?? '').pathname
+//     const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
     
-    const response = await axios.post(
-        `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
-        [
-            {
-                size: 25,
-                widget_id: "category_recommendation",
-                auth_user_id: userId,
-                identities: [urlWithoutDomain],
-                model: "category"
-            }
-        ],
-        {
-            headers: {
-                'Content-Type': 'application/json;charset=utf-8'
-            }
-        }
-    )
+//     const response = await axios.post(
+//         `https://live.luigisbox.tech/v2/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+//         [
+//             {
+//                 size: 25,
+//                 widget_id: "category_recommendation",
+//                 auth_user_id: userId,
+//                 identities: [urlWithoutDomain],
+//                 model: "category"
+//             }
+//         ],
+//         {
+//             headers: {
+//                 'Content-Type': 'application/json;charset=utf-8'
+//             }
+//         }
+//     )
 
-    return response
-}
+//     return response
+// }
 
 
 // global trends
@@ -187,21 +188,24 @@ const fetchRecommenders = async () => {
         isLoadingFetch.value = true
 
         const subType = dataWebpage?.sub_type
+
+        if (subType === 'family') {
+            console.warn('Trends is not available in Family page')
+            return
+        }
+        
         const response = await (
             subType === 'department' ? luigiTrendsDepartment() :
-            subType === 'product' ? luigiTrendsDepartment(dataWebpage?.product_page?.department?.name) :
+            subType === 'product' ? luigiTrendsDepartment(dataWebpage?.product_page?.department?.webpage_title) :
             subType === 'sub_department' ? luigiTrendsSubDepartment() :
-            // subType === 'family' ? luigiTrendsCategory() :
-            subType === 'family' ? Promise.reject(new Error('Trends is not available in Family page')) :
             luigiTrendsGlobal()
         )
-
 
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        // Send Analytics
+        // Luigi: Send Analytics
         if (layout.app.environment === 'production') {
             RecommendationCollector(response.data[0])
         }

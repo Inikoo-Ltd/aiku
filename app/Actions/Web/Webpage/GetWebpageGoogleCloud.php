@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 12-11-2024, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2024
  *
 */
@@ -23,23 +23,26 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Date;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class GetWebpageGoogleCloud extends OrgAction
 {
     use AsAction;
     use WithNoStrictRules;
 
+    private bool $saveSecret = false;
+
     private Website $website;
+
     /**
      * @throws \Throwable
      */
     public function handle(Webpage $webpage, array $modelData): array
     {
-
         $user = auth()->user();
 
 
-        $cacheKey = "ui_state-user:{$user->id};webpage:{$webpage->id};filter-webpage-analytics:" . md5(json_encode($modelData));
+        $cacheKey = "ui_state-user:$user->id;webpage:$webpage->id;filter-webpage-analytics:".md5(json_encode($modelData));
 
         $cachedData = cache()->get($cacheKey);
 
@@ -47,19 +50,20 @@ class GetWebpageGoogleCloud extends OrgAction
             return $cachedData;
         }
 
-        $settings = $webpage->group->settings;
+        $settings          = $webpage->group->settings;
         $oauthClientSecret = Arr::get($settings, 'gcp.oauthClientSecret');
         if (!$oauthClientSecret) {
             $oauthClientSecret = env("GOOGLE_OAUTH_CLIENT_SECRET");
             if (!$oauthClientSecret) {
-                debug("secret is empty \n");
+                Sentry::captureMessage("Secret is empty");
+
                 return [];
             }
             data_set($settings, "gcp.oauthClientSecret", $oauthClientSecret);
             $webpage->group->update(['settings' => $settings]);
         }
 
-        $client = new Client();
+        $client                      = new Client();
         $gcpOauthClientSecretDecoded = base64_decode($oauthClientSecret);
         $client->setAuthConfig(json_decode($gcpOauthClientSecretDecoded, true));
         $client->addScope(Webmasters::WEBMASTERS_READONLY);
@@ -84,12 +88,12 @@ class GetWebpageGoogleCloud extends OrgAction
             return '';
         }
         $websiteData = $webpage->website->data;
-        $siteUrl = Arr::get($websiteData, 'gcp.siteUrl');
+        $siteUrl     = Arr::get($websiteData, 'gcp.siteUrl');
         if (!$siteUrl) {
             try {
                 $siteEntry = $service->sites->listSites()->getSiteEntry();
-                $listSite = Arr::pluck($siteEntry, "siteUrl");
-                $siteUrl = Arr::where($listSite, function (string $value) use ($webpage) {
+                $listSite  = Arr::pluck($siteEntry, "siteUrl");
+                $siteUrl   = Arr::where($listSite, function (string $value) use ($webpage) {
                     return str_contains($value, $webpage->website->domain);
                 });
                 if (empty($siteUrl)) {
@@ -101,9 +105,10 @@ class GetWebpageGoogleCloud extends OrgAction
             } catch (ConnectException) {
                 return $this->getSiteUrl($webpage, $service, $retry - 1);
             } catch (Exception $e) {
-                debug($e);
+                Sentry::captureException($e);
             }
         }
+
         return $siteUrl;
     }
 
@@ -112,19 +117,19 @@ class GetWebpageGoogleCloud extends OrgAction
         if ($retry == 0) {
             return [];
         }
-        $query = new SearchAnalyticsQueryRequest();
-        $currentDate = Date::now()->setTimezone('UTC');
-        $query->startDate = Arr::get($modelData, 'startDate') ?? $currentDate->copy()->subWeek()->toDateString();
-        $query->endDate = Arr::get($modelData, 'endDate') ?? $currentDate->toDateString();
+        $query             = new SearchAnalyticsQueryRequest();
+        $currentDate       = Date::now()->setTimezone('UTC');
+        $query->startDate  = Arr::get($modelData, 'startDate') ?? $currentDate->copy()->subWeek()->toDateString();
+        $query->endDate    = Arr::get($modelData, 'endDate') ?? $currentDate->toDateString();
         $query->dimensions = ['date'];
         $query->searchType = Arr::get($modelData, 'searchType') ?? 'web';
-        $query->dataState = 'all';
+        $query->dataState  = 'all';
         if ($webpage->url) {
             $query->setDimensionFilterGroups([
                 "filters" => [
-                    "dimension" => "PAGE",
+                    "dimension"  => "PAGE",
                     "expression" => "/$webpage->url$",
-                    "operator" => "INCLUDING_REGEX"
+                    "operator"   => "INCLUDING_REGEX"
                 ]
             ]);
         }
@@ -134,14 +139,20 @@ class GetWebpageGoogleCloud extends OrgAction
         } catch (ConnectException) {
             return $this->getSearchAnalytics($webpage, $service, $siteUrl, $modelData, $retry - 1);
         } catch (Exception $e) {
-            debug($e);
+            Sentry::captureException($e);
+            $res = [];
         }
+
         return $res;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Webpage $webpage, ActionRequest $request): array
     {
         $this->initialisationFromShop($webpage->shop, $request);
+
         return $this->action($webpage, $this->validatedData);
     }
 
@@ -153,12 +164,15 @@ class GetWebpageGoogleCloud extends OrgAction
     public function rules(): array
     {
         return [
-            'startDate' => ['sometimes', 'date'],
-            'endDate' => ['sometimes', 'date'],
+            'startDate'  => ['sometimes', 'date'],
+            'endDate'    => ['sometimes', 'date'],
             'searchType' => ['sometimes']
         ];
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Webpage $webpage, array $modelData, bool $strict = true): array
     {
         $this->strict   = $strict;

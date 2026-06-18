@@ -13,6 +13,7 @@ use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
+use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\SysAdmin\User\StoreUser;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -69,11 +70,14 @@ class StoreEmployee extends OrgAction
 
         Arr::forget($modelData, ['username', 'password', 'reset_password', 'user_model_status']);
 
+        $contractData = Arr::only($modelData, ['contract_start_date', 'contract_end_date', 'annual_leave_days']);
+        Arr::forget($modelData, ['contract_start_date', 'contract_end_date', 'annual_leave_days']);
+
         $positions = Arr::get($modelData, 'positions', []);
         data_forget($modelData, 'positions');
         $positions = $this->reorganisePositionsSlugsToIds($positions);
 
-        $employee = DB::transaction(function () use ($parent, $modelData, $positions, $credentials, $contactAddressData) {
+        $employee = DB::transaction(function () use ($parent, $modelData, $positions, $credentials, $contactAddressData, $contractData) {
             /** @var Employee $employee */
             $employee = $parent->employees()->create($modelData);
             $employee->stats()->create();
@@ -113,6 +117,14 @@ class StoreEmployee extends OrgAction
             }
 
             SyncEmployeeJobPositions::run($employee, $positions);
+
+            if (!empty($contractData['contract_start_date'])) {
+                StoreEmployeeContract::run($employee, [
+                    'start_date'        => $contractData['contract_start_date'],
+                    'end_date'          => $contractData['contract_end_date'] ?? null,
+                    'annual_leave_days' => $contractData['annual_leave_days'] ?? null,
+                ]);
+            }
 
             return $employee;
         });
@@ -207,6 +219,9 @@ class StoreEmployee extends OrgAction
             'notes'                                   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'identity_document_type'                  => ['sometimes', 'nullable', 'string', 'max:256'],
             'identity_document_number'                => ['sometimes', 'nullable', 'string', 'max:256'],
+            'contract_start_date'                     => ['sometimes', 'nullable', 'date'],
+            'contract_end_date'                       => ['sometimes', 'nullable', 'date', 'after:contract_start_date'],
+            'annual_leave_days'                       => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:365'],
         ];
 
         if (!$this->strict) {

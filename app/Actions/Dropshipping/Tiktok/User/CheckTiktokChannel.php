@@ -27,12 +27,14 @@ class CheckTiktokChannel
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
         $tiktokShop = Arr::get($tiktokUser->getAuthorizedShop(), 'data.shops');
 
+        SaveShopDataTiktokChannel::run($tiktokUser);
+
         if (Arr::get($tiktokShop, '0')) {
             $canConnectToPlatform = true;
             $existInPlatform      = true;
         }
 
-        if (Arr::get($tiktokShop, '0') && $tiktokUser->tiktok_shop_id && $tiktokUser->tiktok_shop_chiper) {
+        if (Arr::get($tiktokShop, '0') && $tiktokUser->tiktok_shop_id && $tiktokUser->tiktok_shop_chiper && $tiktokUser->tiktok_warehouse_id) {
             $platformStatus       = true;
         }
 

@@ -9,13 +9,15 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
+use App\Actions\Discounts\Offer\UI\FinishOffer;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithStoreOffer;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ProductCategory;
@@ -28,12 +30,12 @@ class UpdateOffer extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithStoreOffer;
 
     private Offer $offer;
 
     public function handle(Offer $offer, array $modelData): Offer
     {
-
         $newTriggerData = null;
         if (isset($modelData['trigger_data_item_quantity'])) {
             $newTriggerData = array_merge(
@@ -137,12 +139,26 @@ class UpdateOffer extends OrgAction
             $modelData['trigger_data'] = $newTriggerData;
             unset($modelData['edit_offer_trigger']);
         }
+
+        // Section: prepare Offer Date
+        $modelData = $this->prepareOfferDate($offer, $modelData);
+
         // dd($modelData);
 
         $offer = $this->update($offer, $modelData);
 
+        if ($offer->wasChanged(['start_at', 'end_at'])) {
+            if (now()->gt($offer->start_at)) {
+                ActivateOffer::run($offer);
+            }
+
+            if (now()->gt($offer->end_at)) {
+                FinishOffer::run($offer);
+            }
+        }
+
         if ($offer->wasChanged(['name'])) {
-            RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop->id);
+            RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop->id);
         }
 
         if ($offer->wasChanged(['label']) && $this->offer->trigger instanceof ProductCategory) {

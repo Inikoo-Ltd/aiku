@@ -7,6 +7,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
@@ -29,8 +30,10 @@ class GetChatSessions
                 'in:' . implode(',', array_column(ChatSessionStatusEnum::cases(), 'value'))
             ],
             'assigned_to_me' => ['sometimes', 'integer'],
-            'limit' => ['sometimes', 'integer', 'min:1', 'max:50'],
-            'web_user_id' => ['sometimes', 'integer', 'exists:web_users,id'],
+            'view_team'       => ['sometimes', 'boolean'],
+            'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
+            'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
+            'search'          => ['sometimes', 'string', 'max:100'],
         ];
     }
 
@@ -69,27 +72,35 @@ class GetChatSessions
         }
 
         if (!empty($filters['assigned_to_me'])) {
-
-            $userId = (int) $filters['assigned_to_me'];
-
+            $userId       = (int) $filters['assigned_to_me'];
             $currentAgent = $this->getCurrentAgent($userId);
 
-            if (!empty($filters['assigned_to_me'])) {
+            if ($currentAgent) {
+                $shopIds = $currentAgent->shops()->pluck('shops.id');
 
-                $userId = (int) $filters['assigned_to_me'];
+                if (!empty($filters['view_team'])) {
+                    $teamAgentIds = ChatAgent::whereHas('shops', function ($q) use ($shopIds) {
+                        $q->whereIn('shops.id', $shopIds);
+                    })->where('id', '!=', $currentAgent->id)->pluck('id');
 
-                $currentAgent = $this->getCurrentAgent($userId);
+                    $requestedStatuses = (array) ($filters['statuses'] ?? ($filters['status'] ? [$filters['status']] : []));
+                    $isClosed          = in_array('closed', $requestedStatuses);
+                    $assignmentStatus  = $isClosed
+                        ? ChatAssignmentStatusEnum::RESOLVED->value
+                        : ChatAssignmentStatusEnum::ACTIVE->value;
 
-                if ($currentAgent) {
-                    $shopIds = $currentAgent->shops()->pluck('shops.id');
+                    $query->whereHas('assignments', function ($assignmentQ) use ($teamAgentIds, $assignmentStatus) {
+                        $assignmentQ->whereIn('chat_agent_id', $teamAgentIds)
+                            ->where('status', $assignmentStatus);
+                    });
+                } else {
                     $query->where(function ($q) use ($currentAgent, $shopIds) {
                         $q->where(function ($sub) use ($shopIds) {
                             $sub->whereIn('shop_id', $shopIds)
                                 ->where('status', ChatSessionStatusEnum::WAITING);
-                        })
-                            ->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent) {
-                                $assignmentQ->where('chat_agent_id', $currentAgent->id);
-                            });
+                        })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent) {
+                            $assignmentQ->where('chat_agent_id', $currentAgent->id);
+                        });
                     });
                 }
             }
@@ -97,6 +108,19 @@ class GetChatSessions
 
         if (isset($filters['web_user_id'])) {
             $query->where('web_user_id', $filters['web_user_id']);
+        }
+
+        if (!empty($filters['search'])) {
+            $term = mb_strtolower($filters['search']);
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER(chat_sessions.guest_identifier COLLATE "C") LIKE ?', ["%{$term}%"])
+                    ->orWhereHas('webUser', function ($q2) use ($term) {
+                        $q2->whereRaw('LOWER(username COLLATE "C") LIKE ?', ["%{$term}%"])
+                            ->orWhereHas('customer', function ($q3) use ($term) {
+                                $q3->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"]);
+                            });
+                    });
+            });
         }
 
         return $query->paginate($filters['limit'] ?? 20);

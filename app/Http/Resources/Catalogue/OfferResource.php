@@ -22,6 +22,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property string $name
+ * @property mixed $duration
+ * @property mixed $start_at
+ * @property mixed $end_at
+ * @property mixed $trigger_type
+ * @property mixed $trigger_data
+ * @property mixed $allowance_signature
+ * @property mixed $settings
+ * @property mixed $type
  *
  */
 class OfferResource extends JsonResource
@@ -32,7 +40,7 @@ class OfferResource extends JsonResource
         $offer = $this->resource;
 
         preg_match('/percentage_off:([0-9]*\.?[0-9]+)/', $this->allowance_signature, $matches);
-        $percentage_off = isset($matches[1]) ? $matches[1] : null;
+        $percentage_off = $matches[1] ?? null;
 
         preg_match('/^all_products_in_product_category(?::(\d+))?:/', $this->allowance_signature, $m);
         $productCategory = isset($m[1]) ? ProductCategory::find($m[1]) : null;
@@ -43,10 +51,10 @@ class OfferResource extends JsonResource
         $customOfferData = [
             'shop_id'                  => $this->shop_id,
             'offer_campaign_id'        => $this->offer_campaign_id,
-            'offer_campaign'           => $this->offerCampaign ? [
-                'id'   => $this->offerCampaign->id,
-                'slug' => $this->offerCampaign->slug,
-                'name' => $this->offerCampaign->name,
+            'offer_campaign'           => $offer->offerCampaign ? [
+                'id'   => $offer->offerCampaign->id,
+                'slug' => $offer->offerCampaign->slug,
+                'name' => $offer->offerCampaign->name,
             ] : null,
             'slug'                     => $this->slug,
             'type'                     => $this->type,

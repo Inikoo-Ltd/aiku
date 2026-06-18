@@ -12,6 +12,7 @@ namespace App\Actions\Fulfilment\StoredItem;
 use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Fulfilment\PalletStoredItem;
@@ -54,6 +55,9 @@ class AttachStoredItemToReturn extends OrgAction
 
                 $existingPalletReturnItem->update($updateData);
             } else {
+                if ($palletStoredItem->storedItem->state === StoredItemStateEnum::DISCONTINUED) {
+                    throw ValidationException::withMessages(['quantity_ordered' => __('The SKU ":reference" is :state and cannot be added to a return.', ['reference' => $palletStoredItem->storedItem->reference, 'state' => $palletStoredItem->storedItem->state->labelGenerated()])]);
+                }
                 $palletReturn->storedItems()->attach(
                     [
                         $palletStoredItem->storedItem->id => [

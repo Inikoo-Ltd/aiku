@@ -10,7 +10,9 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Discounts\OfferAllowance\SuspendOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\CleanFinishedVouchers;
+use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -22,9 +24,18 @@ class SuspendOffer extends OrgAction
 {
     use WithActionUpdate;
 
-
     public function handle(Offer $offer): Offer
     {
+        if ($offer->state == OfferStateEnum::SUSPENDED || $offer->state == OfferStateEnum::FINISHED) {
+            return $offer;
+        }
+
+        if ($offer->state != OfferStateEnum::ACTIVE) {
+            abort(422);
+        }
+
+        $currentStatus = $offer->status;
+
         $modelData = [
             'state'             => OfferStateEnum::SUSPENDED,
             'status'            => false,
@@ -42,11 +53,24 @@ class SuspendOffer extends OrgAction
         $offer->update($modelData);
         OfferCampaignHydrateOffersState::run($offer->offerCampaign);
 
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id);
+        if ($currentStatus != $offer->status) {
+            if ($offer->voucher) {
+                CleanFinishedVouchers::run($offer->id);
+            }
+
+            if ($offer->trigger_type == 'ProductCategory') {
+                UpdateProductCategoryOffersData::run($offer);
+            }
+
+            if ($offer->customer_id) {
+                RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay(now()->addSeconds(10));
+            } else {
+                RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
+            }
+        }
 
         return $offer;
     }
-
 
     public function asController(Offer $offer, ActionRequest $request): Offer
     {

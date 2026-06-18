@@ -10,9 +10,12 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Discounts\Offer;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -161,6 +164,32 @@ class EditFamily extends OrgAction
                                 ]
                             ],
                             [
+                                'label'  => __('FAQ'),
+                                'icon'   => 'fa-light fa-question-circle',
+                                'fields' => [
+                                    'faq' => $family->masterProductCategory
+                                        ? [
+                                            'type'          => 'faq-shop',
+                                            'label'         => __('FAQ'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'noSaveButton'  => true,
+                                            'main'          => $family->masterProductCategory->faq,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $family->faq,
+                                            'toogle'        => [
+                                               'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
+                                        ]
+                                        : [
+                                            'type'  => 'faq-shop',
+                                            'label' => __('FAQ'),
+                                            'value' => $family->faq,
+                                        ],
+                                ]
+                            ],
+                            [
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
@@ -221,9 +250,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                  'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
                                         : [
@@ -242,9 +269,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                  'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
                                     'description_extra' => $family->masterProductCategory
@@ -267,9 +292,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                               'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
                                         : [
@@ -288,9 +311,7 @@ class EditFamily extends OrgAction
                                                     ]
                                             ],
                                             'toogle'  => [
-                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                 'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
                                 ]
@@ -360,18 +381,7 @@ class EditFamily extends OrgAction
                                 ],
 
                             ],
-// todso this is wrong
-//                            [
-//                                'label'  => __('Discounts'),
-//                                'icon'   => 'fa-light fa-badge-percent',
-//                                'fields' => [
-//                                    'offers_data'      => [
-//                                        'label'  => 'Offer List',
-//                                        'value'  =>  $family->offers_data,
-//                                        'type'   =>  'offer_fields'
-//                                    ]
-//                                ],
-//                            ],
+                            $this->grVolSection($family),
                         ]
                     ),
                     'args'      => [
@@ -387,6 +397,48 @@ class EditFamily extends OrgAction
         );
     }
 
+
+    private function grVolSection(ProductCategory $family): ?array
+    {
+        if (!$family->masterProductCategory?->masterShop?->gold_reward_eligible) {
+            return null;
+        }
+
+        $existingOffer = null;
+        if (!$family->follow_master_gr) {
+            $existingOffer = Offer::where('trigger_id', $family->id)
+                ->where('trigger_type', class_basename(ProductCategory::class))
+                ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
+                ->where('state', OfferStateEnum::ACTIVE)
+                ->with('offerAllowances')
+                ->first();
+        }
+
+        $fields = [
+            'follow_master_gr' => [
+                'type'  => 'toggle',
+                'label' => __('Follow Master GR'),
+                'value' => $family->follow_master_gr,
+            ],
+        ];
+
+        if (!$family->follow_master_gr) {
+            $fields['vol_gr_offer'] = [
+                'type'          => 'vol_discount',
+                'label'         => __('Gold Reward Offer'),
+                'initial_value' => [
+                    'item_quantity'  => $existingOffer ? (int) data_get($existingOffer->trigger_data, 'item_quantity', 0) : 0,
+                    'percentage_off' => $existingOffer ? (float) data_get($existingOffer->offerAllowances->first()?->data, 'percentage_off', 0) * 100 : 0,
+                ],
+            ];
+        }
+
+        return [
+            'label'  => __('Gold Reward'),
+            'icon'   => 'fa-light fa-medal',
+            'fields' => $fields,
+        ];
+    }
 
     public function getBreadcrumbs(ProductCategory $family, string $routeName, array $routeParameters): array
     {

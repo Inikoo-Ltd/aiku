@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { routeType } from '@/types/route';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faInfoCircle, faSave } from "@fas";
+import { faInfoCircle, faSave, faExclamationTriangle } from "@fas";
 import Message from "primevue/message";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAlbumCollection, faEdit } from "@fal";
+import { faAlbumCollection, faEdit, faStarfighter } from "@fal";
 import { faPlus } from "@far";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
@@ -19,7 +19,7 @@ import { ref } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue';
 
-library.add(faAlbumCollection);
+library.add(faAlbumCollection, faStarfighter);
 
 const props = withDefaults(defineProps<{
     data: {
@@ -38,15 +38,20 @@ const props = withDefaults(defineProps<{
         }
         is_shop_gr_active?: boolean
         gr_offer_data?: any
+        follow_master_gr?: boolean
+        tags: Array<any>
     },
     master_vol_gr_reward?: {
         show_gr_vol: boolean
         gr_vol_discount_quantity: number
         gr_vol_discount_percentage: number
+        missing_gr_children_count?: number
+        missing_gr_route?: { name: string, parameters: Record<string, any> }
     }
     salesData?: object
     actions?: any
     isMaster?: boolean
+
 }>(), {
     // Default values
     isMaster: false,
@@ -136,10 +141,11 @@ const saveGROffer = () => {
         }
     )
 }
-
+console.log(props)
 </script>
 
 <template>
+   
     <div v-if="data.webpage_url"
 		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
 		<div class="flex items-center gap-2 text-blue-700 text-sm">
@@ -178,6 +184,12 @@ const saveGROffer = () => {
 
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                <dd v-if="data.tags && data.tags.length > 0" class="font-medium flex flex-wrap gap-1 pb-3">
+                    <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
+                        class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+                        {{ tag.name }}
+                    </span>
+                </dd>
                 <ProductCategoryCard :data="data.family?.data"  />
             </div>
 
@@ -186,14 +198,14 @@ const saveGROffer = () => {
                     <div class="mb-1 font-bold">
                         {{ trans("Active Gold Reward offer") }}: 
                     </div>
-                    <div 
-                        v-if="props.master_vol_gr_reward?.gr_vol_discount_percentage" 
-                        @click="openModalMasterGROffer" 
-                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold flex cursor-pointer" 
+                    <div
+                        v-if="props.master_vol_gr_reward?.gr_vol_discount_percentage"
+                        @click="openModalMasterGROffer"
+                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold flex cursor-pointer"
                     >
                         <div class="grid w-72">
                             <div class="flex">
-                                {{ trans('Trigger Quantity') }} 
+                                {{ trans('Trigger Quantity') }}
                                 <span class="ml-auto w-24">
                                     : {{ props.master_vol_gr_reward?.gr_vol_discount_quantity }} Qty
                                 </span>
@@ -201,20 +213,28 @@ const saveGROffer = () => {
                             <div class="flex">
                                 {{ trans('Discount Percentage') }}
                                 <span class="ml-auto w-24">
-                                    : {{ props.master_vol_gr_reward?.gr_vol_discount_percentage }} %
+                                    : {{ parseFloat(props.master_vol_gr_reward?.gr_vol_discount_percentage as any) }} %
                                 </span>
                             </div>
                         </div>
                         <FontAwesomeIcon :icon="faEdit" class="ml-auto my-auto text-amber-500"/>
                     </div>
-                    <div 
+                    <div
                         v-else
-                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold text-white bg-gradient-to-br from-amber-300 to-amber-500 cursor-pointer" 
+                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold text-white bg-gradient-to-br from-amber-300 to-amber-500 cursor-pointer"
                         @click="openModalMasterGROffer"
                     >
                         <FontAwesomeIcon :icon="faPlus" />
                         {{ trans('Add Master GR Offer') }}
                     </div>
+                    <Link
+                        v-if="master_vol_gr_reward?.missing_gr_children_count && master_vol_gr_reward?.missing_gr_route"
+                        :href="route(master_vol_gr_reward.missing_gr_route.name, master_vol_gr_reward.missing_gr_route.parameters)"
+                        class="mt-1 text-sm text-yellow-600 flex items-center gap-1 hover:text-yellow-700"
+                    >
+                        <FontAwesomeIcon :icon="faExclamationTriangle" />
+                        {{ master_vol_gr_reward.missing_gr_children_count }} {{ trans("shop family missing Gold Reward offer") }}
+                    </Link>
                     <Dialog v-model:visible="isOpenModalMasterGROffer" modal header="Gold Reward Offer" :style="{ width: '50rem' }" closable :draggable="false" dismissableMask closeOnEscape>
                         <InputVolDiscount
                             :form="grOfferForm"
@@ -240,7 +260,17 @@ const saveGROffer = () => {
                             {{ data.gr_offer_data?.label }}
                         </Link>
                     </div>
-                    <FamilyOfferLabelDiscount :offer="data.gr_offer_data" />
+                    <div class="flex items-center gap-x-2">
+                        <FamilyOfferLabelDiscount :offer="data.gr_offer_data" :not-follow-master="data.follow_master_gr === false" />
+                        <FontAwesomeIcon
+                            v-if="data.follow_master_gr === false"
+                            :icon="faStarfighter"
+                            v-tooltip="trans('Not following master GR')"
+                            class="text-xl text-red-500"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                    </div>
                 </template>
             </div>
 

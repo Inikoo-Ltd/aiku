@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 02-07-2025-15h-20m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -46,7 +46,7 @@ class SettleRetinaOrderWithBalance extends RetinaAction
         }
 
         $amountToPay = $order->total_amount - $order->payment_amount;
-        $amount = 0;
+
         if ($customer->balance < $amountToPay) {
             $amount = $customer->balance;
         } else {
@@ -67,7 +67,7 @@ class SettleRetinaOrderWithBalance extends RetinaAction
                 'amount' => $amount
             ]);
 
-            $order = UpdateOrder::make()->action(order: $order, modelData:[
+            $order = UpdateOrder::make()->action(order: $order, modelData: [
                 'payment_amount' => $order->payments->sum('amount')
             ], strict: false);
 

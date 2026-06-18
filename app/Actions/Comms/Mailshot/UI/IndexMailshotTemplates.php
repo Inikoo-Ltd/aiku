@@ -54,6 +54,7 @@ class IndexMailshotTemplates extends OrgAction
                 'email_templates.state',
                 'email_templates.created_at',
                 'email_templates.updated_at',
+                'email_templates.compiled_layout'
             ])
             ->allowedSorts(['state', 'name', 'created_at'])
             ->allowedFilters([$globalSearch])

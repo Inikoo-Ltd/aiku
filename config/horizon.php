@@ -217,6 +217,21 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'hydrators-slave-low-priority'      => [
+            'connection'      => 'redis',
+            'queue'           => ['hydrators-slave-low-priority'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 2,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 10,
+            'timeout'         => 3600,
+            'retry_after'     => 2,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'aurora'               => [
             'connection'      => 'redis',
             'queue'           => ['aurora'],
@@ -338,7 +353,14 @@ return [
         ],
         'dropshipping'         => [
             'connection'          => 'redis',
-            'queue'               => ['ds', 'shopify', 'ebay', 'woo'],
+            'queue'               =>
+                [
+                    'ds',
+                    'shopify',
+                    'shopify-bulk',
+                    'ebay',
+                    'woo'
+                ],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
@@ -385,7 +407,7 @@ return [
             'balanceCooldown'     => 3,
         ],
         'cache-warming'        => [
-            'connection' => 'redis-long-running',
+            'connection'          => 'redis-long-running',
             'queue'               => ['cache-warming'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
@@ -402,7 +424,22 @@ return [
         ],
         'ses'                  => [
             'connection'      => 'redis',
-            'queue'           => ['ses-send', 'ses'],
+            'queue'           => ['ses'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 2,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 1,
+            'timeout'         => 3600,
+            'retry_after'     => 2,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
+        'ses-send'                  => [
+            'connection'      => 'redis',
+            'queue'           => ['ses-send'],
             'balance'         => 'auto',
             'maxProcesses'    => 2,
             'maxTime'         => 0,
@@ -459,6 +496,9 @@ return [
             'hydrators-slave'      => [
                 'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 6),
             ],
+            'hydrators-slave-low-priority' => [
+                'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_LOW_PRIORITY_WORKERS', 2),
+            ],
             'aurora'               => [
                 'maxProcesses' => env('HORIZON_AURORA_WORKERS', 12),
             ],
@@ -495,6 +535,9 @@ return [
             'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
+            'ses-send'                  => [
+                'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
+            ],
             'ses-analytics'        => [
                 'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
             ],
@@ -515,6 +558,9 @@ return [
             ],
             'hydrators-slave'      => [
                 'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 1),
+            ],
+            'hydrators-slave-low-priority' => [
+                'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_LOW_PRIORITY_WORKERS', 1),
             ],
             'aurora'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_AURORA', 2),
@@ -549,6 +595,9 @@ return [
             'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
+            'ses-send'                  => [
+                'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
+            ],
             'ses-analytics'        => [
                 'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
             ],
@@ -568,6 +617,9 @@ return [
             ],
             'hydrators-slave'      => [
                 'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 2),
+            ],
+            'hydrators-slave-low-priority' => [
+                'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_LOW_PRIORITY_WORKERS', 1),
             ],
             'aurora'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_AURORA', 2),
@@ -604,6 +656,9 @@ return [
             ],
             'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
+            ],
+            'ses-send'                  => [
+                'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
             ],
             'ses-analytics'        => [
                 'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),

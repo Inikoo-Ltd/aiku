@@ -2,6 +2,8 @@
 
 namespace App\Actions\Ordering\Transaction\Traits;
 
+use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
 
@@ -10,6 +12,8 @@ trait WithCalculateTransactionDiscount
     // To fix concurrent issue discount not applied after picking up from Waiting (reported by Erika)
     public function calculateTransactionDiscountTotal(Transaction $transaction)
     {
+        CalculateOrderDiscounts::run($transaction->order);
+
         if ($transaction->current_discount_factor) {
             $discountedAmount = round((float) $transaction->gross_amount * $transaction->current_discount_factor, 2);
 
@@ -20,5 +24,7 @@ trait WithCalculateTransactionDiscount
                     ]
                 );
         }
+
+        CalculateOrderTotalAmounts::run($transaction->order, false, false);
     }
 }

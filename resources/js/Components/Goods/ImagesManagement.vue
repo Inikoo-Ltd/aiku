@@ -244,7 +244,7 @@ function onDeletefilesInBox(categoryBox: any) {
 
 function openEditAlt(item: any) {
     selectedImageToEditAlt.value = item
-    altInput.value = item?.alt ?? item?.name ?? ""
+    altInput.value = item?.alt ?? ""
     isModalEditAlt.value = true
 }
 
@@ -347,8 +347,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         :class="{ ' cursor-not-allowed': !editable }" :draggable="editable && !!categoryBox.images"
                         @dragstart="(e) =>  editable && categoryBox.images ?  onStartDrag(e, categoryBox) : null"
                         @dragend="(e)=> editable ? onEndDrag(e) : null">
-                        
-                        <Image v-if="categoryBox.images" :src="categoryBox.images" :style="{ objectFit: 'contain' }" />
+                        <Image v-if="categoryBox.images" :src="categoryBox.images" :alt="categoryBox.label" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
                             <span class="text-[12px] font-medium">{{ trans('Drop image here') }}</span>
@@ -434,7 +433,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center
                overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
-                                <Image v-if="item?.image" :src="item?.image"
+                                <Image v-if="item?.image" :src="item?.image" :alt="item.alt"
                                     class="max-h-full max-w-full object-contain" />
                                 <div v-else class="text-gray-400">
                                     <FontAwesomeIcon :icon="faImage" class="text-base" />
@@ -456,10 +455,13 @@ function onDeleteFilesInList(categoryBox: any) {
 
                                 <div class="flex items-center gap-1 mt-0.5">
                                     <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
-                                        :title="item?.alt ? item?.alt : item?.name">
-                                        {{ trans('Alt') }}: {{ item?.alt ? item?.alt : item?.name }}
+                                        :class="item?.alt ? 'text-gray-500' : 'text-gray-400'"
+                                        :title="item?.alt || trans('Not set')">
+                                        {{ trans('Alt') }}: 
+                                        <template v-if="item?.alt">{{ item?.alt }}</template>
+                                        <span v-else class="not-italic">- {{ trans('not set') }}</span>
                                     </span>                                    
-                                    <button v-if="editable && data?.update_image_alt_route" type="button"
+                                    <button v-if="data?.update_image_alt_route" type="button"
                                         @click="openEditAlt(item)"
                                         class="text-gray-400 hover:text-blue-600 transition"
                                         v-tooltip="trans('Edit alt text')">
@@ -520,9 +522,10 @@ function onDeleteFilesInList(categoryBox: any) {
     <Dialog v-model:visible="isModalEditAlt" modal :header="trans('Edit Alt Text')" :style="{ width: '32rem' }">
         <div class="space-y-3">
             <p class="text-xs text-gray-500">
-                {{ trans('Defaults to the file name if empty') }}
+                {{ trans('Alt text describes the image for SEO and screen readers.') }}
             </p>
-            <InputText v-model="altInput" :placeholder="selectedImageToEditAlt?.name || ''" class="w-full" />
+            
+            <InputText v-model="altInput" :placeholder="trans('Describe the image for SEO & accessibility')" class="w-full" />
         </div>
 
         <template #footer>

@@ -52,6 +52,7 @@ const props = defineProps<{
 
 const comment = ref('')
 const isLoading = ref(false)
+const isLoadingTemplate = ref(false)
 const openTemplates = ref(false)
 const _beefree = ref()
 const _unlayer = ref()
@@ -168,7 +169,7 @@ const closeUnsubscribeWarningModal = () => {
 
 
 const saveTemplate = async () => {
-    isLoading.value = true;
+    isLoadingTemplate.value = true;
 
     axios
         .post(
@@ -196,7 +197,7 @@ const saveTemplate = async () => {
             visibleSAveEmailTemplateModal.value = false;
             templateName.value = '';
             temporaryData.value = null;
-            isLoading.value = false;
+            isLoadingTemplate.value = false;
         });
 }
 
@@ -293,6 +294,7 @@ const handleTabUpdate = (tabSlug: string) =>
 const component = computed(() => {
     const components: Component = {
         templates: TableEmailTemplate,
+        other_store_templates: TableEmailTemplate,
         previous_mailshots: TablePreviousMailshots,
         other_store_mailshots: TableOtherStoreMailshots,
     };
@@ -377,17 +379,20 @@ watch(
         :style="{ width: '25rem' }">
         <div class="pt-4">
             <div class="font-semibold mb-3">Template Name</div>
-            <PureInput v-model="templateName" placeholder="Template Name" />
+            <PureInput v-model="templateName" placeholder="Template Name" :disabled="isLoadingTemplate" />
+            <div v-if="isLoadingTemplate" class="text-left text-gray-500 mt-3 text-sm">
+                Please wait a moment. This may take a few seconds while the content is being converted to HTML ...
+            </div>
             <div class="flex justify-end mt-3 gap-3">
-                <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false"></Button>
-                <Button type="save" @click="saveTemplate"></Button>
+                <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false" :disabled="isLoadingTemplate"></Button>
+                <Button type="save" @click="saveTemplate" :loading="isLoadingTemplate" :disabled="isLoadingTemplate"></Button>
             </div>
         </div>
     </Dialog>
 
     <Dialog v-model:visible="visibleUnsubscribeWarningModal" modal :closable="false" :showHeader="false"
         :style="{ width: '30rem' }">
-        <div class="pt-4"> 
+        <div class="pt-4">
             <div class="text-center mb-4">
                 <div class="text-amber-500 text-4xl mb-3">⚠️</div>
                 <div class="font-semibold text-lg mb-2">Missing Unsubscribe Link</div>

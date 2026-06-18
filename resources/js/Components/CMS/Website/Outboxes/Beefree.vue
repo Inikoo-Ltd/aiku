@@ -11,11 +11,11 @@ import { trans } from "laravel-vue-i18n";
 
 const props = withDefaults(defineProps<{
     updateRoute: routeType;
-    imagesUploadRoute: routeType
+    imagesUploadRoute?: routeType
     snapshot: any
-    unpublished_layout: any
+    unpublished_layout?: any
     mergeTags: Array<any>
-    mergeContents: Array<any> | null
+    mergeContents?: Array<any> | null
     organisationSlug: string
     shopSlug?: string
     shopId?: number

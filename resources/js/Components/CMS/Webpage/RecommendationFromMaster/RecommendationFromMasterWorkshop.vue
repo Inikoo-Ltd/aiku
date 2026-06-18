@@ -113,10 +113,20 @@ const sendMessageToParent = (type: string, value: any) => {
       </Swiper>
     </div>
 
-    <!-- Empty -->
-    <div v-else class="px-4 py-10 text-center text-gray-400">
-      No products available
-    </div>
+
+
+  </div>
+  <!-- Empty -->
+  <div v-else class="px-4 py-10 text-center text-gray-400 bg-gray-200">
+    <p class="font-semibold text-gray-700">
+      Related Products Block Hidden
+    </p>
+
+    <p class="mt-2 text-sm text-gray-500">
+      Add at least
+      {{ modelValue?.recommendation_settings?.min_amt_shown || 5 }}
+      products to display this section.
+    </p>
   </div>
 </template>
 

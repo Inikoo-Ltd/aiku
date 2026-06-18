@@ -471,10 +471,12 @@ trait WithLuigis
                 // Discontinuing display also (Tomas Request) | HELP-1677
                 "availability"    => intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale),
                 "stock_qty"       => $product->available_quantity ?? 0,
+                "unit"            => $product->unit,
+                "units"           => $product->units,
                 "price"           => (float)$product->price ?? 0,
                 "price_rrp"       => (float)$product->rrp ?? 0,
-                "unit"            => $product->unit,
                 "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
+                "formatted_price_rrp"       => $product->currency->symbol.$product->rrp.'/'.$product->unit,
                 "image_link"      => Arr::get($product->imageSources(200, 200), 'original'),
                 "product_code"    => $product->code,
                 "product_id"      => $product->id,

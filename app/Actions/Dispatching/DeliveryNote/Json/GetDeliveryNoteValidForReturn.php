@@ -3,6 +3,7 @@
 namespace App\Actions\Dispatching\DeliveryNote\Json;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Http\Resources\Dispatching\DeliveryNote\DeliveryNotesForSelectResource;
 use App\Models\Dispatching\DeliveryNote;
@@ -34,6 +35,7 @@ class GetDeliveryNoteValidForReturn extends OrgAction
         $query->where('delivery_notes.is_returned', false);
 
         $query->where('shops.is_aiku', true);
+        $query->whereNotIn('shops.type', [ShopTypeEnum::EXTERNAL]);
 
 
         $selectColumns = [

@@ -11,6 +11,7 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import { Navigation } from 'swiper/modules'
+import { get } from "lodash"
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -19,6 +20,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 import { trans } from "laravel-vue-i18n"
+import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 library.add(faChevronLeft, faChevronRight)
 
 
@@ -41,7 +43,7 @@ const bKeys = Blueprint(props.webpageData)?.blueprint?.map(b => b?.key?.join("-"
 const slidesPerView = computed(() => {
   const perRow = props.modelValue?.settings?.per_row ?? {}
   return {
-    desktop: perRow.desktop ?? 4,
+    desktop: perRow.desktop ?? 5,
     tablet: perRow.tablet ?? 4,
     mobile: perRow.mobile ?? 2,
   }[props.screenType] ?? 1
@@ -68,7 +70,7 @@ const compSwiperOptions = computed(() => {
   <div  :id="modelValue?.id ? modelValue?.id  : 'see-also-1'+indexBlock" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(modelValue.container?.properties, screenType),
-    width: 'auto'
+    width: '100%'
   }" :dropdown-type="props.modelValue?.settings?.products_data?.type">
     <!-- Title -->
     <div class="px-4 py-6 pb-2">
@@ -100,11 +102,12 @@ const compSwiperOptions = computed(() => {
       sendMessageToParent('activeChildBlock', bKeys[0])
     }">
       <!-- Tombol Navigasi Custom -->
-      <button ref="prevEl" class="swiper-nav-button left-0">
-        <FontAwesomeIcon :icon="['fas', 'chevron-left']" />
+      <button ref="prevEl" class="swiper-nav-button hidden lg:block left-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg"/>
       </button>
-      <button ref="nextEl" class="swiper-nav-button right-0">
-        <FontAwesomeIcon :icon="['fas', 'chevron-right']" />
+
+      <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg"/>
       </button>
 
       <!-- Swiper -->
@@ -120,7 +123,7 @@ const compSwiperOptions = computed(() => {
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="flex-1 flex flex-col">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])"  />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
 
@@ -136,7 +139,7 @@ const compSwiperOptions = computed(() => {
 
 <style scoped>
 .swiper-nav-button {
-  @apply absolute top-1/2 transform -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full shadow-md p-2 hover:bg-gray-100 transition-all duration-300;
+  @apply absolute top-1/2;
 }
 
 .swiper-nav-button svg {

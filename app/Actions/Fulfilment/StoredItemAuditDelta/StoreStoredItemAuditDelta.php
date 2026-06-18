@@ -20,6 +20,7 @@ use App\Models\Fulfilment\StoredItemAuditDelta;
 use DB;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreStoredItemAuditDelta extends OrgAction
@@ -63,6 +64,14 @@ class StoreStoredItemAuditDelta extends OrgAction
             $auditType = StoredItemAuditDeltaTypeEnum::NO_CHANGE;
         }
 
+        if (in_array($auditType, [StoredItemAuditDeltaTypeEnum::SET_UP, StoredItemAuditDeltaTypeEnum::ADDITION], true) && !$storedItem->state->canBeStored()) {
+            $messageReplacements = ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()];
+            $message = match ($auditType) {
+                StoredItemAuditDeltaTypeEnum::SET_UP   => __('The SKU ":reference" is :state and cannot be added to a pallet.', $messageReplacements),
+                StoredItemAuditDeltaTypeEnum::ADDITION => __('The SKU ":reference" is :state, its quantity cannot be increased.', $messageReplacements),
+            };
+            throw ValidationException::withMessages(['stored_item_id' => $message]);
+        }
 
         if (in_array($storedItem->state, [StoredItemStateEnum::SUBMITTED, StoredItemStateEnum::IN_PROCESS])) {
             $isNewStoredItem = true;

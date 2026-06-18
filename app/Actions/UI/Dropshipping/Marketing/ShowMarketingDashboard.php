@@ -103,7 +103,7 @@ class ShowMarketingDashboard extends OrgAction
                     ],
                     [
                         'name' => __('Traffic Sources'),
-                        'value' => $this->shop->commsStats->number_traffic_sources ?? 0,
+                        'value' => $this->shop->crmStats->number_traffic_sources ?? 0,
                         'icon'  => ['fal', 'fa-traffic-light'],
                         'route' => [
                             'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',

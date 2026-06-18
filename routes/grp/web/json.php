@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
+use App\Actions\Catalogue\Product\Json\GetProductsIncludingNotForSaleInShop;
 use App\Actions\Dispatching\BatchCode\Json\GetBatchCodes;
 use App\Actions\Accounting\Payment\Json\GetRefundOriginalInvoicePayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
@@ -40,13 +41,16 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInDepartmentInWorkshop
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategories;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
+use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryForRelatedWebBlock;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
+use App\Actions\Comms\EmailCopy\GetEmailCopy;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateCompiledLayout;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\EmailTemplate\GetOutboxEmailTemplates;
@@ -96,6 +100,7 @@ use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
+use App\Actions\CRM\Customer\Json\GetCustomersInShop;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
@@ -113,6 +118,7 @@ use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
+use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use App\Actions\Web\Website\UI\Json\FetchFamilyDescriptionBlockLayout;
 use Illuminate\Support\Facades\Route;
@@ -147,9 +153,12 @@ Route::get('email/templates/outboxes/{outbox:id}', GetOutboxEmailTemplates::clas
 Route::get('email/templates/{emailTemplate:id}/compiled_layout', GetEmailTemplateCompiledLayout::class)->name('email_templates.show.compiled_layout');
 Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->name('mailshot.merge-tags');
 
+Route::get('email/dispatched-email/{dispatchedEmail:id}/copy', GetEmailCopy::class)->name('email.dispatched-email.copy');
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
 Route::get('shop/{shop}/products-for-website-workshop', GetProductsInWorkshop::class)->name('shop.products_for_website_workshop');
 Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.products');
+Route::get('shop/{shop}/products-including-not-for-sale', GetProductsIncludingNotForSaleInShop::class)->name('shop.products_including_not_for_sale');
+
 Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
 
@@ -162,6 +171,10 @@ Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.d
 Route::get('shop/{shop:id}/sub-departments', GetSubDepartmentsInShop::class)->name('shop.sub_departments');
 Route::get('shop/{shop:id}/products-no-webpage', GetProductsWithNoWebpage::class)->name('shop.products.no-webpage');
 Route::get('shop/{shop}/product-categories', GetProductCategories::class)->name('shop.product_categories');
+
+Route::get('shop/{shop}/families-for-related-web-blocks', [GetProductCategoryForRelatedWebBlock::class, 'onlyFamily'])->name('shop.families.for_related_web_block');
+Route::get('shop/{shop}/departments-for-related-web-blocks', [GetProductCategoryForRelatedWebBlock::class, 'onlyDepartment'])->name('shop.departments.for_related_web_block');
+Route::get('shop/{shop}/sub-departments-for-related-web-blocks', [GetProductCategoryForRelatedWebBlock::class, 'onlySubDepartment'])->name('shop.sub_departments.for_related_web_block');
 
 Route::get('shop/{shop}/catalogue/{productCategory}/families', GetProductCategoryFamilies::class)->name('shop.catalogue.departments.families');
 Route::get('shop/{shop:id}/catalogue/collection/{collection:id}/products', GetProductsNotAttachedToACollection::class)->name('shop.products.not_attached_to_collection')->withoutScopedBindings();
@@ -237,7 +250,7 @@ Route::get('picking-session/{pickingSession:id}/pallet-returns', GetPalletReturn
 Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
-
+Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
@@ -307,3 +320,8 @@ Route::get('{warehouse}/return/select-delivery-notes', GetDeliveryNoteValidForRe
 Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name('dispatching_waiting_badge');
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
+
+Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
+
+// Families list under department page
+Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');

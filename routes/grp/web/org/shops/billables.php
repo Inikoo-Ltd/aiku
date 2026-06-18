@@ -34,9 +34,24 @@ Route::name("shipping.")->prefix('shipping')
         Route::get('create', CreateShippingZoneSchema::class)->name('create');
 
         Route::prefix('{shippingZoneSchema}')->group(function () {
+            Route::patch('shipping-zone/reorder', ReorderShippingZones::class)->name('shipping-zone.reorder');
+        });
+
+        Route::name('current.')->prefix('current/{shippingZoneSchema}')->group(function () {
             Route::get('', ShowShippingZoneSchema::class)->name('show');
             Route::get('edit', EditShippingZoneSchema::class)->name('edit');
-            Route::patch('shipping-zone/reorder', ReorderShippingZones::class)->name('show.shipping-zone.reorder');
+            Route::prefix('shipping-zone')->name('show.shipping-zone.')->group(function () {
+                Route::get('create', CreateShippingZone::class)->name('create');
+                Route::prefix('{shippingZone}')->group(function () {
+                    Route::get('', ShowShippingZone::class)->name('show');
+                    Route::get('edit', EditShippingZone::class)->name('edit');
+                });
+            });
+        });
+
+        Route::name('discount.')->prefix('discount/{shippingZoneSchema}')->group(function () {
+            Route::get('', ShowShippingZoneSchema::class)->name('show');
+            Route::get('edit', EditShippingZoneSchema::class)->name('edit');
             Route::prefix('shipping-zone')->name('show.shipping-zone.')->group(function () {
                 Route::get('create', CreateShippingZone::class)->name('create');
                 Route::prefix('{shippingZone}')->group(function () {

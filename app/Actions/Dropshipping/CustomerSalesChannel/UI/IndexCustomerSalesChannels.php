@@ -35,9 +35,12 @@ class IndexCustomerSalesChannels extends OrgAction
     use WithCustomerSubNavigation;
 
     private Customer|Platform $parent;
+    private string $bucket = '';
 
-    public function handle(Customer|Platform $parent, ?Shop $shop = null, $prefix = null): LengthAwarePaginator
+    public function handle(Customer|Platform $parent, ?Shop $shop = null, $prefix = null, string $bucket = ''): LengthAwarePaginator
     {
+        $this->bucket = $bucket ?: $this->bucket;
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('customer_sales_channels.reference', $value);
@@ -60,6 +63,18 @@ class IndexCustomerSalesChannels extends OrgAction
 
         if ($shop) {
             $queryBuilder->where('customer_sales_channels.shop_id', $shop->id);
+        }
+
+        if ($this->bucket === 'problem') {
+            $queryBuilder->where('customer_sales_channels.platform_status', false);
+        } elseif ($this->bucket === 'ok') {
+            $queryBuilder->where('customer_sales_channels.platform_status', true);
+        } elseif ($this->bucket === 'ok_with_invoices') {
+            $queryBuilder->where('customer_sales_channels.platform_status', true)
+                ->where('customer_sales_channels.number_orders', '>', 0);
+        } elseif ($this->bucket === 'ok_with_recent_invoices') {
+            $queryBuilder->where('customer_sales_channels.platform_status', true)
+                ->whereRaw("customer_sales_channels.last_order_created_at >= NOW() - INTERVAL '30 days'");
         }
 
         $queryBuilder->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id');
@@ -154,7 +169,8 @@ class IndexCustomerSalesChannels extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $customer;
+        $this->parent   = $customer;
+        $this->bucket   = $request->get('bucket', '');
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customer);

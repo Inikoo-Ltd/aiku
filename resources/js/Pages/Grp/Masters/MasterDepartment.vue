@@ -41,6 +41,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import axios from "axios"
 import MasterContentProductCategory from "@/Components/Master/MasterContentProductCategory.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
+import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 
 library.add(
     faFolder,
@@ -79,7 +80,7 @@ const props = defineProps<{
     sales?: object
     salesData?: object
     mini_breadcrumbs?: any[]
-
+    related_product_category : object
     delete_route?: routeType;
     delete_condition?: {
         can_delete: boolean;
@@ -102,7 +103,8 @@ const component = computed(() => {
         history: TableHistories,
         images: ImagesManagement,
         content : MasterContentProductCategory,
-        sales: ProductCategoryTimeSeriesTable
+        sales: ProductCategoryTimeSeriesTable,
+        related_product_category: RelatedProductCategory,
     };
     return components[currentTab.value];
 

@@ -27,6 +27,7 @@ class GetWebBlockFamilyDescription
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', data_get($webPublishedLayout, "family_description.$webBlockType.fieldValue", []));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.id', data_get($webBlock, 'type'));
         data_set($webBlock, 'web_block.layout.data.fieldValue.family', WebBlockFamilyResource::make($webpage->model)->toArray(request()));
         return $webBlock;
     }

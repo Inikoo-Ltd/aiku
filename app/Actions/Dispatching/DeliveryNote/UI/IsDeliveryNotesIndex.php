@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -32,7 +33,7 @@ trait IsDeliveryNotesIndex
     private Group|Warehouse|Shop|Order|Customer|CustomerClient $parent;
     private string $bucket;
 
-    public function handle(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): LengthAwarePaginator
+    public function handle(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false, $replacementsOnly = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -113,12 +114,19 @@ trait IsDeliveryNotesIndex
             $query->where('delivery_note_order.order_id', $parent->id);
         } elseif ($parent instanceof Customer) {
             $query->where('delivery_notes.customer_id', $parent->id);
+            if (!$replacementsOnly) {
+                $query->whereNot('delivery_notes.type', DeliveryNoteTypeEnum::REPLACEMENT);
+            }
         } elseif ($parent instanceof CustomerClient) {
             $query->where('delivery_notes.customer_client_id', $parent->id);
         } elseif ($parent instanceof Shop) {
             $query->where('delivery_notes.shop_id', $parent->id);
         } else {
             abort(419);
+        }
+
+        if ($replacementsOnly) {
+            $query->where('delivery_notes.type', DeliveryNoteTypeEnum::REPLACEMENT);
         }
 
 
@@ -346,13 +354,13 @@ trait IsDeliveryNotesIndex
 
             if ($bucket == 'dispatched' && $parent instanceof Warehouse) {
                 $weightBracketOptions = [
-                    'up_to_1kg'  => __('Up to 1 kg'),
-                    '1_to_3kg'   => __('1 - 3 kg'),
-                    '3_to_6kg'   => __('3 - 6 kg'),
-                    '6_to_10kg'  => __('6 - 10 kg'),
-                    '10_to_20kg' => __('10 - 20 kg'),
-                    '20_to_31kg' => __('20 - 31 kg'),
-                    'over_31kg'  => __('Over 31 kg'),
+                    'up_to_1kg'  => __('Up to').' 1 kg',
+                    '1_to_3kg'   => '1-3 kg',
+                    '3_to_6kg'   => '3-6 kg',
+                    '6_to_10kg'  => '6-10 kg',
+                    '10_to_20kg' => '10-20 kg',
+                    '20_to_31kg' => '10-31 kg',
+                    'over_31kg'  => __('Over').' 31 kg',
                 ];
 
                 $countryOptions = DB::table('delivery_notes')

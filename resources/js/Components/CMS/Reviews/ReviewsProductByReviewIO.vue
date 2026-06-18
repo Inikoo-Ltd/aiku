@@ -118,7 +118,7 @@ const getDataReview= async ()=>{
     // this funciton run only for get data from review.io and fill our databases
 	try {
 		const response: any = await axios.get(
-			route('iris.json.reviews.third_party.product_review',{ product : props.product.code }),
+			route('iris.json.reviews.third_party.product_review',{ product : props.product.id }),
 		)
 	} catch (error: any) {
 		console.log(error)

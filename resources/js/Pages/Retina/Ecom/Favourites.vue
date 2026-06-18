@@ -272,8 +272,10 @@ onMounted(() => {
 :deep(.discount .offer-trigger-label) {
   @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
 
-  border-color: v-bind("layout.iris.theme.color[4]") !important;
-  color: v-bind("layout.iris.theme.color[4]") !important;
+//   border-color: v-bind("layout.iris.theme.color[4]") !important;
+//   color: v-bind("layout.iris.theme.color[4]") !important;
+    color: #E87928 !important;
+    border-color: #E87928 !important;
 }
 
 

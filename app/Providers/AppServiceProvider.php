@@ -23,7 +23,6 @@ use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Facades\Actions;
 use Illuminate\Support\Facades\Event;
 use Laravel\Nightwatch\Records\QueuedJob;
-
 use Vemcogroup\Translation\Translation as BaseTranslation;
 
 /**
@@ -75,15 +74,20 @@ class AppServiceProvider extends ServiceProvider
     {
         Event::listen(function (CommandStarting $event) {
             if (in_array($event->command, [
-                'fetch:',
-                'clone:aurora'
+                'fetch:orders',
+                'fetch:credits',
+                'fetch:stock_movements',
+                'fetch:dispatched_emails',
+                'fetch:stock_locations',
+                'fetch:email_tracking_events',
+                'clone:aurora_vol_gr_offers'
             ])) {
                 Nightwatch::dontSample();
             }
         });
 
         Nightwatch::rejectQueuedJobs(function (QueuedJob $job) {
-            return $job->name === 'App\Actions\Transfers\Aurora\FetchAuroraStocks';
+            return $job->queue == 'aurora';
         });
 
         ParallelTesting::setUpTestCase(function ($token, $testCase) {

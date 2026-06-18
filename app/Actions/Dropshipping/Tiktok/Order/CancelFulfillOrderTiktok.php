@@ -36,7 +36,7 @@ class CancelFulfillOrderTiktok extends OrgAction
             /** @var TiktokUser $tiktokUser */
             $tiktokUser = $order->customerSalesChannel->user;
 
-            $tiktokUser->cancelFulfilOrder($fulfillOrderId);
+            $tiktokUser->rejectFulfilOrder($fulfillOrderId);
         } catch (\Exception $e) {
             Sentry::captureException($e);
         }

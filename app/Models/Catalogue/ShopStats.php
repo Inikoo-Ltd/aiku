@@ -188,6 +188,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_delivery_notes_state_returned
  * @property int $number_return_delivery_notes_state_done
  * @property int $number_return_delivery_notes_state_cancelled
+ * @property int $number_bundles_state_inactive
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily

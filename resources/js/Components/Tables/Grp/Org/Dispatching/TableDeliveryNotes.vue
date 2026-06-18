@@ -68,9 +68,15 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 				route().params["shop"],
 				deliveryNote.slug,
 			])
-
 		case "grp.org.shops.show.crm.customers.show.delivery_notes.index":
 			return route("grp.org.shops.show.crm.customers.show.delivery_notes.show", [
+				route().params["organisation"],
+				route().params["shop"],
+				route().params["customer"],
+				deliveryNote.slug,
+			])
+		case "grp.org.shops.show.crm.customers.show.replacements.index":
+			return route("grp.org.shops.show.crm.customers.show.replacements.show", [
 				route().params["organisation"],
 				route().params["shop"],
 				route().params["customer"],
@@ -108,6 +114,14 @@ function returnNoteRoute(returnDeliveryNote) {
 			return route("grp.org.shops.show.ordering.return_delivery_notes.show", [
 				route().params["organisation"],
 				route().params["shop"],
+				returnDeliveryNote.slug,
+
+			])
+		case "grp.org.shops.show.crm.customers.show.return_delivery_notes.index":
+			return route("grp.org.shops.show.crm.customers.show.return_delivery_notes.show", [
+				route().params["organisation"],
+				route().params["shop"],
+				route().params["customer"],
 				returnDeliveryNote.slug,
 
 			])

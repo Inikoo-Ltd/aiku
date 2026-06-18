@@ -38,7 +38,7 @@ class ProcessRetinaWebUserRequest
 
         $modelData = [
             'date'         => $datetime,
-            'route_name'   => $routeData['name'],
+            'route_name'   => $routeData['name'] ?? '',
             'route_params' => json_encode($routeData['arguments']),
             'os'           => $browserData['os'],
             'device'       => $browserData['device'],

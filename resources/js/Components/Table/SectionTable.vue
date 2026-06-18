@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { trans } from 'laravel-vue-i18n'
 import { ref, computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link } from "@inertiajs/vue3"
@@ -68,7 +69,7 @@ const filteredData = computed(() => {
 					<InputText
 						v-model="searchQuery"
 						type="text"
-						placeholder="Search ..."
+						:placeholder="trans('Search ...')"
 						class="border border-gray-300 rounded appearance-none block w-full px-3 py-2 text-sm leading-none transition-all duration-300 placeholder:text-gray-400 placeholder:italic focus:border-gray-500 focus:ring-0 focus:outline-none" />
 				</IconField>
 			</div>

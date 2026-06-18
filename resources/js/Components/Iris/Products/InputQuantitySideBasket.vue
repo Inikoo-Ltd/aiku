@@ -68,7 +68,7 @@ const onUpdateQuantity = async (newVal?: number) => {
         layout.reload_handle()
         props.product.quantity_ordered = props.product.quantity_ordered_new
 
-        if (selectedQuantity < 1) {
+        if (selectedQuantity <= 0) {
             emits('productRemoved')
         }
         
@@ -134,7 +134,7 @@ const debUpdateQuantity = debounce((newVal?: number) => {
 
 <template>
     <div class="flex gap-x-0.5 items-center">
-        <div @click="() => product.quantity_ordered_new > 0 ? (product.quantity_ordered_new--, debUpdateQuantity()) : null"
+        <div @click="() => product.quantity_ordered_new > 0 ? (product.quantity_ordered_new >= 1 ? product.quantity_ordered_new-- : product.quantity_ordered_new = 0, debUpdateQuantity()) : null"
             class="cursor-pointer opacity-50 hover:opacity-100"
             :class="product.quantity_ordered_new < 1 ? 'opacity-20' : 'cursor-pointer opacity-50 hover:opacity-100'"
         >
@@ -150,6 +150,8 @@ const debUpdateQuantity = debounce((newVal?: number) => {
                     : (set(product, 'quantity_ordered_new', e?.value), debUpdateQuantity())
                 )"
                 @update:modelValue="e => (e != product.quantity_ordered_new ? (set(product, 'quantity_ordered_new', e), debUpdateQuantity()) : false)"
+                :disabled="product.quantity_ordered_new % 1 !== 0"
+                v-tooltip="product.quantity_ordered_new % 1 !== 0 ? ctrans('Cannot edit: product is partially ordered. Use the minus/plus button to adjust quantity.') : null"
                 size="small"
                 inputId="minmax-buttons"
                 mode="decimal"

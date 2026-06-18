@@ -131,7 +131,7 @@ class IndexShopServices extends OrgAction
                         'icon'  => ['fal', 'fa-concierge-bell'],
                         'title' => __('Services')
                     ],
-                    'model'   => __('Catalogue'),
+                    'model'   => $this->shop?->code,
                     'title'   => __('Services'),
                     'actions' => $actions
                 ],

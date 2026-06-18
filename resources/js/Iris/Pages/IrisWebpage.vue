@@ -5,14 +5,15 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, onMounted, onBeforeUnmount, computed } from "vue"
+import { inject, ref, onMounted, onBeforeUnmount, computed, provide } from "vue"
 import { faCheck, faPlus, faMinus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { Head } from "@inertiajs/vue3"
+import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
 import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
-import { usePage } from "@inertiajs/vue3"
+import { useStructuredData } from "@/Iris/Composables/useStructuredData"
 import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
+library.add(faCheck, faPlus, faMinus)
 
 const props = defineProps<{
     webpage_data: {  // ShowIrisWebpage
@@ -31,12 +32,15 @@ const props = defineProps<{
 }>()
 
 defineOptions({ layout: LayoutIris })
-library.add(faCheck, faPlus, faMinus)
 
 const layout: any = inject("layout", {})
 const review = ref(usePage().props?.iris?.website?.reviews_settings)
 const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
 const currentUrl = ref("")
+const structuredDataScript = ref<HTMLScriptElement | null>(null)
+const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
+
+provide('webpage_data', props.webpage_data)
 
 const checkScreenType = () => {
     const width = window.innerWidth
@@ -51,35 +55,25 @@ const robotsContent = computed(() => {
     return `${index}, ${follow}`
 })
 
-
 onMounted(() => {
     currentUrl.value = window.location.href
 
-    if (props?.webpage_data?.seo_data?.structured_data) {
-        const script = document.createElement("script")
-        script.type = "application/ld+json"
-        let structuredData = props.webpage_data?.seo_data?.structured_data
-
-        if (typeof structuredData !== "string") {
-            try {
-                structuredData = JSON.stringify(structuredData)
-            } catch (e) {
-                console.error("Invalid structured data:", e)
-                structuredData = ""
-            }
-        }
-        script.textContent = structuredData
-        document.head.appendChild(script)
-    }
+    structuredDataScript.value = mountStructuredData({
+        webpageData: props.webpage_data,
+        webBlocks: props.web_blocks,
+        currencyCode: layout.iris?.currency?.code,
+        websiteName: layout.iris?.website?.name,
+    })
 
     checkScreenType()
-    window.addEventListener("resize", checkScreenType)
+    window.addEventListener('resize', checkScreenType)
     window.listWebBlocks = props.web_blocks
     layout.recordWebsiteHit()
 })
 
 
 onBeforeUnmount(() => {
+    removeStructuredDataScript(structuredDataScript.value)
     window.removeEventListener("resize", checkScreenType)
 })
 
@@ -105,6 +99,8 @@ onBeforeUnmount(() => {
         <meta name="twitter:description" :content="webpage_data.description || ''" />
         <meta name="twitter:image" :content="webpage_img?.png || webpage_img?.url || ''" />
     </Head>
+    
+    <!-- <pre>{{ blablabla }}</pre> -->
     <div class="bg-white">
         <div class="mx-auto w-full max-w-screen-3xl">
             <div

@@ -1,0 +1,16 @@
+{
+	"slug": "recommendation-product-category-from-master",
+	"scope": "webpage",
+	"code": "recommendation-product-category-from-master",
+	"name": "Related Product Category From Master",
+	"category": "block",
+	"fixed": true,
+	"icon": ["fal", "folder"],
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : true,
+	"data": {
+		"fieldValue": {
+			"id" : "related-product-category-from-master"
+		}
+	}
+}
