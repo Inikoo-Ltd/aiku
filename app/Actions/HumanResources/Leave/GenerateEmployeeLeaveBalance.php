@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\Leave;
 
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\EmployeeContract;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use Carbon\Carbon;
@@ -90,8 +91,12 @@ class GenerateEmployeeLeaveBalance
         $generated = 0;
 
         EmployeeContract::query()
+            ->whereHas('employee', fn ($q) => $q->where('state', EmployeeStateEnum::WORKING))
             ->where('start_date', '<=', $today->toDateString())
-            ->whereNull('end_date')
+            ->where(function ($q) use ($today) {
+                $q->whereNull('end_date')
+                    ->orWhere('end_date', '>=', $today->toDateString());
+            })
             ->with('leaveBalances')
             ->each(function (EmployeeContract $contract) use ($today, &$generated) {
                 $periodStart = $this->currentPeriodStart($contract, $today);
