@@ -51,7 +51,7 @@ const slidesPerView = computed(() => {
 
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProducts = ref<LastOrderedProduct[] | null>()
+const listProducts = ref<LastOrderedProduct[]>([])
 const isLoadingFetch = ref(false)
 
 const fetchRecommenders = async () => {
@@ -65,9 +65,9 @@ const fetchRecommenders = async () => {
                     ignoredProductId: props.fieldValue?.product?.id
                 })
             )
-            listProducts.value = response.data.data
+            listProducts.value = response.data.data || []
             
-            if (!(listProducts.value > 3)) {
+            if (!(listProducts.value?.length > 3)) {
                 console.warn('Block CRB are less than 3, will not showed.')
             }
         } catch (error: any) {
