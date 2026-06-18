@@ -145,7 +145,13 @@ class StoreEbayProduct extends RetinaAction
                 $categoryName = Arr::get($categories, 'itemSummaries.0.categories.0.categoryName');
             }
 
-            if (in_array($categoryId, ['261186', '116113', '180924'])) {
+            $categoryBodySoap = '180924';
+            $includedCategories = ['261186', '116113'];
+            if(!$product->barcode && $categoryId === $categoryBodySoap) {
+                $includedCategories[] = $categoryBodySoap;
+            }
+
+            if (in_array($categoryId, $includedCategories)) {
                 // This force not to use book category
                 $categoryId = '29511';
             }
