@@ -109,6 +109,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
             OutboxCodeEnum::NEW_OFFER,
+            OutboxCodeEnum::FINISH_OFFER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED
             => OutboxTypeEnum::USER_NOTIFICATION,
