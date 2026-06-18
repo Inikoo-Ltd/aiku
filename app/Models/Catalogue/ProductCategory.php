@@ -74,6 +74,8 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $source_department_id
  * @property string|null $source_family_id
  * @property bool $follow_master
+ * @property bool|null $has_gr_vol_discount
+ * @property bool $follow_master_gr
  * @property bool $show_in_website
  * @property int|null $webpage_id
  * @property string|null $url

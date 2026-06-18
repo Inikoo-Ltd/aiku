@@ -379,7 +379,7 @@ const contentClass = computed(() =>
               </button>
             </a>
 
-            <div v-for="data in modelValue.family.tags" :key="data.name" class="
+            <div v-for="data in modelValue?.family?.tags" :key="data.name" class="
         flex
         items-center
         px-3

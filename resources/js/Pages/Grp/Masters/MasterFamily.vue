@@ -90,6 +90,7 @@ const props = defineProps<{
         show_gr_vol: boolean
         gr_vol_discount_quantity?: number
         gr_vol_discount_percentage?: number
+        missing_gr_children_count?: number
     }
 }>()
 const layout = inject("layout")
@@ -190,9 +191,9 @@ const showDialog = ref(false);
             </template>
         </Breadcrumb>
         <Message v-if="mismatch_detected" :severity="'error'">
-            <FontAwesomeIcon 
-                :icon="faWarning" 
-                class="text-red-500 mr-1" 
+            <FontAwesomeIcon
+                :icon="faWarning"
+                class="text-red-500 mr-1"
             />
             {{ trans("One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units.") }}
         </Message>

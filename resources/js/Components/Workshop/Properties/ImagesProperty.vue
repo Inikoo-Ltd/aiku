@@ -17,7 +17,7 @@ const emit = defineEmits(["update:modelValue"]);
 const model = defineModel();
 
 const blueprint = [
-  { key: ["source"], label: "Image", type: "upload_image" },
+  { key: ["source"], label: "Image", type: "upload_image", props_data: { altKey: ["properties", "alt"] } },
   {
     key: ["caption"],
     label: trans("Caption"),

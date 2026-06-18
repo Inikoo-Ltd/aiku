@@ -32,6 +32,7 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
 
     public function handle(User $user, Organisation $organisation, array $modelData): User
     {
+        setPermissionsTeamId($user->group->id);
         $jobPositions = Arr::pull($modelData, 'job_positions', []);
         $jobPositions = $this->reorganisePositionsSlugsToIds($jobPositions);
 
@@ -43,7 +44,7 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
                 'grp-first-load-props:'.$user->id.':*'
             ]
         );
-        BreakUserUiProps::dispatch($user);
+        BreakUserUiProps::run($user);
 
         return $user;
     }

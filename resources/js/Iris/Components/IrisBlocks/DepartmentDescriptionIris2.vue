@@ -32,7 +32,7 @@ library.add(
 const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 	indexBlock: number
-	fieldValue: {
+	fieldValue: {  // GetIrisWebBlockDepartmentDescription
 		department: {
 			name: string
 			description_title?: string
@@ -59,6 +59,14 @@ const props = defineProps<{
 				}
 			}
 		}
+		sub_departments: {
+			name: string
+			url: string
+		}[]
+		collections: {
+			name: string
+			url: string
+		}[]
 	}
 }>()
 
@@ -120,7 +128,7 @@ const calculateDescriptionHeight = async () => {
 
 	if (!media || !description) return
 
-	maxDescriptionHeight.value = media.offsetHeight
+	maxDescriptionHeight.value = media.offsetHeight - 190
 	showReadMore.value = description.scrollHeight > media.offsetHeight
 }
 
@@ -219,6 +227,14 @@ watch(
 							class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
 							{{ item.name }}
 						</LinkIris>
+						<LinkIris
+							v-for="(collection, idxCol) of props.fieldValue.collections"
+							:key="collection.url"
+							:type="'internal'"
+							:href="collection.url"
+							class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
+							{{ collection.name }}
+						</LinkIris>
 					</div>
 				</aside>
 
@@ -252,7 +268,7 @@ watch(
 										class="text-[14px] md:text-[15px] 2xl:text-[17px] leading-7 2xl:leading-8 text-slate-700 max-w-[520px] 2xl:max-w-[650px] mx-auto overflow-hidden transition-all duration-300"
 										:style="
 											!expanded && showReadMore
-												? { maxHeight: `${maxDescriptionHeight - 190}px` }
+												? { maxHeight: `${maxDescriptionHeight}px` }
 												: {}
 										"
 										v-html="fieldValue.department.description_extra" />

@@ -6,6 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\StoreCustomerOffers;
 use App\Actions\Discounts\Offer\StoreGiftsOffers;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::name('offer.')->prefix('offer/{offer:id}')->group(function () {
     Route::patch('update-vol-gr-gift', UpdateVolGrGift::class)->name('update_vol_gr_gift');
     Route::post('finish', FinishOffer::class)->name('finish');
+    Route::post('delete', DeleteOffer::class)->name('delete');
 });
 
 Route::post('offers/shop/{shop:id}/category-offer', StoreProductCategoryDiscount::class)->name('category_offer.store');

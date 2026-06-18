@@ -78,7 +78,13 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
         }
 
         OrderHydrateCategoriesData::run($order);
-        CalculateOrderTotalAmounts::run($order, true, true, false, true);
+        CalculateOrderTotalAmounts::run(
+            order: $order,
+            calculateShipping: true,
+            calculateDiscounts: true,
+            collectionChanged: false,
+            forceRecalculate: true
+        );
 
         $oldPayStatus = $order->pay_status;
         UpdateOrderPaymentsStatus::run($order, false);

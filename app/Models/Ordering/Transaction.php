@@ -133,12 +133,14 @@ class Transaction extends Model
     protected $table = 'transactions';
 
     protected $attributes = [
-        'data'        => '{}',
-        'offers_data' => '{}',
+        'data'                  => '{}',
+        'offers_data'           => '{}',
+        'submitted_offers_data' => '{}',
     ];
 
     protected $casts = [
-        'offers_data' => 'array',
+        'offers_data'           => 'array',
+        'submitted_offers_data' => 'array',
     ];
 
     protected $guarded = [];

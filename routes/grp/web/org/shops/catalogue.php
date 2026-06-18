@@ -33,6 +33,7 @@ use App\Actions\Catalogue\ProductCategory\UI\EditFamily;
 use App\Actions\Catalogue\ProductCategory\UI\EditSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesGR;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesWithNoDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
@@ -286,6 +287,7 @@ Route::name("departments.")->prefix('departments')
 Route::name("families.")->prefix('families')
     ->group(function () {
         Route::get('', IndexFamilies::class)->name('index');
+        Route::get('gr', IndexFamiliesGR::class)->name('gr.index');
         Route::get('no-department', IndexFamiliesWithNoDepartment::class)->name('no_department.index');
         Route::get('create', CreateFamily::class)->name('create');
 

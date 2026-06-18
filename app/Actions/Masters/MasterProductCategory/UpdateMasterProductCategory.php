@@ -15,6 +15,7 @@ use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateM
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateTradeUnitFamilyToChildFamily;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithVolGrDiscount;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
@@ -206,6 +207,10 @@ class UpdateMasterProductCategory extends OrgAction
 
         if ($masterProductCategory->wasChanged('trade_unit_family_id')) {
             MasterFamilyHydrateTradeUnitFamilyToChildFamily::make()->action($masterProductCategory);
+        }
+
+        if ($masterProductCategory->wasChanged('has_gr_vol_discount')) {
+            MasterShopHydrateMasterFamiliesWithVolGrDiscount::dispatch($masterProductCategory->masterShop);
         }
 
         // if ($masterProductCategory->wasChanged('faq')) {

@@ -36,7 +36,7 @@ class PickAllItemFromWaitingWarehouse extends OrgAction
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
-            $picking = PickAllItem::make()->action(
+            $picking = PickAllItem::run(
                 $deliveryNoteItem,
                 [
                     'location_org_stock_id' => Arr::get($modelData, 'location_org_stock_id'),
@@ -47,8 +47,9 @@ class PickAllItemFromWaitingWarehouse extends OrgAction
 
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
 
-            // To fix concurrent issue discount not applied after picking up from Waiting (reported by Erika)
+            // To fix concurrent issue, discounts aren't applied after picking up from Waiting (reported by Erika)
             $this->calculateTransactionDiscountTotal($deliveryNoteItem->transaction);
+
             return $picking;
         });
     }

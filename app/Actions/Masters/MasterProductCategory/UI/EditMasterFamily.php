@@ -227,7 +227,7 @@ class EditMasterFamily extends OrgAction
                                 ],
                             ]
                         ],
-                        app()->environment('local') ? [
+                        $masterProductCategory->masterShop->gold_reward_eligible ? [
                             'label'  => __('Vol / GR'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
