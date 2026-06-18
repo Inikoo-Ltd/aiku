@@ -21,6 +21,7 @@ enum EmailOngoingRunCodeEnum: string
     case INVOICE_DELETED = 'invoice_deleted';
     case NEW_ORDER = 'new_order';
     case NEW_OFFER = 'new_offer';
+    case FINISH_OFFER = 'finish_offer';
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
     case ORDER_CONFIRMATION = 'order_confirmation';
     case PASSWORD_REMINDER = 'password_reminder';

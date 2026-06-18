@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer\UI;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
+use App\Actions\Comms\Email\SendFinishOfferEmailToSubscribers;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\Ordering\Order\CleanFinishedVouchers;
@@ -65,6 +66,8 @@ class FinishOffer extends OrgAction
                 RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
             }
         }
+
+        SendFinishOfferEmailToSubscribers::dispatch($offer->id)->delay(now()->addSeconds(10));
 
         return $offer;
     }
