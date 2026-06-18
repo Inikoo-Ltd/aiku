@@ -118,7 +118,7 @@ class EditMasterShop extends OrgAction
                             'fields' => [
                                 'gold_reward_eligible' => [
                                     'type'  => 'toggle',
-                                    'label' => __('Enable Master Level Offer'),
+                                    'label' => __('Enable gold reward'),
                                     'value' => $masterShop->gold_reward_eligible
                                 ],
                             ]
