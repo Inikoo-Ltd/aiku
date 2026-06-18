@@ -9,10 +9,12 @@
 namespace App\Actions\Traits;
 
 use App\Enums\Helpers\Export\ExportTypeEnum;
+use Illuminate\Contracts\Database\Query\Builder as QueryBuilderContract;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 trait WithExportData
 {
@@ -41,6 +43,30 @@ trait WithExportData
         }
 
         return $result;
+    }
+
+    /**
+     * Stream a CSV straight from a lazy query cursor: flat memory, no model
+     * hydration and no pre-count, suitable for very large datasets.
+     *
+     * @param  array<int, string>  $headings
+     */
+    public function streamCsv(QueryBuilderContract $query, array $headings, string $prefix): StreamedResponse
+    {
+        $filename = now()->format('Y-m-d') . '-' . $prefix . '-' . rand(111, 999) . '.csv';
+
+        return response()->streamDownload(function () use ($query, $headings) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $headings, ',', '"', '');
+
+            foreach ($query->cursor() as $row) {
+                fputcsv($handle, array_values((array) $row), ',', '"', '');
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     /**

@@ -39,6 +39,26 @@ class CustomersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
         return count(array_diff_key($this->recipe, ['all_customers' => true])) > 0;
     }
 
+    /**
+     * Columns selected for streamed CSV exports, aligned with headings().
+     *
+     * @return array<int, string>
+     */
+    public function exportColumns(): array
+    {
+        return [
+            'customers.id',
+            'customers.slug',
+            'customers.name',
+            'customers.email',
+            'customers.phone',
+            'customers.contact_name',
+            'customers.state',
+            'customers.company_name',
+            'customers.created_at',
+        ];
+    }
+
     /** @var Customer $row */
     public function map($row): array
     {
