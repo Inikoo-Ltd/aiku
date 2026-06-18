@@ -36,8 +36,12 @@ class GetCustomersQueryByRecipe
     {
         $query = DB::table('customers');
 
-        $query->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
-            ->where('customer_comms.is_subscribed_to_marketing', true);
+        $query->whereExists(function (Builder $query) {
+            $query->select(DB::raw(1))
+                ->from('customer_comms')
+                ->whereColumn('customer_comms.customer_id', 'customers.id')
+                ->where('customer_comms.is_subscribed_to_marketing', true);
+        });
 
         if ($shopId) {
             $query->where('customers.shop_id', $shopId);

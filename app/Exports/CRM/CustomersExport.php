@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class CustomersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
 {
-    public function __construct(public Organisation|Shop $parent, public array $recipe = [])
+    public function __construct(public Organisation|Shop $parent, public array $recipe = [], public array $states = [], public array $statuses = [])
     {
     }
 
@@ -31,12 +31,40 @@ class CustomersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             $query->whereIn('customers.id', $recipeQuery->select('customers.id'));
         }
 
+        if (count($this->states) > 0) {
+            $query->whereIn('customers.state', $this->states);
+        }
+
+        if (count($this->statuses) > 0) {
+            $query->whereIn('customers.status', $this->statuses);
+        }
+
         return $query;
     }
 
     protected function recipeHasFilters(): bool
     {
         return count(array_diff_key($this->recipe, ['all_customers' => true])) > 0;
+    }
+
+    /**
+     * Columns selected for streamed CSV exports, aligned with headings().
+     *
+     * @return array<int, string>
+     */
+    public function exportColumns(): array
+    {
+        return [
+            'customers.id',
+            'customers.slug',
+            'customers.name',
+            'customers.email',
+            'customers.phone',
+            'customers.contact_name',
+            'customers.state',
+            'customers.company_name',
+            'customers.created_at',
+        ];
     }
 
     /** @var Customer $row */

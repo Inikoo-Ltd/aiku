@@ -82,6 +82,9 @@ const props = defineProps<{
         id: number
         slug: string
         currency_code: string
+        default_dates?: {
+            start: string            
+        }
     }
     offers?: {}
     related_product_category: object,

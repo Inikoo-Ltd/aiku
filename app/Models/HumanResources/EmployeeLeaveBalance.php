@@ -1,26 +1,31 @@
 <?php
 
+/*
+ * @Author: andiferdiawan (https://github.com/andiferdiawan)
+ * @Created: 2026-06-12
+ * @Copyright: Copyright (c) 2026, andiferdiawan
+ */
+
 namespace App\Models\HumanResources;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int $employee_id
- * @property int $year
- * @property int $annual_days
+ * @property int|null $employee_contract_id
+ * @property Carbon|null $period_start
+ * @property Carbon|null $period_end
  * @property float $annual_used
- * @property int $medical_days
  * @property float $medical_used
- * @property int $unpaid_days
  * @property float $unpaid_used
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read \App\Models\HumanResources\Employee|null $employee
+ * @property-read \App\Models\HumanResources\EmployeeContract|null $contract
  * @property-read float $annual_remaining
- * @property-read float $medical_remaining
- * @property-read float $unpaid_remaining
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance query()
@@ -31,9 +36,11 @@ class EmployeeLeaveBalance extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'annual_used' => 'float',
+        'annual_used'  => 'float',
         'medical_used' => 'float',
-        'unpaid_used' => 'float',
+        'unpaid_used'  => 'float',
+        'period_start' => 'date',
+        'period_end'   => 'date',
     ];
 
     public function employee(): BelongsTo
@@ -41,18 +48,15 @@ class EmployeeLeaveBalance extends Model
         return $this->belongsTo(Employee::class);
     }
 
+    public function contract(): BelongsTo
+    {
+        return $this->belongsTo(EmployeeContract::class, 'employee_contract_id');
+    }
+
     public function getAnnualRemainingAttribute(): float
     {
-        return max(0, $this->annual_days - $this->annual_used);
-    }
+        $annualDays = $this->contract?->annual_leave_days ?? 0;
 
-    public function getUnpaidRemainingAttribute(): float
-    {
-        return max(0, $this->unpaid_days - $this->unpaid_used);
-    }
-
-    public function getMedicalRemainingAttribute(): float
-    {
-        return max(0, $this->medical_days - $this->medical_used);
+        return max(0, $annualDays - $this->annual_used);
     }
 }
