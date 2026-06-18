@@ -9,6 +9,8 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\CRM\Customer\GetCustomerFilterStructure;
+use App\Actions\CRM\Customer\GetCustomersQueryByRecipe;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
@@ -44,6 +46,15 @@ class IndexCustomers extends OrgAction
     use HasSearchableText;
 
     private Group|Shop|Organisation $parent;
+
+    private array $customerFilters = [];
+
+    private int $estimatedRecipients = 0;
+
+    protected function recipeHasFilters(array $recipe): bool
+    {
+        return count(array_diff_key($recipe, ['all_customers' => true])) > 0;
+    }
 
     protected function getElementGroups($parent): array
     {
@@ -139,6 +150,22 @@ class IndexCustomers extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Customer::class);
+
+        if ($parent instanceof Shop) {
+            $recipe = request()->input('filters', []);
+
+            if (is_array($recipe) && $this->recipeHasFilters($recipe)) {
+                $this->customerFilters = $recipe;
+
+                $recipeQuery = GetCustomersQueryByRecipe::run($parent->id, $recipe);
+
+                $queryBuilder->whereIn('customers.id', (clone $recipeQuery)->select('customers.id'));
+
+                $this->estimatedRecipients = (clone $recipeQuery)->count('customers.id');
+            } else {
+                $this->estimatedRecipients = Customer::where('shop_id', $parent->id)->count();
+            }
+        }
 
         if ($parent instanceof Organisation || $parent instanceof Shop) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -384,6 +411,18 @@ class IndexCustomers extends OrgAction
         $scope  = $this->parent;
         $action = null;
 
+        $filterProps = [];
+
+        if ($this->parent instanceof Shop) {
+            $filterProps = [
+                'filtersStructure'    => GetCustomerFilterStructure::run($this->parent),
+                'filters'             => $this->customerFilters,
+                'estimatedRecipients' => $this->estimatedRecipients,
+                'shop_id'             => $this->parent->id,
+                'shop_slug'           => $this->parent->slug,
+            ];
+        }
+
         if (!$scope instanceof Group && $this->canEdit && $this->parent->engine !== ShopEngineEnum::FAIRE) {
             $action = [
                 [
@@ -439,7 +478,8 @@ class IndexCustomers extends OrgAction
                         ]
                     ]
                 ],
-                'customers' => CustomersResource::collection($customers)
+                'customers' => CustomersResource::collection($customers),
+                ...$filterProps,
             ]
         )->table($this->tableStructure(parent: $this->parent));
     }

@@ -92,7 +92,7 @@ class IndexOffers extends OrgAction
             ->where('audits.event', 'created')
             ->where('audits.user_type', 'User')
             ->select([
-                'audits.auditable_id as offer_id', 
+                'audits.auditable_id as offer_id',
                 'users.contact_name as created_by'
             ]);
 
@@ -178,7 +178,7 @@ class IndexOffers extends OrgAction
 
         return $query->defaultSort('offers.id')
             ->select($selects)
-            ->allowedSorts(['id', 'code','duration', 'created_at', 'name', 'type', 'orders', 'invoices', 'sales_grp_currency_external'])
+            ->allowedSorts(['state', 'id', 'code', 'start_at', 'end_at', 'created_at', 'name', 'type', 'orders', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -213,7 +213,7 @@ class IndexOffers extends OrgAction
             $table->withEmptyState($emptyStateData);
             $table->withModelOperations($modelOperations);
 
-            $table->column(key: 'state', label: '', type: 'icon', sortable: false);
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true, searchable: false);
             $table->column(key: 'name', label: __('Name'), sortable: true);
             $table->column(key: 'label', label: __('Label'), sortable: false);
             if ($parent instanceof ProductCategory) {
@@ -221,7 +221,8 @@ class IndexOffers extends OrgAction
             } else {
                 $table->column(key: 'type', label: __('Type'), sortable: true);
             }
-            $table->column(key: 'duration', label: __('Duration'), sortable: true, align: 'right');
+            $table->column(key: 'start_at', label: __('Start Date'), sortable: true, align: 'right');
+            $table->column(key: 'end_at', label: __('End Date'), sortable: true, align: 'right');
             $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

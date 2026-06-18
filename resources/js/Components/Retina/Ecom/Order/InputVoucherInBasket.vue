@@ -16,7 +16,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 library.add(faTag)
 
 const props = defineProps<{
-    voucher: {
+    voucher?: {
         id: number
         voucher_code: string
         voucher_amount: number
@@ -27,7 +27,7 @@ const props = defineProps<{
         name: string
         discount: number
     } | null
-    order: {
+    order?: {
         id: number
     }
     routes?: {
@@ -55,7 +55,7 @@ const locale = inject('locale', aikuLocaleStructure)
 // Section: Voucher
 const isLoadingVoucher = ref(false)
 const isModalVoucherNotFound = ref(false)
-const voucherNotFoundMessage = ref('')
+const voucherNotFoundMessage = ref<null | string>('')
 const currentVoucher = ref(props.voucher || {
     id: 0,
     voucher_code: '',
