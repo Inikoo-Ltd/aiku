@@ -51,6 +51,10 @@ class IndexCustomers extends OrgAction
 
     private int $estimatedRecipients = 0;
 
+    private array $stateFilter = [];
+
+    private array $statusFilter = [];
+
     protected function recipeHasFilters(array $recipe): bool
     {
         return count(array_diff_key($recipe, ['all_customers' => true])) > 0;
@@ -58,7 +62,7 @@ class IndexCustomers extends OrgAction
 
     protected function getElementGroups($parent): array
     {
-        return [
+        $groups = [
             'state'  => [
                 'label'    => __('State'),
                 'elements' => array_merge_recursive(
@@ -80,6 +84,58 @@ class IndexCustomers extends OrgAction
                 }
             ]
         ];
+
+        if ($parent instanceof Shop) {
+            unset($groups['state'], $groups['status']);
+        }
+
+        return $groups;
+    }
+
+    protected function getStateFilter(): array
+    {
+        $states = request()->input('state', []);
+
+        if (!is_array($states)) {
+            $states = [$states];
+        }
+
+        return array_values(array_intersect($states, array_keys(CustomerStateEnum::labels())));
+    }
+
+    protected function getStatusFilter(): array
+    {
+        $statuses = request()->input('status', []);
+
+        if (!is_array($statuses)) {
+            $statuses = [$statuses];
+        }
+
+        return array_values(array_intersect($statuses, array_keys(CustomerStatusEnum::labels())));
+    }
+
+    protected function getStateOptions(Shop $shop): array
+    {
+        $labels = CustomerStateEnum::labels();
+        $counts = CustomerStateEnum::count($shop);
+
+        return array_map(fn ($value) => [
+            'value' => $value,
+            'label' => $labels[$value],
+            'count' => $counts[$value] ?? 0,
+        ], array_keys($labels));
+    }
+
+    protected function getStatusOptions(Shop $shop): array
+    {
+        $labels = CustomerStatusEnum::labels();
+        $counts = CustomerStatusEnum::count($shop);
+
+        return array_map(fn ($value) => [
+            'value' => $value,
+            'label' => $labels[$value],
+            'count' => $counts[$value] ?? 0,
+        ], array_keys($labels));
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -152,6 +208,9 @@ class IndexCustomers extends OrgAction
         $queryBuilder = QueryBuilder::for(Customer::class);
 
         if ($parent instanceof Shop) {
+            $this->stateFilter = $this->getStateFilter();
+            $this->statusFilter = $this->getStatusFilter();
+
             $recipe = request()->input('filters', []);
 
             if (is_array($recipe) && $this->recipeHasFilters($recipe)) {
@@ -161,10 +220,20 @@ class IndexCustomers extends OrgAction
 
                 $queryBuilder->whereIn('customers.id', (clone $recipeQuery)->select('customers.id'));
 
-                $this->estimatedRecipients = (clone $recipeQuery)->count('customers.id');
+                $estimateQuery = (clone $recipeQuery);
             } else {
-                $this->estimatedRecipients = Customer::where('shop_id', $parent->id)->count();
+                $estimateQuery = Customer::where('shop_id', $parent->id);
             }
+
+            if (count($this->stateFilter) > 0) {
+                $estimateQuery->whereIn('customers.state', $this->stateFilter);
+            }
+
+            if (count($this->statusFilter) > 0) {
+                $estimateQuery->whereIn('customers.status', $this->statusFilter);
+            }
+
+            $this->estimatedRecipients = $estimateQuery->count('customers.id');
         }
 
         if ($parent instanceof Organisation || $parent instanceof Shop) {
@@ -175,6 +244,16 @@ class IndexCustomers extends OrgAction
                     engine: $elementGroup['engine'],
                     prefix: $prefix
                 );
+            }
+        }
+
+        if ($parent instanceof Shop) {
+            if (count($this->stateFilter) > 0) {
+                $queryBuilder->whereIn('customers.state', $this->stateFilter);
+            }
+
+            if (count($this->statusFilter) > 0) {
+                $queryBuilder->whereIn('customers.status', $this->statusFilter);
             }
         }
 
@@ -420,6 +499,10 @@ class IndexCustomers extends OrgAction
                 'estimatedRecipients' => $this->estimatedRecipients,
                 'shop_id'             => $this->parent->id,
                 'shop_slug'           => $this->parent->slug,
+                'stateOptions'        => $this->getStateOptions($this->parent),
+                'stateFilter'         => $this->stateFilter,
+                'statusOptions'       => $this->getStatusOptions($this->parent),
+                'statusFilter'        => $this->statusFilter,
             ];
         }
 

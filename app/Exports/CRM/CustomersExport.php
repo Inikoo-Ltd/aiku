@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class CustomersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
 {
-    public function __construct(public Organisation|Shop $parent, public array $recipe = [])
+    public function __construct(public Organisation|Shop $parent, public array $recipe = [], public array $states = [], public array $statuses = [])
     {
     }
 
@@ -29,6 +29,14 @@ class CustomersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             $recipeQuery = GetCustomersQueryByRecipe::run($this->parent->id, $this->recipe);
 
             $query->whereIn('customers.id', $recipeQuery->select('customers.id'));
+        }
+
+        if (count($this->states) > 0) {
+            $query->whereIn('customers.state', $this->states);
+        }
+
+        if (count($this->statuses) > 0) {
+            $query->whereIn('customers.status', $this->statuses);
         }
 
         return $query;

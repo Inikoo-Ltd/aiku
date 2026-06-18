@@ -36,6 +36,7 @@ import { Button as ButtonPrime, InputNumber, InputText, RadioButton } from 'prim
 import Menu from 'primevue/menu'
 import Badge from 'primevue/badge'
 import Dropdown from 'primevue/dropdown'
+import MultiSelect from 'primevue/multiselect'
 import Calendar from 'primevue/calendar'
 import Checkbox from 'primevue/checkbox'
 import ToggleButton from 'primevue/togglebutton'
@@ -82,8 +83,14 @@ const props = withDefaults(defineProps<{
     shopSlug: string
     showSave?: boolean
     exportRoutes?: { xlsx: routeType, csv: routeType }
+    stateOptions?: { value: string, label: string, count: number }[]
+    stateFilter?: string[]
+    statusOptions?: { value: string, label: string, count: number }[]
+    statusFilter?: string[]
+    estimateLabel?: string
 }>(), {
     showSave: true,
+    estimateLabel: 'Estimated Recipients',
 });
 
 const {
@@ -105,7 +112,30 @@ const {
     saveFilters,
     getPostalCodeModel,
     hydrateSavedFilters,
+    extraQuery,
 } = useFilterRecipients(props)
+
+const selectedStates = ref<string[]>(props.stateFilter ? [...props.stateFilter] : [])
+
+if (props.stateOptions?.length) {
+    extraQuery.state = [...selectedStates.value]
+}
+
+const onStateChange = () => {
+    extraQuery.state = [...selectedStates.value]
+    fetchCustomers()
+}
+
+const selectedStatuses = ref<string[]>(props.statusFilter ? [...props.statusFilter] : [])
+
+if (props.statusOptions?.length) {
+    extraQuery.status = [...selectedStatuses.value]
+}
+
+const onStatusChange = () => {
+    extraQuery.status = [...selectedStatuses.value]
+    fetchCustomers()
+}
 
 const exportUrl = (type: 'csv' | 'xlsx') => {
     const r = props.exportRoutes?.[type]
@@ -116,7 +146,7 @@ const exportUrl = (type: 'csv' | 'xlsx') => {
     const current = new URLSearchParams(window.location.search)
     const filterQuery = new URLSearchParams()
     current.forEach((value, key) => {
-        if (key === 'filters' || key.startsWith('filters[')) {
+        if (key === 'filters' || key.startsWith('filters[') || key === 'state' || key.startsWith('state[') || key === 'status' || key.startsWith('status[')) {
             filterQuery.append(key, value)
         }
     })
@@ -336,9 +366,33 @@ watch(
                     <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
                 </Button>
 
-                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4" @click="fetchCustomers" />
+                <MultiSelect v-if="stateOptions?.length" v-model="selectedStates" :options="stateOptions"
+                    optionLabel="label" optionValue="value" :placeholder="trans('State')" :maxSelectedLabels="2"
+                    :showToggleAll="false" class="h-10 items-center w-max" appendTo="body" @change="onStateChange"
+                    :pt="{ label: { class: 'whitespace-nowrap' } }">
+                    <template #option="{ option }">
+                        <div class="flex justify-between items-center gap-4 w-full">
+                            <span>{{ option.label }}</span>
+                            <span class="text-xs text-gray-400">{{ option.count }}</span>
+                        </div>
+                    </template>
+                </MultiSelect>
 
-                <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4"
+                <MultiSelect v-if="statusOptions?.length" v-model="selectedStatuses" :options="statusOptions"
+                    optionLabel="label" optionValue="value" :placeholder="trans('Status')" :maxSelectedLabels="2"
+                    :showToggleAll="false" class="h-10 items-center w-max" appendTo="body" @change="onStatusChange"
+                    :pt="{ label: { class: 'whitespace-nowrap' } }">
+                    <template #option="{ option }">
+                        <div class="flex justify-between items-center gap-4 w-full">
+                            <span>{{ option.label }}</span>
+                            <span class="text-xs text-gray-400">{{ option.count }}</span>
+                        </div>
+                    </template>
+                </MultiSelect>
+
+                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4 shrink-0 whitespace-nowrap" @click="fetchCustomers" />
+
+                <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4 shrink-0 whitespace-nowrap"
                     @click="clearAllFilters" />
             </div>
             <!-- center side -->
@@ -579,7 +633,7 @@ watch(
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
 
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">{{ trans("Estimated Recipients") }}</p>
+                    <p class="text-sm text-gray-500 mb-1">{{ trans(estimateLabel) }}</p>
                     <h2 class="text-4xl font-semibold tracking-tight text-gray-900">
                         {{ trans(formatNumber(estimatedRecipients)) }}
                     </h2>

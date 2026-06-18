@@ -10,6 +10,8 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
+use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Helpers\Export\ExportTypeEnum;
 use App\Exports\CRM\CustomersExport;
 use App\Models\Catalogue\Shop;
@@ -32,8 +34,10 @@ class ExportCustomers extends OrgAction
     {
         $type = $modelData['type'];
         $recipe = $modelData['filters'] ?? [];
+        $states = $this->getStateFilter($modelData['state'] ?? []);
+        $statuses = $this->getStatusFilter($modelData['status'] ?? []);
 
-        $export = new CustomersExport($parent, $recipe);
+        $export = new CustomersExport($parent, $recipe, $states, $statuses);
 
         if ($type === ExportTypeEnum::XLSX->value && $export->query()->toBase()->count() < self::STREAM_THRESHOLD) {
             return $this->export($export, 'customers', $type);
@@ -49,9 +53,31 @@ class ExportCustomers extends OrgAction
     public function rules(): array
     {
         return [
-            'type'    => ['required', 'string', Rule::in('csv', 'xlsx')],
-            'filters' => ['sometimes', 'nullable', 'array'],
+            'type'     => ['required', 'string', Rule::in('csv', 'xlsx')],
+            'filters'  => ['sometimes', 'nullable', 'array'],
+            'state'    => ['sometimes', 'nullable', 'array'],
+            'state.*'  => ['string'],
+            'status'   => ['sometimes', 'nullable', 'array'],
+            'status.*' => ['string'],
         ];
+    }
+
+    protected function getStateFilter(array|string $states): array
+    {
+        if (!is_array($states)) {
+            $states = [$states];
+        }
+
+        return array_values(array_intersect($states, array_keys(CustomerStateEnum::labels())));
+    }
+
+    protected function getStatusFilter(array|string $statuses): array
+    {
+        if (!is_array($statuses)) {
+            $statuses = [$statuses];
+        }
+
+        return array_values(array_intersect($statuses, array_keys(CustomerStatusEnum::labels())));
     }
 
 
