@@ -167,7 +167,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         foreach (
             $order->transactions()
                 ->where('has_discount_when_submitted', true)
-                ->whereRaw("submitted_offers_data <> '{}'::jsonb") // If this isn't present due to the bug you told me previously Raul, but submitted_discount_factor is indeed less than 1, would throw error.
+                ->whereRaw("submitted_offers_data <> '{}'::jsonb")
                 ->where('submitted_discount_factor', '<', DB::raw('current_discount_factor'))
                 ->get() as $transactionWithSubmittedDiscount
         ) {
@@ -481,12 +481,18 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function getDaysSinceLastInvoiced(Order $order): int
     {
+
+        $customer = $order->customer;
+        if (!$customer) {
+            return 10000;
+        }
+
         if ($this->isLastInvoicedSet) {
             return $this->daysSinceLastInvoiced ?? 10000;
         }
 
-        $lastInvoiced            = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
-            return $order->customer->last_invoiced_at;
+        $lastInvoiced            = Cache::remember("customer_last_invoiced_at_$customer->id", now()->addDay(), function () use ($customer) {
+            return $customer->last_invoiced_at;
         });
         $this->isLastInvoicedSet = true;
         // Explicitly cast to int to prevent PHP 8.4+ precision loss warnings

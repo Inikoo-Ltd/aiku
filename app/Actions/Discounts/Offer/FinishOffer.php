@@ -6,13 +6,9 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Discounts\Offer\UI;
+namespace App\Actions\Discounts\Offer;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
-use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
-use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
-use App\Actions\Ordering\Order\CleanFinishedVouchers;
-use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
+use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\OrgAction;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
@@ -24,6 +20,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class FinishOffer extends OrgAction
 {
     use AsAction;
+    use HandlesOfferSideEffects;
 
     public function handle(Offer $offer): Offer
     {
@@ -49,22 +46,7 @@ class FinishOffer extends OrgAction
             ]);
         }
 
-        ShopHydrateOffersData::run($offer->shop_id);
-        if ($currentStatus != $offer->status) {
-            if ($offer->voucher) {
-                CleanFinishedVouchers::run($offer->id);
-            }
-
-            if ($offer->trigger_type == 'ProductCategory') {
-                UpdateProductCategoryOffersData::run($offer);
-            }
-
-            if ($offer->customer_id) {
-                RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay(now()->addSeconds(10));
-            } else {
-                RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
-            }
-        }
+        $this->handleOfferSideEffects($offer, $currentStatus != $offer->status);
 
         return $offer;
     }
