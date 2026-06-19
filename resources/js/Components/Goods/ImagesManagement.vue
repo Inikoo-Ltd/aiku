@@ -336,7 +336,7 @@ function onDeleteFilesInList(categoryBox: any) {
                             <FontAwesomeIcon v-if="categoryBox.type == 'video' && video_editable" @click="() => {
                                 selectedVideoToUpdate = { ...categoryBox }
                                 isModalEditVideo = true
-                            }" :icon="faPencil" class="text-gray-400 hover:text-gray-600" fixed-width />
+                            }" :icon="faPencil" class="text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width />
                             <FontAwesomeIcon v-if="(categoryBox.images || categoryBox.url) && editable" :icon="faUnlink"
                                 @click="() => onDeletefilesInBox(categoryBox)"
                                 class="text-gray-400 text-red-600 cursor-pointer text-xs" />
