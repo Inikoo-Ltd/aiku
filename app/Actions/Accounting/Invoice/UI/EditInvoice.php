@@ -124,8 +124,8 @@ class EditInvoice extends OrgAction
                             ],
                         ],
                         [
-                            'title'   => __('Customer identity number'),
-                            'label'   => __('Customer identity number'),
+                            'title'   => __('Tax number'),
+                            'label'   => __('Tax number'),
                             'icon'    => 'fa-light fa-user',
                             'fields'  => [
                                 'formatted_tax_number'          => [
@@ -135,6 +135,14 @@ class EditInvoice extends OrgAction
                                     'additional_instructions'   => __("You are required to add the Country Code as prefix"),
                                     'value'                     => $invoice->tax_number
                                 ],
+
+                            ],
+                        ],
+                        [
+                            'title'   => __('Customer identity number'),
+                            'label'   => __('Customer identity number'),
+                            'icon'    => 'fa-light fa-user',
+                            'fields'  => [
                                 'identity_document_number'      => [
                                     'type'          => 'input',
                                     'label'         => data_get($invoice->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),

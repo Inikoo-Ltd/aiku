@@ -87,7 +87,7 @@ class ProposeAllegroProduct
             $isRequired    = $param['required'] ?? false;
             $restrictions  = $param['restrictions'] ?? [];
 
-            if(!$isRequired) {
+            if (!$isRequired) {
                 continue;
             }
 

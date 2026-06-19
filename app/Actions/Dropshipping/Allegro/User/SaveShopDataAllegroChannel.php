@@ -16,7 +16,6 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class SaveShopDataAllegroChannel
 {
@@ -91,7 +90,7 @@ class SaveShopDataAllegroChannel
                     data_set($data, 'return_id', Arr::get($return, 'id'));
                 }
 
-                if(Arr::get($data, 'responsible_producer_id') === null) {
+                if (Arr::get($data, 'responsible_producer_id') === null) {
                     $responsibleProducer = $allegroUser->createResponsibleProducer([
                         'name' => trim($shop->name),
                         'producerData' => [
@@ -112,7 +111,7 @@ class SaveShopDataAllegroChannel
                     data_set($data, 'responsible_producer_id', Arr::get($responsibleProducer, 'id'));
                 }
 
-                if(Arr::get($data, 'responsible_person_id') === null) {
+                if (Arr::get($data, 'responsible_person_id') === null) {
                     $responsiblePerson = $allegroUser->createResponsiblePerson([
                         'name' => trim($shop->name),
                         'personalData' => [

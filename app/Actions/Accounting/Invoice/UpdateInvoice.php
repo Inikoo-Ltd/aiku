@@ -28,7 +28,6 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
-use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
@@ -91,14 +90,14 @@ class UpdateInvoice extends OrgAction
         $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
 
         $taxNumber = null;
-        $useCustomerTaxNumber = true;
+
 
         $updateTaxCategory = (bool) $billingAddressData;
 
         if (Arr::has($modelData, 'formatted_tax_number')) {
             $formattedTaxNumber     = getUnformattedTaxNumber(Arr::pull($modelData, 'formatted_tax_number'));
             $countryId              = null;
-            $useCustomerTaxNumber   = false;
+
 
             if ($formattedTaxNumber && Arr::has($formattedTaxNumber, 'country_code')) {
                 $countryId          = Country::where('code', Arr::pull($formattedTaxNumber, 'country_code'))->first()?->id;
@@ -116,7 +115,7 @@ class UpdateInvoice extends OrgAction
                         strict: $this->strict
                     );
                 }
-            } elseif (!$countryId && $invoice->taxNumber?->id) {
+            } elseif ($invoice->taxNumber?->id) {
                 DeleteTaxNumber::run($invoice->taxNumber);
             }
 
@@ -148,7 +147,7 @@ class UpdateInvoice extends OrgAction
 
             $customer = $invoice->customer;
 
-            if ($useCustomerTaxNumber) {
+            if (!$this->strict) {
                 $taxNumber = $customer->taxNumber;
             }
 

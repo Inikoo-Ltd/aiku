@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 16 Jun 2026 10:24:23 Malaysia Time, Kuala Lumpur, Malaysia
@@ -138,7 +139,7 @@ class RepairMasterFamilyGrVolFromShops
 
         foreach (self::PRIORITY_SHOP_CODES as $shopCode) {
             /** @var ProductCategory $child */
-            $child = $childrenWithOffer->first(fn($c) => $c->shop?->code === $shopCode);
+            $child = $childrenWithOffer->first(fn ($c) => $c->shop?->code === $shopCode);
             if ($child) {
                 return $child;
             }

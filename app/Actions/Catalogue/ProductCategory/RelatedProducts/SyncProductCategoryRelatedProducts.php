@@ -33,7 +33,7 @@ class SyncProductCategoryRelatedProducts extends OrgAction
 
         $productCategory->relatedProducts()->sync($relatedProducts);
 
-        if($productCategory->webpage) {
+        if ($productCategory->webpage) {
             BreakWebpageCache::run($productCategory->webpage);
         }
 

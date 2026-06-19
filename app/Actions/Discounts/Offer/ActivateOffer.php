@@ -17,7 +17,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -57,7 +56,7 @@ class ActivateOffer extends OrgAction
         OfferCampaignHydrateOffersState::run($offer->offerCampaign);
 
 
-        $this->handleOfferSideEffects($offer,false);
+        $this->handleOfferSideEffects($offer, false);
 
 
         if (!$offer->voucher) {

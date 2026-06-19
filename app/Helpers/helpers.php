@@ -34,7 +34,7 @@ if (!function_exists('getUnformattedTaxNumber')) {
         $prefix     = substr($formattedTaxNumber, 0, 2);
         $taxNumber  = trim(substr($formattedTaxNumber, 2));
 
-        if (!ctype_alpha($prefix)) {
+        if (!ctype_alpha($prefix) || !$taxNumber) {
             return null;
         }
 

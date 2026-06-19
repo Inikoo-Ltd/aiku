@@ -96,7 +96,7 @@ trait WithAllegroApiServices
         $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
         $description = str_replace('&acute;', '´', $content);
 
-        $description = preg_replace_callback('/<b>(.*?)<\/b>/is', function($matches) {
+        $description = preg_replace_callback('/<b>(.*?)<\/b>/is', function ($matches) {
             return '<b>' . strip_tags($matches[1]) . '</b>';
         }, $description);
 
@@ -105,7 +105,7 @@ trait WithAllegroApiServices
         return strip_tags($description, '<b><p><br>');
     }
 
-    function fixHtml(string $html): string
+    public function fixHtml(string $html): string
     {
         $dom = new DOMDocument();
         libxml_use_internal_errors(true);

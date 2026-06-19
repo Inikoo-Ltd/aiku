@@ -78,6 +78,7 @@ use App\Actions\HumanResources\HolidayYear\UI\IndexHolidayYears;
 use App\Actions\HumanResources\HolidayYear\StoreHolidayYear;
 use App\Actions\HumanResources\HolidayYear\UpdateHolidayYear;
 use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
+
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
 Route::prefix('employees')->as('employees.')->group(function () {

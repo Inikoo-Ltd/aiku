@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 16 Jun 2026 10:24:59 Malaysia Time, Kuala Lumpur, Malaysia
@@ -7,7 +8,6 @@
 
 namespace App\Actions\Maintenance\Masters\MasterProductCategories;
 
-use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
@@ -26,11 +26,11 @@ class SyncFollowMasterGoldReward
     {
         foreach ($masterProductCategory->productCategories as $productCategory) {
             if ($productCategory->shop->is_aiku) {
-                $isSameGrVolDiscount=$this->isSameGrVolDiscount($masterProductCategory, $productCategory);
+                $isSameGrVolDiscount = $this->isSameGrVolDiscount($masterProductCategory, $productCategory);
 
-                if(!$this->dryRun){
+                if (!$this->dryRun) {
 
-                    $productCategory->updateQuietly(['follow_master_gr'=>$isSameGrVolDiscount]);
+                    $productCategory->updateQuietly(['follow_master_gr' => $isSameGrVolDiscount]);
 
                 }
 
@@ -41,22 +41,22 @@ class SyncFollowMasterGoldReward
 
     public function isSameGrVolDiscount(MasterProductCategory $masterProductCategory, ProductCategory $productCategory): bool
     {
-        $isSameGoldRewardDiscount=false;
+        $isSameGoldRewardDiscount = false;
 
-        if($masterProductCategory->has_gr_vol_discount===$productCategory->has_gr_vol_discount){
+        if ($masterProductCategory->has_gr_vol_discount === $productCategory->has_gr_vol_discount) {
 
             $offer = Offer::where('trigger_id', $productCategory->id)
                 ->where('offer_type', 'Category Quantity Ordered Order Interval')
-                ->where('status',true)
+                ->where('status', true)
                 ->first();
-            if($offer){
-                $allowance=OfferAllowance::where('offer_id',$offer->id)->where('status',true)->first();
-                if($allowance){
-                    $grDiscountQuantity=Arr::get($offer->trigger_data,'item_quantity');
-                    $grDiscountPercentage=Arr::get($allowance->data,'percentage_off');
+            if ($offer) {
+                $allowance = OfferAllowance::where('offer_id', $offer->id)->where('status', true)->first();
+                if ($allowance) {
+                    $grDiscountQuantity = Arr::get($offer->trigger_data, 'item_quantity');
+                    $grDiscountPercentage = Arr::get($allowance->data, 'percentage_off');
 
-                    if($grDiscountQuantity==$masterProductCategory->gr_vol_discount_quantity && $grDiscountPercentage==$masterProductCategory->gr_vol_discount_percentage){
-                        $isSameGoldRewardDiscount=true;
+                    if ($grDiscountQuantity == $masterProductCategory->gr_vol_discount_quantity && $grDiscountPercentage == $masterProductCategory->gr_vol_discount_percentage) {
+                        $isSameGoldRewardDiscount = true;
                     }
 
                 }

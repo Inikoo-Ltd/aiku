@@ -147,7 +147,7 @@ class StoreEbayProduct extends RetinaAction
 
             $categoryBodySoap = '180924';
             $includedCategories = ['261186', '116113'];
-            if(!$product->barcode && $categoryId === $categoryBodySoap) {
+            if (!$product->barcode && $categoryId === $categoryBodySoap) {
                 $includedCategories[] = $categoryBodySoap;
             }
 

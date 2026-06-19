@@ -10,7 +10,6 @@ namespace App\Actions\Discounts\Offer\VolGr;
 
 use App\Actions\Discounts\Offer\FinishOffer;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Discounts\Offer;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;

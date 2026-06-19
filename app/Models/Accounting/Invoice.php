@@ -130,6 +130,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $amount_off
  * @property string|null $email
  * @property string|null $phone
+ * @property string|null $identity_document_number_alt
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -153,6 +154,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Shop|null $shop
  * @property-read \App\Models\Accounting\InvoiceStats|null $stats
  * @property-read TaxCategory $taxCategory
+ * @property-read TaxNumber|null $taxNumber
  * @method static \Database\Factories\Accounting\InvoiceFactory factory($count = null, $state = [])
  * @method static Builder<static>|Invoice newModelQuery()
  * @method static Builder<static>|Invoice newQuery()

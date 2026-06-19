@@ -50,7 +50,7 @@ class SuspendOffer extends OrgAction
 
         $offer->update($modelData);
 
-        if($currentStatus != $offer->status){
+        if ($currentStatus != $offer->status) {
             $this->handleOfferSideEffects($offer);
         }
 

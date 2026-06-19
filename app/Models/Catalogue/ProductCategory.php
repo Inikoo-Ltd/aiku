@@ -74,8 +74,6 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $source_department_id
  * @property string|null $source_family_id
  * @property bool $follow_master
- * @property bool|null $has_gr_vol_discount
- * @property bool $follow_master_gr
  * @property bool $show_in_website
  * @property int|null $webpage_id
  * @property string|null $url
@@ -112,6 +110,8 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $trade_unit_family_id
  * @property array<array-key, mixed> $faq
  * @property int|null $showcase_image_id
+ * @property bool|null $has_gr_vol_discount
+ * @property bool $follow_master_gr
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
