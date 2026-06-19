@@ -35,6 +35,13 @@ library.add(
     faEye, faShoppingCart, faUndo
 )
 
+interface NoteImage {
+    id: number
+    thumbnail?: { original: string }
+    source?: { original: string }
+    alt?: string | null
+}
+
 interface TimelineEvent {
     id: string
     type: string
@@ -42,6 +49,7 @@ interface TimelineEvent {
     title: string
     subtitle: string | null
     comment: string | null
+    images?: NoteImage[]
     icon: string[]
     color: string
     metadata: Record<string, unknown>
@@ -198,6 +206,22 @@ const formatMetadataValue = (value: unknown): string => {
                                 <p v-if="event.subtitle" class="text-sm text-gray-500 mt-0.5 truncate">
                                     {{ event.subtitle }}
                                 </p>
+                                <div v-if="event.type === 'note' && event.images?.length" class="mt-1.5 flex flex-wrap gap-1.5">
+                                    <a
+                                        v-for="img in event.images"
+                                        :key="img.id"
+                                        :href="img.source?.original"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="block"
+                                    >
+                                        <img
+                                            :src="img.thumbnail?.original ?? img.source?.original"
+                                            :alt="img.alt ?? ''"
+                                            class="h-14 w-14 rounded object-cover ring-1 ring-gray-200 hover:ring-indigo-400 transition"
+                                        />
+                                    </a>
+                                </div>
                             </div>
 
                             <div class="flex items-center gap-2 flex-none">

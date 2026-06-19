@@ -9,6 +9,11 @@ import { routeType } from '@/types/route'
 import SideEditorInputHTML from '@/Components/CMS/Fields/SideEditorInputHTML.vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faInfoCircle } from '@fal'
+
+library.add(faInfoCircle)
 
 const props = withDefaults(
     defineProps<{
@@ -95,6 +100,11 @@ const onChange = () => {
 
 <template>
     <div class="space-y-4">
+        <div class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <FontAwesomeIcon icon="fal fa-info-circle" class="mt-0.5" fixed-width aria-hidden="true" />
+            <span>{{ trans('These settings are applied site-wide, affecting this block on every page across the whole website.') }}</span>
+        </div>
+
         <div class="flex flex-col gap-2">
             <label class="font-medium text-sm">{{ trans('Title') }}</label>
             <SideEditorInputHTML v-model="title" :uploadRoutes="uploadRoutes" @update:modelValue="onChange" />
