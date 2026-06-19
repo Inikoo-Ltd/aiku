@@ -23,12 +23,14 @@ type GenerateProductsStructureOptions = {
 type BuildStructuredDataOptions = {
     webpageData?: StructuredDataWebpageData
     webBlocks?: any[] | Record<string, any>
+    breadcrumbs?: any[]
     currencyCode?: string | null
     websiteName?: string | null
 }
 
 const PRODUCT_BLOCK_TYPES = ["products-1", "products-2"]  // Family page
 const PRODUCT_PAGE_BLOCK_TYPES = ["product-1", "product-2"]  // Product page
+const DEPARTMENT_BLOCK_TYPES = ["sub-departments-1", "sub-departments-2", "sub-departments-3"]
 
 const normalizeWebBlocks = (webBlocks: GenerateProductsStructureOptions["webBlocks"]): any[] => {
     if (Array.isArray(webBlocks)) return webBlocks
@@ -193,6 +195,67 @@ const getEntityImageUrls = (entity: Record<string, any> | null | undefined): str
 
     return [...new Set(candidates.filter((candidate): candidate is string => typeof candidate === "string" && candidate.length > 0))]
 }
+
+const normalizeUrl = (value: unknown): string | undefined => {
+    if (typeof value !== "string" || value.length === 0) return undefined
+
+    try {
+        if (typeof window !== "undefined" && window.location?.origin) {
+            return new URL(value, window.location.origin).toString()
+        }
+
+        return new URL(value).toString()
+    } catch {
+        return value
+    }
+}
+
+// const buildDepartmentRelatedNodes = (
+//     webBlocks: BuildStructuredDataOptions["webBlocks"]
+// ): StructuredDataNode[] => {
+//     const relatedNodes = new Map<string, StructuredDataNode>()
+
+//     for (const block of normalizeWebBlocks(webBlocks)) {
+//         if (!DEPARTMENT_BLOCK_TYPES.includes(block?.type)) continue
+
+//         const fieldValue = block?.web_block?.layout?.data?.fieldValue ?? block?.structure ?? {}
+//         const items = [
+//             ...(Array.isArray(fieldValue?.sub_departments) ? fieldValue.sub_departments : []),
+//             ...(Array.isArray(fieldValue?.collections) ? fieldValue.collections : []),
+//         ]
+
+//         for (const item of items) {
+//             if (!isPlainObject(item) || !isFilledValue(item.url)) continue
+
+//             const url = normalizeUrl(item.url)
+//             if (!url) continue
+//             const name =
+//                 stripHtml(item.title) ??
+//                 stripHtml(item.name) ??
+//                 (isFilledValue(item.code) ? String(item.code) : undefined)
+
+//             if (!name) continue
+
+//             const node: StructuredDataNode = {
+//                 "@type": "CollectionPage",
+//                 "@id": url,
+//                 name,
+//                 url,
+//             }
+
+//             const imageUrls = getEntityImageUrls(item)
+//             if (imageUrls.length) {
+//                 node.image = imageUrls
+//             }
+
+//             if (!relatedNodes.has(url)) {
+//                 relatedNodes.set(url, node)
+//             }
+//         }
+//     }
+
+//     return Array.from(relatedNodes.values())
+// }
 
 const buildOfferNode = ({
     product,
@@ -412,6 +475,72 @@ const buildFamilyProductNode = ({
     return node
 }
 
+// const buildDepartmentNode = ({
+//     webpageData,
+//     webBlocks,
+// }: Pick<BuildStructuredDataOptions, "webpageData" | "webBlocks">): StructuredDataNode | null => {
+//     const hasPart = buildDepartmentRelatedNodes(webBlocks)
+
+//     if (!hasPart.length) return null
+
+//     const node: StructuredDataNode = {
+//         "@type": "CollectionPage",
+//         name: webpageData?.title,
+//         hasPart,
+//     }
+
+//     const description = stripHtml(webpageData?.description)
+//     if (description) {
+//         node.description = description
+//     }
+
+//     const pageUrl = webpageData?.canonical_url
+//     const normalizedPageUrl = normalizeUrl(pageUrl)
+//     if (normalizedPageUrl) {
+//         node["@id"] = normalizedPageUrl
+//         node.url = normalizedPageUrl
+//         node.mainEntityOfPage = normalizedPageUrl
+//     }
+
+//     return node
+// }
+
+const buildBreadcrumbListNode = (
+    breadcrumbs: any[] | null | undefined
+): StructuredDataNode | null => {
+    if (!Array.isArray(breadcrumbs) || !breadcrumbs.length) return null
+
+    const itemListElement = breadcrumbs
+        .map((breadcrumb, index) => {
+            if (breadcrumb?.type !== "simple") return null
+
+            const name = stripHtml(breadcrumb?.simple?.label) ?? (index === 0 ? "Home" : undefined)
+            if (!name) return null
+
+            const item = normalizeUrl(breadcrumb?.simple?.url)
+
+            const listItem: StructuredDataNode = {
+                "@type": "ListItem",
+                position: index + 1,
+                name,
+            }
+
+            if (item) {
+                listItem.item = item
+            }
+
+            return listItem
+        })
+        .filter((item): item is StructuredDataNode => item !== null)
+
+    if (!itemListElement.length) return null
+
+    return {
+        "@type": "BreadcrumbList",
+        itemListElement,
+    }
+}
+
 const normalizeStructuredDataForGraph = (
     structuredData: StructuredDataValue | null
 ): StructuredDataNode | null => {
@@ -482,6 +611,62 @@ const findOrCreateProductNode = (
     return newNode
 }
 
+// const findOrCreateCollectionPageNode = (
+//     data: StructuredDataNode,
+//     buildNode: () => StructuredDataNode
+// ): StructuredDataNode => {
+//     if (Array.isArray(data["@graph"])) {
+//         const existingNode =
+//             data["@graph"].find((node: StructuredDataNode) =>
+//                 ["CollectionPage", "WebPage"].includes(node?.["@type"])
+//             ) ?? null
+
+//         if (existingNode) return existingNode
+
+//         const newNode = buildNode()
+//         data["@graph"].push(newNode)
+//         return newNode
+//     }
+
+//     if (["CollectionPage", "WebPage"].includes(data["@type"])) {
+//         return data
+//     }
+
+//     const newNode = buildNode()
+
+//     data["@context"] = data["@context"] ?? "https://schema.org"
+//     data["@graph"] = [newNode]
+
+//     return newNode
+// }
+
+const appendGraphNode = (
+    data: StructuredDataNode,
+    node: StructuredDataNode,
+    matcher: (existingNode: StructuredDataNode) => boolean
+): void => {
+    if (Array.isArray(data["@graph"])) {
+        if (!data["@graph"].some((existingNode: StructuredDataNode) => matcher(existingNode))) {
+            data["@graph"].push(node)
+        }
+
+        return
+    }
+
+    if (matcher(data)) {
+        return
+    }
+
+    const currentNode = { ...data }
+
+    for (const key of Object.keys(data)) {
+        delete data[key]
+    }
+
+    data["@context"] = currentNode["@context"] ?? "https://schema.org"
+    data["@graph"] = [currentNode, node]
+}
+
 const mergeAutoVariants = (productNode: StructuredDataNode, autoVariants: StructuredDataNode[]): void => {
     const variantMap = new Map<string, StructuredDataNode>()
 
@@ -499,6 +684,34 @@ const mergeAutoVariants = (productNode: StructuredDataNode, autoVariants: Struct
 
     productNode.hasVariant = Array.from(variantMap.values())
 }
+
+// const mergeAutoHasParts = (pageNode: StructuredDataNode, autoHasParts: StructuredDataNode[]): void => {
+//     const hasPartMap = new Map<string, StructuredDataNode>()
+
+//     for (const existingPart of pageNode.hasPart ?? []) {
+//         const key =
+//             existingPart?.["@id"] ??
+//             existingPart?.url ??
+//             existingPart?.name
+
+//         if (key) {
+//             hasPartMap.set(String(key), existingPart)
+//         }
+//     }
+
+//     for (const autoHasPart of autoHasParts) {
+//         const key =
+//             autoHasPart?.["@id"] ??
+//             autoHasPart?.url ??
+//             autoHasPart?.name
+
+//         if (key && !hasPartMap.has(String(key))) {
+//             hasPartMap.set(String(key), autoHasPart)
+//         }
+//     }
+
+//     pageNode.hasPart = Array.from(hasPartMap.values())
+// }
 
 const mergeStructuredDataNode = (
     targetNode: StructuredDataNode,
@@ -529,10 +742,62 @@ const mergeStructuredDataNode = (
 export const buildStructuredData = ({
     webpageData,
     webBlocks,
+    breadcrumbs,
     currencyCode,
     websiteName,
 }: BuildStructuredDataOptions): StructuredDataValue | null => {
-    // Webpage: Family
+    const breadcrumbNode = buildBreadcrumbListNode(breadcrumbs)
+
+    // if (webpageData?.sub_type === "department") {
+        // const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
+        // const autoDepartmentNode = buildDepartmentNode({
+        //     webpageData,
+        //     webBlocks,
+        // })
+
+        // if (!autoDepartmentNode && !breadcrumbNode) {
+        //     return baseStructuredData
+        // }
+
+        // if (!baseStructuredData) {
+        //     if (autoDepartmentNode && breadcrumbNode) {
+        //         return {
+        //             "@context": "https://schema.org",
+        //             "@graph": [autoDepartmentNode, breadcrumbNode],
+        //         }
+        //     }
+
+        //     return {
+        //         "@context": "https://schema.org",
+        //         ...(autoDepartmentNode ?? breadcrumbNode),
+        //     }
+        // }
+
+        // const structuredData =
+        //     normalizeStructuredDataForGraph(baseStructuredData) ?? {
+        //         "@context": "https://schema.org",
+        //     }
+
+        // if (autoDepartmentNode) {
+        //     const departmentNode = findOrCreateCollectionPageNode(structuredData, () => ({
+        //         ...autoDepartmentNode,
+        //     }))
+
+        //     mergeStructuredDataNode(departmentNode, autoDepartmentNode)
+        //     mergeAutoHasParts(departmentNode, autoDepartmentNode.hasPart ?? [])
+        // }
+
+        // if (breadcrumbNode) {
+        //     appendGraphNode(
+        //         structuredData,
+        //         breadcrumbNode,
+        //         (node) => node?.["@type"] === "BreadcrumbList"
+        //     )
+        // }
+
+        // return structuredData
+    // }
+
     if (webpageData?.model_type === "ProductCategory" || webpageData?.sub_type === "family") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
     
@@ -556,6 +821,14 @@ export const buildStructuredData = ({
         )
     
         mergeAutoVariants(productNode, autoVariants)
+
+        if (breadcrumbNode) {
+            appendGraphNode(
+                structuredData,
+                breadcrumbNode,
+                (node) => node?.["@type"] === "BreadcrumbList"
+            )
+        }
     
         return structuredData
     }
@@ -592,7 +865,22 @@ export const buildStructuredData = ({
 
         mergeStructuredDataNode(productNode, autoProductNode)
 
+        if (breadcrumbNode) {
+            appendGraphNode(
+                structuredData,
+                breadcrumbNode,
+                (node) => node?.["@type"] === "BreadcrumbList"
+            )
+        }
+
         return structuredData
+    }
+
+    if (breadcrumbNode) {
+        return {
+            "@context": "https://schema.org",
+            ...breadcrumbNode,
+        }
     }
 
     return null
@@ -602,7 +890,7 @@ export const buildStructuredData = ({
 export const useStructuredData = () => {
     const mountStructuredData = (options: BuildStructuredDataOptions): HTMLScriptElement | null => {
         const structuredData = buildStructuredData(options)
-
+// console.log('Structured Data:', structuredData)
         if (!structuredData) return null
 
         return injectStructuredDataScript(structuredData)
