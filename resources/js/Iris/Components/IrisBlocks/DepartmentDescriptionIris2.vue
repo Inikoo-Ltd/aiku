@@ -141,7 +141,8 @@ const calculateSidebarHeight = async () => {
 
 	const newHeight = _content.value.offsetHeight - 80
 
-	if (newHeight !== maxSideBarHeight.value) {
+
+	if (newHeight != maxSideBarHeight.value) {
 		maxSideBarHeight.value = newHeight
 	}
 }
@@ -187,7 +188,10 @@ watch(
 		props.fieldValue.department.showcase_image,
 		props.screenType,
 	],
-	calculateDescriptionHeight,
+	()=>{
+		calculateDescriptionHeight()
+		calculateSidebarHeight()
+	},
 	{ immediate: true }
 )
 </script>
@@ -239,9 +243,7 @@ watch(
 				</aside>
 
 				<!-- Main Content -->
-				<div ref="_content" 	:style="{
-						...getStyles(fieldValue?.description?.properties, screenType),
-					}">
+				<div ref="_content" :style="{...getStyles(fieldValue?.description?.properties, screenType)}" class="h-fit">
 					<h1
 						class="text-[28px] md:text-[36px] lg:text-[46px] 2xl:text-[60px] font-bold leading-tight text-slate-900">
 						{{

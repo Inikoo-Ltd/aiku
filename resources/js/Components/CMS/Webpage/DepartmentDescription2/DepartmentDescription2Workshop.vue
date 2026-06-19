@@ -286,7 +286,7 @@ const responsiveClasses = computed(() => ({
 				</aside>
 
 				<!-- Main Content -->
-				<div ref="_content" :style="{
+				<div ref="_content" class="h-fit" :style="{
 					...getStyles(modelValue?.description?.properties, screenType),
 				}">
 					<h1>
