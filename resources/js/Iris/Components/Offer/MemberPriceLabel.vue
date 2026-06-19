@@ -13,10 +13,14 @@ library.add(faInfoCircle)
 
 const layout = inject("layout", retinaLayoutStructure)
 
-const infoPopover = ref()
+const infoPopover = ref<any>(null)
 
-const toggleInfo = (event: Event) => {
-    infoPopover.value?.toggle(event)
+const showInfo = (event?: Event) => {
+    infoPopover.value?.show?.(event)
+}
+
+const hideInfo = (event?: Event) => {
+    infoPopover.value?.hide?.(event)
 }
 
 const props = defineProps<{
@@ -47,8 +51,8 @@ const webpage_data = inject("webpage_data", null)
 
         <FontAwesomeIcon :icon="faMedal" v-tooltip="ctrans('Gold Reward')" class="text-lg" :class="active ? 'text-[#E87928]' : 'text-[#b3b3b3]'"/>
 
-        <div class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none text-white"
-        :class="active ? 'bg-[#E87928]' : 'bg-[#b3b3b3]'"  @click="toggleInfo">
+        <div class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none cursor-pointer text-white transform transition-all duration-150 "
+        :class="[ active ? 'bg-[#E87928] hover:bg-[#ff9b4a]' : 'bg-[#b3b3b3] border border-transparent hover:border-[#E87928] hover:text-[#E87928] hover:bg-white' ]" @mouseenter="showInfo" @mouseleave="hideInfo" @focus="showInfo" @blur="hideInfo" tabindex="0" aria-haspopup="true">
         <!-- :class="active ? 'bg-[#E87928]' : 'bg-[#c8c8c8]'"> -->
             <div v-if="offer?.allowances?.[0]?.percentage_off">
                 {{ offer.allowances[0].percentage_off * 100 }}%
