@@ -202,15 +202,15 @@ const _popoverProfit = ref(null)
 
 
         <!-- PRICE -->
-       <div class="flex flex-col gap-y-0 2xl:gap-y-0 zoom-75">
+       <div class="flex flex-col gap-y-0 2xl:gap-y-0">
 
             <div class="relative grid items-center gap-x-1 w-full"
                 :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'
-                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'">
+                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,80%)] 2xl:grid-cols-[1fr_minmax(0,80%)]'
+                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,80%)] 2xl:grid-cols-[1fr_minmax(0,80%)]'">
 
                 <div class="font-semibold whitespace-nowrap">
-                    <span>{{ trans("Price") }}</span>
+                  <!--   <span>{{ trans("Price") }}</span> -->
                     <span class="text-[8px] sm:text-[9px] font-light">
                         ({{ trans("Excl. Vat") }})
                     </span>
@@ -260,8 +260,8 @@ const _popoverProfit = ref(null)
             <!-- GR PRICE -->
             <div v-if="product.discounted_price" class="relative grid items-center gap-x-2 w-full mt-2"
                 :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'
-                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'">
+                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,80%)] 2xl:grid-cols-[1fr_minmax(0,80%)]'
+                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,80%)] 2xl:grid-cols-[1fr_minmax(0,80%)]'">
                 <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'">
                     <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" />
                 </div>
