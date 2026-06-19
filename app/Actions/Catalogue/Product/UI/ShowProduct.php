@@ -486,6 +486,25 @@ class ShowProduct extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.catalogue.products.not_online_products.show'  =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.not_online_products.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.not_online_products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    suffixIndex: " (".__("Not Online").")"
+                )
+            ),
             'grp.org.shops.show.catalogue.products.independent_products.all.show'  =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
