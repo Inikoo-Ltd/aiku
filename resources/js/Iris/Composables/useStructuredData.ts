@@ -210,52 +210,99 @@ const normalizeUrl = (value: unknown): string | undefined => {
     }
 }
 
-// const buildDepartmentRelatedNodes = (
-//     webBlocks: BuildStructuredDataOptions["webBlocks"]
-// ): StructuredDataNode[] => {
-//     const relatedNodes = new Map<string, StructuredDataNode>()
+const getDepartmentSourceItems = (
+    webBlocks: BuildStructuredDataOptions["webBlocks"]
+): Record<string, any>[] => {
+    const items: Record<string, any>[] = []
 
-//     for (const block of normalizeWebBlocks(webBlocks)) {
-//         if (!DEPARTMENT_BLOCK_TYPES.includes(block?.type)) continue
+    for (const block of normalizeWebBlocks(webBlocks)) {
+        if (!DEPARTMENT_BLOCK_TYPES.includes(block?.type)) continue
 
-//         const fieldValue = block?.web_block?.layout?.data?.fieldValue ?? block?.structure ?? {}
-//         const items = [
-//             ...(Array.isArray(fieldValue?.sub_departments) ? fieldValue.sub_departments : []),
-//             ...(Array.isArray(fieldValue?.collections) ? fieldValue.collections : []),
-//         ]
+        const fieldValue = block?.web_block?.layout?.data?.fieldValue ?? block?.structure ?? {}
 
-//         for (const item of items) {
-//             if (!isPlainObject(item) || !isFilledValue(item.url)) continue
+        for (const item of [
+            ...(Array.isArray(fieldValue?.sub_departments) ? fieldValue.sub_departments : []),
+            ...(Array.isArray(fieldValue?.collections) ? fieldValue.collections : []),
+        ]) {
+            if (isPlainObject(item)) {
+                items.push(item)
+            }
+        }
+    }
 
-//             const url = normalizeUrl(item.url)
-//             if (!url) continue
-//             const name =
-//                 stripHtml(item.title) ??
-//                 stripHtml(item.name) ??
-//                 (isFilledValue(item.code) ? String(item.code) : undefined)
+    return items
+}
 
-//             if (!name) continue
+const getDepartmentItemName = (item: Record<string, any>): string | undefined => {
+    return (
+        stripHtml(item.title) ??
+        stripHtml(item.name) ??
+        stripHtml(item.label) ??
+        (isFilledValue(item.code) ? String(item.code) : undefined)
+    )
+}
 
-//             const node: StructuredDataNode = {
-//                 "@type": "CollectionPage",
-//                 "@id": url,
-//                 name,
-//                 url,
-//             }
+const getDepartmentItemUrl = (item: Record<string, any>): string | undefined => {
+    return normalizeUrl(item.url ?? item.canonical_url ?? item.slug)
+}
 
-//             const imageUrls = getEntityImageUrls(item)
-//             if (imageUrls.length) {
-//                 node.image = imageUrls
-//             }
+const buildDepartmentRelatedNodes = (
+    webBlocks: BuildStructuredDataOptions["webBlocks"]
+): StructuredDataNode[] => {
+    const relatedNodes = new Map<string, StructuredDataNode>()
 
-//             if (!relatedNodes.has(url)) {
-//                 relatedNodes.set(url, node)
-//             }
-//         }
-//     }
+    for (const item of getDepartmentSourceItems(webBlocks)) {
+        const url = getDepartmentItemUrl(item)
+        const name = getDepartmentItemName(item)
 
-//     return Array.from(relatedNodes.values())
-// }
+        if (!url || !name) continue
+
+        const node: StructuredDataNode = {
+            "@type": "CollectionPage",
+            "@id": url,
+            name,
+            url,
+        }
+
+        const imageUrls = getEntityImageUrls(item)
+        if (imageUrls.length) {
+            node.image = imageUrls
+        }
+
+        if (!relatedNodes.has(url)) {
+            relatedNodes.set(url, node)
+        }
+    }
+
+    return Array.from(relatedNodes.values())
+}
+
+const buildDepartmentItemListNode = (
+    webBlocks: BuildStructuredDataOptions["webBlocks"],
+    pageUrl?: string
+): StructuredDataNode | null => {
+    const itemListElement = buildDepartmentRelatedNodes(webBlocks).map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.name,
+        url: item.url,
+        // item: item["@id"] ?? item.url,
+    }))
+
+    if (!itemListElement.length) return null
+
+    const node: StructuredDataNode = {
+        "@type": "ItemList",
+        itemListElement,
+    }
+
+    if (pageUrl) {
+        node["@id"] = `${pageUrl}#department-list`
+        node.url = pageUrl
+    }
+
+    return node
+}
 
 const buildOfferNode = ({
     product,
@@ -475,31 +522,38 @@ const buildFamilyProductNode = ({
     return node
 }
 
+// Node: CollectionPage (for department pages)
 // const buildDepartmentNode = ({
 //     webpageData,
 //     webBlocks,
 // }: Pick<BuildStructuredDataOptions, "webpageData" | "webBlocks">): StructuredDataNode | null => {
+//     const pageUrl = normalizeUrl(webpageData?.canonical_url)
 //     const hasPart = buildDepartmentRelatedNodes(webBlocks)
+//     const description = stripHtml(webpageData?.description)
+//     const name = stripHtml(webpageData?.title)
 
-//     if (!hasPart.length) return null
+//     if (!pageUrl && !name && !description && !hasPart.length) return null
 
 //     const node: StructuredDataNode = {
 //         "@type": "CollectionPage",
-//         name: webpageData?.title,
-//         hasPart,
 //     }
 
-//     const description = stripHtml(webpageData?.description)
+//     if (pageUrl) {
+//         node["@id"] = `${pageUrl}#webpage`
+//         node.url = pageUrl
+//         node.mainEntityOfPage = pageUrl
+//     }
+
+//     if (name) {
+//         node.name = name
+//     }
+
 //     if (description) {
 //         node.description = description
 //     }
 
-//     const pageUrl = webpageData?.canonical_url
-//     const normalizedPageUrl = normalizeUrl(pageUrl)
-//     if (normalizedPageUrl) {
-//         node["@id"] = normalizedPageUrl
-//         node.url = normalizedPageUrl
-//         node.mainEntityOfPage = normalizedPageUrl
+//     if (hasPart.length) {
+//         node.hasPart = hasPart
 //     }
 
 //     return node
@@ -632,10 +686,15 @@ const findOrCreateProductNode = (
 //         return data
 //     }
 
+//     const currentNode = { ...data }
 //     const newNode = buildNode()
 
-//     data["@context"] = data["@context"] ?? "https://schema.org"
-//     data["@graph"] = [newNode]
+//     for (const key of Object.keys(data)) {
+//         delete data[key]
+//     }
+
+//     data["@context"] = currentNode["@context"] ?? "https://schema.org"
+//     data["@graph"] = [currentNode, newNode]
 
 //     return newNode
 // }
@@ -748,35 +807,32 @@ export const buildStructuredData = ({
 }: BuildStructuredDataOptions): StructuredDataValue | null => {
     const breadcrumbNode = buildBreadcrumbListNode(breadcrumbs)
 
-    // if (webpageData?.sub_type === "department") {
-        // const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
+    if (webpageData?.sub_type === "department") {
+        const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
+        const pageUrl = normalizeUrl(webpageData?.canonical_url)
         // const autoDepartmentNode = buildDepartmentNode({
         //     webpageData,
         //     webBlocks,
         // })
+        const itemListNode = buildDepartmentItemListNode(webBlocks, pageUrl)
 
-        // if (!autoDepartmentNode && !breadcrumbNode) {
-        //     return baseStructuredData
-        // }
+        if (!baseStructuredData) {
+            const graph = [/*autoDepartmentNode,*/ itemListNode, breadcrumbNode].filter(
+                (node): node is StructuredDataNode => node !== null
+            )
 
-        // if (!baseStructuredData) {
-        //     if (autoDepartmentNode && breadcrumbNode) {
-        //         return {
-        //             "@context": "https://schema.org",
-        //             "@graph": [autoDepartmentNode, breadcrumbNode],
-        //         }
-        //     }
+            if (!graph.length) return null
 
-        //     return {
-        //         "@context": "https://schema.org",
-        //         ...(autoDepartmentNode ?? breadcrumbNode),
-        //     }
-        // }
+            return {
+                "@context": "https://schema.org",
+                "@graph": graph,
+            }
+        }
 
-        // const structuredData =
-        //     normalizeStructuredDataForGraph(baseStructuredData) ?? {
-        //         "@context": "https://schema.org",
-        //     }
+        const structuredData =
+            normalizeStructuredDataForGraph(baseStructuredData) ?? {
+                "@context": "https://schema.org",
+            }
 
         // if (autoDepartmentNode) {
         //     const departmentNode = findOrCreateCollectionPageNode(structuredData, () => ({
@@ -787,16 +843,24 @@ export const buildStructuredData = ({
         //     mergeAutoHasParts(departmentNode, autoDepartmentNode.hasPart ?? [])
         // }
 
-        // if (breadcrumbNode) {
-        //     appendGraphNode(
-        //         structuredData,
-        //         breadcrumbNode,
-        //         (node) => node?.["@type"] === "BreadcrumbList"
-        //     )
-        // }
+        if (itemListNode) {
+            appendGraphNode(
+                structuredData,
+                itemListNode,
+                (node) => node?.["@type"] === "ItemList" && node?.["@id"] === itemListNode["@id"]
+            )
+        }
 
-        // return structuredData
-    // }
+        if (breadcrumbNode) {
+            appendGraphNode(
+                structuredData,
+                breadcrumbNode,
+                (node) => node?.["@type"] === "BreadcrumbList"
+            )
+        }
+
+        return structuredData
+    }
 
     if (webpageData?.model_type === "ProductCategory" && webpageData?.sub_type === "family") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
@@ -890,7 +954,7 @@ export const buildStructuredData = ({
 export const useStructuredData = () => {
     const mountStructuredData = (options: BuildStructuredDataOptions): HTMLScriptElement | null => {
         const structuredData = buildStructuredData(options)
-// console.log('Structured Data:', structuredData)
+console.log('Structured Data:', structuredData)
         if (!structuredData) return null
 
         return injectStructuredDataScript(structuredData)

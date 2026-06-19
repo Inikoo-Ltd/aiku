@@ -116,7 +116,7 @@ class StoreProductToAllegro extends RetinaAction
                     'format' => 'BUY_NOW',
                     'price'  => [
                         'amount'   => number_format((float) $customerPrice, 2, '.', ''),
-                        'currency' => 'PLN'
+                        'currency' => $shop->currency->code
                     ]
                 ],
                 'stock' => [
