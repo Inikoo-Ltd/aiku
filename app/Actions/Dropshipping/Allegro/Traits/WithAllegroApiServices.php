@@ -437,6 +437,11 @@ trait WithAllegroApiServices
         return $this->makeApiRequest('POST', "/sale/responsible-producers", $producerData);
     }
 
+    public function createResponsiblePerson(array $personData): array
+    {
+        return $this->makeApiRequest('POST', "/sale/responsible-persons", $personData);
+    }
+
     public function getRecommendedCategory(string $name): array
     {
         return $this->makeApiRequest('GET', "/sale/matching-categories", [], [

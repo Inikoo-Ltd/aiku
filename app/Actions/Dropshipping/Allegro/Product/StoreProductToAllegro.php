@@ -57,7 +57,7 @@ class StoreProductToAllegro extends RetinaAction
             $product = $portfolio->item;
 
             $getRecommendedCategory = $allegroUser->getRecommendedCategory($product->family->name);
-            $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id');
+            $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id', '12');
 
             $getParameters = $allegroUser->getCategoryParameters($categoryId);
 
@@ -102,6 +102,9 @@ class StoreProductToAllegro extends RetinaAction
                 $customerPrice = $portfolio->customer_price;
             }
 
+            $responsibleProducerId = Arr::get($allegroUser->data, 'responsible_producer_id');
+            $responsiblePersonId = Arr::get($allegroUser->data, 'responsible_person_id');
+
             $offerData = [
                 'productSet' => [
                     [
@@ -110,6 +113,12 @@ class StoreProductToAllegro extends RetinaAction
                         ],
                         'quantity' => [
                             'value' => $availableQuantity
+                        ],
+                        'responsibleProducer' => [
+                            'id' => $responsibleProducerId
+                        ],
+                        'responsiblePerson' => [
+                            'id' => $responsiblePersonId
                         ]
                     ]
                 ],
