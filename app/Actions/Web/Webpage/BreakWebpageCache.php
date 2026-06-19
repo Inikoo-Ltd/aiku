@@ -22,13 +22,22 @@ class BreakWebpageCache extends OrgAction implements ShouldBeUnique
 
     public string $jobQueue = 'urgent';
 
-    public function getJobUniqueId(Webpage $webpage, bool $includeChildren = false): string
+    public function getJobUniqueId(?Webpage $webpage, bool $includeChildren = false): string
     {
-        return $webpage->slug.'-'.$includeChildren ?? 'i';
+        $slug = 'empty';
+        if ($webpage) {
+            $slug = $webpage->slug;
+        }
+
+        return $slug.'-'.$includeChildren ?? 'i';
     }
 
-    public function handle(Webpage $webpage, bool $includeChildren = false): void
+    public function handle(?Webpage $webpage, bool $includeChildren = false): void
     {
+        if (!$webpage) {
+            return;
+        }
+
         $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
         Cache::forget($key);
         $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
