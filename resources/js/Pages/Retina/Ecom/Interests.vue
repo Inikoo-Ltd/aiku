@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject } from "vue"
+import { ref, inject, onMounted } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -11,6 +11,8 @@ import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ulid } from "ulid"
+import { get, set } from "lodash-es"
+import axios from "axios"
 
 import { GridProducts } from "@/Components/Product"
 import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
@@ -39,7 +41,7 @@ const props = defineProps<{
     detachToFavouriteRoute: { name: string }
     attachBackInStockRoute: { name: string }
     detachBackInStockRoute: { name: string }
-	addToBasketRoute:{ name: string }
+    addToBasketRoute: { name: string }
     updateBasketQuantityRoute: { name: string }
 }>()
 
@@ -54,9 +56,6 @@ const isLoadingFavourite = ref<number[]>([])
 const isLoadingRemindBackInStock = ref<number[]>([])
 const key = ref(ulid())
 const layout = inject("layout", retinaLayoutStructure)
-
-const hasInBasket = (product: ProductResource) =>
-    !!props.basketTransactions?.[product.id]
 
 const startLoading = (state: typeof isLoadingFavourite, id: number) => {
     if (!state.value.includes(id)) state.value.push(id)
@@ -80,8 +79,8 @@ const onAddFavourite = (product: ProductResource) => {
             onSuccess: () => {
                 product.is_favourite = true
                 layout?.reload_handle?.()
-				router.reload()
-				key.value = ulid()
+                router.reload()
+                key.value = ulid()
             },
             onError: () => {
                 notify({
@@ -109,8 +108,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             onSuccess: () => {
                 product.is_favourite = false
                 layout?.reload_handle?.()
-				router.reload()
-				key.value = ulid()
+                router.reload()
+                key.value = ulid()
             },
             onError: () => {
                 notify({
@@ -141,8 +140,8 @@ const onAddBackInStock = (product: ProductResource) => {
             onSuccess: () => {
                 product.is_back_in_stock = true
                 layout?.reload_handle?.()
-				router.reload()
-				key.value = ulid()
+                router.reload()
+                key.value = ulid()
             },
             onError: () => {
                 notify({
@@ -170,8 +169,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
             onSuccess: () => {
                 product.is_back_in_stock = false
                 layout?.reload_handle?.()
-				router.reload()
-				key.value = ulid()
+                router.reload()
+                key.value = ulid()
             },
             onError: () => {
                 notify({
@@ -188,6 +187,36 @@ const onUnselectBackInStock = (product: ProductResource) => {
     )
 }
 
+const fetchHasInBasket = async () => {
+    set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
+    try {
+        const apiUrl = `/json/basket/transaction-data`
+
+        if (!apiUrl) {
+            throw new Error("Invalid model_type or missing route configuration");
+        }
+
+        const response = await axios.get(apiUrl);
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+    } catch (error) {
+        console.error('Failed to load product portfolio', error);
+    } finally {
+        set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
+    }
+};
+
+const handleTabFocus = () => {
+    if (document.visibilityState === 'visible') {
+        if (layout?.iris?.is_logged_in) fetchHasInBasket()
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('visibilitychange', handleTabFocus)
+    if (layout?.iris?.is_logged_in) {
+        fetchHasInBasket()
+    }
+})
 </script>
 
 
@@ -200,21 +229,26 @@ const onUnselectBackInStock = (product: ProductResource) => {
         :basket-transactions="basketTransactions"
         :preserve-scroll="true"
         class="mt-5"
-		:key="key"
+        :key="key"
     >
         <template #card="{ item }">
-            <ProductRenderEcom
-                :product="item"
-                :hasInBasket="item"
-                :isLoadingRemindBackInStock="isLoadingRemindBackInStock.includes(item.id)"
-                :isLoadingFavourite="isLoadingFavourite.includes(item.id)"
-                @setBackInStock="onAddBackInStock"
-                @unsetBackInStock="onUnselectBackInStock"
-                @set-favorite="onAddFavourite"
-                @unset-favorite="onUnselectFavourite"
-				:addToBasketRoute="addToBasketRoute"
-				:update-basket-quantity-route="updateBasketQuantityRoute"
-            />
+            <div class="offers h-full">
+                <ProductRenderEcom
+                    :product="item"
+                    :hasInBasket="item"
+                    :basketButton="true"
+                    :isLoadingRemindBackInStock="isLoadingRemindBackInStock.includes(item.id)"
+                    :isLoadingFavourite="isLoadingFavourite.includes(item.id)"
+                    @setBackInStock="onAddBackInStock"
+                    @unsetBackInStock="onUnselectBackInStock"
+                    @set-favorite="onAddFavourite"
+                    @unset-favorite="onUnselectFavourite"
+                    :addToBasketRoute="addToBasketRoute"
+                    :update-basket-quantity-route="updateBasketQuantityRoute"
+                    :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list', item.id], null)"
+                    :routeGettransactionProductData="{ name: 'retina.json.basket_transaction_product_data' }"
+                />
+            </div>
         </template>
     </GridProducts>
 </template>
@@ -233,11 +267,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 :deep(.discount .offer-trigger-label) {
   @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
 
-//   border-color: v-bind("layout.iris.theme.color[4]") !important;
-//   color: v-bind("layout.iris.theme.color[4]") !important;
-    color: #E87928 !important;
-    border-color: #E87928 !important;
+  color: #E87928 !important;
+  border-color: #E87928 !important;
 }
-
-
 </style>
