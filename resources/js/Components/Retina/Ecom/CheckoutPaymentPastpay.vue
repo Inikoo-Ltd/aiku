@@ -22,6 +22,7 @@ const props = defineProps<{
 			bank_code: string
 			iban: string
 			account_number: string
+            charges: any
 		}
 	}
 	needToPay: number
@@ -67,7 +68,7 @@ const onSubmitPlaceOrder = async () => {
 			window.location.href = response.data.data
 		}, 800);
 	} catch (error: any) {
-		
+
 		const errorMessage = error.response?.data?.message
 			|| error.response?.data?.errors
 			|| error.message
@@ -122,7 +123,7 @@ const isModalPastpayRedirected = ref(false)
 			<!-- Section: method selector -->
 			<div class="flex flex-col gap-y-2 mt-3">
 				<button
-					v-for="option in xxxx.charges.options"
+					v-for="option in props.data.data.charges"
 					:key="option.days"
 					type="button"
 					@click="selectedOption = option"
@@ -189,7 +190,7 @@ const isModalPastpayRedirected = ref(false)
 								fixed-width
 								aria-hidden="true" />
 						</div> -->
-	
+
 						<div class="mt-3 text-center sm:mt-5">
 							<div as="h3" class="font-semibold text-2xl">
 								{{ ctrans("Pastpay payment selected.") }}
@@ -199,7 +200,7 @@ const isModalPastpayRedirected = ref(false)
 							</div>
 						</div>
 					</div>
-	
+
 					<div class="mt-5 sm:mt-6 flex flex-col gap-4 text-center items-center">
 						<LoadingText />
 					</div>
