@@ -269,6 +269,16 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </Link>
         </template>
 
+        <template #cell(gr_detail)="{ item: family }">
+            <div v-if="family.gr_detail && (family.gr_detail.percentage || family.gr_detail.quantity)"
+                class="whitespace-nowrap tabular-nums">
+                <span v-tooltip="trans('Percentage off')">{{ family.gr_detail.percentage }}%</span>
+                <span class="text-gray-400 mx-1">·</span>
+                <span v-tooltip="trans('Trigger quantity')">{{ family.gr_detail.quantity }}</span>
+            </div>
+            <span v-else class="text-gray-400 italic">-</span>
+        </template>
+
         <template #cell(current_products)="{ item: family }">
             <Link :href="productRoute(family)" class="primaryLink">
             {{ family["current_products"] }}

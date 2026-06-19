@@ -14,27 +14,34 @@ use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersStat
 use App\Actions\Ordering\Order\CleanFinishedVouchers;
 use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
 use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
 
 trait HandlesOfferSideEffects
 {
-    protected function handleOfferSideEffects(Offer $offer, bool $statusChanged): void
+    protected function handleOfferSideEffects(Offer $offer, $recalculateBasket = true): void
     {
         if ($offer->offerCampaign) {
             OfferCampaignHydrateOffersState::run($offer->offerCampaign);
-        } else {
-            ShopHydrateOffersData::run($offer->shop_id);
         }
 
-        if ($statusChanged) {
-            if ($offer->voucher) {
-                CleanFinishedVouchers::run($offer->id);
-            }
+        ShopHydrateOffersData::run($offer->shop_id);
 
-            if ($offer->trigger_type == 'ProductCategory') {
-                UpdateProductCategoryOffersData::run($offer);
-            }
 
+        if ($offer->voucher) {
+            CleanFinishedVouchers::run($offer->id);
+        }
+
+        if ($offer->trigger_type == 'ProductCategory') {
+            UpdateProductCategoryOffersData::run($offer);
+        }
+
+        $this->cleanWebpagesCache($offer);
+
+
+        if ($recalculateBasket) {
             if ($offer->customer_id) {
                 RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay(now()->addSeconds(10));
             } else {
@@ -42,4 +49,25 @@ trait HandlesOfferSideEffects
             }
         }
     }
+
+    public function cleanWebpagesCache(Offer $offer): void
+    {
+        if ($offer->trigger_type == 'ProductCategory') {
+            /** @var ProductCategory $productCategory */
+            $productCategory = $offer->trigger;
+
+            if ($productCategory && $productCategory->webpage) {
+                BreakWebpageCache::run($productCategory->webpage, true);
+            }
+        } elseif ($offer->trigger_type == 'Product') {
+            /** @var Product $product */
+            $product = $offer->trigger;
+
+            if ($product && $product->webpage) {
+                BreakWebpageCache::run($product->webpage);
+            }
+        }
+    }
+
+
 }
