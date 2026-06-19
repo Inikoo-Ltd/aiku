@@ -427,6 +427,16 @@ trait WithAllegroApiServices
         return $this->makeApiRequest('GET', "/sale/categories/$categoryId/parameters");
     }
 
+    public function getResponsibleProducer(): array
+    {
+        return $this->makeApiRequest('GET', "/sale/responsible-producers");
+    }
+
+    public function createResponsibleProducer(array $producerData): array
+    {
+        return $this->makeApiRequest('POST', "/sale/responsible-producers", $producerData);
+    }
+
     public function getRecommendedCategory(string $name): array
     {
         return $this->makeApiRequest('GET', "/sale/matching-categories", [], [
