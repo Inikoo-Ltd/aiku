@@ -7,6 +7,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -24,13 +25,18 @@ class IndexProductsNotOnline extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
+    public function liveWebpageExistsSql(): string
+    {
+        return "exists (select 1 from webpages w where w.id = products.webpage_id and w.state = '".WebpageStateEnum::LIVE->value."')";
+    }
+
     public function getElementGroups(Shop $shop): array
     {
         $rawCounts = Product::where('is_main', true)
             ->where('shop_id', $shop->id)
             ->whereNull('exclusive_for_customer_id')
             ->where('is_for_sale', true)
-            ->where('has_live_webpage', false)
+            ->whereRaw('not '.$this->liveWebpageExistsSql())
             ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING, ProductStateEnum::IN_PROCESS])
             ->selectRaw('state, count(*) as total')
             ->groupBy('state')
@@ -77,7 +83,7 @@ class IndexProductsNotOnline extends OrgAction
         $queryBuilder->where('products.shop_id', $shop->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.is_for_sale', true);
-        $queryBuilder->where('products.has_live_webpage', false);
+        $queryBuilder->whereRaw('not '.$this->liveWebpageExistsSql());
         $queryBuilder->whereIn('products.state', [
             ProductStateEnum::ACTIVE, 
             ProductStateEnum::DISCONTINUING, 
@@ -113,10 +119,10 @@ class IndexProductsNotOnline extends OrgAction
                 'products.unit',
                 'products.master_product_id',
                 'products.webpage_id',
-                'products.has_live_webpage',
                 'webpages.state as webpage_state',
                 'products.available_quantity'
-            ]);
+            ])
+            ->selectRaw($this->liveWebpageExistsSql().' as has_live_webpage');
 
         return $queryBuilder->allowedSorts([
             'code',
