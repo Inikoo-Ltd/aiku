@@ -39,6 +39,7 @@ import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
 import Calendar from 'primevue/calendar'
 import Checkbox from 'primevue/checkbox'
+import Popover from 'primevue/popover'
 import ToggleButton from 'primevue/togglebutton'
 import { routeType } from '@/types/route'
 import axios from 'axios'
@@ -88,6 +89,7 @@ const props = withDefaults(defineProps<{
     statusOptions?: { value: string, label: string, count: number }[]
     statusFilter?: string[]
     estimateLabel?: string
+    exportFields?: { key: string, label: string }[]
 }>(), {
     showSave: true,
     estimateLabel: 'Estimated Recipients',
@@ -137,6 +139,17 @@ const onStatusChange = () => {
     fetchCustomers()
 }
 
+const exportPanel = ref()
+
+const selectedColumns = ref<string[]>(props.exportFields ? props.exportFields.map(f => f.key) : [])
+
+const allColumnsSelected = computed({
+    get: () => !!props.exportFields?.length && selectedColumns.value.length === props.exportFields.length,
+    set: (value: boolean) => {
+        selectedColumns.value = value ? (props.exportFields ?? []).map(f => f.key) : []
+    }
+})
+
 const exportUrl = (type: 'csv' | 'xlsx') => {
     const r = props.exportRoutes?.[type]
     if (!r?.name) return ''
@@ -151,12 +164,24 @@ const exportUrl = (type: 'csv' | 'xlsx') => {
         }
     })
 
+    if (props.exportFields?.length) {
+        selectedColumns.value.forEach(column => filterQuery.append('columns[]', column))
+    }
+
     const query = filterQuery.toString()
     if (!query) {
         return base
     }
 
     return base + (base.includes('?') ? '&' : '?') + query
+}
+
+const exportColumns = (type: 'csv' | 'xlsx') => {
+    if (!selectedColumns.value.length) {
+        return
+    }
+
+    window.open(exportUrl(type), '_blank')
 }
 
 const filterMenu = ref()
@@ -404,14 +429,46 @@ watch(
             <!-- right side -->
             <div class="flex items-center gap-3">
 
-                <div v-if="exportRoutes" class="rounded-md">
-                    <a :href="exportUrl('csv')" target="_blank" rel="noopener">
-                        <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
-                    </a>
-                    <a :href="exportUrl('xlsx')" target="_blank" rel="noopener">
-                        <Button :icon="faDownload" label="XLSX" type="tertiary" class="border-l-0 rounded-l-none" />
-                    </a>
-                </div>
+                <template v-if="exportRoutes">
+                    <div v-if="exportFields?.length">
+                        <Button :icon="faDownload" :label="trans('Export')" type="tertiary"
+                            @click="exportPanel.toggle($event)" />
+
+                        <Popover ref="exportPanel">
+                            <div class="w-72">
+                                <div class="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
+                                    <Button :icon="faDownload" label="XLSX" type="tertiary"
+                                        :disabled="!selectedColumns.length" @click="exportColumns('xlsx')" />
+                                    <Button :icon="faDownload" label="CSV" type="tertiary"
+                                        :disabled="!selectedColumns.length" @click="exportColumns('csv')" />
+                                </div>
+
+                                <label
+                                    class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
+                                    <Checkbox v-model="allColumnsSelected" :binary="true" />
+                                    <span>{{ trans("Select all") }}</span>
+                                </label>
+
+                                <div class="max-h-72 overflow-y-auto">
+                                    <label v-for="field in exportFields" :key="field.key"
+                                        class="flex items-center gap-2 px-1 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded">
+                                        <Checkbox v-model="selectedColumns" :value="field.key" />
+                                        <span>{{ field.label }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </Popover>
+                    </div>
+
+                    <div v-else class="rounded-md">
+                        <a :href="exportUrl('csv')" target="_blank" rel="noopener">
+                            <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
+                        </a>
+                        <a :href="exportUrl('xlsx')" target="_blank" rel="noopener">
+                            <Button :icon="faDownload" label="XLSX" type="tertiary" class="border-l-0 rounded-l-none" />
+                        </a>
+                    </div>
+                </template>
 
                 <Button v-if="showSave" :label="trans('Save')" type="positive" icon="save" @click="saveFilters"
                     class="h-10 px-4" :disabled="isByOrderValueInvalid" />

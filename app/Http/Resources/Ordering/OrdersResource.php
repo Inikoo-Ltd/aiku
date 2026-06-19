@@ -63,6 +63,7 @@ class OrdersResource extends JsonResource
         $payDetailedStatus        = '';
         $payDetailedStatusTooltip = '';
 
+
         if ($this->pay_detailed_status == OrderPayDetailedStatusEnum::UNPAID && $this->to_be_paid_by) {
             if ($this->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
                 $payDetailedStatusTooltip = __('To be paid by cash on delivery');
@@ -70,6 +71,15 @@ class OrdersResource extends JsonResource
             } elseif ($this->to_be_paid_by == OrderToBePaidByEnum::BANK) {
                 $payDetailedStatusTooltip = __('To be paid by bank transfer');
                 $payDetailedStatus        = __('To be paid by bank');
+            }
+        }
+        if ($this->pay_detailed_status == OrderPayDetailedStatusEnum::PARTIALLY_PAID && $this->to_be_paid_by) {
+            if ($this->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
+                $payDetailedStatusTooltip = __('Remaining to be paid by cash on delivery');
+                $payDetailedStatus        = __('To be paid by COD').' (P)';
+            } elseif ($this->to_be_paid_by == OrderToBePaidByEnum::BANK) {
+                $payDetailedStatusTooltip = __('Remaining to be paid by bank transfer');
+                $payDetailedStatus        = __('To be paid by bank').' (P)';
             }
         } else {
             $payDetailedStatus        = $this->pay_detailed_status ? $this->pay_detailed_status->labels()[$this->pay_detailed_status->value] : '';

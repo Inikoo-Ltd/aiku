@@ -20,6 +20,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\UI\CRM\CustomersTabsEnum;
+use App\Exports\CRM\CustomersExport;
 use App\Http\Resources\CRM\CustomersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -136,6 +137,16 @@ class IndexCustomers extends OrgAction
             'label' => $labels[$value],
             'count' => $counts[$value] ?? 0,
         ], array_keys($labels));
+    }
+
+    protected function getExportFields(): array
+    {
+        $definitions = CustomersExport::fieldDefinitions();
+
+        return array_map(fn ($key) => [
+            'key'   => $key,
+            'label' => __($definitions[$key]['heading']),
+        ], array_keys($definitions));
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -503,6 +514,7 @@ class IndexCustomers extends OrgAction
                 'stateFilter'         => $this->stateFilter,
                 'statusOptions'       => $this->getStatusOptions($this->parent),
                 'statusFilter'        => $this->statusFilter,
+                'exportFields'        => $this->getExportFields(),
             ];
         }
 

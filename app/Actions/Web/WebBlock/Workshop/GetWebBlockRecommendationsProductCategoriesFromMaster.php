@@ -20,7 +20,7 @@ class GetWebBlockRecommendationsProductCategoriesFromMaster
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $permissions =  [];
+        $permissions =  ['edit', 'hidden'];
 
         data_set(
             $webBlock,

@@ -61,6 +61,7 @@ onMounted(() => {
     structuredDataScript.value = mountStructuredData({
         webpageData: props.webpage_data,
         webBlocks: props.web_blocks,
+        breadcrumbs: usePage().props?.breadcrumbs as any[] | undefined,
         currencyCode: layout.iris?.currency?.code,
         websiteName: layout.iris?.website?.name,
     })
@@ -120,8 +121,7 @@ onBeforeUnmount(() => {
 
             <!-- REVIEW -->
             <div 
-                v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)"
-                class="my-10 2xl:my-16">
+                v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)">
                 <div>
                     <ReviewByStore :code="'review-by-store'" />
                 </div>

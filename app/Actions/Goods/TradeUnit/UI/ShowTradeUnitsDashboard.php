@@ -138,6 +138,15 @@ class ShowTradeUnitsDashboard extends OrgAction
                         'icon'  => 'fal fa-tag',
                         'value' => $this->group->goodsStats->number_trade_units_without_brand,
                     ],
+                    [
+                        'label' => __('Without Barcode'),
+                        'route' => [
+                            'name'       => 'grp.trade_units.units.missing_barcode',
+                            'parameters' => []
+                        ],
+                        'icon'  => 'fal fa-barcode',
+                        'value' => $this->group->goodsStats->number_trade_units_without_barcode,
+                    ],
                 ],
             ]
         );

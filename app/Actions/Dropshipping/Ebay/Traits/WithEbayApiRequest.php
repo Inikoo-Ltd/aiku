@@ -264,6 +264,33 @@ trait WithEbayApiRequest
         return $matches[1] ?? null;
     }
 
+    public function getFormattedDescriptions(string $description): string
+    {
+        $descriptions = mb_substr($description, 0, 4000);
+        $descriptions = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $descriptions = strip_tags($descriptions);
+
+        $bannedWords = [
+            'heal', 'heals', 'healing', 'healed',
+            'cure', 'cures', 'cured', 'curing',
+            'treat', 'treats', 'treated', 'treatment', 'treatments',
+            'remedy', 'remedies',
+            'therapy', 'therapies', 'therapeutic',
+            'diagnose', 'diagnosis',
+            'prevent', 'prevents', 'prevention',
+            'medicine', 'medicinal', 'medicate',
+            'antibacterial', 'antimicrobial', 'antifungal', 'antiviral',
+            'detox', 'detoxify', 'detoxification',
+            'pain relief', 'pain killer', 'painkiller',
+        ];
+
+        $pattern = '/\b(' . implode('|', array_map('preg_quote', $bannedWords)) . ')\b/iu';
+        $descriptions = preg_replace($pattern, '', $descriptions);
+
+        $descriptions = preg_replace('/\s+/', ' ', $descriptions);
+        return trim($descriptions);
+    }
+
     public function getItemAspectsForCategory($categoryId)
     {
         $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');

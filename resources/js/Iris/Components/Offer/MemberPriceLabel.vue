@@ -7,6 +7,7 @@ import Popover from "primevue/popover"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInfoCircle } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faMedal } from "@fas";
 
 library.add(faInfoCircle)
 
@@ -33,31 +34,33 @@ const webpage_data = inject("webpage_data", null)
 </script>
 
 <template>
-    <div class="inline-flex items-center overflow-hidden rounded gap-2" :class="{
+    <div class="inline-flex items-center overflow-hidden rounded gap-1" :class="{
         // 'gap-2': active,
         // 'gap-0': !active,
         'opacity-60': !active,
     }">
-        <img :src="active
+       <!--  <img :src="active
             ? `/assets/promo/gr-aw.png`
             // : `/assets/promo/gr-inactive.png`
             : `/assets/promo/gr-inactive-2.png`
-            " alt="Gold Reward" v-tooltip="ctrans('Gold Reward')" class="h-7 w-auto shrink-0" />
+            " alt="Gold Reward" v-tooltip="ctrans('Gold Reward')" class="h-7 w-auto shrink-0" /> -->
 
-        <div class="flex items-center gap-2 rounded px-2 py-[3px] text-[10px] 2xl:text-xs font-semibold leading-none text-white"
-        :class="active ? 'bg-[#E87928]' : 'bg-[#b3b3b3]'">
+        <FontAwesomeIcon :icon="faMedal" v-tooltip="ctrans('Gold Reward')" class="text-lg" :class="active ? 'text-[#E87928]' : 'text-[#b3b3b3]'"/>
+
+        <div class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none text-white"
+        :class="active ? 'bg-[#E87928]' : 'bg-[#b3b3b3]'"  @click="toggleInfo">
         <!-- :class="active ? 'bg-[#E87928]' : 'bg-[#c8c8c8]'"> -->
             <div v-if="offer?.allowances?.[0]?.percentage_off">
                 {{ offer.allowances[0].percentage_off * 100 }}%
 
-                <span class="hidden lg:inline-flex">
+               <!--  <span class="hidden lg:inline-flex">
                     {{ ctrans("OFF") }}
-                </span>
+                </span> -->
             </div>
 
-            <button type="button" class="flex items-center justify-center" @click="toggleInfo">
+            <!-- <button type="button" class="flex items-center justify-center" @click="toggleInfo">
                 <FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] 2xl:text-xs text-white/90 hover:text-white" />
-            </button>
+            </button> -->
         </div>
 
         <Popover ref="infoPopover">

@@ -149,6 +149,13 @@ class GetCustomerShowcase
                     'customer' => $customer->id
                 ]
             ],
+            'store_note_route' => [
+                'name'       => 'grp.models.customer.note.store',
+                'parameters' => [
+                    'customer' => $customer->id
+                ],
+                'method'     => 'post'
+            ],
             'shop'              => [
                 'id' => $customer->shop->id,
                 'name' => $customer->shop->name,

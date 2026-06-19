@@ -353,6 +353,24 @@ class EditShop extends OrgAction
                     ]
                 ],
                 [
+                    'label'  => __('Customers'),
+                    'icon'   => 'fal fa-user',
+                    'fields' => [
+                        'identity_document_number_label' => [
+                            'type'          => 'input',
+                            'label'         => __('Identity Document Number Label'),
+                            'information'   => __('The label would replace all of the Identity Document Number text under this shop'),
+                            'value'         => data_get($shop->settings, 'customer.identity_document_number', ''),
+                        ],
+                        'identity_document_number_alt_label' => [
+                            'type'          => 'input',
+                            'label'         => __('Identity Document Number Alt. Label'),
+                            'information'   => __('The label would replace all of the Identity Document Number Alt. text under this shop'),
+                            'value'         => data_get($shop->settings, 'customer.identity_document_number_alt', ''),
+                        ],
+                    ],
+                ],
+                [
                     'label'  => __('Registration'),
                     'icon'   => 'fal fa-transporter',
                     'fields' => [
