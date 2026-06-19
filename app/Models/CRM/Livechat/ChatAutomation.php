@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property ChatAutomationTriggerEnum $trigger_type
  * @property bool $is_enabled
  * @property string $message
+ * @property array<array-key, mixed>|null $flow
  * @property array<array-key, mixed>|null $conditions
  * @property int $priority
  * @property bool $send_once
@@ -42,6 +43,7 @@ class ChatAutomation extends Model
             'trigger_type' => ChatAutomationTriggerEnum::class,
             'is_enabled'   => 'boolean',
             'send_once'    => 'boolean',
+            'flow'         => 'array',
             'conditions'   => 'array',
             'stats'        => 'array',
             'deleted_at'   => 'datetime',

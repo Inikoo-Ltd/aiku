@@ -26,6 +26,7 @@ class ChatAutomationResource extends JsonResource
             'trigger_label'      => ChatAutomationTriggerEnum::labels()[$trigger->value] ?? $trigger->value,
             'is_enabled'         => (bool) $automation->is_enabled,
             'message'            => $automation->message,
+            'flow'               => $automation->flow ?? null,
             'conditions'         => $automation->conditions ?? [],
             'priority'           => $automation->priority,
             'send_once'          => (bool) $automation->send_once,
