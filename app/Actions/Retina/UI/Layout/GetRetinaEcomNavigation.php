@@ -113,31 +113,50 @@ class GetRetinaEcomNavigation
             ],
         ];
 
-        $groupNavigation['favourites'] = [
-            'label'   => __('Favourites'),
+        $groupNavigation['interest'] = [
+            'label'   => __('My Interests'),
             'icon'    => ['fal', 'fa-heart'],
-            'root'    => 'retina.ecom.favourites.',
+            'root'    => 'retina.ecom.interest.',
             'route'   => [
-                'name' => 'retina.ecom.favourites.index'
+                'name' => 'retina.ecom.interest.favourites.index'
             ],
             'topMenu' => [
-
+                'subSections' => [
+                    [
+                        'label' => __('Favourites'),
+                        'icon'  => ['fal', 'fa-heart'],
+                        'root'  => 'retina.ecom.interest.favourites.',
+                        'route' => [
+                            'name' => 'retina.ecom.interest.favourites.index'
+                        ]
+                    ],
+                    [
+                        'label' => __('Previously Ordered'),
+                        'icon'  => ['fal', 'fa-history'],
+                        'root'  => 'retina.ecom.interest.previously_ordered.',
+                        'route' => [
+                            'name' => 'retina.ecom.interest.previously_ordered.index'
+                        ]
+                    ],
+                    [
+                        'label' => __('Back In Stock Reminders'),
+                        'icon'  => ['fal', 'fa-envelope-open-text'],
+                        'root'  => 'retina.ecom.interest.back_in_stock.',
+                        'route' => [
+                            'name' => 'retina.ecom.interest.back_in_stock.index'
+                        ]
+                    ],
+                    [
+                        'label' => __('New Arrivals'),
+                        'icon'  => ['fal', 'fa-sparkles'],
+                        'root'  => 'retina.ecom.interest.new_arrivals.',
+                        'route' => [
+                            'name' => 'retina.ecom.interest.new_arrivals.index'
+                        ]
+                    ],
+                ]
             ]
         ];
-
-        if (app()->environment('local')) {
-            $groupNavigation['back-in-stocks'] = [
-                'label'   => __('Back In Stocks Reminders'),
-                'icon'    => ['fas', 'fa-envelope-circle-check'],
-                'root'    => 'retina.ecom.back_in_stock.',
-                'route'   => [
-                    'name' => 'retina.ecom.back_in_stock.index'
-                ],
-                'topMenu' => [
-
-                ]
-            ];
-        }
 
         $groupNavigation['invoices'] = [
             'label' => __('Invoices'),
