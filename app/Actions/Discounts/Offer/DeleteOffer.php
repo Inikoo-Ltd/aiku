@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
+use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
 use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
@@ -25,6 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteOffer extends OrgAction
 {
+
+    use HandlesOfferSideEffects;
     /**
      * @throws \Throwable
      */
@@ -59,7 +62,7 @@ class DeleteOffer extends OrgAction
         ShopHydrateOffers::dispatch($offer->shop)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffers::dispatch($offer->offerCampaign)->delay($this->hydratorsDelay);
         if ($oldState !== OfferStateEnum::IN_PROCESS) {
-            RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id);
+            $this->handleOfferSideEffects($offer);
         }
 
         return $offer;

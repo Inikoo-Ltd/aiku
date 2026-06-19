@@ -45,8 +45,9 @@ class FinishOffer extends OrgAction
                 'end_at' => now()
             ]);
         }
-
-        $this->handleOfferSideEffects($offer, $currentStatus != $offer->status);
+        if($currentStatus != $offer->status) {
+            $this->handleOfferSideEffects($offer);
+        }
 
         return $offer;
     }
