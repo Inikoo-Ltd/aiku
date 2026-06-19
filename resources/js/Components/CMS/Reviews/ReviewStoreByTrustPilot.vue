@@ -87,7 +87,7 @@ watch(
 <template>
   <div
     :id="`trustpilot-widget-${code}`"
-    class="trustpilot-widget"
+    class="trustpilot-widget mt-12"
     :data-locale="getLocale()"
     :data-template-id="review?.data?.template_id"
     :data-businessunit-id="review?.data?.business_unit_id"

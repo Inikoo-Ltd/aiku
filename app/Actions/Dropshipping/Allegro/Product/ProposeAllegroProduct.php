@@ -85,6 +85,10 @@ class ProposeAllegroProduct
             $isRequired    = $param['required'] ?? false;
             $restrictions  = $param['restrictions'] ?? [];
 
+            if(!$isRequired) {
+                continue;
+            }
+
             // 1. Always add EAN/GTIN if available
             if (str_contains($paramName, 'ean') || str_contains($paramName, 'gtin') || $paramId === '225694') {
                 if ($product->barcode) {

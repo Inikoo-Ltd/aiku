@@ -58,6 +58,7 @@ const robotsContent = computed(() => {
 onMounted(() => {
     currentUrl.value = window.location.href
 
+    // Structure data (Department, Sub-department, Family, Product)
     structuredDataScript.value = mountStructuredData({
         webpageData: props.webpage_data,
         webBlocks: props.web_blocks,
