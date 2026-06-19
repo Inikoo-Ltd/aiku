@@ -123,7 +123,6 @@ class Kernel extends ConsoleKernel
             );
 
 
-
             $this->logSchedule(
                 $schedule->job(RunOutOfStockInOrderEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'RunOutOfStockInOrderEmailBulkRuns',
@@ -508,7 +507,6 @@ class Kernel extends ConsoleKernel
         }
 
         if (config('app.slave')) {
-
             $this->logSchedule(
                 $schedule->job(RunMailshotTrackingUpdates::makeJob())->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'RunMailshotTrackingUpdates',
@@ -551,15 +549,6 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'SaveWebsitesSitemap',
                 type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('clone:aurora_vol_gr_offers sk eu')->twiceDailyAt(12, 18)->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'CloneAuroraVolGrOffers',
-                ),
-                name: 'CloneAuroraVolGrOffers',
-                type: 'command',
                 scheduledAt: now()->format('H:i')
             );
 

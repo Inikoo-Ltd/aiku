@@ -113,7 +113,7 @@ class EditMasterShop extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Offer'),
+                            'label'  => __('Offers'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
                                 'gold_reward_eligible' => [
