@@ -119,6 +119,10 @@ class StoreProductToAllegro extends RetinaAction
                         ],
                         'responsiblePerson' => [
                             'id' => $responsiblePersonId
+                        ],
+                        'safetyInformation' => [
+                            'type' => 'TEXT',
+                            'description' => __('This product is safe for use.')
                         ]
                     ]
                 ],
