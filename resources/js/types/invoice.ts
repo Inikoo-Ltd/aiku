@@ -38,6 +38,17 @@ export interface InvoiceResource {
     tax_liability_at: string
     total_amount: string
     in_process : boolean
+    tax_number: number
+    tax_number_status: string
+    tax_number_valid: boolean
+    identity_document_number?: {
+        label: string
+        number: number
+    }
+    identity_document_number_alt?: {
+        label: string
+        number: number
+    }
     type: {
         icon: Icon
         label: string

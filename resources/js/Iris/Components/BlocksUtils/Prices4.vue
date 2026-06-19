@@ -304,7 +304,7 @@ const _popoverProfit = ref(null)
                 </div>
 
                 <div v-if="showMemberPrice" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
-                    <div class="flex text-xs items-center justify-center rounded-full text-primary">
+                    <div class="flex text-xs items-center justify-center rounded-full text-[#E87928]">
                         <FontAwesomeIcon :icon="faCheck" />
                     </div>
                 </div>

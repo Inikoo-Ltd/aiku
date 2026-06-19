@@ -24,6 +24,7 @@ interface Stat {
     changeType?: string
     icon: string
     color?: string
+    currency_code?: string
     backgroundColor?: string
     is_negative?: boolean
     route?: {

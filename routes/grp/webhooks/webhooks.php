@@ -8,6 +8,7 @@
 
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Comms\Notifications\GetSnsNotification;
+use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductChanged;
@@ -66,4 +67,8 @@ Route::middleware('verify.shopify.webhook')->group(function () {
 Route::prefix('tiktok')->as('webhooks.tiktok.')->group(function () {
     Route::post('orders', HandleOrderIncomingTiktok::class)->name('orders.create');
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
+});
+
+Route::prefix('allegro')->as('allegro.')->group(function () {
+    Route::get('callback', AuthenticateAllegroAccount::class)->name('callback');
 });

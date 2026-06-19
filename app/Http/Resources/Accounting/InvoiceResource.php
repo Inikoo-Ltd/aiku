@@ -21,7 +21,8 @@ class InvoiceResource extends JsonResource
         /** @var Invoice $invoice */
         $invoice = $this;
 
-        $timeZone = $invoice->shop->timezone->name;
+        $shop = $invoice->shop;
+        $timeZone = $shop?->timezone->name;
 
         return [
             'slug'                => $invoice->slug,
@@ -44,11 +45,18 @@ class InvoiceResource extends JsonResource
             'tax_number'          => $invoice->tax_number,
             'tax_number_valid'    => $invoice->tax_number_valid,
             'tax_number_status'   => $invoice->tax_number_status,
+            'identity_document_number'      => $invoice->identity_document_number ? [
+                'label'     => data_get($shop?->settings, 'customer.identity_document_number') ?? __('Identity document number'),
+                'number'    => $invoice->identity_document_number,
+            ] : null,
+            'identity_document_number_alt'  => $invoice->identity_document_number_alt ? [
+                'label'     => data_get($shop?->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt'),
+                'number'    => $invoice->identity_document_number_alt,
+            ] : null,
             'name'                => $invoice->customer_name,
             'contact_name'        => $invoice->customer_contact_name,
             'invoice_category_id' => $invoice->invoice_category_id,
             'category'            => InvoiceCategoryResource::make($invoice->invoiceCategory),
-
         ];
     }
 }
