@@ -27,10 +27,14 @@ class StoreChatAutomation extends OrgAction
             'name'         => ['required', 'string', 'max:255'],
             'trigger_type' => ['required', Rule::enum(ChatAutomationTriggerEnum::class)],
             'is_enabled'   => ['sometimes', 'boolean'],
-            'message'      => ['required', 'string', 'max:2000'],
-            'conditions'   => ['sometimes', 'nullable', 'array'],
-            'priority'     => ['sometimes', 'integer', 'min:0', 'max:1000'],
-            'send_once'    => ['sometimes', 'boolean'],
+            'message'         => ['required', 'string', 'max:2000'],
+            'flow'            => ['sometimes', 'nullable', 'array'],
+            'flow.start'      => ['sometimes', 'nullable', 'string'],
+            'flow.nodes'      => ['sometimes', 'nullable', 'array'],
+            'flow.edges'      => ['sometimes', 'nullable', 'array'],
+            'conditions'      => ['sometimes', 'nullable', 'array'],
+            'priority'        => ['sometimes', 'integer', 'min:0', 'max:1000'],
+            'send_once'       => ['sometimes', 'boolean'],
         ];
     }
 

@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * @Author: andiferdiawan (https://github.com/andiferdiawan)
+ * @Created: YYYY-MM-DD HH:mm:ss
+ * @Copyright: Copyright (c) 2026, andiferdiawan
+ */
+
 namespace App\Actions\CRM\ChatAutomation;
 
 use App\Actions\OrgAction;
@@ -25,12 +31,16 @@ class ToggleChatAutomation extends OrgAction
         return $this->handle($chatAutomation);
     }
 
-    public function htmlResponse(): void
+    public function htmlResponse(ChatAutomation $chatAutomation): void
     {
+        $description = $chatAutomation->is_enabled
+            ? __('Automated message enabled.')
+            : __('Automated message disabled.');
+
         request()->session()->flash('notification', [
             'status'      => 'success',
             'title'       => __('Success!'),
-            'description' => __('Automated message toggled.'),
+            'description' => $description,
         ]);
     }
 }

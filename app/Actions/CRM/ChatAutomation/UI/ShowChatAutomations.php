@@ -38,6 +38,7 @@ class ShowChatAutomations extends OrgAction
             'Org/Chat/Automations',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'organisationId' => $organisation->id,
                 'title'       => __('Automated Messages'),
                 'pageHead'    => [
                     'title'   => __('Automated Messages'),

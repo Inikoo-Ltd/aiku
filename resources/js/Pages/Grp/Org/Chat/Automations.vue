@@ -17,6 +17,7 @@ library.add(faRobot, faHandHoldingHeart, faMoon, faHourglassHalf, faClock, faTra
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
+    organisationId: number
     title: string
     data: any
 }>()
@@ -36,9 +37,9 @@ function editRoute(id: number): string {
 
 function toggle(id: number): void {
     router.patch(
-        route('grp.models.org.chat.automation.toggle', { organisation: orgSlug.value, chatAutomation: id }),
+        route('grp.models.org.chat.automation.toggle', { organisation: props.organisationId, chatAutomation: id }),
         {},
-        { preserveScroll: true, only: ['data'] }
+        { preserveScroll: true, only: ['data', 'flash'] }
     )
 }
 </script>
@@ -94,7 +95,7 @@ function toggle(id: number): void {
                 <ModalConfirmationDelete
                     :routeDelete="{
                         name: 'grp.models.org.chat.automation.delete',
-                        parameters: { organisation: orgSlug, chatAutomation: item.id },
+                        parameters: { organisation: props.organisationId, chatAutomation: item.id },
                     }"
                     :title="trans('Are you sure you want to delete this automated message?')"
                     :noLabel="trans('Delete')"

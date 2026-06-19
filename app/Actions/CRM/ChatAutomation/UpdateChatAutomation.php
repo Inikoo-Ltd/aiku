@@ -23,10 +23,14 @@ class UpdateChatAutomation extends OrgAction
             'name'         => ['sometimes', 'string', 'max:255'],
             'trigger_type' => ['sometimes', \Illuminate\Validation\Rule::enum(ChatAutomationTriggerEnum::class)],
             'is_enabled'   => ['sometimes', 'boolean'],
-            'message'      => ['sometimes', 'string', 'max:2000'],
-            'conditions'   => ['sometimes', 'nullable', 'array'],
-            'priority'     => ['sometimes', 'integer', 'min:0', 'max:1000'],
-            'send_once'    => ['sometimes', 'boolean'],
+            'message'         => ['sometimes', 'string', 'max:2000'],
+            'flow'            => ['sometimes', 'nullable', 'array'],
+            'flow.start'      => ['sometimes', 'nullable', 'string'],
+            'flow.nodes'      => ['sometimes', 'nullable', 'array'],
+            'flow.edges'      => ['sometimes', 'nullable', 'array'],
+            'conditions'      => ['sometimes', 'nullable', 'array'],
+            'priority'        => ['sometimes', 'integer', 'min:0', 'max:1000'],
+            'send_once'       => ['sometimes', 'boolean'],
         ];
     }
 
