@@ -327,6 +327,24 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </Link>
         </template>
 
+        <template #cell(gr_detail)="{ item: family }">
+            <div v-if="family.gr_detail && (family.gr_detail.percentage || family.gr_detail.quantity)"
+                class="whitespace-nowrap tabular-nums">
+                <span v-tooltip="trans('Percentage off')">{{ family.gr_detail.percentage }}%</span>
+                <span class="text-gray-400 mx-1">·</span>
+                <span v-tooltip="trans('Trigger quantity')">{{ family.gr_detail.quantity }}</span>
+            </div>
+            <span v-else class="text-gray-400 italic">-</span>
+        </template>
+
+        <template #cell(number_following_master_gr)="{ item: family }">
+            <span class="tabular-nums">{{ family.number_following_master_gr ?? 0 }}</span>
+        </template>
+
+        <template #cell(number_not_following_master_gr)="{ item: family }">
+            <span class="tabular-nums">{{ family.number_not_following_master_gr ?? 0 }}</span>
+        </template>
+
         <template #cell(actions)="{ item }">
             <Link v-if="routes?.detach?.name" as="button"
                 :href="route(routes.detach.name, { ...routes.detach.parameters, family: item.id })"
