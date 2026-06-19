@@ -798,7 +798,7 @@ export const buildStructuredData = ({
         // return structuredData
     // }
 
-    if (webpageData?.model_type === "ProductCategory" || webpageData?.sub_type === "family") {
+    if (webpageData?.model_type === "ProductCategory" && webpageData?.sub_type === "family") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
     
         const autoVariants = generateProductsStructureFromProductsList({
@@ -834,7 +834,7 @@ export const buildStructuredData = ({
     }
 
     // Webpage: Product
-    if (webpageData?.model_type === "Product" || webpageData?.sub_type === "product") {
+    if (webpageData?.model_type === "Product" && webpageData?.sub_type === "product") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
         const autoProductNode = buildProductNode({
             webpageData,
