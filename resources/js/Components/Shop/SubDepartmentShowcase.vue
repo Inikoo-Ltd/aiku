@@ -65,10 +65,20 @@ provide('isModalOpen', isModalOpen)
 const navigateTo = () => {
     const routeParams = route().params;
 
-    router.visit(route("grp.org.shops.show.catalogue.departments.show.sub_departments.edit", {
-        ...routeParams,
-        section: 1
-    }));
+    switch (route().current()) {
+        case "grp.org.shops.show.catalogue.sub_departments.show":
+            router.visit(route("grp.org.shops.show.catalogue.sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            }));
+            break;
+        default:
+            router.visit(route("grp.org.shops.show.catalogue.departments.show.sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            }));
+            break;
+    }
 }
 </script>
 
