@@ -124,7 +124,11 @@ class ProductsResource extends JsonResource
             'family_slug'                       => $this->family_slug,
             'family_code'                       => $this->family_code,
             'family_name'                       => $this->family_name,
-            'webpage_state'                     => $this->webpage_state ? $webpageStateIcon[$this->webpage_state] : null,
+            'webpage_state'                     => $this->webpage_state ? $webpageStateIcon[$this->webpage_state] : [
+                'tooltip' => __('No webpage'),
+                'icon'    => 'fal fa-browser',
+                'class'   => 'text-gray-300',
+            ],
             'price'                             => $this->price,
             'units'                             => trimDecimalZeros($this->units),
             'unit'                              => $this->unit,
