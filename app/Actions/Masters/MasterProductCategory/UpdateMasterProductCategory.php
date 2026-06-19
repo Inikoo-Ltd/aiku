@@ -9,7 +9,8 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
-use App\Actions\Discounts\Offer\UpdateVolumeGrOfferFromMaster;
+use App\Actions\Discounts\Offer\VolGr\FinishVolumeGrOfferFromMaster;
+use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateTradeUnitFamilyToChildFamily;
@@ -107,17 +108,20 @@ class UpdateMasterProductCategory extends OrgAction
             ]);
         }
 
+        $grUpdating = false;
+        $grDeleting = false;
         if (Arr::has($modelData, 'vol_gr_offer')) {
             $volGR = Arr::pull($modelData, 'vol_gr_offer');
-
             if ($volGR) {
                 data_set($modelData, 'has_gr_vol_discount', true);
-
                 data_set($modelData, 'gr_vol_discount_percentage', $volGR['percentage_off']);
                 data_set($modelData, 'gr_vol_discount_quantity', $volGR['item_quantity']);
+                $grUpdating = true;
             } else {
                 data_set($modelData, 'has_gr_vol_discount', false);
-                // TODO: Delete GR Reward from Master Product Category to Children
+                data_set($modelData, 'gr_vol_discount_percentage', 0);
+                data_set($modelData, 'gr_vol_discount_quantity',0);
+                $grDeleting = true;
             }
         }
 
@@ -125,8 +129,13 @@ class UpdateMasterProductCategory extends OrgAction
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::hasAny($changed, ['gr_vol_discount_percentage', 'gr_vol_discount_quantity'])) {
-            $result = UpdateVolumeGrOfferFromMaster::make()->action($masterProductCategory);
+
+        if ($grDeleting) {
+            FinishVolumeGrOfferFromMaster::dispatch($masterProductCategory);
+        }
+
+        if ($grUpdating && Arr::hasAny($changed, ['gr_vol_discount_percentage', 'gr_vol_discount_quantity'])) {
+            $result = UpdateVolumeGrOfferFromMaster::run($masterProductCategory);
 
             if (data_get($result, 'updated_offers', 0) == 0) {
 

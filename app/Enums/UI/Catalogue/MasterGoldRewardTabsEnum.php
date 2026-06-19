@@ -32,9 +32,10 @@ enum MasterGoldRewardTabsEnum: string
                 'icon'  => 'fal fa-times-circle',
             ],
             MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER => [
-                'title' => __('Not Follow Master'),
-                'icon'  => 'fal fa-starfighter',
+                'title'     => __('Families Not Following Master'),
+                'icon'      => 'fal fa-starfighter',
                 'iconColor' => '#DC2626',
+                'align'     => 'right',
             ],
         };
     }

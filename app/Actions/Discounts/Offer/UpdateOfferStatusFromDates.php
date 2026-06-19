@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
+use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
 use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
@@ -23,7 +24,7 @@ use Illuminate\Console\Command;
 class UpdateOfferStatusFromDates extends OrgAction
 {
     use WithActionUpdate;
-
+    use HandlesOfferSideEffects;
 
     public function handle(Offer $offer, ?Command $command = null): Offer
     {
@@ -98,7 +99,7 @@ class UpdateOfferStatusFromDates extends OrgAction
             }
         }
         if ($currentStatus != $offer->status) {
-            RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
+            $this->handleOfferSideEffects($offer);
         }
 
 

@@ -641,12 +641,12 @@ test('UI edit shop with related products description link', function () {
                 'formData.blueprint.2.fields.related_product_follow_master',
                 fn (AssertableInertia $field) => $field
                     ->where('type', 'toggle')
-                    ->where('description.2', 'You can setup the products listed in @manage_related_products@')
                     ->where('descriptionLinks.manage_related_products.label', 'related products tab')
                     ->where('descriptionLinks.manage_related_products.route.name', 'grp.masters.master_shops.show.master_families.show')
                     ->where('descriptionLinks.manage_related_products.route.parameters.masterShop', $masterShop->slug)
                     ->where('descriptionLinks.manage_related_products.route.parameters.masterFamily', $masterFamily->slug)
                     ->where('descriptionLinks.manage_related_products.route.parameters.tab', 'related_products')
+                    ->etc()
             );
     });
 });

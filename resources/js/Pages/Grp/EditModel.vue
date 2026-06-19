@@ -66,7 +66,7 @@ import {
     faCommentAlt,
     faDollyFlatbedAlt,
     faMapMarkedAlt,
-    faBullseye,
+    faMedal,
     faBullseyePointer
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
@@ -131,7 +131,8 @@ library.add(
     faUserLock,
     faDollyFlatbedAlt,
     faMapMarkedAlt,
-    faBullseyePointer
+    faBullseyePointer,
+    faMedal,
 )
 
 const props = defineProps<{
