@@ -93,9 +93,14 @@ class StoreProductToAllegro extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
-            $targetCurrency = Currency::where('code', 'PLN')->first();
-            $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
-            $customerPrice = $portfolio->customer_price * $plnPriceExchange;
+            if(Arr::get($allegroUser->data, 'marketplace_id') === 'allegro-pl') {
+                $targetCurrency = Currency::where('code', 'PLN')->first();
+                $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
+                $customerPrice = $portfolio->customer_price * $plnPriceExchange;
+            } else {
+                $targetCurrency = $shop->currency;
+                $customerPrice = $portfolio->customer_price;
+            }
 
             $offerData = [
                 'productSet' => [
@@ -108,7 +113,7 @@ class StoreProductToAllegro extends RetinaAction
                         ]
                     ]
                 ],
-                'name'     => $portfolio->customer_product_name,
+                'name'     => Str::limit($portfolio->customer_product_name, 75),
                 'category' => [
                     'id' => $categoryId
                 ],
@@ -116,7 +121,7 @@ class StoreProductToAllegro extends RetinaAction
                     'format' => 'BUY_NOW',
                     'price'  => [
                         'amount'   => number_format((float) $customerPrice, 2, '.', ''),
-                        'currency' => $shop->currency->code
+                        'currency' => $targetCurrency->code
                     ]
                 ],
                 'stock' => [
