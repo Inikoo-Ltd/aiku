@@ -21,6 +21,7 @@ import { faStarChristmas } from "@fas"
 const props = defineProps<{
     data: {
         editable?: boolean
+        video_editable?: boolean
         id: {}
         images: {}
         bucket_images?: boolean
@@ -44,6 +45,7 @@ const props = defineProps<{
 
 // State
 const editable = ref(props?.data?.editable ?? true)
+const video_editable = ref(props?.data?.video_editable ?? true)
 const selectedDragImage = ref<ImageTS | null>(null)
 const loadingSubmit = ref<null | number | string>(null)
 const isModalEditVideo = ref(false)
@@ -331,7 +333,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon v-if="categoryBox.information" v-tooltip="categoryBox.information"
                                 icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon v-if="categoryBox.type == 'video' && editable" @click="() => {
+                            <FontAwesomeIcon v-if="categoryBox.type == 'video' && video_editable" @click="() => {
                                 selectedVideoToUpdate = { ...categoryBox }
                                 isModalEditVideo = true
                             }" :icon="faPencil" class="text-gray-400 hover:text-gray-600" fixed-width />
@@ -354,11 +356,13 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
                     </div>
 
-
                     <div v-if="categoryBox.type == 'video'"
                         class="relative flex h-36 w-full items-center justify-center bg-gray-50 cursor-pointer"
-                        @click="editable ? () => { selectedVideoToUpdate = { ...categoryBox }; isModalEditVideo = true } : null">
-
+                        @click="() => {
+                            if (!video_editable) return;
+                            selectedVideoToUpdate = { ...categoryBox }
+                            isModalEditVideo = true
+                        }">
                         <!-- Video preview -->
                         <div v-if="categoryBox.url" class="relative w-full h-full">
                             <iframe class="w-full h-full rounded-md pointer-events-none" :src="categoryBox.url"
