@@ -17,6 +17,9 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
+use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\SalesChannel\RedoSalesChannelTimeSeries;
 use App\Actions\OrgAction;
@@ -25,11 +28,13 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
+use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -85,33 +90,76 @@ class UpdateInvoice extends OrgAction
 
         $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
 
+        $taxNumber = null;
+        $useCustomerTaxNumber = true;
+
+        $updateTaxCategory = (bool) $billingAddressData;
+
+        if (Arr::has($modelData, 'formatted_tax_number')) {
+            $formattedTaxNumber     = getUnformattedTaxNumber(Arr::pull($modelData, 'formatted_tax_number'));
+            $countryId              = null;
+            $useCustomerTaxNumber   = false;
+
+            if ($formattedTaxNumber && Arr::has($formattedTaxNumber, 'country_code')) {
+                $countryId          = Country::where('code', Arr::pull($formattedTaxNumber, 'country_code'))->first()?->id;
+            }
+
+            if ($countryId) {
+                data_set($formattedTaxNumber, 'country_id', $countryId);
+
+                if ($invoice->taxNumber) {
+                    $taxNumber = UpdateTaxNumber::run($invoice->taxNumber, $formattedTaxNumber, $this->strict);
+                } else {
+                    $taxNumber = StoreTaxNumber::run(
+                        owner: $invoice,
+                        modelData: $formattedTaxNumber,
+                        strict: $this->strict
+                    );
+                }
+            } elseif (!$countryId && $invoice->taxNumber?->id) {
+                DeleteTaxNumber::run($invoice->taxNumber);
+            }
+
+            data_set($modelData, 'tax_number', $taxNumber?->getFormattedTaxNumber());
+            data_set($modelData, 'tax_number_status', $taxNumber?->status?->value, false);
+            data_set($modelData, 'tax_number_valid', $taxNumber?->valid, false);
+            $updateTaxCategory = true;
+        }
+
         $invoice = $this->update($invoice, $modelData, ['data']);
 
-        if ($billingAddressData) {
+        if ($updateTaxCategory) {
             $staleInvoice = clone $invoice;
 
-            $this->updateFixedAddress(
-                $invoice,
-                $invoice->billingAddress,
-                $billingAddressData,
-                'Ordering',
-                'billing',
-                'address_id'
-            );
-            $invoice->update([
-                'billing_country_id' => $invoice->billingAddress->country_id,
-            ]);
+            if ($billingAddressData) {
+                $this->updateFixedAddress(
+                    $invoice,
+                    $invoice->billingAddress,
+                    $billingAddressData,
+                    'Ordering',
+                    'billing',
+                    'address_id'
+                );
+
+                $invoice->update([
+                    'billing_country_id' => $invoice->billingAddress->country_id,
+                ]);
+            }
 
             $customer = $invoice->customer;
 
+            if ($useCustomerTaxNumber) {
+                $taxNumber = $customer->taxNumber;
+            }
 
             $taxCategoryInvoice = GetTaxCategory::run(
                 country: $invoice->organisation->country,
-                taxNumber: $customer->taxNumber,
+                taxNumber: $taxNumber,
                 billingAddress: $invoice->billingAddress,
                 deliveryAddress: $invoice->deliveryAddress,
                 isRe: $customer?->is_re,
             );
+
             $invoice->update([
                 'tax_category_id' => $taxCategoryInvoice->id,
             ]);
@@ -119,20 +167,24 @@ class UpdateInvoice extends OrgAction
             CalculateInvoiceTotals::run($invoice);
             RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
 
-            $this->auditBillingAddressUpdate($invoice, $oldBillAddressData, $billingAddressData, $staleInvoice);
-            $this->auditBillingAddressUpdate($customer, $oldBillAddressData, $billingAddressData);
+            if ($billingAddressData) {
+                $this->auditBillingAddressUpdate($invoice, $oldBillAddressData, $billingAddressData, $staleInvoice);
+                $this->auditBillingAddressUpdate($customer, $oldBillAddressData, $billingAddressData);
+            }
 
             if ($order = $invoice->order) {
                 $staleOrder = clone $order;
 
-                $this->updateFixedAddress(
-                    $order,
-                    $order->billingAddress,
-                    $billingAddressData,
-                    'Ordering',
-                    'billing',
-                    'billing_address_id'
-                );
+                if ($billingAddressData) {
+                    $this->updateFixedAddress(
+                        $order,
+                        $order->billingAddress,
+                        $billingAddressData,
+                        'Ordering',
+                        'billing',
+                        'billing_address_id'
+                    );
+                }
 
                 $order->update([
                     'tax_category_id' => $taxCategoryInvoice->id,
@@ -140,7 +192,9 @@ class UpdateInvoice extends OrgAction
                 $order->refresh();
                 CalculateOrderTotalAmounts::run($order, false, false);
 
-                $this->auditBillingAddressUpdate($order, $oldBillAddressData, $billingAddressData, $staleOrder);
+                if ($billingAddressData) {
+                    $this->auditBillingAddressUpdate($order, $oldBillAddressData, $billingAddressData, $staleOrder);
+                }
             }
         }
 
@@ -289,6 +343,7 @@ class UpdateInvoice extends OrgAction
             ],
             'shipping_zone_schema_id'       => ['sometimes', 'nullable'],
             'shipping_zone_id'              => ['sometimes', 'nullable'],
+            'formatted_tax_number'          => ['sometimes', 'nullable', 'string'],
             'identity_document_number'      => ['sometimes', 'nullable', 'string'],
             'identity_document_number_alt'  => ['sometimes', 'nullable', 'string'],
 
@@ -318,6 +373,7 @@ class UpdateInvoice extends OrgAction
             $rules['deleted_by']                         = ['sometimes', 'nullable', 'integer'];
             $rules['customer_name']                      = ['sometimes', 'nullable', 'string'];
             $rules['customer_contact_name']              = ['sometimes', 'nullable', 'string'];
+            $rules['formatted_tax_number']               = ['sometimes', 'nullable', 'string'];
             $rules['tax_number']                         = ['sometimes', 'nullable', 'string'];
             $rules['tax_number_status']                  = ['sometimes', 'nullable', 'string'];
             $rules['tax_number_valid']                   = ['sometimes', 'nullable', 'boolean'];
