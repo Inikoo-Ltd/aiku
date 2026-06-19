@@ -8,14 +8,21 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faRobot, faPlus, faTrash, faCommentDots, faFlagCheckered,
     faHeadset, faBrain, faKeyboard, faPlay,
+    faAlignLeft, faLink, faAngleUp, faAngleDown,
 } from '@fal'
 import { trans } from 'laravel-vue-i18n'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
 
-library.add(faRobot, faPlus, faTrash, faCommentDots, faFlagCheckered, faHeadset, faBrain, faKeyboard, faPlay)
+library.add(
+    faRobot, faPlus, faTrash, faCommentDots, faFlagCheckered,
+    faHeadset, faBrain, faKeyboard, faPlay,
+    faAlignLeft, faLink, faAngleUp, faAngleDown,
+)
 
+type BlockType = 'text' | 'button'
+interface Block { id: string; type: BlockType; text?: string; label?: string; url?: string }
 interface FlowOption { id: string; label: string }
 interface VFNode { id: string; type: string; position: { x: number; y: number }; data: any }
 interface VFEdge { id: string; source: string; sourceHandle?: string; target: string }
@@ -34,8 +41,23 @@ const nodes = ref<VFNode[]>([])
 const edges = ref<VFEdge[]>([])
 const startId = ref('start')
 
+function normalizeStep(n: VFNode): VFNode {
+    if (n.type !== 'step') {
+        return n
+    }
+    if (!Array.isArray(n.data.options)) {
+        n.data.options = [] as FlowOption[]
+    }
+    if (!Array.isArray(n.data.blocks)) {
+        n.data.blocks = (!n.data.isStart && n.data.message)
+            ? [{ id: uid('b'), type: 'text', text: n.data.message }]
+            : ([] as Block[])
+    }
+    return n
+}
+
 if (props.modelValue?.nodes?.length) {
-    nodes.value = props.modelValue.nodes.map(n => ({ ...n, data: { ...n.data } }))
+    nodes.value = props.modelValue.nodes.map(n => normalizeStep({ ...n, data: { ...n.data } }))
     edges.value = (props.modelValue.edges ?? []).map(e => ({ ...e }))
     startId.value = props.modelValue.start ?? 'start'
     // keep the start node message synced with the parent's message field
@@ -47,15 +69,20 @@ if (props.modelValue?.nodes?.length) {
         id: 'start',
         type: 'step',
         position: { x: 80, y: 120 },
-        data: { message: props.startMessage, options: [] as FlowOption[], isStart: true },
+        data: { message: props.startMessage, blocks: [] as Block[], options: [] as FlowOption[], isStart: true },
     }]
 }
 
-const { onConnect, addEdges } = useVueFlow()
+const { onConnect, addEdges, removeNodes, removeEdges } = useVueFlow()
 
 // one outgoing edge per option handle: replace existing
 onConnect((conn) => {
-    edges.value = edges.value.filter(e => !(e.source === conn.source && e.sourceHandle === conn.sourceHandle))
+    const duplicates = edges.value
+        .filter(e => e.source === conn.source && e.sourceHandle === conn.sourceHandle)
+        .map(e => e.id)
+    if (duplicates.length) {
+        removeEdges(duplicates)
+    }
     addEdges([{ ...conn, id: uid('e') }])
 })
 
@@ -69,8 +96,35 @@ function addStepNode(): void {
         id: uid('s'),
         type: 'step',
         position: spawnPosition(),
-        data: { message: '', options: [] as FlowOption[], isStart: false },
+        data: { message: '', blocks: [{ id: uid('b'), type: 'text', text: '' }] as Block[], options: [] as FlowOption[], isStart: false },
     })
+}
+
+function addBlock(data: any, type: BlockType): void {
+    const base = { id: uid('b'), type }
+    if (type === 'text') {
+        data.blocks.push({ ...base, text: '' })
+    } else {
+        data.blocks.push({ ...base, label: trans('Button'), url: '' })
+    }
+}
+
+function removeBlock(data: any, blockId: string): void {
+    data.blocks = data.blocks.filter((b: Block) => b.id !== blockId)
+}
+
+function moveBlock(data: any, index: number, dir: number): void {
+    const target = index + dir
+    if (target < 0 || target >= data.blocks.length) {
+        return
+    }
+    const arr = data.blocks
+    ;[arr[index], arr[target]] = [arr[target], arr[index]]
+}
+
+const blockMeta: Record<BlockType, { label: string; icon: string }> = {
+    text:   { label: trans('Text'),   icon: 'fa-align-left' },
+    button: { label: trans('Button'), icon: 'fa-link' },
 }
 
 function addActionNode(action: string): void {
@@ -83,9 +137,10 @@ function addActionNode(action: string): void {
 }
 
 function deleteNode(id: string): void {
-    if (id === startId.value) return
-    nodes.value = nodes.value.filter(n => n.id !== id)
-    edges.value = edges.value.filter(e => e.source !== id && e.target !== id)
+    if (id === startId.value) {
+        return
+    }
+    removeNodes([id], true)
 }
 
 function addOption(node: VFNode): void {
@@ -94,7 +149,12 @@ function addOption(node: VFNode): void {
 
 function removeOption(node: VFNode, optId: string): void {
     node.data.options = node.data.options.filter((o: FlowOption) => o.id !== optId)
-    edges.value = edges.value.filter(e => !(e.source === node.id && e.sourceHandle === optId))
+    const dead = edges.value
+        .filter(e => e.source === node.id && e.sourceHandle === optId)
+        .map(e => e.id)
+    if (dead.length) {
+        removeEdges(dead)
+    }
 }
 
 const actionMeta: Record<string, { label: string; icon: string; color: string }> = {
@@ -120,6 +180,7 @@ function serialize(): FlowValue | null {
             data: n.type === 'step'
                 ? {
                     message: n.id === startId.value ? props.startMessage : n.data.message,
+                    blocks: n.data.blocks ?? [],
                     options: n.data.options,
                     isStart: n.data.isStart,
                 }
@@ -131,7 +192,13 @@ function serialize(): FlowValue | null {
 
 const startOptions = computed<FlowOption[]>(() => nodes.value.find(n => n.id === startId.value)?.data.options ?? [])
 
-defineExpose({ serialize, startOptions })
+defineExpose({
+    serialize,
+    startOptions,
+    flowNodes: computed(() => nodes.value),
+    flowEdges: computed(() => edges.value),
+    startId: computed(() => startId.value),
+})
 </script>
 
 <template>
@@ -172,7 +239,7 @@ defineExpose({ serialize, startOptions })
 
                 <!-- Step node -->
                 <template #node-step="{ id, data }">
-                    <div class="w-60 rounded-xl bg-white border-2 shadow-sm"
+                    <div class="w-72 rounded-xl bg-white border-2 shadow-sm"
                         :class="data.isStart ? 'border-green-400' : 'border-indigo-200'">
                         <Handle v-if="!data.isStart" type="target" :position="Position.Left" class="!bg-indigo-400" />
 
@@ -189,18 +256,52 @@ defineExpose({ serialize, startOptions })
                             </button>
                         </div>
 
-                        <!-- message -->
-                        <div class="px-3 py-2">
-                            <p v-if="data.isStart" class="text-xs text-gray-600 whitespace-pre-wrap break-words min-h-[2rem]">
-                                {{ startMessage || trans('Edit the message in the field above ↑') }}
-                            </p>
-                            <textarea
-                                v-else
-                                v-model="data.message"
-                                rows="2"
-                                class="nodrag w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 resize-none focus:outline-none focus:border-indigo-400"
-                                :placeholder="trans('Message…')"
-                            />
+                        <!-- content blocks -->
+                        <div class="px-3 py-2 space-y-2">
+                            <div v-if="data.isStart" class="text-xs text-gray-600 whitespace-pre-wrap break-words bg-green-50/60 border border-green-100 rounded-md px-2 py-1.5">
+                                {{ startMessage || trans('Edit the first message in the field on the left ↖') }}
+                            </div>
+
+                            <div v-for="(block, idx) in data.blocks" :key="block.id"
+                                class="rounded-md border border-gray-200 bg-gray-50/60 p-2 space-y-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                                        <FontAwesomeIcon :icon="['fal', blockMeta[block.type].icon]" />{{ blockMeta[block.type].label }}
+                                    </span>
+                                    <div class="nodrag flex items-center gap-0.5 text-gray-300">
+                                        <button type="button" class="hover:text-gray-600 px-0.5" @click="moveBlock(data, idx, -1)">
+                                            <FontAwesomeIcon :icon="['fal', 'fa-angle-up']" class="text-[11px]" />
+                                        </button>
+                                        <button type="button" class="hover:text-gray-600 px-0.5" @click="moveBlock(data, idx, 1)">
+                                            <FontAwesomeIcon :icon="['fal', 'fa-angle-down']" class="text-[11px]" />
+                                        </button>
+                                        <button type="button" class="hover:text-red-500 px-0.5" @click="removeBlock(data, block.id)">
+                                            <FontAwesomeIcon :icon="['fal', 'fa-trash']" class="text-[10px]" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <textarea v-if="block.type === 'text'" v-model="block.text" rows="2"
+                                    class="nodrag w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 resize-none focus:outline-none focus:border-indigo-400"
+                                    :placeholder="trans('Text…')" />
+
+                                <template v-else>
+                                    <input v-model="block.label"
+                                        class="nodrag w-full text-[11px] border border-gray-200 rounded-md px-2 py-1 mb-1 focus:outline-none focus:border-indigo-400"
+                                        :placeholder="trans('Button label')" />
+                                    <input v-model="block.url"
+                                        class="nodrag w-full text-[11px] border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:border-indigo-400"
+                                        :placeholder="trans('https://… (opens link)')" />
+                                </template>
+                            </div>
+
+                            <div class="nodrag flex flex-wrap gap-1">
+                                <button v-for="t in (['text','button'] as const)" :key="t" type="button"
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-dashed border-gray-200 text-[10px] font-medium text-gray-500 hover:bg-gray-100"
+                                    @click="addBlock(data, t)">
+                                    <FontAwesomeIcon :icon="['fal', blockMeta[t].icon]" />{{ blockMeta[t].label }}
+                                </button>
+                            </div>
                         </div>
 
                         <!-- options -->

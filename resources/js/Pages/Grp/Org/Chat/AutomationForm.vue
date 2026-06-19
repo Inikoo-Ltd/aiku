@@ -7,7 +7,7 @@ import { capitalize } from '@/Composables/capitalize'
 import { trans } from 'laravel-vue-i18n'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faRobot, faSave, faPaperPlane, faPaperclip, faRedo, faTimes, faProjectDiagram } from '@fal'
+import { faRobot, faSave, faPaperPlane, faPaperclip, faRedo, faTimes, faProjectDiagram, faShare } from '@fal'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
@@ -16,7 +16,7 @@ import InputNumber from 'primevue/inputnumber'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 
-library.add(faRobot, faSave, faPaperPlane, faPaperclip, faRedo, faTimes, faProjectDiagram)
+library.add(faRobot, faSave, faPaperPlane, faPaperclip, faRedo, faTimes, faProjectDiagram, faShare)
 
 interface ShopOption { id: number; name: string; code: string }
 interface TriggerType { value: string; label: string; description: string }
@@ -80,9 +80,114 @@ function render(text: string): string {
         .replace(/\{agent_name\}/g, 'Sarah')
 }
 
-const previewText = computed(() => render(form.message) || trans('Your message preview will appear here…'))
-const previewTime = computed(() => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
-const previewOptions = computed<{ id: string; label: string }[]>(() => canvasRef.value?.startOptions ?? [])
+function nowTime(): string {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+interface Block { id: string; type: 'text' | 'button'; text?: string; label?: string; url?: string }
+interface SimMessage {
+    role: 'bot' | 'user' | 'system'
+    text?: string
+    blocks?: Block[]
+    time: string
+}
+
+const flowNodes = computed<any[]>(() => canvasRef.value?.flowNodes ?? [])
+const flowEdges = computed<any[]>(() => canvasRef.value?.flowEdges ?? [])
+const startNodeId = computed<string>(() => canvasRef.value?.startId ?? 'start')
+const startOptions = computed<{ id: string; label: string }[]>(() => canvasRef.value?.startOptions ?? [])
+
+function nodeById(id: string): any {
+    return flowNodes.value.find(n => n.id === id)
+}
+
+function targetFor(nodeId: string, optionId: string): any {
+    const edge = flowEdges.value.find(e => e.source === nodeId && e.sourceHandle === optionId)
+    return edge ? nodeById(edge.target) : null
+}
+
+const simLog = ref<SimMessage[]>([])
+const simActiveNodeId = ref<string>('start')
+const simActiveOptions = ref<{ id: string; label: string }[]>([])
+const simEnded = ref(false)
+const hasInteracted = computed(() => simLog.value.some(m => m.role === 'user'))
+
+function blocksForNode(node: any): Block[] {
+    const blocks: Block[] = []
+    if (node?.id === startNodeId.value) {
+        const text = render(form.message)
+        if (text) {
+            blocks.push({ id: 'start-text', type: 'text', text })
+        }
+    }
+    for (const b of (node?.data?.blocks ?? [])) {
+        blocks.push(b.type === 'text' ? { ...b, text: render(b.text ?? '') } : { ...b })
+    }
+    return blocks
+}
+
+function resetSim(): void {
+    const startNode = nodeById(startNodeId.value)
+    const blocks = startNode
+        ? blocksForNode(startNode)
+        : (render(form.message) ? [{ id: 'start-text', type: 'text', text: render(form.message) } as Block] : [])
+    simLog.value = [{
+        role: 'bot',
+        blocks: blocks.length ? blocks : [{ id: 'ph', type: 'text', text: trans('Your message preview will appear here…') }],
+        time: nowTime(),
+    }]
+    simActiveNodeId.value = startNodeId.value
+    simActiveOptions.value = startOptions.value
+    simEnded.value = false
+}
+
+const actionFeedback: Record<string, { role: SimMessage['role']; text: string; end: boolean }> = {
+    end:           { role: 'system', text: trans('— Conversation ended —'),                                  end: true },
+    handoff:       { role: 'system', text: trans('— Connecting you to a live agent… —'),                     end: true },
+    ai_answer:     { role: 'bot',    text: trans('🤖 The AI assistant answers from the knowledge base…'),     end: true },
+    collect_input: { role: 'bot',    text: trans('Please type your reply below…'),                           end: true },
+}
+
+function advanceTo(node: any): void {
+    if (!node) {
+        simLog.value.push({ role: 'system', text: trans('— Chat ended —'), time: nowTime() })
+        simEnded.value = true
+        return
+    }
+    if (node.type === 'step') {
+        const blocks = blocksForNode(node)
+        simLog.value.push({ role: 'bot', blocks: blocks.length ? blocks : [{ id: 'ph', type: 'text', text: trans('…') }], time: nowTime() })
+        simActiveNodeId.value = node.id
+        simActiveOptions.value = node.data.options ?? []
+        if (!simActiveOptions.value.length) {
+            simEnded.value = true
+        }
+    } else {
+        const fb = actionFeedback[node.data.action] ?? actionFeedback.end
+        simLog.value.push({ role: fb.role, text: fb.text, time: nowTime() })
+        simEnded.value = fb.end
+    }
+}
+
+function pickOption(opt: { id: string; label: string }): void {
+    if (simEnded.value) {
+        return
+    }
+    const fromNode = simActiveNodeId.value
+    simLog.value.push({ role: 'user', text: opt.label || trans('Option'), time: nowTime() })
+    simActiveOptions.value = []
+    advanceTo(targetFor(fromNode, opt.id))
+}
+
+watch(
+    [() => form.message, () => canvasRef.value?.flowNodes, () => canvasRef.value?.flowEdges],
+    () => {
+        if (!hasInteracted.value) {
+            resetSim()
+        }
+    },
+    { deep: true, immediate: true },
+)
 
 watch(() => form.trigger_type, () => {
     if (!isEdit.value && !form.name) {
@@ -217,7 +322,14 @@ function submit(): void {
         <div class="space-y-5 xl:sticky xl:top-6">
             <!-- Live preview -->
             <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{{ trans('Live Preview') }}</p>
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ trans('Live Preview') }}</p>
+                    <button type="button" class="inline-flex items-center gap-1.5 text-[11px] font-medium text-indigo-600 hover:text-indigo-800"
+                        @click="resetSim">
+                        <FontAwesomeIcon :icon="['fal', 'fa-redo']" class="text-[10px]" />
+                        {{ trans('Restart') }}
+                    </button>
+                </div>
                 <div class="mx-auto w-[300px] max-w-full rounded-[2rem] bg-gray-900 p-2.5 shadow-2xl">
                     <div class="rounded-[1.5rem] overflow-hidden bg-white flex flex-col h-[480px]">
                         <div class="flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shrink-0">
@@ -228,27 +340,64 @@ function submit(): void {
                                 <p class="text-sm font-semibold truncate">{{ shopName }} {{ trans('Assistant') }}</p>
                                 <p class="text-[11px] text-white/80 truncate">{{ trans('Virtual Assistant') }}</p>
                             </div>
-                            <FontAwesomeIcon :icon="['fal', 'fa-redo']" class="text-sm text-white/80" />
+                            <FontAwesomeIcon :icon="['fal', 'fa-redo']" class="text-sm text-white/80 cursor-pointer" @click="resetSim" />
                             <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-base text-white/80" />
                         </div>
 
                         <div class="flex-1 overflow-y-auto px-3 py-4 bg-[#f0f4f8] space-y-3">
-                            <div class="flex items-end gap-2">
-                                <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-500 flex items-center justify-center shrink-0 text-[10px]">
-                                    <FontAwesomeIcon :icon="['fal', 'fa-robot']" />
-                                </div>
-                                <div class="max-w-[80%]">
-                                    <p class="text-[10px] text-gray-400 mb-1 ml-1">{{ shopName }} {{ trans('Assistant') }}</p>
-                                    <div class="rounded-2xl rounded-bl-md bg-white text-gray-800 px-3.5 py-2.5 text-sm shadow-sm">
-                                        <p class="whitespace-pre-wrap break-words leading-relaxed">{{ previewText }}</p>
-                                        <div class="text-[10px] text-gray-400 text-right mt-1">{{ previewTime }}</div>
+                            <template v-for="(msg, i) in simLog" :key="i">
+                                <!-- bot bubble -->
+                                <div v-if="msg.role === 'bot'" class="flex items-end gap-2">
+                                    <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-500 flex items-center justify-center shrink-0 text-[10px]">
+                                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" />
+                                    </div>
+                                    <div class="max-w-[85%] space-y-1.5">
+                                        <p class="text-[10px] text-gray-400 mb-1 ml-1">{{ shopName }} {{ trans('Assistant') }}</p>
+
+                                        <div class="rounded-2xl rounded-bl-md bg-white text-gray-800 px-3 py-3 text-sm shadow-sm space-y-2">
+                                            <template v-if="msg.blocks?.length">
+                                                <template v-for="block in msg.blocks" :key="block.id">
+                                                    <p v-if="block.type === 'text'" class="whitespace-pre-wrap break-words leading-relaxed px-0.5">
+                                                        {{ block.text }}
+                                                    </p>
+
+                                                    <a v-else
+                                                        :href="block.url || undefined" target="_blank" rel="noopener"
+                                                        class="flex items-center justify-center gap-1.5 rounded-xl bg-white border border-gray-200 text-indigo-600 px-3 py-2 text-xs font-medium hover:bg-indigo-50">
+                                                        <FontAwesomeIcon :icon="['fal', 'fa-share']" class="text-[10px]" />
+                                                        {{ block.label || trans('Button') }}
+                                                    </a>
+                                                </template>
+                                            </template>
+
+                                            <p v-else class="whitespace-pre-wrap break-words leading-relaxed px-0.5">{{ msg.text }}</p>
+                                        </div>
+
+                                        <div class="text-[10px] text-gray-400 ml-1">{{ msg.time }}</div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div v-if="previewOptions.length" class="flex flex-wrap gap-2 justify-end pl-8">
-                                <button v-for="opt in previewOptions" :key="opt.id" type="button"
-                                    class="px-3 py-1.5 rounded-full border border-indigo-300 text-indigo-600 text-xs bg-white">
+                                <!-- user bubble -->
+                                <div v-else-if="msg.role === 'user'" class="flex justify-end">
+                                    <div class="max-w-[80%]">
+                                        <div class="rounded-2xl rounded-br-md bg-indigo-500 text-white px-3.5 py-2.5 text-sm shadow-sm">
+                                            <p class="whitespace-pre-wrap break-words leading-relaxed">{{ msg.text }}</p>
+                                            <div class="text-[10px] text-white/70 text-right mt-1">{{ msg.time }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- system note -->
+                                <div v-else class="flex justify-center">
+                                    <span class="text-[11px] text-gray-400 bg-gray-200/60 rounded-full px-3 py-1">{{ msg.text }}</span>
+                                </div>
+                            </template>
+
+                            <!-- active option buttons -->
+                            <div v-if="simActiveOptions.length && !simEnded" class="flex flex-wrap gap-2 justify-end pl-8">
+                                <button v-for="opt in simActiveOptions" :key="opt.id" type="button"
+                                    class="px-3 py-1.5 rounded-full border border-indigo-300 text-indigo-600 text-xs bg-white hover:bg-indigo-50 active:scale-95 transition"
+                                    @click="pickOption(opt)">
                                     {{ opt.label || trans('Option') }}
                                 </button>
                             </div>
@@ -265,6 +414,7 @@ function submit(): void {
                         </div>
                     </div>
                 </div>
+                <p class="text-[11px] text-gray-400 text-center mt-2">{{ trans('Click a button to simulate the flow.') }}</p>
             </div>
 
             <!-- Save -->
