@@ -532,6 +532,7 @@ export const buildStructuredData = ({
     currencyCode,
     websiteName,
 }: BuildStructuredDataOptions): StructuredDataValue | null => {
+    // Webpage: Family
     if (webpageData?.model_type === "ProductCategory" || webpageData?.sub_type === "family") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
     
@@ -559,6 +560,7 @@ export const buildStructuredData = ({
         return structuredData
     }
 
+    // Webpage: Product
     if (webpageData?.model_type === "Product" || webpageData?.sub_type === "product") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
         const autoProductNode = buildProductNode({
