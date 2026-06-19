@@ -22,7 +22,6 @@ import {
 	faSignInAlt,
 	faFileAlt,
 	faUser,
-	faEnvelope,
 	faHeart
 } from "@fas"
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
@@ -157,28 +156,14 @@ const onClickLogout = () => {
 
 			<!-- Right Menu -->
 			<div class="shrink-0 h-full flex items-center gap-6">
-				<!-- Mail -->
-				<LinkIris v-if="isLoggedIn" href="/app/back-in-stocks" :type="'internal'"
-					v-slot="{ isLoading } = { isLoading: false }">
-					<button class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-						v-tooltip="ctrans('Reminder back in stock')">
-						<FontAwesomeIcon :icon="faEnvelope" class="text-[20px]" />
-						<span class="text-sm font-medium">
-							{{ layout.iris_variables?.back_in_stock_count }}
-						</span>
-					</button>
-				</LinkIris>
-
-				<!-- Wishlist -->
-				<LinkIris v-if="isLoggedIn" href="/app/favourites" :type="'internal'"
+				<!-- My Interest -->
+				<LinkIris v-if="isLoggedIn" href="/app/interest/favourites" :type="'internal'"
 					v-slot="{ isLoading } = { isLoading: false }">
 					<button class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors"
-						v-tooltip="ctrans('Favourites')">
+						v-tooltip="ctrans('My Interest')">
 						<FontAwesomeIcon :icon="faHeart" class="text-[20px]" />
 						<span class="text-sm font-medium">
-							<div class="button">
-								{{ layout.iris_variables?.favourites_count }}
-							</div>
+							{{ ctrans('My Interest') }}
 						</span>
 					</button>
 				</LinkIris>

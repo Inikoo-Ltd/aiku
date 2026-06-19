@@ -6,12 +6,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { SubSection } from "@/types/Navigation"
-import { faEnvelope, faPallet, faTruck, faTruckCouch, faTruckRamp } from "@fal";
+import { faEnvelope, faEnvelopeOpenText, faPallet, faTruck, faTruckCouch, faTruckRamp } from "@fal";
 import { faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, faDotCircle as FarDotCircle } from "@far";
 import { ref, computed } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faDotCircle, faTruck, faPallet, faTruckRamp, faTruckCouch, faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, FarDotCircle, faEnvelope)
+library.add(faDotCircle, faTruck, faPallet, faTruckRamp, faTruckCouch, faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, FarDotCircle, faEnvelope, faEnvelopeOpenText)
 
 const layoutStore = useLayoutStore()
 
