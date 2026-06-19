@@ -55,9 +55,10 @@ class ShowMailshotWorkshop extends OrgAction
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
         $email = $mailshot->email;
+        $hasPublishedVersion = $email?->liveSnapshot?->compiled_layout ? true : false;
 
         $templateLayout = null;
-        if ($request->has('template')) {
+        if ($request->has('template') && !$hasPublishedVersion) {
             $templateSlug = $request->get('template');
             $template = EmailTemplate::findBySlug($templateSlug);
             if ($template) {
