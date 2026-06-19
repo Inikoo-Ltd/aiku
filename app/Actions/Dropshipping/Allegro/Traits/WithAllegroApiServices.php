@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Allegro\Traits;
 
+use DOMDocument;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -88,7 +89,36 @@ trait WithAllegroApiServices
 
     public function sanitizeAllegroDescription(?string $content): string
     {
-        return trim(html_entity_decode(strip_tags($content), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if (!$content) {
+            return "<p>".__("No description available")."</p>";
+        }
+
+        $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+        $description = str_replace('&acute;', '´', $content);
+
+        $description = preg_replace_callback('/<b>(.*?)<\/b>/is', function($matches) {
+            return '<b>' . strip_tags($matches[1]) . '</b>';
+        }, $description);
+
+        $description = $this->fixHtml($description);
+
+        return strip_tags($description, '<b><p><br>');
+    }
+
+    function fixHtml(string $html): string
+    {
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<div>' . $html . '</div>', LIBXML_NOERROR | LIBXML_HTML_NOIMPLIED);
+        libxml_clear_errors();
+
+        // Get the inner content of the wrapping div
+        $body = $dom->getElementsByTagName('div')->item(0);
+        $result = '';
+        foreach ($body->childNodes as $child) {
+            $result .= $dom->saveXML($child);
+        }
+        return $result;
     }
 
     // -------------------------------------------------------------------------
@@ -419,21 +449,6 @@ trait WithAllegroApiServices
     public function getCategoryParameters(string $categoryId): array
     {
         return $this->makeApiRequest('GET', "/sale/categories/$categoryId/parameters");
-    }
-
-    public function getResponsibleProducer(): array
-    {
-        return $this->makeApiRequest('GET', "/sale/responsible-producers");
-    }
-
-    public function createResponsibleProducer(array $producerData): array
-    {
-        return $this->makeApiRequest('POST', "/sale/responsible-producers", $producerData);
-    }
-
-    public function createResponsiblePerson(array $personData): array
-    {
-        return $this->makeApiRequest('POST', "/sale/responsible-persons", $personData);
     }
 
     public function getRecommendedCategory(string $name): array

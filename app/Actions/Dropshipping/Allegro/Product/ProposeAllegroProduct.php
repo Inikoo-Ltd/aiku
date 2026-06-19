@@ -44,6 +44,8 @@ class ProposeAllegroProduct
             ];
         }
 
+        $description = $allegroUser->sanitizeAllegroDescription($portfolio->customer_description);
+
         $productData = [
             'name'     => Str::substr($portfolio->customer_product_name, 0, 75),
             'category' => [
@@ -57,7 +59,7 @@ class ProposeAllegroProduct
                         'items' => [
                             [
                                 'type'    => 'TEXT',
-                                'content' => $allegroUser->sanitizeAllegroDescription($portfolio->customer_description)
+                                'content' => $description
                             ]
                         ]
                     ]
