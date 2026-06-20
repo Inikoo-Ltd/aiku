@@ -8,9 +8,7 @@
 
 namespace App\Actions\Web\Webpage;
 
-use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartmentDescription;
 use App\Actions\Web\WebBlock\Workshop\GetBlockSubDepartment;
-use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockCollection;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartments;
@@ -51,8 +49,13 @@ trait WithFillWorkshopWebBlocks
         } elseif (str_starts_with($webBlockType, 'families-') && str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetWebBlockFamiliesOverview::run($webpage, $webBlock);
         } elseif ($webBlockType == 'sub-departments-3') {
-            $parsedWebBlocks[$key] = GetWebBlockSubDepartmentsThree::run($webpage, $webBlock);
-        } elseif ($webBlockType !== 'sub-departments-3' && str_contains($webBlockType, 'sub-departments-')) {
+            $webBlockData = GetWebBlockSubDepartmentsThree::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
+        } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
@@ -73,13 +76,28 @@ trait WithFillWorkshopWebBlocks
         } elseif ($webBlockType == 'recommendation-from-master') {
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-product-category-from-master') {
-            $parsedWebBlocks[$key] = GetWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
+            $webBlockData = GetWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } elseif ($webBlockType == 'faq-department') {
-            $parsedWebBlocks[$key] = GetFaqDepartment::run($webpage, $webBlock);
+            $webBlockData = GetFaqDepartment::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'top-families') {
-            $parsedWebBlocks[$key] = GetTopFamilies::run($webpage, $webBlock);
+            $webBlockData = GetTopFamilies::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }
