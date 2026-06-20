@@ -9,22 +9,21 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
 use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Models\Web\Webpage;
-use Lorisleiva\Actions\Concerns\AsObject;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetIrisWebBlockFamilyDescription
 {
     use AsObject;
+    use HasWebBlockLayoutData;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $webBlockType = data_get($webBlock, 'type', '');
-        $webPublishedLayout = $webpage->website->published_layout;
+        $this->setWebBlockLayoutData($webpage, $webBlock, 'family_description');
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue', data_get($webPublishedLayout, "family_description.$webBlockType.fieldValue", []));
-        data_set($webBlock, 'web_block.layout.data.fieldValue.id', data_get($webBlock, 'type'));
         data_set($webBlock, 'web_block.layout.data.fieldValue.family', WebBlockFamilyResource::make($webpage->model)->toArray(request()));
 
         return [

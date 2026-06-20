@@ -41,12 +41,17 @@ trait WithFillIrisWebBlocks
         // if ($webBlockType == 'department-description-1') {
         //     $parsedWebBlocks[$key] = GetIrisWebBlockDepartment::run($webpage, $webBlock);
         if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
-            $parsedWebBlocks[$key] = GetIrisWebBlockDepartmentDescription::run($webpage, $webBlock);
+            $departmentData = GetIrisWebBlockDepartmentDescription::run($webpage, $webBlock);
+            if ($departmentData) {
+                $parsedWebBlocks[$key] = $departmentData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'sub-department-description-1') {
             $parsedWebBlocks[$key] = GetIrisBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockCollection::run($webpage, $webBlock);
-        } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
+        } elseif (str_starts_with($webBlockType, 'families-') && str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamiliesOverview::run($webpage, $webBlock);
         } elseif ($webBlockType == 'sub-departments-3') {
             $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartmentsThree::run($webpage, $webBlock);
