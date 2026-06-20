@@ -8,21 +8,22 @@
 
 namespace App\Actions\Web\WebBlock\Workshop;
 
-use App\Http\Resources\Web\WebBlockProductCategoryDescriptionResource;
+use App\Actions\Web\WebBlock\Concerns\HasDepartmentData;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetWebBlockDepartment
 {
     use AsObject;
+    use HasDepartmentData;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $permissions =  ['edit','hidden'];
+        $permissions = ['edit', 'hidden'];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.department', WebBlockProductCategoryDescriptionResource::make($webpage->model)->toArray(request()));
+        $this->setDepartmentData($webpage, $webBlock);
+
         return $webBlock;
     }
-
 }

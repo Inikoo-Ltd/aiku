@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartmentDescription;
 use App\Actions\Web\WebBlock\Workshop\GetBlockSubDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockCollection;
@@ -35,11 +36,14 @@ trait WithFillWorkshopWebBlocks
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
-        // Old. Commented out
-        // if ($webBlockType == 'department-description-1') {
-        //     $parsedWebBlocks[$key] = GetWebBlockDepartment::run($webpage, $webBlock);
+
         if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
-            $parsedWebBlocks[$key] = GetWebBlockDepartmentDescription::run($webpage, $webBlock);
+            $departmentData = GetWebBlockDepartmentDescription::run($webpage, $webBlock);
+            if ($departmentData) {
+                $parsedWebBlocks[$key] = $departmentData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'sub-department-description-1') {
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {

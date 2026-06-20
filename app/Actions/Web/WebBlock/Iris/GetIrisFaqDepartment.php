@@ -9,25 +9,21 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Actions\Web\WebBlock\Concerns\HasFaqDepartmentData;
+use App\Actions\Web\WebBlock\Concerns\HasIrisWebBlockResponse;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
-use Illuminate\Support\Arr;
 
 class GetIrisFaqDepartment
 {
     use AsObject;
+    use HasFaqDepartmentData;
+    use HasIrisWebBlockResponse;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        data_set($webBlock, 'web_block.layout.data.fieldValue.faqs', $webpage->model->faq);
-        return [
-            'type' => $webBlock['type'],
-            'structure' => Arr::get(
-                $webBlock,
-                'web_block.layout.data.fieldValue',
-                []
-            ),
-        ];
-    }
+        $this->setFaqDepartmentData($webpage, $webBlock);
 
+        return $this->irisResponse($webBlock);
+    }
 }

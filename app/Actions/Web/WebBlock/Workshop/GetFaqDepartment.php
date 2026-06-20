@@ -9,15 +9,19 @@
 
 namespace App\Actions\Web\WebBlock\Workshop;
 
+use App\Actions\Web\WebBlock\Concerns\HasFaqDepartmentData;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetFaqDepartment
 {
     use AsObject;
+    use HasFaqDepartmentData;
+
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        data_set($webBlock, 'web_block.layout.data.fieldValue.faqs', $webpage->model->faq);
+        $this->setFaqDepartmentData($webpage, $webBlock);
+
         return $webBlock;
     }
 }
