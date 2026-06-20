@@ -37,7 +37,7 @@ class StoreTransactionHasOfferAllowance extends OrgAction
         $transactionHasOfferAllowance = TransactionHasOfferAllowance::create($modelData);
 
         OfferAllowanceHydrateOrders::dispatch($transactionHasOfferAllowance->offerAllowance);
-        OfferHydrateOrders::dispatch($transactionHasOfferAllowance->offer);
+        OfferHydrateOrders::dispatch($transactionHasOfferAllowance->offer_id);
         OfferCampaignHydrateOrders::dispatch($transactionHasOfferAllowance->offerCampaign);
         OrderHydrateOffers::dispatch($transaction->order);
 
