@@ -55,19 +55,23 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             ->get();
 
         try {
-            $logs           = [];
-            $inventoryItems = [];
+            $logs                   = [];
+            $inventoryItems         = [];
+            $portfoliosToUpdateData = [];
 
             /** @var Portfolio $portfolio */
             foreach ($portfolios as $portfolio) {
-
                 $product = DB::connection('aiku_no_sticky')->table('products')->select('available_quantity', 'is_for_sale')->find($portfolio->item_id);
 
                 if (!$product) {
                     continue;
                 }
 
-                $logs[] = StorePlatformPortfolioLog::run($portfolio, []);
+                $availableQuantity = $product->available_quantity;
+                if (!$product->is_for_sale) {
+                    $availableQuantity = 0;
+                }
+
 
                 // Get variant ID (either from stored or fetch default variant)
                 $variantId = Arr::get($portfolio->data, 'shopify_product.variants.edges.0.node.id');
@@ -91,11 +95,6 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 // Get inventory item ID from variant
                 $inventoryItemId = $this->getInventoryItemId($shopifyUser, $variantId);
 
-                $availableQuantity = $product->available_quantity;
-                if (!$product->is_for_sale) {
-                    $availableQuantity = 0;
-                }
-
                 $maxQtyAd = $shopifyUser->customerSalesChannel?->max_quantity_advertise;
 
                 if ($maxQtyAd > 0) {
@@ -103,22 +102,18 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 }
 
                 if ($inventoryItemId) {
-                    $inventoryItems[] = [
+                    $inventoryItems[]                       = [
                         'inventoryItemId' => $inventoryItemId,
                         'locationId'      => $shopifyUser->shopify_location_id,
                         'quantity'        => $availableQuantity,
                     ];
+                    $portfoliosToUpdateData[$portfolio->id] = [
+                        'last_stock_value' => $availableQuantity,
+                    ];
+                    $logs[]                                 = StorePlatformPortfolioLog::run($portfolio, []);
                 }
             }
 
-            if (empty($inventoryItems)) {
-                $this->bulkUpdateLogs($logs, [
-                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => __('No valid inventory items found')
-                ]);
-
-                return;
-            }
 
             // Use inventorySetQuantities mutation - this sets absolute quantities
             $mutation = <<<'MUTATION'
@@ -157,6 +152,13 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                     'response' => $res
                 ]);
 
+                foreach ($portfoliosToUpdateData as $portfolioId => $data) {
+                    $portfolio = Portfolio::find($portfolioId);
+                    $portfolio?->update([
+                        'stock_last_fail_updated_at' => now(),
+                    ]);
+                }
+
                 return;
             }
 
@@ -173,6 +175,13 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 return;
             }
 
+            foreach ($portfoliosToUpdateData as $portfolioId => $data) {
+                $portfolio = Portfolio::find($portfolioId);
+                $portfolio?->update([
+                    'last_stock_value'      => $data['last_stock_value'],
+                    'stock_last_updated_at' => now(),
+                ]);
+            }
 
             $this->bulkUpdateLogs($logs, [
                 'status' => PlatformPortfolioLogsStatusEnum::OK
@@ -182,6 +191,13 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                 'response' => $e->getMessage()
             ]);
+
+            foreach ($portfoliosToUpdateData as $portfolioId => $data) {
+                $portfolio = Portfolio::find($portfolioId);
+                $portfolio?->update([
+                    'stock_last_fail_updated_at' => now(),
+                ]);
+            }
         }
     }
 
