@@ -12,26 +12,60 @@ use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
-use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class BulkUpdateShopifyPortfolio
+class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 {
     use AsAction;
     use WithShopifyApi;
 
-    public function handle(ShopifyUser $shopifyUser, Collection $portfolios): void
+    public string $jobQueue = 'shopify-slave';
+    public int $jobTries = 1;
+
+    public function getJobUniqueId(?int $customerSalesChannelId): string
     {
+        return $customerSalesChannelId ?? 'empty';
+    }
+
+    public function handle(?int $customerSalesChannelId): void
+    {
+        if (!$customerSalesChannelId) {
+            return;
+        }
+
+        $customerSalesChannel = CustomerSalesChannel::on('aiku_no_sticky')->find($customerSalesChannelId);
+
+        if (!$customerSalesChannel) {
+            return;
+        }
+
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = $customerSalesChannel->user;
+
+        $portfolios = Portfolio::on('aiku_no_sticky')
+            ->where('customer_sales_channel_id', $customerSalesChannel->id)
+            ->whereNotNull('platform_product_variant_id')
+            ->where('status', true)
+            ->get();
+
         try {
-            $logs = [];
+            $logs           = [];
             $inventoryItems = [];
 
+            /** @var Portfolio $portfolio */
             foreach ($portfolios as $portfolio) {
-                /** @var Product $product */
-                $product = $portfolio->item;
+
+                $product = DB::connection('aiku_no_sticky')->table('products')->select('available_quantity', 'is_for_sale')->find($portfolio->item_id);
+
+                if (!$product) {
+                    continue;
+                }
 
                 $logs[] = StorePlatformPortfolioLog::run($portfolio, []);
 
@@ -58,7 +92,7 @@ class BulkUpdateShopifyPortfolio
                 $inventoryItemId = $this->getInventoryItemId($shopifyUser, $variantId);
 
                 $availableQuantity = $product->available_quantity;
-                if (! $product->is_for_sale) {
+                if (!$product->is_for_sale) {
                     $availableQuantity = 0;
                 }
 
@@ -71,17 +105,18 @@ class BulkUpdateShopifyPortfolio
                 if ($inventoryItemId) {
                     $inventoryItems[] = [
                         'inventoryItemId' => $inventoryItemId,
-                        'locationId' => $shopifyUser->shopify_location_id,
-                        'quantity' => $availableQuantity,
+                        'locationId'      => $shopifyUser->shopify_location_id,
+                        'quantity'        => $availableQuantity,
                     ];
                 }
             }
 
             if (empty($inventoryItems)) {
                 $this->bulkUpdateLogs($logs, [
-                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => __('No valid inventory items found')
                 ]);
+
                 return;
             }
 
@@ -107,9 +142,9 @@ class BulkUpdateShopifyPortfolio
 
             $variables = [
                 'input' => [
-                    'reason' => 'correction',
-                    'name' => 'available',
-                    'quantities' => $inventoryItems,
+                    'reason'                => 'correction',
+                    'name'                  => 'available',
+                    'quantities'            => $inventoryItems,
                     'ignoreCompareQuantity' => true
                 ]
             ];
@@ -118,9 +153,10 @@ class BulkUpdateShopifyPortfolio
 
             if (!$status) {
                 $this->bulkUpdateLogs($logs, [
-                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $res
                 ]);
+
                 return;
             }
 
@@ -130,9 +166,10 @@ class BulkUpdateShopifyPortfolio
             $userErrors = $body['data']['inventorySetQuantities']['userErrors'] ?? [];
             if (!empty($userErrors)) {
                 $this->bulkUpdateLogs($logs, [
-                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => 'User errors: ' . json_encode($userErrors)
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => 'User errors: '.json_encode($userErrors)
                 ]);
+
                 return;
             }
 
@@ -140,10 +177,9 @@ class BulkUpdateShopifyPortfolio
             $this->bulkUpdateLogs($logs, [
                 'status' => PlatformPortfolioLogsStatusEnum::OK
             ]);
-
         } catch (\Throwable $e) {
             $this->bulkUpdateLogs($logs ?? [], [
-                'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                 'response' => $e->getMessage()
             ]);
         }

@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 04-04-2025-11h-52m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
  */
 
@@ -170,7 +170,7 @@ class IndexCustomerSalesChannels extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent   = $customer;
-        $this->bucket   = $request->get('bucket', '');
+        $this->bucket   = $request->input('bucket', '');
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customer);

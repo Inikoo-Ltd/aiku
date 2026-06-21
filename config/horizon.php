@@ -351,6 +351,22 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
+        'shopify-slave'         => [
+            'connection'          => 'redis',
+            'queue'               => ['shopify-slave'],
+            'balance'             => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses'        => 1,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            'memory'              => 1280,
+            'tries'               => 1,
+            'timeout'             => 3600,
+            'retry_after'         => 600,
+            'nice'                => 0,
+            'balanceMaxShift'     => 1,
+            'balanceCooldown'     => 3,
+        ],
         'dropshipping'         => [
             'connection'          => 'redis',
             'queue'               =>
@@ -547,6 +563,9 @@ return [
             'cache-warming'        => [
                 'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 3),
             ],
+            'shopify-slave' => [
+                'maxProcesses' => env('HORIZON_SHOPIFY_SLAVE_WORKERS', 1),
+            ]
 
         ],
         'staging'    => [
@@ -607,6 +626,9 @@ return [
             'cache-warming'        => [
                 'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
             ],
+            'shopify-slave' => [
+                'maxProcesses' => env('HORIZON_SHOPIFY_SLAVE_WORKERS', 1),
+            ]
         ],
         'local'      => [
             'normal'               => [
@@ -669,6 +691,10 @@ return [
             'cache-warming'        => [
                 'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
             ],
+            'shopify-slave' => [
+                'maxProcesses' => env('HORIZON_SHOPIFY_SLAVE_WORKERS', 1),
+            ]
+
 
         ],
     ],
