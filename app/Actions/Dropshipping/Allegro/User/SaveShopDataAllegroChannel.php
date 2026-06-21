@@ -104,7 +104,7 @@ class SaveShopDataAllegroChannel
                             ],
                             'contact' => [
                                 'email' => $shop->email,
-                                'phoneNumber' => Str::replace('+', '', $shop->organisation->phone)
+                                'phoneNumber' => '441142729165'
                             ]
                         ]
                     ]);
@@ -125,7 +125,7 @@ class SaveShopDataAllegroChannel
                             ],
                             'contact' => [
                                 'email' => $shop->email,
-                                'phoneNumber' => Str::replace('+', '', $shop->organisation->phone)
+                                'phoneNumber' => '441142729165'
                             ]
                         ]
                     ]);
