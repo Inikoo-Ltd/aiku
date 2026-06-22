@@ -97,7 +97,7 @@ class UpdateEbayPortfolio implements ShouldBeUnique
             $response = $ebayUser->getOffer($portfolio->platform_product_id);
 
             if (Arr::get($response, 'availableQuantity') == $availableQuantity) {
-                UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
+                UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                     'status'           => PlatformPortfolioLogsStatusEnum::OK,
                     'last_stock_value' => $availableQuantity
                 ]);
@@ -124,7 +124,7 @@ class UpdateEbayPortfolio implements ShouldBeUnique
                 }
 
 
-                UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
+                UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => 'E1: '.$message
                 ]);
@@ -140,7 +140,7 @@ class UpdateEbayPortfolio implements ShouldBeUnique
                 ]);
             }
         } catch (Throwable $e) {
-            UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
+            UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                 'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                 'response' => 'E2: '.$e->getMessage()
             ]);

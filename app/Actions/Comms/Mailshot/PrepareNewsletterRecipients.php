@@ -55,8 +55,10 @@ class PrepareNewsletterRecipients
                     }
                 }
 
-                ProcessSendMailshot::dispatch($mailshot->id, $customerIds);
-                $this->countRecipients += $numValidEmails;
+                if (!empty($customerIds)) {
+                    ProcessSendMailshot::dispatch($mailshot->id, $customerIds);
+                    $this->countRecipients += $numValidEmails;
+                }
             });
 
         $mailshot->update([
