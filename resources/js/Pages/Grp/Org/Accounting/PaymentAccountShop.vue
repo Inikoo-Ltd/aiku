@@ -30,7 +30,6 @@ const props = defineProps<{
 const locale = useLocaleStore()
 
 const paymentAccountShop = props.data
-console.log("paym",paymentAccountShop)
 </script>
 
 <template>
