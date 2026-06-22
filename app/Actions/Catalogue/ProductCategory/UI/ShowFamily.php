@@ -157,6 +157,15 @@ class ShowFamily extends OrgAction
             }
         }
 
+        $iconLinks = [];
+        if ($family->has_gr_vol_discount) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-medal',
+                'tooltip' => __('Gold Reward Volume Discount'),
+                'color'   => '#D97706',
+            ];
+        }
+
         $urlMaster = null;
         if ($family->master_product_category_id) {
             $urlMaster = [
@@ -165,24 +174,17 @@ class ShowFamily extends OrgAction
                     $family->masterProductCategory->id
                 ]
             ];
-        }
 
-
-        $iconLinks = [];
-        if ($family->has_gr_vol_discount) {
-            $iconLinks[] = [
-                'icon'    => 'fal fa-medal',
-                'tooltip' => __('Gold Reward Volume Discount'),
-                'color'   => '#D97706',
-            ];
             if (!$family->follow_master_gr) {
                 $iconLinks[] = [
                     'icon'    => 'fal fa-starfighter',
                     'tooltip' => __('Not following master GR'),
                     'color'   => '#DC2626',
+                    'route'   => $urlMaster
                 ];
             }
         }
+
 
         $tabs = [
             FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
