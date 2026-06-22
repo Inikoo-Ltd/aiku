@@ -92,6 +92,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_invoice_date_changed
  * @property int $number_outboxes_type_web_user_registration
  * @property int $number_outboxes_type_oos_in_order_notification
+ * @property int $number_outboxes_type_new_offer
+ * @property int $number_outboxes_type_finish_offer
  * @property-read \App\Models\Comms\PostRoom|null $postRoom
  * @method static Builder<static>|PostRoomStats newModelQuery()
  * @method static Builder<static>|PostRoomStats newQuery()
