@@ -37,6 +37,10 @@ class SendFinishOfferEmailToSubscribers extends OrgAction
         /** @var Outbox $outbox */
         $outbox = $offer->shop->outboxes()->where('code', OutboxCodeEnum::FINISH_OFFER->value)->first();
 
+        if (!$outbox) {
+            return;
+        }
+
         $this->sendOutboxEmailToSubscribers(
             $outbox,
             additionalData: [
