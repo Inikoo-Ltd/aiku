@@ -41,6 +41,8 @@ class RedoDailyInvoiceTimeSeries
 
     public string $jobQueue = 'default-long-slave';
 
+    protected const OUTBOX_REPROCESS_DAYS = 3;
+
     public function handle(?string $date = null): void
     {
         $today       = $date ?? now()->toDateString();
@@ -53,12 +55,17 @@ class RedoDailyInvoiceTimeSeries
 
     protected function dispatchOutboxTimeSeries(string $today, array $periodDates): void
     {
+        $windowStart = Carbon::parse($today)->subDays(self::OUTBOX_REPROCESS_DAYS - 1)->toDateString();
+
+        $outboxPeriodDates = $periodDates;
+        $outboxPeriodDates[TimeSeriesFrequencyEnum::DAILY->value]['from'] = $windowStart;
+
         $outboxIds = collect();
 
         foreach (['dispatched_emails', 'mailshots', 'email_bulk_runs'] as $table) {
             $outboxIds = $outboxIds->merge(
                 DB::connection('aiku_no_sticky')->table($table)
-                    ->whereDate('created_at', $today)
+                    ->where('created_at', '>=', $windowStart . ' 00:00:00')
                     ->whereNotNull('outbox_id')
                     ->distinct()
                     ->pluck('outbox_id')
@@ -66,7 +73,7 @@ class RedoDailyInvoiceTimeSeries
         }
 
         $outboxIds->unique()->each(
-            fn ($id) => $this->dispatchForAllFrequencies(ProcessOutboxTimeSeriesRecords::class, $id, $periodDates)
+            fn ($id) => $this->dispatchForAllFrequencies(ProcessOutboxTimeSeriesRecords::class, $id, $outboxPeriodDates)
         );
     }
 
