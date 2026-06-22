@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 
 /**
  * @property int $id
@@ -53,6 +55,35 @@ class ChatAutomation extends Model
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function knowledgeSources(): HasMany
+    {
+        return $this->hasMany(ChatKnowledgeSource::class);
+    }
+
+    public function knowledgeChunks(): HasMany
+    {
+        return $this->hasMany(ChatKnowledgeChunk::class);
+    }
+
+    /**
+     * @return array<int, array{id: string, type: string, data: array<string, mixed>}>
+     */
+    public function flowNodes(): array
+    {
+        return Arr::get($this->flow ?? [], 'nodes', []);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function flowNodesOfType(string $type): array
+    {
+        return array_values(array_filter(
+            $this->flowNodes(),
+            fn ($node) => ($node['type'] ?? null) === $type
+        ));
     }
 
     public function scopeEnabled(Builder $query): Builder
