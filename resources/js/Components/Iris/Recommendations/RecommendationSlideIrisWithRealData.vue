@@ -77,7 +77,7 @@ const isLoadingVisit = ref(false)
         </div> -->
 
         <!-- Section: Title -->
-        <span class="mb-1 !text-sm font-semibold leading-snug line-clamp-2 min-h-[3em]"
+        <span class="mb-1 !text-sm font-semibold leading-snug line-clamp-2 min-h-[3em] text-justify"
             :title="product.attributes.title">
             <component :is="product.attributes.web_url[0] ? LinkIris : 'div'" :href="product.iris_attributes?.url"
                 class="hover:underline" @success="() => SelectItemCollector(product)"
@@ -86,7 +86,7 @@ const isLoadingVisit = ref(false)
             </component>
         </span>
 
-        <div class="flex justify-between">
+        <div class="xflex justify-between">
             <div class="text-xs text-gray-400 mb-2">
                {{ product.attributes.product_code[0] }}
             </div>

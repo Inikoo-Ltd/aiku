@@ -351,6 +351,22 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
+        'shopify-slave'         => [
+            'connection'          => 'redis',
+            'queue'               => ['shopify-slave'],
+            'balance'             => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses'        => 1,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            'memory'              => 1280,
+            'tries'               => 1,
+            'timeout'             => 3600,
+            'retry_after'         => 600,
+            'nice'                => 0,
+            'balanceMaxShift'     => 1,
+            'balanceCooldown'     => 3,
+        ],
         'dropshipping'         => [
             'connection'          => 'redis',
             'queue'               =>
@@ -424,7 +440,22 @@ return [
         ],
         'ses'                  => [
             'connection'      => 'redis',
-            'queue'           => ['ses-send', 'ses'],
+            'queue'           => ['ses'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 2,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 1,
+            'timeout'         => 3600,
+            'retry_after'     => 2,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
+        'ses-send'                  => [
+            'connection'      => 'redis',
+            'queue'           => ['ses-send'],
             'balance'         => 'auto',
             'maxProcesses'    => 2,
             'maxTime'         => 0,
@@ -520,6 +551,9 @@ return [
             'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
+            'ses-send'                  => [
+                'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
+            ],
             'ses-analytics'        => [
                 'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
             ],
@@ -529,6 +563,9 @@ return [
             'cache-warming'        => [
                 'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 3),
             ],
+            'shopify-slave' => [
+                'maxProcesses' => env('HORIZON_SHOPIFY_SLAVE_WORKERS', 1),
+            ]
 
         ],
         'staging'    => [
@@ -577,6 +614,9 @@ return [
             'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
+            'ses-send'                  => [
+                'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
+            ],
             'ses-analytics'        => [
                 'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
             ],
@@ -586,6 +626,9 @@ return [
             'cache-warming'        => [
                 'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
             ],
+            'shopify-slave' => [
+                'maxProcesses' => env('HORIZON_SHOPIFY_SLAVE_WORKERS', 1),
+            ]
         ],
         'local'      => [
             'normal'               => [
@@ -636,6 +679,9 @@ return [
             'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
+            'ses-send'                  => [
+                'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
+            ],
             'ses-analytics'        => [
                 'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
             ],
@@ -645,6 +691,10 @@ return [
             'cache-warming'        => [
                 'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
             ],
+            'shopify-slave' => [
+                'maxProcesses' => env('HORIZON_SHOPIFY_SLAVE_WORKERS', 1),
+            ]
+
 
         ],
     ],

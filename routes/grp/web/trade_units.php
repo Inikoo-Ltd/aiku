@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Goods\TradeUnit\UI\EditTradeUnit;
+use App\Actions\Goods\TradeUnit\UI\IndexMissingBarcodeTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingBrandTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingDescriptionTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingDimensionsTradeUnits;
@@ -42,6 +43,7 @@ Route::prefix('units')->as('units.')->group(function () {
     Route::get('/missing-dimensions', IndexMissingDimensionsTradeUnits::class)->name('missing_dimensions');
     Route::get('/missing-description', IndexMissingDescriptionTradeUnits::class)->name('missing_description');
     Route::get('/missing-brand', IndexMissingBrandTradeUnits::class)->name('missing_brand');
+    Route::get('/missing-barcode', IndexMissingBarcodeTradeUnits::class)->name('missing_barcode');
     Route::prefix('{tradeUnit:slug}')->group(function () {
         Route::get('', ShowTradeUnit::class)->name('show');
         Route::get('edit', EditTradeUnit::class)->name('edit');

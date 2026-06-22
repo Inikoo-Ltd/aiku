@@ -57,7 +57,7 @@ class StorePicking extends OrgAction
             SavePickingInAurora::dispatch($picking);
         }
 
-        $orgStockMovement = StoreOrgStockMovement::run(
+        StoreOrgStockMovement::dispatch(
             $locationOrgStock->orgStock,
             $locationOrgStock->location,
             [
@@ -66,11 +66,7 @@ class StorePicking extends OrgAction
             ]
         );
 
-        $picking->update(
-            [
-                'org_stock_movement_id' => $orgStockMovement->id,
-            ]
-        );
+
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
         $deliveryNoteItem->refresh();
@@ -78,8 +74,8 @@ class StorePicking extends OrgAction
 
         $productCode  = $deliveryNoteItem->orgStock?->code ?? 'Unknown Item';
 
-        $oldAuditString = "{$oldPickingQuantity} pcs of {$productCode}";
-        $newAuditString = "{$newPickingQuantity} pcs of {$productCode}";
+        $oldAuditString = "$oldPickingQuantity pcs of $productCode";
+        $newAuditString = "$newPickingQuantity pcs of $productCode";
 
         DispatchSimpleAudit::run(
             auditableModel  : $deliveryNoteItem->deliveryNote,

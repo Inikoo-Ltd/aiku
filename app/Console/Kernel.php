@@ -23,6 +23,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Discounts\Offer\ActivateScheduledOffers;
 use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
@@ -120,7 +121,6 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
-
 
 
             $this->logSchedule(
@@ -469,6 +469,16 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->job(ActivateScheduledOffers::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'ActivateScheduledOffers',
+                ),
+                name: 'ActivateScheduledOffers',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+
+            $this->logSchedule(
                 $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
                 ),
@@ -497,7 +507,6 @@ class Kernel extends ConsoleKernel
         }
 
         if (config('app.slave')) {
-
             $this->logSchedule(
                 $schedule->job(RunMailshotTrackingUpdates::makeJob())->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'RunMailshotTrackingUpdates',
@@ -540,15 +549,6 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'SaveWebsitesSitemap',
                 type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('clone:aurora_vol_gr_offers sk eu')->twiceDailyAt(12, 18)->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'CloneAuroraVolGrOffers',
-                ),
-                name: 'CloneAuroraVolGrOffers',
-                type: 'command',
                 scheduledAt: now()->format('H:i')
             );
 
@@ -703,6 +703,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'HydrateOutboxes',
                 ),
                 name: 'HydrateOutboxes',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('leave:generate-balances')->dailyAt('01:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'LeaveGenerateBalances',
+                ),
+                name: 'LeaveGenerateBalances',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

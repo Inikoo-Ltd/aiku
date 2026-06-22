@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, inject } from 'vue'
+import { ref, computed, watch, inject, onMounted } from 'vue'
 import type { Component } from "vue";
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -312,6 +312,12 @@ watch(
         currentTab.value = val
     }
 )
+
+onMounted(() => {
+  window.addEventListener('popstate', () => {
+    router.reload()
+  });
+})
 </script>
 
 

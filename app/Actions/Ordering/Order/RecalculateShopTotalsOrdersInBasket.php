@@ -34,6 +34,7 @@ class RecalculateShopTotalsOrdersInBasket implements ShouldBeUnique
         }
         /** @var Order $order */
         foreach ($shop->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
+
             if ($order->updated_by_customer_at && $order->updated_by_customer_at->isAfter(Carbon::now()->subHours(3))) {
                 CalculateOrderTotalAmounts::dispatch($order, true, true, false, true);
             } else {

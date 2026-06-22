@@ -19,7 +19,7 @@ import { faAbacus } from "@fad"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { faSkull } from "@fal"
+import { faClock, faInfinity, faSkull } from "@fal"
 import { notify } from "@kyvg/vue3-notification"
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -34,36 +34,42 @@ library.add(
     faAbacus
 )
 
-function offerRoute(offer: {}) {
+function offerRoute(offer: {}, extraParams?: {}) {
     switch (route().current()) {                
         case "grp.org.shops.show.catalogue.departments.show":
             return route(
                 "grp.org.shops.show.catalogue.departments.show.offers.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).department,
-                    offer.slug])
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: (route().params as RouteParams).shop,
+                    department: (route().params as RouteParams).department,
+                    offer: offer.slug,
+                    ...extraParams
+                })
         case "grp.org.shops.show.catalogue.departments.show.sub_departments.show":
         case "grp.org.shops.show.catalogue.sub_departments.show":
             return route(
                 "grp.org.shops.show.catalogue.sub_departments.show.offers.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).subDepartment,
-                    offer.slug])
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: (route().params as RouteParams).shop,
+                    subDepartment: (route().params as RouteParams).subDepartment,
+                    offer: offer.slug,
+                    ...extraParams
+                })
         case "grp.org.shops.show.catalogue.departments.show.families.show":
         case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show":
         case "grp.org.shops.show.catalogue.sub_departments.show.families.show":
         case "grp.org.shops.show.catalogue.families.show":
             return route(
                 "grp.org.shops.show.catalogue.families.show.offers.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).family,
-                    offer.slug])
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: (route().params as RouteParams).shop,
+                    family: (route().params as RouteParams).family,
+                    offer: offer.slug,
+                    ...extraParams
+                })
         case "grp.org.shops.show.discounts.campaigns.show":
             return route(
                 returnRouteOffer(offer),
@@ -71,7 +77,8 @@ function offerRoute(offer: {}) {
                     organisation: (route().params as RouteParams).organisation,
                     shop: (route().params as RouteParams).shop,
                     offerCampaign: props.offerCampaign?.slug ?? offer.offer_campaign_slug,
-                    offer: offer.slug
+                    offer: offer.slug,
+                    ...extraParams
                 })
         case "grp.org.shops.show.crm.customers.show":
             return route(
@@ -80,15 +87,19 @@ function offerRoute(offer: {}) {
                     organisation: (route().params as RouteParams).organisation,
                     shop: (route().params as RouteParams).shop,
                     offerCampaign: props.offerCampaign?.slug ?? offer.offer_campaign_slug,
-                    offer: offer.slug
+                    offer: offer.slug,
+                    ...extraParams
                 })
         case "grp.org.shops.show.discounts.offers.index":
             return route(
                 "grp.org.shops.show.discounts.offers.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    offer.slug])
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: (route().params as RouteParams).shop,
+                    offer: offer.slug,
+                    ...extraParams
+                }
+                )
         default:
             return "#"
     }
@@ -168,22 +179,17 @@ const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
             <Icon :data="offer.type_icon" />
         </template>
 
-        <template #cell(duration)="{ item: offer }">
-            <div v-if="offer.duration == 'interval'" class="grid text-left">
-                <div>
-                    <span class="font-medium">
-                        {{ trans("Start Date") }}
-                    </span>:  {{ useFormatTime(offer.start_at, { localeCode: locale.language.code, formatTime: "aiku" }) }}
-                </div>
-                <div>
-                    <span class="font-medium">
-                        {{ trans("End Date") }}
-                    </span>:  {{ useFormatTime(offer.end_at, { localeCode: locale.language.code, formatTime: "aiku" }) }} 
-                </div>
-            </div>
-            <div v-else>
-                {{ useFormatTime(offer.start_at, { localeCode: locale.language.code, formatTime: "aiku" }) }} 
-            </div>
+        <template #cell(start_at)="{ item: offer }">
+            {{ useFormatTime(offer.start_at, { localeCode: locale.language.code, formatTime: "hm" }) }}    
+        </template>
+
+        <template #cell(end_at)="{ item: offer }">
+            <span v-if="offer.duration == 'permanent'" class="">
+                <FontAwesomeIcon :icon="faInfinity" v-tooltip="ctrans('Permanent Offer')" />
+            </span>
+            <span v-else class="">
+                {{ useFormatTime(offer.end_at, { localeCode: locale.language.code, formatTime: "hm" }) }}
+            </span>
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: collection }">
@@ -199,6 +205,15 @@ const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
                 @click="terminateOffer(item)"
                 icon="fal fa-skull"
             />
+        </template>
+
+        <template #cell(created_by)="{ item }">
+            <Link :href="offerRoute(item, {tab: 'history'})" class="hover:opacity-80 transition text-black primaryLink">
+                <FontAwesomeIcon 
+                    :icon="faClock"
+                />
+            </Link>
+            {{ item.created_by ?? ctrans('System') }}
         </template>
     </Table>
 </template>

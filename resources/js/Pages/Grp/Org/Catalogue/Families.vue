@@ -37,6 +37,7 @@ const props = defineProps<{
     index?: {}
     sales?: {}
     need_review?: {}
+    missing_gr?: {}
     routes: {
         departments_route: routeType
         submit_route: routeType
@@ -53,7 +54,8 @@ const component = computed(() => {
     const components: any = {
         index: TableFamilies,
         sales: TableFamilies,
-        need_review: TableFamilies
+        need_review: TableFamilies,
+        missing_gr: TableFamilies
     }
 
     return components[currentTab.value]

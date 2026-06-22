@@ -14,6 +14,7 @@ use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -76,6 +77,11 @@ class EditShop extends OrgAction
         $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
             ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
+
+        $firstMasterFamily = $shop->masterShop?->masterProductCategories()
+            ->where('type', MasterProductCategoryTypeEnum::FAMILY)
+            ->orderBy('id')
+            ->first();
 
         $helpPortalFields = [
             'portal_link'  => [
@@ -262,12 +268,30 @@ class EditShop extends OrgAction
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.related_product_follow_master', false),
                             'information'   => __('This would force related products under this shop to follow any updates done on master'),
-                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?'),
+                            'description'   => [
+                                __('Related products are the products that are recommended to customers when they view a product category page.'),
+                                __('Enabling this would force all of this shop related products to follow master shop related products.'),
+                                $firstMasterFamily ? __('You can setup the products listed in @manage_related_products@ (Family: ') . $firstMasterFamily->code . __(')') : '',
+                            ],
+                            'descriptionLinks' => [
+                                'manage_related_products' => [
+                                    'label' => __('related products tab'),
+                                    'route' => $firstMasterFamily ? [
+                                        'name'       => 'grp.masters.master_shops.show.master_families.show',
+                                        'parameters' => [
+                                            'masterShop'   => $shop->masterShop->slug,
+                                            'masterFamily' => $firstMasterFamily->slug,
+                                            'tab'          => 'related_products',
+                                        ],
+                                    ] : null,
+                                ],
+                            ],
                         ],
                         'related_product_categories_follow_master' => [
                             'label'         => __('Related Product Category Follow Master'),
                             'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.related_product_categories_follow_master', false),
+                            'value'         => data_get($shop->settings, 'catalog.related_product_categories_follow_master', true),
                             'information'   => __('This would force related product categories under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
@@ -317,7 +341,7 @@ class EditShop extends OrgAction
                             'saveConfirmation'  => [
                                 'title'     => __('Are you sure want to update currency exchange?'),
                                 'description'   => __("This will affect all products in the shop, including the product that in customer's basket. Products that already purchased in Order will not affected."),
-                                'yesLabel'  => __('Yes, update currency exchane')
+                                'yesLabel'  => __('Yes, update currency exchange')
                             ],
                             'label'       => __('Product Currency Exchange'),
                             'placeholder' => __('Product Currency Exchange'),
@@ -327,6 +351,24 @@ class EditShop extends OrgAction
                                 ?? GetCurrencyExchange::run($shop->currency, $shop->currency),
                         ]
                     ]
+                ],
+                [
+                    'label'  => __('Customers'),
+                    'icon'   => 'fal fa-user',
+                    'fields' => [
+                        'identity_document_number_label' => [
+                            'type'          => 'input',
+                            'label'         => __('Identity Document Number Label'),
+                            'information'   => __('The label would replace all of the Identity Document Number text under this shop'),
+                            'value'         => data_get($shop->settings, 'customer.identity_document_number', ''),
+                        ],
+                        'identity_document_number_alt_label' => [
+                            'type'          => 'input',
+                            'label'         => __('Identity Document Number Alt. Label'),
+                            'information'   => __('The label would replace all of the Identity Document Number Alt. text under this shop'),
+                            'value'         => data_get($shop->settings, 'customer.identity_document_number_alt', ''),
+                        ],
+                    ],
                 ],
                 [
                     'label'  => __('Registration'),

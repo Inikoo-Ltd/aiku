@@ -93,6 +93,7 @@ const props = defineProps<{
 		ebay: number
 		amazon: number
 		magento: number
+		allegro: number
 	}
 }>()
 
@@ -609,7 +610,6 @@ provide("goNext", goNext)
 
 			<!-- Section: Allegro -->
 			<div
-				v-if="layout?.app?.environment === 'local'"
 				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
 				<div
 					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
@@ -629,7 +629,7 @@ provide("goNext", goNext)
 				</div>
 
 				<div class="w-full flex justify-end">
-					<a v-if="layout?.app?.environment === 'local'" :href="props.allegroAuth?.url" class="w-full">
+					<a :href="props.allegroAuth?.url" class="w-full">
 						<Button
 							:label="trans('Connect')"
 							type="primary"
@@ -637,7 +637,6 @@ provide("goNext", goNext)
 							xclick="() => (isModalAllegro = true)"
 						/>
 					</a>
-					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 				</div>
 			</div>
 		</div>

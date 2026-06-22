@@ -9,7 +9,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories;
 
-use App\Actions\Catalogue\ProductCategory\RelatedChild\RelatedProductCategories\SyncProductCategoryRelatedProductCategories;
+use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\SyncProductCategoryRelatedProductCategories;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,9 +21,14 @@ class SyncShopRelatedProductCategoriesFromMasterProductCategory
     public function handle(MasterProductCategory $masterProductCategory): void
     {
         foreach ($masterProductCategory->productCategories as $productCategory) {
-            if (!data_get($productCategory->shop->settings, 'catalog.related_product_categories_follow_master', false)) {
+
+
+
+
+            if (!data_get($productCategory->shop->settings, 'catalog.related_product_categories_follow_master', true)) {
                 continue;
             }
+
 
             $productCategoriesId = [];
             foreach ($masterProductCategory->relatedMasterProductCategories as $relatedMasterProductCategory) {

@@ -36,11 +36,14 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
         }
 
         $query = QueryBuilder::for(Portfolio::class);
-        $query->where('customer_sales_channel_id', $customerSalesChannel->id);
-        $query->where('item_type', 'Product');
+        $query->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id);
+        $query->where('portfolios.item_type', 'Product');
 
         if (Arr::get($modelData, 'search')) {
-            $query->whereAnyWordStartWith('products.name', $modelData['search']);
+            $query->where(function ($q) use ($modelData) {
+                $q->whereAnyWordStartWith('products.name', $modelData['search'])
+                    ->orWhereAnyWordStartWith('products.code', $modelData['search']);
+            });
         }
 
 

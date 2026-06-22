@@ -18,6 +18,7 @@ library.add(faCube, faStar, faImage, faPencil)
 interface LinkData {
   url?: string
   workshop_url?: string
+  image_alt?: string
 }
 
 interface ImageData {
@@ -26,6 +27,7 @@ interface ImageData {
   attributes?: Record<string, any>
   link_data?: LinkData
   caption?: string
+  alt?: string
 }
 
 interface LayoutData {
@@ -94,7 +96,7 @@ const resolvedGap = computed(() => {
         <SwiperSlide v-for="(image, index) in modelValue?.value?.images || []" :key="index" class="w-full">
           <component :is="'div'" :href="getHref(image) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">
-            <Image :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
+            <Image :src="image.source" :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`" :imageCover="true" :style="{
               ...getStyles(modelValue.value.layout?.properties, screenType),
               ...getStyles(image.properties, screenType)
             }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }" />
@@ -111,7 +113,7 @@ const resolvedGap = computed(() => {
           class="group relative hover:bg-white/40 flex flex-col h-full">
           <component :is="'div'" :href="getHref(image) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">
-            <Image v-if="image?.source" :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`"
+            <Image v-if="image?.source" :src="image.source" :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`"
               :imageCover="true" class="w-full h-full aspect-square object-cover rounded-lg" :style="{
                 ...getStyles(modelValue.value.layout?.properties, screenType),
                 ...getStyles(image.properties, screenType)

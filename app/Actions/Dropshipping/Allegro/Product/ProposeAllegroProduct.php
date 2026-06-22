@@ -44,6 +44,8 @@ class ProposeAllegroProduct
             ];
         }
 
+        $description = $allegroUser->sanitizeAllegroDescription($portfolio->customer_description);
+
         $productData = [
             'name'     => Str::substr($portfolio->customer_product_name, 0, 75),
             'category' => [
@@ -57,7 +59,7 @@ class ProposeAllegroProduct
                         'items' => [
                             [
                                 'type'    => 'TEXT',
-                                'content' => $allegroUser->sanitizeAllegroDescription($portfolio->customer_description)
+                                'content' => $description
                             ]
                         ]
                     ]
@@ -84,6 +86,10 @@ class ProposeAllegroProduct
             $paramType     = $param['type'] ?? 'STRING'; // STRING | INTEGER | FLOAT | DICTIONARY
             $isRequired    = $param['required'] ?? false;
             $restrictions  = $param['restrictions'] ?? [];
+
+            if (!$isRequired) {
+                continue;
+            }
 
             // 1. Always add EAN/GTIN if available
             if (str_contains($paramName, 'ean') || str_contains($paramName, 'gtin') || $paramId === '225694') {

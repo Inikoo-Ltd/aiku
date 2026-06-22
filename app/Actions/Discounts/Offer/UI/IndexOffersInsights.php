@@ -95,8 +95,16 @@ class IndexOffersInsights extends OrgAction
             $query->where('offers.type', $offerType);
         }
 
+        $offerCreators = DB::table('audits')
+            ->join('users', 'users.id', '=', 'audits.user_id')
+            ->where('audits.auditable_type', 'Offer')
+            ->where('audits.event', 'created')
+            ->where('audits.user_type', 'User')
+            ->select('audits.auditable_id as offer_id', 'users.contact_name as created_by');
+
         $query->leftJoin('offer_campaigns', 'offers.offer_campaign_id', '=', 'offer_campaigns.id');
         $query->leftJoinSub($offerRedemptions, 'offer_redemptions', 'offer_redemptions.offer_id', '=', 'offers.id');
+        $query->leftJoinSub($offerCreators, 'offer_creators', 'offer_creators.offer_id', '=', 'offers.id');
 
         foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
             $query->whereElementGroup(
@@ -126,6 +134,7 @@ class IndexOffersInsights extends OrgAction
                 DB::raw('COALESCE(offer_redemptions.revenue_net_amount, 0) as revenue_net_amount'),
                 DB::raw('COALESCE(offer_redemptions.discounted_amount, 0) as discounted_amount'),
                 'offer_redemptions.last_used_at',
+                'offer_creators.created_by',
             ])
             ->allowedSorts(['code', 'name', 'type', 'redemptions', 'redemption_customers', 'revenue_net_amount', 'discounted_amount', 'last_used_at'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
@@ -166,6 +175,7 @@ class IndexOffersInsights extends OrgAction
             $table->column(key: 'avg_discount', label: __('Avg discount'), align: 'right');
             $table->column(key: 'revenue_net_amount', label: __('Revenue influenced'), sortable: true, align: 'right');
             $table->column(key: 'last_used_at', label: __('Last used'), sortable: true, align: 'right');
+            $table->column(key: 'created_by', label: __('Created by'), sortable: false);
 
             $table->defaultSort('-redemptions');
         };

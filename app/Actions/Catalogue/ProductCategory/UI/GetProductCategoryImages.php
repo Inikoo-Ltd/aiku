@@ -27,6 +27,7 @@ class GetProductCategoryImages
     {
         return [
             'editable'            => !$productCategory->master_product_category_id,
+            'video_editable'      => true,
             'id'                  => $productCategory->id,
             // 'images_category_box' => $this->getSingleImageData($productCategory), // Old One
             'images_category_box' => $productCategory->type == ProductCategoryTypeEnum::DEPARTMENT ? array_merge(

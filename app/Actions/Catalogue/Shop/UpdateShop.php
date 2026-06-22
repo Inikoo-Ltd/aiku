@@ -85,6 +85,14 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
 
+        if (Arr::has($modelData, 'identity_document_number_label')) {
+            data_set($modelData, 'settings.customer.identity_document_number', Arr::pull($modelData, 'identity_document_number_label'));
+        }
+
+        if (Arr::has($modelData, 'identity_document_number_alt_label')) {
+            data_set($modelData, 'settings.customer.identity_document_number_alt', Arr::pull($modelData, 'identity_document_number_alt_label'));
+        }
+
         // Catalogue Descriptions etc
 
         if (Arr::has($modelData, 'collection_follow_master')) {
@@ -183,6 +191,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'reviews');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
+
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
 
@@ -387,7 +396,10 @@ class UpdateShop extends OrgAction
             'company_name'                                            => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'                                                   => ['sometimes', 'nullable', 'email'],
             'phone'                                                   => ['sometimes', 'nullable'],
+            'identity_document_number_label'                          => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt_label'                      => ['sometimes', 'nullable', 'string'],
             'identity_document_number'                                => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt'                            => ['sometimes', 'nullable', 'string'],
             'identity_document_type'                                  => ['sometimes', 'nullable', 'string'],
             'type'                                                    => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
             'currency_id'                                             => ['sometimes', 'required', 'exists:currencies,id'],

@@ -19,6 +19,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Helpers\TaxNumber;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
@@ -39,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -128,6 +130,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $amount_off
  * @property string|null $email
  * @property string|null $phone
+ * @property string|null $identity_document_number_alt
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -151,6 +154,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Shop|null $shop
  * @property-read \App\Models\Accounting\InvoiceStats|null $stats
  * @property-read TaxCategory $taxCategory
+ * @property-read TaxNumber|null $taxNumber
  * @method static \Database\Factories\Accounting\InvoiceFactory factory($count = null, $state = [])
  * @method static Builder<static>|Invoice newModelQuery()
  * @method static Builder<static>|Invoice newQuery()
@@ -359,4 +363,8 @@ class Invoice extends Model implements Auditable
         return $this->belongsTo(CustomerClient::class);
     }
 
+    public function taxNumber(): MorphOne
+    {
+        return $this->morphOne(TaxNumber::class, 'owner');
+    }
 }

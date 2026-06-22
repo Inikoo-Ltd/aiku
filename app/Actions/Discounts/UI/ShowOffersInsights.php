@@ -78,6 +78,20 @@ class ShowOffersInsights extends OrgAction
             ->orderBy('type')
             ->pluck('type');
 
+        $dashboard = [
+            'super_blocks' => [
+                [
+                    'id'        => 'offers_insights',
+                    'intervals' => [
+                        'options'        => $this->dashboardIntervalOption(),
+                        'value'          => $savedInterval->value,
+                        'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings),
+                    ],
+                    'insights'  => $insights,
+                ],
+            ],
+        ];
+
         return Inertia::render(
             'Org/Discounts/OffersInsights',
             [
@@ -95,19 +109,14 @@ class ShowOffersInsights extends OrgAction
                     'title'     => __('Insights'),
                     'model'     => __('Offers'),
                 ],
-                'intervals'   => [
-                    'options'        => $this->dashboardIntervalOption(),
-                    'value'          => $savedInterval->value,
-                    'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings),
-                ],
                 'filters'     => [
                     'campaigns' => $campaignOptions,
                     'types'     => $typeOptions,
                     'campaign'  => $this->offerCampaign?->slug,
                     'type'      => $this->offerType,
                 ],
-                'insights'    => $insights,
                 'offers'      => OffersInsightsResource::collection($offers),
+                'dashboard'   => $dashboard,
             ]
         )->table(IndexOffersInsights::make()->tableStructure($this->shop));
     }

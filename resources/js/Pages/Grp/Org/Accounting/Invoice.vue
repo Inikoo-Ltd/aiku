@@ -39,10 +39,11 @@ import {
     faDraftingCompass,
     faEnvelope,
     faArrowCircleLeft,
-    faTrashAlt, faExpandArrows, faTruck, faAddressCard, faReceipt, faShapes, faExclamationTriangle
+    faTrashAlt, faExpandArrows, faTruck, faAddressCard, faReceipt, faShapes, faExclamationTriangle,
+    faIdCard
 } from "@fal";
 import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck, faOmega, faExclamationCircle, faCheckCircle } from "@fas";
-import {faCheck} from "@far";
+import { faCheck, faIdCard as farIdCard} from "@far";
 import {faSpinnerThird} from "@fad";
 import {useFormatTime} from "@/Composables/useFormatTime";
 import {PageHeadingTypes} from "@/types/PageHeading";
@@ -524,6 +525,30 @@ const submitEditAddress = async () => {
                         size="xs"
                         v-tooltip="taxNumberStatusText"
                     />
+                </dd>
+            </dl>
+
+            <!-- Field: IDN (Identity Document Number) -->
+            <dl v-if="invoice.identity_document_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt v-tooltip="invoice.identity_document_number?.label" class="flex-none">
+                    <span class="sr-only">{{ invoice.identity_document_number?.label }}</span>
+                    <FontAwesomeIcon :icon="farIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
+                </dt>
+                <dd class="text-base text-gray-500 flex items-center gap-x-2">
+                    <span>{{ invoice.identity_document_number?.number }}</span> 
+                    <span class="text-xs"> ({{ invoice.identity_document_number?.label }}) </span>
+                </dd>
+            </dl>
+
+            <!-- Field: IDN Alt (Identity Document Number Alt) -->
+            <dl v-if="invoice.identity_document_number_alt" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt v-tooltip="invoice.identity_document_number_alt?.label" class="flex-none">
+                    <span class="sr-only">{{ invoice.identity_document_number_alt?.label }}</span>
+                    <FontAwesomeIcon :icon="faIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
+                </dt>
+                <dd class="text-base text-gray-500 flex items-center gap-x-2">
+                    <span>{{ invoice.identity_document_number_alt?.number }}</span>
+                    <span class="text-xs"> ({{ invoice.identity_document_number_alt?.label }}) </span>
                 </dd>
             </dl>
 

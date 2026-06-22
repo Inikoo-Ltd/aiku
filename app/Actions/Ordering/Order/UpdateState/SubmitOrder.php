@@ -84,14 +84,14 @@ class SubmitOrder extends OrgAction
         if ($transactions->isNotEmpty()) {
             foreach ($transactions as $transaction) {
                 $transactionData = ['state' => TransactionStateEnum::SUBMITTED];
-                if ($transaction->submitted_at == null) {
-                    data_set($transactionData, 'submitted_at', $date);
-                    data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
-                    data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered);
-                    data_set($transactionData, 'submitted_gross_amount', $transaction->gross_amount);
-                    data_set($transactionData, 'submitted_net_amount', $transaction->net_amount);
-                    data_set($transactionData, 'submitted_discount_factor', $transaction->current_discount_factor);
-                }
+                data_set($transactionData, 'submitted_at', $date);
+                data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
+                data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered);
+                data_set($transactionData, 'submitted_gross_amount', $transaction->gross_amount);
+                data_set($transactionData, 'submitted_net_amount', $transaction->net_amount);
+                data_set($transactionData, 'submitted_discount_factor', $transaction->current_discount_factor);
+                data_set($transactionData, 'submitted_offers_data', $transaction->offers_data); // TODO only take needed data later
+                data_set($transactionData, 'has_discount_when_submitted', $transaction->current_discount_factor < 1);
 
                 $transaction->update($transactionData);
             }
@@ -154,55 +154,57 @@ class SubmitOrder extends OrgAction
             $triggerData = json_decode($giftOfferData->trigger_data, true);
 
             if ($order->gross_amount >= Arr::get($triggerData, 'min_order_amount', 0)) {
-                $allowanceData     = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', $giftOfferData->id)->first();
-                $allowanceGiftData = json_decode($allowanceData->data, true);
+                $allowanceData = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', $giftOfferData->id)->first();
+                if ($allowanceData) {
+                    $allowanceGiftData = json_decode($allowanceData->data, true);
 
-                /** @var Product $gift */
-                $gift     = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
-                $quantity = Arr::get($allowanceGiftData, 'quantity', 0);
-                if ($quantity > 0 && $gift) {
-                    $giftTransaction = StoreTransaction::make()->action(
-                        $order,
-                        $gift->currentHistoricProduct,
-                        [
-                            'quantity_ordered' => 0,
-                            'quantity_bonus'   => $quantity,
-                            'is_gift'          => true,
-                        ]
-                    );
-
-                    $giftTransaction->update([
-                        'offers_data' => [
-                            'v' => 1,
-                            'o' => [
-                                'oc' => $giftOfferData->offer_campaign_id,
-                                'o'  => $giftOfferData->id,
-                                'oa' => $allowanceData->id,
-                                't'  => 'gift',
-                                'p'  => 0,
-                                'l'  => $giftOfferData->name,
+                    /** @var Product $gift */
+                    $gift     = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
+                    $quantity = Arr::get($allowanceGiftData, 'quantity', 0);
+                    if ($quantity > 0 && $gift) {
+                        $giftTransaction = StoreTransaction::make()->action(
+                            $order,
+                            $gift->currentHistoricProduct,
+                            [
+                                'quantity_ordered' => 0,
+                                'quantity_bonus'   => $quantity,
+                                'is_gift'          => true,
                             ]
-                        ]
-                    ]);
+                        );
 
-                    DB::table('transaction_has_offer_allowances')->insert([
-                        'order_id'              => $order->id,
-                        'transaction_id'        => $giftTransaction->id,
-                        'model_type'            => $giftTransaction->model_type,
-                        'model_id'              => $giftTransaction->model_id,
-                        'offer_campaign_id'     => $giftOfferData->offer_campaign_id,
-                        'offer_id'              => $giftOfferData->id,
-                        'offer_allowance_id'    => $giftOfferData->id,
-                        'discounted_amount'     => 0,
-                        'discounted_percentage' => 0,
-                        'is_gift'               => true,
-                        'free_items_value'      => $gift->price * $quantity,
-                        'number_of_free_items'  => 1,
-                        'created_at'            => now(),
-                        'updated_at'            => now(),
-                        'data'                  => '{}'
+                        $giftTransaction->update([
+                            'offers_data' => [
+                                'v' => 1,
+                                'o' => [
+                                    'oc' => $giftOfferData->offer_campaign_id,
+                                    'o'  => $giftOfferData->id,
+                                    'oa' => $allowanceData->id,
+                                    't'  => 'gift',
+                                    'p'  => 0,
+                                    'l'  => $giftOfferData->name,
+                                ]
+                            ]
+                        ]);
 
-                    ]);
+                        DB::table('transaction_has_offer_allowances')->insert([
+                            'order_id'              => $order->id,
+                            'transaction_id'        => $giftTransaction->id,
+                            'model_type'            => $giftTransaction->model_type,
+                            'model_id'              => $giftTransaction->model_id,
+                            'offer_campaign_id'     => $giftOfferData->offer_campaign_id,
+                            'offer_id'              => $giftOfferData->id,
+                            'offer_allowance_id'    => $giftOfferData->id,
+                            'discounted_amount'     => 0,
+                            'discounted_percentage' => 0,
+                            'is_gift'               => true,
+                            'free_items_value'      => $gift->price * $quantity,
+                            'number_of_free_items'  => 1,
+                            'created_at'            => now(),
+                            'updated_at'            => now(),
+                            'data'                  => '{}'
+
+                        ]);
+                    }
                 }
             }
         }

@@ -9,25 +9,33 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
+use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
 use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 
 class DeleteOffer extends OrgAction
 {
+    use HandlesOfferSideEffects;
     /**
      * @throws \Throwable
      */
     public function handle(Offer $offer, bool $force = false): Offer
     {
+        $oldState = $offer->state;
         DB::transaction(function () use ($offer, $force) {
-            foreach ($offer->offerAllowances()->withTrashed()->get() as $allowance) {
+            /** @var \Illuminate\Database\Eloquent\Builder $offerAllowances */
+            $offerAllowances = $offer->offerAllowances();
+            foreach ($offerAllowances->withTrashed()->get() as $allowance) {
                 if ($force) {
                     $allowance->stats()->delete();
                     $allowance->forceDelete();
@@ -44,15 +52,41 @@ class DeleteOffer extends OrgAction
             }
         });
 
+
         OfferCampaignHydrateOffersState::run($offer->offerCampaign);
 
         GroupHydrateOffers::dispatch($offer->group)->delay($this->hydratorsDelay);
         OrganisationHydrateOffers::dispatch($offer->organisation)->delay($this->hydratorsDelay);
         ShopHydrateOffers::dispatch($offer->shop)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffers::dispatch($offer->offerCampaign)->delay($this->hydratorsDelay);
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id);
+        if ($oldState !== OfferStateEnum::IN_PROCESS) {
+            $this->handleOfferSideEffects($offer);
+        }
 
         return $offer;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Offer $offer, ActionRequest $request): Offer
+    {
+        if ($offer->state !== OfferStateEnum::IN_PROCESS) {
+            abort(403);
+        }
+
+        $this->initialisationFromShop($offer->shop, []);
+
+        return $this->handle($offer);
+    }
+
+    public function htmlResponse(Offer $offer): RedirectResponse
+    {
+        return Redirect::route('grp.org.shops.show.discounts.campaigns.show', [
+            'organisation'  => $offer->offerCampaign->organisation->slug,
+            'shop'          => $offer->offerCampaign->shop->slug,
+            'offerCampaign' => $offer->offerCampaign->slug,
+        ]);
     }
 
 

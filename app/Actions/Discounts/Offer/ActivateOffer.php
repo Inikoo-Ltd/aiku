@@ -8,21 +8,22 @@
 
 namespace App\Actions\Discounts\Offer;
 
+use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\Discounts\OfferAllowance\ActivateOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
 use Lorisleiva\Actions\ActionRequest;
 
 class ActivateOffer extends OrgAction
 {
     use WithActionUpdate;
-
+    use HandlesOfferSideEffects;
 
     public function handle(Offer $offer, ?int $hydratorDelay = null): Offer
     {
@@ -53,11 +54,18 @@ class ActivateOffer extends OrgAction
 
         UpdateOfferAllowanceSignature::run($offer);
         OfferCampaignHydrateOffersState::run($offer->offerCampaign);
-        if ($offer->trigger instanceof ProductCategory) {
-            UpdateProductCategoryOffersData::run($offer);
-        }
 
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay($this->hydratorsDelay);
+
+        $this->handleOfferSideEffects($offer, false);
+
+
+        if (!$offer->voucher) {
+            if ($offer->customer_id) {
+                RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay($this->hydratorsDelay);
+            } else {
+                RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop_id)->delay($this->hydratorsDelay);
+            }
+        }
 
         return $offer;
     }

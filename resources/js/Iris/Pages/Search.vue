@@ -6,16 +6,19 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { getStyles } from "@/Composables/styles"
 import { onMounted } from "vue"
+import { ctrans } from "@/Composables/useTrans"
 
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', irisLocaleStructure)
 
 const props = defineProps<{
-    web_block_family?: {}
+    web_block_family?: {
+        fieldValue?: Record<string, any>
+    }
 }>()
 
-console.log("PROP web_block_family", props.web_block_family);
+// console.log("PROP web_block_family", props.web_block_family);
 
 // Init: Search result
 const LBInitSearchResult = async () => {
@@ -68,111 +71,111 @@ const LBInitSearchResult = async () => {
             Translations: {
                 [usedLocale]: {
                     "activeFilter": {
-                        "remove": trans("Cancel"),
+                        "remove": ctrans("Cancel"),
                     },
                     "activeFilters": {
-                        "title": trans("Used filters"),
-                        "cancelAllFilters": trans("Cancel all filters"),
+                        "title": ctrans("Used filters"),
+                        "cancelAllFilters": ctrans("Cancel all filters"),
                     },
                     "additionalResults": {
-                        "title": trans("You may also like"),
+                        "title": ctrans("You may also like"),
                     },
                     "facet": {
                         "name": {
-                            "category": trans("Categories"),
-                            "department": trans("Departments"),
-                            "sub_department": trans("Sub Departments"),
-                            "brand": trans("Brands"),
-                            "collection": trans("Collections"),
-                            "tag": trans("Tags"),
-                            "price_amount": trans("Price"),
-                            "color": trans("Colors"),
-                            "news": trans("News"),
+                            "category": ctrans("Categories"),
+                            "department": ctrans("Departments"),
+                            "sub_department": ctrans("Sub Departments"),
+                            "brand": ctrans("Brands"),
+                            "collection": ctrans("Collections"),
+                            "tag": ctrans("Tags"),
+                            "price_amount": ctrans("Price"),
+                            "color": ctrans("Colors"),
+                            "news": ctrans("News"),
                         },
                         "multichoice": {
-                            "showMore": trans("More (:count)"),
-                            "showLess": trans("Hide others"),
+                            "showMore": ctrans("More (:count)"),
+                            "showLess": ctrans("Hide others"),
                         },
                     },
                     "facetDate": {
-                        "smallerThan": trans("Before"),
-                        "exactDay": trans("Exact day"),
-                        "biggerThan": trans("After"),
-                        "range": trans("From-To"),
-                        "get": trans("get"),
+                        "smallerThan": ctrans("Before"),
+                        "exactDay": ctrans("Exact day"),
+                        "biggerThan": ctrans("After"),
+                        "range": ctrans("From-To"),
+                        "get": ctrans("get"),
                     },
                     "facetNumericRange": {
-                        "from": trans("From"),
-                        "to": trans("to"),
-                        "histogramBucketTitle": trans(":count Products"),
+                        "from": ctrans("From"),
+                        "to": ctrans("to"),
+                        "histogramBucketTitle": ctrans(":count Products"),
                     },
                     "facets": {
-                        "closeFilter": trans("Close"),
+                        "closeFilter": ctrans("Close"),
                     },
                     "loading": {
-                        "isLoading": trans("Loading ..."),
+                        "isLoading": ctrans("Loading ..."),
                     },
                     "noResults": {
-                        "noResults": trans("We couldn't find any suitable results"),
+                        "noResults": ctrans("We couldn't find any suitable results"),
                     },
                     "pagination": {
-                        "nextPage": trans("Load more"),
+                        "nextPage": ctrans("Load more"),
                     },
                     "quickSearch": {
                         "title": {
-                            "category": trans("Categories"),
-                            "department": trans("Departments"),
-                            "sub_department": trans("Sub Departments"),
-                            "brand": trans("Brands"),
-                            "collection": trans("Collections"),
-                            "tag": trans("Tags"),
-                            "price_amount": trans("Price"),
-                            "color": trans("Colors"),
-                            "news": trans("News"),
+                            "category": ctrans("Categories"),
+                            "department": ctrans("Departments"),
+                            "sub_department": ctrans("Sub Departments"),
+                            "brand": ctrans("Brands"),
+                            "collection": ctrans("Collections"),
+                            "tag": ctrans("Tags"),
+                            "price_amount": ctrans("Price"),
+                            "color": ctrans("Colors"),
+                            "news": ctrans("News"),
                         },
                         "topItemTitle": {
-                            "category": trans("Top categories"),
-                            "brand": trans("Top brands"),
+                            "category": ctrans("Top categories"),
+                            "brand": ctrans("Top brands"),
                         }
                     },
                     "resultDefault": {
-                        "actionButton": trans("Detail"),
+                        "actionButton": ctrans("Detail"),
                         "availability": {
-                            "0": trans("Unavailable"),
+                            "0": ctrans("Unavailable"),
                         },
-                        "result": trans("Result"),
-                        "loginForPrices": trans("Login for prices"),
+                        "result": ctrans("Result"),
+                        "loginForPrices": ctrans("Login for prices"),
                     },
                     "search": {
-                        "title": trans("Results for :query (:hitsCount)"),
-                        "titleShort": trans("Search"),
-                        "filter": trans("Filters"),
+                        "title": ctrans("Results for :query (:hitsCount)"),
+                        "titleShort": ctrans("Search"),
+                        "filter": ctrans("Filters"),
                         "queryUnderstanding": {
-                            "title": trans("We detected the following filters"),
-                            "cancel": trans("Repeat without automatic filter detection"),
+                            "title": ctrans("We detected the following filters"),
+                            "cancel": ctrans("Repeat without automatic filter detection"),
                         }
                     },
                     "sort": {
-                        "default": trans("Default"),
-                        "price_amount:asc": trans("Price: Low to High"),
-                        "price_amount:desc": trans("Price: High to Low"),
-                        "headlineTitle": trans("Sort by") + ": ",
+                        "default": ctrans("Default"),
+                        "price_amount:asc": ctrans("Price: Low to High"),
+                        "price_amount:desc": ctrans("Price: High to Low"),
+                        "headlineTitle": ctrans("Sort by") + ": ",
                     },
                     "site": {
-                        "titleResults": trans("Results for :query (:hitsCount)"),
-                        "queryCorrection": trans("We detected the following filters"),
+                        "titleResults": ctrans("Results for :query (:hitsCount)"),
+                        "queryCorrection": ctrans("We detected the following filters"),
                     },
                     "topItems": {
-                        "category": trans("Categories"),
-                        "department": trans("Departments"),
-                        "sub_department": trans("Sub Departments"),
-                        "brand": trans("Brands"),
-                        "collection": trans("Collections"),
-                        "tag": trans("Tags"),
-                        "price_amount": trans("Price"),
-                        "title": trans("You might be interested"),
+                        "category": ctrans("Categories"),
+                        "department": ctrans("Departments"),
+                        "sub_department": ctrans("Sub Departments"),
+                        "brand": ctrans("Brands"),
+                        "collection": ctrans("Collections"),
+                        "tag": ctrans("Tags"),
+                        "price_amount": ctrans("Price"),
+                        "title": ctrans("You might be interested"),
                         "results": {
-                            "title": trans("Top products"),
+                            "title": ctrans("Top products"),
                         }
                     },
                 }
@@ -204,7 +207,9 @@ onBeforeMount(() => {
 
 })
 
-const createCssClassFromStyleObject = (className: string, styleObj: Record<string, string>) => {
+const createCssClassFromStyleObject = (className: string, styleObj?: Record<string, string> | null) => {
+    if (!styleObj) return
+
     const styleId = `style-${className}`
 
     // Avoid multiple inject with same name
@@ -227,12 +232,12 @@ const createCssClassFromStyleObject = (className: string, styleObj: Record<strin
 
 onMounted(() => {
     
-    createCssClassFromStyleObject('lb-product-card', getStyles(props.web_block_family.fieldValue?.card_product?.properties, 'desktop'))
+    createCssClassFromStyleObject('lb-product-card', getStyles(props.web_block_family?.fieldValue?.card_product?.properties, 'desktop'))
     // createCssClassFromStyleObject('render-product-button-login', getStyles(props.web_block_family.fieldValue?.buttonLogin?.properties, 'desktop'))
 })
 
 // const inputValue = ref('')
-console.log("layout", layout)
+// console.log("layout", layout)
 </script>
 <template>
     <div class="xmd:py-16 w-full mx-auto px-8">

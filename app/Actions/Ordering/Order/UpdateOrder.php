@@ -77,10 +77,10 @@ class UpdateOrder extends OrgAction
 
         if ($oldPlatform != $order->platform) {
             if ($order->platform) {
-                PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
+                PlatformHydrateOrders::dispatch($order->platform_id)->delay($this->hydratorsDelay);
             }
             if ($oldPlatform) {
-                PlatformHydrateOrders::dispatch($oldPlatform)->delay($this->hydratorsDelay);
+                PlatformHydrateOrders::dispatch($oldPlatform->id)->delay($this->hydratorsDelay);
             }
         }
 

@@ -188,25 +188,33 @@
 
                     @if($invoice->customer['email'])
                 <div>
-                    <span class="address_label">{{ __('Email') }}:</span> <span
-                            class="address_value">{{ $invoice->customer['email'] }}</span>
+                    <span class="address_label">{{ __('Email') }}:</span> 
+                    <span class="address_value">{{ $invoice->customer['email'] }}</span>
                 </div>
                     @endif
                     @if($invoice->customer['phone'])
                 <div>
 
-                    <span class="address_label">{{ __('Phone') }}:</span> <span
-                            class="address_value">{{ $invoice->customer['phone'] }}</span>
+                    <span class="address_label">{{ __('Phone') }}:</span>
+                    <span class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
                     @endif
                 @if($invoice->tax_number && $invoice->tax_number_valid)
                     <div>
-                        <span class="address_label">{{ __('Tax Number') }}:</span> <span class="address_value">{{ $invoice->tax_number }}</span>
+                        <span class="address_label">{{ __('Tax Number') }}:</span>
+                        <span class="address_value">{{ $invoice->tax_number }}</span>
                     </div>
                 @endif
                 @if($invoice->identity_document_number)
                     <div>
-                        <span class="address_label">{{ __('EORI') }}:</span> <span class="address_value"> {{$invoice->identity_document_number}} </span>
+                        <span class="address_label">{{ data_get($shop->settings, 'customer.identity_document_number') ?? __('Identity Document Number') }}:</span>
+                        <span class="address_value"> {{$invoice->identity_document_number}} </span>
+                    </div>
+                @endif
+                @if($invoice->identity_document_number_alt)
+                    <div>
+                        <span class="address_label">{{ data_get($shop->settings, 'customer.identity_document_number_alt') ?? __('Identity Document Number Alt.') }}:</span>
+                        <span class="address_value"> {{$invoice->identity_document_number_alt}} </span>
                     </div>
                 @endif
             </div>
@@ -468,7 +476,7 @@
 
     </tbody>
     <tbody class="totals">
-        @if ($order && ($order?->goods_amount != $order?->gross_amount))
+        @if ($order && ($order?->goods_amount != $order->gross_amount))
 
             <tr>
                 <td style="border:none" colspan="4"></td>
@@ -479,7 +487,7 @@
             <tr>
                 <td style="border:none" colspan="4"></td>
                 <td style="color: #16a34a">{{ __('Discounts') }}</td>
-                <td style="color: #16a34a">- {{ $invoice->currency->symbol . ($order->gross_amount - $order->goods_amount) }}</td>
+                <td style="color: #16a34a">- {{ $invoice->currency->symbol . number_format($order->gross_amount - $order->goods_amount, 2) }}</td>
             </tr>
 
             <tr>

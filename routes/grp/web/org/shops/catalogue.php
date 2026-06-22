@@ -23,6 +23,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithIndependentTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
 use App\Actions\Catalogue\Product\UI\IndexMissingDescriptionProducts;
+use App\Actions\Catalogue\Product\UI\IndexProductsNotOnline;
 use App\Actions\Catalogue\Product\UI\IndexRRPViolationProducts;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
 use App\Actions\Catalogue\ProductCategory\UI\CreateDepartment;
@@ -33,6 +34,7 @@ use App\Actions\Catalogue\ProductCategory\UI\EditFamily;
 use App\Actions\Catalogue\ProductCategory\UI\EditSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesGR;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesWithNoDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
@@ -133,6 +135,17 @@ Route::prefix('products')->as('products.')
 
         Route::prefix('missing-description')->as('missing_description_products.')->group(function () {
             Route::get('', IndexMissingDescriptionProducts::class)->name('index');
+            Route::prefix('{product}')->group(function () {
+                Route::get('', ShowProduct::class)->name('show');
+                Route::get('images', GetProductUploadedImages::class)->name('images');
+                Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+            });
+        });
+
+        Route::prefix('not-online')->as('not_online_products.')->group(function () {
+            Route::get('', IndexProductsNotOnline::class)->name('index');
+            Route::get('create', CreateProduct::class)->name('create');
             Route::prefix('{product}')->group(function () {
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
@@ -286,6 +299,7 @@ Route::name("departments.")->prefix('departments')
 Route::name("families.")->prefix('families')
     ->group(function () {
         Route::get('', IndexFamilies::class)->name('index');
+        Route::get('gr', IndexFamiliesGR::class)->name('gr.index');
         Route::get('no-department', IndexFamiliesWithNoDepartment::class)->name('no_department.index');
         Route::get('create', CreateFamily::class)->name('create');
 

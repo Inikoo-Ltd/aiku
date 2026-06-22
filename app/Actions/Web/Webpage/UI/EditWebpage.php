@@ -185,6 +185,22 @@ class EditWebpage extends OrgAction
             ];
         }
 
+
+        $informationWarning = [];
+        if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY) {
+            $informationWarning = [
+                [
+                    'description' => "Structure @type 'ProductGroup' or @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
+                ]
+            ];
+        } elseif ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
+            $informationWarning = [
+                [
+                    'description' => "Structure @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
+                ]
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -226,13 +242,7 @@ class EditWebpage extends OrgAction
                                     'type'     => 'structure_data_website',
                                     'value'    => Arr::get($webpage->seo_data, 'structured_data') ?? '',
                                     'required' => false,
-                                    ...($webpage->sub_type == WebpageSubTypeEnum::FAMILY ? [
-                                        'information_warning' => [
-                                            [
-                                                'description' => "Structure @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
-                                            ]
-                                        ]
-                                    ] : []),
+                                    'information_warning'   => $informationWarning,
                                 ],
                             ]
                         ] : null,

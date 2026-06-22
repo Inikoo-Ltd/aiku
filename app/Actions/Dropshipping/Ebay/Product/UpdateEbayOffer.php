@@ -51,11 +51,11 @@ class UpdateEbayOffer implements ShouldBeUnique
                 ]
             );
 
-            UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
+            UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                 'status' => PlatformPortfolioLogsStatusEnum::OK
             ]);
         } catch (Throwable $e) {
-            UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
+            UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                 'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                 'response' => 'E2: ' . $e->getMessage()
             ]);

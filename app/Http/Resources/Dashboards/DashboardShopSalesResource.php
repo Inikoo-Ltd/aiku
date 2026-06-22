@@ -51,7 +51,7 @@ class DashboardShopSalesResource extends JsonResource
             $migrationTooltip .= ' on ' . $data['migrated_to_aiku_on'];
         }
 
-        $migrationIcon = ($data['is_aiku'] ?? false) ? [
+        $migrationIcon = ($data['migrated_to_aiku_on'] ?? false) ? [
             'icon_right' => [
                 'img'   => '/favicon.svg' ?? null,
                 'tooltip' => $migrationTooltip,

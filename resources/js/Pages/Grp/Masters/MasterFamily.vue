@@ -23,7 +23,7 @@ import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import { capitalize } from "@/Composables/capitalize"
-import FamilyShowcase from "@/Components/Showcases/Grp/FamilyShowcase.vue"
+import MasterFamilyShowcase from "@/Components/Showcases/Grp/MasterFamilyShowcase.vue"
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
@@ -90,6 +90,7 @@ const props = defineProps<{
         show_gr_vol: boolean
         gr_vol_discount_quantity?: number
         gr_vol_discount_percentage?: number
+        missing_gr_children_count?: number
     }
 }>()
 const layout = inject("layout")
@@ -102,7 +103,7 @@ const handleTabUpdate = (tabSlug: string) => {
 
 const component = computed(() => {
     const components = {
-        showcase: FamilyShowcase,
+        showcase: MasterFamilyShowcase,
         mailshots: TableMailshots,
         families: TableFamilies,
         customers: TableCustomers,
@@ -190,9 +191,9 @@ const showDialog = ref(false);
             </template>
         </Breadcrumb>
         <Message v-if="mismatch_detected" :severity="'error'">
-            <FontAwesomeIcon 
-                :icon="faWarning" 
-                class="text-red-500 mr-1" 
+            <FontAwesomeIcon
+                :icon="faWarning"
+                class="text-red-500 mr-1"
             />
             {{ trans("One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units.") }}
         </Message>

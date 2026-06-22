@@ -10,6 +10,7 @@
 namespace App\Actions\Discounts\Offer\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Http\Resources\Catalogue\OfferResource;
@@ -68,10 +69,59 @@ class EditOffer extends OrgAction
 
         $blueprint = [];
 
+        $triggerEdit = [];
+
+        data_set($triggerEdit, 'start_at', [
+            'type'              => 'date',
+            'information'       => __('The date from which the offer is valid. From this date, the offer will be applicable.'),
+            'label'             => __('Start Date'),
+            'placeholder'       => __('date'),
+            'required'          => true,
+            'readonly'          => now()->gt($offer->start_at),
+            'extraInformation'  => now()->gt($offer->start_at) ? __('Offer is started already. Unable to modify start date') : null,
+            'minDate'           => now()->gt($offer->start_at) ? $offer->start_at : now(),
+            'value'             => $offer->start_at,
+        ]);
+
+        if ($offer->duration === OfferDurationEnum::INTERVAL) {
+            $minEnd = $offer->start_at->addDay();
+            data_set($triggerEdit, 'end_at', [
+                'type'              => 'date',
+                'information'       => __('The date until which the offer is valid. After this date, the offer will no longer be applicable.'),
+                'label'             => __('End Date'),
+                'placeholder'       => __('date'),
+                'minDate'           => now()->gt($minEnd) ? now() : $minEnd,
+                'required'          => true,
+                'value'             => $offer->end_at,
+            ]);
+        }
+
+        if ($triggerValue) {
+            data_set($triggerEdit, 'edit_offer_trigger', [
+                'type'          => 'editOffer',
+                'label'         => __('Trigger'),
+                'required'      => true,
+                'currency_code' => $this->organisation->currency->code,
+                'offer'         => $offer,
+                'value'         => $triggerValue,
+            ]);
+        }
+        if ($discountValue) {
+            data_set($triggerEdit, 'edit_offer_discount', [
+                'type'          => 'editOffer',
+                'label'         => __('Discount'),
+                'required'      => true,
+                'currency_code' => $this->organisation->currency->code,
+                'offer'         => $offer,
+                'value'         => $discountValue,
+            ]);
+        }
+
         if ($offer->state != OfferStateEnum::FINISHED) {
             $blueprint = [
                 [
-                    'title'  => __('Properties'),
+                    'label'  => __('Properties'),
+                    'icon'   => 'fa-light fa-fingerprint',
                     'fields' => [
                         'name'                => [
                             'type'        => 'input',
@@ -88,31 +138,12 @@ class EditOffer extends OrgAction
                             'required'    => true,
                             'value'       => $offer->label,
                         ] : null,
-                        'date'                => app()->environment('local') ? [
-                            'type'        => 'date',
-                            'information' => __('The date until which the offer is valid. After this date, the offer will no longer be applicable.'),
-                            'label'       => __('End Date'),
-                            'placeholder' => __('date'),
-                            'required'    => true,
-                            'value'       => $offer->end_at,
-                        ] : null,
-                        'edit_offer_trigger'  => $triggerValue ? [
-                            'type'          => 'editOffer',
-                            'label'         => __('Trigger'),
-                            'required'      => true,
-                            'currency_code' => $this->organisation->currency->code,
-                            'offer'         => $offer,
-                            'value'         => $triggerValue,
-                        ] : null,
-                        'edit_offer_discount' => $discountValue ? [
-                            'type'          => 'editOffer',
-                            'label'         => __('Discount'),
-                            'required'      => true,
-                            'currency_code' => $this->organisation->currency->code,
-                            'offer'         => $offer,
-                            'value'         => $discountValue,
-                        ] : null,
                     ]
+                ],
+                [
+                    'label'  => __('Offer Triggers'),
+                    'icon'   => 'fa-light fa-bullseye-pointer',
+                    'fields' => $triggerEdit
                 ],
             ];
         }
@@ -126,37 +157,49 @@ class EditOffer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit Offer').' '.$offer->code,
+                'title'       => __('Editing Offer').' '.$offer->code,
                 'pageHead'    => [
                     'title'     => $offer->name,
                     'model'     => __('Edit Offer'),
                     'icon'      => 'fal fa-pencil',
                     'iconRight' => $offer->state->stateIcon()[$offer->state->value],
-                    'actions'   => array_filter([
-                        $offer->state == OfferStateEnum::ACTIVE ? [
-                            'type'  => 'button',
-                            'label' => __('Finish Now'),
-                            'style' => 'red',
-                            'icon'  => 'fal fa-skull',
-                            'route' => [
-                                'method'     => 'post',
-                                'name'       => 'grp.models.offer.finish',
-                                'parameters' => $offer->id,
-                            ],
-                        ] : null,
+                    'actions'   => array_filter(
                         [
-                            'type'  => 'button',
-                            'style' => 'exitEdit',
-                            'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters()),
+                            $offer->state == OfferStateEnum::ACTIVE ? [
+                                'type'  => 'button',
+                                'label' => __('Finish Now'),
+                                'style' => 'red',
+                                'icon'  => 'fal fa-skull',
+                                'route' => [
+                                    'method'     => 'post',
+                                    'name'       => 'grp.models.offer.finish',
+                                    'parameters' => $offer->id,
+                                ],
+                            ] : null,
+                            $offer->state == OfferStateEnum::IN_PROCESS ? [
+                                'type'  => 'button',
+                                'label' => __('Delete Offer'),
+                                'style' => 'red',
+                                'icon'  => 'fal fa-trash-alt',
+                                'route' => [
+                                    'method'     => 'post',
+                                    'name'       => 'grp.models.offer.delete',
+                                    'parameters' => $offer->id,
+                                ],
+                            ] : null,
+                            [
+                                'type'  => 'button',
+                                'style' => 'exitEdit',
+                                'route' => [
+                                    'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                    'parameters' => array_values($request->route()->originalParameters()),
+                                ]
                             ]
                         ]
-                    ]),
+                    ),
                 ],
                 'warning'     => $warning,
                 'formData'    => [
-                    'fullLayout' => true,
                     'blueprint'  => $blueprint,
                     'args'       => [
                         'updateRoute' => [

@@ -262,7 +262,7 @@ class IndexDepartments extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $departments, ActionRequest $request): Response
     {
-        $navigation = ProductCategoryTabsEnum::navigation();
+        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
 
         $subNavigation = null;
         if ($this->parent instanceof Collection) {

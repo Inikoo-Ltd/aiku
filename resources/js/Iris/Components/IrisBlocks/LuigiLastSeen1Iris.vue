@@ -180,6 +180,9 @@ const fetchRecommendersToGetProducts = async () => {
                 }
             )
             listProducts.value = response.data.data
+            if (!(listProducts.value?.length > 3)) {
+                console.warn('Block Last Seen are less than 3, will not showed.')
+            }
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         } finally {

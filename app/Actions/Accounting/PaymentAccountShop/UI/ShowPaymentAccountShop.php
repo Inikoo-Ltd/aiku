@@ -16,6 +16,7 @@ use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Http\Resources\Accounting\PaymentAccountShopsResource;
 use App\Models\Accounting\PaymentAccount;
+use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -31,18 +32,16 @@ class ShowPaymentAccountShop extends OrgAction
 
 
     /**
-     * @var \App\Models\Accounting\PaymentAccount|\App\Models\Catalogue\Shop|\App\Models\Fulfilment\Fulfilment
+     * @var Fulfilment|PaymentAccount|PaymentAccountShop|Shop
      */
-    private Fulfilment|PaymentAccount|Shop $parent;
+    private Fulfilment|PaymentAccount|Shop|PaymentAccountShop $parent;
 
-    public function handle(PaymentAccount|Shop|Fulfilment $parent, $prefix = null): LengthAwarePaginator
+    public function handle(PaymentAccountShop $parent, $prefix = null): PaymentAccountShop
     {
-
+        return $parent;
     }
 
-
-
-    public function htmlResponse(LengthAwarePaginator $paymentAccountShops, ActionRequest $request): Response
+    public function htmlResponse(PaymentAccountShop $paymentAccountShop, ActionRequest $request): Response
     {
         $subNavigation = [];
         if ($this->parent instanceof PaymentAccount) {
@@ -66,24 +65,22 @@ class ShowPaymentAccountShop extends OrgAction
                     'icon'          => ['fal', 'fa-store-alt'],
                     'title'         => __('Payment Account Shops'),
                 ],
-                'data'        => PaymentAccountShopsResource::collection($paymentAccountShops)
-
-
+                'data'        => PaymentAccountShopsResource::make($paymentAccountShop)
             ]
         );
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): LengthAwarePaginator
+    public function inShop(Organisation $organisation, Shop $shop, PaymentAccountShop $paymentAccountShop, ActionRequest $request): PaymentAccountShop
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop);
+        return $this->handle($paymentAccountShop);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): LengthAwarePaginator
+    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): PaymentAccountShop
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
@@ -92,7 +89,7 @@ class ShowPaymentAccountShop extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, PaymentAccount $paymentAccount, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, PaymentAccount $paymentAccount, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): PaymentAccountShop
     {
         $this->parent = $paymentAccount;
         $this->initialisation($organisation, $request);
