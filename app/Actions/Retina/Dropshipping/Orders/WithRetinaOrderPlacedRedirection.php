@@ -9,8 +9,10 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 
 trait WithRetinaOrderPlacedRedirection
@@ -19,18 +21,28 @@ trait WithRetinaOrderPlacedRedirection
     {
         $itemsToPushLayer = [];
 
-        if (Arr::get($arr, 'order')) {
-            foreach ($arr['order']?->transactions as $index => $transaction) {
-                if ($transaction->model_type != 'Product') {
-                    continue;
-                }
+        /** @var Order $order */
+        $order = Arr::get($arr, 'order');
 
+        if ($order) {
+            $transactionsData = DB::table('transactions')
+                ->select('webpages.slug', 'products.name', 'products.price', 'transactions.quantity_ordered')
+                ->where('transactions.order_id', $order->id)
+                ->where('transactions.deleted_at', null)
+                ->where('transactions.model_type', 'Product')
+                ->whereNotNull('webpages.slug')
+                ->leftJoin('products', 'transactions.model_id', '=', 'products.id')
+                ->leftJoin('webpages', 'products.webpage_id', '=', 'webpages.id')
+                ->get();
+
+            $index = 0;
+            foreach ($transactionsData as $transactionData) {
                 $itemsToPushLayer[] = (object)[
-                    'item_id'   => $transaction->model?->getLuigiIdentity(),
-                    'item_name' => $transaction->model?->name,
-                    'index'     => $index,
-                    'price'     => (float)$transaction->model?->price,
-                    'quantity'  => (float)$transaction->quantity_ordered,
+                    'item_id'   => 'webpage-'.$transactionData->slug,
+                    'item_name' => $transactionData->name,
+                    'index'     => $index++,
+                    'price'     => (float)$transactionData->price,
+                    'quantity'  => (float)$transactionData->quantity_ordered,
                 ];
             }
         }

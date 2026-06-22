@@ -71,7 +71,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
                         'objects' => $objects
                     ];
                     $compressed = count($objects) >= 1000;
-                    $command?->info("Reindexing webpages $website->domain with ".count($objects)." objects");
+                    $command->info("Reindexing webpages $website->domain with ".count($objects)." objects");
                     try {
                         $this->request($website, '/v1/content', $body, 'post', $compressed);
                     } catch (Exception $e) {
@@ -100,10 +100,13 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
     {
         if ($command->argument('website')) {
             $website = Website::find($command->argument('website'));
+            $this->handle($website, $command);
         } else {
-            $website = Website::first();
+           foreach (Website::where('migrated',true) as $website) {
+                $this->handle($website, $command);
+            }
         }
-        $this->handle($website, $command);
+
 
         return 0;
     }
