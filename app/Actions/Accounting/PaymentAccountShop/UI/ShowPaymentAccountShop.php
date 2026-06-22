@@ -68,9 +68,14 @@ class ShowPaymentAccountShop extends OrgAction
                             'type'    => 'button',
                             'icon'        => 'fal fa-pencil',
                             'style'       => 'transparent',
-                            // 'label'   => __('Edit'),
                             'tooltip' => __('Edit payment account shop'),
-                            'route' => [],
+                            'route' => [
+                                'name' => 'grp.org.accounting.payment-accounts.edit',
+                                'parameters' => [
+                                    'organisation' => $paymentAccountShop->shop->organisation->slug,
+                                    'paymentAccount' => $paymentAccountShop->paymentAccount->slug
+                                ]
+                            ],
                         ],
                     ],
                 ],
