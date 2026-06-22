@@ -47,15 +47,15 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
             $timeSeries = $outbox->timeSeries()->create(['frequency' => $frequency]);
         }
 
-        $this->processTimeSeries($timeSeries, $from, $to);
+        $this->processTimeSeries($outbox, $timeSeries, $from, $to);
 
         OutboxHydrateTimeSeriesNumberRecords::run($timeSeries->id);
     }
 
-    protected function processTimeSeries(OutboxTimeSeries $timeSeries, string $from, string $to): void
+    protected function processTimeSeries(Outbox $outbox, OutboxTimeSeries $timeSeries, string $from, string $to): void
     {
         $results = $timeSeries->frequency === TimeSeriesFrequencyEnum::DAILY
-            ? $this->fetchDailyResults($timeSeries, $from, $to)
+            ? $this->fetchDailyResults($outbox, $timeSeries, $from, $to)
             : $this->fetchAggregatedResults($timeSeries, $from, $to);
 
         foreach ($results as $result) {
@@ -70,6 +70,7 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
                 [
                     'from'              => $periodFrom,
                     'to'                => $periodTo,
+                    'runs'              => $result->runs,
                     'dispatched_emails' => $result->dispatched_emails,
                     'opened_emails'     => $result->opened_emails,
                     'clicked_emails'    => $result->clicked_emails,
@@ -80,9 +81,9 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
         }
     }
 
-    protected function fetchDailyResults(OutboxTimeSeries $timeSeries, string $from, string $to): Collection
+    protected function fetchDailyResults(Outbox $outbox, OutboxTimeSeries $timeSeries, string $from, string $to): Collection
     {
-        return DB::connection('aiku_no_sticky')->table('dispatched_emails')
+        $emails = DB::connection('aiku_no_sticky')->table('dispatched_emails')
             ->where('created_at', '>=', $from)
             ->where('created_at', '<=', $to)
             ->where('outbox_id', $timeSeries->outbox_id)
@@ -95,7 +96,45 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
                 DB::raw("SUM(CASE WHEN state = 'unsubscribed' THEN 1 ELSE 0 END) as unsubscribed")
             )
             ->groupBy(DB::raw('CAST(created_at AS DATE)'))
-            ->get();
+            ->get()
+            ->keyBy('date');
+
+        $runs = $this->fetchDailyRuns($outbox, $from, $to);
+
+        return $emails->keys()->merge($runs->keys())->unique()->values()->map(fn ($date) => (object) [
+            'date'              => $date,
+            'runs'              => $runs->get($date)->runs ?? 0,
+            'dispatched_emails' => $emails->get($date)->dispatched_emails ?? 0,
+            'opened_emails'     => $emails->get($date)->opened_emails ?? 0,
+            'clicked_emails'    => $emails->get($date)->clicked_emails ?? 0,
+            'bounced_emails'    => $emails->get($date)->bounced_emails ?? 0,
+            'unsubscribed'      => $emails->get($date)->unsubscribed ?? 0,
+        ]);
+    }
+
+    protected function fetchDailyRuns(Outbox $outbox, string $from, string $to): Collection
+    {
+        $table = match ($outbox->model_type) {
+            'Mailshot'        => 'mailshots',
+            'EmailOngoingRun' => 'email_bulk_runs',
+            default           => null,
+        };
+
+        if (!$table) {
+            return collect();
+        }
+
+        return DB::connection('aiku_no_sticky')->table($table)
+            ->where('created_at', '>=', $from)
+            ->where('created_at', '<=', $to)
+            ->where('outbox_id', $outbox->id)
+            ->select(
+                DB::raw('CAST(created_at AS DATE) as date'),
+                DB::raw('COUNT(*) as runs')
+            )
+            ->groupBy(DB::raw('CAST(created_at AS DATE)'))
+            ->get()
+            ->keyBy('date');
     }
 
     protected function fetchAggregatedResults(OutboxTimeSeries $timeSeries, string $from, string $to): Collection
@@ -107,6 +146,7 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
         }
 
         $selects = [
+            DB::raw('SUM(runs) as runs'),
             DB::raw('SUM(dispatched_emails) as dispatched_emails'),
             DB::raw('SUM(opened_emails) as opened_emails'),
             DB::raw('SUM(clicked_emails) as clicked_emails'),
