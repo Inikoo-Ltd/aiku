@@ -18,6 +18,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\Traits\WithManageWebpageState;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -42,6 +43,7 @@ class UpdateProductCategory extends OrgAction
     use WithNoStrictRules;
     use WithImageCatalogue;
     use WithProductCategoryHydrators;
+    use WithManageWebpageState;
     use SanitizeInputs;
 
     private ProductCategory $productCategory;
@@ -170,11 +172,17 @@ class UpdateProductCategory extends OrgAction
             'name_i8n'
         ])) {
             $this->productCategoryHydrators($productCategory);
+
+            if (Arr::has($changes, 'state')) {
+                $this->handleWebpageState($productCategory);
+            }
+
             if ($productCategory->webpage_id) {
                 ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60);
                 ClearCacheByWildcard::run("irisData:website:{$productCategory->webpage->website_id}:*");
             }
         }
+
         if (Arr::has($changes, 'follow_master_gr') && $productCategory->follow_master_gr && $productCategory->masterProductCategory) {
             UpdateVolumeGrOfferFromMaster::run($productCategory->masterProductCategory);
         }
