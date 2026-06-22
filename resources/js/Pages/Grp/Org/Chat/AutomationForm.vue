@@ -7,7 +7,7 @@ import { capitalize } from '@/Composables/capitalize'
 import { trans } from 'laravel-vue-i18n'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faRobot, faSave, faPaperPlane, faPaperclip, faRedo, faTimes, faProjectDiagram, faShare } from '@fal'
+import { faRobot, faSave, faPaperPlane, faPaperclip, faRedo, faTimes, faProjectDiagram, faShare, faSlidersH, faAngleLeft, faAngleRight } from '@fal'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
@@ -16,7 +16,7 @@ import InputNumber from 'primevue/inputnumber'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 
-library.add(faRobot, faSave, faPaperPlane, faPaperclip, faRedo, faTimes, faProjectDiagram, faShare)
+library.add(faRobot, faSave, faPaperPlane, faPaperclip, faRedo, faTimes, faProjectDiagram, faShare, faSlidersH, faAngleLeft, faAngleRight)
 
 interface ShopOption { id: number; name: string; code: string }
 interface TriggerType { value: string; label: string; description: string }
@@ -61,6 +61,7 @@ const form = useForm({
 })
 
 const canvasRef = ref<InstanceType<typeof CanvasFlowBuilder> | null>(null)
+const settingsOpen = ref(true)
 
 const shopOptions = computed(() => props.shops.map(s => ({ label: `${s.name} (${s.code})`, value: s.id })))
 const currentTrigger = computed(() => props.triggerTypes.find(t => t.value === form.trigger_type))
@@ -216,10 +217,38 @@ function submit(): void {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
-    <div class="w-full px-4 xl:px-0 py-6 grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)_340px] gap-5 items-start">
+    <div class="w-full px-4  py-6 grid grid-cols-1 gap-5 items-start"
+        :class="settingsOpen ? 'xl:grid-cols-[360px_minmax(0,1fr)_340px]' : 'xl:grid-cols-[48px_minmax(0,1fr)_340px]'">
+
+        <!-- Left column collapsed: thin rail -->
+        <div v-if="!settingsOpen" class="hidden xl:flex flex-col items-center">
+            <button type="button"
+                class="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-300 flex items-center justify-center shadow-sm"
+                v-tooltip="trans('Show settings')"
+                @click="settingsOpen = true">
+                <FontAwesomeIcon :icon="['fal', 'fa-sliders-h']" />
+            </button>
+            <button type="button"
+                class="mt-2 w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 flex items-center justify-center shadow-sm"
+                v-tooltip="trans('Show settings')"
+                @click="settingsOpen = true">
+                <FontAwesomeIcon :icon="['fal', 'fa-angle-right']" />
+            </button>
+        </div>
 
         <!-- Left column: settings -->
-        <div class="space-y-5">
+        <div v-show="settingsOpen" class="space-y-5">
+
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ trans('Settings') }}</span>
+                <button type="button"
+                    class="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-indigo-600"
+                    v-tooltip="trans('Collapse to widen the canvas')"
+                    @click="settingsOpen = false">
+                    <FontAwesomeIcon :icon="['fal', 'fa-angle-left']" class="text-[11px]" />
+                    {{ trans('Hide') }}
+                </button>
+            </div>
 
             <!-- Details -->
             <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
