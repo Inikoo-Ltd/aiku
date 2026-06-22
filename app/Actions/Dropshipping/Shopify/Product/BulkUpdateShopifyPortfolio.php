@@ -206,7 +206,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                     'stock_last_fail_updated_at' => now(),
                 ]);
                 if ($log) {
-                    UpdatePlatformPortfolioLog::run($log, [
+                    UpdatePlatformPortfolioLog::dispatch($log, [
                         'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                         'response' => $failedIndices[$index]
                     ]);
@@ -217,7 +217,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                     'stock_last_updated_at' => now(),
                 ]);
                 if ($log) {
-                    UpdatePlatformPortfolioLog::run($log, [
+                    UpdatePlatformPortfolioLog::dispatch($log, [
                         'status' => PlatformPortfolioLogsStatusEnum::OK
                     ]);
                 }
@@ -293,7 +293,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
     public function bulkUpdateLogs(array $platformPortfolioLogs, array $modelData): void
     {
         foreach ($platformPortfolioLogs as $platformPortfolioLog) {
-            UpdatePlatformPortfolioLog::run($platformPortfolioLog, $modelData);
+            UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, $modelData);
         }
     }
 }
