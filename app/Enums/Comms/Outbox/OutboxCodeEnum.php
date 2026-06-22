@@ -57,6 +57,7 @@ enum OutboxCodeEnum: string
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
     case WEB_USER_REGISTRATION = 'web_user_registration';
+    case WARM_LEAD_ENGAGEMENT = 'warm_lead_engagement';
 
 
     public function type(): OutboxTypeEnum
@@ -86,7 +87,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
-            OutboxCodeEnum::WEB_USER_REGISTRATION
+            OutboxCodeEnum::WEB_USER_REGISTRATION,
+            OutboxCodeEnum::WARM_LEAD_ENGAGEMENT
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
@@ -162,6 +164,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
+            OutboxCodeEnum::WARM_LEAD_ENGAGEMENT => 'Warm lead engagement',
         };
     }
 
@@ -210,6 +213,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
+            OutboxCodeEnum::WARM_LEAD_ENGAGEMENT => 'Warm lead engagement',
         };
     }
 
@@ -284,8 +288,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION => ['b2b', 'b2c', 'dropshipping'],
-            OutboxCodeEnum::OOS_NOTIFICATION => ['b2b', 'dropshipping'],
-            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => ['b2b', 'dropshipping'],
+            OutboxCodeEnum::OOS_NOTIFICATION,
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
+            OutboxCodeEnum::WARM_LEAD_ENGAGEMENT => ['b2b', 'dropshipping'],
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::ABANDONED_CART,
             OutboxCodeEnum::REORDER_REMINDER,
@@ -377,7 +382,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
-            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
+            OutboxCodeEnum::WARM_LEAD_ENGAGEMENT
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -427,6 +433,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
+            OutboxCodeEnum::WARM_LEAD_ENGAGEMENT,
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
@@ -462,7 +469,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
-            OutboxCodeEnum::WEB_USER_REGISTRATION
+            OutboxCodeEnum::WEB_USER_REGISTRATION,
+            OutboxCodeEnum::WARM_LEAD_ENGAGEMENT
 
             => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
 

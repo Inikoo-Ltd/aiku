@@ -61,4 +61,5 @@ enum EmailOngoingRunCodeEnum: string
 
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
     case WEB_USER_REGISTRATION = 'web_user_registration';
+    case WARM_LEAD_ENGAGEMENT = 'warm_lead_engagement';
 }
