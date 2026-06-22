@@ -132,7 +132,7 @@ const amnestyUntil = computed<string>(
 }
 
 .gr-label--active .gr-title {
-    @apply py-2 pr-6 rounded-l-lg bg-orange-500;
+    @apply py-2 pr-6 rounded-l-lg bg-[#E87928];
 }
 
 .gr-label--active .gr-content {
@@ -148,7 +148,7 @@ const amnestyUntil = computed<string>(
 }
 
 .gr-label--inactive .gr-content {
-    @apply -ml-4 pl-7 my-0.5 mr-0.5 min-w-[7rem] rounded-md bg-gray-300 text-white shadow-sm;
+    @apply -ml-4 pl-7 my-0.5 mr-0.5 min-w-[7rem] rounded-md bg-[#B3B3B3] text-white shadow-sm;
 }
 
 .gr-popover {
