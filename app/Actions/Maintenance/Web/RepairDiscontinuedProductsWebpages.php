@@ -24,26 +24,23 @@ class RepairDiscontinuedProductsWebpages
     public function handle(Product $product, Command $command): void
     {
         if ($product->webpage) {
-            $result=CloseDiscontinuedWebpage::run($product->webpage);
+            $result = CloseDiscontinuedWebpage::run($product->webpage);
 
-            if(Arr::has($result,'redirect_to'))
+            if (Arr::has($result,'redirect_to'))
             {
                 $command->info(sprintf(
                     'Redirecting discontinued product %s to %s',
                     $product->slug,
                     $result['redirect_to']
                 ));
-
-            }else{
+            } else {
                 $command->error(sprintf(
-                    'No redirect found for discontinued product %s',
-                    $product->slug
+                    'No redirect found for discontinued product %s. Error: %s',
+                    $product->slug, 
+                    data_get($result, 'error', 'n/a error message')
                 ));
                 exit;
-
             }
-
-
         }
     }
 

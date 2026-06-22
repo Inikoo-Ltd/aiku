@@ -16,17 +16,33 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 class RepairDiscontinuedFamilyWebpages
 {
     use WithActionUpdate;
 
-    public function handle(ProductCategory $productCategory): void
+    public function handle(ProductCategory $productCategory, Command $command): void
     {
         if ($productCategory->webpage) {
-            CloseDiscontinuedWebpage::run($productCategory->webpage);
-        }
+            $result = CloseDiscontinuedWebpage::run($productCategory->webpage);
 
+            if (Arr::has($result,'redirect_to'))
+            {
+                $command->info(sprintf(
+                    'Redirecting discontinued family %s to %s',
+                    $productCategory->slug,
+                    $result['redirect_to']
+                ));
+            } else {
+                $command->error(sprintf(
+                    'No redirect found for discontinued family %s. Error: %s',
+                    $productCategory->slug, 
+                    data_get($result, 'error', 'n/a error message')
+                ));
+                exit;
+            }
+        }
     }
 
     public string $commandSignature = 'repair:discontinued-family-webpages';
@@ -56,7 +72,7 @@ class RepairDiscontinuedFamilyWebpages
 
                     $webpage = $productCategory->webpage;
 
-                    $this->handle($productCategory);
+                    $this->handle($productCategory, $command);
 
                     $command->info(sprintf(
                         "Repaired family: %s | family_state: %s | webpage: %s | webpage_state: %s",
