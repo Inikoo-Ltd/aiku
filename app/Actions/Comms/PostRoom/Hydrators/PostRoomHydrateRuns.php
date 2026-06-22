@@ -11,6 +11,7 @@
 namespace App\Actions\Comms\PostRoom\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Comms\PostRoom;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -30,8 +31,12 @@ class PostRoomHydrateRuns implements ShouldBeUnique
 
     public function handle(PostRoom $postRoom): void
     {
-        $count = DB::table('outbox_intervals')->leftjoin('outboxes', 'outbox_intervals.outbox_id', '=', 'outboxes.id')
-            ->where('post_room_id', $postRoom->id)->sum('runs_all');
+        $count = DB::table('outbox_time_series_records')
+            ->join('outbox_time_series', 'outbox_time_series_records.outbox_time_series_id', '=', 'outbox_time_series.id')
+            ->join('outboxes', 'outbox_time_series.outbox_id', '=', 'outboxes.id')
+            ->where('outbox_time_series.frequency', TimeSeriesFrequencyEnum::DAILY->value)
+            ->where('outboxes.post_room_id', $postRoom->id)
+            ->sum('outbox_time_series_records.runs');
 
         $postRoom->intervals()->update(
             [
