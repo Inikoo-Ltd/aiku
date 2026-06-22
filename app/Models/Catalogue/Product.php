@@ -529,7 +529,10 @@ class Product extends Model implements Auditable, HasMedia
 
     public function getLuigiIdentity(): string
     {
-        return $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->webpage?->website?->id.':'.$this->webpage?->id;
+        if($this->webpage){
+            return $this->webpage->luigiIdentity();
+        }
+        return 'unknown';
     }
 
     public function frontImage(): HasOne
