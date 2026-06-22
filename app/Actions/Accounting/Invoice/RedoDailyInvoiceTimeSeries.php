@@ -12,6 +12,7 @@ use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
 use App\Actions\Catalogue\CollectionTimeSeries\PreprocessCollectionTimeSeries;
 use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
 use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
+use App\Actions\Comms\Outbox\ProcessOutboxTimeSeriesRecords;
 use App\Actions\CRM\Customer\ProcessCustomerTimeSeriesRecords;
 use App\Actions\Discounts\Offer\ProcessOfferTimeSeriesRecords;
 use App\Actions\Discounts\OfferCampaign\ProcessOfferCampaignTimeSeriesRecords;
@@ -47,6 +48,26 @@ class RedoDailyInvoiceTimeSeries
 
         $this->dispatchInvoiceBasedTimeSeries($today, $periodDates);
         $this->dispatchInvoiceTransactionBasedTimeSeries($today, $periodDates);
+        $this->dispatchOutboxTimeSeries($today, $periodDates);
+    }
+
+    protected function dispatchOutboxTimeSeries(string $today, array $periodDates): void
+    {
+        $outboxIds = collect();
+
+        foreach (['dispatched_emails', 'mailshots', 'email_bulk_runs'] as $table) {
+            $outboxIds = $outboxIds->merge(
+                DB::connection('aiku_no_sticky')->table($table)
+                    ->whereDate('created_at', $today)
+                    ->whereNotNull('outbox_id')
+                    ->distinct()
+                    ->pluck('outbox_id')
+            );
+        }
+
+        $outboxIds->unique()->each(
+            fn ($id) => $this->dispatchForAllFrequencies(ProcessOutboxTimeSeriesRecords::class, $id, $periodDates)
+        );
     }
 
     protected function resolvePeriodDates(string $date): array
