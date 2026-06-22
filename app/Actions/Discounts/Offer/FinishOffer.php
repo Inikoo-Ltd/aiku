@@ -8,6 +8,7 @@
 
 namespace App\Actions\Discounts\Offer;
 
+use App\Actions\Comms\Email\SendFinishOfferEmailToSubscribers;
 use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\OrgAction;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -48,6 +49,8 @@ class FinishOffer extends OrgAction
         if ($currentStatus != $offer->status) {
             $this->handleOfferSideEffects($offer);
         }
+
+        SendFinishOfferEmailToSubscribers::dispatch($offer->id)->delay(now()->addSeconds(10));
 
         return $offer;
     }

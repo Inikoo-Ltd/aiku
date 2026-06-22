@@ -67,7 +67,7 @@ class IndexCustomerSalesChannels extends OrgAction
 
         if ($this->bucket === 'problem') {
             $queryBuilder->where('customer_sales_channels.platform_status', false);
-        } elseif ($this->bucket === 'ok') {
+        } elseif ($this->bucket === 'ok' || $this->bucket === '') {
             $queryBuilder->where('customer_sales_channels.platform_status', true);
         } elseif ($this->bucket === 'ok_with_invoices') {
             $queryBuilder->where('customer_sales_channels.platform_status', true)

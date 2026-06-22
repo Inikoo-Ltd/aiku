@@ -83,7 +83,7 @@ trait WithLuigis
 
             if ($compressed) {
                 $header['Content-Encoding'] = 'gzip';
-                $bodyToSend = gzencode($bodyJson, 9);
+                $bodyToSend                 = gzencode($bodyJson, 9);
             } else {
                 $bodyToSend = $bodyJson;
             }
@@ -195,7 +195,7 @@ trait WithLuigis
                 "identity" => $url,
                 "type"     => "tag",
                 "fields"   => array_filter([
-                    "slug"       => $this->getIdentityTag($tag),
+                    "slug"       => 'tag-'.$tag->slug,
                     "title"      => $tag->name,
                     "web_url"    => $url,
                     "image_link" => Arr::get($tag->imageSources(200, 200), 'original'),
@@ -228,7 +228,7 @@ trait WithLuigis
                 "identity" => $url,
                 "type"     => "brand",
                 "fields"   => array_filter([
-                    "slug"       => $this->getIdentityBrand($brand),
+                    "slug"       => 'brand-'.$brand->slug,
                     "title"      => $brand->name,
                     "web_url"    => $url,
                     "image_link" => Arr::get($brand->imageSources(200, 200), 'original'),
@@ -290,8 +290,7 @@ trait WithLuigis
             $objects = [
                 [
                     "type"     => "item",
-                    "identity" => $this->getWebpageUrl($webpage),
-                    //todo: "identity" => $this->getIdentity($webpage)
+                    "identity" => $webpage->luigiIdentity(),
                 ],
             ];
 
@@ -381,9 +380,9 @@ trait WithLuigis
             $family     = $product->family;
             $familyData = [
                 "type"     => "category",
-                "identity" => $this->getWebpageUrl($family->webpage),
+                "identity" => $family->webpage->luigiIdentity(),
                 "fields"   => array_filter([
-                    "slug"        => $this->getIdentity($family->webpage),
+                    "slug"        => 'webpage-'.$webpage->slug,
                     "title"       => $family->webpage->title,
                     "web_url"     => $family->webpage->getCanonicalUrl(),
                     "description" => $family->webpage->description,
@@ -398,9 +397,9 @@ trait WithLuigis
             $department     = $product->department;
             $departmentData = [
                 "type"     => "department",
-                "identity" => $this->getWebpageUrl($department->webpage),
+                "identity" => $department->webpage->luigiIdentity(),
                 "fields"   => array_filter([
-                    "slug"        => $this->getIdentity($department->webpage),
+                    "slug"        => 'webpage-'.$webpage->slug,
                     "title"       => $department->webpage->title,
                     "web_url"     => $department->webpage->getCanonicalUrl(),
                     "description" => $department->webpage->description,
@@ -415,9 +414,9 @@ trait WithLuigis
             $subDepartment     = $product->subDepartment;
             $subDepartmentData = [
                 "type"     => "sub_department",
-                "identity" => $this->getWebpageUrl($subDepartment->webpage),
+                "identity" => $subDepartment->webpage->luigiIdentity(),
                 "fields"   => array_filter([
-                    "slug"        => $this->getIdentity($subDepartment->webpage),
+                    "slug"        => 'webpage-'.$subDepartment->webpage->slug,
                     "title"       => $subDepartment->webpage->title,
                     "web_url"     => $subDepartment->webpage->getCanonicalUrl(),
                     "description" => $subDepartment?->webpage->description,
@@ -434,7 +433,7 @@ trait WithLuigis
                 "identity" => $url,
                 "type"     => "brand",
                 "fields"   => array_filter([
-                    "slug"       => $this->getIdentityBrand($brand),
+                    "slug"       => 'brand-'.$brand->slug,
                     "title"      => $brand->name,
                     "web_url"    => $url,
                     "image_link" => Arr::get($brand->imageSources(200, 200), 'original'),
@@ -451,7 +450,7 @@ trait WithLuigis
                     "identity" => $url,
                     "type"     => "tag",
                     "fields"   => array_filter([
-                        "slug"       => $this->getIdentityTag($tag),
+                        "slug"       => 'tag-'.$tag->slug,
                         "title"      => $tag->name,
                         "web_url"    => $url,
                         "image_link" => Arr::get($tag->imageSources(200, 200), 'original'),
@@ -459,31 +458,30 @@ trait WithLuigis
                 ];
             }
         }
-        $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
 
         return [
-            "identity" => $identity,
+            "identity" => $webpage->luigiIdentity(),
             "type"     => "item",
             "fields"   => array_filter([
-                "slug"            => $this->getIdentity($webpage),
-                "title"           => $webpage->title,
-                "web_url"         => $webpage->getCanonicalUrl(),
+                "slug"                => 'webpage-'.$webpage->slug,
+                "title"               => $webpage->title,
+                "web_url"             => $webpage->getCanonicalUrl(),
                 // Discontinuing display also (Tomas Request) | HELP-1677
-                "availability"    => intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale),
-                "stock_qty"       => $product->available_quantity ?? 0,
-                "unit"            => $product->unit,
-                "units"           => $product->units,
-                "price"           => (float)$product->price ?? 0,
-                "price_rrp"       => (float)$product->rrp ?? 0,
-                "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
-                "formatted_price_rrp"       => $product->currency->symbol.$product->rrp.'/'.$product->unit,
-                "image_link"      => Arr::get($product->imageSources(200, 200), 'original'),
-                "product_code"    => $product->code,
-                "product_id"      => $product->id,
-                "introduced_at"   => $product->created_at ? $product->created_at->format('c') : null,
-                "description"     => $product->description,
-                'website_id'      => $webpage->website_id,
-                'webpage_id'      => $webpage->id,
+                "availability"        => intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale),
+                "stock_qty"           => $product->available_quantity ?? 0,
+                "unit"                => $product->unit,
+                "units"               => $product->units,
+                "price"               => (float)$product->price ?? 0,
+                "price_rrp"           => (float)$product->rrp ?? 0,
+                "formatted_price"     => $product->currency->symbol.$product->price.'/'.$product->unit,
+                "formatted_price_rrp" => $product->currency->symbol.$product->rrp.'/'.$product->unit,
+                "image_link"          => Arr::get($product->imageSources(200, 200), 'original'),
+                "product_code"        => $product->code,
+                "product_id"          => $product->id,
+                "introduced_at"       => $product->created_at ? $product->created_at->format('c') : null,
+                "description"         => $product->description,
+                'website_id'          => $webpage->website_id,
+                'webpage_id'          => $webpage->id,
             ]),
             ...(count($familyData) || count($departmentData) || count($subDepartmentData) || count($brandObject) || count($tagsObject) ? [
                 "nested" => array_values(array_filter([
@@ -517,7 +515,7 @@ trait WithLuigis
             }
 
             return [
-                "identity" => $this->getWebpageUrl($modelWebpage),
+                "identity" => $webpage->luigiIdentity(),
                 "type"     => $type ?? $this->getType($model),
                 "fields"   => array_filter([
                     "slug"        => $this->getIdentity($modelWebpage),

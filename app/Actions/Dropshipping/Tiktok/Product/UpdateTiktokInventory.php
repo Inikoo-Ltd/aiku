@@ -66,7 +66,7 @@ class UpdateTiktokInventory
         ]);
 
         if (count(Arr::get($tiktokInventory, 'data.errors', [])) === 0) {
-            UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
+            UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                 'status' => PlatformPortfolioLogsStatusEnum::OK,
                 'last_stock_value' => $availableQuantity
             ]);
@@ -79,7 +79,7 @@ class UpdateTiktokInventory
                 'stock_last_updated_at' => now()
             ]);
         } else {
-            UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
+            UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                 'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                 'response' => 'E1: ' . Arr::get($tiktokInventory, 'data.errors.0.message', [])
             ]);
