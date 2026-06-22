@@ -399,6 +399,17 @@ const handleClose = () => {
     
 }
 
+const resetBundleState = () => {
+    bundle.resetBundle()
+    bundle.products.value = []
+    selectedMedia.value = []
+    selectedMediaIds.value = []
+    selectedMediaForAI.value = []
+    customerChannelsId.value = null
+    bundle.step.value = 1
+    bundle.close()
+}
+
 const handleDelete = () => {
     const routeConfig = bundleRoutes.delete
     const routeParams = {
@@ -406,21 +417,18 @@ const handleDelete = () => {
         bundle: bundle.bundle_id.value
     }
 
+    if (!customerChannelsId.value || !bundle.bundle_id.value) {
+        resetBundleState()
+        return
+    }
+
     router.delete(route(routeConfig.name, routeParams), {
         preserveScroll: true,
 
         onSuccess: () => {
-            bundle.resetBundle()
-            bundle.products.value = []
-            selectedMedia.value = []
-            selectedMediaIds.value = []
-            selectedMediaForAI.value = []
-            customerChannelsId.value = null
-            bundle.step.value = 1
-            bundle.close()
+            resetBundleState()
             notify({
                 title: trans('Success'),
-                // text: trans('Failed to delete bundle'),
                 type: 'success'
             })
         },
