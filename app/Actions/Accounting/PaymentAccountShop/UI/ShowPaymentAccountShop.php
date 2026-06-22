@@ -14,13 +14,12 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
-use App\Http\Resources\Accounting\PaymentAccountShopsResource;
+use App\Http\Resources\Accounting\PaymentAccountShopResource;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -64,8 +63,18 @@ class ShowPaymentAccountShop extends OrgAction
                     'subNavigation' => $subNavigation,
                     'icon'          => ['fal', 'fa-store-alt'],
                     'title'         => __('Payment Account Shops'),
+                    'actions'       => [
+                    [
+                            'type'    => 'button',
+                            'icon'        => 'fal fa-pencil',
+                            'style'       => 'transparent',
+                            // 'label'   => __('Edit'),
+                            'tooltip' => __('Edit payment account shop'),
+                            'route' => [],
+                        ],
+                    ],
                 ],
-                'data'        => PaymentAccountShopsResource::make($paymentAccountShop)
+                'data'        => PaymentAccountShopResource::make($paymentAccountShop)
             ]
         );
     }
