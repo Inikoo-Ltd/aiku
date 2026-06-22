@@ -138,7 +138,6 @@ class StoreCustomerOffers extends OrgAction
     public function asController(Shop $shop, ActionRequest $request): Offer
     {
         $this->initialisationFromShop($shop, $request);
-
         return $this->handle($shop, $this->validatedData);
     }
 }
