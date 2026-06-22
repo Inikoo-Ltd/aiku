@@ -61,6 +61,10 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
         }
 
         foreach ($wooOrders as $wooOrder) {
+            if(blank($wooOrder) || !is_array($wooOrder)) {
+                continue;
+            }
+
             $wooCommerceUser->debugWebhooks()->create([
                 'data' => $wooOrder
             ]);
