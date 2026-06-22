@@ -317,7 +317,9 @@ watch(
 )
 
 onMounted(() => {
- router.reload();
+  window.addEventListener('popstate', () => {
+    router.reload()
+  });
 })
 </script>
 
