@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\RelatedProducts;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -31,6 +32,10 @@ class SyncProductCategoryRelatedProducts extends OrgAction
 
 
         $productCategory->relatedProducts()->sync($relatedProducts);
+
+        if ($productCategory->webpage) {
+            BreakWebpageCache::run($productCategory->webpage);
+        }
 
         return $productCategory;
     }

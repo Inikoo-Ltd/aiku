@@ -15,16 +15,16 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $employee_id
- * @property int|null $employee_contract_id
- * @property Carbon|null $period_start
- * @property Carbon|null $period_end
  * @property float $annual_used
  * @property float $medical_used
  * @property float $unpaid_used
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read \App\Models\HumanResources\Employee|null $employee
+ * @property int|null $employee_contract_id
+ * @property Carbon|null $period_start
+ * @property Carbon|null $period_end
  * @property-read \App\Models\HumanResources\EmployeeContract|null $contract
+ * @property-read \App\Models\HumanResources\Employee|null $employee
  * @property-read float $annual_remaining
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newQuery()

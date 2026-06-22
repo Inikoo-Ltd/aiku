@@ -18,12 +18,17 @@ use Illuminate\Support\Carbon;
  * @property int $employee_id
  * @property Carbon $start_date
  * @property Carbon|null $end_date
- * @property int $annual_leave_days
+ * @property float $annual_leave_days
  * @property string|null $notes
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Employee $employee
- * @property-read EmployeeLeaveBalance|null $leaveBalance
+ * @property-read \App\Models\HumanResources\Employee|null $employee
+ * @property-read \App\Models\HumanResources\EmployeeLeaveBalance|null $leaveBalance
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\EmployeeLeaveBalance> $leaveBalances
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeContract newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeContract newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeContract query()
+ * @mixin \Eloquent
  */
 class EmployeeContract extends Model
 {

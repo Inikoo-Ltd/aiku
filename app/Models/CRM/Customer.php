@@ -144,6 +144,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
  * @property string|null $eori
  * @property string|null $ukims
+ * @property string|null $identity_document_number_alt
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AllegroUser> $allegroUsers

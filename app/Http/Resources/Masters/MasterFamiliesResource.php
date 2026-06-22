@@ -34,6 +34,10 @@ use Illuminate\Support\Arr;
  * @property mixed $master_sub_department_name
  * @property mixed $currency_code
  * @property mixed $health_rank
+ * @property mixed $gr_vol_discount_percentage
+ * @property mixed $gr_vol_discount_quantity
+ * @property mixed $number_following_master_gr
+ * @property mixed $number_not_following_master_gr
  */
 class MasterFamiliesResource extends JsonResource
 {
@@ -69,6 +73,12 @@ class MasterFamiliesResource extends JsonResource
                 ],
             'number_current_products'    => $this->current_master_assets,
             'image_thumbnail'            => Arr::get($this->web_images, 'main.thumbnail'),
+            'gr_detail'                  => [
+                'percentage' => (float) $this->gr_vol_discount_percentage,
+                'quantity'   => (int) $this->gr_vol_discount_quantity,
+            ],
+            'number_following_master_gr'     => (int) $this->number_following_master_gr,
+            'number_not_following_master_gr' => (int) $this->number_not_following_master_gr,
             'currency_code'              => $this->currency_code,
             'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,

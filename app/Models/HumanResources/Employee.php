@@ -93,11 +93,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $identity_document_issued_by
  * @property bool $allow_shift
  * @property EmploymentTypeEnum $employment_type
+ * @property-read \App\Models\HumanResources\EmployeeContract|null $activeContract
  * @property-read \App\Models\Helpers\Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Address> $addresses
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
+ * @property-read Collection<int, \App\Models\HumanResources\EmployeeContract> $contracts
+ * @property-read \App\Models\HumanResources\EmployeeLeaveBalance|null $currentLeaveBalance
  * @property-read string|null $department
  * @property-read Group|null $group
  * @property-read Collection<int, \App\Models\HumanResources\HRAnnouncement> $hrAnnouncements
@@ -106,7 +109,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\HumanResources\EmployeeHasJobPositions|null $pivot
  * @property-read Collection<int, \App\Models\HumanResources\JobPosition> $jobPositions
  * @property-read \App\Models\HumanResources\EmployeeAnalytics|null $latestAnalytics
- * @property-read \App\Models\HumanResources\EmployeeLeaveBalance|null $leaveBalance
+ * @property-read Collection<int, \App\Models\HumanResources\EmployeeLeaveBalance> $leaveBalances
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read \App\Models\Helpers\Media|null $seoImage

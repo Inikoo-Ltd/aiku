@@ -71,7 +71,7 @@ class StoreEbayProduct extends RetinaAction
 
                     $displayError = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
 
-                    UpdatePlatformPortfolioLog::run($logs, [
+                    UpdatePlatformPortfolioLog::dispatch($logs, [
                         'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                         'response' => $displayError
                     ]);
@@ -109,10 +109,11 @@ class StoreEbayProduct extends RetinaAction
 
             $descriptions = mb_substr($portfolio->customer_description, 0, 4000);
 
-
             if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
             }
+
+            // $descriptions = $ebayUser->getFormattedDescriptions($descriptions);
 
             $family = $product->family?->name;
 
@@ -144,7 +145,13 @@ class StoreEbayProduct extends RetinaAction
                 $categoryName = Arr::get($categories, 'itemSummaries.0.categories.0.categoryName');
             }
 
-            if ($categoryId == '261186') {
+            $categoryBodySoap = '180924';
+            $includedCategories = ['261186', '116113'];
+            if (!$product->barcode && $categoryId === $categoryBodySoap) {
+                $includedCategories[] = $categoryBodySoap;
+            }
+
+            if (in_array($categoryId, $includedCategories)) {
                 // This force not to use book category
                 $categoryId = '29511';
             }
@@ -285,7 +292,7 @@ class StoreEbayProduct extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             }

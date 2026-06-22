@@ -141,7 +141,8 @@ const calculateSidebarHeight = async () => {
 
 	const newHeight = _content.value.offsetHeight - 80
 
-	if (newHeight !== maxSideBarHeight.value) {
+
+	if (newHeight != maxSideBarHeight.value) {
 		maxSideBarHeight.value = newHeight
 	}
 }
@@ -187,7 +188,10 @@ watch(
 		props.fieldValue.department.showcase_image,
 		props.screenType,
 	],
-	calculateDescriptionHeight,
+	()=>{
+		calculateDescriptionHeight()
+		calculateSidebarHeight()
+	},
 	{ immediate: true }
 )
 </script>
@@ -195,8 +199,7 @@ watch(
 <template>
 	<div
 		:id="fieldValue?.id ? fieldValue?.id : 'department-1-iris' + indexBlock"
-		component="department-1-iris"
-		class="pt-7 pb-4">
+		component="department-1-iris">
 		<div
 			:style="{
 				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
@@ -239,9 +242,7 @@ watch(
 				</aside>
 
 				<!-- Main Content -->
-				<div ref="_content" 	:style="{
-						...getStyles(fieldValue?.description?.properties, screenType),
-					}">
+				<div ref="_content" :style="{...getStyles(fieldValue?.description?.properties, screenType)}" class="h-fit">
 					<h1
 						class="text-[28px] md:text-[36px] lg:text-[46px] 2xl:text-[60px] font-bold leading-tight text-slate-900">
 						{{
@@ -361,8 +362,16 @@ watch(
 								:key="item.url"
 								:href="item.url"
 								type="internal"
-								class="block text-slate-700">
+								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
 								{{ item.name }}
+							</LinkIris>
+							<LinkIris
+								v-for="(collection, idxCol) of props.fieldValue.collections"
+								:key="collection.url"
+								:type="'internal'"
+								:href="collection.url"
+								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
+								{{ collection.name }}
 							</LinkIris>
 						</div>
 					</details>

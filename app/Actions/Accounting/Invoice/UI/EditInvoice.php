@@ -124,16 +124,31 @@ class EditInvoice extends OrgAction
                             ],
                         ],
                         [
+                            'title'   => __('Tax number'),
+                            'label'   => __('Tax number'),
+                            'icon'    => 'fa-light fa-user',
+                            'fields'  => [
+                                'formatted_tax_number'          => [
+                                    'type'                      => 'input',
+                                    'label'                     => __('Tax Number'),
+                                    'information'               => __("Modifying this value would only affect the Invoice Tax Number and not the Customer's"),
+                                    'additional_instructions'   => __("You are required to add the Country Code as prefix"),
+                                    'value'                     => $invoice->tax_number
+                                ],
+
+                            ],
+                        ],
+                        [
                             'title'   => __('Customer identity number'),
                             'label'   => __('Customer identity number'),
                             'icon'    => 'fa-light fa-user',
                             'fields'  => [
-                                'identity_document_number' => [
+                                'identity_document_number'      => [
                                     'type'          => 'input',
                                     'label'         => data_get($invoice->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),
                                     'value'         => $invoice->identity_document_number
                                 ],
-                                'identity_document_number_alt' => [
+                                'identity_document_number_alt'  => [
                                     'type'          => 'input',
                                     'label'         => data_get($invoice->shop->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt').'/'.__('Registration number Alt'),
                                     'value'         => $invoice->identity_document_number_alt

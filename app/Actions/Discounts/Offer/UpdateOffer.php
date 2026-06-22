@@ -9,9 +9,8 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
-use App\Actions\Discounts\Offer\UI\FinishOffer;
+use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
-use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
@@ -19,8 +18,8 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithStoreOffer;
 use App\Http\Resources\Catalogue\OfferResource;
-use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
@@ -31,6 +30,7 @@ class UpdateOffer extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithStoreOffer;
+    use HandlesOfferSideEffects;
 
     private Offer $offer;
 
@@ -52,14 +52,14 @@ class UpdateOffer extends OrgAction
 
             // Set percentage_off to allowance_signature
             if (!empty($editOfferDiscount['percentage_off'])) {
-                $percentage_off = ((float) $editOfferDiscount['percentage_off']) / 100; // Convert 25 → 0.25
+                $percentage_off = ((float)$editOfferDiscount['percentage_off']) / 100; // Convert 25 → 0.25
 
-                $signature = trim((string) $offer['allowance_signature']);
+                $signature = trim((string)$offer['allowance_signature']);
 
                 // Try to replace existing percentage_off
                 $newSignature = preg_replace(
                     '/(percentage_off:)[0-9.]+/',
-                    '${1}' . $percentage_off,
+                    '${1}'.$percentage_off,
                     $signature,
                     -1,
                     $count
@@ -72,9 +72,9 @@ class UpdateOffer extends OrgAction
 
                     if ($signature === '') {
                         // Signature is empty → don't prefix with colon
-                        $newSignature = 'percentage_off:' . $percentage_off;
+                        $newSignature = 'percentage_off:'.$percentage_off;
                     } else {
-                        $newSignature = $signature . ':percentage_off:' . $percentage_off;
+                        $newSignature = $signature.':percentage_off:'.$percentage_off;
                     }
                 }
 
@@ -97,7 +97,7 @@ class UpdateOffer extends OrgAction
                 }
 
                 // Set or update item_quantity
-                $triggerData['item_quantity'] = (int) $editOffer['trigger_item_quantity'];
+                $triggerData['item_quantity'] = (int)$editOffer['trigger_item_quantity'];
 
                 // Assign back (Laravel will re-encode it to JSON automatically)
                 $newTriggerData = $triggerData;
@@ -113,7 +113,7 @@ class UpdateOffer extends OrgAction
                 }
 
                 // Set or update min_amount
-                $triggerData['min_amount'] = (int) $editOffer['trigger_min_amount'];
+                $triggerData['min_amount'] = (int)$editOffer['trigger_min_amount'];
 
                 // Assign back (Laravel will re-encode it to JSON automatically)
                 $newTriggerData = $triggerData;
@@ -129,7 +129,7 @@ class UpdateOffer extends OrgAction
                 }
 
                 // Set or update order_number
-                $triggerData['order_number'] = (int) $editOffer['trigger_order_number'];
+                $triggerData['order_number'] = (int)$editOffer['trigger_order_number'];
 
                 // Assign back (Laravel will re-encode it to JSON automatically)
                 $newTriggerData = $triggerData;
@@ -157,19 +157,20 @@ class UpdateOffer extends OrgAction
             }
         }
 
-        if ($offer->wasChanged(['name'])) {
-            RecalculateShopOrderDiscountsInBasket::dispatch($offer->shop->id);
+        if ($offer->wasChanged(['label'])) {
+            if ($this->offer->trigger instanceof ProductCategory) {
+                UpdateProductCategoryOffersData::run($offer);
+            }
+            $this->cleanWebpagesCache($offer);
         }
 
-        if ($offer->wasChanged(['label']) && $this->offer->trigger instanceof ProductCategory) {
-            UpdateProductCategoryOffersData::run($offer);
-        }
 
         if ($offer->wasChanged(['state', 'status'])) {
             GroupHydrateOffers::dispatch($offer->group)->delay($this->hydratorsDelay);
             OrganisationHydrateOffers::dispatch($offer->organisation)->delay($this->hydratorsDelay);
             ShopHydrateOffers::dispatch($offer->shop)->delay($this->hydratorsDelay);
             OfferCampaignHydrateOffers::dispatch($offer->offerCampaign)->delay($this->hydratorsDelay);
+            $this->handleOfferSideEffects($offer);
         }
 
         return $offer;
@@ -216,7 +217,7 @@ class UpdateOffer extends OrgAction
             'start_at'                   => ['sometimes', 'date'],
             'end_at'                     => ['sometimes', 'nullable', 'date'],
             'edit_offer_trigger'         => ['sometimes', 'nullable'],
-            'edit_offer_discount'         => ['sometimes', 'nullable']
+            'edit_offer_discount'        => ['sometimes', 'nullable']
         ];
 
         if (!$this->strict) {

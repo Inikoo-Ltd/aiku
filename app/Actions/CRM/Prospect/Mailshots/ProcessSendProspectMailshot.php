@@ -13,6 +13,7 @@ use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
+use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Actions\Comms\Mailshot\StoreMailshotRecipient;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientsStoredAt;
 use App\Actions\Comms\Traits\WithDispatchedEmailEncryption;
@@ -43,7 +44,9 @@ class ProcessSendProspectMailshot
         }
 
         $outboxId = $mailshot->outbox_id;
-        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
+        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot, [
+            'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
+        ]);
 
         foreach ($prospectIds as $prospectId) {
             $prospect = Prospect::find($prospectId);
@@ -90,7 +93,8 @@ class ProcessSendProspectMailshot
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
-                'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
+                'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count(),
+                'state'         => EmailDeliveryChannelStateEnum::READY->value
             ]
         );
 

@@ -26,7 +26,7 @@ import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
-import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
+import MasterSubDepartmentShowcase from "@/Components/Showcases/Grp/MasterSubDepartmentShowcase.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue"
@@ -86,7 +86,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component: Component = computed(() => {
     const components = {
-        showcase: SubDepartmentShowcase,
+        showcase: MasterSubDepartmentShowcase,
         products: TableProducts,
         mailshots: TableMailshots,
         customers: TableCustomers,

@@ -6,38 +6,40 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Discounts\Offer;
+namespace App\Actions\Discounts\Offer\VolGr;
 
-use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
-use App\Actions\OrgAction;
+use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\AsObject;
 
-class UpdateVolumeGrOfferFromMaster extends OrgAction
+class UpdateVolumeGrOfferFromMaster
 {
-    use AsAction;
+    use AsObject;
 
     private int $updatedOffersCount = 0;
     private int $updatedAllowancesCount = 0;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(MasterProductCategory $masterProductCategory): array
     {
         $masterProductCategory->refresh();
         $this->updatedOffersCount = 0;
         $this->updatedAllowancesCount = 0;
-        $masterEnableGR = $masterProductCategory->masterShop->gold_reward_eligible;
+        $masterShopEnableGR = $masterProductCategory->masterShop->gold_reward_eligible;
 
-        if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY || !$masterEnableGR) {
+        if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY || !$masterShopEnableGR) {
 
             return [
                 'success'            => false,
                 'updated_offers'     => $this->updatedOffersCount,
                 'updated_allowances' => $this->updatedAllowancesCount,
-                'error_message'      => $masterEnableGR ? __('Unable to update GR. Only master family is able to be edited') : __('Unable to update GR, master shop disabled Master Level offer update')
+                'error_message'      => $masterShopEnableGR ? __('Unable to update GR. Only master family is able to be edited') : __('Unable to update GR, master shop disabled Master Level offer update')
             ];
         }
 
@@ -99,11 +101,4 @@ class UpdateVolumeGrOfferFromMaster extends OrgAction
         ];
     }
 
-    public function action(MasterProductCategory $masterProductCategory): array
-    {
-        $this->asAction = true;
-        $this->initialisationFromGroup($masterProductCategory->group, []);
-
-        return $this->handle($masterProductCategory);
-    }
 }

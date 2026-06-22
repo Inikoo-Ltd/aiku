@@ -7,12 +7,12 @@
  */
 
 use App\Actions\Discounts\Offer\DeleteOffer;
+use App\Actions\Discounts\Offer\FinishOffer;
 use App\Actions\Discounts\Offer\StoreCustomerOffers;
 use App\Actions\Discounts\Offer\StoreGiftsOffers;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\StoreShopOffer;
 use App\Actions\Discounts\Offer\StoreVoucherOffers;
-use App\Actions\Discounts\Offer\UI\FinishOffer;
 use App\Actions\Discounts\Offer\VolGr\UpdateVolGrGift;
 use Illuminate\Support\Facades\Route;
 

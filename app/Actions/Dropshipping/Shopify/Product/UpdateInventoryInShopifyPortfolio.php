@@ -8,13 +8,12 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsCommand;
-use Sentry;
 
 class UpdateInventoryInShopifyPortfolio
 {
@@ -25,29 +24,25 @@ class UpdateInventoryInShopifyPortfolio
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
-        $platform              = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
+        $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
         if ($customerSalesChannel === null) {
-            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
+            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
+                ->where('stock_update', true)
+                ->where('platform_status', true)
+                ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+                ->get();
         } else {
             $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
                 ->where('id', $customerSalesChannel->id)
-                ->where('stock_update', true)
                 ->get();
         }
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
-            $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
-                ->whereNotNull('platform_product_variant_id')
-                ->get();
-
             if ($customerSalesChannel->user) {
-                try {
-                    BulkUpdateShopifyPortfolio::run($customerSalesChannel->user, $portfolios);
-                } catch (\Exception $e) {
-                    Sentry::captureException($e);
-                }
+                BulkUpdateShopifyPortfolio::dispatch($customerSalesChannel->id)
+                    ->delay(now()->addSeconds(rand(0, 7200)));
             }
         }
     }

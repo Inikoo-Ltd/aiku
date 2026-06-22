@@ -10,6 +10,7 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
@@ -100,6 +101,7 @@ class ProductsResource extends JsonResource
             data_set($extraField, 'product_org_stocks', $pickingFactor);
         }
 
+        $webpageStateIcon = WebpageStateEnum::stateIcon();
 
         return [
             'id'                                => $this->id,
@@ -122,6 +124,11 @@ class ProductsResource extends JsonResource
             'family_slug'                       => $this->family_slug,
             'family_code'                       => $this->family_code,
             'family_name'                       => $this->family_name,
+            'webpage_state'                     => $this->webpage_state ? $webpageStateIcon[$this->webpage_state] : [
+                'tooltip' => __('No webpage'),
+                'icon'    => 'fal fa-browser',
+                'class'   => 'text-gray-300',
+            ],
             'price'                             => $this->price,
             'units'                             => trimDecimalZeros($this->units),
             'unit'                              => $this->unit,

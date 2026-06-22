@@ -30,7 +30,7 @@ class PlaceOrderPayByBank extends RetinaAction
     public function handle(Customer $customer): array
     {
         $order = Order::find($customer->current_order_in_basket_id);
-        if(!$order){
+        if (!$order) {
             abort(404);
         }
 

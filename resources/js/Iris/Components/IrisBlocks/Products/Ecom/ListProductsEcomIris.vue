@@ -61,7 +61,7 @@ const products = ref<any[]>(
 );
 
 const q = ref("")
-const orderBy = ref(layout.params?.order_by || props.fieldValue?.sub_type == 'family'  ?  'recommended' : '-created_at')
+const orderBy = ref(layout.params?.order_by || props.fieldValue?.sub_type == 'family' ? 'recommended' : '-created_at')
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
@@ -346,7 +346,7 @@ const toggleSort = (key: string) => {
     }
 
     if (props.fieldValue?.sub_type == 'family' && key == 'recommended') orderBy.value = key
-    if(key == 'created_at') orderBy.value = `-${key}`
+    if (key == 'created_at') orderBy.value = `-${key}`
     else orderBy.value = isAscending.value ? key : `-${key}`
     updateQueryParams()
     handleSearch()
@@ -433,8 +433,7 @@ watch(
 
 <template>
 
-    <div :id="fieldValue?.id ? fieldValue?.id : 'list-products-ecom-iris'" component="list-products-ecom-iris"
-        class="">
+    <div :id="fieldValue?.id ? fieldValue?.id : 'list-products-ecom-iris'" component="list-products-ecom-iris" class="">
         <ConfirmDialog>
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
@@ -456,7 +455,9 @@ watch(
             <!-- Main Content -->
             <div class="flex-1">
                 <!-- Search & Sort -->
-                <div class="pt-3 pb-2 flex flex-col md:flex-row justify-between items-center gap-4 px-0 2xl:px-[50px]">
+                <div class="pt-3 pb-2 flex gap-4 px-0 2xl:px-[50px]" :class="layout.rightbasket?.show
+                    ? 'flex-col items-start'
+                    : 'flex-col md:flex-row items-center justify-between'">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
                         <template v-if="!props.fieldValue?.settings?.is_hide_filter">
                             <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-2 !w-auto"
@@ -483,32 +484,10 @@ watch(
                                 {{ products.length === 1 ? trans("product") : trans("products") }}
                             </span>
                         </div>
-
-                        <!--  <div class=" w-full" >
-                            <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
-                                :placeholder="trans('Search products...')" :clear="true" :isLoading="isLoadingInitial"
-                                :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
-                                <template #prefix>
-                                    <div class="pl-3 whitespace-nowrap text-gray-400">
-                                        <FontAwesomeIcon :icon='faSearch' class="icon-search" fixed-width
-                                            aria-hidden='true' />
-                                    </div>
-                                </template>
-                            </PureInput>
-                        </div> -->
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex space-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
-                        <!-- <button @click="toggleNewArrivals"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
-                            isNewArrivals
-                                ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                                : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                        ]">
-                            New Arrivals
-                        </button> -->
-
+                    <div class="flex space-x-6 w-fit overflow-x-auto mt-2 md:mt-0">
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
                             class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
                             :class="[
@@ -520,27 +499,6 @@ watch(
                         </button>
                     </div>
                 </div>
-
-                <!-- Section: Results  -->
-                <!-- <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
-                    <div
-                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
-                        <span class="font-medium">
-                            {{ trans("Showing") }}
-                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
-                                {{ products.length }}
-                            </span>
-                            {{ trans("of") }}
-                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
-                                {{ totalProducts }}
-                            </span>
-                            {{ products.length === 1 ? trans("product") : trans("products") }}
-                        </span>
-                    </div>
-
-                    <div>
-                    </div>
-                </div> -->
 
                 <!-- Product Grid -->
                 <div :class="responsiveGridClass"

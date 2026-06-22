@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
+import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faCog } from "@fal"
 import { faSpinnerThird } from "@fad"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faLaptopCode, faLayerGroup } from "@fas"
@@ -21,7 +21,7 @@ import GoldReward from "@/Components/Utils/GoldReward.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup, faSpinnerThird)
+library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup, faSpinnerThird, faCog)
 
 const props = defineProps<{
     screenType?: "desktop" | "mobile" | "tablet"
@@ -211,9 +211,9 @@ const goToBundle = () => {
             <SwitchLanguage
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
 
-
+            <!-- v-if="!layout.offer_data" -->
             <!-- Section: Profile -->
-            <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris href="/app/dashboard" :type="'internal'" class="flex items-center justify-center" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
                     v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
                     :loading="isLoading"
@@ -228,14 +228,37 @@ const goToBundle = () => {
                     </template>
                     <template #label>
                         <!-- <span v-tooltip="trans('Profile')" class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" /> -->
-                        <span v-tooltip="trans('My Account')" class="button">{{ trans("My Account") }}</span>
+                        <!-- <span v-tooltip="trans('My Account')" class="button">{{ trans("My Account") }}</span> -->
                         <!-- <GoldReward v-if="layout.offer_data?.type === 'gr'" /> -->
                     </template>
                 </Button>
             </LinkIris>
 
-            <!-- Section: Back in stock -->
-            <LinkIris href="/app/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <!-- Section: My Interest -->
+            <LinkIris v-if="layout.retina?.type !== 'dropshipping'" href="/app/interest/favourites" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+                <Button
+                    v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
+                    v-tooltip="trans('My Interest')"
+                    type="transparent"
+                    :loading="isLoading"
+                    icon="fal fa-heart"
+                    class="button"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-heart" class="align-middle button" fixed-width aria-hidden="true" />
+                    </template>
+                     <template #label>
+                        <!-- <div class="button whitespace-nowrap" v-if="model?.favourite?.text === `{{ favourites_count }}`"
+                            v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
+                        <div class="button" v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
+                            {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
+                            trans("favourites") : trans("favourite") }}
+                        </div> -->
+                    </template>
+                </Button>
+            </LinkIris>
+
+            <LinkIris v-else href="/app/dropshipping/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
                     v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                     v-tooltip="trans('Reminder back in stock')"
@@ -253,7 +276,6 @@ const goToBundle = () => {
                     </template>
                 </Button>
             </LinkIris>
-
             <!-- section redirect to bundle -->
             <Button v-if="isLoggedIn && layout.retina?.type === 'dropshipping' &&  Object.keys(layout.user?.customerSalesChannels || {}).length > 0" v-tooltip="trans('Add Bundles')" type="transparent" class="button"
                 @click="goToBundle" :loading="isLoadingBundle">
@@ -265,31 +287,6 @@ const goToBundle = () => {
                     <FontAwesomeIcon icon="fas fa-layer-group" class="button" fixed-width />
                 </template>
             </Button>
-
-            <!-- Section: Favourite -->
-            <LinkIris href="/app/favourites" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
-                <Button
-                    v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping')"
-                    v-tooltip="trans('Favourites')"
-                    :loading="isLoading"
-                    icon="fal fa-heart"
-                    type="transparent"
-                    class="button"
-                >
-                    <template #icon>
-                        <FontAwesomeIcon icon="fal fa-heart" fixed-width aria-hidden="true" class="button"/>
-                    </template>
-                    <template #label>
-                        <div class="button whitespace-nowrap" v-if="model?.favourite?.text === `{{ favourites_count }}`"
-                            v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
-                        <div class="button" v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
-                            {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
-                            trans("favourites") : trans("favourite") }}
-                        </div>
-                    </template>
-                </Button>
-            </LinkIris>
-
 
             <!-- Section: Basket (cart) -->
             <LinkIris href="/app/basket" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">

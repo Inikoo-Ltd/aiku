@@ -35,7 +35,9 @@ import {
     faIslandTropical,
     faGift,
     faBadgePercent,
-    faIdCard
+    faIdCard,
+    faHistory,
+    faPaperclip,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -46,7 +48,7 @@ import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressMa
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import ButtonPrimeVue from "primevue/button"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import CountUp from "vue-countup-v3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -64,7 +66,7 @@ import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimelin
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { PDRNotes } from "@/types/Pallet"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent, faHistory, faPaperclip)
 
 interface Customer {
     slug: string
@@ -149,6 +151,7 @@ const props = defineProps<{
         tags_selected_id: number[]
         internal_note: PDRNotes
         update_route: routeType
+        store_note_route?: routeType
         orders_route: routeType | null
         last_order: {
             reference: string
@@ -357,6 +360,74 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
         isLoadingGiftOptOut.value = false
     }
 }
+
+// Section: Add History Note
+const isModalNote = ref(false)
+const noteText = ref("")
+const noteImages = ref<File[]>([])
+const noteImagePreviews = ref<string[]>([])
+const isSubmittingNote = ref(false)
+
+const onSelectNoteImages = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    if (!target.files) return
+
+    Array.from(target.files).forEach((file) => {
+        noteImages.value.push(file)
+        noteImagePreviews.value.push(URL.createObjectURL(file))
+    })
+
+    target.value = ""
+}
+
+const removeNoteImage = (index: number) => {
+    URL.revokeObjectURL(noteImagePreviews.value[index])
+    noteImages.value.splice(index, 1)
+    noteImagePreviews.value.splice(index, 1)
+}
+
+const resetNoteForm = () => {
+    noteImagePreviews.value.forEach((url) => URL.revokeObjectURL(url))
+    noteText.value = ""
+    noteImages.value = []
+    noteImagePreviews.value = []
+}
+
+const submitNote = async () => {
+    if (!props.data.store_note_route || !noteText.value.trim()) return
+
+    try {
+        isSubmittingNote.value = true
+
+        const formData = new FormData()
+        formData.append("note", noteText.value)
+        noteImages.value.forEach((file) => formData.append("images[]", file))
+
+        await axios.post(
+            route(props.data.store_note_route.name, props.data.store_note_route.parameters),
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } }
+        )
+
+        notify({
+            title: trans("Success"),
+            text: trans("Note added to the timeline"),
+            type: "success"
+        })
+
+        resetNoteForm()
+        isModalNote.value = false
+        router.reload({ only: ["timeline"] })
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error?.response?.data?.message || error.message || trans("Please try again or contact administrator"),
+            type: "error"
+        })
+    } finally {
+        isSubmittingNote.value = false
+    }
+}
 </script>
 
 <template>
@@ -421,6 +492,14 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
             <FontAwesomeIcon icon="fal fa-envelope" class="text-blue-500 text-xs" />
             {{ trans("Send Email") }}
         </a>
+        <button
+            v-if="data.store_note_route"
+            @click="() => (isModalNote = true)"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+            <FontAwesomeIcon icon="fal fa-history" class="text-rose-500 text-xs" />
+            {{ trans("Add History Note") }}
+        </button>
     </div>
 
     <!-- 3-Column Hub Layout -->
@@ -537,7 +616,7 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                             </button>
                         </div>
-                        
+
                         <!-- Field: Website -->
                         <div v-if="data?.customer?.contact_website" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Website')" class="flex-none">
@@ -560,7 +639,7 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
                                 <FontAwesomeIcon icon="fal fa-globe-europe" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                {{ data?.customer?.eori }} 
+                                {{ data?.customer?.eori }}
                                 <span class="text-xs text-gray-400">EORI</span>
                             </dd>
                         </div>
@@ -571,7 +650,7 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
                                 <FontAwesomeIcon icon="fal fa-island-tropical" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                {{ data?.customer?.ukims }} 
+                                {{ data?.customer?.ukims }}
                                 <span class="text-xs text-gray-400">UKIMS</span>
                             </dd>
                         </div>
@@ -629,7 +708,7 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
                         </div>
                     </div>
 
-                    
+
 
                     <!-- Field: Gift opt-out (shown when shop has GR gifts) -->
                     <div class="w-full flex gap-y-2 py-2 border-t">
@@ -1032,6 +1111,54 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
     </Modal>
 
     <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />
+
+    <!-- Modal: Add History Note -->
+    <Modal v-if="data.store_note_route" :isOpen="isModalNote" @onClose="() => (isModalNote = false)" width="max-w-lg w-full">
+        <div class="p-1">
+            <h3 class="text-base font-semibold text-gray-800 mb-1">{{ trans("Add History Note") }}</h3>
+            <p class="text-xs text-gray-500 mb-3">{{ trans("Record what happened when communicating with this customer. It will appear in the timeline.") }}</p>
+
+            <textarea
+                v-model="noteText"
+                rows="4"
+                :placeholder="trans('Write your note...')"
+                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+            />
+
+            <!-- Image picker -->
+            <div class="mt-3">
+                <label class="inline-flex items-center gap-2 cursor-pointer text-sm text-indigo-600 hover:text-indigo-700">
+                    <FontAwesomeIcon icon="fal fa-paperclip" />
+                    {{ trans("Attach images") }}
+                    <input type="file" accept="image/*" multiple class="hidden" @change="onSelectNoteImages" />
+                </label>
+
+                <div v-if="noteImagePreviews.length" class="mt-2 flex flex-wrap gap-2">
+                    <div v-for="(preview, index) in noteImagePreviews" :key="index" class="relative">
+                        <img :src="preview" class="h-16 w-16 rounded object-cover ring-1 ring-gray-200" />
+                        <button
+                            type="button"
+                            @click="() => removeNoteImage(index)"
+                            v-tooltip="trans('Remove')"
+                            class="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600"
+                        >
+                            <FontAwesomeIcon :icon="faTimes" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 flex justify-end gap-2">
+                <ButtonPrimeVue severity="secondary" size="small" variant="outlined" @click="() => (isModalNote = false)">
+                    {{ trans("Cancel") }}
+                </ButtonPrimeVue>
+                <ButtonPrimeVue severity="info" size="small" :disabled="isSubmittingNote || !noteText.trim()" @click="submitNote">
+                    <FontAwesomeIcon v-if="isSubmittingNote" icon="fad fa-spinner-third" class="animate-spin mr-1" />
+                    {{ trans("Save Note") }}
+                </ButtonPrimeVue>
+            </div>
+        </div>
+    </Modal>
 
 </template>
 

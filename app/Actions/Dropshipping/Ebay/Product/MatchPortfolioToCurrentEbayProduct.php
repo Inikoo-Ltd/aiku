@@ -78,7 +78,7 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
         ]);
 
         if (Arr::get($publishedOffer, 'listingId')) {
-            UpdatePlatformPortfolioLog::run($logs, [
+            UpdatePlatformPortfolioLog::dispatch($logs, [
                 'status' => PlatformPortfolioLogsStatusEnum::OK
             ]);
         }
@@ -86,7 +86,7 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
         if ($errorMessage = Arr::get($publishedOffer, 'errors')) {
             $displayError = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
 
-            UpdatePlatformPortfolioLog::run($logs, [
+            UpdatePlatformPortfolioLog::dispatch($logs, [
                 'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                 'response' => $displayError
             ]);

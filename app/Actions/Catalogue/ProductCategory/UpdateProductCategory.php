@@ -8,15 +8,18 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Discounts\Offer\FinishOffer;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
-use App\Actions\Discounts\Offer\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
+use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -48,6 +51,7 @@ class UpdateProductCategory extends OrgAction
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
         $originalImageId = $productCategory->image_id;
+        $oldState        = $productCategory->state;
 
         if ($productCategory->type !== ProductCategoryTypeEnum::FAMILY) {
             Arr::pull($modelData, 'trade_unit_family_id'); // Safeguard so only family would have relationship with TradeUnitFamilyId
@@ -97,7 +101,11 @@ class UpdateProductCategory extends OrgAction
 
         if (Arr::has($modelData, 'vol_gr_offer')) {
             $volGrData = Arr::pull($modelData, 'vol_gr_offer');
-            $this->updateFamilyGrOffer($productCategory, $volGrData);
+            if ($volGrData) {
+                $this->updateFamilyGrOffer($productCategory, $volGrData);
+            } else {
+                $this->finishFamilyGrOffer($productCategory);
+            }
         }
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
@@ -165,13 +173,25 @@ class UpdateProductCategory extends OrgAction
             'name_i8n'
         ])) {
             $this->productCategoryHydrators($productCategory);
+
             if ($productCategory->webpage_id) {
                 ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60);
                 ClearCacheByWildcard::run("irisData:website:{$productCategory->webpage->website_id}:*");
             }
         }
+
         if (Arr::has($changes, 'follow_master_gr') && $productCategory->follow_master_gr && $productCategory->masterProductCategory) {
-            UpdateVolumeGrOfferFromMaster::make()->action($productCategory->masterProductCategory);
+            UpdateVolumeGrOfferFromMaster::run($productCategory->masterProductCategory);
+        }
+
+        if ($oldState != $productCategory->state && $productCategory->webpage) {
+            if ($productCategory->state == ProductCategoryStateEnum::DISCONTINUED) {
+                CloseDiscontinuedWebpage::run($productCategory->webpage);
+            }
+
+            if ($productCategory->state == ProductCategoryStateEnum::ACTIVE && $oldState == ProductCategoryStateEnum::DISCONTINUED) {
+                ReopenDiscontinuedWebpage::run($productCategory->webpage);
+            }
         }
 
         $productCategory->refresh();
@@ -306,16 +326,16 @@ class UpdateProductCategory extends OrgAction
         return $rules;
     }
 
-
     private function updateFamilyGrOffer(ProductCategory $productCategory, ?array $volGrData): void
     {
         if (!$volGrData || empty($volGrData['item_quantity']) || empty($volGrData['percentage_off'])) {
             $productCategory->updateQuietly(['has_gr_vol_discount' => false]);
+
             return;
         }
 
-        $itemQuantity  = (int) $volGrData['item_quantity'];
-        $percentageOff = (float) $volGrData['percentage_off'];
+        $itemQuantity  = (int)$volGrData['item_quantity'];
+        $percentageOff = (float)$volGrData['percentage_off'];
 
         $offer = Offer::where('trigger_id', $productCategory->id)
             ->where('trigger_type', class_basename(ProductCategory::class))
@@ -355,6 +375,21 @@ class UpdateProductCategory extends OrgAction
         }
 
         $productCategory->updateQuietly(['has_gr_vol_discount' => true]);
+    }
+
+    private function finishFamilyGrOffer(ProductCategory $productCategory): void
+    {
+        $offer = Offer::where('trigger_id', $productCategory->id)
+            ->where('trigger_type', class_basename(ProductCategory::class))
+            ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
+            ->with('offerAllowances')
+            ->first();
+
+        if ($offer) {
+            FinishOffer::run($offer);
+        }
+
+        $productCategory->updateQuietly(['has_gr_vol_discount' => false]);
     }
 
     public function action(ProductCategory $productCategory, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): ProductCategory
