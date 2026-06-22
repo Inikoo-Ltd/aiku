@@ -3,14 +3,14 @@
 /*
  * author Louis Perez
  * created on 22-06-2026-11h-08m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Actions\Maintenance\Web;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\Traits\WithManageWebpageState;
+use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -20,11 +20,13 @@ use Illuminate\Console\Command;
 class RepairDiscontinuedFamilyWebpages
 {
     use WithActionUpdate;
-    use WithManageWebpageState;
 
     public function handle(ProductCategory $productCategory): void
     {
-        $this->handleWebpageState($productCategory);
+        if ($productCategory->webpage) {
+            CloseDiscontinuedWebpage::run($productCategory->webpage);
+        }
+
     }
 
     public string $commandSignature = 'repair:discontinued-family-webpages';
@@ -39,7 +41,6 @@ class RepairDiscontinuedFamilyWebpages
             })
             ->whereIn('state', [
                 ProductCategoryStateEnum::DISCONTINUED,
-                ProductCategoryStateEnum::IN_PROCESS,
             ])
             ->whereHas('webpage', function ($q) {
                 $q->where('state', WebpageStateEnum::LIVE);
@@ -47,7 +48,7 @@ class RepairDiscontinuedFamilyWebpages
 
         $count = (clone $query)->count();
 
-        $command->info("Found {$count} discontinued/in_process families with LIVE webpages.");
+        $command->info("Found $count discontinued/in_process families with LIVE webpages.");
 
         $query->orderBy('id')
             ->chunk(500, function ($productCategories) use ($command) {

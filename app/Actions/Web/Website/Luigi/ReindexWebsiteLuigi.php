@@ -69,7 +69,8 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
                     $body       = [
                         'objects' => $objects
                     ];
-                    $compressed = count($objects) >= 1000;
+                    $compressed = count($objects) >= 1;
+                    $compressed = false;
                     $command->info("Reindexing webpages $website->domain with ".count($objects)." objects");
                     try {
                         $this->request($website, '/v1/content', $body, 'post', $compressed);

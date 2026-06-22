@@ -3,27 +3,48 @@
 /*
  * author Louis Perez
  * created on 22-06-2026-11h-08m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Actions\Maintenance\Web;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\Traits\WithManageWebpageState;
+use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 class RepairDiscontinuedProductsWebpages
 {
     use WithActionUpdate;
-    use WithManageWebpageState;
 
-    public function handle(Product $product): void
+    public function handle(Product $product, Command $command): void
     {
-        $this->handleWebpageState($product);
+        if ($product->webpage) {
+            $result=CloseDiscontinuedWebpage::run($product->webpage);
+
+            if(Arr::has($result,'redirect_to'))
+            {
+                $command->info(sprintf(
+                    'Redirecting discontinued product %s to %s',
+                    $product->slug,
+                    $result['redirect_to']
+                ));
+
+            }else{
+                $command->error(sprintf(
+                    'No redirect found for discontinued product %s',
+                    $product->slug
+                ));
+                exit;
+
+            }
+
+
+        }
     }
 
     public string $commandSignature = 'repair:discontinued-product-webpages';
@@ -37,7 +58,6 @@ class RepairDiscontinuedProductsWebpages
             })
             ->whereIn('state', [
                 ProductStateEnum::DISCONTINUED,
-                ProductStateEnum::IN_PROCESS,
             ])
             ->whereHas('webpage', function ($q) {
                 $q->where('state', WebpageStateEnum::LIVE);
@@ -45,7 +65,7 @@ class RepairDiscontinuedProductsWebpages
 
         $count = (clone $query)->count();
 
-        $command->info("Found {$count} discontinued/in_process products with LIVE webpages.");
+        $command->info("Found $count discontinued/in_process products with LIVE webpages.");
 
         $query->orderBy('id')
             ->chunk(500, function ($products) use ($command) {
@@ -53,7 +73,7 @@ class RepairDiscontinuedProductsWebpages
 
                     $webpage = $product->webpage;
 
-                    $this->handle($product);
+                    $this->handle($product,$command);
 
                     $command->info(sprintf(
                         "Repaired product: %s | product_state: %s | webpage: %s | webpage_state: %s",
