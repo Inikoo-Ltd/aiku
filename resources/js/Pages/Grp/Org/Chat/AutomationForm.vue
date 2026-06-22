@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import axios from 'axios'
 import { Head, useForm } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import CanvasFlowBuilder from '@/Components/Chat/Automation/CanvasFlowBuilder.vue'
@@ -63,6 +64,24 @@ const form = useForm({
 const canvasRef = ref<InstanceType<typeof CanvasFlowBuilder> | null>(null)
 const settingsOpen = ref(true)
 
+const uploadEndpoint = computed<string | null>(() =>
+    isEdit.value
+        ? route('grp.models.org.chat.automation.knowledge.upload', props.submitRoute.parameters)
+        : null,
+)
+
+const fetchUrlEndpoint = computed<string | null>(() =>
+    isEdit.value
+        ? route('grp.models.org.chat.automation.knowledge.fetch-url', props.submitRoute.parameters)
+        : null,
+)
+
+const previewAnswerEndpoint = computed<string | null>(() =>
+    isEdit.value
+        ? route('grp.models.org.chat.automation.knowledge.preview-answer', props.submitRoute.parameters)
+        : null,
+)
+
 const shopOptions = computed(() => props.shops.map(s => ({ label: `${s.name} (${s.code})`, value: s.id })))
 const currentTrigger = computed(() => props.triggerTypes.find(t => t.value === form.trigger_type))
 const variables = ['{customer_name}', '{shop_name}', '{business_hours}', '{agent_name}']
@@ -107,10 +126,19 @@ function targetFor(nodeId: string, optionId: string): any {
     return edge ? nodeById(edge.target) : null
 }
 
+function knowledgeNodeIdsFor(nodeId: string): string[] {
+    return flowEdges.value
+        .filter(e => e.target === nodeId && e.targetHandle === 'kb')
+        .map(e => e.source)
+}
+
 const simLog = ref<SimMessage[]>([])
 const simActiveNodeId = ref<string>('start')
 const simActiveOptions = ref<{ id: string; label: string }[]>([])
 const simEnded = ref(false)
+const simAiNode = ref<any | null>(null)
+const aiQuestion = ref('')
+const simAiThinking = ref(false)
 const hasInteracted = computed(() => simLog.value.some(m => m.role === 'user'))
 
 function blocksForNode(node: any): Block[] {
@@ -140,6 +168,9 @@ function resetSim(): void {
     simActiveNodeId.value = startNodeId.value
     simActiveOptions.value = startOptions.value
     simEnded.value = false
+    simAiNode.value = null
+    aiQuestion.value = ''
+    simAiThinking.value = false
 }
 
 const actionFeedback: Record<string, { role: SimMessage['role']; text: string; end: boolean }> = {
@@ -163,10 +194,86 @@ function advanceTo(node: any): void {
         if (!simActiveOptions.value.length) {
             simEnded.value = true
         }
+    } else if (node.data.action === 'ai_answer') {
+        simLog.value.push({ role: 'system', text: trans('🤖 Ask the AI a question about your knowledge base'), time: nowTime() })
+        simActiveNodeId.value = node.id
+        simActiveOptions.value = []
+        simAiNode.value = node
     } else {
         const fb = actionFeedback[node.data.action] ?? actionFeedback.end
         simLog.value.push({ role: fb.role, text: fb.text, time: nowTime() })
         simEnded.value = fb.end
+    }
+}
+
+function activeAiNode(): any {
+    return simAiNode.value
+        ?? flowNodes.value.find(n => n.type === 'action' && n.data?.action === 'ai_answer')
+}
+
+function linkify(text: string): string {
+    const escaped = (text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+
+    return escaped.replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)\]])/g, url =>
+        `<a href="${url}" target="_blank" rel="noopener" class="text-indigo-600 underline break-all">${url}</a>`,
+    )
+}
+
+async function sendMessage(): Promise<void> {
+    const question = aiQuestion.value.trim()
+    if (!question || simAiThinking.value) {
+        return
+    }
+
+    const node = activeAiNode()
+    const history = simLog.value
+        .filter(m => m.role === 'user' || m.role === 'bot')
+        .slice(-8)
+        .map(m => ({
+            role: m.role,
+            text: m.text ?? (m.blocks ?? []).map(b => b.text || b.label).filter(Boolean).join(' '),
+        }))
+        .filter(m => m.text.trim() !== '')
+
+    simLog.value.push({ role: 'user', text: question, time: nowTime() })
+    aiQuestion.value = ''
+
+    if (!node) {
+        simLog.value.push({ role: 'system', text: trans('Add an “Ask AI” node to chat with the AI.'), time: nowTime() })
+        return
+    }
+    if (!previewAnswerEndpoint.value) {
+        simLog.value.push({ role: 'system', text: trans('Save the automation first to test the AI.'), time: nowTime() })
+        return
+    }
+
+    const isFlowDriven = simAiNode.value === node
+
+    simAiThinking.value = true
+    try {
+        const { data } = await axios.post(previewAnswerEndpoint.value, {
+            question,
+            knowledge_node_ids: knowledgeNodeIdsFor(node.id),
+            threshold: node.data.threshold ?? 0.3,
+            max_chunks: node.data.maxChunks ?? 4,
+            persona: node.data.persona ?? '',
+            fallback_message: node.data.fallbackMessage ?? '',
+            history,
+        })
+        simLog.value.push({ role: 'bot', text: data?.text ?? trans('…'), time: nowTime() })
+
+        if (isFlowDriven) {
+            simAiNode.value = null
+            advanceTo(targetFor(node.id, data?.answered ? 'answered' : 'fallback'))
+        }
+    } catch (e: any) {
+        simLog.value.push({ role: 'system', text: e?.response?.data?.message ?? trans('AI request failed.'), time: nowTime() })
+    } finally {
+        simAiThinking.value = false
     }
 }
 
@@ -343,6 +450,8 @@ function submit(): void {
                     ref="canvasRef"
                     :model-value="props.automation?.flow ?? null"
                     :start-message="form.message"
+                    :upload-endpoint="uploadEndpoint"
+                    :fetch-url-endpoint="fetchUrlEndpoint"
                 />
             </div>
         </div>
@@ -399,7 +508,7 @@ function submit(): void {
                                                 </template>
                                             </template>
 
-                                            <p v-else class="whitespace-pre-wrap break-words leading-relaxed px-0.5">{{ msg.text }}</p>
+                                            <p v-else class="whitespace-pre-wrap break-words leading-relaxed px-0.5" v-html="linkify(msg.text)"></p>
                                         </div>
 
                                         <div class="text-[10px] text-gray-400 ml-1">{{ msg.time }}</div>
@@ -430,16 +539,32 @@ function submit(): void {
                                     {{ opt.label || trans('Option') }}
                                 </button>
                             </div>
+
+                            <!-- AI thinking indicator -->
+                            <div v-if="simAiThinking" class="flex items-center gap-2 pl-8 text-[11px] text-purple-500">
+                                <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="animate-pulse" />
+                                {{ trans('AI is thinking…') }}
+                            </div>
                         </div>
 
                         <div class="flex items-center gap-2 px-3 py-2.5 border-t border-gray-100 bg-white shrink-0">
                             <FontAwesomeIcon :icon="['fal', 'fa-paperclip']" class="text-gray-300 text-sm" />
-                            <div class="flex-1 text-xs text-gray-400 bg-gray-50 rounded-full px-3 py-2 border border-gray-100">
-                                {{ trans('Type your message…') }}
-                            </div>
-                            <div class="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center shrink-0">
+                            <input
+                                v-model="aiQuestion"
+                                :disabled="simAiThinking"
+                                type="text"
+                                :placeholder="simAiNode ? trans('Ask the AI…') : trans('Type your message…')"
+                                class="flex-1 text-xs text-gray-700 bg-gray-50 rounded-full px-3 py-2 border focus:outline-none"
+                                :class="simAiNode ? 'border-purple-200 focus:border-purple-400' : 'border-gray-100 focus:border-indigo-400'"
+                                @keyup.enter="sendMessage"
+                            />
+                            <button type="button"
+                                :disabled="simAiThinking || !aiQuestion.trim()"
+                                class="w-8 h-8 rounded-full text-white flex items-center justify-center shrink-0 disabled:opacity-40"
+                                :class="simAiNode ? 'bg-purple-500' : 'bg-indigo-500'"
+                                @click="sendMessage">
                                 <FontAwesomeIcon :icon="['fal', 'fa-paper-plane']" class="text-xs" />
-                            </div>
+                            </button>
                         </div>
                     </div>
                 </div>

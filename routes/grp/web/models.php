@@ -72,6 +72,9 @@ use App\Actions\CRM\ChatAutomation\StoreChatAutomation;
 use App\Actions\CRM\ChatAutomation\UpdateChatAutomation;
 use App\Actions\CRM\ChatAutomation\DeleteChatAutomation;
 use App\Actions\CRM\ChatAutomation\ToggleChatAutomation;
+use App\Actions\CRM\ChatAutomation\Knowledge\UploadChatKnowledgeFile;
+use App\Actions\CRM\ChatAutomation\Knowledge\FetchChatKnowledgeUrl;
+use App\Actions\CRM\ChatAutomation\Knowledge\PreviewChatRagAnswer;
 use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
@@ -630,6 +633,9 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
         Route::patch('{chatAutomation:id}', UpdateChatAutomation::class)->name('update')->withoutScopedBindings();
         Route::delete('{chatAutomation:id}', DeleteChatAutomation::class)->name('delete')->withoutScopedBindings();
         Route::patch('{chatAutomation:id}/toggle', ToggleChatAutomation::class)->name('toggle')->withoutScopedBindings();
+        Route::post('{chatAutomation:id}/knowledge/upload', UploadChatKnowledgeFile::class)->name('knowledge.upload')->withoutScopedBindings();
+        Route::post('{chatAutomation:id}/knowledge/fetch-url', FetchChatKnowledgeUrl::class)->name('knowledge.fetch-url')->withoutScopedBindings();
+        Route::post('{chatAutomation:id}/knowledge/preview-answer', PreviewChatRagAnswer::class)->name('knowledge.preview-answer')->withoutScopedBindings();
     });
 
     Route::prefix('fulfilment/{fulfilment:id}/rentals')->name('fulfilment.rentals.')->group(function () {

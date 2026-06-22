@@ -2,6 +2,7 @@
 
 namespace App\Actions\CRM\ChatAutomation;
 
+use App\Actions\CRM\ChatAutomation\Knowledge\SyncChatKnowledgeFromFlow;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatAutomationTriggerEnum;
 use App\Models\CRM\Livechat\ChatAutomation;
@@ -13,7 +14,11 @@ class StoreChatAutomation extends OrgAction
 {
     public function handle(array $modelData): ChatAutomation
     {
-        return ChatAutomation::create($modelData);
+        $chatAutomation = ChatAutomation::create($modelData);
+
+        SyncChatKnowledgeFromFlow::run($chatAutomation);
+
+        return $chatAutomation;
     }
 
     public function rules(): array
