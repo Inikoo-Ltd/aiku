@@ -59,7 +59,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
             ->chunk(200, function ($webpages) use ($website, $command) {
                 if ($command) {
                     $objects = [];
-                    $index=0;
+                    $index = 0;
                     foreach ($webpages as $webpage) {
                         $command->line($index++.' '.$webpage->slug);
                         $object = $this->getObjectFromWebpage($webpage);

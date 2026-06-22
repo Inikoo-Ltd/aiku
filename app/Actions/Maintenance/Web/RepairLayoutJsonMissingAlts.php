@@ -189,13 +189,14 @@ class RepairLayoutJsonMissingAlts
         $total = 0;
 
         $websiteSlug = $command->argument('website');
-        
-        $websites = Website::when($websiteSlug, 
+
+        $websites = Website::when(
+            $websiteSlug,
             fn ($q) => $q->where('slug', $websiteSlug)
         )->get();
 
         $applyChanges = (bool) $command->option('apply-changes');
-        
+
         foreach ($websites as $website) {
             $command->info("\nApplying Repair for website: [$website->slug] $website->name");
 
