@@ -40,6 +40,7 @@ const props = withDefaults(defineProps<{
         gr_offer_data?: any
         follow_master_gr?: boolean
         tags: Array<any>
+        show_gr_vol?: boolean
     },
     master_vol_gr_reward?: {
         show_gr_vol: boolean
@@ -253,7 +254,7 @@ console.log(props)
                     </Dialog>
                 </template>
 
-                <template v-if="data.is_shop_gr_active && data.gr_offer_data">
+                <template v-if="data.show_gr_vol">
                     <div class="mb-1">
                         {{ trans("Active Gold Reward offer") }}:
                         <Link :href="offerRoute(data.gr_offer_data)" class="secondaryLink">

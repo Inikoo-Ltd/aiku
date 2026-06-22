@@ -33,6 +33,11 @@ const props = defineProps<{
     estimatedRecipients?: number
     shop_id?: number
     shop_slug?: string
+    stateOptions?: { value: string; label: string; count: number }[]
+    stateFilter?: string[]
+    statusOptions?: { value: string; label: string; count: number }[]
+    statusFilter?: string[]
+    exportFields?: { key: string; label: string }[]
 }>()
 
 const downloadUrl = (type: string) => {
@@ -62,7 +67,9 @@ const downloadUrl = (type: string) => {
     <TableTemplateRecipients v-if="filtersStructure" :filters="filters ?? {}" :filters-structure="filtersStructure"
         :recipients-recipe="filters && Object.keys(filters).length ? filters : null" :shop-id="(shop_id as number)"
         :shop-slug="(shop_slug as string)" :estimated-recipients="estimatedRecipients ?? 0"
-        :export-routes="download_route" :show-save="false" />
+        :export-routes="download_route" :show-save="false" :state-options="stateOptions" :state-filter="stateFilter ?? []"
+        :status-options="statusOptions" :status-filter="statusFilter ?? []" estimate-label="Estimated Customers"
+        :export-fields="exportFields" />
 
     <TableCustomers :data="customers" />
 </template>

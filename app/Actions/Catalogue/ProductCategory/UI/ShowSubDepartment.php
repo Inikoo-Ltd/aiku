@@ -215,6 +215,9 @@ class ShowSubDepartment extends OrgAction
                     'id'            => $subDepartment->shop->id,
                     'slug'          => $subDepartment->shop->slug,
                     'currency_code' => $subDepartment->shop->currency->code,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                    ],
                 ],
                 'product_category_id'                  => $subDepartment->id,
 

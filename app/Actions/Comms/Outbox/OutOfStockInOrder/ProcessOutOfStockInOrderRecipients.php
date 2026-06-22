@@ -14,6 +14,7 @@ use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunRecipientStoredAt;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
+use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Support\Facades\Log;
 use App\Models\Comms\EmailBulkRun;
@@ -46,7 +47,9 @@ class ProcessOutOfStockInOrderRecipients
             return;
         }
 
-        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
+        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun, [
+            'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
+        ]);
 
         foreach ($customers as $customer) {
             $customerModel = Customer::find($customer['id']);
@@ -82,7 +85,8 @@ class ProcessOutOfStockInOrderRecipients
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
-                'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count()
+                'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count(),
+                'state'         => EmailDeliveryChannelStateEnum::READY->value
             ]
         );
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);

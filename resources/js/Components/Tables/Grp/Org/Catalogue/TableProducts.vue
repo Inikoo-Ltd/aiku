@@ -35,7 +35,6 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { notify } from "@kyvg/vue3-notification"
 
 
-
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack)
 
 
@@ -138,11 +137,20 @@ function onCancel(item) {
 
 function productRoute(product: Product) {
     if (!product.slug) {
-        return ""
+        return "ss"
     }
 
     // console.log(route().current())
     switch (route().current()) {
+        case 'grp.org.shops.show.catalogue.products.not_online_products.index': 
+            return route(
+                'grp.org.shops.show.catalogue.products.not_online_products.show',
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]
+            )
         case 'grp.org.shops.show.catalogue.products.independent_products.current.index':
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.current.show",
@@ -694,6 +702,10 @@ const repairTradeUnitFromChildren = async (product) => {
             </LabelSKU>
         </template>
 
+        <template #cell(webpage_state)="{ item: product }">
+            <Icon :data="product.webpage_state" />
+        </template>
+
         <template #cell(price)="{ item: product }">
             <div v-if="onEditOpen.includes(product.id)">
                 <InputNumber v-model="editingValues[product.id].price" mode="currency" :currency="product.currency_code"
@@ -885,7 +897,7 @@ const repairTradeUnitFromChildren = async (product) => {
                 <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
-                {{ product["code"] }}
+                    {{ product["code"] }}
                 </Link>
             </div>
         </template>

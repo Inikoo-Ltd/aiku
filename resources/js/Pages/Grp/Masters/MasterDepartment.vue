@@ -17,7 +17,7 @@ import {
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { computed, ref } from "vue";
-import DepartmentShowcase from "@/Components/Showcases/Grp/DepartmentShowcase.vue";
+import MasterDepartmentShowcase from "@/Components/Showcases/Grp/MasterDepartmentShowcase.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue";
@@ -42,6 +42,7 @@ import axios from "axios"
 import MasterContentProductCategory from "@/Components/Master/MasterContentProductCategory.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import { Department } from "@/types/department";
 
 library.add(
     faFolder,
@@ -65,7 +66,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes,
     tabs: {
         current: string;
-        navigation: object;
+        navigation: Record<string, any>;
     }
     products?: object
     families?: object;
@@ -90,10 +91,9 @@ const props = defineProps<{
 
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
-
 const component = computed(() => {
-    const components = {
-        showcase: DepartmentShowcase,
+    const components: Record<string, any> = {
+        showcase: MasterDepartmentShowcase,
         products: TableProducts,
         families: TableFamilies,
         departments: TableDepartments,
@@ -106,8 +106,11 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         related_product_category: RelatedProductCategory,
     };
-    return components[currentTab.value];
+    return components[currentTab.value] ?? null;
+});
 
+const currentData = computed(() => {
+    return (props as Record<string, any>)[currentTab.value];
 });
 
 
@@ -177,7 +180,7 @@ function masterDepartmentRoute(department: Department) {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-   <div  class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+    <div class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
@@ -194,7 +197,8 @@ function masterDepartmentRoute(department: Department) {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData"></component>
+    
+    <component :is="component" :data="currentData" :tab="currentTab" is-master :salesData="salesData"></component>
 </template>
 
 <style scoped>

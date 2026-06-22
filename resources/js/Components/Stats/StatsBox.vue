@@ -55,7 +55,7 @@ const isLoadingMetaRight = ref(false)
             <Icon v-else-if="stat.icon" :data="stat.icon" class="text-xl" />
 
             <CountUp :endVal='stat?.value' :duration='1.5' :scrollSpyOnce='true' :options='{
-                    formattingFn: (value: number) => locale.number(value)
+                    formattingFn: (value: number) => stat.currency_code ? locale.currencyFormat(stat.currency_code, value) : locale.number(value)
                 }' />
         </dd>
 

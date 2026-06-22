@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Allegro\Traits;
 
+use DOMDocument;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -93,8 +94,31 @@ trait WithAllegroApiServices
         }
 
         $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+        $description = str_replace('&acute;', '´', $content);
 
-        return strip_tags($content, '<b><p><br>');
+        $description = preg_replace_callback('/<b>(.*?)<\/b>/is', function ($matches) {
+            return '<b>' . strip_tags($matches[1]) . '</b>';
+        }, $description);
+
+        $description = $this->fixHtml($description);
+
+        return strip_tags($description, '<b><p><br>');
+    }
+
+    public function fixHtml(string $html): string
+    {
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<div>' . $html . '</div>', LIBXML_NOERROR | LIBXML_HTML_NOIMPLIED);
+        libxml_clear_errors();
+
+        // Get the inner content of the wrapping div
+        $body = $dom->getElementsByTagName('div')->item(0);
+        $result = '';
+        foreach ($body->childNodes as $child) {
+            $result .= $dom->saveXML($child);
+        }
+        return $result;
     }
 
     // -------------------------------------------------------------------------

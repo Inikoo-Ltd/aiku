@@ -8,7 +8,6 @@ use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Collection as CollectionModel;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -56,7 +55,7 @@ class RepairLayoutJsonMissingAlts
 
                     if ($webpage) {
 
-                        $alt=GetWebpageAlt::run($webpage->id);
+                        $alt = GetWebpageAlt::run($webpage->id);
 
 
                         if ($this->canUseWebpageModelForAlt($webpage)) {
@@ -89,13 +88,12 @@ class RepairLayoutJsonMissingAlts
             $changes++;
 
 
-//            $command?->line(
-//                "[APPLY] model_has_web_blocks:    {$modelHasWebBlocks->webpage->canonical_url}  {$modelHasWebBlocks->id}   web_block:{$item->id} image_position:{$key} alt: {$alt}"
-//
-//            );
+            //            $command?->line(
+            //                "[APPLY] model_has_web_blocks:    {$modelHasWebBlocks->webpage->canonical_url}  {$modelHasWebBlocks->id}   web_block:{$item->id} image_position:{$key} alt: {$alt}"
+            //
+            //            );
             $command?->line(
                 "alt: {$alt}"
-
             );
 
             data_set(
@@ -116,7 +114,7 @@ class RepairLayoutJsonMissingAlts
 
             // Update snapshot for all webpages using this WebBlock
             foreach ($item->webpages as $webpage) {
-                $this->updateWebpage($webpage,$command);
+                $this->updateWebpage($webpage, $command);
             }
         } else {
             // If database already has the alt value, but the webpage's snapshot is still empty, force synchronization of the snapshot.
@@ -124,7 +122,7 @@ class RepairLayoutJsonMissingAlts
                 $webpage = $modelHasWebBlocks->webpage;
                 if ($this->isSnapshotStale($webpage, $item)) {
                     $command?->line("[SYNC SNAPSHOT] webpage:{$webpage->id} web_block:{$item->id}");
-                    $this->updateWebpage($webpage,$command);
+                    $this->updateWebpage($webpage, $command);
                 }
             }
         }
@@ -133,11 +131,11 @@ class RepairLayoutJsonMissingAlts
     }
 
 
-    public function updateWebpage(Webpage $webpage,Command $command)
+    public function updateWebpage(Webpage $webpage, Command $command)
     {
         UpdateWebpageContent::run($webpage);
 
-        if($webpage->state!=WebpageStateEnum::LIVE){
+        if ($webpage->state != WebpageStateEnum::LIVE) {
             return;
         }
 

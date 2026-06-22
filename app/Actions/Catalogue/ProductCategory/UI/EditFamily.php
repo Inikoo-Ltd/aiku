@@ -435,7 +435,7 @@ class EditFamily extends OrgAction
 
         return [
             'label'  => __('Gold Reward'),
-            'icon'   => 'fa-light fa-medal',
+            'icon'   => 'fal fa-medal',
             'fields' => $fields,
         ];
     }

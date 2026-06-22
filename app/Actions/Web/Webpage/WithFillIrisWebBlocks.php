@@ -10,7 +10,6 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\Iris\GetIrisBlockSubDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartmentDescription;
-use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCollection;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartments;
@@ -37,20 +36,27 @@ trait WithFillIrisWebBlocks
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
-        // Old. Commented it out
-        // if ($webBlockType == 'department-description-1') {
-        //     $parsedWebBlocks[$key] = GetIrisWebBlockDepartment::run($webpage, $webBlock);
         if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
-            $parsedWebBlocks[$key] = GetIrisWebBlockDepartmentDescription::run($webpage, $webBlock);
+            $departmentData = GetIrisWebBlockDepartmentDescription::run($webpage, $webBlock);
+            if ($departmentData) {
+                $parsedWebBlocks[$key] = $departmentData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'sub-department-description-1') {
             $parsedWebBlocks[$key] = GetIrisBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockCollection::run($webpage, $webBlock);
-        } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
+        } elseif (str_starts_with($webBlockType, 'families-') && str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamiliesOverview::run($webpage, $webBlock);
         } elseif ($webBlockType == 'sub-departments-3') {
-            $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartmentsThree::run($webpage, $webBlock);
-        } elseif ($webBlockType !== 'sub-departments-3' && str_contains($webBlockType, 'sub-departments-')) {
+            $webBlockData = GetIrisWebBlockSubDepartmentsThree::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
+        } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamilies::run($webpage, $webBlock);
@@ -69,7 +75,12 @@ trait WithFillIrisWebBlocks
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-product-category-from-master') {
-            $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
+            $webBlockData = GetIrisWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'recommendation-from-master') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
@@ -79,9 +90,19 @@ trait WithFillIrisWebBlocks
         } elseif ($webBlockType == 'relatedProductCategory') {
             $parsedWebBlocks[$key] = GetIrisRelatedProductCategory::run($webBlock);
         } elseif ($webBlockType == 'faq-department') {
-            $parsedWebBlocks[$key] = GetIrisFaqDepartment::run($webpage, $webBlock);
+            $webBlockData = GetIrisFaqDepartment::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'top-families') {
-            $parsedWebBlocks[$key] = GetIrisTopFamilies::run($webpage, $webBlock);
+            $webBlockData = GetIrisTopFamilies::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

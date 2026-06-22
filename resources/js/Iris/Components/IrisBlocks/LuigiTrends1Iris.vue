@@ -188,21 +188,24 @@ const fetchRecommenders = async () => {
         isLoadingFetch.value = true
 
         const subType = dataWebpage?.sub_type
+
+        if (subType === 'family') {
+            console.warn('Trends is not available in Family page')
+            return
+        }
+        
         const response = await (
             subType === 'department' ? luigiTrendsDepartment() :
             subType === 'product' ? luigiTrendsDepartment(dataWebpage?.product_page?.department?.webpage_title) :
             subType === 'sub_department' ? luigiTrendsSubDepartment() :
-            // subType === 'family' ? luigiTrendsCategory() :
-            subType === 'family' ? Promise.reject(new Error('Trends is not available in Family page')) :
             luigiTrendsGlobal()
         )
-
 
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        // Send Analytics
+        // Luigi: Send Analytics
         if (layout.app.environment === 'production') {
             RecommendationCollector(response.data[0])
         }

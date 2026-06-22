@@ -88,7 +88,7 @@ class StoreAllegroOrder extends RetinaAction
     public function digestAllegroCustomerClient(AllegroUser $allegroUser, array $allegroOrderData): CustomerClient
     {
         $allegroOrderAddressData = Arr::get($allegroOrderData, 'delivery.address');
-        $reference = trim(Arr::get($allegroOrderAddressData, 'firstName').' '.Arr::get($allegroOrderAddressData, 'lastName'));
+        $reference = trim(Arr::get($allegroOrderAddressData, 'firstName').' '.Arr::get($allegroOrderAddressData, 'lastName') . ' ' . Arr::get($allegroOrderData, 'buyer.login'));
 
         $customerClientID = DB::table('customer_clients')
             ->select('id')

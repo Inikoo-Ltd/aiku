@@ -142,7 +142,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
   await computeMaxHeight()
 }, { deep: true })
 
-console.log(props)
+
 </script>
 
 <template>
@@ -201,6 +201,19 @@ console.log(props)
         <FontAwesomeIcon :icon="faChevronRight" class="text-xl" fixed-width />
       </button>
     </div>
+  </div>
+
+    <!-- Empty -->
+  <div v-else class="px-4 py-10 text-center text-gray-400 bg-gray-200">
+    <p class="font-semibold text-gray-700">
+      Related Products Category Block Hidden
+    </p>
+
+    <p class="mt-2 text-sm text-gray-500">
+      Add at least
+      {{ modelValue?.recommendation_settings?.min_amt_shown || 5 }}
+      products to display this section.
+    </p>
   </div>
 </template>
 

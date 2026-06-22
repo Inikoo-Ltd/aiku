@@ -7,6 +7,8 @@ import ListSelector from "@/Components/Selector.vue"
 import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
 import Image from "@common/Components/Image.vue";
+import { Message } from "primevue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const props = defineProps<{
     data: {
@@ -98,11 +100,17 @@ const SaveOrder = async () => {
 
 <template>
     <div class="p-4 space-y-4">
+        <Message severity="info" size="small">
+            <template #icon>
+                <FontAwesomeIcon icon='fal fa-info-circle' class='' fixed-width aria-hidden='true' />
+            </template>
+            {{ ctrans('This products list will be used for recommenders in product category page (Department/Sub Department/Family page). Only if the shop is turn on the setting.') }}
+        </Message>
 
         <!-- HEADER ACTION -->
         <div class="flex justify-between items-center">
             <div class="text-xl font-semibold text-gray-700">
-                {{ trans('Product Recommendations Ordering') }}
+                {{ ctrans('Product Recommendations Ordering') }}
             </div>
 
             <Button v-if="props.data?.editable" label="Save" :disabled="!saveActive" @click="SaveOrder"   :loading="loadingOrder" type="save" />

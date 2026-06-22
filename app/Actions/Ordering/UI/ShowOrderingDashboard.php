@@ -180,10 +180,11 @@ class ShowOrderingDashboard extends OrgAction
                 ],
                 'stats'          => [
                     [
-                        'label' => __('Avg Order Value'),
-                        'icon'  => 'fal fa-coin',
-                        'color' => '#10b981',
-                        'value' => $avgOrderValue,
+                        'label'         => __('Avg Order Value'),
+                        'icon'          => 'fal fa-coin',
+                        'color'         => '#10b981',
+                        'value'         => $avgOrderValue,
+                        'currency_code' => $shop->currency->code,
                     ],
                     [
                         'label' => __('Avg Parcel Weight (g)'),

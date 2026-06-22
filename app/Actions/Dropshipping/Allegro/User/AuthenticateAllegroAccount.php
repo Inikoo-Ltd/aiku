@@ -19,7 +19,6 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -110,7 +109,6 @@ class AuthenticateAllegroAccount extends OrgAction
 
             } catch (\Exception $e) {
                 dd($e->getMessage());
-                Log::error('Allegro authentication failed: ' . $e->getMessage());
 
                 \Sentry::captureException($e);
 

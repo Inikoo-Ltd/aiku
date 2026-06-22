@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\Intrastat\ExportIntrastatExcel;
 use App\Actions\Accounting\Intrastat\ExportIntrastatImportExcel;
 use App\Actions\Accounting\Intrastat\ExportIntrastatXml;
@@ -37,6 +38,7 @@ Route::get('/packer-performance', IndexPackerPerformanceReport::class)->name('pa
 Route::get('/intrastat/exports', IndexIntrastatExportReport::class)->name('intrastat.exports');
 Route::get('/intrastat/exports/export-xml', ExportIntrastatXml::class)->name('intrastat.exports.export');
 Route::get('/intrastat/exports/export-slovakia', ExportIntrastatXmlSlovakia::class)->name('intrastat.exports.export-slovakia');
+Route::get('/intrastat/exports/export-aeat', ExportIntrastatAeat::class)->name('intrastat.exports.export-aeat');
 Route::get('/intrastat/exports/export-excel', ExportIntrastatExcel::class)->name('intrastat.exports.export-excel');
 
 Route::get('/intrastat/imports', IndexIntrastatImportReport::class)->name('intrastat.imports');

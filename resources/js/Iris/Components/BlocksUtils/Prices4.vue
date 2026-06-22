@@ -164,7 +164,7 @@ const _popoverProfit = ref(null)
     class="font-sans border-gray-200 mt-1 mb-[-2px] px-0 tabular-nums leading-none text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
 
         <!-- HEADER -->
-        <div v-if="product?.rrp_per_unit ?? 0 > 0"
+        <div 
             class="mb-1 flex items-center justify-between border-b border-gray-200 pb-1 text-[11px]">
             <div class="flex items-center gap-2">
                 <span class="font-medium text-[#333]">
@@ -180,7 +180,7 @@ const _popoverProfit = ref(null)
                 <LabelComingSoon v-else-if="product.is_coming_soon" :product="product" />
             </div>
 
-            <div class="flex items-center gap-1 whitespace-nowrap">
+            <div v-if="product?.rrp_per_unit ?? 0 > 0" class="flex items-center gap-1 whitespace-nowrap">
                 <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
                     @mouseleave="_popoverProfit?.hide"
                     class="cursor-pointer opacity-60 hover:opacity-100 flex items-center text-[8px] sm:text-[9px] md:text-[10px]">
@@ -202,15 +202,15 @@ const _popoverProfit = ref(null)
 
 
         <!-- PRICE -->
-       <div class="flex flex-col gap-y-0 2xl:gap-y-0 zoom-75">
+       <div class="flex flex-col gap-y-0 2xl:gap-y-0">
 
             <div class="relative grid items-center gap-x-1 w-full"
                 :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'
-                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'">
+                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,75%)] 2xl:grid-cols-[1fr_minmax(0,75%)]'
+                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,75%)] 2xl:grid-cols-[1fr_minmax(0,75%)]'">
 
                 <div class="font-semibold whitespace-nowrap">
-                    <span>{{ trans("Price") }}</span>
+                  <!--   <span>{{ trans("Price") }}</span> -->
                     <span class="text-[8px] sm:text-[9px] font-light">
                         ({{ trans("Excl. Vat") }})
                     </span>
@@ -260,8 +260,8 @@ const _popoverProfit = ref(null)
             <!-- GR PRICE -->
             <div v-if="product.discounted_price" class="relative grid items-center gap-x-2 w-full mt-2"
                 :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'
-                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,50%)] 2xl:grid-cols-[1fr_minmax(0,50%)]'">
+                    ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,75%)] 2xl:grid-cols-[1fr_minmax(0,75%)]'
+                    : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,75%)] 2xl:grid-cols-[1fr_minmax(0,75%)]'">
                 <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'">
                     <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" />
                 </div>
@@ -287,13 +287,11 @@ const _popoverProfit = ref(null)
 
 
 
-                <div v-if="bestOffer" class="font-medium text-right  min-w-0" :class="bestOfferClass">
+                <div v-if="bestOffer" class="font-medium text-right min-w-0" :class="bestOfferClass">
                     <div class="flex items-baseline justify-end gap-0.5 min-w-0">
                         <div class="min-w-0 flex-1 truncate text-[#E87928] border-[#E87928]">
-                            <span v-if="product.units == 1">{{ locale.currencyFormat(currency?.code,
-                                product.discounted_price) }}
-                                /{{ product.unit }}</span>
-                            <span v-else>{{ locale.currencyFormat(currency?.code, product.discounted_price) }}<span
+                            <span class="font-bold" v-if="product.units == 1">{{ locale.currencyFormat(currency?.code, product.discounted_price) }} /{{ product.unit }}</span>
+                            <span v-else><span class="font-bold">{{ locale.currencyFormat(currency?.code, product.discounted_price) }}</span><span
                                     class="text-[8px] sm:text-[9px] md:text-[10px]">({{
                                         locale.currencyFormat(currency?.code,
                                             product.discounted_price_per_unit) }}
@@ -304,7 +302,7 @@ const _popoverProfit = ref(null)
                 </div>
 
                 <div v-if="showMemberPrice" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
-                    <div class="flex text-xs items-center justify-center rounded-full text-primary">
+                    <div class="flex text-xs items-center justify-center rounded-full text-[#E87928]">
                         <FontAwesomeIcon :icon="faCheck" />
                     </div>
                 </div>

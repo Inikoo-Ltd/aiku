@@ -25,50 +25,43 @@ class CheckDuplicatedProspect
 
     public function handle(?Shop $shop = null): Collection
     {
+        $query = DB::table('prospects as p')
+            ->join('shops as s', 'p.shop_id', '=', 's.id')
+            ->select(
+                'p.shop_id',
+                's.name as shop_name',
+                'p.email',
+                'p.phone'
+            )
+            ->whereNull('p.deleted_at');
 
-        $emailDuplicates = DB::table('prospects')
-            ->selectRaw("shop_id, 'Emails' as duplicate_type, SUM(duplicate_count) as number_of_duplicated_data")
-            ->fromSub(function ($query) use ($shop) {
-                $query->select('shop_id', 'email')
-                    ->selectRaw('COUNT(*) as duplicate_count')
-                    ->from('prospects');
+        if ($shop) {
+            $query->where('p.shop_id', $shop->id);
+        }
 
-                if ($shop) {
-                    $query->where('shop_id', $shop->id);
-                }
-
-                $query->whereNotNull('email')
+        $query->where(function ($q) {
+            $q->whereIn('p.email', function ($sub) {
+                $sub->select('email')
+                    ->from('prospects')
+                    ->whereNotNull('email')
                     ->whereNull('deleted_at')
                     ->groupBy('shop_id', 'email')
                     ->havingRaw('COUNT(*) > 1');
-            }, 'duplicates')
-            ->groupBy('shop_id');
-
-        $phoneDuplicates = DB::table('prospects')
-            ->selectRaw("shop_id, 'Phone Numbers' as duplicate_type, SUM(duplicate_count) as number_of_duplicated_data")
-            ->fromSub(function ($query) use ($shop) {
-                $query->select('shop_id', 'phone')
-                    ->selectRaw('COUNT(*) as duplicate_count')
-                    ->from('prospects');
-
-                if ($shop) {
-                    $query->where('shop_id', $shop->id);
-                }
-
-                $query->whereNotNull('phone')
+            })->orWhereIn('p.phone', function ($sub) {
+                $sub->select('phone')
+                    ->from('prospects')
+                    ->whereNotNull('phone')
                     ->whereNull('deleted_at')
                     ->groupBy('shop_id', 'phone')
                     ->havingRaw('COUNT(*) > 1');
-            }, 'duplicates')
-            ->groupBy('shop_id');
+            });
+        });
 
-        $results = $emailDuplicates
-            ->union($phoneDuplicates)
-            ->orderBy('shop_id')
-            ->orderBy('duplicate_type')
+        return $query
+            ->orderBy('p.shop_id')
+            ->orderBy('p.email')
+            ->orderBy('p.phone')
             ->get();
-
-        return $results;
     }
 
     public function asCommand(Command $command): int
@@ -93,15 +86,21 @@ class CheckDuplicatedProspect
 
         try {
             $results = $this->handle($shop);
+
             if ($results->isEmpty()) {
                 $command->line('No duplicated prospects found.');
                 return 0;
             }
+
             foreach ($results as $result) {
-                $shop = Shop::find($result->shop_id);
-                // Shop ID: 18 — AWGifts Europe has 10 prospects with duplicated phone numbers
-                $command->line("Shop {$result->shop_id}, {$shop?->name} has {$result->number_of_duplicated_data} prospects with duplicated {$result->duplicate_type}");
+                $command->line(
+                    "Shop ID: {$result->shop_id} | " .
+                    "Shop: {$result->shop_name} | " .
+                    "Email: {$result->email} | " .
+                    "Phone: {$result->phone}"
+                );
             }
+
             return 0;
         } catch (\Exception $e) {
             $command->error("Error checking duplicated prospects: {$e->getMessage()}");

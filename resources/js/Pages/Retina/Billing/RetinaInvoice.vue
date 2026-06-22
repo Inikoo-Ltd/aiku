@@ -15,9 +15,9 @@ import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { FieldOrderSummary } from "@/types/Pallet"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faBuilding, faMoneyBillAlt } from "@fal"
+import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faBuilding, faMoneyBillAlt, faIdCard, faReceipt } from "@fal"
 import { faClock, faFileExcel, faFileInvoice, faFilePdf } from "@fas"
-import { faCheck } from "@far"
+import { faCheck, faIdCard as farIdCard } from "@far"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue"
@@ -26,7 +26,7 @@ import NeedToPay from "@/Components/Utils/NeedToPay.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import type { Component } from "vue"
 
-library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt, faFileExcel)
+library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt, faFileExcel, faReceipt)
 
 
 const props = defineProps<{
@@ -99,6 +99,36 @@ watchEffect(() => {
     usePage().url  // to trigger watchEffect on filter table changed
 })
 
+// Tax number validation helper functions
+const getStatusIcon = (status: string, valid: boolean) => {
+    if (status === 'invalid' || !valid) {
+        return 'fa-exclamation-circle'
+    }
+    if (status === 'valid' || valid) {
+        return 'fa-check-circle'
+    }
+    return 'fa-spinner-third'
+}
+
+const getStatusColor = (status: string, valid: boolean) => {
+    if (status === 'invalid' || !valid) {
+        return 'text-red-600'
+    }
+    if (status === 'valid' || valid) {
+        return 'text-green-600'
+    }
+    return 'text-yellow-600'
+}
+
+const taxNumberStatusText = computed(() => {
+    if (props.invoice.tax_number_status === 'invalid' || !props.invoice.tax_number_valid) {
+        return trans('Invalid')
+    }
+    if (props.invoice.tax_number_status === 'valid' || props.invoice.tax_number_valid) {
+        return trans('Valid')
+    }
+    return trans('Pending')
+})
 
 </script>
 
@@ -156,6 +186,48 @@ watchEffect(() => {
                                      aria-hidden="true" />
                 </dt>
                 <dd class="text-base text-gray-500">{{ box_stats?.customer.phone }}</dd>
+            </dl>
+
+            <!-- Field: Tax Number -->
+            <dl v-if="invoice.tax_number && invoice.tax_number_valid" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt v-tooltip="trans('Tax Number')" class="flex-none">
+                    <span class="sr-only">Tax Number</span>
+                    <FontAwesomeIcon icon="fal fa-receipt" size="xs" class="text-gray-400" fixed-width
+                                     aria-hidden="true"/>
+                </dt>
+                <dd class="text-base text-gray-500 flex items-center gap-x-2">
+                    <span>{{ invoice.tax_number }}</span>
+                    <FontAwesomeIcon
+                        :icon="getStatusIcon(invoice.tax_number_status, invoice.tax_number_valid)"
+                        :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)"
+                        size="xs"
+                        v-tooltip="taxNumberStatusText"
+                    />
+                </dd>
+            </dl>
+
+            <!-- Field: IDN (Identity Document Number) -->
+            <dl v-if="invoice.identity_document_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt v-tooltip="invoice.identity_document_number?.label" class="flex-none">
+                    <span class="sr-only">{{ invoice.identity_document_number?.label }}</span>
+                    <FontAwesomeIcon :icon="farIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
+                </dt>
+                <dd class="text-base text-gray-500 flex items-center gap-x-2">
+                    <span>{{ invoice.identity_document_number?.number }}</span> 
+                    <span class="text-xs"> ({{ invoice.identity_document_number?.label }}) </span>
+                </dd>
+            </dl>
+
+            <!-- Field: IDN Alt (Identity Document Number Alt) -->
+            <dl v-if="invoice.identity_document_number_alt" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt v-tooltip="invoice.identity_document_number_alt?.label" class="flex-none">
+                    <span class="sr-only">{{ invoice.identity_document_number_alt?.label }}</span>
+                    <FontAwesomeIcon :icon="faIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
+                </dt>
+                <dd class="text-base text-gray-500 flex items-center gap-x-2">
+                    <span>{{ invoice.identity_document_number_alt?.number }}</span>
+                    <span class="text-xs"> ({{ invoice.identity_document_number_alt?.label }}) </span>
+                </dd>
             </dl>
 
             <!-- Field: Address -->

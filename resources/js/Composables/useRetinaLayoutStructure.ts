@@ -13,6 +13,13 @@ import { Navigation, grpNavigation, orgNavigation } from "@/types/Navigation"
 import { Image } from "@/types/Image"
 import { Notification } from '@/types/Notification'
 
+interface Language {
+    id: number
+    code: string
+    name: string
+    flag: string
+    native_name: string
+}
 
 export const retinaLayoutStructure = {
     app: {
@@ -38,6 +45,11 @@ export const retinaLayoutStructure = {
     iris: {
         currency: {
             code: '',
+        },
+        website_i18n: {
+            current_language: {} as Language,
+            shop_language: {} as Language,
+            language_options: {} as { [key: string]: Language },
         }
     },
     iris_variables: {

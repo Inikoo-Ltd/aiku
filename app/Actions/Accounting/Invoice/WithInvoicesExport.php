@@ -55,7 +55,7 @@ trait WithInvoicesExport
                     $transaction->handling_date = Carbon::parse($transaction->data['date'])->format('d M Y');
                 }
 
-               if ($transaction->transaction_id) {
+                if ($transaction->transaction_id) {
                     $transaction->batch_codes = DB::table('delivery_note_items')
                         ->join('pickings', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
                         ->join('batch_codes', 'batch_codes.id', '=', 'pickings.batch_code_id')
