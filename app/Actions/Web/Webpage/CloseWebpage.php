@@ -50,10 +50,9 @@ class CloseWebpage extends OrgAction
             'state'               => WebpageStateEnum::CLOSED->value,
             'redirect_webpage_id' => Arr::get($modelData, 'to_webpage_id')
         ]);
-        $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
 
         try {
-            DeleteLuigiContent::run($webpage->website, $identity, 'item');
+            DeleteLuigiContent::run($webpage->website, $webpage->luigiIdentity(), 'item');
         } catch (\Exception) {
             //
         }

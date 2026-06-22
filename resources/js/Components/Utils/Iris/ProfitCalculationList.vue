@@ -77,7 +77,7 @@ const locale = inject('locale', aikuLocaleStructure)
             <td class="pt-0.5 sm:pt-1 pb-1.5 sm:pb-3 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
               <div class="flex items-center gap-0.5 sm:gap-1 text-slate-800">
                 {{ trans("Profit") }}
-                <span class="text-emerald-600 font-semibold text-[0.95em]">[{{ product.margin }}]:</span>
+                <span class="text-emerald-600 font-semibold text-[0.95em]">({{ product.margin }}):</span>
               </div>
             </td>
             <td class="pt-0.5 sm:pt-1 pb-1.5 sm:pb-3 pr-2.5 sm:pr-6 font-semibold text-emerald-600">
@@ -102,7 +102,7 @@ const locale = inject('locale', aikuLocaleStructure)
             <td class="pt-1.5 sm:pt-3 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
               <div class="flex items-center gap-0.5 sm:gap-1 text-slate-800">
                 {{ trans("Profit") }}
-                <span class="text-[#E87928] font-semibold text-[0.95em]">[{{ product.discounted_margin }}]:</span>
+                <span class="text-[#E87928] font-semibold text-[0.95em]">({{ product.discounted_margin }}):</span>
               </div>
             </td>
             <td class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-[#E87928]">

@@ -29,6 +29,8 @@ const props = defineProps<{
 
 const fields = props.fieldData?.fields ?? [{ key: "value", placeholder: "Value" }]
 
+const hasLabels = fields.some((field) => !!field.label)
+
 const toEmptyRow = (): RowData => {
     const row: RowData = { _key: nextKey() }
     for (const f of fields) row[f.key] = ""
@@ -61,6 +63,18 @@ const removeRow = (key: number) => {
 
 <template>
     <div class="space-y-3">
+        <div v-if="hasLabels" class="flex gap-2 items-end">
+            <div
+                v-for="field in fields"
+                :key="`label-${field.key}`"
+                class="flex-1">
+                <span v-if="field.label" class="block text-xs font-medium text-gray-500">
+                    {{ trans(field.label) }}
+                </span>
+            </div>
+            <div class="w-8 shrink-0" aria-hidden="true" />
+        </div>
+
         <div
             v-for="row in rows"
             :key="row._key"

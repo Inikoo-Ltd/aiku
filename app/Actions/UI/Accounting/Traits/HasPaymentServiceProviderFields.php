@@ -110,7 +110,18 @@ trait HasPaymentServiceProviderFields
                     'type'     => 'input',
                     'label'    => __('api key'),
                     'required' => true,
-                    'value'    => Arr::get($data, 'pastpay_apikey')
+                    'value'    => Arr::get($data, 'credentials.api_key')
+                ],
+                'pastpay_charges' => [
+                    'type'     => 'dynamic_list',
+                    'label'    => __('charges'),
+                    'required' => true,
+                    'value'    => Arr::get($data, 'charges.options', []),
+                    'fields'   => [
+                        ['key' => 'days', 'label' => __('Days'), 'placeholder' => __('Input Days')],
+                        ['key' => 'charge', 'label' => __('Charge (%)'), 'placeholder' => __('Input Charge')],
+                    ],
+                    'addLabel' => __('Add charge'),
                 ]
             ],
             default => []

@@ -34,7 +34,7 @@ class TradeUnitImagesResource extends JsonResource
 
         $image = $media->getImage()->resize(0, 100);
         $imageSources = GetPictureSources::run($image);
-        
+
         return [
             'id'    => $this->id,
             'name'  => $this->name,

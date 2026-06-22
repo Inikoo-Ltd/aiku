@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\ProductCategory\Json;
 
 use App\Actions\IrisAction;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockFamilyResourceForDepartmentWebpage;
@@ -52,6 +53,10 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             )
             ->orderBy('product_categories.code')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+            ->whereIn('product_categories.state', [
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING
+            ])
             ->where('product_categories.show_in_website', true)
             ->where('product_categories.shop_id', $parent->shop_id)
             ->where('product_categories.department_id', $parent->id)

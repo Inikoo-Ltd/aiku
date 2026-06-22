@@ -93,7 +93,7 @@ class StoreProductToAllegro extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
-            if(Arr::get($allegroUser->data, 'marketplace_id') === 'allegro-pl') {
+            if (Arr::get($allegroUser->data, 'marketplace_id') === 'allegro-pl') {
                 $targetCurrency = Currency::where('code', 'PLN')->first();
                 $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
                 $customerPrice = $portfolio->customer_price * $plnPriceExchange;
@@ -186,11 +186,11 @@ class StoreProductToAllegro extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             } else {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $allegroOffer
                 ]);
@@ -205,7 +205,7 @@ class StoreProductToAllegro extends RetinaAction
             ]);
 
             if ($logs) {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $e->getMessage()
                 ]);

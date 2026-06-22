@@ -76,6 +76,12 @@ const saveSettings = async () => {
             },
             { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
         )
+
+        notify({
+            title: trans('Success'),
+            text: trans('Settings updated successfully.'),
+            type: 'success',
+        })
     } catch (error: any) {
         notify({
             title: trans('Something went wrong'),

@@ -85,8 +85,8 @@ class IndexProductsNotOnline extends OrgAction
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->whereRaw('not '.$this->liveWebpageExistsSql());
         $queryBuilder->whereIn('products.state', [
-            ProductStateEnum::ACTIVE, 
-            ProductStateEnum::DISCONTINUING, 
+            ProductStateEnum::ACTIVE,
+            ProductStateEnum::DISCONTINUING,
             ProductStateEnum::IN_PROCESS
         ]);
 

@@ -26,6 +26,7 @@ const props = defineProps<{
         readonly?: boolean
         copyButton: boolean
         maxLength?: number
+        additional_instructions?: string
     }
 }>()
 
@@ -92,8 +93,10 @@ const updateFormValue = (newValue) => {
                     </div>
                 </template>
             </PureInput>
-
-
+        </div>
+        
+        <div v-if="props.fieldData?.additional_instructions" class="text-xs italic text-gray-500 pt-1">
+            <span class="text-red-500">*</span> {{ props.fieldData?.additional_instructions }}
         </div>
 
         <!-- Counter: Letters and Words -->

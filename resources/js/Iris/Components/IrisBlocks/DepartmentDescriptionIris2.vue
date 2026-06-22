@@ -199,8 +199,7 @@ watch(
 <template>
 	<div
 		:id="fieldValue?.id ? fieldValue?.id : 'department-1-iris' + indexBlock"
-		component="department-1-iris"
-		class="pt-7 pb-4">
+		component="department-1-iris">
 		<div
 			:style="{
 				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
@@ -363,8 +362,16 @@ watch(
 								:key="item.url"
 								:href="item.url"
 								type="internal"
-								class="block text-slate-700">
+								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
 								{{ item.name }}
+							</LinkIris>
+							<LinkIris
+								v-for="(collection, idxCol) of props.fieldValue.collections"
+								:key="collection.url"
+								:type="'internal'"
+								:href="collection.url"
+								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
+								{{ collection.name }}
 							</LinkIris>
 						</div>
 					</details>

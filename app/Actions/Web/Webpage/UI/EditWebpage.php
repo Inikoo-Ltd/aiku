@@ -193,7 +193,7 @@ class EditWebpage extends OrgAction
                     'description' => "Structure @type 'ProductGroup' or @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
                 ]
             ];
-        } else if ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
+        } elseif ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
             $informationWarning = [
                 [
                     'description' => "Structure @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",

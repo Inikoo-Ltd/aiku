@@ -297,6 +297,8 @@ class IndexMasterFamiliesGR extends OrgAction
             )
             ->where('master_product_categories.master_shop_id', $parent->id)
             ->leftJoin('product_category_stats', 'product_categories.id', '=', 'product_category_stats.product_category_id')
+            ->leftJoin('shops', 'product_categories.shop_id', '=', 'shops.id')
+            ->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id')
             ->with(['getGROffer.offerAllowances']);
 
         $queryBuilder->select([
@@ -309,11 +311,15 @@ class IndexMasterFamiliesGR extends OrgAction
             'product_categories.web_images',
             'product_categories.master_product_category_id',
             'product_category_stats.number_current_products',
+            'shops.slug as shop_slug',
+            'shops.code as shop_code',
+            'shops.name as shop_name',
+            'organisations.slug as organisation_slug',
         ]);
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'shop_code'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -339,6 +345,7 @@ class IndexMasterFamiliesGR extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'shop_code', label: __('Shop'), tooltip: __('Shop code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'gr_detail', label: __('GR detail'), tooltip: __('Percentage & trigger quantity'), canBeHidden: false);
         };

@@ -46,7 +46,7 @@ class CreateMailshot extends OrgAction
                 ],
                 'subject' => [
                     'type'        => 'input',
-                    'label'       => __('subject'),
+                    'label'       => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required'    => true,
                     'value'       => '',
@@ -61,7 +61,7 @@ class CreateMailshot extends OrgAction
                 // add default value all customers
                 'recipients_recipe' => [
                     'type'        => 'input',
-                    'label'       => __('recipients recipe'),
+                    'label'       => __('Recipients recipe'),
                     'placeholder' => __('Email recipients recipe'),
                     'required'    => true,
                     'hidden'      => true,

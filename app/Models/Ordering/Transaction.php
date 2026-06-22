@@ -100,6 +100,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property numeric|null $submitted_net_amount
  * @property float $submitted_discount_factor
  * @property float $current_discount_factor
+ * @property array<array-key, mixed> $submitted_offers_data
+ * @property bool $has_discount_when_submitted
  * @property-read Asset|null $asset
  * @property-read Customer|null $customer
  * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems

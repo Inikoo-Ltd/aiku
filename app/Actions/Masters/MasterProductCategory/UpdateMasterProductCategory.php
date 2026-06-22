@@ -120,7 +120,7 @@ class UpdateMasterProductCategory extends OrgAction
             } else {
                 data_set($modelData, 'has_gr_vol_discount', false);
                 data_set($modelData, 'gr_vol_discount_percentage', 0);
-                data_set($modelData, 'gr_vol_discount_quantity',0);
+                data_set($modelData, 'gr_vol_discount_quantity', 0);
                 $grDeleting = true;
             }
         }

@@ -19,7 +19,6 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -130,7 +129,7 @@ class AuthenticateAllegroAccount extends OrgAction
             'code_verifier' => $codeVerifier
         ]));
 
-        $redirectUri = route('retina.dropshipping.allegro.callback');
+        $redirectUri = route('allegro.callback');
         $scope = 'allegro:api:sale:offers:read allegro:api:sale:offers:write allegro:api:sale:settings:read allegro:api:sale:settings:write allegro:api:orders:read allegro:api:orders:write allegro:api:ratings allegro:api:disputes allegro:api:bids allegro:api:ads allegro:api:campaigns allegro:api:profile:read allegro:api:profile:write allegro:api:fulfillment:read allegro:api:fulfillment:write allegro:api:shipments:read allegro:api:shipments:write';
 
         return $this->getAuthorizationUrl($redirectUri, $codeChallenge, $scope, $state);

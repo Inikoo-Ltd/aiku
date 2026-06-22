@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
 use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
-use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
@@ -26,7 +25,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteOffer extends OrgAction
 {
-
     use HandlesOfferSideEffects;
     /**
      * @throws \Throwable
