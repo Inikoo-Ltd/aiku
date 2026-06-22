@@ -167,6 +167,28 @@
   },
   {
     "outboxes": [
+      "new_offer"
+    ],
+    "name": "New offer",
+    "content": "new_offer.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "offer"
+    ]
+  },
+  {
+    "outboxes": [
+      "finish_offer"
+    ],
+    "name": "Finish offer",
+    "content": "finish_offer.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "offer"
+    ]
+  },
+  {
+    "outboxes": [
       "invoice_deleted"
     ],
     "name": "Invoice deleted",
