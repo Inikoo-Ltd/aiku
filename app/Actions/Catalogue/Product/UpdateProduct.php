@@ -24,6 +24,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\CloseWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ReopenWebpage;
+use App\Actions\Web\Webpage\Traits\WithManageWebpageState;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -53,6 +54,7 @@ class UpdateProduct extends OrgAction
     use WithProductOrgStocks;
     use HasDangerousGoodsFields;
     use HasProductInformation;
+    use WithManageWebpageState;
 
     private Product $product;
 
@@ -188,7 +190,8 @@ class UpdateProduct extends OrgAction
                 MasterAssetHydrateAssets::run($product->master_product_id);
             }
 
-            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
+            // Only reopen if it's also not in_process/discontinued
+            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED && !in_array($product->state, [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])) {
                 ReopenWebpage::run($product->webpage);
             }
 
@@ -340,6 +343,11 @@ class UpdateProduct extends OrgAction
 
         if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $oldState != $product->state) {
             $product = ProductHydrateAvailableQuantity::run($product);
+        }
+
+        // If is_for_sale is changed, respect changes made above, if not, manage webpage state based on product state
+        if (!Arr::has($changed, 'is_for_sale') && $oldState != $product->state) {
+            $this->handleWebpageState($product);
         }
 
         return $product;
