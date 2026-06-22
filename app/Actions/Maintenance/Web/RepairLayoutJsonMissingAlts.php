@@ -183,29 +183,35 @@ class RepairLayoutJsonMissingAlts
         return false;
     }
 
-    public string $commandSignature = 'repair:layout_json_missing_alts {website} {--apply-changes}';
+    public string $commandSignature = 'repair:layout_json_missing_alts {website?} {--apply-changes}';
 
     public function asCommand(Command $command): void
     {
         $total = 0;
 
-        try {
-            $website = Website::where('slug', $command->argument('website'))->firstOrFail();
-        } catch (Exception $e) {
-            $command->error($e->getMessage());
-            return;
-        }
+        $websiteSlug = $command->argument('website');
+        
+        $websites = Website::when($websiteSlug, 
+            fn ($q) => $q->where('slug', $websiteSlug)
+        )->get();
 
         $applyChanges = (bool) $command->option('apply-changes');
+        
+        foreach ($websites as $website) {
+            $command->info("\nApplying Repair for website: [{$website->slug}] {$website->name}");
 
-        ModelHasWebBlocks::where('website_id', $website->id)
-            ->with(['webBlock', 'webpage'])
-            ->chunk(100, function ($items) use ($command, &$total, $applyChanges) {
-                foreach ($items as $item) {
-                    $total += $this->handle($item, $applyChanges, $command);
-                }
-            });
+            ModelHasWebBlocks::where('website_id', $website->id)
+                ->with(['webBlock', 'webpage'])
+                ->chunk(100, function ($items) use ($command, &$total, $applyChanges) {
+                    foreach ($items as $item) {
+                        $total += $this->handle($item, $applyChanges, $command);
+                    }
+                });
 
-        $command->info("Applied {$total} missing alt repairs.");
+            $command->info("Applied {$total} missing alt repairs.");
+            $command->info("====== / ======");
+        }
+
+
     }
 }
