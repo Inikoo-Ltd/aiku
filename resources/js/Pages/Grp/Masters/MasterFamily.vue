@@ -23,7 +23,7 @@ import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import { capitalize } from "@/Composables/capitalize"
-import FamilyShowcase from "@/Components/Showcases/Grp/FamilyShowcase.vue"
+import MasterFamilyShowcase from "@/Components/Showcases/Grp/MasterFamilyShowcase.vue"
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
@@ -103,7 +103,7 @@ const handleTabUpdate = (tabSlug: string) => {
 
 const component = computed(() => {
     const components = {
-        showcase: FamilyShowcase,
+        showcase: MasterFamilyShowcase,
         mailshots: TableMailshots,
         families: TableFamilies,
         customers: TableCustomers,
