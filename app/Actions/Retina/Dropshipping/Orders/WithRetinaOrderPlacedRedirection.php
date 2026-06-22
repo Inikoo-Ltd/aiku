@@ -35,7 +35,7 @@ trait WithRetinaOrderPlacedRedirection
                 ->leftJoin('webpages', 'products.webpage_id', '=', 'webpages.id')
                 ->get();
 
-            $index = 0;
+            $index = 1;
             foreach ($transactionsData as $transactionData) {
                 $itemsToPushLayer[] = (object)[
                     'item_id'   => 'webpage-'.$transactionData->slug,
