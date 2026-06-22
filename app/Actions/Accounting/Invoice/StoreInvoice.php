@@ -12,6 +12,8 @@ use App\Actions\CRM\Customer\MatchCustomerProspects;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Actions\Helpers\TaxNumber\CloneTaxNumberFromCustomer;
+use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -95,16 +97,17 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'identity_document_number_alt', $customer->identity_document_number_alt, false);
 
 
-        $taxNumber = $customer->taxNumber;
-        if ($taxNumber) {
-            data_set($modelData, 'tax_number', $taxNumber->getFormattedTaxNumber(), false);
-            data_set($modelData, 'tax_number_status', $taxNumber->status, false);
-            data_set($modelData, 'tax_number_valid', $taxNumber->valid, false);
-        } else {
-            data_set($modelData, 'tax_number', null, false);
-            data_set($modelData, 'tax_number_status', 'na', false);
-            data_set($modelData, 'tax_number_valid', false, false);
-        }
+        // Old Logic, safe to delete
+        // $taxNumber = $customer->taxNumber;
+        // if ($taxNumber) {
+        //     data_set($modelData, 'tax_number', $taxNumber->getFormattedTaxNumber(), false);
+        //     data_set($modelData, 'tax_number_status', $taxNumber->status, false);
+        //     data_set($modelData, 'tax_number_valid', $taxNumber->valid, false);
+        // } else {
+        //     data_set($modelData, 'tax_number', null, false);
+        //     data_set($modelData, 'tax_number_status', 'na', false);
+        //     data_set($modelData, 'tax_number_valid', false, false);
+        // }
 
 
         if (!Arr::has($modelData, 'billing_address')) {
@@ -163,9 +166,20 @@ class StoreInvoice extends OrgAction
                 'address_id'
             );
 
+            $taxNumber         = null;
+            $customerTaxNumber = $invoice->customer->taxNumber;
+            if ($customerTaxNumber) {
+                $taxNumber = CloneTaxNumberFromCustomer::run(
+                    target: $invoice,
+                    originalTaxNumber: $customerTaxNumber
+                );
+            }
 
             $invoice->updateQuietly(
                 [
+                    'tax_number'        => $taxNumber?->getFormattedTaxNumber() ?? null,
+                    'tax_number_status' => $taxNumber?->status ?? 'na',
+                    'tax_number_valid'  => $taxNumber?->valid ?? false,
                     'billing_country_id' => $invoice->address->country_id
                 ]
             );
