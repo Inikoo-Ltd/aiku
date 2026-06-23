@@ -53,21 +53,6 @@ const props = defineProps<{
         compiled_layout: any,
         compiled_layout_size: number,
         performance_insights_route: string,
-        time_series_data?: Array<{
-            id: number;
-            period: string;
-            filter_date: string;
-            error: number;
-            sent: number;
-            delivered: number;
-            hard_bounce: number;
-            soft_bounce: number;
-            opened: number;
-            clicked: number;
-            spam: number;
-            unsubscribed: number;
-            delay: number;
-        }>;
     }
     liveStats?: any[]
     ownShopTemplates?: Array<{

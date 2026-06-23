@@ -58,7 +58,7 @@ const fetchInsights = async () => {
                 headers: { Accept: 'application/json' },
             }
         );
-        records.value = data ?? [];
+        records.value = data?.metric ?? [];
     } finally {
         isLoading.value = false;
     }
