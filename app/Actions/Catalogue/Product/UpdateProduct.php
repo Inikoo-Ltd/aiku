@@ -17,6 +17,8 @@ use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantit
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
+use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
+use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
 use App\Models\Masters\MasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -24,7 +26,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\CloseWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ReopenWebpage;
-use App\Actions\Web\Webpage\Traits\WithManageWebpageState;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -54,7 +55,6 @@ class UpdateProduct extends OrgAction
     use WithProductOrgStocks;
     use HasDangerousGoodsFields;
     use HasProductInformation;
-    use WithManageWebpageState;
 
     private Product $product;
 
@@ -345,9 +345,17 @@ class UpdateProduct extends OrgAction
             $product = ProductHydrateAvailableQuantity::run($product);
         }
 
-        // If is_for_sale is changed, respect changes made above, if not, manage webpage state based on product state
-        if (!Arr::has($changed, 'is_for_sale') && $oldState != $product->state) {
-            $this->handleWebpageState($product);
+        if ($oldState != $product->state && $product->webpage) {
+
+            if ($product->state == ProductStateEnum::DISCONTINUED) {
+                CloseDiscontinuedWebpage::run($product->webpage);
+            }
+
+            if ($product->state == ProductStateEnum::ACTIVE && $oldState == ProductStateEnum::DISCONTINUED) {
+                ReopenDiscontinuedWebpage::run($product->webpage);
+            }
+
+
         }
 
         return $product;

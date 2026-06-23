@@ -20,6 +20,14 @@ export interface PaymentAccountShop {
     number_payments: number
     amount_successfully_paid: number
     shop_currency_code: string
+    data: {
+        options: PaymentAccountShopChargeOption[]
+    }
+}
+
+export interface PaymentAccountShopChargeOption {
+    days: number
+    charge: string
 }
 
 export type PaymentAccountShopState = 'in_process' | 'active' | 'inactive'

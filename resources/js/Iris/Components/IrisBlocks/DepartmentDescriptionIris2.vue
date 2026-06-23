@@ -362,7 +362,7 @@ watch(
 								:key="item.url"
 								:href="item.url"
 								type="internal"
-								class="block text-slate-700">
+								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
 								{{ item.name }}
 							</LinkIris>
 							<LinkIris

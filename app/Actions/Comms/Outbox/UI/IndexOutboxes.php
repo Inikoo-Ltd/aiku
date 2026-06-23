@@ -16,6 +16,7 @@ use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Comms\Outbox\OutboxTypeEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Mail\OutboxesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -84,6 +85,20 @@ class IndexOutboxes extends OrgAction
 
         $queryBuilder->where('outboxes.is_applicable', true);
 
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'outbox_time_series',
+            timeSeriesRecordsTable: 'outbox_time_series_records',
+            foreignKey: 'outbox_id',
+            aggregateColumns: [
+                'runs'              => 'runs',
+                'dispatched_emails' => 'dispatched_emails_lw',
+                'opened_emails'     => 'opened_emails_lw',
+                'unsubscribed'      => 'unsubscribed_lw',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            includeLY: false,
+        );
+
         return $queryBuilder
             ->defaultSort('outboxes.name')
             ->select([
@@ -94,17 +109,16 @@ class IndexOutboxes extends OrgAction
                 'outboxes.state',
                 'outboxes.days_after',
                 'outboxes.sub_type',
-                'outbox_intervals.dispatched_emails_lw',
-                'outbox_intervals.opened_emails_lw',
-                'outbox_intervals.unsubscribed_lw',
+                $timeSeriesData['selectRaw']['runs'],
+                $timeSeriesData['selectRaw']['dispatched_emails_lw'],
+                $timeSeriesData['selectRaw']['opened_emails_lw'],
+                $timeSeriesData['selectRaw']['unsubscribed_lw'],
                 'shops.name as shop_name',
                 'shops.slug as shop_slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
-            ->selectRaw('outbox_intervals.runs_all runs')
             ->leftJoin('outbox_stats', 'outbox_stats.outbox_id', 'outboxes.id')
-            ->leftJoin('outbox_intervals', 'outbox_intervals.outbox_id', 'outboxes.id')
             ->allowedSorts(['name', 'state', 'runs', 'number_mailshots', 'dispatched_emails_lw', 'opened_emails_lw', 'unsubscribed_lw'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
