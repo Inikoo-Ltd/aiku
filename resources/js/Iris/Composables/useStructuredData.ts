@@ -26,7 +26,6 @@ type BuildStructuredDataOptions = {
 }
 
 const PRODUCT_BLOCK_TYPES = ["products-1", "products-2"]  // Family page
-const DEPARTMENT_BLOCK_TYPES = ["sub-departments-1", "sub-departments-2", "sub-departments-3"]
 
 const normalizeWebBlocks = (webBlocks: GenerateProductsStructureOptions["webBlocks"]): any[] => {
     if (Array.isArray(webBlocks)) return webBlocks
@@ -206,100 +205,6 @@ export const normalizeUrl = (value: unknown): string | undefined => {
     }
 }
 
-const getDepartmentSourceItems = (
-    webBlocks: BuildStructuredDataOptions["webBlocks"]
-): Record<string, any>[] => {
-    const items: Record<string, any>[] = []
-
-    for (const block of normalizeWebBlocks(webBlocks)) {
-        if (!DEPARTMENT_BLOCK_TYPES.includes(block?.type)) continue
-
-        const fieldValue = block?.web_block?.layout?.data?.fieldValue ?? block?.structure ?? {}
-
-        for (const item of [
-            ...(Array.isArray(fieldValue?.sub_departments) ? fieldValue.sub_departments : []),
-            ...(Array.isArray(fieldValue?.collections) ? fieldValue.collections : []),
-        ]) {
-            if (isPlainObject(item)) {
-                items.push(item)
-            }
-        }
-    }
-
-    return items
-}
-
-const getDepartmentItemName = (item: Record<string, any>): string | undefined => {
-    return (
-        stripHtml(item.title) ??
-        stripHtml(item.name) ??
-        stripHtml(item.label) ??
-        (isFilledValue(item.code) ? String(item.code) : undefined)
-    )
-}
-
-const getDepartmentItemUrl = (item: Record<string, any>): string | undefined => {
-    return normalizeUrl(item.url ?? item.canonical_url ?? item.slug)
-}
-
-const buildDepartmentRelatedNodes = (
-    webBlocks: BuildStructuredDataOptions["webBlocks"]
-): StructuredDataNode[] => {
-    const relatedNodes = new Map<string, StructuredDataNode>()
-
-    for (const item of getDepartmentSourceItems(webBlocks)) {
-        const url = getDepartmentItemUrl(item)
-        const name = getDepartmentItemName(item)
-
-        if (!url || !name) continue
-
-        const node: StructuredDataNode = {
-            "@type": "CollectionPage",
-            "@id": url,
-            name,
-            url,
-        }
-
-        const imageUrls = getEntityImageUrls(item)
-        if (imageUrls.length) {
-            node.image = imageUrls
-        }
-
-        if (!relatedNodes.has(url)) {
-            relatedNodes.set(url, node)
-        }
-    }
-
-    return Array.from(relatedNodes.values())
-}
-
-const buildDepartmentItemListNode = (
-    webBlocks: BuildStructuredDataOptions["webBlocks"],
-    pageUrl?: string
-): StructuredDataNode | null => {
-    const itemListElement = buildDepartmentRelatedNodes(webBlocks).map((item, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        name: item.name,
-        url: item.url,
-        // item: item["@id"] ?? item.url,
-    }))
-
-    if (!itemListElement.length) return null
-
-    const node: StructuredDataNode = {
-        "@type": "ItemList",
-        itemListElement,
-    }
-
-    if (pageUrl) {
-        node["@id"] = `${pageUrl}#department-list`
-        node.url = pageUrl
-    }
-
-    return node
-}
-
 const buildFamilyProductNode = ({
     webpageData,
     websiteName,
@@ -451,33 +356,6 @@ const findOrCreateProductGroupNode = (
 //     return newNode
 // }
 
-const appendGraphNode = (
-    data: StructuredDataNode,
-    node: StructuredDataNode,
-    matcher: (existingNode: StructuredDataNode) => boolean
-): void => {
-    if (Array.isArray(data["@graph"])) {
-        if (!data["@graph"].some((existingNode: StructuredDataNode) => matcher(existingNode))) {
-            data["@graph"].push(node)
-        }
-
-        return
-    }
-
-    if (matcher(data)) {
-        return
-    }
-
-    const currentNode = { ...data }
-
-    for (const key of Object.keys(data)) {
-        delete data[key]
-    }
-
-    data["@context"] = currentNode["@context"] ?? "https://schema.org"
-    data["@graph"] = [currentNode, node]
-}
-
 const mergeAutoVariants = (productNode: StructuredDataNode, autoVariants: StructuredDataNode[]): void => {
     const variantMap = new Map<string, StructuredDataNode>()
 
@@ -556,53 +434,6 @@ export const buildStructuredData = ({
     currencyCode,
     websiteName,
 }: BuildStructuredDataOptions): StructuredDataValue | null => {
-    if (webpageData?.sub_type === "department") {
-        const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
-        const pageUrl = normalizeUrl(webpageData?.canonical_url)
-        // const autoDepartmentNode = buildDepartmentNode({
-        //     webpageData,
-        //     webBlocks,
-        // })
-        const itemListNode = buildDepartmentItemListNode(webBlocks, pageUrl)
-
-        if (!baseStructuredData) {
-            const graph = [/*autoDepartmentNode,*/ itemListNode].filter(
-                (node): node is StructuredDataNode => node !== null
-            )
-
-            if (!graph.length) return null
-
-            return {
-                "@context": "https://schema.org",
-                "@graph": graph,
-            }
-        }
-
-        const structuredData =
-            normalizeStructuredDataForGraph(baseStructuredData) ?? {
-                "@context": "https://schema.org",
-            }
-
-        // if (autoDepartmentNode) {
-        //     const departmentNode = findOrCreateCollectionPageNode(structuredData, () => ({
-        //         ...autoDepartmentNode,
-        //     }))
-
-        //     mergeStructuredDataNode(departmentNode, autoDepartmentNode)
-        //     mergeAutoHasParts(departmentNode, autoDepartmentNode.hasPart ?? [])
-        // }
-
-        if (itemListNode) {
-            appendGraphNode(
-                structuredData,
-                itemListNode,
-                (node) => node?.["@type"] === "ItemList" && node?.["@id"] === itemListNode["@id"]
-            )
-        }
-
-        return structuredData
-    }
-
     if (webpageData?.model_type === "ProductCategory" && webpageData?.sub_type === "family") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
     
@@ -630,8 +461,9 @@ export const buildStructuredData = ({
     }
 
     // Note: Product page structured data is mounted independently in the product
-    // components (product-1 / product-2) via useProductStructuredData, so it lives
-    // in its own <script> and stays separate from the rest of the page schema.
+    // components (product-1 / product-2) via useProductStructuredData, and Department
+    // page structured data in SubDepartmentsIris via useDepartmentStructuredData, so
+    // each lives in its own <script> and stays separate from the rest of the page schema.
 
     return null
 
