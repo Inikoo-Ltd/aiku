@@ -49,5 +49,4 @@ trait WithStoreRedirect
             'from_path.unique' => 'The last part of the URL (after "/") is already used on another redirect/webpage. Try a different ending',
         ];
     }
-
 }
