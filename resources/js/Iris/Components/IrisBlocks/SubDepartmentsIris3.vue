@@ -48,7 +48,7 @@ const selectedOption = ref<string | null>(null)
 const sortKey = ref('created_at')
 const families = ref(props.fieldValue?.families?.data ?? [])
 const isAscending = ref(true)
-const orderBy = ref( '-created_at')
+const orderBy = ref('-created_at')
 
 const sortOptions = computed(() => {
   const baseOptions = [
