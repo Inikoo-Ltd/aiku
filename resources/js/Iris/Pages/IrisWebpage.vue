@@ -59,10 +59,10 @@ onMounted(() => {
     currentUrl.value = window.location.href
 
     // Structure data (Department, Sub-department, Family, Product)
+    // Breadcrumbs structured data is mounted independently in BreadcrumbsIris.vue
     structuredDataScript.value = mountStructuredData({
         webpageData: props.webpage_data,
         webBlocks: props.web_blocks,
-        breadcrumbs: usePage().props?.breadcrumbs as any[] | undefined,
         currencyCode: layout.iris?.currency?.code,
         websiteName: layout.iris?.website?.name,
     })

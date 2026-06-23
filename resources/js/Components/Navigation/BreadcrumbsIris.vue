@@ -17,6 +17,7 @@ import { routeType } from '@/types/route'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { onMounted } from "vue"
 import { watch } from "vue"
+import { useBreadcrumbStructuredData } from "@/Iris/Composables/useBreadcrumbStructuredData"
 
 library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot)
 
@@ -127,6 +128,29 @@ onUnmounted(() => {
 })
 
 const isMobile = computed(() => isMobileRef.value)
+
+// Section: Breadcrumbs structured data (SEO)
+// Mounted independently here instead of inside the page structured data (useStructuredData),
+// so the breadcrumb schema lives in its own <script> and is easier to maintain.
+const { mountBreadcrumbStructuredData, removeStructuredDataScript } = useBreadcrumbStructuredData()
+const breadcrumbStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
+const refreshBreadcrumbStructuredData = () => {
+    removeStructuredDataScript(breadcrumbStructuredDataScript.value)
+    breadcrumbStructuredDataScript.value = mountBreadcrumbStructuredData(props.breadcrumbs)
+}
+
+onMounted(() => {
+    refreshBreadcrumbStructuredData()
+})
+
+watch(() => props.breadcrumbs, () => {
+    refreshBreadcrumbStructuredData()
+}, { deep: true })
+
+onUnmounted(() => {
+    removeStructuredDataScript(breadcrumbStructuredDataScript.value)
+})
 </script>
 
 <template>

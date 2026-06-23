@@ -23,7 +23,6 @@ type GenerateProductsStructureOptions = {
 type BuildStructuredDataOptions = {
     webpageData?: StructuredDataWebpageData
     webBlocks?: any[] | Record<string, any>
-    breadcrumbs?: any[]
     currencyCode?: string | null
     websiteName?: string | null
 }
@@ -168,7 +167,7 @@ const isPlainObject = (value: unknown): value is Record<string, any> => {
     return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
-const stripHtml = (value: unknown): string | undefined => {
+export const stripHtml = (value: unknown): string | undefined => {
     if (typeof value !== "string") return undefined
 
     const sanitized = value
@@ -196,7 +195,7 @@ const getEntityImageUrls = (entity: Record<string, any> | null | undefined): str
     return [...new Set(candidates.filter((candidate): candidate is string => typeof candidate === "string" && candidate.length > 0))]
 }
 
-const normalizeUrl = (value: unknown): string | undefined => {
+export const normalizeUrl = (value: unknown): string | undefined => {
     if (typeof value !== "string" || value.length === 0) return undefined
 
     try {
@@ -559,42 +558,6 @@ const buildFamilyProductNode = ({
 //     return node
 // }
 
-const buildBreadcrumbListNode = (
-    breadcrumbs: any[] | null | undefined
-): StructuredDataNode | null => {
-    if (!Array.isArray(breadcrumbs) || !breadcrumbs.length) return null
-
-    const itemListElement = breadcrumbs
-        .map((breadcrumb, index) => {
-            if (breadcrumb?.type !== "simple") return null
-
-            const name = stripHtml(breadcrumb?.simple?.label) ?? (index === 0 ? "Home" : undefined)
-            if (!name) return null
-
-            const item = normalizeUrl(breadcrumb?.simple?.url)
-
-            const listItem: StructuredDataNode = {
-                "@type": "ListItem",
-                position: index + 1,
-                name,
-            }
-
-            if (item) {
-                listItem.item = item
-            }
-
-            return listItem
-        })
-        .filter((item): item is StructuredDataNode => item !== null)
-
-    if (!itemListElement.length) return null
-
-    return {
-        "@type": "BreadcrumbList",
-        itemListElement,
-    }
-}
-
 const normalizeStructuredDataForGraph = (
     structuredData: StructuredDataValue | null
 ): StructuredDataNode | null => {
@@ -801,12 +764,9 @@ const mergeStructuredDataNode = (
 export const buildStructuredData = ({
     webpageData,
     webBlocks,
-    breadcrumbs,
     currencyCode,
     websiteName,
 }: BuildStructuredDataOptions): StructuredDataValue | null => {
-    const breadcrumbNode = buildBreadcrumbListNode(breadcrumbs)
-
     if (webpageData?.sub_type === "department") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
         const pageUrl = normalizeUrl(webpageData?.canonical_url)
@@ -817,7 +777,7 @@ export const buildStructuredData = ({
         const itemListNode = buildDepartmentItemListNode(webBlocks, pageUrl)
 
         if (!baseStructuredData) {
-            const graph = [/*autoDepartmentNode,*/ itemListNode, breadcrumbNode].filter(
+            const graph = [/*autoDepartmentNode,*/ itemListNode].filter(
                 (node): node is StructuredDataNode => node !== null
             )
 
@@ -851,14 +811,6 @@ export const buildStructuredData = ({
             )
         }
 
-        if (breadcrumbNode) {
-            appendGraphNode(
-                structuredData,
-                breadcrumbNode,
-                (node) => node?.["@type"] === "BreadcrumbList"
-            )
-        }
-
         return structuredData
     }
 
@@ -885,15 +837,6 @@ export const buildStructuredData = ({
         )
     
         mergeAutoVariants(productNode, autoVariants)
-
-        if (breadcrumbNode) {
-            appendGraphNode(
-                structuredData,
-                breadcrumbNode,
-                (node) => node?.["@type"] === "BreadcrumbList"
-            )
-        }
-    
         return structuredData
     }
 
@@ -929,22 +872,7 @@ export const buildStructuredData = ({
 
         mergeStructuredDataNode(productNode, autoProductNode)
 
-        if (breadcrumbNode) {
-            appendGraphNode(
-                structuredData,
-                breadcrumbNode,
-                (node) => node?.["@type"] === "BreadcrumbList"
-            )
-        }
-
         return structuredData
-    }
-
-    if (breadcrumbNode) {
-        return {
-            "@context": "https://schema.org",
-            ...breadcrumbNode,
-        }
     }
 
     return null
@@ -954,7 +882,6 @@ export const buildStructuredData = ({
 export const useStructuredData = () => {
     const mountStructuredData = (options: BuildStructuredDataOptions): HTMLScriptElement | null => {
         const structuredData = buildStructuredData(options)
-console.log('Structured Data:', structuredData)
         if (!structuredData) return null
 
         return injectStructuredDataScript(structuredData)
