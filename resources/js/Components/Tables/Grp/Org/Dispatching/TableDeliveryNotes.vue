@@ -18,6 +18,7 @@ import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTruck, faYinYang } from "@fal"
@@ -238,6 +239,18 @@ const generateRouteDeliveryNote = (id: string) => {
 					fixed-width
 					aria-hidden="true" />
 				<NotesDisplay :item="deliveryNote" reference-field="reference" />
+				<WaitingOppositeCountBadge
+					v-if="Number(deliveryNote.waiting_warehouse_count) > 0"
+					:count="Number(deliveryNote.waiting_warehouse_count)"
+					type="warehouse"
+					:href="deliveryNoteRoute(deliveryNote)"
+				/>
+				<WaitingOppositeCountBadge
+					v-if="Number(deliveryNote.waiting_crm_count) > 0"
+					:count="Number(deliveryNote.waiting_crm_count)"
+					type="crm"
+					:href="deliveryNoteRoute(deliveryNote)"
+				/>
 			</div>
 		</template>
 

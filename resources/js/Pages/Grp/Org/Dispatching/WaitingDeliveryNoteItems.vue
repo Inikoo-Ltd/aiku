@@ -29,6 +29,7 @@ const props = defineProps<{
     allow_stock_controller_set_not_picked: boolean
     is_still_picking: boolean
     is_read_only: boolean
+    waiting_type: string
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -63,6 +64,7 @@ watch(() => props.tabs.current, (newTab) => {
         :allowStockControllerSetNotPicked="allow_stock_controller_set_not_picked"
         :isStillPicking="is_still_picking"
         :isReadOnly="is_read_only"
+        :waitingType="waiting_type"
     />
 </template>
 

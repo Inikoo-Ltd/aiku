@@ -33,6 +33,8 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $oppositeWaitingColumn = $waitingType == 'warehouse' ? 'has_waiting_crm' : 'has_waiting_warehouse';
+
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->join('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id')
@@ -95,6 +97,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             ])
             ->selectRaw('(SELECT string_agg(t.name, \', \' ORDER BY t.name) FROM delivery_note_has_trolleys dnt JOIN trolleys t ON t.id = dnt.trolley_id WHERE dnt.delivery_note_id = delivery_notes.id) as trolley_names')
             ->selectRaw('(SELECT string_agg(pb.code, \', \' ORDER BY pb.code) FROM picked_bay_has_delivery_notes pbdn JOIN picked_bays pb ON pb.id = pbdn.picked_bay_id WHERE pbdn.delivery_note_id = delivery_notes.id) as picked_bay_codes')
+            ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
             ->allowedSorts(['org_stock_name', 'org_stock_code', 'picking_position'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

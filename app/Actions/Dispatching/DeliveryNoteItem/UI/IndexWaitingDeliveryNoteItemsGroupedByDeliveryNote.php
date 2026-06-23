@@ -32,6 +32,8 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $oppositeWaitingColumn = $waitingType == 'warehouse' ? 'has_waiting_crm' : 'has_waiting_warehouse';
+
         $query = QueryBuilder::for(DeliveryNote::class);
         $query->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
         $query->leftJoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
@@ -74,6 +76,7 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
                 'shops.engine as shop_engine',
                 'organisations.slug as organisation_slug',
             ])
+            ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
             ->allowedSorts(['delivery_note_reference'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
