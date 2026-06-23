@@ -40,8 +40,9 @@ const props = defineProps<{
             }
         }
         container?: any
-        model_type: string
-        model_id: number
+        sub_type: string  // 'family'
+        model_type: string  // 'ProductCategory'
+        model_id: number  // '31890'
     }
     webpageData?: any
     blockData?: {}
@@ -516,6 +517,8 @@ watch(
 
 
                     <template v-else-if="products.length">
+                        <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
+                        <!-- <pre>{{ get(layout, ['family_quantity_ordered'], []) }}</pre> -->
                         <div v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class=" relative rounded flex md:flex-1 justify-center">
