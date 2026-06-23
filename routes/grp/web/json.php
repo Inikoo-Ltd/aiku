@@ -56,6 +56,7 @@ use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\EmailTemplate\GetOutboxEmailTemplates;
 use App\Actions\Comms\EmailTemplate\GetSeededEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
+use App\Actions\Comms\Mailshot\GetMailshotPerformanceInsights;
 use App\Actions\Comms\Mailshot\GetMailshotTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
@@ -152,6 +153,7 @@ Route::get('email/templates/seeded', GetSeededEmailTemplates::class)->name('emai
 Route::get('email/templates/outboxes/{outbox:id}', GetOutboxEmailTemplates::class)->name('email_templates.outbox');
 Route::get('email/templates/{emailTemplate:id}/compiled_layout', GetEmailTemplateCompiledLayout::class)->name('email_templates.show.compiled_layout');
 Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->name('mailshot.merge-tags');
+Route::get('/mailshot/{mailshot}/performance-insights', GetMailshotPerformanceInsights::class)->name('mailshot.performance-insights');
 
 Route::get('email/dispatched-email/{dispatchedEmail:id}/copy', GetEmailCopy::class)->name('email.dispatched-email.copy');
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');

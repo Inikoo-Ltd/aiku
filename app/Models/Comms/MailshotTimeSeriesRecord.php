@@ -86,4 +86,11 @@ class MailshotTimeSeriesRecord extends Model
             ? round($this->number_provoked_unsubscribe / $this->number_dispatched_emails * 100, 2)
             : 0;
     }
+
+    public function bounceRate(): float
+    {
+        return $this->number_dispatched_emails > 0
+            ? round(($this->number_dispatched_emails_state_hard_bounce + $this->number_dispatched_emails_state_soft_bounce) / $this->number_dispatched_emails * 100, 2)
+            : 0;
+    }
 }
