@@ -40,12 +40,6 @@ trait OfferCampaignDiscountShippingTrait
                     'title'     => $offerCampaign->name,
                     'model'     => __('Offer Campaign'),
                     'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
-                    'actions'   => app()->environment('local') ? [
-                        [
-                            'type' => 'button',
-                            'key'  => 'category_create_discount',
-                        ]
-                    ] : [],
                 ],
                 'tabs'                                 => [
                     'current'    => $this->tab,

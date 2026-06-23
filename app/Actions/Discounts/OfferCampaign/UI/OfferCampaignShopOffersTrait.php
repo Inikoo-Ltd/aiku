@@ -40,12 +40,6 @@ trait OfferCampaignShopOffersTrait
                     'title'         => OfferCampaignTypeEnum::from($offerCampaign->type->value)->labels()[$offerCampaign->type->value],
                     'model'         => __('Offer Campaign'),
                     'iconRight'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
-                    'actions' => app()->environment('local') ? [
-                        [
-                            'type'  => 'button',
-                            'key'   => 'create_offer_shop',
-                        ]
-                    ] : [],
                 ],
                 'tabs'                                               => [
                     'current'    => $this->tab,
