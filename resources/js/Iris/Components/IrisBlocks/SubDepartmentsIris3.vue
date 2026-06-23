@@ -9,6 +9,11 @@ import { ctrans } from "@/Composables/useTrans";
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
+interface FilterOptions {
+	name: string
+	code: string
+}
+
 const props = defineProps<{
   fieldValue: {
     department?: {
@@ -27,7 +32,9 @@ const props = defineProps<{
         total: number
       }
     }
-    sub_department_list: Array<any>
+    sub_department_list?: FilterOptions[]
+    collections_list?: FilterOptions[]
+    filter_options?: FilterOptions[]
   }
   webpageData?: any
   blockData?: object
@@ -37,7 +44,7 @@ const props = defineProps<{
 const loading = ref(false)
 const loadingMore = ref(false)
 const layout: any = inject("layout", {})
-const selectedSubDepartment = ref<number | null>(null)
+const selectedOption = ref<string | null>(null)
 const sortKey = ref('created_at')
 const families = ref(props.fieldValue?.families?.data ?? [])
 const isAscending = ref(true)
@@ -74,25 +81,24 @@ const loadFamilies = async (
       loading.value = true
     }
 
+    const isSubDepartment = props.fieldValue.sub_department_list?.some((item) => item.code === selectedOption.value);
+    const filter: Record<string, string> = {[isSubDepartment ? 'category' : 'collection']: selectedOption.value};
+
     const response = await axios.get(
       route(
         'iris.json.website.category.family_under_department',
         {
-          productCategory:
-            props.fieldValue.department?.slug,
+          productCategory: props.fieldValue.department?.slug,
         }
       ),
       {
         params: {
-          filter: {
-            category:
-              selectedSubDepartment.value,
-          },
+          filter,
           sort: orderBy.value,
           page,
         },
       }
-    )
+    );
 
     if (append) {
       families.value = [
@@ -115,7 +121,7 @@ const loadFamilies = async (
   }
 }
 
-watch(selectedSubDepartment, () => {
+watch(selectedOption, () => {
   loadFamilies(1)
 })
 
@@ -188,14 +194,14 @@ onMounted(() => {
           {{ ctrans('Families Found') }}
         </div>
 
-        <select v-model.number="selectedSubDepartment"
+        <select v-model.number="selectedOption"
           class="h-[58px] w-[170px] rounded-[18px] border border-[#B8B8B8] bg-white px-4 text-center text-xl text-slate-800 shadow-[0_4px_0_0_rgba(0,0,0,0.15)]">
           <option :value="null">
             {{ ctrans('All') }}
           </option>
 
-          <option v-for="department in fieldValue.sub_department_list" :key="department.code" :value="department.code">
-            {{ department.name }}
+          <option v-for="option in fieldValue.filter_options" :key="option.code" :value="option.code">
+            {{ option.name }}
           </option>
         </select>
       </div>
@@ -213,15 +219,15 @@ onMounted(() => {
               {{ ctrans('Filter By Category') }} :
             </span>
 
-            <select v-model.number="selectedSubDepartment"
+            <select v-model.number="selectedOption"
               class="h-11 min-w-[180px] rounded-md border border-slate-400 bg-white px-4">
               <option :value="null">
                 {{ ctrans('All') }}
               </option>
 
-              <option v-for="department in fieldValue.sub_department_list" :key="department.code"
-                :value="department.code">
-                {{ department.name }}
+              <option v-for="option in fieldValue.filter_options" :key="option.code"
+                :value="option.code">
+                {{ option.name }}
               </option>
             </select>
           </div>
