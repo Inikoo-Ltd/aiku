@@ -53,6 +53,7 @@ const orderBy = ref('-created_at')
 const sortOptions = computed(() => {
   const baseOptions = [
     { label: ctrans("New arrivals"), value: "created_at" },
+    { label: ctrans("Name"), value: "name" },
   ]
   return baseOptions
 })
