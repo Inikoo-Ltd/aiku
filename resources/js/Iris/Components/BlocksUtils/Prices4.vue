@@ -235,12 +235,12 @@ const _popoverProfit = ref(null)
 
                     <!-- MULTIPLE -->
                     <template v-else>
-                        <div class="flex justify-end items-center gap-1 min-w-0">
-                            <span class="whitespace-nowrap">
+                        <div class="flex justify-end items-center gap-1 min-w-0 ">
+                            <span class="whitespace-nowrap text-[8px] sm:text-[9px] md:text-[10px]">
                                 {{ locale.currencyFormat(currency?.code, product.price) }}
                             </span>
                             <span v-if="product.price_per_unit > 0"
-                                class="font-normal truncate min-w-0 text-[8px] sm:text-[9px] md:text-[10px]"
+                                class="truncate min-w-0"
                                 :title="product.unit">
                                 ({{ locale.currencyFormat(currency?.code, product.price_per_unit) }}/{{ product.unit }})
                             </span>
@@ -291,8 +291,9 @@ const _popoverProfit = ref(null)
                     <div class="flex items-baseline justify-end gap-0.5 min-w-0">
                         <div class="min-w-0 flex-1 truncate text-[#E87928] border-[#E87928]">
                             <span class="font-bold" v-if="product.units == 1">{{ locale.currencyFormat(currency?.code, product.discounted_price) }} /{{ product.unit }}</span>
-                            <span v-else><span class="font-bold">{{ locale.currencyFormat(currency?.code, product.discounted_price) }}</span><span
-                                    class="text-[8px] sm:text-[9px] md:text-[10px]">({{
+                            <span v-else>
+                                <span class=" text-[8px] sm:text-[9px] md:text-[10px]">{{ locale.currencyFormat(currency?.code, product.discounted_price) }}</span><span
+                                    class="font-bold">({{
                                         locale.currencyFormat(currency?.code,
                                             product.discounted_price_per_unit) }}
                                     /{{ product.unit }})</span></span>
