@@ -100,7 +100,7 @@ const embedUrl = computed(() => {
 		if (host.includes("vimeo.com")) {
 			const id = u.pathname.split("/").filter(Boolean).pop()
 
-			return id ? `https://player.vimeo.com/video/${id}?autoplay=1&muted=1` : v
+			return id ? `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&playsinline=1` : v
 		}
 	} catch (e) {
 		//
@@ -468,7 +468,7 @@ watch(
 			<!-- Close Button -->
 			<button
 				type="button"
-				class="absolute top-0 right-0 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-red-500 backdrop-blur text-white hover:bg-white/30 transition"
+				class="absolute top-0 right-0 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black-500/50 backdrop-blur text-white hover:bg-white/30 transition"
 				@click="videoDialogVisible = false">
 				<FontAwesomeIcon :icon="faTimes" />
 			</button>
