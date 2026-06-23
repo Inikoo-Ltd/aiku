@@ -58,6 +58,7 @@ enum OfferTypeEnum: string
     case ORDER_NUMBER = "Order Number";
     case CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL = "Category Quantity Ordered Order Interval";
     case GIFT = "Gift";
+    case DISCOUNTED_SHIPPING = "Discount Shipping";
 
     public function label(): string
     {
@@ -134,9 +135,17 @@ enum OfferTypeEnum: string
             self::GR_AMNESTY
             => $this->amnestyIcon(),
 
+            self::DISCOUNTED_SHIPPING
+            => $this->shippingIcon(),
+
             self::DISCRETIONARY
             => $this->defaultIcon(),
         };
+    }
+
+    private function shippingIcon(): array
+    {
+        return $this->iconData('fal fa-truck');
     }
 
     private function customerIcon(): array

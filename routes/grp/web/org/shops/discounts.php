@@ -13,7 +13,6 @@ use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Discounts\Offer\UI\ShowOffer;
 use App\Actions\Discounts\Offer\UpdateOffer;
 use App\Actions\Discounts\OfferCampaign\Json\CheckVoucherCodeExistence;
-use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UI\CreateGrAmnesty;
 use App\Actions\Discounts\OfferCampaign\UI\CreateVolGrGift;
@@ -71,16 +70,10 @@ Route::name("campaigns.")->prefix('campaigns')
         //todo
         Route::get('{offerCampaign}/edit-gr-amnesty', EditVolGrGift::class)->name('edit_current_gr_amnesty_offer')->withoutScopedBindings();
 
-
         Route::get(
             '{offerCampaign}/voucher/check',
             CheckVoucherCodeExistence::class
         )->name('check_voucher');
-
-        Route::post(
-            '{offerCampaign}/shipping',
-            StoreDiscountShipping::class
-        )->name('store_shipping');
 
 
         Route::post(

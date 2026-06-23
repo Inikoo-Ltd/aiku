@@ -706,7 +706,6 @@ test('UI show customer showcase tab has stats for KPI cards', function () {
             ->component('Org/Shop/CRM/Customer')
             ->has('tabs')
             ->has('showcase')
-            ->has('showcase.stats')
             ->where(
                 'showcase.stats',
                 fn ($stats) => isset($stats['historic_clv_amount'])

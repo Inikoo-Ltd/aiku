@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 11 May 2026 16:44:46 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Mon, 22 Jun 2026 20:59:43 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -12,6 +12,7 @@ use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithStoreOfferRules;
 use App\Actions\Traits\WithStoreOffer;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
@@ -26,7 +27,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreShopOffer extends OrgAction
+class StoreDiscountShipping extends OrgAction
 {
     use WithStoreOffer;
     use WithStoreOfferRules;
@@ -36,23 +37,11 @@ class StoreShopOffer extends OrgAction
      */
     public function handle(Shop $shop, array $modelData): ?Offer
     {
-        $percentageOff = Arr::pull($modelData, 'percentage_off');
-        $itemQuantity  = (int)Arr::pull($modelData, 'trigger_data_item_quantity');
-        $itemAmount    = (float)Arr::pull($modelData, 'trigger_data_item_amount');
+        $minOrderAmount = (int)Arr::pull($modelData, 'min_order_amount');
 
-        $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::SHOP_OFFERS)->first();
+        $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::SHIPPING)->first();
         if (!$offerCampaign) {
             return null;
-        }
-
-
-        $type = Arr::pull($modelData, 'type');
-
-        if ($type == 'quantity') {
-            $type = 'any';
-        }
-        if ($type == 'amount' && $itemAmount <= 0) {
-            $type = 'any';
         }
 
 
@@ -67,48 +56,34 @@ class StoreShopOffer extends OrgAction
             false
         );
 
+        data_set($modelData, 'duration', OfferDurationEnum::INTERVAL);
+
         data_set($modelData, 'trigger_type', 'Customer');//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
         //  data_set($modelData, 'trigger_id', $shop->id);
 
-        if ($type == 'quantity' || $type == 'any') {
-            $type = OfferTypeEnum::SHOP_ORDERED;
-            data_set(
-                $modelData,
-                'trigger_data',
-                [
-                    'item_quantity' => $itemQuantity
-                ]
-            );
-        } else {
-            $type = OfferTypeEnum::SHOP_AMOUNT_ORDERED;
-            data_set(
-                $modelData,
-                'trigger_data',
-                [
-                    'item_amount' => $itemAmount
-                ]
-            );
-        }
+        data_set(
+            $modelData,
+            'trigger_data',
+            [
+                'min_order_amount' => $minOrderAmount
+            ]
+        );
 
         data_set(
             $modelData,
             'type',
-            $type
+            OfferTypeEnum::DISCOUNTED_SHIPPING
         );
 
-        $targetType = OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER;
 
         data_set(
             $modelData,
             'allowances',
             [
                 [
-                    'class'       => OfferAllowanceClass::DISCOUNT->value,
-                    'target_type' => $targetType,
-                    'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
-                    'data'        => [
-                        'percentage_off' => $percentageOff,
-                    ]
+                    'class'       => OfferAllowanceClass::SHIPPING->value,
+                    'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
+                    'type'        => OfferAllowanceType::SHIPPING->value,
                 ]
             ]
         );
@@ -123,12 +98,9 @@ class StoreShopOffer extends OrgAction
     public function rules(): array
     {
         return [
-            'name'                       => ['sometimes', 'string', 'max:255'],
-            'type'                       => ['required', 'string', 'in:quantity,amount'],
-            'duration'                   => ['required', 'string', 'in:interval,permanent'],
-            'trigger_data_item_quantity' => ['nullable', 'required_if:type,quantity', 'integer', 'min:1'],
-            'trigger_data_item_amount'   => ['nullable', 'required_if:type,amount', 'numeric', 'min:0'],
-            'start_at'                   => [
+            'name'             => ['sometimes', 'string', 'max:255'],
+            'min_order_amount' => ['nullable', 'required_if:type,amount', 'numeric', 'min:0'],
+            'start_at'         => [
                 'required',
                 'date',
                 Rule::when(
@@ -136,8 +108,7 @@ class StoreShopOffer extends OrgAction
                     ['before_or_equal:end_at']
                 )
             ],
-            'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
-            'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:100'],
+            'end_at'           => ['required', 'date'],
         ];
     }
 

@@ -467,6 +467,16 @@ trait WithAllegroApiServices
         ]);
     }
 
+    public function createResponsibleProducer(array $data): array
+    {
+        return $this->makeApiRequest('POST', '/sale/responsible-producers', $data);
+    }
+
+    public function createResponsiblePerson(array $data): array
+    {
+        return $this->makeApiRequest('POST', '/sale/responsible-persons', $data);
+    }
+
     public function createReturnPolicy(array $data): array
     {
         $data = [

@@ -48,7 +48,7 @@ class AuthenticateAllegroAccount extends OrgAction
 
                 $tokenData = $this->exchangeCodeForTokens(
                     Arr::get($modelData, 'code'),
-                    route('retina.dropshipping.allegro.callback'),
+                    route('allegro.callback'),
                     $codeVerifier ?? null
                 );
 

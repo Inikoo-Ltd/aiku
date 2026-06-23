@@ -217,7 +217,10 @@ class ShowDeliveryNote extends OrgAction
         }
 
         if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
-            $showCancel = false;
+            // Disable Faire Cancel if Order. Allow if Replacement (INI:1503)
+            if ($deliveryNote->type === DeliveryNoteTypeEnum::ORDER) {
+                $showCancel = false;
+            }
         }
 
         $actions = [];
