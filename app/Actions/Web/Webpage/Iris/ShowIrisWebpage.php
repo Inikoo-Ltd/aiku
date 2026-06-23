@@ -68,10 +68,10 @@ class ShowIrisWebpage
                 'type'          => $webpage->type,
                 'sub_type'      => $webpage->sub_type,  // 'sub_department', 'department', 'product', 'category'
                 'model_type'    => $webpage->model_type,  // Product, ProductCategory, etc
-                'product_page'  => $webpage->sub_type?->value === 'product' && $webpage->model_type === 'Product'
+                'product_page'  => $webpage->model instanceof Product
                     ? ['department' => [
-                        'name'          => $webpage->model?->department?->name,
-                        'webpage_title' => $webpage->model?->department?->webpage?->title,
+                        'name'          => $webpage->model->department?->name,
+                        'webpage_title' => $webpage->model->department?->webpage?->title,
                     ]]
                     : null,
             ],
@@ -371,13 +371,13 @@ class ShowIrisWebpage
 
     public function getIrisProductNavigation(Webpage $webpage): ?array
     {
-        if ($webpage->model_type !== 'Product') {
+        if (!$webpage->model instanceof Product) {
             return null;
         }
 
         /** @var Product $product */
         $product = $webpage->model;
-        if (!$product || !$product->family_id) {
+        if (!$product->family_id) {
             return null;
         }
 
@@ -396,7 +396,7 @@ class ShowIrisWebpage
                     ->where('website_id', $webpage->website_id);
             }])
             ->orderBy('index_under_family')
-            ->orderBy('name')
+            ->orderBy('code')
             ->get();
 
         $currentIndex = $siblings->search(fn (Product $sibling) => $sibling->id === $product->id);
