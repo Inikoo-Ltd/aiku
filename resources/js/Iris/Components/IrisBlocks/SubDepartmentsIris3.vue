@@ -172,6 +172,8 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith("-")
     }
 })
+
+console.log('sdsd',props)
 </script>
 
 <template>
@@ -200,7 +202,7 @@ onMounted(() => {
             {{ ctrans('All') }}
           </option>
 
-          <option v-for="option in fieldValue.filter_options" :key="option.code" :value="option.code">
+          <option v-for="option in fieldValue.sub_department_list" :key="option.code" :value="option.code">
             {{ option.name }}
           </option>
         </select>
@@ -225,7 +227,7 @@ onMounted(() => {
                 {{ ctrans('All') }}
               </option>
 
-              <option v-for="option in fieldValue.filter_options" :key="option.code"
+              <option v-for="option in fieldValue.sub_department_list" :key="option.code"
                 :value="option.code">
                 {{ option.name }}
               </option>
