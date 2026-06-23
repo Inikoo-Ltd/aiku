@@ -10,7 +10,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Masters\MasterProductCategory;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -18,9 +18,6 @@ class GetMasterDepartmentFamiliesFromCollections
 {
     use AsObject;
 
-    /**
-     * @return array{data: AnonymousResourceCollection, editable: bool}
-     */
     public function handle(MasterProductCategory $masterDepartment): array
     {
         $collectionIds = $masterDepartment->masterCollections()->pluck('master_collections.id');
@@ -29,9 +26,68 @@ class GetMasterDepartmentFamiliesFromCollections
             ->whereIn('master_collection_id', $collectionIds)
             ->where('model_type', 'MasterProductCategory')
             ->pluck('model_id')
-            ->unique();
+            ->unique()
+            ->values();
 
-        $families = MasterProductCategory::query()
+        $existingOrderings = DB::table('master_department_family_orderings')
+            ->where('master_department_id', $masterDepartment->id)
+            ->whereIn('master_family_id', $familyIds)
+            ->pluck('position', 'master_family_id');
+
+        $this->syncNewFamiliesToPivot($masterDepartment->id, $familyIds, $existingOrderings);
+
+        $orderings = DB::table('master_department_family_orderings')
+            ->where('master_department_id', $masterDepartment->id)
+            ->whereIn('master_family_id', $familyIds)
+            ->orderBy('position')
+            ->pluck('position', 'master_family_id');
+
+        $families = $this->queryFamilies($familyIds);
+
+        $sorted = $families->sortBy(fn ($f) => $orderings[$f->id] ?? PHP_INT_MAX)->values();
+
+        return [
+            'data'                        => MasterFamiliesResource::collection($sorted),
+            'editable'                    => true,
+            'sync_payload_key'            => 'family_position_map',
+            'route_sync_related_products' => [
+                'name'       => 'grp.models.master_product_category.department_family_ordering.sync',
+                'parameters' => ['masterProductCategory' => $masterDepartment->id],
+            ],
+        ];
+    }
+
+    private function syncNewFamiliesToPivot(int $departmentId, Collection $familyIds, Collection $existingOrderings): void
+    {
+        $newFamilyIds = $familyIds->diff($existingOrderings->keys());
+
+        if ($newFamilyIds->isEmpty()) {
+            return;
+        }
+
+        $nextPosition = $existingOrderings->isEmpty()
+            ? 1
+            : DB::table('master_department_family_orderings')
+                ->where('master_department_id', $departmentId)
+                ->max('position') + 1;
+
+        $now  = now();
+        $rows = $newFamilyIds->map(function ($id) use ($departmentId, &$nextPosition, $now) {
+            return [
+                'master_department_id' => $departmentId,
+                'master_family_id'     => $id,
+                'position'             => $nextPosition++,
+                'created_at'           => $now,
+                'updated_at'           => $now,
+            ];
+        })->values()->all();
+
+        DB::table('master_department_family_orderings')->insert($rows);
+    }
+
+    private function queryFamilies(Collection $familyIds): Collection
+    {
+        return MasterProductCategory::query()
             ->whereIn('master_product_categories.id', $familyIds)
             ->where('master_product_categories.type', MasterProductCategoryTypeEnum::FAMILY)
             ->leftJoin('master_product_category_stats', 'master_product_categories.id', '=', 'master_product_category_stats.master_product_category_id')
@@ -62,12 +118,6 @@ class GetMasterDepartmentFamiliesFromCollections
                 'sub_departments.name as master_sub_department_name',
                 'currencies.code as currency_code',
             ])
-            ->orderBy('master_product_categories.code')
             ->get();
-
-        return [
-            'data' => MasterFamiliesResource::collection($families),
-            'editable' => true
-        ];
     }
 }
