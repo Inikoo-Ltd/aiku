@@ -2,7 +2,7 @@
 import { inject, ref, watch, onMounted, onUnmounted } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { debounce, get, set } from 'lodash-es'
-import { faChevronRight, faTrashAlt } from "@fal"
+import { faChevronRight, faTrashAlt, faPlusCircle } from "@fal"
 import { faCheckCircle, faExclamationTriangle } from "@fas"
 import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -21,6 +21,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Image from "@common/Components/Image.vue"
 import Discount from '@/Components/Utils/Label/Discount.vue'
+import { getBestOffer } from '@/Composables/useOffers'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
@@ -28,7 +29,8 @@ import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import MissedOfferFOB from '@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue'
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle, faExclamationTriangle)
+import LabelOfAvailableDiscountInRightBasket from '@/Components/Utils/Iris/Label/LabelOfAvailableDiscountInRightBasket.vue'
+library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle, faExclamationTriangle, faPlusCircle)
 
 interface DataSideBasket {
     order_summary: any
@@ -225,6 +227,25 @@ const convertToFloat2 = (val: any) => {
     const num = parseFloat(val)
     if (isNaN(num)) return 0.00
     return parseFloat(num.toFixed(2))
+}
+
+// Section: Best available (not yet applied) discount for a basket product
+// product.offers_data => discount already applied to the product
+// product.product_offers_data => all available offers of the product
+const getUnappliedBestOffer = (product: any) => {
+    const productOffers = product?.product_offers_data
+    if (!productOffers || !(productOffers.number_offers > 0)) return null
+
+    const bestOffer = getBestOffer(productOffers)
+    if (!bestOffer) return null
+
+    // Already applied: the compact applied offer id lives in offers_data.o.o
+    const appliedOfferId = product?.offers_data?.o?.o
+    if (appliedOfferId != null && String(appliedOfferId) === String(bestOffer.id)) {
+        return null
+    }
+
+    return bestOffer
 }
 
 
@@ -497,8 +518,21 @@ onUnmounted(() => {
                             </div>
 
                             <div>
-                                 <Discount v-if="Object.keys(product.offers_data || {})?.length"
-                                        :offers_data="product.offers_data" class="text-xxs" />
+                                <div class="relative">
+                                    <Transition name="slide-absolute-to-right">
+                                        <Discount
+                                            v-if="Object.keys(product.offers_data || {})?.length"
+                                            :offers_data="product.offers_data" class="text-xxs"
+                                        />
+                                        <!-- Best available discount that is not applied yet -->
+                                        <div v-else-if="getUnappliedBestOffer(product)"
+                                            v-tooltip="ctrans('Available best offer. Not applied yet.')"
+                                            class="border border-transparent mb-1 w-fit flex items-center gap-1 text-xxs text-[#E87928] opacity-70"
+                                        >
+                                            <LabelOfAvailableDiscountInRightBasket :offers_data="getUnappliedBestOffer(product)" />
+                                        </div>
+                                    </Transition>
+                                </div>
 
                                          <div class=" min-w-0 flex justify-between gap-x-3 w-full text-xs">
 
@@ -636,11 +670,13 @@ onUnmounted(() => {
             @onRemove="fetchDataSideBasket(true)"
             @onApply="fetchDataSideBasket(true)"
             inIris
-            class="py-2 w-full flex px-6"
+            class="py-2 w-full flex px-6 border-t border-gray-200"
         />
 
         <!-- Section: Order Summary -->
-        <div class="border-t border-gray-200 px-4 pt-3 pb-6 sm:px-6">
+        <div class="px-4 pt-3 pb-6 sm:px-6"
+            :class="layout.retina.type == 'b2b' ? '' : 'border-t border-gray-200 '"
+        >
             <div class="relative isolate">
                 <OrderSummary :order_summary="dataSideBasket?.order_summary"
                     :currency_code="layout.iris?.currency?.code" size="sm" />

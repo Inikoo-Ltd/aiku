@@ -78,6 +78,9 @@ class DeliveryNotesResource extends JsonResource
         } else {
             $weight = round($this->estimated_weight / 1000).' Kg';
         }
+
+        $totalParcels = is_array($this->parcels) ? count($this->parcels) : 0;
+        
         return [
             'id'                          => $this->id,
             'slug'                        => $this->slug,
@@ -94,6 +97,7 @@ class DeliveryNotesResource extends JsonResource
                 ],
             ] : null,
             'skus'                        => $this->skus,
+            'parcels'                     => $totalParcels,
             'batch_code_expiry_date'      => $this->batch_code_expiry_date,
             'date'                        => $this->date,
             'state'                       => $this->state,

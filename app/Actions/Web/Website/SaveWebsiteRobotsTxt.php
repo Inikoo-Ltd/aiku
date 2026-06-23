@@ -11,7 +11,7 @@ class SaveWebsiteRobotsTxt extends OrgAction
     public function handle(Website $website): void
     {
         $scheme  = app()->environment('production') ? 'https' : 'http';
-        $baseUrl = $scheme . '://' . $website->domain;
+        $baseUrl = $scheme . '://www.' . $website->domain;
 
         $groups = [
             'products',

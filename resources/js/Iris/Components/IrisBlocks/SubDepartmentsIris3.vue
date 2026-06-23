@@ -48,11 +48,12 @@ const selectedOption = ref<string | null>(null)
 const sortKey = ref('created_at')
 const families = ref(props.fieldValue?.families?.data ?? [])
 const isAscending = ref(true)
-const orderBy = ref( '-created_at')
+const orderBy = ref('-created_at')
 
 const sortOptions = computed(() => {
   const baseOptions = [
     { label: ctrans("New arrivals"), value: "created_at" },
+    { label: ctrans("Name"), value: "name" },
   ]
   return baseOptions
 })
@@ -64,7 +65,7 @@ const meta = ref(
     last_page: 1,
     links: [],
     path: '',
-    per_page: 50,
+    per_page: 500,
     to: 0,
     total: families.value.length,
   }
@@ -96,6 +97,7 @@ const loadFamilies = async (
           filter,
           sort: orderBy.value,
           page,
+          per_page : 250
         },
       }
     );
@@ -202,7 +204,7 @@ console.log('sdsd',props)
             {{ ctrans('All') }}
           </option>
 
-          <option v-for="option in fieldValue.sub_department_list" :key="option.code" :value="option.code">
+          <option v-for="option in fieldValue.filter_options" :key="option.code" :value="option.code">
             {{ option.name }}
           </option>
         </select>
@@ -227,7 +229,7 @@ console.log('sdsd',props)
                 {{ ctrans('All') }}
               </option>
 
-              <option v-for="option in fieldValue.sub_department_list" :key="option.code"
+              <option v-for="option in fieldValue.filter_options" :key="option.code"
                 :value="option.code">
                 {{ option.name }}
               </option>

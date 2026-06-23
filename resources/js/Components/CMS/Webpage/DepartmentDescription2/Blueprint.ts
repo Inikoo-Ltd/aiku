@@ -6,9 +6,9 @@ export default {
 			type: "text",
 			information: "id selector is used to select one unique element!",
 		},
-        {
+		{
 			name: "Side Menu",
-			key: ["sidebar","properties"],
+			key: ["sidebar", "properties"],
 			replaceForm: [
 				{
 					key: ["background"],
@@ -32,9 +32,9 @@ export default {
 				},
 			],
 		},
-        {
+		{
 			name: "Description",
-			key: ["description","properties"],
+			key: ["description", "properties"],
 			replaceForm: [
 				{
 					key: ["background"],
@@ -58,9 +58,9 @@ export default {
 				},
 			],
 		},
-        {
+		{
 			name: "CTA",
-			key: ["cta","properties"],
+			key: ["cta", "properties"],
 			replaceForm: [
 				{
 					key: ["background"],
@@ -106,6 +106,46 @@ export default {
 					label: "Margin",
 					type: "margin",
 					props_data: {},
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+			],
+		},
+		{
+			name: "Button",
+			key: ["button"],
+			replaceForm: [
+				{
+					key: ["text"],
+					label: "Text",
+					type: "text",
+				},
+				{
+					key: ["container", "properties", "text"],
+					type: "textProperty",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "background"],
+					label: "Background",
+					type: "background",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "margin"],
+					label: "Margin",
+					type: "margin",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "padding"],
+					label: "Padding",
+					type: "padding",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "border"],
+					label: "Border",
+					type: "border",
 					useIn: ["desktop", "tablet", "mobile"],
 				},
 			],

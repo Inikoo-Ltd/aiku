@@ -196,7 +196,8 @@ watch(
 			}">
 			<div class="text-center mb-12">
 				<span class="font-medium text-[#1d2d44]" :style="{ fontSize: '2rem' }">
-					{{ ctrans("Best - Selling") }} {{ modelValue.product_category_title || 'families'}} {{ ctrans('Ranges') }}
+					<template v-if="modelValue.title">{{ modelValue.title }}</template>
+					<template v-else>{{ ctrans("Best - Selling") }} {{ modelValue.product_category_title || 'families'}} {{ ctrans('Ranges') }}</template>
 				</span>
 			</div>
 
