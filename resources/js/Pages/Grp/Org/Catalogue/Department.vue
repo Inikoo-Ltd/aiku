@@ -39,6 +39,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import SetIndexRecomendersFamily from '@/Components/SetIndexRecomendersFamily.vue'
 
 library.add(
     faFolder,
@@ -78,6 +79,7 @@ const props = defineProps<{
     sales?: object
     salesData?: object
     product_category_id?: number
+      index_recomenders_families : any;
     shop_data: {
         id: number
         slug: string
@@ -106,6 +108,7 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         offers: TableOffers,
         related_product_category: RelatedProductCategory,
+        index_recomenders_families : SetIndexRecomendersFamily,
     };
     return components[currentTab.value];
 
