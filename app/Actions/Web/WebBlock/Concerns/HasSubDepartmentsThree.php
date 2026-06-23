@@ -15,6 +15,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockFamilyResourceForDepartmentWebpage;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 
@@ -55,6 +56,12 @@ trait HasSubDepartmentsThree
                 'collections.code',
                 'collections.name'
             ])
+            ->whereExists(function ($query) {
+                $query->selectRaw(1)
+                    ->from('collection_has_models as chm')
+                    ->whereColumn('chm.collection_id', 'collections.id')
+                    ->where('chm.model_type', class_basename(ProductCategory::class));
+            })
             ->get()
             ->toArray();
 

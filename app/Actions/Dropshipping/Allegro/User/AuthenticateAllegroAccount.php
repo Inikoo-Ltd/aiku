@@ -67,11 +67,21 @@ class AuthenticateAllegroAccount extends OrgAction
 
                     $response = $http->json();
 
+                    if($http->failed()) {
+                        throw new \Exception('Failed to fetch user data: ' . $http->json());
+                    }
+
+                    $name = (Arr::get($response, 'firstName') && Arr::get($response, 'lastName'))
+                        ? Arr::get($response, 'firstName') . ' ' . Arr::get($response, 'lastName')
+                        : Arr::get($response, 'company.name');
+
+                    if( !$name) {
+                        $name = Arr::get($response, 'login');
+                    }
+
                     $userData = [
                         'allegro_id' => Arr::get($response, 'id'),
-                        'name' => (Arr::get($response, 'firstName') && Arr::get($response, 'lastName'))
-                            ? Arr::get($response, 'firstName') . ' ' . Arr::get($response, 'lastName')
-                            : Arr::get($response, 'company.name'),
+                        'name' => $name,
                         'access_token' => $tokenData['access_token'],
                         'access_token_expire_in' => $accessTokenExpiresAt,
                         'refresh_token' => $tokenData['refresh_token'] ?? null,
@@ -102,9 +112,13 @@ class AuthenticateAllegroAccount extends OrgAction
                         }
                     }
 
-                    return Redirect::route('retina.dropshipping.customer_sales_channels.show', [
-                        'customerSalesChannel' => $allegroUser->customerSalesChannel->slug
-                    ]);
+                    $customerSalesChannel = $allegroUser->customerSalesChannel;
+                    $domain = "https://{$customerSalesChannel->shop->website->domain}";
+                    $path = "/app/dropshipping/channels/$customerSalesChannel->slug";
+
+                    $fullUrl = $domain . $path;
+
+                    return Redirect::away($fullUrl);
                 }
 
             } catch (\Exception $e) {
