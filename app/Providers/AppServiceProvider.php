@@ -100,6 +100,10 @@ class AppServiceProvider extends ServiceProvider
                 DB::connection('aiku');
                 DB::purge('aiku');
                 DB::reconnect('aiku');
+                config(['database.connections.aiku_no_sticky.database' => $databaseName]);
+                DB::connection('aiku_no_sticky');
+                DB::purge('aiku_no_sticky');
+                DB::reconnect('aiku_no_sticky');
             }
         });
 
