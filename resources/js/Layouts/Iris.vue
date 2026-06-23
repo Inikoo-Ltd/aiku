@@ -181,7 +181,7 @@ const fetchHasInBasket = async () => {
         }
 
         const response = await axios.get(apiUrl);
-        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || {})
     } catch (error) {
         console.error('Failed to load product portfolio', error);
     } finally {
