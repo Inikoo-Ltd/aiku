@@ -43,6 +43,20 @@ class CallApiGlsEsShipping extends OrgAction
 
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
+        if ($parent instanceof PalletReturn) {
+            $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+        } else {
+            $parentResource = GetShippingDeliveryNoteData::run($parent);
+        }
+
+        $countryCode = Arr::get($parentResource, 'to_address.country_code');
+        $limit = ($countryCode == 'ES') ?: 31.5;
+        $totalWeight = $parent->effective_weight / 1000;
+
+        if ($totalWeight > $limit) {
+            return $this->splitByWeightLimit($parent, $shipper, $limit, $totalWeight);
+        }
+
         $modelData = $this->createGlsEsShipment($parent, $shipper);
         if (Arr::has($modelData, 'error')) {
             return [
@@ -57,6 +71,210 @@ class CallApiGlsEsShipping extends OrgAction
         return $this->getGlsEsLabel($shipper, $modelData);
     }
 
+    public function splitByWeightLimit(DeliveryNote|PalletReturn $parent, Shipper $shipper, float $limit, float $totalWeight)
+    {
+        $parcels = $parent->parcels ?? [];
+        $parcelWeights = [];
+        foreach ($parcels as $parcel) {
+            $parcelWeights[] = (float)Arr::get($parcel, 'weight', 1.0);
+        }
+        if (empty($parcelWeights)) {
+            $parcelWeights[] = $totalWeight;
+        }
+
+        $weightsToShip = [];
+        foreach ($parcelWeights as $w) {
+            if ($w > $limit) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => [
+                        'message' => 'International shipping max weight per parcel is ' . $limit
+                    ],
+                    'modelData' => []
+                ];
+            } else {
+                $weightsToShip[] = $w;
+            }
+        }
+
+        $xmlPayloads = [];
+        foreach ($weightsToShip as $splitWeight) {
+            $xmlPayloads[] = $this->getCreateLabelXml($parent, $shipper, $splitWeight);
+        }
+
+        $headers = ["Content-Type: text/xml; charset=UTF-8"];
+        $url = $this->getBaseUrl() . "/b2b.asmx?wsdl";
+        $createResults = $this->executeParallelCurl($xmlPayloads, $url, $headers);
+
+        $trackings = [];
+        $soapResults = [];
+        foreach ($createResults as $index => $res) {
+            if (!$res['success'] || empty($res['content'])) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => [
+                        'message' => 'Split shipment failed (connection issue): ' . ($res['error'] ?? 'No response')
+                    ],
+                    'modelData' => []
+                ];
+            }
+
+            libxml_use_internal_errors(true);
+            $xml = simplexml_load_string($res['content'], null, null, "http://www.w3.org/2003/05/soap-envelope");
+            if ($xml === false) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => [
+                        'message' => 'Split shipment failed: Invalid XML response'
+                    ],
+                    'modelData' => []
+                ];
+            }
+
+            $xml->registerXPathNamespace('asm', 'http://www.asmred.com/');
+            $arr = $xml->xpath("//asm:GrabaServiciosResponse/asm:GrabaServiciosResult");
+            if (empty($arr)) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => [
+                        'message' => 'Split shipment failed: GrabaServiciosResult not found'
+                    ],
+                    'modelData' => []
+                ];
+            }
+
+            $ret = $arr[0]->xpath("//Servicios/Envio");
+            if (empty($ret)) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => [
+                        'message' => 'Split shipment failed: Envio not found'
+                    ],
+                    'modelData' => []
+                ];
+            }
+
+            $error = (string)$ret[0]->Errores->Error;
+            if ($error) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => [
+                        'message' => 'Split shipment failed: ' . $error
+                    ],
+                    'modelData' => []
+                ];
+            }
+
+            $codExp = $ret[0]->xpath("//Servicios/Envio/@codexp");
+            $cb = $ret[0]->xpath("//Servicios/Envio/@codbarras");
+            $uid = $ret[0]->xpath("//Servicios/Envio/@uid");
+
+            $codbarras = (string)$cb[0]["codbarras"];
+            $trackings[] = $codbarras;
+
+            $soapResults[$index] = [
+                'reference' => $codbarras,
+                'trackings' => [$codbarras],
+                'tracking' => $codbarras,
+                'data' => [
+                    'codexp' => (string)$codExp[0]["codexp"],
+                    'codbarras' => $codbarras,
+                    'uid' => (string)$uid[0]["uid"],
+                ]
+            ];
+        }
+
+        $uidClient = $this->getAccessToken($shipper);
+        $labelXmlPayloads = [];
+        foreach ($trackings as $reference) {
+            $labelXmlPayloads[] = '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:asm="http://www.asmred.com/">
+                <soap:Header/>
+                <soap:Body>
+                   <asm:EtiquetaEnvioV2>
+                      <uidcliente>' . $uidClient . '</uidcliente>
+                      <asm:codigo>' . $reference . '</asm:codigo>
+                      <asm:tipoEtiqueta>PDF</asm:tipoEtiqueta>
+                   </asm:EtiquetaEnvioV2>
+                </soap:Body>
+                </soap:Envelope>';
+        }
+
+        $labelResults = $this->executeParallelCurl($labelXmlPayloads, $url, $headers);
+
+        $labels = [];
+        $lastModelData = [];
+        foreach ($labelResults as $index => $res) {
+            if (!$res['success'] || empty($res['content'])) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => [
+                        'message' => 'Failed to retrieve label for split shipment (connection issue): ' . ($res['error'] ?? 'No response')
+                    ],
+                    'modelData' => []
+                ];
+            }
+
+            libxml_use_internal_errors(true);
+            $xml = simplexml_load_string($res['content']);
+            if ($xml === false) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => [
+                        'message' => 'Failed to retrieve label for split shipment: Invalid XML response'
+                    ],
+                    'modelData' => []
+                ];
+            }
+
+            $xml->registerXPathNamespace('soap', 'http://www.w3.org/2003/05/soap-envelope');
+            $xml->registerXPathNamespace('asm', 'http://www.asmred.com/');
+            $result = $xml->xpath('//soap:Body/asm:EtiquetaEnvioV2Response/asm:EtiquetaEnvioV2Result/Etiquetas/Etiqueta');
+
+            if ($result === false || empty($result)) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => [
+                        'message' => 'Failed to retrieve label for split shipment: No label found'
+                    ],
+                    'modelData' => []
+                ];
+            }
+
+            $labelBase64 = (string)$result[0];
+            $labels[] = base64_decode($labelBase64);
+
+            $modelData = $soapResults[$index];
+            $modelData['label'] = $labelBase64;
+            $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
+            $modelData['number_parcels'] = 1;
+            $lastModelData = $modelData;
+        }
+
+        try {
+            $mergedLabelBase64 = $this->mergePdfStrings($labels);
+        } catch (\Throwable $e) {
+            return [
+                'status'    => 'fail',
+                'errorData' => [
+                    'message' => 'Failed to merge PDF labels: ' . $e->getMessage()
+                ],
+                'modelData' => []
+            ];
+        }
+
+        $finalModelData = $lastModelData;
+        $finalModelData['tracking'] = implode(',', $trackings);
+        $finalModelData['trackings'] = $trackings;
+        $finalModelData['label'] = $mergedLabelBase64;
+        $finalModelData['number_parcels'] = count($trackings);
+
+        return [
+            'status'    => 'success',
+            'modelData' => $finalModelData,
+            'errorData' => []
+        ];
+    }
+
     public function getGlsEsLabel(Shipper $shipper, array $modelData): array
     {
         $status    = 'fail';
@@ -64,15 +282,15 @@ class CallApiGlsEsShipping extends OrgAction
 
         $uidClient = $this->getAccessToken($shipper);
         $reference = $modelData['data']['codbarras'];
-        $url       = $this->getBaseUrl()."/b2b.asmx?wsdl";
+        $url       = $this->getBaseUrl() . "/b2b.asmx?wsdl";
 
         $xml = '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:asm="http://www.asmred.com/">
 <soap:Header/>
 <soap:Body>
    <asm:EtiquetaEnvioV2>
       <!--Optional:-->
-      <uidcliente>'.$uidClient.'</uidcliente>
-      <asm:codigo>'.$reference.'</asm:codigo>
+      <uidcliente>' . $uidClient . '</uidcliente>
+      <asm:codigo>' . $reference . '</asm:codigo>
       <asm:tipoEtiqueta>PDF</asm:tipoEtiqueta>
    </asm:EtiquetaEnvioV2>
 </soap:Body>
@@ -89,12 +307,14 @@ class CallApiGlsEsShipping extends OrgAction
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: text/xml; charset=UTF-8"));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
         $postResult = curl_exec($ch);
 
         if (curl_errno($ch)) {
             $errorData = [
-                'message' => 'No se pudo llamar al WS de GLS',
+                'message' => 'No se pudo llamar al WS de GLS: ' . curl_error($ch),
             ];
         }
 
@@ -139,11 +359,11 @@ class CallApiGlsEsShipping extends OrgAction
         ];
     }
 
-    public function createGlsEsShipment(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
+    public function createGlsEsShipment(DeliveryNote|PalletReturn $parent, Shipper $shipper, ?float $splitWeight = null): array
     {
         $modelData = [];
 
-        $url = $this->getBaseUrl()."/b2b.asmx?wsdl";
+        $url = $this->getBaseUrl() . "/b2b.asmx?wsdl";
         $ch  = curl_init();
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -152,12 +372,15 @@ class CallApiGlsEsShipping extends OrgAction
         curl_setopt($ch, CURLOPT_FORBID_REUSE, true);
         curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $this->getCreateLabelXml($parent, $shipper));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $this->getCreateLabelXml($parent, $shipper, $splitWeight));
         curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: text/xml; charset=UTF-8"));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
         $postResult = curl_exec($ch);
-        curl_close($ch);
+        curl_close($ch); // Note : will deprecated in PHP 9+
 
+        libxml_use_internal_errors(true);
         $xml = simplexml_load_string($postResult, null, null, "http://http://www.w3.org/2003/05/soap-envelope");
 
 
@@ -194,7 +417,7 @@ class CallApiGlsEsShipping extends OrgAction
         return $modelData;
     }
 
-    public function getCreateLabelXml(DeliveryNote|PalletReturn $parent, Shipper $shipper): string
+    public function getCreateLabelXml(DeliveryNote|PalletReturn $parent, Shipper $shipper, ?float $splitWeight = null): string
     {
         $uidClient = $this->getAccessToken($shipper);
 
@@ -225,7 +448,7 @@ class CallApiGlsEsShipping extends OrgAction
         $shippingNotes = $parent->shipping_notes ?? '';
         $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60));
 
-        $weight = $parent->effective_weight / 1000;
+        $weight = $splitWeight ?? ($parent->effective_weight / 1000);
 
         $countryCode = Arr::get($parentResource, 'to_address.country_code');
         if ($countryCode == 'ES') {
@@ -238,17 +461,17 @@ class CallApiGlsEsShipping extends OrgAction
         $shipmentData["date"]              = Carbon::now()->format('d/m/Y');
         $shipmentData["service"]           = $service;
         $shipmentData["time"]              = "18";
-        $shipmentData["parcels"]           = count($parcels);
+        $shipmentData["parcels"]           = $splitWeight ? 1 : count($parcels);
         $shipmentData["weight"]            = $weight;
         $shipmentData["reem"]              = "0";
         $shipmentData["from_name"]         = $fromContactName;
-        $shipmentData["from_address"]      = trim(Arr::get($parentResource, 'from_address.address_line_1').' '.Arr::get($parentResource, 'from_address.address_line_2'));
+        $shipmentData["from_address"]      = trim(Arr::get($parentResource, 'from_address.address_line_1') . ' ' . Arr::get($parentResource, 'from_address.address_line_2'));
         $shipmentData["from_city"]         = Arr::get($parentResource, 'from_address.locality');
         $shipmentData["from_country_code"] = Arr::get($parentResource, 'from_address.country_code');
         $shipmentData["from_postal_code"]  = Arr::get($parentResource, 'from_address.postal_code');
 
         $shipmentData["to_name"]         = $contactName;
-        $shipmentData["to_address"]      = trim(Arr::get($parentResource, 'to_address.address_line_1').' '.Arr::get($parentResource, 'to_address.address_line_2'));
+        $shipmentData["to_address"]      = trim(Arr::get($parentResource, 'to_address.address_line_1') . ' ' . Arr::get($parentResource, 'to_address.address_line_2'));
         $shipmentData["to_city"]         = Arr::get($parentResource, 'to_address.locality');
         $shipmentData["to_country_code"] = Arr::get($parentResource, 'to_address.country_code');
         $shipmentData["to_postal_code"]  = Arr::get($parentResource, 'to_address.postal_code');
@@ -257,10 +480,12 @@ class CallApiGlsEsShipping extends OrgAction
         $shipmentData["notes"]           = $shippingNotes;
         $shipmentData["nif"]             = "";
         $shipmentData["portage"]         = "P";
+
+        dd($shipmentData);
         if (app()->environment('local')) {
-            $shipmentData["RefC"] = 'test+'.rand(1000, 9999).' '.strtoupper($parent->reference).' V2';
+            $shipmentData["RefC"] = 'test+' . rand(1000, 9999) . ' ' . strtoupper($parent->reference) . ' V2';
         } else {
-            $shipmentData["RefC"] = strtoupper($parent->reference).' V2';
+            $shipmentData["RefC"] = strtoupper($parent->reference) . ' V2';
         }
 
 
@@ -275,36 +500,36 @@ class CallApiGlsEsShipping extends OrgAction
          <soap12:Body>
          <GrabaServicios  xmlns="http://www.asmred.com/">
          <docIn>
-            <Servicios uidcliente="'.$uidClient.'" xmlns="http://www.asmred.com/">
+            <Servicios uidcliente="' . $uidClient . '" xmlns="http://www.asmred.com/">
             <Envio>
-               <Fecha>'.$shipmentData["date"].'</Fecha>
-               <Servicio>'.$shipmentData["service"].'</Servicio>
-               <Horario>'.$shipmentData["time"].'</Horario>
-               <Bultos>'.$shipmentData["parcels"].'</Bultos>
-               <Peso>'.$shipmentData["weight"].'</Peso>
-               <Portes>'.$shipmentData["portage"].'</Portes>
+               <Fecha>' . $shipmentData["date"] . '</Fecha>
+               <Servicio>' . $shipmentData["service"] . '</Servicio>
+               <Horario>' . $shipmentData["time"] . '</Horario>
+               <Bultos>' . $shipmentData["parcels"] . '</Bultos>
+               <Peso>' . $shipmentData["weight"] . '</Peso>
+               <Portes>' . $shipmentData["portage"] . '</Portes>
                <Importes>
-                  <Reembolso>'.$shipmentData["reem"].'</Reembolso>
+                  <Reembolso>' . $shipmentData["reem"] . '</Reembolso>
                </Importes>
                <Remite>
-                  <Nombre>'.$shipmentData["from_name"].'</Nombre>
-                  <Direccion>'.$shipmentData["from_address"].'</Direccion>
-                  <Poblacion>'.$shipmentData["from_city"].'</Poblacion>
-                  <Pais>'.$shipmentData["from_country_code"].'</Pais>
-                  <CP>'.$shipmentData["from_postal_code"].'</CP>
+                  <Nombre>' . $shipmentData["from_name"] . '</Nombre>
+                  <Direccion>' . $shipmentData["from_address"] . '</Direccion>
+                  <Poblacion>' . $shipmentData["from_city"] . '</Poblacion>
+                  <Pais>' . $shipmentData["from_country_code"] . '</Pais>
+                  <CP>' . $shipmentData["from_postal_code"] . '</CP>
                </Remite>
                <Destinatario>
-                  <Nombre>'.$shipmentData["to_name"].'</Nombre>
-                  <Direccion>'.$shipmentData["to_address"].'</Direccion>
-                  <Poblacion>'.$shipmentData["to_city"].'</Poblacion>
-                  <Pais>'.$shipmentData["to_country_code"].'</Pais>
-                  <CP>'.$shipmentData["to_postal_code"].'</CP>
-                  <Telefono>'.$shipmentData["to_phone"].'</Telefono>
-                  <Email>'.$shipmentData["to_email"].'</Email>
-                  <NIF>'.$shipmentData["nif"].'</NIF>
-                  <Observaciones>'.$shipmentData["notes"].'</Observaciones>
+                  <Nombre>' . $shipmentData["to_name"] . '</Nombre>
+                  <Direccion>' . $shipmentData["to_address"] . '</Direccion>
+                  <Poblacion>' . $shipmentData["to_city"] . '</Poblacion>
+                  <Pais>' . $shipmentData["to_country_code"] . '</Pais>
+                  <CP>' . $shipmentData["to_postal_code"] . '</CP>
+                  <Telefono>' . $shipmentData["to_phone"] . '</Telefono>
+                  <Email>' . $shipmentData["to_email"] . '</Email>
+                  <NIF>' . $shipmentData["nif"] . '</NIF>
+                  <Observaciones>' . $shipmentData["notes"] . '</Observaciones>
                </Destinatario><Referencias>
-                  <Referencia tipo="C">'.$shipmentData["RefC"].'</Referencia>
+                  <Referencia tipo="C">' . $shipmentData["RefC"] . '</Referencia>
                </Referencias>
             </Envio>
             </Servicios>
@@ -314,5 +539,89 @@ class CallApiGlsEsShipping extends OrgAction
          </soap12:Envelope>';
     }
 
+    private function mergePdfStrings(array $pdfStrings): string
+    {
+        $mpdf = new \Mpdf\Mpdf();
+        foreach ($pdfStrings as $pdfString) {
+            $tempFile = tempnam(sys_get_temp_dir(), 'pdf_merge_');
+            file_put_contents($tempFile, $pdfString);
+            try {
+                $pageCount = $mpdf->setSourceFile($tempFile);
+                for ($i = 1; $i <= $pageCount; $i++) {
+                    $tplId = $mpdf->importPage($i);
+                    $mpdf->AddPage();
+                    $mpdf->useTemplate($tplId);
+                }
+            } finally {
+                @unlink($tempFile);
+            }
+        }
+        return base64_encode($mpdf->Output('', 'S'));
+    }
 
+    public function executeParallelCurl(array $xmlPayloads, string $url, array $headers): array
+    {
+        $mh = curl_multi_init();
+        $handles = [];
+        $results = [];
+
+        foreach ($xmlPayloads as $key => $xml) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_HEADER, false);
+            curl_setopt($ch, CURLOPT_FORBID_REUSE, true);
+            curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+
+            curl_multi_add_handle($mh, $ch);
+            $handles[$key] = $ch;
+        }
+
+        $active = null;
+        do {
+            $mrc = curl_multi_exec($mh, $active);
+        } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+
+        while ($active && $mrc == CURLM_OK) {
+            if (curl_multi_select($mh) != -1) {
+                do {
+                    $mrc = curl_multi_exec($mh, $active);
+                } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+            } else {
+                usleep(100);
+                do {
+                    $mrc = curl_multi_exec($mh, $active);
+                } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+            }
+        }
+
+        foreach ($handles as $key => $ch) {
+            $error = curl_error($ch);
+            $content = curl_multi_getcontent($ch);
+            if ($error) {
+                $results[$key] = [
+                    'success' => false,
+                    'error' => $error,
+                    'content' => null,
+                ];
+            } else {
+                $results[$key] = [
+                    'success' => true,
+                    'error' => null,
+                    'content' => $content,
+                ];
+            }
+            curl_multi_remove_handle($mh, $ch);
+            curl_close($ch);
+        }
+
+        curl_multi_close($mh);
+
+        return $results;
+    }
 }
