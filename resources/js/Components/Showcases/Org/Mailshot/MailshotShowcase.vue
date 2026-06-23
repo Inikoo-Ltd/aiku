@@ -51,6 +51,7 @@ const props = defineProps<{
         },
         compiled_layout: any,
         compiled_layout_size: number,
+        performance_insights_route: string,
         time_series_data?: Array<{
             id: number;
             period: string;
@@ -309,7 +310,8 @@ console.log("Stats", stats.value)
             <!-- Performance Metrics -->
             <PerformanceMetrics :mailshot-state="mailshotState"
                 :total-opened="stats?.find((s: any) => s.key === 'number_opened_emails')?.value ?? 0"
-                :time-series-data="data.time_series_data" />
+                :mailshot-id="data.mailshot.data.id"
+                :performance-insights-route="data.performance_insights_route" />
 
 
             <!-- Full preview modal -->

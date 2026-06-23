@@ -1,35 +1,21 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import Chart from "primevue/chart";
 import { trans } from 'laravel-vue-i18n';
+import axios from "axios";
 
 const props = defineProps<{
     mailshotState: string;
     totalOpened: number;
     totalClicked: number;
-    timeSeriesData?: Array<{
-        id: number;
-        period: string;
-        filter_date: string;
-        error: number;
-        sent: number;
-        delivered: number;
-        hard_bounce: number;
-        soft_bounce: number;
-        opened: number;
-        clicked: number;
-        spam: number;
-        unsubscribed: number;
-        delay: number;
-        open_rate: number;
-        clicked_rate: number;
-        spam_rate: number;
-        unsubscribe_rate: number;
-    }>;
+    mailshotId: number;
+    performanceInsightsRoute: string;
 }>();
 
 const selectedPeriod = ref('day');
 const selectedMetric = ref('opened');
+const isLoading = ref(false);
+const records = ref<Array<{ period: string; value: number }>>([]);
 
 const periods = [
     { key: 'day', label: 'Day' },
@@ -49,99 +35,67 @@ const metrics = [
     { key: 'bounce_rate', label: 'Bounce Rate' }
 ];
 
-const processTimeSeriesData = (period: string, metric: string) => {
-    if (!props.timeSeriesData || !Array.isArray(props.timeSeriesData) || props.timeSeriesData.length === 0) {
-        return { labels: [], data: [] };
-    }
-
-    const labels = props.timeSeriesData.map(item => item.period);
-    const data = props.timeSeriesData.map(item => {
-        switch (metric) {
-            case 'error': return item.error;
-            case 'sent': return item.sent;
-            case 'delivered': return item.delivered;
-            case 'hard_bounce': return item.hard_bounce;
-            case 'soft_bounce': return item.soft_bounce;
-            case 'opened': return item.opened;
-            case 'clicked': return item.clicked;
-            case 'spam': return item.spam;
-            case 'unsubscribed': return item.unsubscribed;
-            case 'delay': return item.delay;
-            case 'open_rate': return item.open_rate;
-            case 'clicked_rate': return item.clicked_rate;
-            case 'spam_rate': return item.spam_rate;
-            case 'unsubscribe_rate': return item.unsubscribe_rate;
-            default: return 0;
-        }
-    });
-
-    return { labels, data };
+// Maps this component's metric keys to App\Enums\Comms\Mailshot\MailshotPerformanceInsightMetricEnum values
+const apiMetricMap: Record<string, string> = {
+    opened: 'total_email_opened',
+    clicked: 'total_click',
+    open_rate: 'open_rate',
+    clicked_rate: 'click_rate',
+    spam_rate: 'spam_rate',
+    unsubscribe_rate: 'unsubscribe_rate',
+    bounce_rate: 'bounce_rate',
 };
-
-
 
 const isRateMetric = (metric: string) => rateMetrics.includes(metric);
 
+const fetchInsights = async () => {
+    isLoading.value = true;
+    try {
+        const { data } = await axios.get(
+            route(props.performanceInsightsRoute, { mailshot: props.mailshotId }),
+            {
+                params: { frequency: selectedPeriod.value, metric: apiMetricMap[selectedMetric.value] },
+                headers: { Accept: 'application/json' },
+            }
+        );
+        records.value = data ?? [];
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+watch([selectedPeriod, selectedMetric], fetchInsights, { immediate: true });
+
 const totalValue = computed(() => {
-    if (!props.timeSeriesData || props.timeSeriesData.length === 0) {
+    if (records.value.length === 0) {
         return 0;
     }
 
-    const metric = selectedMetric.value;
-
-    if (isRateMetric(metric)) {
-        // For rate metrics, calculate average
-        const sum = props.timeSeriesData.reduce((acc, item) => {
-            switch (metric) {
-                case 'open_rate': return acc + item.open_rate;
-                case 'clicked_rate': return acc + item.clicked_rate;
-                case 'spam_rate': return acc + item.spam_rate;
-                case 'unsubscribe_rate': return acc + item.unsubscribe_rate;
-                default: return acc;
-            }
-        }, 0);
-        return props.timeSeriesData.length > 0 ? sum / props.timeSeriesData.length : 0;
+    if (isRateMetric(selectedMetric.value)) {
+        const sum = records.value.reduce((acc, record) => acc + record.value, 0);
+        return sum / records.value.length;
     }
 
-    // For count metrics, calculate sum
-    return props.timeSeriesData.reduce((sum, item) => {
-        switch (metric) {
-            case 'error': return sum + item.error;
-            case 'sent': return sum + item.sent;
-            case 'delivered': return sum + item.delivered;
-            case 'hard_bounce': return sum + item.hard_bounce;
-            case 'soft_bounce': return sum + item.soft_bounce;
-            case 'opened': return sum + item.opened;
-            case 'clicked': return sum + item.clicked;
-            case 'spam': return sum + item.spam;
-            case 'unsubscribed': return sum + item.unsubscribed;
-            case 'delay': return sum + item.delay;
-            default: return sum;
+    return records.value.reduce((sum, record) => sum + record.value, 0);
+});
+
+const chartData = computed(() => ({
+    labels: records.value.map(record => record.period),
+    datasets: [
+        {
+            data: records.value.map(record => record.value),
+            borderColor: '#36a2eb',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.1,
+            pointBackgroundColor: '#36a2eb',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
         }
-    }, 0);
-});
-
-const chartData = computed(() => {
-    const { labels, data } = processTimeSeriesData(selectedPeriod.value, selectedMetric.value);
-
-    return {
-        labels,
-        datasets: [
-            {
-                data,
-                borderColor: '#36a2eb',
-                borderWidth: 2,
-                fill: false,
-                tension: 0.1,
-                pointBackgroundColor: '#36a2eb',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }
-        ]
-    };
-});
+    ]
+}));
 
 const chartOptions = computed(() => ({
     responsive: true,
@@ -199,14 +153,10 @@ const chartOptions = computed(() => ({
         }
     }
 }));
-
-const shouldShow = computed(() => {
-    return props.timeSeriesData && props.timeSeriesData.length > 0;
-});
 </script>
 
 <template>
-    <div v-if="shouldShow" class="card p-4 mt-6">
+    <div class="card p-4 mt-6">
         <div class="mb-4">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
 
@@ -247,8 +197,10 @@ const shouldShow = computed(() => {
 
         <!-- Chart Container -->
         <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div class="h-64">
-                <Chart type="line" :data="chartData" :options="chartOptions" class="w-full h-full" />
+            <div class="h-64 relative flex justify-center items-center">
+                <span v-if="isLoading" class="text-gray-500 text-sm">{{ trans('Loading...') }}</span>
+                <span v-else-if="records.length === 0" class="text-gray-500 text-sm">{{ trans('No Data Available') }}</span>
+                <Chart v-else type="line" :data="chartData" :options="chartOptions" class="w-full h-full" />
             </div>
         </div>
     </div>
