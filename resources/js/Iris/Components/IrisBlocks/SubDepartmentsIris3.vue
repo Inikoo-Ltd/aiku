@@ -2,7 +2,7 @@
 import Image from '@/Common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import axios from 'axios'
-import { ref, watch, computed, inject } from 'vue'
+import { ref, watch, computed, inject, onMounted } from 'vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from "@/Composables/useTrans";
@@ -38,8 +38,17 @@ const loading = ref(false)
 const loadingMore = ref(false)
 const layout: any = inject("layout", {})
 const selectedSubDepartment = ref<number | null>(null)
-
+const sortKey = ref('created_at')
 const families = ref(props.fieldValue?.families?.data ?? [])
+const isAscending = ref(true)
+const orderBy = ref( '-created_at')
+
+const sortOptions = computed(() => {
+  const baseOptions = [
+    { label: ctrans("New arrivals"), value: "created_at" },
+  ]
+  return baseOptions
+})
 
 const meta = ref(
   props.fieldValue?.families?.meta ?? {
@@ -79,6 +88,7 @@ const loadFamilies = async (
             category:
               selectedSubDepartment.value,
           },
+          sort: orderBy.value,
           page,
         },
       }
@@ -110,22 +120,61 @@ watch(selectedSubDepartment, () => {
 })
 
 const perRow = computed(() => ({
-	mobile: props.fieldValue?.settings?.per_row?.mobile ?? 2,
-	tablet: props.fieldValue?.settings?.per_row?.tablet ?? 3,
-	desktop: props.fieldValue?.settings?.per_row?.desktop ?? 5,
+  mobile: props.fieldValue?.settings?.per_row?.mobile ?? 2,
+  tablet: props.fieldValue?.settings?.per_row?.tablet ?? 3,
+  desktop: props.fieldValue?.settings?.per_row?.desktop ?? 5,
 }))
 
-console.log(props)
+const updateQueryParams = () => {
+    const url = new URL(window.location.href)
+
+    if (orderBy.value) {
+        url.searchParams.set("order_by", orderBy.value)
+    } else {
+        url.searchParams.delete("order_by")
+    }
+
+
+    window.history.replaceState({}, "", url.toString())
+}
+
+
+const toggleSort = (key: string) => {
+    if (sortKey.value === key) {
+        isAscending.value = !isAscending.value
+    } else {
+        sortKey.value = key
+        isAscending.value = true
+    }
+    orderBy.value = isAscending.value ? key : `-${key}`
+    updateQueryParams()
+    loadFamilies(1)
+}
+
+const getArrow = (key: typeof sortKey.value) => {
+  if (sortKey.value !== key) return ""
+  return isAscending.value ? "↑" : "↓"
+}
+
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const sortParam = urlParams.get("order_by")
+    if (sortParam) {
+        orderBy.value = sortParam
+        const key = sortParam.replace("-", "")
+        sortKey.value = key as typeof sortKey.value
+        isAscending.value = !sortParam.startsWith("-")
+    }
+})
 </script>
 
 <template>
   <section :id="'sub-department'"
     class="editor-class pt-12 mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14"
-    	:style="{
-			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-			...getStyles(fieldValue.container?.properties, screenType),
-		}"
-    >
+    :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(fieldValue.container?.properties, screenType),
+    }">
     <!-- Header -->
     <div class="mb-10">
       <span :style="{ fontSize: '2rem' }" class="font-medium text-[#1d2d44]">
@@ -136,7 +185,7 @@ console.log(props)
       <div class="flex items-center justify-between gap-4 lg:hidden">
         <div class="text-2xl text-slate-700">
           {{ meta.total }}
-          {{ ctrans('products Found') }}
+          {{ ctrans('Families Found') }}
         </div>
 
         <select v-model.number="selectedSubDepartment"
@@ -152,28 +201,41 @@ console.log(props)
       </div>
 
       <!-- Desktop -->
-      <div class="hidden lg:flex lg:flex-row lg:items-center lg:gap-20">
-        <div class="text-2xl text-slate-700">
-          {{ meta.total }}
-          {{ ctrans('products Found') }}
+      <div class="hidden lg:flex justify-between">
+        <div class="lg:flex lg:flex-row lg:items-center lg:gap-20">
+          <div class="text-2xl text-slate-700">
+            {{ meta.total }}
+            {{ ctrans('Families Found') }}
+          </div>
+
+          <div class="flex items-center gap-4">
+            <span class="text-xl text-slate-700">
+              {{ ctrans('Filter By Category') }} :
+            </span>
+
+            <select v-model.number="selectedSubDepartment"
+              class="h-11 min-w-[180px] rounded-md border border-slate-400 bg-white px-4">
+              <option :value="null">
+                {{ ctrans('All') }}
+              </option>
+
+              <option v-for="department in fieldValue.sub_department_list" :key="department.code"
+                :value="department.code">
+                {{ department.name }}
+              </option>
+            </select>
+          </div>
         </div>
-
-        <div class="flex items-center gap-4">
-          <span class="text-xl text-slate-700">
-            {{ ctrans('Filter By Category') }} :
-          </span>
-
-          <select v-model.number="selectedSubDepartment"
-            class="h-11 min-w-[180px] rounded-md border border-slate-400 bg-white px-4">
-            <option :value="null">
-              {{ ctrans('All') }}
-            </option>
-
-            <option v-for="department in fieldValue.sub_department_list" :key="department.code"
-              :value="department.code">
-              {{ department.name }}
-            </option>
-          </select>
+        <div class="flex space-x-6 w-fit overflow-x-auto mt-2 md:mt-0 justify-end">
+          <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
+            class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
+            :class="[
+              sortKey === option.value
+                ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
+                : `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
+            ]">
+            {{ option.label }} {{ getArrow(option.value) }}
+          </button>
         </div>
       </div>
     </div>
@@ -189,17 +251,14 @@ console.log(props)
     </div>
 
     <!-- Family Grid -->
-    <div v-else
-			class="grid gap-5"
-			:style="{
-				gridTemplateColumns: `repeat(${
-					screenType === 'mobile'
-						? perRow.mobile
-						: screenType === 'tablet'
-							? perRow.tablet
-							: perRow.desktop
-				}, minmax(0, 1fr))`,
-			}">
+    <div v-else class="grid gap-5" :style="{
+      gridTemplateColumns: `repeat(${screenType === 'mobile'
+        ? perRow.mobile
+        : screenType === 'tablet'
+          ? perRow.tablet
+          : perRow.desktop
+        }, minmax(0, 1fr))`,
+    }">
       <LinkIris v-for="family in families" :key="family.id" :href="family.url" class="group block" type="internal">
         <div class="aspect-square overflow-hidden bg-gray-100 relative xflex items-center justify-center">
           <div v-if="!family.image" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -207,8 +266,7 @@ console.log(props)
           </div>
           <Image :src="family.image" :alt="family.name"
             class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-            :class="!family.image ? 'opacity-0' : ''"
-          />
+            :class="!family.image ? 'opacity-0' : ''" />
         </div>
 
         <span class="mt-2 line-clamp-2 text-lg leading-snug text-slate-900 font-semibold">
