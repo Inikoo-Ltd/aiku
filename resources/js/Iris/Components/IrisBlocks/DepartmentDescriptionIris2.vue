@@ -194,6 +194,15 @@ watch(
 	},
 	{ immediate: true }
 )
+
+watch(
+  () => embedUrl.value,
+  (val) => {
+    console.log("embedUrl changed", val)
+  },
+  { immediate: true }
+)
+
 </script>
 
 <template>
@@ -314,6 +323,7 @@ watch(
 									<div
 										class="video-cover w-full h-[220px] md:h-[280px] lg:h-[360px] 2xl:h-[500px]">
 										<iframe
+											v-once
 											:src="embedUrl"
 											frameborder="0"
 											allow="autoplay; fullscreen; picture-in-picture"
@@ -396,7 +406,8 @@ watch(
 										class="absolute inset-0 w-full h-full"
 										frameborder="0"
 										allow="autoplay; fullscreen; picture-in-picture"
-										allowfullscreen />
+  										@load="console.log('iframe loaded')"
+									/>
 								</div>
 							</template>
 
@@ -476,6 +487,7 @@ watch(
 			<div class="aspect-video overflow-hidden rounded-xl">
 				<iframe
 					v-if="embedUrl"
+					v-once
 					:src="`${embedUrl}${embedUrl.includes('?') ? '&' : '?'}autoplay=1`"
 					frameborder="0"
 					allow="
@@ -487,6 +499,7 @@ watch(
 						picture-in-picture;
 					"
 					allowfullscreen
+					@load="console.log('iframe loaded')"
 					class="w-full h-full" />
 			</div>
 		</div>

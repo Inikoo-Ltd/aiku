@@ -112,9 +112,13 @@ class AuthenticateAllegroAccount extends OrgAction
                         }
                     }
 
-                    return Redirect::route('retina.dropshipping.customer_sales_channels.show', [
-                        'customerSalesChannel' => $allegroUser->customerSalesChannel->slug
-                    ]);
+                    $customerSalesChannel = $allegroUser->customerSalesChannel;
+                    $domain = "https://{$customerSalesChannel->shop->website->domain}";
+                    $path = "/app/dropshipping/channels/$customerSalesChannel->slug";
+
+                    $fullUrl = $domain . $path;
+
+                    return Redirect::away($fullUrl);
                 }
 
             } catch (\Exception $e) {
