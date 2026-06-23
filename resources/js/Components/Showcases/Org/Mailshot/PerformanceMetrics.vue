@@ -12,6 +12,7 @@ const props = defineProps<{
     performanceInsightsRoute: string;
 }>();
 
+const totalOrAverageValue = ref(0);
 const selectedPeriod = ref('day');
 const selectedMetric = ref('opened');
 const isLoading = ref(false);
@@ -59,25 +60,13 @@ const fetchInsights = async () => {
             }
         );
         records.value = data?.metric ?? [];
+        totalOrAverageValue.value = data?.total ?? 0;
     } finally {
         isLoading.value = false;
     }
 };
 
 watch([selectedPeriod, selectedMetric], fetchInsights, { immediate: true });
-
-const totalValue = computed(() => {
-    if (records.value.length === 0) {
-        return 0;
-    }
-
-    if (isRateMetric(selectedMetric.value)) {
-        const sum = records.value.reduce((acc, record) => acc + record.value, 0);
-        return sum / records.value.length;
-    }
-
-    return records.value.reduce((sum, record) => sum + record.value, 0);
-});
 
 const chartData = computed(() => ({
     labels: records.value.map(record => record.period),
@@ -190,7 +179,7 @@ const chartOptions = computed(() => ({
                     {{ isRateMetric(selectedMetric) ? 'Average Rate' : 'Total Opened' }}
                 </label>
                 <span class="text-sm font-bold text-gray-900">
-                    {{ isRateMetric(selectedMetric) ? `${totalValue.toFixed(2)}%` : props.totalOpened }}
+                    {{ totalOrAverageValue }}
                 </span>
             </div>
         </div>
