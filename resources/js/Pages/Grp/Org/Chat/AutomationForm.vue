@@ -211,16 +211,40 @@ function activeAiNode(): any {
         ?? flowNodes.value.find(n => n.type === 'action' && n.data?.action === 'ai_answer')
 }
 
-function linkify(text: string): string {
+function imageTag(url: string, alt: string): string {
+    return `<img src="${url}" alt="${alt}" loading="lazy" class="mt-1.5 max-w-full rounded-lg border border-gray-200" />`
+}
+
+function renderRichText(text: string): string {
     const escaped = (text ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
 
-    return escaped.replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)\]])/g, url =>
+    const stash: string[] = []
+    const keep = (html: string): string => ` IMG${stash.push(html) - 1} `
+
+    let out = escaped.replace(/\[Image:\s*([^\]]*?)\]/gi, (whole, inner: string) => {
+        const match = inner.match(/(https?:\/\/[^\s\]]+)/)
+        if (!match) {
+            return whole
+        }
+        const url = match[1]
+        const alt = inner.replace(url, '').replace(/[-–\s]+$/, '').trim()
+
+        return keep(imageTag(url, alt))
+    })
+
+    out = out.replace(/(https?:\/\/[^\s<]+\.(?:png|jpe?g|gif|webp|svg|bmp|avif)(?:\?[^\s<]*)?)/gi, url =>
+        keep(imageTag(url, '')),
+    )
+
+    out = out.replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)\]])/g, url =>
         `<a href="${url}" target="_blank" rel="noopener" class="text-indigo-600 underline break-all">${url}</a>`,
     )
+
+    return out.replace(/ IMG(\d+) /g, (_whole, index: string) => stash[Number(index)])
 }
 
 async function sendMessage(): Promise<void> {
@@ -508,7 +532,7 @@ function submit(): void {
                                                 </template>
                                             </template>
 
-                                            <p v-else class="whitespace-pre-wrap break-words leading-relaxed px-0.5" v-html="linkify(msg.text)"></p>
+                                            <p v-else class="whitespace-pre-wrap break-words leading-relaxed px-0.5" v-html="renderRichText(msg.text)"></p>
                                         </div>
 
                                         <div class="text-[10px] text-gray-400 ml-1">{{ msg.time }}</div>
