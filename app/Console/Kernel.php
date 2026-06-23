@@ -25,6 +25,7 @@ use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
+use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
 use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
@@ -349,23 +350,15 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
+
             $this->logSchedule(
-                $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
-                    monitorSlug: 'UpdateInventoryInShopifyPortfolio',
+                $schedule->job(UpdateShopifyInventory::makeJob())->everySixHours()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'UpdateShopifyInventory',
                 ),
-                name: 'UpdateInventoryInShopifyPortfolio',
-                type: 'command',
+                name: 'UpdateShopifyInventory',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
-
-            //            $this->logSchedule(
-            //                $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-            //                    monitorSlug: 'CheckShopifyPortfolios',
-            //                ),
-            //                name: 'CheckShopifyPortfolios',
-            //                type: 'command',
-            //                scheduledAt: now()->format('H:i')
-            //            );
 
             $this->logSchedule(
                 $schedule->command('shop-external:check-all-shop-connections')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
