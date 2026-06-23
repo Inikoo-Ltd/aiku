@@ -162,8 +162,6 @@ const SaveOrder = async () => {
             v-if="props.data?.editable" ref="productDialog"
             v-model="listProducts.data.data"
             @update:model-value="saveActive = true"
-            :routeFetchDepartment="props.data?.route_get_department"
-            :routeFetchSubDepartment="props.data?.route_get_sub_department"
             :routeFetchFamily="props.data?.route_get_family"
         />
 
