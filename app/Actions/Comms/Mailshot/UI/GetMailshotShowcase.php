@@ -26,6 +26,7 @@ class GetMailshotShowcase
             'mailshot' => new MailshotResource($mailshot),
             'compiled_layout' => $compiledLayout,
             'compiled_layout_size' => $kb,
+            'performance_insights_route' => 'grp.json.mailshot.performance-insights',
             'time_series_data' => GetMailshotTimeSeries::run($mailshot)->jsonSerialize(),
         ];
     }

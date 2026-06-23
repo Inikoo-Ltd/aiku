@@ -41,6 +41,7 @@ const props = defineProps<{
         mailshot: {
             data: {
                 id: any,
+                slug:string, 
                 subject: any,
                 state: any,
                 state_label: any,
@@ -310,7 +311,7 @@ console.log("Stats", stats.value)
             <!-- Performance Metrics -->
             <PerformanceMetrics :mailshot-state="mailshotState"
                 :total-opened="stats?.find((s: any) => s.key === 'number_opened_emails')?.value ?? 0"
-                :mailshot-id="data.mailshot.data.id"
+                :mailshot-slug="data.mailshot.data.slug"
                 :performance-insights-route="data.performance_insights_route" />
 
 

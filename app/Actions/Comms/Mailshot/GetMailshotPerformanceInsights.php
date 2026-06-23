@@ -78,9 +78,4 @@ class GetMailshotPerformanceInsights
     {
         return $this->handle($mailshot, $request->input('frequency'), $request->input('metric'));
     }
-
-    public function __invoke(Mailshot $mailshot, ActionRequest $request): array
-    {
-        return $this->handle($mailshot, $request->input('frequency'), $request->input('metric'));
-    }
 }

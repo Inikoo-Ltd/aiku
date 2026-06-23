@@ -8,7 +8,7 @@ const props = defineProps<{
     mailshotState: string;
     totalOpened: number;
     totalClicked: number;
-    mailshotId: number;
+    mailshotSlug: string;
     performanceInsightsRoute: string;
 }>();
 
@@ -52,7 +52,7 @@ const fetchInsights = async () => {
     isLoading.value = true;
     try {
         const { data } = await axios.get(
-            route(props.performanceInsightsRoute, { mailshot: props.mailshotId }),
+            route(props.performanceInsightsRoute, { mailshot: props.mailshotSlug }),
             {
                 params: { frequency: selectedPeriod.value, metric: apiMetricMap[selectedMetric.value] },
                 headers: { Accept: 'application/json' },
