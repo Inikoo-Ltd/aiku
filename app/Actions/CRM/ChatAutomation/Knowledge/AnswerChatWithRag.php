@@ -210,9 +210,11 @@ class AnswerChatWithRag
     {
         $rules = $confident
             ? [
-                'Answer the question using the KNOWLEDGE below.',
-                'Do not invent facts, numbers, links, prices, or steps that are not in the KNOWLEDGE.',
-                'If a relevant KNOWLEDGE block starts with "SOURCE_URL:", share that exact URL as the tutorial/guide link so the customer can click it. Never invent or alter a URL, and only use a SOURCE_URL that is relevant to the question.',
+                'Answer ONLY using the KNOWLEDGE below. Do not invent facts, numbers, prices, steps, links, or images that are not in the KNOWLEDGE.',
+                'The KNOWLEDGE is retrieved by similarity, so it can be about a RELATED but DIFFERENT subject than what was asked (for example a different sales channel, product, or feature). If the KNOWLEDGE does not actually cover the exact thing the customer asked about, do NOT adapt or rename steps from a different subject and do NOT share its link. Instead say you do not have information about that specific topic yet.',
+                'Match the shape of your answer to what the customer actually asked. If they only want a link, reply with one short sentence plus the exact link. If it is a quick factual question, answer to the point in one or two sentences. But when they ask how to do something, or ask for step-by-step, give the full ordered steps from the KNOWLEDGE, do not hold back or deflect them to a link instead.',
+                'If a relevant KNOWLEDGE block starts with "SOURCE_URL:", you may share that exact URL as the tutorial/guide link so the customer can click it. Never invent or alter a URL, and only use a SOURCE_URL that is relevant to the question.',
+                'KNOWLEDGE may include images written as "[Image: description - URL]" or as plain image URLs. The chat renders an image automatically whenever you include its URL, so to SHOW an image you simply put its exact image URL on its own line at the right place in your answer. Never say you cannot show or send images, and never replace an available image URL with a link to the article. When the customer asks for steps with images, place the relevant image URL on its own line right after the step it illustrates. Never invent or alter an image URL.',
             ]
             : [
                 'There is NO documentation for this question in the knowledge base.',
@@ -228,7 +230,7 @@ class AnswerChatWithRag
             $rules,
             [
                 'Write in plain text only. Do not use Markdown: no asterisks for bold or bullets, no "#" headings, no backticks.',
-                'When listing steps, put each step on its own line as "1. ", "2. ", "3. " and keep them short.',
+                'Use numbered lines "1. ", "2. ", "3. " only when you are actually giving step-by-step instructions, and keep each step short. For links or quick answers, reply naturally without forcing a list.',
                 'Use CONVERSATION to resolve follow-up questions like "give me the link".',
                 $persona,
             ],

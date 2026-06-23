@@ -4,6 +4,7 @@ namespace App\Models\CRM\Livechat;
 
 use App\Enums\CRM\Livechat\ChatKnowledgeSourceStatusEnum;
 use App\Enums\CRM\Livechat\ChatKnowledgeSourceTypeEnum;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,6 +41,13 @@ class ChatKnowledgeSource extends Model implements HasMedia
             'type'   => ChatKnowledgeSourceTypeEnum::class,
             'status' => ChatKnowledgeSourceStatusEnum::class,
         ];
+    }
+
+    protected function content(): Attribute
+    {
+        return Attribute::set(
+            fn (?string $value): ?string => $value === null ? null : mb_scrub($value, 'UTF-8'),
+        );
     }
 
     public function registerMediaCollections(): void
