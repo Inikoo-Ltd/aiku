@@ -206,10 +206,9 @@ const onClickCopy = (textToCopy: string) => {
         </Transition>
         
         <!-- Section: payment session id -->
-        <div v-if="props.data?.data?.id" class="italic opacity-70 text-xs mt-2">
-            {{ ctrans("Payment session id") }}: <span @click="useCopyText(props.data.data.id)" class="underline cursor-pointer">
+        <div v-if="props.data?.data?.id" class="italic opacity-50 text-[10px] mt-5">
+           <span @click="useCopyText(props.data.data.id)" class="cursor-pointer">
                 {{ props.data.data.id }}
-                <CopyButton :text="props.data.data.id" class="ml-2" />
             </span>
         </div>
     </div>
