@@ -481,7 +481,6 @@ class CallApiGlsEsShipping extends OrgAction
         $shipmentData["nif"]             = "";
         $shipmentData["portage"]         = "P";
 
-        dd($shipmentData);
         if (app()->environment('local')) {
             $shipmentData["RefC"] = 'test+' . rand(1000, 9999) . ' ' . strtoupper($parent->reference) . ' V2';
         } else {
