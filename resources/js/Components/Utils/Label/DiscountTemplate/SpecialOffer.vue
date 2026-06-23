@@ -24,14 +24,16 @@ const _popoverInfoCircle = ref()
 
 const label = computed<string>(() => props.offer?.label || ctrans("Special Offer"))
 
-const percentageOff = computed<string | null>(() => {
-    const raw = props.offer?.percentage_off
-    if (raw === undefined || raw === null || raw === "") {
-        return null
-    }
+const maxDiscountLabel = computed(() => {
+    const raw = props.offer?.max_percentage_discount
+    if (!raw) return null
 
-    return String(raw)
+    const val = Number(raw)
+    if (!val) return null
+
+    return (val * 100).toFixed(2).replace(/\.00$/, "")
 })
+console.log('haloo',props)
 </script>
 
 <template>
@@ -42,11 +44,11 @@ const percentageOff = computed<string | null>(() => {
 
         <div class="special-offer__content">
             <div class="special-offer__percentage">
-                <span v-if="percentageOff">{{ percentageOff }} {{ ctrans("OFF") }}</span>
+                <span v-if="maxDiscountLabel">{{ maxDiscountLabel }} {{ ctrans("OFF") }}</span>
             </div>
 
-            <div v-if="offer?.duration_label && use_duration" class="special-offer__status">
-                {{ ctrans("Until :date", { date: offer.duration_label }) }}
+            <div v-if="offer?.duration_label" class="special-offer__status">
+                {{  offer.duration_label  }}
             </div>
         </div>
 
