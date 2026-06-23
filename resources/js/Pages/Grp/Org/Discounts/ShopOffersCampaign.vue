@@ -42,8 +42,8 @@ const props = defineProps<{
         id: number
         slug: string
         currency_code: string
-        organisation: string
-        offercampaign: string
+        organisation?: string
+        offercampaign?: string
     }
 }>()
 

@@ -451,7 +451,7 @@ const isFormInvalid = computed(() => {
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :minDate="startDate" :placeholder="trans('Select end date')" />
+                                :minDate="startDate ?? undefined" :placeholder="trans('Select end date')" />
                         </div>
                     </div>
                 </div>
