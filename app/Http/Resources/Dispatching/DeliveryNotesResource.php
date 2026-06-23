@@ -79,7 +79,7 @@ class DeliveryNotesResource extends JsonResource
             $weight = round($this->estimated_weight / 1000).' Kg';
         }
 
-        $totalParcels = count($this->parcels);
+        $totalParcels = is_array($this->parcels) ? count($this->parcels) : 0;
         
         return [
             'id'                          => $this->id,

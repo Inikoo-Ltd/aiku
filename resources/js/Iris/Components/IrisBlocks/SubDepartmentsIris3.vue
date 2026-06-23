@@ -53,6 +53,7 @@ const orderBy = ref('-created_at')
 const sortOptions = computed(() => {
   const baseOptions = [
     { label: ctrans("New arrivals"), value: "created_at" },
+    { label: ctrans("Name"), value: "name" },
   ]
   return baseOptions
 })
@@ -203,7 +204,7 @@ console.log('sdsd',props)
             {{ ctrans('All') }}
           </option>
 
-          <option v-for="option in fieldValue.sub_department_list" :key="option.code" :value="option.code">
+          <option v-for="option in fieldValue.filter_options" :key="option.code" :value="option.code">
             {{ option.name }}
           </option>
         </select>
@@ -228,7 +229,7 @@ console.log('sdsd',props)
                 {{ ctrans('All') }}
               </option>
 
-              <option v-for="option in fieldValue.sub_department_list" :key="option.code"
+              <option v-for="option in fieldValue.filter_options" :key="option.code"
                 :value="option.code">
                 {{ option.name }}
               </option>
