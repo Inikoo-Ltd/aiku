@@ -73,7 +73,7 @@ const shopData = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-category-create-discount>
+        <template #other>
             <ModalCreateShippingDiscount :shop_data="shopData" />
         </template>
     </PageHeading>

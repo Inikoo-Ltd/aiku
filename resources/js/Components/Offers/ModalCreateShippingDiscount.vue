@@ -2,7 +2,7 @@
 
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { ref, computed } from "vue"
+import { ref, computed, watch, nextTick } from "vue"
 import { DatePicker, InputNumber } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
@@ -91,11 +91,41 @@ const endDate = ref<Date | null>(
         : null
 )
 
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
+const quickApplyPresets = [1, 2, 3, 7]
+const quickApplyDays = ref<number | null>(null)
+
+let isApplyingPreset = false
+
+const applyQuickApply = (days: number) => {
+    isApplyingPreset = true
+
+    const start = new Date(today)
+    const end = new Date(today)
+    end.setDate(end.getDate() + days)
+
+    startDate.value = start
+    endDate.value = end
+    quickApplyDays.value = days
+
+    nextTick(() => {
+        isApplyingPreset = false
+    })
+}
+
+watch([startDate, endDate], () => {
+    if (!isApplyingPreset) {
+        quickApplyDays.value = null
+    }
+})
+
 const resetForm = () => {
     offerLabel.value = ""
     offerAmount.value = 0
     startDate.value = null
     endDate.value = null
+    quickApplyDays.value = null
     isLoadingSubmit.value = false
 }
 
@@ -135,9 +165,8 @@ const isFormInvalid = computed(() => {
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
             <div class="px-6">
-                <h2 class="text-2xl font-bold mxb-4 text-center">{{ trans("Create Discount Shipping") }}</h2>
-                <div class="mt-8 space-y-8">
-
+                <h2 class="text-2xl font-bold mb-4 text-center">{{ trans("Create Discount Shipping") }}</h2>
+                <div class="mt-2 space-y-4">
                     <!-- offer name -->
                     <div>
                         <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
@@ -164,6 +193,25 @@ const isFormInvalid = computed(() => {
                             <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
                                          :currency="props.shop_data.currency_code" locale="en-US"
                                          :placeholder="trans('Enter minimum amount')" />
+                        </div>
+                    </div>
+
+                    <!-- Quick apply -->
+                    <div>
+                        <label class="font-medium mb-2 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-bolt"
+                                             class="text-xs text-amber-400 align-middle" />
+                            {{ trans("Quick apply") }}:
+                        </label>
+                        <div class="pl-4 flex flex-wrap gap-2">
+                            <button v-for="days in quickApplyPresets" :key="days" type="button"
+                                    @click="applyQuickApply(days)"
+                                    class="px-3.5 py-2 rounded-lg border text-sm cursor-pointer transition-colors"
+                                    :class="quickApplyDays === days
+                                        ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                        : 'border-gray-200 hover:border-gray-300'">
+                                {{ trans(':count day', { count: String(days) }) }}
+                            </button>
                         </div>
                     </div>
 
