@@ -16,7 +16,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class OfferHydrateOrders implements ShouldBeUnique
 {
-
     use AsAction;
 
     public string $jobQueue = 'hydrators-slave';

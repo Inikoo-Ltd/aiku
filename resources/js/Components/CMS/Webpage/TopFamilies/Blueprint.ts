@@ -7,6 +7,12 @@ export default {
 			information: "id selector is used to select one unique element!",
 		},
 		{
+			label: "Title",
+			key: ["title"],
+			type: "text",
+			information: "Custom heading text. Leave empty to use the default 'Best - Selling",
+		},
+		{
 			name: "Card",
 			key: ["card", "container", "properties"],
 			replaceForm: [

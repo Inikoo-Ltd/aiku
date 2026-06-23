@@ -158,6 +158,10 @@ class FetchIrisEcomBasket extends IrisAction
                 'products.code',
                 'products.available_quantity',
                 'products.web_images',
+                'products.offers_data as product_offers_data',
+                'products.department_id',
+                'products.sub_department_id',
+                'products.family_id',
                 'webpages.url as canonical_url'
             )
             ->where('transactions.model_type', 'Product')
@@ -185,11 +189,14 @@ class FetchIrisEcomBasket extends IrisAction
                 'available_quantity'   => $productData->available_quantity,
                 'canonical_url'        => $productData->canonical_url,
                 'offers_data'          => json_decode($productData->offers_data, 1),
+                'product_offers_data'  => json_decode($productData->product_offers_data, true),
                 'name'                 => $productData->name,
                 'code'                 => $productData->code,
                 'units'                => (int)$productData->units,
                 'web_image_thumbnail'  => $webImageThumbnail,
-
+                'department_id'        => $productData->department_id,
+                'sub_department_id'    => $productData->sub_department_id,
+                'family_id'            => $productData->family_id,
             ];
         }
 

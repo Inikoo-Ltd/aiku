@@ -26,8 +26,7 @@ class RepairDiscontinuedProductsWebpages
         if ($product->webpage) {
             $result = CloseDiscontinuedWebpage::run($product->webpage);
 
-            if (Arr::has($result,'redirect_to'))
-            {
+            if (Arr::has($result, 'redirect_to')) {
                 $command->info(sprintf(
                     'Redirecting discontinued product %s to %s',
                     $product->slug,
@@ -36,7 +35,7 @@ class RepairDiscontinuedProductsWebpages
             } else {
                 $command->error(sprintf(
                     'No redirect found for discontinued product %s. Error: %s',
-                    $product->slug, 
+                    $product->slug,
                     data_get($result, 'error', 'n/a error message')
                 ));
                 exit;
@@ -70,7 +69,7 @@ class RepairDiscontinuedProductsWebpages
 
                     $webpage = $product->webpage;
 
-                    $this->handle($product,$command);
+                    $this->handle($product, $command);
 
                     $command->info(sprintf(
                         "Repaired product: %s | product_state: %s | webpage: %s | webpage_state: %s",

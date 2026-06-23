@@ -339,16 +339,16 @@ const responsiveClasses = computed(() => ({
 								</div>
 
 								<div class="flex justify-center mt-5">
-									<button v-if="modelValue.department.showcase_video"
+									<button v-if="modelValue.department.showcase_video" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 										:class="['bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-md transition', responsiveClasses.buttonPadding]"
 										@click="videoDialogVisible = true">
-										{{ ctrans("See a video") }}
+										{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("See a video") }}
 									</button>
 
 									<a v-else href="#sub-department">
-										<button
+										<button :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 											:class="['bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-md transition', responsiveClasses.buttonPadding]">
-											{{ ctrans("Browse All") }}
+												{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("Browse All") }}
 										</button>
 									</a>
 								</div>
@@ -447,15 +447,15 @@ const responsiveClasses = computed(() => ({
 								{{ expanded ? "Read Less" : "Read More" }}
 							</button>
 							<div>
-								<button v-if="modelValue.department.showcase_video"
+								<button v-if="modelValue.department.showcase_video" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 									class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md transition"
 									@click="videoDialogVisible = true">
-									{{ ctrans("See a video") }}
+									{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("See a video") }}
 								</button>
 								<a v-else href="#sub-department">
-									<button
+									<button :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 										class="mt-6 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 rounded-md transition">
-										{{ ctrans("Browse All") }}
+										{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("Browse All") }}
 									</button>
 								</a>
 							</div>

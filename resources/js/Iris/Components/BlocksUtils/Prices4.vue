@@ -15,7 +15,6 @@ import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import { faCheck } from "@far"
-import { toInteger } from "lodash-es"
 
 library.add(faPlusCircle, faQuestionCircle)
 
@@ -25,6 +24,7 @@ const locale = useLocaleStore()
 
 interface ProductResource {
     id: number
+    family_id?: number | null
     name: string
     code: string
     image?: {
@@ -109,15 +109,19 @@ const showIntervalOffer = computed(() => {
         === 'Category Quantity Ordered Order Interval' && webpage_data?.sub_type != 'family'
 })
 
-const quantityOrdered = computed(() =>
-    toInteger(props.hasInBasket?.quantity_ordered)
-)
+// Total quantity ordered across the whole family this product belongs to
+const familyQuantityOrdered = computed(() => {
+    const familyId = props.product?.family_id
+    if (familyId == null) return 0
+
+    return Number(layout?.family_quantity_ordered?.[familyId] ?? 0)
+})
 
 const showMemberPrice = computed(() => {
     if (layout?.user?.gr_data?.amnesty) return true
     if (layout?.user?.gr_data?.customer_is_gr) return true
 
-    return bestOffer.value?.category_qty_trigger <= quantityOrdered.value
+    return bestOffer.value?.category_qty_trigger <= familyQuantityOrdered.value
 })
 
 // console.log("showMemberPrice", showMemberPrice.value)
@@ -235,12 +239,12 @@ const _popoverProfit = ref(null)
 
                     <!-- MULTIPLE -->
                     <template v-else>
-                        <div class="flex justify-end items-center gap-1 min-w-0">
-                            <span class="whitespace-nowrap">
+                        <div class="flex justify-end items-center gap-1 min-w-0 ">
+                            <span class="whitespace-nowrap text-[8px] sm:text-[9px] md:text-[10px]">
                                 {{ locale.currencyFormat(currency?.code, product.price) }}
                             </span>
                             <span v-if="product.price_per_unit > 0"
-                                class="font-normal truncate min-w-0 text-[8px] sm:text-[9px] md:text-[10px]"
+                                class="truncate min-w-0"
                                 :title="product.unit">
                                 ({{ locale.currencyFormat(currency?.code, product.price_per_unit) }}/{{ product.unit }})
                             </span>
@@ -267,21 +271,21 @@ const _popoverProfit = ref(null)
                 </div>
                 <div v-else class="offer">
                     <DiscountByType v-if="bestOffer?.type == 'Category Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Category Quantity Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'"
                         :offers_data="product?.product_offers_data" template="first-order" />
                     <DiscountByType v-if="bestOffer?.type == 'Category Amount Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Department Quantity Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Subdepartment Quantity Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Department Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <div v-else class="w-full"></div>
                 </div>
 
@@ -291,8 +295,9 @@ const _popoverProfit = ref(null)
                     <div class="flex items-baseline justify-end gap-0.5 min-w-0">
                         <div class="min-w-0 flex-1 truncate text-[#E87928] border-[#E87928]">
                             <span class="font-bold" v-if="product.units == 1">{{ locale.currencyFormat(currency?.code, product.discounted_price) }} /{{ product.unit }}</span>
-                            <span v-else><span class="font-bold">{{ locale.currencyFormat(currency?.code, product.discounted_price) }}</span><span
-                                    class="text-[8px] sm:text-[9px] md:text-[10px]">({{
+                            <span v-else>
+                                <span class=" text-[8px] sm:text-[9px] md:text-[10px]">{{ locale.currencyFormat(currency?.code, product.discounted_price) }}</span><span
+                                    class="font-bold">({{
                                         locale.currencyFormat(currency?.code,
                                             product.discounted_price_per_unit) }}
                                     /{{ product.unit }})</span></span>

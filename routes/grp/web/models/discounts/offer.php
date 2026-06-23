@@ -11,6 +11,7 @@ use App\Actions\Discounts\Offer\FinishOffer;
 use App\Actions\Discounts\Offer\StoreCustomerOffers;
 use App\Actions\Discounts\Offer\StoreGiftsOffers;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
+use App\Actions\Discounts\Offer\StoreDiscountShipping;
 use App\Actions\Discounts\Offer\StoreShopOffer;
 use App\Actions\Discounts\Offer\StoreVoucherOffers;
 use App\Actions\Discounts\Offer\VolGr\UpdateVolGrGift;
@@ -27,3 +28,4 @@ Route::post('offers/shop/{shop:id}/gift-offer', StoreGiftsOffers::class)->name('
 Route::post('offers/shop/{shop:id}/shop-offer', StoreShopOffer::class)->name('shop_offer.store');
 Route::post('offers/shop/{shop:id}/voucher', StoreVoucherOffers::class)->name('store_voucher');
 Route::post('offers/shop/{shop:id}/customer-offer', StoreCustomerOffers::class)->name('store_customer_offer');
+Route::post('offers/shop/{shop:id}/shipping-offer', StoreDiscountShipping::class)->name('shipping_offer.store');

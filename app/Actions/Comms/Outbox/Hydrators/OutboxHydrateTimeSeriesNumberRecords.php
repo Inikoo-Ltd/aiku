@@ -22,7 +22,7 @@ class OutboxHydrateTimeSeriesNumberRecords implements ShouldBeUnique
 
     public function handle(int $timeSeriesId): void
     {
-        $timeSeries = OutboxTimeSeries::find($timeSeriesId);
+        $timeSeries = OutboxTimeSeries::on('aiku_no_sticky')->find($timeSeriesId);
 
         if (!$timeSeries) {
             return;

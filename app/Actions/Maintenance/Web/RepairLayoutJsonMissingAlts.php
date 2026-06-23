@@ -16,7 +16,6 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
-use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -77,7 +76,7 @@ class RepairLayoutJsonMissingAlts
             $changes++;
 
             $command?->line(
-                "Webblock: {$item->id} || Webpage ID: " . ($webpageId ?? 'N/A') . " || Image index: {$key} || Webpage subtype : " . ($webpage?->sub_type?->value ?? 'N/A') . " || Alt: {$alt}"
+                "Web block: $item->id || Webpage ID: " . ($webpageId ?? 'N/A') . " || Image index: $key || Webpage subtype : " . ($webpage?->sub_type?->value ?? 'N/A') . " || Alt: $alt"
             );
 
             data_set(
@@ -105,7 +104,7 @@ class RepairLayoutJsonMissingAlts
             if ($apply && $modelHasWebBlocks->webpage) {
                 $webpage = $modelHasWebBlocks->webpage;
                 if ($this->isSnapshotStale($webpage, $item)) {
-                    $command?->line("[SYNC SNAPSHOT] webpage:{$webpage->id} web_block:{$item->id}");
+                    $command?->line("[SYNC SNAPSHOT] webpage:$webpage->id web_block:$item->id");
                     $this->updateWebpage($webpage, $command);
                 }
             }
@@ -114,7 +113,7 @@ class RepairLayoutJsonMissingAlts
         return $changes;
     }
 
-    public function updateWebpage(Webpage $webpage, Command $command)
+    public function updateWebpage(Webpage $webpage, Command $command): void
     {
         UpdateWebpageContent::run($webpage);
 
@@ -170,7 +169,7 @@ class RepairLayoutJsonMissingAlts
 
                 foreach ($dbImages as $key => $dbImg) {
                     $dbAlt = data_get($dbImg, 'properties.alt');
-                    $snapAlt = data_get($snapshotImages, "{$key}.properties.alt");
+                    $snapAlt = data_get($snapshotImages, "$key.properties.alt");
 
                     // If alt is present in DB, but empty in snapshot
                     if (!blank($dbAlt) && blank($snapAlt)) {
@@ -183,29 +182,36 @@ class RepairLayoutJsonMissingAlts
         return false;
     }
 
-    public string $commandSignature = 'repair:layout_json_missing_alts {website} {--apply-changes}';
+    public string $commandSignature = 'repair:layout_json_missing_alts {website?} {--apply-changes}';
 
     public function asCommand(Command $command): void
     {
         $total = 0;
 
-        try {
-            $website = Website::where('slug', $command->argument('website'))->firstOrFail();
-        } catch (Exception $e) {
-            $command->error($e->getMessage());
-            return;
-        }
+        $websiteSlug = $command->argument('website');
+
+        $websites = Website::when(
+            $websiteSlug,
+            fn ($q) => $q->where('slug', $websiteSlug)
+        )->get();
 
         $applyChanges = (bool) $command->option('apply-changes');
 
-        ModelHasWebBlocks::where('website_id', $website->id)
-            ->with(['webBlock', 'webpage'])
-            ->chunk(100, function ($items) use ($command, &$total, $applyChanges) {
-                foreach ($items as $item) {
-                    $total += $this->handle($item, $applyChanges, $command);
-                }
-            });
+        foreach ($websites as $website) {
+            $command->info("\nApplying Repair for website: [$website->slug] $website->name");
 
-        $command->info("Applied {$total} missing alt repairs.");
+            ModelHasWebBlocks::where('website_id', $website->id)
+                ->with(['webBlock', 'webpage'])
+                ->chunk(100, function ($items) use ($command, &$total, $applyChanges) {
+                    foreach ($items as $item) {
+                        $total += $this->handle($item, $applyChanges, $command);
+                    }
+                });
+
+            $command->info("Applied $total missing alt repairs.");
+            $command->info("====== / ======");
+        }
+
+
     }
 }

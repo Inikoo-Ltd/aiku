@@ -529,7 +529,7 @@ class Product extends Model implements Auditable, HasMedia
 
     public function getLuigiIdentity(): string
     {
-        if($this->webpage){
+        if ($this->webpage) {
             return $this->webpage->luigiIdentity();
         }
         return 'unknown';

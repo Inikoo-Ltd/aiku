@@ -33,6 +33,16 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             $query->where("sub_department.code", $value);
         });
 
+        $collectionSearch = AllowedFilter::callback('collection', function ($query, $value) {
+            $query
+                ->join('collection_has_models as chm', function ($join) {
+                    $join->on('chm.model_id', 'product_categories.id')
+                        ->where('chm.model_type', class_basename(ProductCategory::class));
+                })
+                ->leftJoin('collections as c', 'c.id', 'chm.collection_id')
+                ->where('c.code', $value);
+        });
+
         return QueryBuilder::for(ProductCategory::class)
             ->leftJoin('webpages', function ($join) {
                 $join->on('product_categories.id', '=', 'webpages.model_id')
@@ -48,10 +58,10 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
                     'product_categories.name',
                     'product_categories.web_images',
                     'product_categories.image_id',
+                    'product_categories.created_at',
                     'webpages.canonical_url'
                 ]
             )
-            ->orderBy('product_categories.code')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->whereIn('product_categories.state', [
                 ProductCategoryStateEnum::ACTIVE,
@@ -63,9 +73,10 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ->whereNotNull('webpages.id')
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
-            ->allowedSorts(['code', 'name'])
-            ->allowedFilters([$categorySearch])
-            ->withIrisPaginator(25)
+            ->defaultSort('-created_at')
+            ->allowedSorts(['code', 'name', 'created_at'])
+            ->allowedFilters([$categorySearch, $collectionSearch])
+            ->withIrisPaginator(500)
             ->withQueryString();
     }
 
