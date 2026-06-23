@@ -54,7 +54,7 @@ class CallApiGlsEsShipping extends OrgAction
         $totalWeight = $parent->effective_weight / 1000;
 
         if ($totalWeight > $limit) {
-            return $this->splitShiment($parent, $shipper, $limit, $totalWeight);
+            return $this->splitByWeightLimit($parent, $shipper, $limit, $totalWeight);
         }
 
         $modelData = $this->createGlsEsShipment($parent, $shipper);
@@ -71,7 +71,8 @@ class CallApiGlsEsShipping extends OrgAction
         return $this->getGlsEsLabel($shipper, $modelData);
     }
 
-    public function splitShiment(DeliveryNote|PalletReturn $parent, Shipper $shipper, float $limit, float $totalWeight) {
+    public function splitByWeightLimit(DeliveryNote|PalletReturn $parent, Shipper $shipper, float $limit, float $totalWeight)
+    {
         $parcels = $parent->parcels ?? [];
         $parcelWeights = [];
         foreach ($parcels as $parcel) {
@@ -87,7 +88,7 @@ class CallApiGlsEsShipping extends OrgAction
                 return [
                     'status'    => 'fail',
                     'errorData' => [
-                        'message' => 'International shipping max weight per parcel is '.$limit
+                        'message' => 'International shipping max weight per parcel is ' . $limit
                     ],
                     'modelData' => []
                 ];
@@ -102,7 +103,7 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
         $headers = ["Content-Type: text/xml; charset=UTF-8"];
-        $url = $this->getBaseUrl()."/b2b.asmx?wsdl";
+        $url = $this->getBaseUrl() . "/b2b.asmx?wsdl";
         $createResults = $this->executeParallelCurl($xmlPayloads, $url, $headers);
 
         $trackings = [];
@@ -190,8 +191,8 @@ class CallApiGlsEsShipping extends OrgAction
                 <soap:Header/>
                 <soap:Body>
                    <asm:EtiquetaEnvioV2>
-                      <uidcliente>'.$uidClient.'</uidcliente>
-                      <asm:codigo>'.$reference.'</asm:codigo>
+                      <uidcliente>' . $uidClient . '</uidcliente>
+                      <asm:codigo>' . $reference . '</asm:codigo>
                       <asm:tipoEtiqueta>PDF</asm:tipoEtiqueta>
                    </asm:EtiquetaEnvioV2>
                 </soap:Body>
@@ -281,15 +282,15 @@ class CallApiGlsEsShipping extends OrgAction
 
         $uidClient = $this->getAccessToken($shipper);
         $reference = $modelData['data']['codbarras'];
-        $url       = $this->getBaseUrl()."/b2b.asmx?wsdl";
+        $url       = $this->getBaseUrl() . "/b2b.asmx?wsdl";
 
         $xml = '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:asm="http://www.asmred.com/">
 <soap:Header/>
 <soap:Body>
    <asm:EtiquetaEnvioV2>
       <!--Optional:-->
-      <uidcliente>'.$uidClient.'</uidcliente>
-      <asm:codigo>'.$reference.'</asm:codigo>
+      <uidcliente>' . $uidClient . '</uidcliente>
+      <asm:codigo>' . $reference . '</asm:codigo>
       <asm:tipoEtiqueta>PDF</asm:tipoEtiqueta>
    </asm:EtiquetaEnvioV2>
 </soap:Body>
@@ -362,7 +363,7 @@ class CallApiGlsEsShipping extends OrgAction
     {
         $modelData = [];
 
-        $url = $this->getBaseUrl()."/b2b.asmx?wsdl";
+        $url = $this->getBaseUrl() . "/b2b.asmx?wsdl";
         $ch  = curl_init();
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -377,7 +378,7 @@ class CallApiGlsEsShipping extends OrgAction
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
         $postResult = curl_exec($ch);
-        curl_close($ch);
+        curl_close($ch); // Note : will deprecated in PHP 9+
 
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($postResult, null, null, "http://http://www.w3.org/2003/05/soap-envelope");
@@ -464,13 +465,13 @@ class CallApiGlsEsShipping extends OrgAction
         $shipmentData["weight"]            = $weight;
         $shipmentData["reem"]              = "0";
         $shipmentData["from_name"]         = $fromContactName;
-        $shipmentData["from_address"]      = trim(Arr::get($parentResource, 'from_address.address_line_1').' '.Arr::get($parentResource, 'from_address.address_line_2'));
+        $shipmentData["from_address"]      = trim(Arr::get($parentResource, 'from_address.address_line_1') . ' ' . Arr::get($parentResource, 'from_address.address_line_2'));
         $shipmentData["from_city"]         = Arr::get($parentResource, 'from_address.locality');
         $shipmentData["from_country_code"] = Arr::get($parentResource, 'from_address.country_code');
         $shipmentData["from_postal_code"]  = Arr::get($parentResource, 'from_address.postal_code');
 
         $shipmentData["to_name"]         = $contactName;
-        $shipmentData["to_address"]      = trim(Arr::get($parentResource, 'to_address.address_line_1').' '.Arr::get($parentResource, 'to_address.address_line_2'));
+        $shipmentData["to_address"]      = trim(Arr::get($parentResource, 'to_address.address_line_1') . ' ' . Arr::get($parentResource, 'to_address.address_line_2'));
         $shipmentData["to_city"]         = Arr::get($parentResource, 'to_address.locality');
         $shipmentData["to_country_code"] = Arr::get($parentResource, 'to_address.country_code');
         $shipmentData["to_postal_code"]  = Arr::get($parentResource, 'to_address.postal_code');
@@ -480,12 +481,11 @@ class CallApiGlsEsShipping extends OrgAction
         $shipmentData["nif"]             = "";
         $shipmentData["portage"]         = "P";
 
-        // dump($shipmentData);
-        // dd('die');
+        dd($shipmentData);
         if (app()->environment('local')) {
-            $shipmentData["RefC"] = 'test+'.rand(1000, 9999).' '.strtoupper($parent->reference).' V2';
+            $shipmentData["RefC"] = 'test+' . rand(1000, 9999) . ' ' . strtoupper($parent->reference) . ' V2';
         } else {
-            $shipmentData["RefC"] = strtoupper($parent->reference).' V2';
+            $shipmentData["RefC"] = strtoupper($parent->reference) . ' V2';
         }
 
 
@@ -500,36 +500,36 @@ class CallApiGlsEsShipping extends OrgAction
          <soap12:Body>
          <GrabaServicios  xmlns="http://www.asmred.com/">
          <docIn>
-            <Servicios uidcliente="'.$uidClient.'" xmlns="http://www.asmred.com/">
+            <Servicios uidcliente="' . $uidClient . '" xmlns="http://www.asmred.com/">
             <Envio>
-               <Fecha>'.$shipmentData["date"].'</Fecha>
-               <Servicio>'.$shipmentData["service"].'</Servicio>
-               <Horario>'.$shipmentData["time"].'</Horario>
-               <Bultos>'.$shipmentData["parcels"].'</Bultos>
-               <Peso>'.$shipmentData["weight"].'</Peso>
-               <Portes>'.$shipmentData["portage"].'</Portes>
+               <Fecha>' . $shipmentData["date"] . '</Fecha>
+               <Servicio>' . $shipmentData["service"] . '</Servicio>
+               <Horario>' . $shipmentData["time"] . '</Horario>
+               <Bultos>' . $shipmentData["parcels"] . '</Bultos>
+               <Peso>' . $shipmentData["weight"] . '</Peso>
+               <Portes>' . $shipmentData["portage"] . '</Portes>
                <Importes>
-                  <Reembolso>'.$shipmentData["reem"].'</Reembolso>
+                  <Reembolso>' . $shipmentData["reem"] . '</Reembolso>
                </Importes>
                <Remite>
-                  <Nombre>'.$shipmentData["from_name"].'</Nombre>
-                  <Direccion>'.$shipmentData["from_address"].'</Direccion>
-                  <Poblacion>'.$shipmentData["from_city"].'</Poblacion>
-                  <Pais>'.$shipmentData["from_country_code"].'</Pais>
-                  <CP>'.$shipmentData["from_postal_code"].'</CP>
+                  <Nombre>' . $shipmentData["from_name"] . '</Nombre>
+                  <Direccion>' . $shipmentData["from_address"] . '</Direccion>
+                  <Poblacion>' . $shipmentData["from_city"] . '</Poblacion>
+                  <Pais>' . $shipmentData["from_country_code"] . '</Pais>
+                  <CP>' . $shipmentData["from_postal_code"] . '</CP>
                </Remite>
                <Destinatario>
-                  <Nombre>'.$shipmentData["to_name"].'</Nombre>
-                  <Direccion>'.$shipmentData["to_address"].'</Direccion>
-                  <Poblacion>'.$shipmentData["to_city"].'</Poblacion>
-                  <Pais>'.$shipmentData["to_country_code"].'</Pais>
-                  <CP>'.$shipmentData["to_postal_code"].'</CP>
-                  <Telefono>'.$shipmentData["to_phone"].'</Telefono>
-                  <Email>'.$shipmentData["to_email"].'</Email>
-                  <NIF>'.$shipmentData["nif"].'</NIF>
-                  <Observaciones>'.$shipmentData["notes"].'</Observaciones>
+                  <Nombre>' . $shipmentData["to_name"] . '</Nombre>
+                  <Direccion>' . $shipmentData["to_address"] . '</Direccion>
+                  <Poblacion>' . $shipmentData["to_city"] . '</Poblacion>
+                  <Pais>' . $shipmentData["to_country_code"] . '</Pais>
+                  <CP>' . $shipmentData["to_postal_code"] . '</CP>
+                  <Telefono>' . $shipmentData["to_phone"] . '</Telefono>
+                  <Email>' . $shipmentData["to_email"] . '</Email>
+                  <NIF>' . $shipmentData["nif"] . '</NIF>
+                  <Observaciones>' . $shipmentData["notes"] . '</Observaciones>
                </Destinatario><Referencias>
-                  <Referencia tipo="C">'.$shipmentData["RefC"].'</Referencia>
+                  <Referencia tipo="C">' . $shipmentData["RefC"] . '</Referencia>
                </Referencias>
             </Envio>
             </Servicios>
