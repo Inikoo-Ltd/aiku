@@ -15,7 +15,6 @@ import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import { faCheck } from "@far"
-import { toInteger } from "lodash-es"
 
 library.add(faPlusCircle, faQuestionCircle)
 
@@ -25,6 +24,7 @@ const locale = useLocaleStore()
 
 interface ProductResource {
     id: number
+    family_id?: number | null
     name: string
     code: string
     image?: {
@@ -109,15 +109,19 @@ const showIntervalOffer = computed(() => {
         === 'Category Quantity Ordered Order Interval' && webpage_data?.sub_type != 'family'
 })
 
-const quantityOrdered = computed(() =>
-    toInteger(props.hasInBasket?.quantity_ordered)
-)
+// Total quantity ordered across the whole family this product belongs to
+const familyQuantityOrdered = computed(() => {
+    const familyId = props.product?.family_id
+    if (familyId == null) return 0
+
+    return Number(layout?.family_quantity_ordered?.[familyId] ?? 0)
+})
 
 const showMemberPrice = computed(() => {
     if (layout?.user?.gr_data?.amnesty) return true
     if (layout?.user?.gr_data?.customer_is_gr) return true
 
-    return bestOffer.value?.category_qty_trigger <= quantityOrdered.value
+    return bestOffer.value?.category_qty_trigger <= familyQuantityOrdered.value
 })
 
 // console.log("showMemberPrice", showMemberPrice.value)

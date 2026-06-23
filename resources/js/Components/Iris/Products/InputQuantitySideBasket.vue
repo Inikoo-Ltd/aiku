@@ -59,10 +59,10 @@ const onUpdateQuantity = async (newVal?: number) => {
             quantity_ordered: selectedQuantity,
             quantity_ordered_new: selectedQuantity,
             transactions_id: props.product.transaction_id,
+            department_id: response.data?.department_id ?? null,
+            sub_department_id: response.data?.sub_department_id ?? null,
+            family_id: response.data?.family_id ?? null,
         })
-
-
-        console.log('Response axios:', response.data)
 
         setStatus('success')
         layout.reload_handle()
