@@ -50,7 +50,7 @@ function buildHref(routeTarget: RouteTarget): string {
                 :alt="platform.name"
                 class="w-5 h-5 object-contain flex-shrink-0"
             />
-            <span class="font-semibold text-gray-700">{{ platform.name }}</span>
+            <!-- <span class="font-semibold text-gray-700">{{ platform.name }}</span> -->
 
             <div class="flex items-center gap-1 border-l border-gray-200 pl-2 ml-1">
                 <FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400 text-xs" />

@@ -48,7 +48,7 @@ const selectedOption = ref<string | null>(null)
 const sortKey = ref('created_at')
 const families = ref(props.fieldValue?.families?.data ?? [])
 const isAscending = ref(true)
-const orderBy = ref( '-created_at')
+const orderBy = ref('-created_at')
 
 const sortOptions = computed(() => {
   const baseOptions = [
@@ -64,7 +64,7 @@ const meta = ref(
     last_page: 1,
     links: [],
     path: '',
-    per_page: 50,
+    per_page: 500,
     to: 0,
     total: families.value.length,
   }
@@ -96,6 +96,7 @@ const loadFamilies = async (
           filter,
           sort: orderBy.value,
           page,
+          per_page : 250
         },
       }
     );

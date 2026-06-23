@@ -59,6 +59,7 @@ class ShowIrisWebpage
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
+            'navigation'                  => $this->getIrisProductNavigation($webpage),
             'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
                 'title'         => $webpage->title,
@@ -366,6 +367,65 @@ class ShowIrisWebpage
         }
 
         return $breadcrumbs;
+    }
+
+    public function getIrisProductNavigation(Webpage $webpage): ?array
+    {
+        if ($webpage->model_type !== 'Product') {
+            return null;
+        }
+
+        /** @var Product $product */
+        $product = $webpage->model;
+        if (!$product || !$product->family_id) {
+            return null;
+        }
+
+        $siblings = Product::query()
+            ->where('products.family_id', $product->family_id)
+            ->where(function ($query) {
+                $query->whereNull('products.variant_id')
+                    ->orWhere('products.is_variant_leader', true);
+            })
+            ->whereHas('webpage', function ($query) use ($webpage) {
+                $query->where('state', WebpageStateEnum::LIVE)
+                    ->where('website_id', $webpage->website_id);
+            })
+            ->with(['webpage' => function ($query) use ($webpage) {
+                $query->where('state', WebpageStateEnum::LIVE)
+                    ->where('website_id', $webpage->website_id);
+            }])
+            ->orderBy('index_under_family')
+            ->orderBy('name')
+            ->get();
+
+        $currentIndex = $siblings->search(fn (Product $sibling) => $sibling->id === $product->id);
+        if ($currentIndex === false) {
+            return null;
+        }
+
+        $navigation = [
+            'previous' => $this->getProductNavigationItem($siblings->get($currentIndex - 1)),
+            'next'     => $this->getProductNavigationItem($siblings->get($currentIndex + 1)),
+        ];
+
+        if (!$navigation['previous'] && !$navigation['next']) {
+            return null;
+        }
+
+        return $navigation;
+    }
+
+    private function getProductNavigationItem(?Product $product): ?array
+    {
+        if (!$product || !$product->webpage) {
+            return null;
+        }
+
+        return [
+            'label' => $product->name,
+            'url'   => $this->getEnvironmentUrl($product->webpage->canonical_url),
+        ];
     }
 
     public function getBreadcrumbShortLabel(Webpage $webpage): string
