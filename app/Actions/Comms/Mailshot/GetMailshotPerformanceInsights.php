@@ -41,10 +41,10 @@ class GetMailshotPerformanceInsights
             return [];
         }
 
-        $metric = $timeSeries->records->map(function (MailshotTimeSeriesRecord $record) use ($frequencyEnum, $metricEnum) {
+        $metric = $timeSeries->records->sortBy('from')->map(function (MailshotTimeSeriesRecord $record) use ($frequencyEnum, $metricEnum, $mailshotStat) {
             return [
                 'period' => $this->formatPeriod($record->from, $record->to, $frequencyEnum),
-                'value'  => $this->resolveMetricValue($record, $metricEnum),
+                'value'  => $this->resolveMetricValue($record, $mailshotStat, $metricEnum),
             ];
         })->values()->all();
 
@@ -55,17 +55,28 @@ class GetMailshotPerformanceInsights
 
     }
 
-    protected function resolveMetricValue(MailshotTimeSeriesRecord $record, MailshotPerformanceInsightMetricEnum $metric): float
+    protected function resolveMetricValue(MailshotTimeSeriesRecord $record, MailshotStats $stats, MailshotPerformanceInsightMetricEnum $metric): float
     {
         //  TODO: FIX calculation
         return match ($metric) {
-            MailshotPerformanceInsightMetricEnum::TOTAL_EMAIL_OPENED => (float) $record->number_dispatched_emails_state_opened,
-            MailshotPerformanceInsightMetricEnum::TOTAL_CLICK        => (float) $record->number_dispatched_emails_state_clicked,
-            MailshotPerformanceInsightMetricEnum::OPEN_RATE          => $record->openRate(),
-            MailshotPerformanceInsightMetricEnum::CLICK_RATE         => $record->clickedRate(),
-            MailshotPerformanceInsightMetricEnum::SPAM_RATE          => $record->spamRate(),
-            MailshotPerformanceInsightMetricEnum::UNSUBSCRIBE_RATE   => $record->unsubscribeRate(),
-            MailshotPerformanceInsightMetricEnum::BOUNCE_RATE        => $record->bounceRate(),
+            MailshotPerformanceInsightMetricEnum::TOTAL_EMAIL_OPENED => $record->number_dispatched_emails_state_opened,
+            MailshotPerformanceInsightMetricEnum::TOTAL_CLICK        => $record->number_dispatched_emails_state_clicked, // should be unique one customer just record at least one clicked
+
+            MailshotPerformanceInsightMetricEnum::OPEN_RATE          => $stats->number_try_send_success > 0
+                ? round($record->number_dispatched_emails_state_opened / $stats->number_try_send_success * 100, 2)
+                : 0,
+            MailshotPerformanceInsightMetricEnum::CLICK_RATE         => $stats->number_try_send_success > 0
+                ? round($record->number_dispatched_emails_state_clicked / $stats->number_try_send_success * 100, 2)
+                : 0,
+            MailshotPerformanceInsightMetricEnum::SPAM_RATE          => $stats->number_try_send_success > 0
+                ? round($record->number_dispatched_emails_state_spam / $stats->number_try_send_success * 100, 2)
+                : 0,
+            MailshotPerformanceInsightMetricEnum::UNSUBSCRIBE_RATE   => $stats->number_try_send_success > 0
+                ? round($record->number_provoked_unsubscribe / $stats->number_try_send_success * 100, 2)
+                : 0,
+            MailshotPerformanceInsightMetricEnum::BOUNCE_RATE        => $stats->number_try_send_success > 0
+                ? round(($record->number_dispatched_emails_state_hard_bounce + $record->number_dispatched_emails_state_soft_bounce) / $stats->number_try_send_success * 100, 2)
+                : 0,
         };
     }
 
@@ -75,11 +86,11 @@ class GetMailshotPerformanceInsights
         return match ($metric) {
             MailshotPerformanceInsightMetricEnum::TOTAL_EMAIL_OPENED => $stats->number_dispatched_emails_state_opened,
             MailshotPerformanceInsightMetricEnum::TOTAL_CLICK        => $stats->number_dispatched_emails_state_clicked,
-            MailshotPerformanceInsightMetricEnum::OPEN_RATE          => $stats->number_dispatched_emails_state_opened,
-            MailshotPerformanceInsightMetricEnum::CLICK_RATE         => $stats->number_dispatched_emails_state_opened,
-            MailshotPerformanceInsightMetricEnum::SPAM_RATE          => $stats->number_dispatched_emails_state_opened,
-            MailshotPerformanceInsightMetricEnum::UNSUBSCRIBE_RATE   => $stats->number_dispatched_emails_state_opened,
-            MailshotPerformanceInsightMetricEnum::BOUNCE_RATE        => $stats->number_dispatched_emails_state_opened,
+            MailshotPerformanceInsightMetricEnum::OPEN_RATE          => $stats->number_try_send_success > 0 ? round($stats->number_dispatched_emails_state_opened / $stats->number_try_send_success * 100, 2) : 0,
+            MailshotPerformanceInsightMetricEnum::CLICK_RATE         => $stats->number_try_send_success > 0 ? round($stats->number_dispatched_emails_state_clicked / $stats->number_try_send_success * 100, 2) : 0, // make sound only for unique one customer just record at least one clicked
+            MailshotPerformanceInsightMetricEnum::SPAM_RATE          => $stats->number_try_send_success > 0 ? round($stats->number_dispatched_emails_state_spam / $stats->number_try_send_success * 100, 2) : 0,
+            MailshotPerformanceInsightMetricEnum::UNSUBSCRIBE_RATE   => $stats->number_try_send_success > 0 ? round($stats->number_provoked_unsubscribe / $stats->number_try_send_success * 100, 2) : 0,
+            MailshotPerformanceInsightMetricEnum::BOUNCE_RATE        => $stats->number_try_send_success > 0 ? round(($stats->number_dispatched_emails_state_hard_bounce + $stats->number_dispatched_emails_state_soft_bounce) / $stats->number_try_send_success * 100, 2) : 0,
         };
     }
 
