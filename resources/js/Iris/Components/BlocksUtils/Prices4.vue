@@ -267,21 +267,21 @@ const _popoverProfit = ref(null)
                 </div>
                 <div v-else class="offer">
                     <DiscountByType v-if="bestOffer?.type == 'Category Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Category Quantity Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'"
                         :offers_data="product?.product_offers_data" template="first-order" />
                     <DiscountByType v-if="bestOffer?.type == 'Category Amount Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Department Quantity Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Subdepartment Quantity Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Department Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'"
-                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <div v-else class="w-full"></div>
                 </div>
 
