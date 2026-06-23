@@ -257,6 +257,8 @@ trait IsDeliveryNotesIndex
             )
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
+            ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_w WHERE dni_w.delivery_note_id = delivery_notes.id AND dni_w.has_waiting_warehouse = true) as waiting_warehouse_count")
+            ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_c WHERE dni_c.delivery_note_id = delivery_notes.id AND dni_c.has_waiting_crm = true) as waiting_crm_count")
             ->allowedSorts([
                 'reference',
                 'date',

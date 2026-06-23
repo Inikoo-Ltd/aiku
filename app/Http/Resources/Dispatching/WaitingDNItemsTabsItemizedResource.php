@@ -50,6 +50,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $notes
  * @property mixed $trolley_names
  * @property mixed $picked_bay_codes
+ * @property mixed $opposite_waiting_count
  */
 class WaitingDNItemsTabsItemizedResource extends JsonResource
 {
@@ -122,6 +123,7 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'delivery_note_slug'         => $this->delivery_note_slug,
             'delivery_note_reference'    => $this->delivery_note_reference,
             'delivery_note_state'        => $this->delivery_note_state,
+            'opposite_waiting_count'     => (int) $this->opposite_waiting_count,
             'trolley_names'   => $this->trolley_names,
             'picked_bay_codes' => $this->picked_bay_codes,
 
