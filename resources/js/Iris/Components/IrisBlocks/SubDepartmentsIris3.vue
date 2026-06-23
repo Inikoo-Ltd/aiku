@@ -64,7 +64,7 @@ const meta = ref(
     last_page: 1,
     links: [],
     path: '',
-    per_page: 50,
+    per_page: 500,
     to: 0,
     total: families.value.length,
   }
@@ -96,6 +96,7 @@ const loadFamilies = async (
           filter,
           sort: orderBy.value,
           page,
+          per_page : 250
         },
       }
     );

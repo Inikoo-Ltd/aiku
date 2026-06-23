@@ -76,7 +76,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ->defaultSort('-created_at')
             ->allowedSorts(['code', 'name', 'created_at'])
             ->allowedFilters([$categorySearch, $collectionSearch])
-            ->withIrisPaginator(100)
+            ->withIrisPaginator(500)
             ->withQueryString();
     }
 
