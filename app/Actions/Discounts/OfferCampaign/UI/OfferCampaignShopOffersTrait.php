@@ -44,10 +44,6 @@ trait OfferCampaignShopOffersTrait
                         [
                             'type'  => 'button',
                             'key'   => 'create_offer_shop',
-                            // 'route' => [
-                            //     'name'       => preg_replace('/show$/', 'create_family_offer', request()->route()->getName()),
-                            //     'parameters' => array_values(request()->route()->originalParameters())
-                            // ]
                         ]
                     ] : [],
                 ],

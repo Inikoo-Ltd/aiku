@@ -10,6 +10,7 @@
 namespace App\Actions\Web\WebBlock\Concerns;
 
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -21,8 +22,10 @@ trait HasSubDepartmentsThree
 {
     protected function getSubDepartmentsThree(Webpage $webpage, array $webBlock): array
     {
+        $parent = $webpage->model;
+
         $subDepartmentList = DB::table('product_categories')
-            ->where('product_categories.department_id', $webpage->model_id)
+            ->where('product_categories.department_id', $parent->id)
             ->where('product_categories.shop_id', $webpage->shop_id)
             ->leftJoin('webpages', function ($join) {
                 $join->on('product_categories.id', '=', 'webpages.model_id')
@@ -47,10 +50,20 @@ trait HasSubDepartmentsThree
             ->get()
             ->toArray();
 
-        $familiesList = GetFamiliesUnderDepartmentPage::run($webpage->model);
+        $collectionList = $parent->collections()->where('state', CollectionStateEnum::ACTIVE)
+            ->select([
+                'collections.code',
+                'collections.name'
+            ])
+            ->get()
+            ->toArray();
+
+        $familiesList = GetFamiliesUnderDepartmentPage::run($parent);
 
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_department_list', $subDepartmentList ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.collections_list', $collectionList ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.filter_options', array_merge($subDepartmentList ?? [], $collectionList ?? []));
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamilyResourceForDepartmentWebpage::collection($familiesList) ?? []);
 
         return $webBlock;

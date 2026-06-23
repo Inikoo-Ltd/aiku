@@ -10,12 +10,15 @@ import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
 import PureInput from "../Pure/PureInput.vue"
 import InformationIcon from "../Utils/InformationIcon.vue"
+import axios from "axios"
 
 const props = defineProps<{
     shop_data: {
         id: number
         slug: string
         currency_code: string
+        organisation?: string
+        offercampaign?: string
         default_dates: {
             start: string
             end: string
@@ -27,49 +30,53 @@ const isOpenModal = ref(false)
 
 const offerLabel = ref("")
 const offerAmount = ref<number | null>(0)
-// const startDate = ref(null)
-// const endDate = ref(null)
 
 const isLoadingSubmit = ref(false)
-const submitCategoryOffer = () => {
+const submitShippingOffer = () => {
+    isLoadingSubmit.value = true
     // Section: Submit
-    router.post(
+    const payload = {
+        name: offerLabel.value,
+        min_order_amount: offerAmount.value,
+        start_at: formatDate(startDate.value),
+        end_at: formatDate(endDate.value)
+    }
+
+    axios.post(
         route("grp.models.shipping_offer.store", {
             shop: props.shop_data.id
-
         }),
-        {
-            name: offerLabel.value,
-            min_order_amount: offerAmount.value,
-            start_at: startDate.value,
-            end_at: endDate.value
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                resetForm()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            }
-        }
+        payload
     )
+    .then((response) => {
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully submit the data"),
+            type: "success"
+        })
+        resetForm();
+        isOpenModal.value = false
+
+        router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+            organisation: props.shop_data.organisation,
+            shop: props.shop_data.slug,
+            offerCampaign: props.shop_data.offercampaign,
+            offer: response.data.slug
+        }))
+        router.reload()
+    })
+    .catch((error) => {
+        const errors = error.response?.data?.errors || {}
+        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+        notify({
+            title: trans("Something went wrong"),
+            text: errMsg,
+            type: "error"
+        })
+    })
+    .finally(() => {
+        isLoadingSubmit.value = false
+    })
 }
 
 const startDate = ref<Date | null>(
@@ -86,9 +93,10 @@ const endDate = ref<Date | null>(
 
 const resetForm = () => {
     offerLabel.value = ""
-    offerAmount.value = null
+    offerAmount.value = 0
     startDate.value = null
     endDate.value = null
+    isLoadingSubmit.value = false
 }
 
 const openModal = () => {
@@ -97,9 +105,24 @@ const openModal = () => {
     isOpenModal.value = true
 }
 
+const closeModal = () => {
+    isOpenModal.value = false
+    resetForm()
+}
+
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
 const isFormInvalid = computed(() => {
     if (!offerLabel.value) return true
-    // if (!offerAmount.value || offerAmount.value <= 0) return true
+    if (offerAmount.value === null || offerAmount.value === undefined || offerAmount.value < 0) return true
     if (!endDate.value) return true
     if (startDate.value && endDate.value < startDate.value) return true
     return false
@@ -110,7 +133,7 @@ const isFormInvalid = computed(() => {
     <div>
         <Button :label="trans('Create Discount Shipping')" @click="openModal" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
             <div class="px-6">
                 <h2 class="text-2xl font-bold mxb-4 text-center">{{ trans("Create Discount Shipping") }}</h2>
                 <div class="mt-8 space-y-8">
@@ -170,7 +193,7 @@ const isFormInvalid = computed(() => {
                                 :
                             </label>
                             <div class="pl-4">
-                                <DatePicker v-model="endDate" showButtonBar showIcon />
+                                <DatePicker v-model="endDate" showButtonBar showIcon :minDate="startDate ?? undefined"/>
                             </div>
                             <p v-if="startDate && endDate && endDate < startDate" class="text-red-500 text-sm">
                                 End date must be after start date
@@ -181,9 +204,9 @@ const isFormInvalid = computed(() => {
                 </div>
 
                 <div class="pl-4 mt-8 flex justify-end gap-x-4">
-                    <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                            :isLoading="isLoadingSubmit" :disabled="isFormInvalid" />
+                    <Button @click="closeModal" type="cancel" />
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitShippingOffer"
+                            :loading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit" />
                 </div>
 
             </div>
