@@ -101,8 +101,8 @@ let isApplyingPreset = false
 const applyQuickApply = (days: number) => {
     isApplyingPreset = true
 
-    const start = new Date(today)
-    const end = new Date(today)
+    const start = startDate.value ? new Date(startDate.value) : new Date(today)
+    const end = new Date(start)
     end.setDate(end.getDate() + days)
 
     startDate.value = start
