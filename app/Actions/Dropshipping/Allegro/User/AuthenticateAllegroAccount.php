@@ -130,7 +130,8 @@ class AuthenticateAllegroAccount extends OrgAction
         ]));
 
         $redirectUri = route('allegro.callback');
-        $scope = 'allegro:api:sale:offers:read allegro:api:sale:offers:write allegro:api:sale:settings:read allegro:api:sale:settings:write allegro:api:orders:read allegro:api:orders:write allegro:api:ratings allegro:api:disputes allegro:api:bids allegro:api:billing:read allegro:api:payments:read allegro:api:payments:write allegro:api:profile:read allegro:api:profile:write allegro:api:fulfillment:read allegro:api:fulfillment:write allegro:api:shipments:read allegro:api:shipments:write';
+
+        $scope = 'allegro:api:sale:offers:read allegro:api:sale:offers:write allegro:api:sale:settings:read allegro:api:sale:settings:write allegro:api:orders:read allegro:api:orders:write allegro:api:profile:read allegro:api:profile:write allegro:api:fulfillment:read allegro:api:fulfillment:write allegro:api:shipments:read allegro:api:shipments:write';
         return $this->getAuthorizationUrl($redirectUri, $codeChallenge, $scope, $state);
     }
 
