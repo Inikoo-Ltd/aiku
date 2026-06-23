@@ -43,6 +43,7 @@ import MasterContentProductCategory from "@/Components/Master/MasterContentProdu
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 import { Department } from "@/types/department";
+import SetIndexRecomendersFamily from '@/Components/SetIndexRecomendersFamily.vue'
 
 library.add(
     faFolder,
@@ -105,6 +106,7 @@ const component = computed(() => {
         content : MasterContentProductCategory,
         sales: ProductCategoryTimeSeriesTable,
         related_product_category: RelatedProductCategory,
+        index_recomenders_families : SetIndexRecomendersFamily,
     };
     return components[currentTab.value] ?? null;
 });

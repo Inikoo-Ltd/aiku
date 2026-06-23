@@ -20,6 +20,7 @@ enum MasterDepartmentTabsEnum: string
     case CONTENT = 'content';
     case IMAGES = 'images';
     case RELATED_PRODUCT_CATEGORY = 'related_product_category';
+    case INDEX_RECOMENDERS_FAMILIES = 'index_recomenders_families';
     // case DEPARTMENTS = 'departments';
     case SALES = 'sales';
     case HISTORY = 'history';
@@ -45,6 +46,10 @@ enum MasterDepartmentTabsEnum: string
             ],
             MasterDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
+                'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            MasterDepartmentTabsEnum::INDEX_RECOMENDERS_FAMILIES => [
+                'title' => __('Index Recomenders Families'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             MasterDepartmentTabsEnum::CONTENT => [

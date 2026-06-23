@@ -156,6 +156,10 @@ class ShowMasterDepartment extends GrpAction
                     fn () => GetRelatedMasterProductCategories::run($masterDepartment)
                     : Inertia::lazy(fn () => GetRelatedMasterProductCategories::run($masterDepartment)),
 
+                MasterDepartmentTabsEnum::INDEX_RECOMENDERS_FAMILIES->value => $this->tab === MasterDepartmentTabsEnum::INDEX_RECOMENDERS_FAMILIES->value ?
+                    fn () => GetMasterProductCategoryTimeSeriesData::run($masterDepartment)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryTimeSeriesData::run($masterDepartment)),
+
                 // MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
                 //     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
                 //     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
