@@ -25,7 +25,8 @@ enum DepartmentTabsEnum: string
     case HISTORY = 'history';
     // case DATA = 'data';
     case CUSTOMERS = 'customers';
-    case RELATED_PRODUCT_CATEGORY    = 'related_product_category';
+    case RELATED_PRODUCT_CATEGORY      = 'related_product_category';
+    case INDEX_RECOMENDERS_FAMILIES    = 'index_recomenders_families';
 
 
     public function blueprint(): array
@@ -73,6 +74,10 @@ enum DepartmentTabsEnum: string
             DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY => [
                 'title' => __('Related Product Category'),
                 'icon'  => 'fal fa-folder-tree',
+            ],
+            DepartmentTabsEnum::INDEX_RECOMENDERS_FAMILIES => [
+                'title' => __('Index Recommenders'),
+                'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };
     }
