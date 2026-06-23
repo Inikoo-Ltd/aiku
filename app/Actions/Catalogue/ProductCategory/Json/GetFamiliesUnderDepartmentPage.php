@@ -62,7 +62,6 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
                     'webpages.canonical_url'
                 ]
             )
-            ->orderBy('product_categories.code')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->whereIn('product_categories.state', [
                 ProductCategoryStateEnum::ACTIVE,
@@ -74,6 +73,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ->whereNotNull('webpages.id')
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
+            ->defaultSort('-created_at')
             ->allowedSorts(['code', 'name', 'created_at'])
             ->allowedFilters([$categorySearch, $collectionSearch])
             ->withIrisPaginator(100)
