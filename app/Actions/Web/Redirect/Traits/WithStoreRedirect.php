@@ -27,7 +27,7 @@ trait WithStoreRedirect
             $fromUrl = trim($fromUrl, '/'); // Sanitize start & end slash
             $fromPath = array_last(explode('/', $fromUrl)); // Get last path
 
-            $url = 'https://' . $website->domain . '/' . $fromUrl;
+            $url = 'https://www.' . $website->domain . '/' . $fromUrl;
 
             $this->set('from_url', $url);
             $this->set('from_path', $fromPath);
@@ -49,5 +49,4 @@ trait WithStoreRedirect
             'from_path.unique' => 'The last part of the URL (after "/") is already used on another redirect/webpage. Try a different ending',
         ];
     }
-
 }
