@@ -52,10 +52,53 @@ class ShopHydrateOffersData implements ShouldBeUnique
 
         $offersData = $this->processGr($offersData, $shop);
         $offersData = $this->processFob($offersData, $shop);
+        $offersData = $this->processDiscountedShipping($offersData, $shop);
 
         $shop->updateQuietly(['offers_data' => $offersData]);
         $shop->refresh();
         app()->setLocale($currentLocale);
+    }
+
+    public function processDiscountedShipping(array $offersData, Shop $shop): array
+    {
+        data_set($offersData, 'discounted_shipping.active', false);
+        data_set($offersData, 'discounted_shipping.min_amount', null);
+
+        $discountedShippingDiscountCampaign = OfferCampaign::where('shop_id', $shop->id)
+            ->where('status', true)
+            ->where('type', OfferCampaignTypeEnum::SHIPPING)->first();
+
+        if (!$discountedShippingDiscountCampaign) {
+            return $offersData;
+        }
+
+        $offers = Offer::where('offer_campaign_id', $discountedShippingDiscountCampaign->id)
+            ->where('status', true)->get();
+
+
+        $minAmount = null;
+
+        /** @var Offer $offer */
+        foreach ($offers as $offer) {
+            $amount = Arr::get($offer->trigger_data, 'min_order_amount');
+
+            if ($minAmount == null || $amount < $minAmount) {
+                $minAmount = $amount;
+
+                $offerAllowance = OfferAllowance::where('offer_id', $offer->id)->first();
+
+                data_set($offersData, 'discounted_shipping.active', true);
+                data_set($offersData, 'discounted_shipping.id', $offer->id);
+                data_set($offersData, 'discounted_shipping.offer_campaign_id', $offer->offer_campaign_id);
+                data_set($offersData, 'discounted_shipping.offer_allowance_id', $offerAllowance?->id);
+                data_set($offersData, 'discounted_shipping.end_at', $offer->end_at->toDateTimeString());
+                data_set($offersData, 'discounted_shipping.formated_end_at', $offer->end_at->toFormattedDateString());
+                data_set($offersData, 'discounted_shipping.min_amount', $minAmount);
+                data_set($offersData, 'discounted_shipping.missined_offer_label', $offer->name.': '.__('Spend :amount more to qualify for discounted shipping'));
+            }
+        }
+
+        return $offersData;
     }
 
     public function processFob(array $offersData, Shop $shop): array

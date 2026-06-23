@@ -29,14 +29,14 @@ class CloseDiscontinuedWebpage
             ];
         }
 
-        if( $webpage->model instanceof ProductCategory && $webpage->model->type !== ProductCategoryTypeEnum::FAMILY ) {
+        if ($webpage->model instanceof ProductCategory && $webpage->model->type !== ProductCategoryTypeEnum::FAMILY) {
             return [
                 'error' => 'product_category_not_family'
             ];
         }
 
 
-        if($webpage->state !== WebpageStateEnum::LIVE) {
+        if ($webpage->state !== WebpageStateEnum::LIVE) {
             return [
                 'error' => 'webpage_not_live'
             ];

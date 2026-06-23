@@ -68,6 +68,9 @@ class GetRetinaPaymentAccountShopCheckoutComData
 
         $paymentSessionRequest->customer       = new CustomerRequest();
         $paymentSessionRequest->customer->name = $order->customer->name;
+        if ($order->customer->email) {
+            $paymentSessionRequest->customer->email = $order->customer->email;
+        }
 
         $paymentSessionRequest->metadata = [
             'origin'       => 'aiku',

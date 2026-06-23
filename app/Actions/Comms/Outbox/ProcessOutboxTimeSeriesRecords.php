@@ -35,13 +35,16 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
         $from .= ' 00:00:00';
         $to   .= ' 23:59:59';
 
-        $outbox = Outbox::find($outboxId);
+        $outbox = Outbox::on('aiku_no_sticky')->find($outboxId);
 
         if (!$outbox) {
             return;
         }
 
-        $timeSeries = OutboxTimeSeries::where('outbox_id', $outbox->id)->where('frequency', $frequency->value)->first();
+        $timeSeries = OutboxTimeSeries::on('aiku_no_sticky')
+            ->where('outbox_id', $outbox->id)
+            ->where('frequency', $frequency->value)
+            ->first();
 
         if (!$timeSeries) {
             $timeSeries = $outbox->timeSeries()->create(['frequency' => $frequency]);
@@ -139,7 +142,10 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
 
     protected function fetchAggregatedResults(OutboxTimeSeries $timeSeries, string $from, string $to): Collection
     {
-        $dailyTimeSeries = OutboxTimeSeries::where('outbox_id', $timeSeries->outbox_id)->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->first();
+        $dailyTimeSeries = OutboxTimeSeries::on('aiku_no_sticky')
+            ->where('outbox_id', $timeSeries->outbox_id)
+            ->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)
+            ->first();
 
         if (!$dailyTimeSeries) {
             return collect();
