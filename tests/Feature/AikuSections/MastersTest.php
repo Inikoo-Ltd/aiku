@@ -24,6 +24,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\UI\GetMasterDepartmentFamiliesFromCollections;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Masters\MasterShop\HydrateMasterShop;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
@@ -1097,6 +1098,20 @@ test('attach master collection to department', function (MasterProductCategory $
 
     expect($attached)->toBeTrue();
 })->depends('create master department', 'create master collection');
+
+test('get master department families from collections', function (MasterProductCategory $masterDepartment, MasterCollection $masterCollection, MasterProductCategory $masterFamily) {
+    AttachMasterCollectionToModel::make()->action($masterDepartment, $masterCollection);
+    AttachModelsToMasterCollection::make()->action($masterCollection, [
+        'families' => [$masterFamily->id],
+    ]);
+
+    $payload = GetMasterDepartmentFamiliesFromCollections::run($masterDepartment);
+
+    expect($payload)
+        ->toHaveKeys(['data', 'editable'])
+        ->and($payload['editable'])->toBeTrue()
+        ->and($payload['data']->collection->pluck('id')->all())->toContain($masterFamily->id);
+})->depends('create master department', 'create master collection', 'create master family');
 
 
 test('create master product page loads for family in master shop', function () {

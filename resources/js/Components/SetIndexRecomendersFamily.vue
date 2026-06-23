@@ -18,15 +18,12 @@ const props = defineProps<{
             parameters: Record<string, any>
         }
         sync_payload_key?: string
-        route_get_department : routeType
-        route_get_sub_department : routeType
-        route_get_family : routeType
     }
     product_category_id?: number
 }>()
 
 const listProducts = ref({
-    data: props.data?.data ?? []
+    data: props.data.data ?? []
 })
 const saveActive = ref(false)
 const productDialog = ref()
@@ -94,7 +91,7 @@ const SaveOrder = async () => {
         loadingOrder.value = false
     }
 }
-
+console.log('plm',props)
 </script>
 
 <template>
@@ -110,14 +107,12 @@ const SaveOrder = async () => {
         </div>
 
         <!-- MAIN CONTENT -->
+
         <div class="bg-white border rounded-lg p-4">
 
             <SetOrderingPositionOfProduct :data="listProducts.data" :disabled="!props.data?.editable"
                 @update:data="(event) => { listProducts.data.data = event, saveActive = true }"
-                :useDelete="true" @delete="(item) => {
-                    listProducts.data.data = listProducts.data.data.filter((product: any) => product.id !== item.id),
-                    saveActive = true
-                }">
+                :useDelete="false">
 
 
                 <template #image-list="{item}">
@@ -126,13 +121,6 @@ const SaveOrder = async () => {
 
                 <template #image-card="{item}">
                     <Image :src="item.image_thumbnail?.main?.thumbnail || item?.image_thumbnail" class="w-full h-24 object-cover rounded mb-2" />
-                </template>
-
-                <!-- TOP ACTION -->
-                <template v-if="props.data?.editable" #before-button-list>
-                    <div class="flex justify-end mx-3">
-                        <Button label="+ Add Product Category" type="tertiary" size="xs" @click="openAddProduct" />
-                    </div>
                 </template>
 
                 <!-- EMPTY STATE -->
@@ -148,22 +136,11 @@ const SaveOrder = async () => {
                             {{ trans('Start by adding your first product category to this list.') }}
                         </div>
 
-                        <Button v-if="props.data?.editable" class="mt-5" label="Add Product Category" type="create"
-                            @click="openAddProduct" />
                     </div>
                 </template>
             </SetOrderingPositionOfProduct>
         </div>
-
-        <!-- SELECTOR -->
-        <SelectorProductCategory
-            v-if="props.data?.editable" ref="productDialog"
-            v-model="listProducts.data.data"
-            @update:model-value="saveActive = true"
-            :routeFetchDepartment="props.data?.route_get_department"
-            :routeFetchSubDepartment="props.data?.route_get_sub_department"
-            :routeFetchFamily="props.data?.route_get_family"
-        />
+    
 
     </div>
 </template>

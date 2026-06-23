@@ -18,7 +18,10 @@ class GetMasterDepartmentFamiliesFromCollections
 {
     use AsObject;
 
-    public function handle(MasterProductCategory $masterDepartment): AnonymousResourceCollection
+    /**
+     * @return array{data: AnonymousResourceCollection, editable: bool}
+     */
+    public function handle(MasterProductCategory $masterDepartment): array
     {
         $collectionIds = $masterDepartment->masterCollections()->pluck('master_collections.id');
 
@@ -62,6 +65,9 @@ class GetMasterDepartmentFamiliesFromCollections
             ->orderBy('master_product_categories.code')
             ->get();
 
-        return MasterFamiliesResource::collection($families);
+        return [
+            'data' => MasterFamiliesResource::collection($families),
+            'editable' => true
+        ];
     }
 }

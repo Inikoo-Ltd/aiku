@@ -84,6 +84,7 @@ const props = defineProps<{
     mini_breadcrumbs?: any[]
     related_product_category : object
     delete_route?: routeType;
+    index_recomenders_families : any;
     delete_condition?: {
         can_delete: boolean;
         master_shop_slug: string;
