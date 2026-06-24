@@ -11,7 +11,7 @@ namespace App\Enums\UI\Ordering;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 
-enum RetinaOrderTabsEnum: string
+enum RetinaReviewsTabsEnum: string
 {
     use EnumHelperTrait;
     use HasTabs;
