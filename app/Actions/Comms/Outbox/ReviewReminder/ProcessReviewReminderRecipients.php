@@ -10,6 +10,7 @@ use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Models\Comms\EmailBulkRun;
+use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -20,7 +21,7 @@ class ProcessReviewReminderRecipients implements ShouldQueue
 
     public string $jobQueue = 'ses';
 
-    public function handle(int $emailBulkRunId, array $customerIds): void
+    public function handle(int $emailBulkRunId, array $customers): void
     {
         $emailBulkRun = EmailBulkRun::find($emailBulkRunId);
 
@@ -28,16 +29,21 @@ class ProcessReviewReminderRecipients implements ShouldQueue
             return;
         }
 
-        if (!$emailBulkRun->outbox_id) {
+        $outbox = Outbox::find($emailBulkRun->outbox_id);
+
+        if (!$outbox) {
             return;
         }
+
+        $previousLocale = app()->getLocale();
+        app()->setLocale($outbox->shop->language->code);
 
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun, [
             'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
         ]);
 
-        foreach ($customerIds as $customerId) {
-            $customerModel = Customer::find($customerId);
+        foreach ($customers as $customer) {
+            $customerModel = Customer::find($customer['id']);
             if (!$customerModel) {
                 continue;
             }
@@ -47,7 +53,10 @@ class ProcessReviewReminderRecipients implements ShouldQueue
                 $customerModel,
                 [
                     'outbox_id'     => $emailBulkRun->outbox_id,
-                    'email_address' => $customerModel->email
+                    'email_address' => $customerModel->email,
+                    'data->additional_data' => [
+                        'review_reminder_items' => $this->generateReviewLinks($customer['product_ids'])
+                    ]
                 ]
             );
 
@@ -63,6 +72,8 @@ class ProcessReviewReminderRecipients implements ShouldQueue
             );
         }
 
+        app()->setLocale($previousLocale);
+
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
@@ -73,5 +84,12 @@ class ProcessReviewReminderRecipients implements ShouldQueue
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
 
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
+    }
+
+    public function generateReviewLinks(string $productIds): string
+    {
+        return "Hello, please review the following products: " . $productIds;
+        // retina.ecom.orders.show
+        return $html;
     }
 }
