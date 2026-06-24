@@ -8,14 +8,9 @@
 
 namespace App\Actions\Retina\Ecom\Orders;
 
-use App\Actions\CRM\Customer\UI\GetCustomerShowcase;
-use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
-use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Order\UI\IndexReviewProductsInOrder;
 use App\Actions\Ordering\Order\UI\IndexReviewFamiliesInOrder;
-use App\Actions\Ordering\Order\UI\IndexReviewOrderInOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
-use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
@@ -23,12 +18,10 @@ use App\Enums\UI\Ordering\RetinaOrderReviewTabsEnum;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerResource;
-use App\Http\Resources\Dispatching\RetinaShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\RetinaOrderReviewableResource;
-use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
@@ -38,6 +31,8 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
+use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Helpers\Media;
 
 class ShowRetinaEcomOrderReview extends RetinaAction
 {
@@ -156,7 +151,43 @@ class ShowRetinaEcomOrderReview extends RetinaAction
 
     public function getOverallReview(): array
     {
-        return [];
+        $orderId        = (int) ($this->order_id ?? 0);
+        $reviewableId   = (int) ($this->reviewable_id ?? 0);
+        $reviewableType = (string) ($this->reviewable_type ?? 'Product');
+
+        $imageData = is_string($this->row_image_data)
+            ? json_decode($this->row_image_data, true)
+            : (array) ($this->row_image_data ?? []);
+        $rowMedia = $imageData ? Media::hydrate([$imageData])->first() : null;
+
+        $reviewMediaData = is_string($this->review_media_data)
+            ? json_decode($this->review_media_data, true)
+            : ($this->review_media_data ?? []);
+        $reviewImages = $reviewMediaData
+            ? Media::hydrate($reviewMediaData)->map(fn ($media) => ImageResource::make($media)->getArray())->values()->all()
+            : [];
+
+        $ratingLabels = [
+            ReviewContextEnum::SHOP->value   => $this->ratingLabelsForShop($this->order->shop_id, ReviewContextEnum::SHOP),
+        ];
+
+        return [
+                'review_id'       => $this->review_id ? (int) $this->review_id : null,
+                'status'          => $this->review_status,
+                'rating'          => $this->review_rating !== null ? (float) $this->review_rating : null,
+                'rating_a'        => $this->review_rating_a !== null ? (int) $this->review_rating_a : null,
+                'rating_b'        => $this->review_rating_b !== null ? (int) $this->review_rating_b : null,
+                'rating_c'        => $this->review_rating_c !== null ? (int) $this->review_rating_c : null,
+                'rating_d'        => $this->review_rating_d !== null ? (int) $this->review_rating_d : null,
+                'rating_e'        => $this->review_rating_e !== null ? (int) $this->review_rating_e : null,
+                'message'         => $this->review_message,
+                'is_public'       => $this->review_is_public !== null ? (bool) $this->review_is_public : true,
+                'review_images'   => $reviewImages,
+                'reviewable_type' => $reviewableType,
+                'reviewable_id'   => $reviewableId,
+                'order_id'        => $orderId,
+                'rating_labels'   => $ratingLabels[ReviewContextEnum::SHOP->value],
+        ];
     }
 
     private function ratingLabelsForShop(int $shopId, ReviewContextEnum $context): array
