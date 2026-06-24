@@ -91,6 +91,19 @@ class EditOutboxInShop extends OrgAction
                     ],
                 ]
             ];
+        }if (in_array($outbox->code, [OutboxCodeEnum::REVIEW_REMINDER])) {
+            $fields[] = [
+                'title' => '',
+                'fields' => [
+                    'days_after' => [
+                        'type' => 'input_number',
+                        'label' => __('Days after order dispatched'),
+                        'placeholder' => __('Days after order dispatched'),
+                        'required' => false,
+                        'value' => $outbox->days_after ?? 10,
+                    ],
+                ]
+            ];
         } elseif (in_array($outbox->code, [OutboxCodeEnum::BASKET_LOW_STOCK])) {
             $fields[] = $subjectField;
             $fields[] = [
