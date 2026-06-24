@@ -178,6 +178,8 @@ use App\Actions\Retina\Woo\MatchRetinaBulkNewProductToCurrentWooCommerce;
 use App\Actions\Retina\Woo\MatchRetinaPortfolioToCurrentWooProduct;
 use App\Actions\Retina\Woo\StoreRetinaNewProductToCurrentWoo;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Retina\Ecom\Review\StoreRetinaReview;
+use App\Actions\Retina\Ecom\Review\UpdateRetinaReview;
 
 Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place_order_pay_by_bank');
 Route::post('place-order-pay-by-cash-on-delivery', PlaceOrderPayByCashOnDelivery::class)->name('place_order_pay_by_cash_on_delivery');
@@ -200,8 +202,8 @@ Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->whe
 Route::post('favourite/{product:id}', StoreRetinaFavourite::class)->name('favourites.store')->whereNumber('product');
 Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('favourites.delete')->whereNumber('product');
 
-Route::post('review/{order:id}/store', RetinaStoreReview::class)->name('review.store');
-Route::patch('review/{review:id}/update', RetinaUpdateReview::class)->name('review.update');
+Route::post('review/{order:id}/store', StoreRetinaReview::class)->name('review.store');
+Route::patch('review/{review:id}/update', UpdateRetinaReview::class)->name('review.update');
 
 Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings()->whereNumber('product');
 Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings()->whereNumber('product');
