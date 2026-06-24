@@ -743,20 +743,21 @@ class EditShop extends OrgAction
                                 ]
                             ),
                         ],
-                        'review_auto_publishing' => [
-                            'type'        => 'select',
-                            'label'       => __('Auto publishing'),
-                            'information' => __('When customer reviews are published after submission.'),
-                            'required'    => true,
-                            'value'       => Arr::get($shop->settings, 'reviews.auto_publishing', ReviewAutoPublishingEnum::IMMEDIATELY->value),
+                        'review_publishing' => [
+                            'type'        => 'review_publishing',
+                            'label'       => __('Visibility & publishing'),
+                            'information' => __('Choose which visibility modes are available and when public reviews are published.'),
                             'options'     => ReviewAutoPublishingEnum::selectOptions(),
-                        ],
-                        'review_auto_publishing_delay_hours' => [
-                            'type'        => 'input_number',
-                            'label'       => __('Auto publishing delay (hours)'),
-                            'information' => __('Number of hours to wait before publishing when auto publishing is set to delay.'),
-                            'value'       => Arr::get($shop->settings, 'reviews.auto_publishing_delay_hours', 24),
-                            'min'         => 1,
+                            'value'       => [
+                                'visibility' => [
+                                    'private' => Arr::get($shop->settings, 'reviews.visibility.private', true),
+                                    'public'  => Arr::get($shop->settings, 'reviews.visibility.public', true),
+                                ],
+                                'auto_publishing' => [
+                                    'mode'        => Arr::get($shop->settings, 'reviews.auto_publishing.mode', ReviewAutoPublishingEnum::IMMEDIATELY->value),
+                                    'delay_hours' => Arr::get($shop->settings, 'reviews.auto_publishing.delay_hours', 24),
+                                ],
+                            ],
                         ],
                         'review_allow_reactions' => [
                             'type'        => 'toggle',
