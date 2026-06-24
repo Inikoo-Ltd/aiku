@@ -4,7 +4,7 @@ namespace App\Actions\Masters\MasterAsset\Hydrators;
 
 use App\Actions\Catalogue\Review\Hydrators\Concerns\BuildsReviewStats;
 use App\Models\Masters\MasterAsset;
-use App\Models\Reviews\ProductReview;
+use App\Models\Reviews\Review;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -30,7 +30,7 @@ class MasterAssetHydrateReviewStats implements ShouldBeUnique
         }
 
         $stats = $this->buildReviewStats(
-            ProductReview::query()->where('master_product_id', $masterAsset->id)
+            Review::query()->where('master_product_id', $masterAsset->id)
         );
 
         $masterAsset->reviewStats()->updateOrCreate([], $stats);

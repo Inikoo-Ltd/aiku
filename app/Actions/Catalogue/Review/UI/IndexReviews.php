@@ -8,8 +8,6 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
-use App\Models\Reviews\ProductReview;
-use App\Models\Reviews\ProductCategoryReview;
 use App\Models\Reviews\Review;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Services\QueryBuilder;
@@ -168,14 +166,14 @@ class IndexReviews extends OrgAction
     private function reviewModel(ProductCategory|Product|Shop $parent): string
     {
         if ($parent instanceof Product) {
-            return ProductReview::class;
+            return Review::class;
         }
 
         if ($parent instanceof Shop) {
             return Review::class;
         }
 
-        return ProductCategoryReview::class;
+        return Review::class;
     }
 
     private function foreignKey(ProductCategory|Product|Shop $parent): string
