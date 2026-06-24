@@ -526,6 +526,8 @@ class UpdateShop extends OrgAction
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
             'reviews'                                                 => ['sometimes', 'nullable', 'array'],
+            'reviews.data.approval_required'                          => ['sometimes', 'boolean'],
+            'reviews.data.hours_after_dispatched'                     => ['sometimes', 'integer', 'min:1'],
             'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],
             'review_rating_labels.*'                                  => ['sometimes', 'array'],
             'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],

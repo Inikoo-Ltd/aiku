@@ -3,11 +3,13 @@ import { trans } from 'laravel-vue-i18n'
 import { ref, watch, computed } from 'vue'
 import { isNull, get } from 'lodash-es'
 import { faTimes, faCheck } from '@fas'
+import { faInfoCircle } from '@fal'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import InputSwitch from 'primevue/inputswitch'
 
-library.add(faTimes, faCheck)
+library.add(faTimes, faCheck, faInfoCircle)
 
 const props = defineProps<{
     form: any
@@ -144,9 +146,19 @@ const fieldNameString = computed(() =>
         <!-- AIKU INTERNAL PROVIDER SETTINGS -->
         <div v-if="provider === 'aiku'" class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
             <div class="flex flex-col gap-1">
-                <label class="text-sm">{{ trans('Require Approval Before Publishing') }}</label>
-                <p class="text-xs text-gray-500">{{ trans('When enabled, customer reviews must be approved by an admin before they are published.') }}</p>
+                <label class="flex items-center gap-1 text-sm">
+                    {{ trans('Require Approval Before Publishing') }}
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('When enabled, customer reviews must be approved by an admin before they are published.')" fixed-width aria-hidden="true" />
+                </label>
                 <InputSwitch v-model="approvalRequired" />
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="flex items-center gap-1 text-sm">
+                    {{ trans('Hours After Dispatch Before Review Is Available') }}
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('Number of hours after an order is dispatched before the review menu appears to the customer.')" fixed-width aria-hidden="true" />
+                </label>
+                <PureInput type="number" :modelValue="data['hours_after_dispatched'] ?? 24"
+                    @update:modelValue="updateDataField('hours_after_dispatched', Number($event))" />
             </div>
         </div>
 
