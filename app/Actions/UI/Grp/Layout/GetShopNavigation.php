@@ -62,16 +62,6 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
-                    [
-                        "label"   => __("Reviews"),
-                        "tooltip" => __("Reviews"),
-                        "icon"    => ["fal", "fa-star"],
-                        'root'    => 'grp.org.shops.show.dashboard.reviews',
-                        "route"   => [
-                            "name"       => "grp.org.shops.show.dashboard.reviews.index",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
                 ],
             ]
         ];
@@ -203,20 +193,6 @@ class GetShopNavigation
                 "route" => [
                     "name" => "grp.org.shops.show.reviews.dashboard",
                     "parameters" => [$shop->organisation->slug, $shop->slug],
-                ],
-                "topMenu" => [
-                    "subSections" => [
-                        [
-                            "label" => __("Reviews"),
-                            "tooltip" => __("Reviews"),
-                            "icon" => ["fal", "fa-star"],
-                            "root" => "grp.org.shops.show.reviews.index",
-                            "route" => [
-                                "name" => "grp.org.shops.show.reviews.index",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
-                            ],
-                        ],
-                    ],
                 ],
             ];
         }
