@@ -101,7 +101,7 @@ const embedUrl = computed(() => {
 			const id = u.pathname.split("/").filter(Boolean).pop()
 
 			return id
-				? `https://player.vimeo.com/video/${id}?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1`
+				? `https://player.vimeo.com/video/${id}?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&muted=1&playsinline=1`
 				: v
 		}
 	} catch (e) {

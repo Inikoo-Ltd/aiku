@@ -103,8 +103,11 @@ class CallApiGlsEsShipping extends OrgAction
             $xmlPayloads[] = $this->getCreateLabelXml($parent, $shipper, $splitWeight, $index);
         }
 
-        $headers = ["Content-Type: text/xml; charset=UTF-8"];
-        $url = $this->getBaseUrl() . "/b2b.asmx?wsdl";
+        $headers = [
+            "Content-Type: text/xml; charset=utf-8",
+            "SOAPAction: \"http://www.asmred.com/GrabaServicios\""
+        ];
+        $url = $this->getBaseUrl() . "/b2b.asmx";
         $createResults = $this->executeParallelCurl($xmlPayloads, $url, $headers);
 
         $trackings = [];
@@ -121,7 +124,7 @@ class CallApiGlsEsShipping extends OrgAction
             }
 
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($res['content'], null, null, "http://www.w3.org/2003/05/soap-envelope");
+            $xml = simplexml_load_string($res['content'], null, null, "http://schemas.xmlsoap.org/soap/envelope/");
             if ($xml === false) {
                 return [
                     'status'    => 'fail',
@@ -188,19 +191,23 @@ class CallApiGlsEsShipping extends OrgAction
         $uidClient = $this->getAccessToken($shipper);
         $labelXmlPayloads = [];
         foreach ($trackings as $reference) {
-            $labelXmlPayloads[] = '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:asm="http://www.asmred.com/">
-                <soap:Header/>
-                <soap:Body>
-                   <asm:EtiquetaEnvioV2>
-                      <uidcliente>' . $uidClient . '</uidcliente>
-                      <asm:codigo>' . $reference . '</asm:codigo>
-                      <asm:tipoEtiqueta>PDF</asm:tipoEtiqueta>
-                   </asm:EtiquetaEnvioV2>
-                </soap:Body>
-                </soap:Envelope>';
+            $labelXmlPayloads[] = '<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+<soap:Body>
+   <EtiquetaEnvioV2 xmlns="http://www.asmred.com/">
+      <uidcliente>' . $uidClient . '</uidcliente>
+      <codigo>' . $reference . '</codigo>
+      <tipoEtiqueta>PDF</tipoEtiqueta>
+   </EtiquetaEnvioV2>
+</soap:Body>
+</soap:Envelope>';
         }
 
-        $labelResults = $this->executeParallelCurl($labelXmlPayloads, $url, $headers);
+        $labelHeaders = [
+            "Content-Type: text/xml; charset=utf-8",
+            "SOAPAction: \"http://www.asmred.com/EtiquetaEnvioV2\""
+        ];
+        $labelResults = $this->executeParallelCurl($labelXmlPayloads, $url, $labelHeaders);
 
         $labels = [];
         $lastModelData = [];
@@ -227,7 +234,7 @@ class CallApiGlsEsShipping extends OrgAction
                 ];
             }
 
-            $xml->registerXPathNamespace('soap', 'http://www.w3.org/2003/05/soap-envelope');
+            $xml->registerXPathNamespace('soap', 'http://schemas.xmlsoap.org/soap/envelope/');
             $xml->registerXPathNamespace('asm', 'http://www.asmred.com/');
             $result = $xml->xpath('//soap:Body/asm:EtiquetaEnvioV2Response/asm:EtiquetaEnvioV2Result/Etiquetas/Etiqueta');
 
@@ -283,17 +290,16 @@ class CallApiGlsEsShipping extends OrgAction
 
         $uidClient = $this->getAccessToken($shipper);
         $reference = $modelData['data']['codbarras'];
-        $url       = $this->getBaseUrl() . "/b2b.asmx?wsdl";
+        $url       = $this->getBaseUrl() . "/b2b.asmx";
 
-        $xml = '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:asm="http://www.asmred.com/">
-<soap:Header/>
+        $xml = '<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
 <soap:Body>
-   <asm:EtiquetaEnvioV2>
-      <!--Optional:-->
+   <EtiquetaEnvioV2 xmlns="http://www.asmred.com/">
       <uidcliente>' . $uidClient . '</uidcliente>
-      <asm:codigo>' . $reference . '</asm:codigo>
-      <asm:tipoEtiqueta>PDF</asm:tipoEtiqueta>
-   </asm:EtiquetaEnvioV2>
+      <codigo>' . $reference . '</codigo>
+      <tipoEtiqueta>PDF</tipoEtiqueta>
+   </EtiquetaEnvioV2>
 </soap:Body>
 </soap:Envelope>';
 
@@ -307,7 +313,10 @@ class CallApiGlsEsShipping extends OrgAction
         curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: text/xml; charset=UTF-8"));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: text/xml; charset=utf-8",
+            "SOAPAction: \"http://www.asmred.com/EtiquetaEnvioV2\""
+        ]);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
@@ -329,7 +338,7 @@ class CallApiGlsEsShipping extends OrgAction
                 'message' => 'No se encontraron etiquetas',
             ];
         } else {
-            $xml->registerXPathNamespace('soap', 'http://www.w3.org/2003/05/soap-envelope');
+            $xml->registerXPathNamespace('soap', 'http://schemas.xmlsoap.org/soap/envelope/');
             $xml->registerXPathNamespace('asm', 'http://www.asmred.com/');
 
             $result = $xml->xpath('//soap:Body/asm:EtiquetaEnvioV2Response/asm:EtiquetaEnvioV2Result/Etiquetas/Etiqueta');
@@ -364,7 +373,7 @@ class CallApiGlsEsShipping extends OrgAction
     {
         $modelData = [];
 
-        $url = $this->getBaseUrl() . "/b2b.asmx?wsdl";
+        $url = $this->getBaseUrl() . "/b2b.asmx";
         $ch  = curl_init();
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -374,7 +383,10 @@ class CallApiGlsEsShipping extends OrgAction
         curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $this->getCreateLabelXml($parent, $shipper, $splitWeight));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: text/xml; charset=UTF-8"));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: text/xml; charset=utf-8",
+            "SOAPAction: \"http://www.asmred.com/GrabaServicios\""
+        ]);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
@@ -395,7 +407,7 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
         libxml_use_internal_errors(true);
-        $xml = simplexml_load_string($postResult, null, null, "http://http://www.w3.org/2003/05/soap-envelope");
+        $xml = simplexml_load_string($postResult, null, null, "http://schemas.xmlsoap.org/soap/envelope/");
 
         if ($xml === false) {
             $modelData['error'] = 'Invalid XML response from GLS Spain API';
@@ -525,47 +537,48 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
         return '<?xml version="1.0" encoding="utf-8"?>
-         <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
-         <soap12:Body>
-         <GrabaServicios  xmlns="http://www.asmred.com/">
-         <docIn>
-            <Servicios uidcliente="' . $uidClient . '" xmlns="http://www.asmred.com/">
-            <Envio>
-               <Fecha>' . $shipmentData["date"] . '</Fecha>
-               <Servicio>' . $shipmentData["service"] . '</Servicio>
-               <Horario>' . $shipmentData["time"] . '</Horario>
-               <Bultos>' . $shipmentData["parcels"] . '</Bultos>
-               <Peso>' . $shipmentData["weight"] . '</Peso>
-               <Portes>' . $shipmentData["portage"] . '</Portes>
-               <Importes>
-                  <Reembolso>' . $shipmentData["reem"] . '</Reembolso>
-               </Importes>
-               <Remite>
-                  <Nombre>' . $shipmentData["from_name"] . '</Nombre>
-                  <Direccion>' . $shipmentData["from_address"] . '</Direccion>
-                  <Poblacion>' . $shipmentData["from_city"] . '</Poblacion>
-                  <Pais>' . $shipmentData["from_country_code"] . '</Pais>
-                  <CP>' . $shipmentData["from_postal_code"] . '</CP>
-               </Remite>
-               <Destinatario>
-                  <Nombre>' . $shipmentData["to_name"] . '</Nombre>
-                  <Direccion>' . $shipmentData["to_address"] . '</Direccion>
-                  <Poblacion>' . $shipmentData["to_city"] . '</Poblacion>
-                  <Pais>' . $shipmentData["to_country_code"] . '</Pais>
-                  <CP>' . $shipmentData["to_postal_code"] . '</CP>
-                  <Telefono>' . $shipmentData["to_phone"] . '</Telefono>
-                  <Email>' . $shipmentData["to_email"] . '</Email>
-                  <NIF>' . $shipmentData["nif"] . '</NIF>
-                  <Observaciones>' . $shipmentData["notes"] . '</Observaciones>
-               </Destinatario><Referencias>
-                  <Referencia tipo="C">' . $shipmentData["RefC"] . '</Referencia>
-               </Referencias>
-            </Envio>
-            </Servicios>
-            </docIn>
-         </GrabaServicios>
-         </soap12:Body>
-         </soap12:Envelope>';
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+<soap:Body>
+<GrabaServicios xmlns="http://www.asmred.com/">
+<docIn>
+   <Servicios uidcliente="' . $uidClient . '" xmlns="http://www.asmred.com/">
+      <Envio>
+         <Fecha>' . $shipmentData["date"] . '</Fecha>
+         <Servicio>' . $shipmentData["service"] . '</Servicio>
+         <Horario>' . $shipmentData["time"] . '</Horario>
+         <Bultos>' . $shipmentData["parcels"] . '</Bultos>
+         <Peso>' . $shipmentData["weight"] . '</Peso>
+         <Portes>' . $shipmentData["portage"] . '</Portes>
+         <Importes>
+            <Reembolso>' . $shipmentData["reem"] . '</Reembolso>
+         </Importes>
+         <Remite>
+            <Nombre>' . $shipmentData["from_name"] . '</Nombre>
+            <Direccion>' . $shipmentData["from_address"] . '</Direccion>
+            <Poblacion>' . $shipmentData["from_city"] . '</Poblacion>
+            <Pais>' . $shipmentData["from_country_code"] . '</Pais>
+            <CP>' . $shipmentData["from_postal_code"] . '</CP>
+         </Remite>
+         <Destinatario>
+            <Nombre>' . $shipmentData["to_name"] . '</Nombre>
+            <Direccion>' . $shipmentData["to_address"] . '</Direccion>
+            <Poblacion>' . $shipmentData["to_city"] . '</Poblacion>
+            <Pais>' . $shipmentData["to_country_code"] . '</Pais>
+            <CP>' . $shipmentData["to_postal_code"] . '</CP>
+            <Telefono>' . $shipmentData["to_phone"] . '</Telefono>
+            <Email>' . $shipmentData["to_email"] . '</Email>
+            <NIF>' . $shipmentData["nif"] . '</NIF>
+            <Observaciones>' . $shipmentData["notes"] . '</Observaciones>
+         </Destinatario>
+         <Referencias>
+            <Referencia tipo="C">' . $shipmentData["RefC"] . '</Referencia>
+         </Referencias>
+      </Envio>
+   </Servicios>
+</docIn>
+</GrabaServicios>
+</soap:Body>
+</soap:Envelope>';
     }
 
     private function mergePdfStrings(array $pdfStrings): string

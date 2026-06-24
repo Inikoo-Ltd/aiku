@@ -15,7 +15,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
-class FetchAllegroOrdersFromApi extends RetinaAction
+class GetAllegroOrdersFromApi extends RetinaAction
 {
     use WithActionUpdate;
 
