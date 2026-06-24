@@ -56,7 +56,7 @@ class ProcessReviewReminderRecipients implements ShouldQueue
                     'outbox_id'     => $emailBulkRun->outbox_id,
                     'email_address' => $customerModel->email,
                     'data->additional_data' => [
-                        'review_reminder_items' => $this->generateReviewLinks($customer['order_ids'])
+                        'review_reminder_links' => $this->generateReviewLinks($customer['order_ids'])
                     ]
                 ]
             );

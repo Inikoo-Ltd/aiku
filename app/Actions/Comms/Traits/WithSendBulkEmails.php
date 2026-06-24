@@ -226,6 +226,8 @@ trait WithSendBulkEmails
             'prospect-phone' => Arr::get($additionalData, 'prospect_phone'),
             'prospect-company-name' => Arr::get($additionalData, 'prospect_company_name'),
 
+            'review-reminder-links' => Arr::get($additionalData, 'review_reminder_links'),
+
             default => $originalPlaceholder,
         };
     }
