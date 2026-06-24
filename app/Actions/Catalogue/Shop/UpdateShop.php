@@ -301,12 +301,12 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
         }
 
-        if (Arr::exists($modelData, 'review_auto_publishing')) {
-            data_set($modelData, 'settings.reviews.auto_publishing', Arr::pull($modelData, 'review_auto_publishing'));
-        }
-
-        if (Arr::exists($modelData, 'review_auto_publishing_delay_hours')) {
-            data_set($modelData, 'settings.reviews.auto_publishing_delay_hours', Arr::pull($modelData, 'review_auto_publishing_delay_hours'));
+        if (Arr::exists($modelData, 'review_publishing')) {
+            $reviewPublishing = Arr::pull($modelData, 'review_publishing');
+            data_set($modelData, 'settings.reviews.visibility.private', (bool) Arr::get($reviewPublishing, 'visibility.private', false));
+            data_set($modelData, 'settings.reviews.visibility.public', (bool) Arr::get($reviewPublishing, 'visibility.public', false));
+            data_set($modelData, 'settings.reviews.auto_publishing.mode', Arr::get($reviewPublishing, 'auto_publishing.mode'));
+            data_set($modelData, 'settings.reviews.auto_publishing.delay_hours', Arr::get($reviewPublishing, 'auto_publishing.delay_hours'));
         }
 
         if (Arr::exists($modelData, 'review_allow_reactions')) {
@@ -548,8 +548,11 @@ class UpdateShop extends OrgAction
             'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],
             'review_rating_labels.*'                                  => ['sometimes', 'array'],
             'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],
-            'review_auto_publishing'                                  => ['sometimes', 'required', Rule::enum(ReviewAutoPublishingEnum::class)],
-            'review_auto_publishing_delay_hours'                      => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'review_publishing'                                       => ['sometimes', 'nullable', 'array'],
+            'review_publishing.visibility.private'                    => ['sometimes', 'boolean'],
+            'review_publishing.visibility.public'                     => ['sometimes', 'boolean'],
+            'review_publishing.auto_publishing.mode'                  => ['sometimes', 'required', Rule::enum(ReviewAutoPublishingEnum::class)],
+            'review_publishing.auto_publishing.delay_hours'           => ['sometimes', 'nullable', 'integer', 'min:1'],
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
