@@ -115,6 +115,18 @@ class EditWebpage extends OrgAction
                 "maxLength"   => 150,
                 "counter"     => true,
             ],
+            'webpage_title_prefix'  => [
+                'type'          => 'input',
+                'information'   => __('Would add the set prefix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'label'         => __('Title Prefix'),
+                'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
+            ],
+            'webpage_title_suffix'  => [
+                'type'          => 'input',
+                'information'   => __('Would add the set suffix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'label'         => __('Title Suffix'),
+                'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
+            ],
             'index_page'      => [
                 'type'        => 'toggle',
                 'label'       => __('Index Page'),
