@@ -100,7 +100,9 @@ const embedUrl = computed(() => {
 		if (host.includes("vimeo.com")) {
 			const id = u.pathname.split("/").filter(Boolean).pop()
 
-			return id ? `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&playsinline=1` : v
+			return id
+				? `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&autopause=0&background=1&playsinline=1`
+				: v
 		}
 	} catch (e) {
 		//
@@ -324,6 +326,7 @@ watch(
 										class="video-cover w-full h-[220px] md:h-[280px] lg:h-[360px] 2xl:h-[500px]">
 										<iframe
 											v-once
+											v-if="screenType === 'desktop'"
 											:src="embedUrl"
 											frameborder="0"
 											allow="autoplay; fullscreen; picture-in-picture"
@@ -402,6 +405,8 @@ watch(
 							<template v-else-if="fieldValue.department.showcase_video">
 								<div class="relative w-full h-full">
 									<iframe
+									    v-if="screenType === 'mobile'"
+										v-once
 										:src="embedUrl"
 										class="absolute inset-0 w-full h-full"
 										frameborder="0"
@@ -486,7 +491,7 @@ watch(
 
 			<div class="aspect-video overflow-hidden rounded-xl">
 				<iframe
-					v-if="embedUrl"
+					v-if="videoDialogVisible && embedUrl"
 					v-once
 					:src="`${embedUrl}${embedUrl.includes('?') ? '&' : '?'}autoplay=1`"
 					frameborder="0"
