@@ -200,6 +200,7 @@ class IndexOrders extends OrgAction
                 'orders.total_amount',
                 'orders.payment_amount',
                 'orders.pay_detailed_status',
+                'orders.updated_by_customer_at',
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
                 'customer_clients.name as client_name',
@@ -222,7 +223,7 @@ class IndexOrders extends OrgAction
                 'orders.with_replacement',
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at']) // Ensure `id` is the first sort column
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -301,6 +302,10 @@ class IndexOrders extends OrgAction
                 $table->column(key: 'submitted_at', label: __('Submitted'), sortable: true, type: 'date_hm');
             } else {
                 $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
+            }
+
+            if ($bucket == 'in_basket') {
+                $table->column(key: 'updated_by_customer_at', label: __('Last updated'), sortable: true, type: 'date_hm');
             }
 
 

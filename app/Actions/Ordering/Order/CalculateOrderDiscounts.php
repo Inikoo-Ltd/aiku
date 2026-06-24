@@ -8,17 +8,22 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsObject;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class CalculateOrderDiscounts
+class CalculateOrderDiscounts implements ShouldBeUnique
 {
-    use AsObject;
+    use AsAction;
+
+    public string $jobQueue = 'urgent';
 
     private \Illuminate\Support\Collection $transactions;
 
@@ -32,8 +37,21 @@ class CalculateOrderDiscounts
 
     private Order $order;
 
+    public function getJobUniqueId(Order $order): string
+    {
+        return $order->id;
+    }
+
     public function handle(Order $order): Order
     {
+        if (in_array($order->state, [
+            OrderStateEnum::CANCELLED,
+            OrderStateEnum::DISPATCHED,
+            OrderStateEnum::FINALISED,
+        ])) {
+            return $order;
+        }
+
         $this->order        = $order;
         $this->transactions = collect();
 
@@ -69,8 +87,9 @@ class CalculateOrderDiscounts
         DB::table('transactions')->where('order_id', $order->id)
             ->where('quantity_ordered', '>', 0)
             ->update([
-                'net_amount'  => DB::raw('gross_amount'),
-                'offers_data' => []
+                'net_amount'              => DB::raw('gross_amount'),
+                'offers_data'             => [],
+                'current_discount_factor' => 1,
             ]);
 
         foreach ($this->transactions as $transaction) {
@@ -93,7 +112,9 @@ class CalculateOrderDiscounts
                                     'p'   => percentage($transaction->discounted_percentage, 1),
                                     'l'   => $transaction->offer_label,
                                     'st'  => $transaction->sub_trigger,
-                                    'sto' => $transaction->sub_trigger_offer_id
+                                    'sto' => $transaction->sub_trigger_offer_id,
+                                    'f'   => $transaction->free_items_value ?? 0,
+                                    'nf'  => $transaction->number_of_free_items ?? 0
 
                                 ]
                             ]
@@ -120,7 +141,15 @@ class CalculateOrderDiscounts
             }
         }
 
+
+        if ($order->state != OrderStateEnum::CREATING) {
+            $this->regenerateSubmittedTransactionDiscounts($order);
+        }
+
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
+
+        $this->getGiftsMeters($order);
+
 
         $order->update(
             [
@@ -132,9 +161,136 @@ class CalculateOrderDiscounts
         return $order;
     }
 
+    public function regenerateSubmittedTransactionDiscounts(Order $order): void
+    {
+        /** @var Transaction $transactionWithSubmittedDiscount */
+        foreach (
+            $order->transactions()
+                ->where('has_discount_when_submitted', true)
+                ->whereRaw("submitted_offers_data <> '{}'::jsonb")
+                ->where('submitted_discount_factor', '<', DB::raw('current_discount_factor'))
+                ->get() as $transactionWithSubmittedDiscount
+        ) {
+            DB::table('transaction_has_offer_allowances')->where('is_gift', false)->where('transaction_id', $transactionWithSubmittedDiscount->id)->delete();
+
+
+            $percentageOff    = 1 - $transactionWithSubmittedDiscount->submitted_discount_factor;
+            $discountedAmount = round((float)$transactionWithSubmittedDiscount->gross_amount * $percentageOff, 2);
+
+
+            DB::table('transactions')->where('id', $transactionWithSubmittedDiscount->id)
+                ->update(
+                    [
+
+                        'net_amount'              => $transactionWithSubmittedDiscount->gross_amount - $discountedAmount,
+                        'current_discount_factor' => $transactionWithSubmittedDiscount->submitted_discount_factor,
+                        'offers_data'             => $transactionWithSubmittedDiscount->submitted_offers_data
+                    ]
+                );
+
+
+            DB::table('transaction_has_offer_allowances')->insert([
+                'order_id'              => $order->id,
+                'transaction_id'        => $transactionWithSubmittedDiscount->id,
+                'model_type'            => $transactionWithSubmittedDiscount->model_type,
+                'model_id'              => $transactionWithSubmittedDiscount->model_id,
+                'offer_campaign_id'     => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.oc'),
+                'offer_id'              => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.o'),
+                'offer_allowance_id'    => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.oa'),
+                'discounted_amount'     => $discountedAmount,
+                'discounted_percentage' => $percentageOff,
+                'free_items_value'      => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.f', 0),
+                'number_of_free_items'  => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.nf', 0),
+                'created_at'            => now(),
+                'updated_at'            => now(),
+                'data'                  => '{}'
+
+            ]);
+        }
+    }
+
+
+    public function getGiftsMeters(Order $order): void
+    {
+        foreach (
+            DB::table('offers')
+                ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
+                ->where('shop_id', $order->shop_id)
+                ->where('type', OfferTypeEnum::GIFT->value)
+                ->where('status', true)->get() as $giftOfferData
+        ) {
+            $triggerData = json_decode($giftOfferData->trigger_data, true);
+
+            $this->offerMeters[$giftOfferData->allowance_signature] = [
+                'offer_id' => $giftOfferData->id,
+                'label'    => $giftOfferData->name,
+                'is_gift'  => true,
+                'metadata' => [
+                    'current' => $order->gross_amount,
+                    'target'  => Arr::get($triggerData, 'min_order_amount', 0),
+
+                ]
+            ];
+        }
+    }
+
     private function setEnabledOffers(Order $order): void
     {
         $enabledOffers = [];
+
+
+        foreach (
+            DB::table('offers')
+                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])
+                ->where('customer_id', $order->customer_id)
+                ->where('status', true)
+                ->get() as $customerExclusiveOfferData
+        ) {
+            if ($customerExclusiveOfferData->type == OfferTypeEnum::CUSTOMER_ANY_ORDER->value) {
+                $enabledOffers[$customerExclusiveOfferData->allowance_signature] = [
+                    'offer_id'    => $customerExclusiveOfferData->id,
+                    'offer_label' => $customerExclusiveOfferData->name,
+                ];
+            } elseif ($customerExclusiveOfferData->type == OfferTypeEnum::CUSTOMER_AMOUNT_ORDERED->value) {
+                $triggerData = json_decode($customerExclusiveOfferData->trigger_data, true);
+
+                if ($order->gross_amount >= Arr::get($triggerData, 'min_order_amount', 0)) {
+                    $enabledOffers[$customerExclusiveOfferData->allowance_signature] = [
+                        'offer_id'    => $customerExclusiveOfferData->id,
+                        'offer_label' => $customerExclusiveOfferData->name,
+                    ];
+                }
+            }
+        }
+
+
+        if ($order->offer_voucher_id) {
+            $voucherData = DB::table('offers')
+                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
+                ->where('shop_id', $order->shop_id)
+                ->where('status', true)
+                ->where('id', $order->offer_voucher_id)
+                ->first();
+
+            if ($voucherData) {
+                if ($voucherData->type == OfferTypeEnum::VOUCHER_ANY_ORDER->value) {
+                    $enabledOffers[$voucherData->allowance_signature] = [
+                        'offer_id'    => $voucherData->id,
+                        'offer_label' => $voucherData->name,
+                    ];
+                } elseif ($voucherData->type == OfferTypeEnum::VOUCHER_AMOUNT_ORDERED->value) {
+                    $triggerData = json_decode($voucherData->trigger_data, true);
+
+                    if ($order->gross_amount >= Arr::get($triggerData, 'item_amount', 0)) {
+                        $enabledOffers[$voucherData->allowance_signature] = [
+                            'offer_id'    => $voucherData->id,
+                            'offer_label' => $voucherData->name,
+                        ];
+                    }
+                }
+            }
+        }
+
 
         $offersData = DB::table('offers')
             ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
@@ -159,6 +315,7 @@ class CalculateOrderDiscounts
                     $this->offerMeters[$offerData->allowance_signature] = [
                         'offer_id' => $offerData->id,
                         'label'    => $offerData->name,
+                        'is_gift'  => false,
                         'metadata' => $metadata,
                     ];
                 }
@@ -324,12 +481,18 @@ class CalculateOrderDiscounts
 
     public function getDaysSinceLastInvoiced(Order $order): int
     {
+
+        $customer = $order->customer;
+        if (!$customer) {
+            return 10000;
+        }
+
         if ($this->isLastInvoicedSet) {
             return $this->daysSinceLastInvoiced ?? 10000;
         }
 
-        $lastInvoiced            = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
-            return $order->customer->last_invoiced_at;
+        $lastInvoiced            = Cache::remember("customer_last_invoiced_at_$customer->id", now()->addDay(), function () use ($customer) {
+            return $customer->last_invoiced_at;
         });
         $this->isLastInvoicedSet = true;
         // Explicitly cast to int to prevent PHP 8.4+ precision loss warnings

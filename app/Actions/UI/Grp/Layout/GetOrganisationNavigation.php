@@ -183,7 +183,19 @@ class GetOrganisationNavigation
                 'parameters' => [$organisation->slug],
             ],
 
-            'topMenu' => []
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Top Customers'),
+                        'icon'    => ['fal', 'fa-trophy'],
+                        'root'    => 'grp.org.overview.customers.top_customers',
+                        'route'   => [
+                            'name'       => 'grp.org.overview.customers.top_customers',
+                            'parameters' => [$organisation->slug]
+                        ]
+                    ],
+                ]
+            ]
         ];
 
         $navigation = $this->getReportsNavs($user, $organisation, $navigation);
@@ -214,6 +226,15 @@ class GetOrganisationNavigation
                         'root'    => 'grp.org.chat.agents.show',
                         'route'   => [
                             'name'       => 'grp.org.chat.agents.show',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label'   => __('Conversations'),
+                        'icon'    => ['fal', 'fa-comments'],
+                        'root'    => 'grp.org.chat.conversations.show',
+                        'route'   => [
+                            'name'       => 'grp.org.chat.conversations.show',
                             'parameters' => [$organisation->slug],
                         ],
                     ],

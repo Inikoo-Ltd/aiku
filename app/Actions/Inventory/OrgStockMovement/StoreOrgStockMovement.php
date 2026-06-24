@@ -20,19 +20,21 @@ use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Models\Dispatching\Picking;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrgStockMovement extends OrgAction
 {
     use CalculatesOrgStockHistories;
 
-    public function handle(OrgStock $orgStock, Location $location, array $modelData): OrgStockMovement
+    public int $jobTries = 1;
+
+    public function handle(OrgStock $orgStock, Location $location, array $modelData, ?Picking $picking = null): OrgStockMovement
     {
         data_set($modelData, 'group_id', $location->group_id);
         data_set($modelData, 'organisation_id', $location->organisation_id);
@@ -104,7 +106,7 @@ class StoreOrgStockMovement extends OrgAction
         }
 
         if ($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE) {
-            OrgStockHydrateStockValue::dispatch($orgStock);//todo do we need to delete this??? mybe yes
+            OrgStockHydrateStockValue::dispatch($orgStock);//todo do we need to delete this??? maybe yes
             OrgStockHydrateSkuValue::dispatch($orgStock);
         }
 
@@ -112,6 +114,11 @@ class StoreOrgStockMovement extends OrgAction
         OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
         CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay(now()->addMinutes(15));
 
+        $picking?->update(
+            [
+                'org_stock_movement_id' => $orgStockMovement->id,
+            ]
+        );
 
         return $orgStockMovement;
     }
@@ -139,14 +146,6 @@ class StoreOrgStockMovement extends OrgAction
         return $rules;
     }
 
-
-    public function asController(OrgStock $orgStock, Location $location, ActionRequest $request, int $hydratorsDelay = 0, bool $strict = true): OrgStockMovement
-    {
-        $this->initialisation($orgStock->organisation, $request);
-
-        return $this->handle($orgStock, $location, $this->validatedData);
-    }
-
     public function action(OrgStock $orgStock, Location $location, array $modelData, int $hydratorsDelay = 0, bool $strict = true): OrgStockMovement
     {
         $this->asAction       = true;
@@ -157,6 +156,5 @@ class StoreOrgStockMovement extends OrgAction
 
         return $this->handle($orgStock, $location, $this->validatedData);
     }
-
 
 }

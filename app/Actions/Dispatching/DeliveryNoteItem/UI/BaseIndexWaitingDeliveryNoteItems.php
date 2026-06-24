@@ -87,6 +87,7 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
             'allow_stock_controller_set_not_picked' => (data_get($this->organisation->settings, 'orders.allow_stock_controller_set_not_picked', false)),
             'is_still_picking'                      => $this->getDeliveryNoteState()->value === DeliveryNoteStateEnum::HANDLING->value,
             'is_read_only'                          => $this->readOnly,
+            'waiting_type'                          => $this->waitingType,
             'tabs'                                  => [
                 'current'    => $this->tab,
                 'navigation' => $this->getTabNavigation(),

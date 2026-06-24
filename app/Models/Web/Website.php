@@ -115,6 +115,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $published_family_description_checksum
  * @property int|null $landing_page_id
  * @property \Illuminate\Support\Carbon|null $last_visited_at
+ * @property int|null $unpublished_department_description_snapshot_id
+ * @property int|null $live_department_description_snapshot_id
+ * @property string|null $published_department_description_checksum
  * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Web\Crawl> $crawls
@@ -125,6 +128,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read \App\Models\Web\Webpage|null $landingPage
  * @property-read Snapshot|null $liveCollectionSnapshot
+ * @property-read Snapshot|null $liveDepartmentDescriptionSnapshot
  * @property-read Snapshot|null $liveDepartmentSnapshot
  * @property-read Snapshot|null $liveFamiliesOverviewSnapshot
  * @property-read Snapshot|null $liveFamilyDescriptionSnapshot
@@ -147,6 +151,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries
  * @property-read Snapshot|null $unpublishedCollectionSnapshot
+ * @property-read Snapshot|null $unpublishedDepartmentDescriptionSnapshot
  * @property-read Snapshot|null $unpublishedDepartmentSnapshot
  * @property-read Snapshot|null $unpublishedFamiliesOverviewSnapshot
  * @property-read Snapshot|null $unpublishedFamilyDescriptionSnapshot
@@ -414,6 +419,16 @@ class Website extends Model implements Auditable, HasMedia
     public function liveFamilyDescriptionSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'live_family_description_snapshot_id');
+    }
+
+    public function unpublishedDepartmentDescriptionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_department_description_snapshot_id');
+    }
+
+    public function liveDepartmentDescriptionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_department_description_snapshot_id');
     }
 
     public function liveSnapshot(): BelongsTo

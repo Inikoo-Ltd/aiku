@@ -9,26 +9,21 @@
 
 namespace App\Actions\Web\WebBlock\Workshop;
 
-use App\Http\Resources\Web\WebBlockFamilyResource;
+use App\Actions\Web\WebBlock\Concerns\HasFamilyDescriptionData;
+use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetWebBlockFamilyDescription
 {
     use AsObject;
+    use HasFamilyDescriptionData;
+    use HasWebBlockLayoutData;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $permissions =  ['edit','hidden'];
+        $this->setFamilyDescriptionData($webpage, $webBlock);
 
-
-        $webBlockType = data_get($webBlock, 'type', '');
-        $webPublishedLayout = $webpage->website->published_layout;
-
-        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock, 'web_block.layout.data.fieldValue', data_get($webPublishedLayout, "family_description.$webBlockType.fieldValue", []));
-        data_set($webBlock, 'web_block.layout.data.fieldValue.family', WebBlockFamilyResource::make($webpage->model)->toArray(request()));
         return $webBlock;
     }
-
 }

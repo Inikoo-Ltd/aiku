@@ -50,7 +50,7 @@ trait WithReviewIOApi
     {
         $this->initializeReviewIoApi();
 
-        $url = $this->baseReviewIoUrl.rtrim($endpoint, '/');
+        $url = rtrim($this->baseReviewIoUrl, '/').$endpoint;
 
         if ($params) {
             $this->queryReviewIoParams = array_merge($this->queryReviewIoParams, $params);
@@ -99,7 +99,7 @@ trait WithReviewIOApi
             data_set($additionalParams, 'type', $type);
         }
 
-        return $this->buildReviewIoRequest('GET', '/reviews', $additionalParams);
+        return $this->buildReviewIoRequest('GET', '/product/review', $additionalParams);
     }
 
     public function retrieveStoreReviewStatistics(): array|string

@@ -84,7 +84,7 @@ class CancelDeliveryNote extends OrgAction
                     $locationPickingStock = LocationOrgStock::where('org_stock_id', $picking->org_stock_id)->first();
                 }
 
-                if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK) {
+                if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK && $picking->quantity > 0) {
                     StoreSowing::make()->action(
                         $deliveryNoteItem,
                         $user,

@@ -169,7 +169,7 @@ export const recordWebsiteHit = () => {
   }
 
   // Fire-and-forget request used only to record hit analytics.
-  void axios.post("/models/record-hit", {
+  void axios.post("/analytics/hit", {
       original_route: route().current(),
       original_params: route().params,
       webpage_id: usePage().props.webpage_id,

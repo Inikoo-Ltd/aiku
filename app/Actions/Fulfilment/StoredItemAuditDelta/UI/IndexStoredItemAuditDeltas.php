@@ -75,25 +75,20 @@ class IndexStoredItemAuditDeltas extends OrgAction
                 'stored_item_audit_deltas.pallet_id as pallet_id',
                 'pallets.customer_reference as pallet_customer_reference',
                 'stored_item_audit_deltas.stored_item_id as stored_item_id',
-                
                 'stored_items.id as stored_item_id',
                 'stored_items.slug as stored_item_slug',
                 'stored_items.reference as stored_item_reference',
-
                 'stored_item_audit_deltas.audited_at',
                 'stored_item_audit_deltas.original_quantity',
                 'stored_item_audit_deltas.audited_quantity',
                 'stored_item_audit_deltas.state',
                 'stored_item_audit_deltas.audit_type',
-                
                 'stored_item_audits.id as stored_item_audit_id',
                 'stored_item_audits.reference as stored_item_audit_reference',
                 'stored_item_audits.slug as stored_item_audit_slug',
-                
                 'pallet_deliveries.id as pallet_delivery_id',
                 'pallet_deliveries.reference as pallet_delivery_reference',
                 'pallet_deliveries.slug as pallet_delivery_slug',
-
                 'pallet_returns.id as pallet_returns_id',
                 'pallet_returns.type as pallet_returns_type',
                 'pallet_returns.reference as pallet_returns_reference',

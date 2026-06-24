@@ -24,6 +24,27 @@ if (!function_exists('escapeSQLSearch')) {
     }
 }
 
+if (!function_exists('getUnformattedTaxNumber')) {
+    function getUnformattedTaxNumber(?string $formattedTaxNumber = null): array|null
+    {
+        if (!$formattedTaxNumber) {
+            return null;
+        }
+
+        $prefix     = substr($formattedTaxNumber, 0, 2);
+        $taxNumber  = trim(substr($formattedTaxNumber, 2));
+
+        if (!ctype_alpha($prefix) || !$taxNumber) {
+            return null;
+        }
+
+        return [
+            'country_code' => strtoupper($prefix),
+            'number'       => $taxNumber,
+        ];
+    }
+}
+
 if (!function_exists('cleanCapitalize')) {
     function cleanCapitalize(?string $value): ?string
     {

@@ -19,6 +19,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { faDoorOpen } from "@far"
 
 library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChartLine)
 
@@ -39,6 +40,7 @@ const props = defineProps<{
     }
     route_storefront: routeType
     route_landing_page?: routeType
+    route_welcome?:routeType
     luigi_data: {
         last_reindexed: string
         luigisbox_tracker_id: string
@@ -146,6 +148,11 @@ const links = computed(() => {
                     <div class="p-2">
                         <ButtonWithLink :routeTarget="route_storefront" icon="fal fa-home" type="tertiary"
                             :label="trans('Storefront')" full />
+                    </div>
+
+                     <div class="p-2">
+                        <ButtonWithLink :routeTarget="route_welcome" :icon="faDoorOpen" type="tertiary"
+                            :label="trans('Welcome Page')" full />
                     </div>
                     
                     <div class="p-2" v-if="route_landing_page.length">

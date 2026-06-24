@@ -12,207 +12,310 @@ use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
-use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Support\Arr;
+use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class BulkUpdateShopifyPortfolio
+class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 {
     use AsAction;
     use WithShopifyApi;
 
-    public function handle(ShopifyUser $shopifyUser, Collection $portfolios): void
+    public string $jobQueue = 'shopify-slave';
+    public int $jobTries = 1;
+
+    public function getJobUniqueId(?int $customerSalesChannelId): string
     {
-        try {
-            $logs = [];
-            $inventoryItems = [];
+        return $customerSalesChannelId ?? 'empty';
+    }
 
-            foreach ($portfolios as $portfolio) {
-                /** @var Product $product */
-                $product = $portfolio->item;
+    public function handle(?int $customerSalesChannelId, ?Command $command = null): void
+    {
+        if (!$customerSalesChannelId) {
+            return;
+        }
 
-                $logs[] = StorePlatformPortfolioLog::run($portfolio, []);
+        $customerSalesChannel = CustomerSalesChannel::on('aiku_no_sticky')->find($customerSalesChannelId);
 
-                // Get variant ID (either from stored or fetch default variant)
-                $variantId = Arr::get($portfolio->data, 'shopify_product.variants.edges.0.node.id');
+        if (!$customerSalesChannel) {
+            return;
+        }
 
-                if (!$variantId) {
-                    // Fetch the default variant from the product
-                    $variantId = $this->getDefaultVariantId($shopifyUser, $portfolio->platform_product_id);
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = $customerSalesChannel->user;
+        if (!$shopifyUser instanceof ShopifyUser) {
+            $command?->error('Shopify user not found');
 
-                    if ($variantId) {
-                        // Update the portfolio with the variant ID
-                        $portfolio->update([
-                            'platform_product_variant_id' => $variantId
-                        ]);
-                    }
-                }
+            return;
+        }
 
-                if (!$variantId) {
-                    continue;
-                }
+        $portfolios = Portfolio::on('aiku_no_sticky')
+            ->where('customer_sales_channel_id', $customerSalesChannel->id)
+            ->whereNotNull('platform_product_id')
+            ->where('status', true)
+            ->get()
+            ->keyBy('id');
 
-                // Get inventory item ID from variant
-                $inventoryItemId = $this->getInventoryItemId($shopifyUser, $variantId);
+        if ($portfolios->isEmpty()) {
+            return;
+        }
 
-                $availableQuantity = $product->available_quantity;
-                if (! $product->is_for_sale) {
-                    $availableQuantity = 0;
-                }
+        $productMap = DB::connection('aiku_no_sticky')
+            ->table('products')
+            ->whereIn('id', $portfolios->pluck('item_id')->unique())
+            ->select('id', 'available_quantity', 'is_for_sale')
+            ->get()
+            ->keyBy('id');
 
-                $maxQtyAd = $shopifyUser->customerSalesChannel?->max_quantity_advertise;
+        $maxQtyAd = $customerSalesChannel->max_quantity_advertise;
 
-                if ($maxQtyAd > 0) {
-                    $availableQuantity = min($availableQuantity, $maxQtyAd);
-                }
+        foreach ($portfolios->chunk(100) as $portfolioChunk) {
+            try {
+                $this->processChunk($shopifyUser, $portfolioChunk, $productMap, $maxQtyAd, $command);
+            } catch (\Throwable) {
+                // Individual chunk failure handled by not throwing to allow other chunks to proceed
+            }
+        }
+    }
 
-                if ($inventoryItemId) {
-                    $inventoryItems[] = [
-                        'inventoryItemId' => $inventoryItemId,
-                        'locationId' => $shopifyUser->shopify_location_id,
-                        'quantity' => $availableQuantity,
-                    ];
-                }
+    /**
+     * @param  Collection<int, Portfolio>  $portfolios
+     * @param  Collection<int, \stdClass>  $productMap
+     */
+    private function processChunk(ShopifyUser $shopifyUser, Collection $portfolios, Collection $productMap, ?int $maxQtyAd, ?Command $command = null): void
+    {
+        $logs                   = [];
+        $inventoryItems         = [];
+        $portfoliosToUpdateData = [];
+        $indexToPortfolioId     = [];
+
+        $shopifyIdsToFetch = $portfolios->map(fn($p) => $p->platform_product_variant_id ?: $p->platform_product_id)
+            ->filter()
+            ->unique()
+            ->toArray();
+
+        $shopifyDataMap = $this->getShopifyDataBatch($shopifyUser, $shopifyIdsToFetch);
+
+        foreach ($portfolios as $portfolio) {
+            $productData = $productMap->get($portfolio->item_id);
+
+            if (!$productData instanceof \stdClass) {
+                continue;
             }
 
-            if (empty($inventoryItems)) {
-                $this->bulkUpdateLogs($logs, [
-                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => __('No valid inventory items found')
-                ]);
-                return;
+            $availableQuantity = $productData->available_quantity;
+            if (!$productData->is_for_sale) {
+                $availableQuantity = 0;
             }
 
-            // Use inventorySetQuantities mutation - this sets absolute quantities
-            $mutation = <<<'MUTATION'
-                mutation inventorySetQuantities($input: InventorySetQuantitiesInput!) {
-                    inventorySetQuantities(input: $input) {
-                        inventoryAdjustmentGroup {
-                            id
-                            reason
-                            changes {
-                                name
-                                delta
-                            }
-                        }
-                        userErrors {
-                            field
-                            message
-                        }
-                    }
-                }
-            MUTATION;
+            if ($maxQtyAd > 0) {
+                $availableQuantity = min($availableQuantity, $maxQtyAd);
+            }
 
-            $variables = [
-                'input' => [
-                    'reason' => 'correction',
-                    'name' => 'available',
-                    'quantities' => $inventoryItems,
-                    'ignoreCompareQuantity' => true
-                ]
+            $key         = $portfolio->platform_product_variant_id ?: $portfolio->platform_product_id;
+            $shopifyData = $shopifyDataMap[$key] ?? null;
+
+            if (!$shopifyData) {
+                continue;
+            }
+
+            $variantId       = $shopifyData['variantId'];
+            $inventoryItemId = $shopifyData['inventoryItemId'];
+
+            if ($variantId && $portfolio->platform_product_variant_id !== $variantId) {
+                $portfolio->update(['platform_product_variant_id' => $variantId]);
+            }
+
+            if (!$inventoryItemId) {
+                continue;
+            }
+
+
+            $currentIndex                      = count($inventoryItems);
+            $inventoryItems[]                  = [
+                'inventoryItemId' => $inventoryItemId,
+                'locationId'      => $shopifyUser->shopify_location_id,
+                'quantity'        => (int)$availableQuantity,
+            ];
+            $indexToPortfolioId[$currentIndex] = $portfolio->id;
+
+            $portfoliosToUpdateData[$portfolio->id] = [
+                'last_stock_value' => $availableQuantity,
             ];
 
-            list($status, $res) = $this->doPost($shopifyUser, $mutation, $variables);
+            $logs[$portfolio->id] = StorePlatformPortfolioLog::run($portfolio, []);
+        }
 
-            if (!$status) {
-                $this->bulkUpdateLogs($logs, [
-                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $res
-                ]);
-                return;
+        if (empty($inventoryItems)) {
+            return;
+        }
+
+        $mutation = <<<'MUTATION'
+            mutation inventorySetQuantities($input: InventorySetQuantitiesInput!) {
+                inventorySetQuantities(input: $input) {
+                    userErrors {
+                        field
+                        message
+                    }
+                }
             }
+        MUTATION;
 
-            $body = $res['body']->toArray();
+        $variables = [
+            'input' => [
+                'reason'                => 'correction',
+                'name'                  => 'available',
+                'quantities'            => $inventoryItems,
+                'ignoreCompareQuantity' => true
+            ]
+        ];
 
-            // Check for user errors
-            $userErrors = $body['data']['inventorySetQuantities']['userErrors'] ?? [];
-            if (!empty($userErrors)) {
-                $this->bulkUpdateLogs($logs, [
-                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => 'User errors: ' . json_encode($userErrors)
-                ]);
-                return;
-            }
+        [$status, $res] = $this->doPost($shopifyUser, $mutation, $variables);
 
-
+        if (!$status) {
             $this->bulkUpdateLogs($logs, [
-                'status' => PlatformPortfolioLogsStatusEnum::OK
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $res
             ]);
 
-        } catch (\Throwable $e) {
-            $this->bulkUpdateLogs($logs ?? [], [
-                'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                'response' => $e->getMessage()
-            ]);
+            foreach ($portfoliosToUpdateData as $portfolioId => $data) {
+                $command?->error(json_encode($res));
+                $portfolios->get($portfolioId)?->update([
+                    'stock_last_fail_updated_at' => now(),
+                ]);
+            }
+
+            return;
+        }
+
+        $body = $res['body']->toArray();
+
+        $userErrors    = $body['data']['inventorySetQuantities']['userErrors'] ?? [];
+        $failedIndices = [];
+        foreach ($userErrors as $error) {
+            $path = $error['field'] ?? [];
+            if (isset($path[2]) && is_numeric($path[2])) {
+                $failedIndices[(int)$path[2]] = $error['message'];
+            }
+        }
+
+        foreach ($inventoryItems as $index => $item) {
+            $portfolioId = $indexToPortfolioId[$index];
+            $portfolio   = $portfolios->get($portfolioId);
+            $log         = $logs[$portfolioId] ?? null;
+
+            if (isset($failedIndices[$index])) {
+                $portfolio?->update([
+                    'stock_last_fail_updated_at' => now(),
+                ]);
+                if ($log) {
+                    UpdatePlatformPortfolioLog::dispatch($log, [
+                        'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                        'response' => $failedIndices[$index]
+                    ]);
+                }
+            } else {
+                $command?->line("Portfolio $portfolioId usefully updated");
+                $portfolio?->update([
+                    'last_stock_value'      => $portfoliosToUpdateData[$portfolioId]['last_stock_value'],
+                    'stock_last_updated_at' => now(),
+                ]);
+                if ($log) {
+                    UpdatePlatformPortfolioLog::dispatch($log, [
+                        'status' => PlatformPortfolioLogsStatusEnum::OK
+                    ]);
+                }
+            }
         }
     }
 
-    private function getDefaultVariantId(ShopifyUser $shopifyUser, string $productId): ?string
+    private function getShopifyDataBatch(ShopifyUser $shopifyUser, array $shopifyIds): array
     {
+        if (empty($shopifyIds)) {
+            return [];
+        }
+
         $query = <<<'QUERY'
-            query getProductVariants($id: ID!) {
-                product(id: $id) {
-                    id
-                    variants(first: 1) {
-                        edges {
-                            node {
-                                id
+            query getNodes($ids: [ID!]!) {
+                nodes(ids: $ids) {
+                    __typename
+                    ... on Product {
+                        id
+                        variants(first: 1) {
+                            edges {
+                                node {
+                                    id
+                                    inventoryItem {
+                                        id
+                                    }
+                                }
                             }
+                        }
+                    }
+                    ... on ProductVariant {
+                        id
+                        inventoryItem {
+                            id
                         }
                     }
                 }
             }
         QUERY;
 
-        $variables = [
-            'id' => $productId
-        ];
-
-        list($status, $res) = $this->doPost($shopifyUser, $query, $variables);
+        [$status, $res] = $this->doPost($shopifyUser, $query, ['ids' => $shopifyIds]);
 
         if (!$status) {
-            return null;
+            return [];
         }
 
-        $body = $res['body']->toArray();
-
-        return $body['data']['product']['variants']['edges'][0]['node']['id'] ?? null;
-    }
-
-    private function getInventoryItemId(ShopifyUser $shopifyUser, string $variantId): ?string
-    {
-        $query = <<<'QUERY'
-            query getInventoryItemId($id: ID!) {
-                productVariant(id: $id) {
-                    id
-                    inventoryItem {
-                        id
-                    }
-                }
+        $body    = $res['body']->toArray();
+        $results = [];
+        foreach ($body['data']['nodes'] ?? [] as $node) {
+            if (!$node) {
+                continue;
             }
-        QUERY;
 
-        $variables = [
-            'id' => $variantId
-        ];
-
-        list($status, $res) = $this->doPost($shopifyUser, $query, $variables);
-
-        if (!$status) {
-            return null;
+            if ($node['__typename'] === 'Product') {
+                $variant = $node['variants']['edges'][0]['node'] ?? null;
+                if ($variant) {
+                    $results[$node['id']] = [
+                        'variantId'       => $variant['id'],
+                        'inventoryItemId' => $variant['inventoryItem']['id'] ?? null
+                    ];
+                }
+            } elseif ($node['__typename'] === 'ProductVariant') {
+                $results[$node['id']] = [
+                    'variantId'       => $node['id'],
+                    'inventoryItemId' => $node['inventoryItem']['id'] ?? null
+                ];
+            }
         }
 
-        $body = $res['body']->toArray();
-
-        return $body['data']['productVariant']['inventoryItem']['id'] ?? null;
+        return $results;
     }
 
     public function bulkUpdateLogs(array $platformPortfolioLogs, array $modelData): void
     {
         foreach ($platformPortfolioLogs as $platformPortfolioLog) {
-            UpdatePlatformPortfolioLog::run($platformPortfolioLog, $modelData);
+            UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, $modelData);
         }
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'dropshipping:bulk-update-shopify-portfolio {customerSalesChannelId}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $this->handle($command->argument('customerSalesChannelId'), $command);
+
+        return 0;
+    }
+
 }

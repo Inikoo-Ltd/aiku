@@ -28,6 +28,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
+import { trans } from "laravel-vue-i18n"
 
 
 library.add(faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle)
@@ -97,7 +98,7 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
+            <Button v-if="can_add_order" @click="isOrderModalOpen = true" :label="trans('Add Order')" style="create"
                 icon="plus" />
         </template>
     </PageHeading>

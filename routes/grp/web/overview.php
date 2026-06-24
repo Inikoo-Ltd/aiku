@@ -31,6 +31,7 @@ use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\PostRoom\UI\IndexPostRooms;
 use App\Actions\Comms\PostRoom\UI\ShowPostRoom;
 use App\Actions\CRM\Customer\UI\IndexCustomersInOverview;
+use App\Actions\CRM\Customer\UI\ShowCrmDashboardInOverview;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\CRM\WebUser\UI\IndexWebUsersInCRM;
 use App\Actions\CRM\WebUser\UI\IndexWebUsersInGroup;
@@ -114,6 +115,7 @@ Route::name('web.')->prefix('web')->group(function () {
 
 Route::name('crm.')->prefix('crm')->group(function () {
     Route::get('/customers', [IndexCustomersInOverview::class, 'inGroup'])->name('customers.index');
+    Route::get('/customers/top-customers', ShowCrmDashboardInOverview::class)->name('customers.top_customers');
     Route::get('/web-users', [IndexWebUsersInCRM::class, 'inGroup'])->name('web-users.index');
     Route::get('/prospects', [IndexProspects::class, 'inGroup'])->name('prospects.index');
 });

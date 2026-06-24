@@ -11,15 +11,11 @@ namespace App\Actions\Goods\TradeUnit\UI;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
+use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitStandardIndex;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Goods\TradeUnitsTabsEnum;
-use App\Http\Resources\Goods\TradeUnitsResource;
-use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
-use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,6 +24,7 @@ class IndexTradeUnits extends GrpAction
 {
     use WithGoodsAuthorisation;
     use WithTradeUnitIndex;
+    use WithTradeUnitStandardIndex;
 
     private Group $parent;
     private string $bucket;
@@ -89,10 +86,6 @@ class IndexTradeUnits extends GrpAction
 
     public function handle($prefix = null, $bucket = 'all'): LengthAwarePaginator
     {
-        $globalSearch = $this->tradeUnitGlobalSearch();
-
-        $this->updateQueryBuilderParametersIfPrefixed($prefix);
-
         $queryBuilder = $this->baseTradeUnitIndexBuilder();
         $queryBuilder->where('trade_units.group_id', $this->group->id);
         $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
@@ -109,97 +102,7 @@ class IndexTradeUnits extends GrpAction
             $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::ANOMALITY);
         }
 
-        $selects = [
-            'trade_units.code',
-            'trade_units.slug',
-            'trade_units.name',
-            'trade_units.description',
-            'trade_units.gross_weight',
-            'trade_units.marketing_dimensions',
-            'trade_units.volume',
-            'trade_units.type',
-            'trade_unit_stats.number_current_stocks',
-            'trade_unit_stats.number_current_products',
-            'trade_units.id',
-            'trade_units.health_rank',
-        ];
-
-        if ($prefix === TradeUnitsTabsEnum::SALES->value) {
-            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
-                timeSeriesTable: 'trade_unit_time_series',
-                timeSeriesRecordsTable: 'trade_unit_time_series_records',
-                foreignKey: 'trade_unit_id',
-                aggregateColumns: [
-                    'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'invoices'                    => 'invoices',
-                ],
-                frequency: TimeSeriesFrequencyEnum::DAILY->value,
-                prefix: $prefix,
-                includeLY: true
-            );
-
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['invoices'];
-            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-        }
-
-        $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products', 'health_rank'];
-
-        if ($prefix === TradeUnitsTabsEnum::SALES->value) {
-            $allowedSorts[] = 'sales_grp_currency_external';
-            $allowedSorts[] = 'invoices';
-        }
-
-        $queryBuilder
-            ->defaultSort('trade_units.code')
-            ->select($selects);
-
-        return $this->finalizeTradeUnitIndex(
-            queryBuilder: $queryBuilder,
-            allowedSorts: $allowedSorts,
-            globalSearch: $globalSearch,
-            prefix: $prefix
-        );
-    }
-
-    public function tableStructure(Group $parent, ?array $modelOperations = null, $prefix = null, bool $sales = false): Closure
-    {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $sales) {
-            $emptyState = match (class_basename($parent)) {
-                'Group' => [
-                    'title' => __("No Trade Units found"),
-                ],
-                default => null
-            };
-
-            $this->setupTradeUnitTable(
-                table: $table,
-                modelOperations: $modelOperations,
-                prefix: $prefix,
-                withLabelRecord: true,
-                emptyState: $emptyState
-            );
-
-            if ($sales) {
-                $table->betweenDates(['date']);
-                $this->addColumnCodeAndName($table);
-                $this->addSalesColumns($table);
-                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
-            } else {
-                $this->addColumnCodeAndName($table);
-
-                $this->addColumnNumberCurrentStocks($table);
-                $this->addColumnNumberCurrentProducts($table);
-                $this->addColumnType($table, 'Unit label');
-            }
-        };
-    }
-
-
-    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
-    {
-        return TradeUnitsResource::collection($tradeUnits);
+        return $this->handleStandardTradeUnitIndex($queryBuilder, $prefix);
     }
 
     public function htmlResponse(LengthAwarePaginator $tradeUnits, ActionRequest $request): Response
@@ -235,15 +138,15 @@ class IndexTradeUnits extends GrpAction
                 ],
 
                 TradeUnitsTabsEnum::INDEX->value => $this->tab == TradeUnitsTabsEnum::INDEX->value
-                    ? fn () => TradeUnitsResource::collection($tradeUnits)
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection($tradeUnits)),
+                    ? fn () => $this->jsonResponse($tradeUnits)
+                    : Inertia::lazy(fn () => $this->jsonResponse($tradeUnits)),
 
                 TradeUnitsTabsEnum::SALES->value => $this->tab == TradeUnitsTabsEnum::SALES->value
-                    ? fn () => TradeUnitsResource::collection($this->handle(prefix: TradeUnitsTabsEnum::SALES->value, bucket: $this->bucket))
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection($this->handle(prefix: TradeUnitsTabsEnum::SALES->value, bucket: $this->bucket))),
+                    ? fn () => $this->jsonResponse($this->handle(prefix: TradeUnitsTabsEnum::SALES->value, bucket: $this->bucket))
+                    : Inertia::lazy(fn () => $this->jsonResponse($this->handle(prefix: TradeUnitsTabsEnum::SALES->value, bucket: $this->bucket))),
             ]
-        )->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::INDEX->value))
-         ->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::SALES->value, sales: true));
+        )->table($this->standardTradeUnitTableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::INDEX->value))
+         ->table($this->standardTradeUnitTableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::SALES->value, sales: true));
     }
 
 

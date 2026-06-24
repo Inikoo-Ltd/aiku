@@ -50,6 +50,8 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(BrandTimeSeries $timeSeries, Shop $shop, string $from, string $to): void
     {
+        $processedPeriods = [];
+
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where('invoice_transactions.brand_id', '=', $timeSeries->brand_id)
             ->where('invoice_transactions.shop_id', '=', $shop->id)
@@ -86,6 +88,44 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
+                ]
+            );
+
+            $processedPeriods[] = $period;
+        }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $shop, $from, $to, $processedPeriods);
+    }
+
+    protected function processPeriodsWithoutInvoices(BrandTimeSeries $timeSeries, Shop $shop, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'brand_time_series_id' => $timeSeries->id,
+                    'shop_id'              => $shop->id,
+                    'period'               => $periodData['period'],
+                    'frequency'            => $timeSeries->frequency->singleLetter(),
+                ],
+                [
+                    'organisation_id'             => $shop->organisation_id,
+                    'from'                        => $periodData['from'],
+                    'to'                          => $periodData['to'],
+                    'sales_external'              => 0,
+                    'sales_org_currency_external' => 0,
+                    'sales_grp_currency_external' => 0,
+                    'sales_internal'              => 0,
+                    'sales_org_currency_internal' => 0,
+                    'sales_grp_currency_internal' => 0,
+                    'lost_revenue'                => 0,
+                    'lost_revenue_org_currency'   => 0,
+                    'lost_revenue_grp_currency'   => 0,
+                    'customers_invoiced'          => 0,
+                    'invoices'                    => 0,
+                    'refunds'                     => 0,
+                    'orders'                      => 0,
                 ]
             );
         }

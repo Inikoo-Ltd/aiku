@@ -90,8 +90,6 @@ class UpdateWebpage extends OrgAction
 
         if (Arr::has($modelData, 'state_data')) {
 
-
-
             if (Arr::has($modelData, 'state_data.state')) {
                 data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
             }
@@ -101,9 +99,6 @@ class UpdateWebpage extends OrgAction
             }
 
             if (Arr::get($modelData, 'state_data.state') == 'closed') {
-
-
-
                 if ($redirect = $webpage->redirectedTo) {
                     $redirect->update([
                         'from_webpage_id'   => $webpage->id
@@ -114,13 +109,10 @@ class UpdateWebpage extends OrgAction
                     ]);
                 } else {
                     StoreRedirect::make()->action($webpage, [
-                        'type'          => RedirectTypeEnum::TEMPORAL,
+                        'type'          => RedirectTypeEnum::PERMANENT,
                         'to_webpage_id' => Arr::get($modelData, 'state_data.redirect_webpage_id')
                     ]);
                 }
-
-
-
             } else {
                 Redirect::where('from_path', $webpage->url)->where('website_id', $webpage->website->id)->delete();
             }
@@ -129,7 +121,6 @@ class UpdateWebpage extends OrgAction
                 ProductHydrateHasLiveWebpage::run($webpage->model);
             }
             data_forget($modelData, 'state_data');
-
 
         }
 

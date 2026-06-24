@@ -108,6 +108,25 @@ trait WithWooCommerceApiRequest
         return ['message' => 'Unknown error occurred'];
     }
 
+    protected function isWooCommerceUnauthorizedResponse(array $response): bool
+    {
+        foreach ($response as $item) {
+            if (is_string($item)) {
+                $item = json_decode($item, true);
+            }
+
+            if (!is_array($item)) {
+                continue;
+            }
+
+            if (Arr::get($item, 'data.status') === 401 || Arr::get($item, 'status') === 401) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Initialize the WooCommerce API credentials
      *
@@ -619,10 +638,26 @@ trait WithWooCommerceApiRequest
                 return false;
             }
 
+            if ($this->isWooCommerceUnauthorizedResponse($result)) {
+                return false;
+            }
+
             return count($result) > 0;
         } catch (\Exception $e) {
             \Sentry::captureMessage($e->getMessage());
             return false;
+        }
+    }
+
+    public function checkSettings(): array
+    {
+        try {
+            if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
+                $this->initWooCommerceApi();
+            }
+            return $this->makeWooCommerceRequest('GET', 'settings');
+        } catch (\Exception $e) {
+            return [];
         }
     }
 

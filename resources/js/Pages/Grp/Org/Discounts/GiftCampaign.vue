@@ -34,9 +34,15 @@ const props = defineProps<{
         stats: {}
     }
     shop_data: {
-        id:number
-        slug: string
+        id: number
+        slug?: string        
+        organisation?: string
+        offercampaign?: string
         currency_code: string
+        default_dates: {
+            start: string
+            end: string
+        }
     }
 }>()
 
@@ -57,7 +63,7 @@ const component = computed(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-gift-create-discount>
+        <template #other>
             <ModalCreateGiftOffers :shop_data="props.shop_data" />
         </template>
     </PageHeading>

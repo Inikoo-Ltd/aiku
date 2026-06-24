@@ -1,0 +1,273 @@
+<script setup lang="ts">
+import { ref, inject, onMounted } from "vue"
+import { Head, router } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { capitalize } from "@/Composables/capitalize"
+
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faHeart } from "@fas"
+import { faBoxOpen, faImage } from "@fal"
+import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { ulid } from "ulid"
+import { get, set } from "lodash-es"
+import axios from "axios"
+
+import { GridProducts } from "@/Components/Product"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
+
+library.add(faHeart, faBoxOpen, faImage)
+
+interface ProductResource {
+    id: number
+    is_favourite?: boolean
+    is_back_in_stock?: boolean
+}
+
+const props = defineProps<{
+    data: Record<string, any>
+    title: string
+    pageHead: Record<string, any>
+    basketTransactions?: Record<
+        number,
+        {
+            id: string
+            quantity_ordered: number
+            asset_id: number
+        }
+    >
+    attachToFavouriteRoute: { name: string }
+    detachToFavouriteRoute: { name: string }
+    attachBackInStockRoute: { name: string }
+    detachBackInStockRoute: { name: string }
+    addToBasketRoute: { name: string }
+    updateBasketQuantityRoute: { name: string }
+}>()
+
+const emits = defineEmits([
+    "afterOnAddFavourite",
+    "afterOnUnselectFavourite",
+    "afterOnAddBackInStock",
+    "afterOnUnselectBackInStock",
+])
+
+const isLoadingFavourite = ref<number[]>([])
+const isLoadingRemindBackInStock = ref<number[]>([])
+const key = ref(ulid())
+const layout = inject("layout", retinaLayoutStructure)
+
+const startLoading = (state: typeof isLoadingFavourite, id: number) => {
+    if (!state.value.includes(id)) state.value.push(id)
+}
+
+const stopLoading = (state: typeof isLoadingFavourite, id: number) => {
+    state.value = state.value.filter(v => v !== id)
+}
+
+/* ================= FAVORITE ================= */
+
+const onAddFavourite = (product: ProductResource) => {
+    router.post(
+        route(props.attachToFavouriteRoute.name, { product: product.id }),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ["iris"],
+            onStart: () => startLoading(isLoadingFavourite, product.id),
+            onSuccess: () => {
+                product.is_favourite = true
+                layout?.reload_handle?.()
+                router.reload()
+                key.value = ulid()
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the product to favourites"),
+                    type: "error",
+                })
+            },
+            onFinish: () => {
+                stopLoading(isLoadingFavourite, product.id)
+                emits("afterOnAddFavourite", product)
+            },
+        }
+    )
+}
+
+const onUnselectFavourite = (product: ProductResource) => {
+    router.delete(
+        route(props.detachToFavouriteRoute.name, { product: product.id }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ["iris"],
+            onStart: () => startLoading(isLoadingFavourite, product.id),
+            onSuccess: () => {
+                product.is_favourite = false
+                layout?.reload_handle?.()
+                router.reload()
+                key.value = ulid()
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from favourites"),
+                    type: "error",
+                })
+            },
+            onFinish: () => {
+                stopLoading(isLoadingFavourite, product.id)
+                emits("afterOnUnselectFavourite", product)
+            },
+        }
+    )
+}
+
+/* ================= BACK IN STOCK ================= */
+
+const onAddBackInStock = (product: ProductResource) => {
+    router.post(
+        route(props.attachBackInStockRoute.name, { product: product.id }),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ["iris"],
+            onStart: () => startLoading(isLoadingRemindBackInStock, product.id),
+            onSuccess: () => {
+                product.is_back_in_stock = true
+                layout?.reload_handle?.()
+                router.reload()
+                key.value = ulid()
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the product to remind back in stock"),
+                    type: "error",
+                })
+            },
+            onFinish: () => {
+                stopLoading(isLoadingRemindBackInStock, product.id)
+                emits("afterOnAddBackInStock", product)
+            },
+        }
+    )
+}
+
+const onUnselectBackInStock = (product: ProductResource) => {
+    router.delete(
+        route(props.detachBackInStockRoute.name, { product: product.id }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ["iris"],
+            onStart: () => startLoading(isLoadingRemindBackInStock, product.id),
+            onSuccess: () => {
+                product.is_back_in_stock = false
+                layout?.reload_handle?.()
+                router.reload()
+                key.value = ulid()
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from remind back in stock"),
+                    type: "error",
+                })
+            },
+            onFinish: () => {
+                stopLoading(isLoadingRemindBackInStock, product.id)
+                emits("afterOnUnselectBackInStock", product)
+            },
+        }
+    )
+}
+
+const fetchHasInBasket = async () => {
+    set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
+    try {
+        const apiUrl = `/json/basket/transaction-data`
+
+        if (!apiUrl) {
+            throw new Error("Invalid model_type or missing route configuration");
+        }
+
+        const response = await axios.get(apiUrl);
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+    } catch (error) {
+        console.error('Failed to load product portfolio', error);
+    } finally {
+        set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
+    }
+};
+
+const handleTabFocus = () => {
+    if (document.visibilityState === 'visible') {
+        if (layout?.iris?.is_logged_in) fetchHasInBasket()
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('visibilitychange', handleTabFocus)
+    if (layout?.iris?.is_logged_in) {
+        fetchHasInBasket()
+    }
+})
+</script>
+
+
+<template>
+    <Head :title="capitalize(title)" />
+    <PageHeading :data="pageHead" />
+
+    <GridProducts
+        :resource="data"
+        :basket-transactions="basketTransactions"
+        :preserve-scroll="true"
+        class="mt-5"
+        :key="key"
+    >
+        <template #card="{ item }">
+            <div class="offers h-full">
+                <ProductRenderEcom
+                    :product="item"
+                    :hasInBasket="item"
+                    :basketButton="true"
+                    :isLoadingRemindBackInStock="isLoadingRemindBackInStock.includes(item.id)"
+                    :isLoadingFavourite="isLoadingFavourite.includes(item.id)"
+                    @setBackInStock="onAddBackInStock"
+                    @unsetBackInStock="onUnselectBackInStock"
+                    @set-favorite="onAddFavourite"
+                    @unset-favorite="onUnselectFavourite"
+                    :addToBasketRoute="addToBasketRoute"
+                    :update-basket-quantity-route="updateBasketQuantityRoute"
+                    :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list', item.id], null)"
+                    :routeGettransactionProductData="{ name: 'retina.json.basket_transaction_product_data' }"
+                />
+            </div>
+        </template>
+    </GridProducts>
+</template>
+
+
+<style scoped lang="scss">
+:deep(.discount .background-primary) {
+  background-color: v-bind("layout.iris.theme.color[4]") !important;
+}
+
+:deep(.discount .text-primary) {
+  color: v-bind("layout.iris.theme.color[4]") !important;
+}
+
+
+:deep(.discount .offer-trigger-label) {
+  @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
+
+  color: #E87928 !important;
+  border-color: #E87928 !important;
+}
+</style>

@@ -201,7 +201,7 @@ class GetShopNavigation
                 "icon"    => ["fal", "fa-badge-percent"],
                 "label"   => __("Offers"),
                 "route"   => [
-                    "name"       => 'grp.org.shops.show.discounts.dashboard',
+                    "name"       => 'grp.org.shops.show.discounts.insights',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "topMenu" => [
@@ -232,6 +232,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.discounts.offers.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.discounts.offers.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Insights"),
+                            "tooltip" => __("Insights"),
+                            "icon"    => ["fal", "fa-analytics"],
+                            'root'    => 'grp.org.shops.show.discounts.insights',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.discounts.insights",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
@@ -307,7 +317,8 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->authTo([
+        if ($user->hasAnyPermission([
+            "websites-view.{$shop->organisation_id}",
             "web.$shop->id.view",
             "group-webmaster.view"
         ])) {

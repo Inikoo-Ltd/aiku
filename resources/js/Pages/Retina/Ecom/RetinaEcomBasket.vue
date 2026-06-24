@@ -3,16 +3,17 @@ import { trans } from 'laravel-vue-i18n'
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed } from "vue"
+import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed, watch } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTag, faStar, faBoxHeart, faShieldAlt } from "@fas"
+import { faTag, faStar, faBoxHeart, faShieldAlt,faExclamationTriangle } from "@fas"
 import { faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
 import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -26,12 +27,14 @@ import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelect
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
-import { ToggleSwitch } from 'primevue'
+import { InputText, ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
-library.add(faTag, faCheck)
+import { useFormatTime } from '@/Composables/useFormatTime'
+import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
+library.add(faTag, faCheck, faExclamationTriangle)
 
 interface ChargeResource {
     label: string
@@ -80,6 +83,7 @@ const props = defineProps<{
             created_at: string
             available_quantity: string
             currency_code: string
+            luigi_identity: string | null
             deleteRoute: routeType
         }[]
     }
@@ -93,6 +97,7 @@ const props = defineProps<{
     }
     balance: string
     total_to_pay: string
+    cart_gross_amount: number
     routes: {
         update_route: routeType
         submit_route: routeType
@@ -125,6 +130,16 @@ const props = defineProps<{
         }
     }
     missed_offers: Record<string, { label: string }>
+    voucher: {
+        id: number
+        voucher_code: string
+        voucher_amount: number
+        status: string
+        until: string
+        name: string
+        discount: string
+    } | null
+
 }>()
 
 
@@ -239,6 +254,8 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
+
+
 interface Product {
     historic_asset_id: number
     id: number
@@ -269,7 +286,7 @@ const onAddProducts = async (product: Product) => {
 
     // return
 
-    const onlyProps = product?.transaction_id ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
+    const onlyProps = product?.transaction_id ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay', 'summary'] : {}
 
     router[routePost.method](
         routePost.route_post,
@@ -307,7 +324,7 @@ const onAddProducts = async (product: Product) => {
                     }
                 }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
-                layout.reload_handle()
+                layout?.reload_handle?.()
             },
             onFinish: () => {
                 isLoadingSubmit.value = false
@@ -344,7 +361,7 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
         }
     } : storeRoute
 
-    const onlyProps = existingTransaction ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
+    const onlyProps = existingTransaction ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay', 'summary'] : {}
 
     router[routePost.method](
         routePost.route_post,
@@ -385,7 +402,7 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                         ]
                     }
                 })
-                layout.reload_handle()
+                layout?.reload_handle?.()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'
             },
@@ -398,13 +415,19 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
         })
 }
 
-const blackListProductIds = computed(() => {
+// const blackListProductIds = computed(() => {
+//     if (!props.transactions?.data) return []
+
+//     return props.transactions.data
+//         .map(transaction => transaction.id.toString())
+//         .filter(Boolean)
+// })
+
+const basketProductIdentities = computed(() => {
     if (!props.transactions?.data) return []
 
     return props.transactions.data
-        .map(transaction => {
-            return transaction.id.toString()
-        })
+        .map(transaction => transaction.luigi_identity)
         .filter(Boolean)
 })
 
@@ -591,136 +614,162 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
 
-            <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
-                <EligibleGift
-                    :routeUpdate="{
-                        name: 'retina.models.order.update_gr_gift',
-                        parameters: order?.id
-                    }"
-                    :giftOptions="gr_gifts?.gifts"
-                    :meter="gr_gifts.meter"
-                    :isOptedOut="gr_gifts.is_gift_opted_out"
-                    :routeOptOut="gr_gifts.route_customer_update"
-                />
-            </div>
-            
-            <!-- Section: Charge Premium Dispatch -->
-            <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
-                    <InformationIcon :information="charges.premium_dispatch?.description" />
-                    {{ charges.premium_dispatch?.label ? trans(charges.premium_dispatch.label) : trans(charges.premium_dispatch?.name ?? '') }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
-                </div>
-                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                    <ToggleSwitch
-                        :modelValue="order?.is_premium_dispatch"
-                        @update:modelValue="(e) => (onChangePriorityDispatch(e))"
-                        xdisabled="isLoadingPriorityDispatch"
-                    >
-                        <template #handle="{ checked }">
-                            <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
-                            <template v-else>
-                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </template>
-                    </ToggleSwitch>
-                </div>
-            </div>
-            
-            <!-- Section: Charge Extra Packing -->
-            <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
-                    <InformationIcon :information="charges.extra_packing?.description" />
-                    {{ charges.extra_packing?.label ? trans(charges.extra_packing.label) : trans(charges.extra_packing?.name ?? '') }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
-                </div>
-                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                    <ToggleSwitch
-                        :modelValue="order?.has_extra_packing"
-                        @update:modelValue="(e) => (onChangeExtraPacking(e))"
-                    >
-                        <template #handle="{ checked }">
-                            <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
-                            <template v-else>
-                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </template>
-                    </ToggleSwitch>
-                </div>
-            </div>
-            
-            <!-- Section: Charge Insurance -->
-            <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                <div class="px-2 flex justify-end items-center gap-x-1 relative">
-                    <InformationIcon :information="charges.insurance?.description" />
-                    {{ charges.insurance?.label ? trans(charges.insurance.label) : trans(charges.insurance?.name ?? '') }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
-                </div>
-                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                    <ToggleSwitch
-                        :modelValue="order?.has_insurance"
-                        @update:modelValue="(e) => (onChangeInsurance(e))"
-                        xdisabled="isLoadingInsurance"
-                    >
-                        <template #handle="{ checked }">
-                            <LoadingIcon v-if="isLoadingInsurance" xclass="text-sm text-gray-500" />
-                            <template v-else>
-                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </template>
-                    </ToggleSwitch>
-                </div>
-            </div>
+            <div class="grid md:grid-cols-2 gap-x-8 py-4">
+                <!-- Section: Instructions (delivery and other) -->
+                <div class="w-full md:px-4">
+                    <div v-if="total_products > 0" class="flex flex-col md:flex-row xjustify-end px-3 md:px-6 gap-x-4">
+                        <div class="grid md:grid-cols-2 gap-y-4 gap-x-4 w-full">
+                            <!-- <div></div> -->
                 
-        </div>
-        
-        <div class="w-full px-4 mt-8">
-            <div v-if="total_products > 0" class="flex flex-col md:flex-row justify-end px-6 gap-x-4">
-                <div class="grid md:grid-cols-3 gap-y-4 gap-x-4 w-full">
-                    <div></div>
-        
-                    <!-- Input text: Delivery instructions -->
-                    <div class="">
-                        <div class="text-sm text-gray-500">
-                            <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
-                            {{ trans("Delivery instructions") }}
-                            <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
-                            :
+                            <!-- Input text: Delivery instructions -->
+                            <div class="">
+                                <div class="text-sm text-gray-500">
+                                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
+                                    {{ trans("Delivery instructions") }}
+                                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                                    :
+                                </div>
+                                <PureTextarea
+                                    v-model="deliveryInstructions"
+                                    @update:modelValue="() => debounceDeliveryInstructions()"
+                                    :placeholder="trans('Add if needed')"
+                                    rows="4"
+                                    :disabled="!is_in_basket"
+                                    :loading="isLoadingNote.includes('shipping_notes')"
+                                    :isSuccess="recentlySuccessNote.includes('shipping_notes')"
+                                    :isError="recentlyErrorNote"
+                                    :maxlength="35"
+                                />
+                            </div>
+                            <!-- Input text: Other instructions -->
+                            <div class="">
+                                <div class="text-sm text-gray-500">
+                                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
+                                    {{ trans("Other instructions") }}:
+                                </div>
+                                <PureTextarea
+                                    v-model="noteToSubmit"
+                                    @update:modelValue="() => debounceSubmitNote()"
+                                    :placeholder="trans('Add if needed')"
+                                    rows="4"
+                                    :loading="isLoadingNote.includes('customer_notes')"
+                                    :isSuccess="recentlySuccessNote.includes('customer_notes')"
+                                    :isError="recentlyErrorNote"
+                                />
+                            </div>
                         </div>
-                        <PureTextarea
-                            v-model="deliveryInstructions"
-                            @update:modelValue="() => debounceDeliveryInstructions()"
-                            :placeholder="trans('Add if needed')"
-                            rows="4"
-                            :disabled="!is_in_basket"
-                            :loading="isLoadingNote.includes('shipping_notes')"
-                            :isSuccess="recentlySuccessNote.includes('shipping_notes')"
-                            :isError="recentlyErrorNote"
-                            :maxlength="35"
-                        />
-                    </div>
-                    <!-- Input text: Other instructions -->
-                    <div class="">
-                        <div class="text-sm text-gray-500">
-                            <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
-                            {{ trans("Other instructions") }}:
-                        </div>
-                        <PureTextarea
-                            v-model="noteToSubmit"
-                            @update:modelValue="() => debounceSubmitNote()"
-                            :placeholder="trans('Add if needed')"
-                            rows="4"
-                            :loading="isLoadingNote.includes('customer_notes')"
-                            :isSuccess="recentlySuccessNote.includes('customer_notes')"
-                            :isError="recentlyErrorNote"
-                        />
                     </div>
                 </div>
+
+                <!-- Section: List of charges -->
+                <div class="row-start-1 md:row-auto">
+                    <!-- Section: Voucher Code -->
+                    <InputVoucherInBasket
+                        v-if="layout.retina.type == 'b2b'"
+                        :voucher="voucher"
+                        :order="order"
+                        :routes="{
+                            store: {
+                                name: 'retina.models.order.store_voucher',
+                                parameters: order?.id
+                            },
+                            remove: {
+                                name: 'retina.models.order.remove_voucher',
+                                parameters: order?.id
+                            }
+                        }"
+                        :currentGrossAmount="summary.cart_gross_amount"
+                    />
+
+                    <!-- Section: Eligible Gifts -->
+                    <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
+                        <EligibleGift
+                            :routeUpdate="{
+                                name: 'retina.models.order.update_gr_gift',
+                                parameters: order?.id
+                            }"
+                            :giftOptions="gr_gifts?.gifts"
+                            :meter="gr_gifts.meter"
+                            :isOptedOut="gr_gifts.is_gift_opted_out"
+                            :routeOptOut="gr_gifts.route_customer_update"
+                        />
+                    </div>
+                
+                    <!-- Section: Charge Premium Dispatch -->
+                    <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
+                        <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                            <InformationIcon v-if="charges.premium_dispatch?.description" :information="charges.premium_dispatch.description ?? ''" />
+                            {{ charges.premium_dispatch?.label ? ctrans(charges.premium_dispatch.label) : ctrans(charges.premium_dispatch?.name ?? '') }}
+                            <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
+                        </div>
+                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                            <ToggleSwitch
+                                :modelValue="order?.is_premium_dispatch"
+                                @update:modelValue="(e) => (onChangePriorityDispatch(e))"
+                                xdisabled="isLoadingPriorityDispatch"
+                            >
+                                <template #handle="{ checked }">
+                                    <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
+                                    <template v-else>
+                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </template>
+                            </ToggleSwitch>
+                        </div>
+                    </div>
+                    <!-- Section: Charge Extra Packing -->
+                    <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
+                        <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
+                            <InformationIcon v-if="charges.extra_packing?.description" :information="charges.extra_packing.description ?? ''" />
+                            {{ charges.extra_packing?.label ? trans(charges.extra_packing.label) : trans(charges.extra_packing?.name ?? '') }}
+                            <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
+                        </div>
+                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                            <ToggleSwitch
+                                :modelValue="order?.has_extra_packing"
+                                @update:modelValue="(e) => (onChangeExtraPacking(e))"
+                            >
+                                <template #handle="{ checked }">
+                                    <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
+                                    <template v-else>
+                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </template>
+                            </ToggleSwitch>
+                        </div>
+                    </div>
+                
+                    <!-- Section: Charge Insurance -->
+                    <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
+                        <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                            <InformationIcon v-if="charges.insurance?.description" :information="charges.insurance.description ?? ''" />
+                            {{ charges.insurance?.label ? trans(charges.insurance.label) : trans(charges.insurance?.name ?? '') }}
+                            <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
+                        </div>
+                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                            <ToggleSwitch
+                                :modelValue="order?.has_insurance"
+                                @update:modelValue="(e) => (onChangeInsurance(e))"
+                                xdisabled="isLoadingInsurance"
+                            >
+                                <template #handle="{ checked }">
+                                    <LoadingIcon v-if="isLoadingInsurance" xclass="text-sm text-gray-500" />
+                                    <template v-else>
+                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </template>
+                            </ToggleSwitch>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t flex justify-end py-5 px-4 md:px-8">
                 <!-- Section: button Place Order & button Checkout -->
-                <div v-if="!is_unable_dispatch || order.is_collection" class="w-full md:w-72 pt-5">
+                <div v-if="!is_unable_dispatch || order.is_collection" class="w-full md:w-72">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink
@@ -740,7 +789,7 @@ const onChangeInsurance = async (val: boolean) => {
                             </div>
                         </div>
                     </template>
-                    
+
                     <!-- Checkout -->
                     <ButtonWithLink
                         v-else
@@ -783,7 +832,8 @@ const onChangeInsurance = async (val: boolean) => {
                 <BasketRecommendations
                     @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"
                     :listLoadingProducts
-                    :blacklistItems="blackListProductIds"
+                    xblacklistItems="blackListProductIds"
+                    :basketItemIds="basketProductIdentities"
                 />
             </div>
         </div>

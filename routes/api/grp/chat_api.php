@@ -25,6 +25,9 @@ use App\Actions\CRM\ChatSession\GetChatStatus;
 use App\Actions\CRM\ChatSession\StoreOfflineMessage;
 use App\Actions\CRM\ChatSession\GetAgentUnreadMessagesSummary;
 use App\Actions\CRM\ChatSession\CloseChatSession;
+use App\Actions\CRM\ChatSession\GetChatCustomerProfile;
+use App\Actions\CRM\ChatSession\GetChatCustomerTimeline;
+use App\Actions\CRM\ChatSession\ShareChatSessionToSlack;
 
 Route::get('/ping', function () {
     return 'pong';
@@ -45,6 +48,8 @@ Route::post('/sessions/{chatSession:ulid}/typing', HandleChatTyping::class)
     ->name('sessions.typing');
 
 Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity');
+Route::get('/sessions/{chatSession:ulid}/customer-profile', GetChatCustomerProfile::class)->name('sessions.customer_profile');
+Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline');
 Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages');
 
 Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::class)
@@ -52,6 +57,9 @@ Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::cla
 
 Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail::class)
     ->name('sessions.sync_by_email');
+
+Route::post('/sessions/{chatSession:ulid}/share-to-slack', [ShareChatSessionToSlack::class, 'asController'])
+    ->name('sessions.share_to_slack');
 
 Route::get('agents', GetChatAgents::class)->name('agents.index');
 Route::get('/agents/specializations', GetChatAgentSpecializations::class)->name('agent.specializations');

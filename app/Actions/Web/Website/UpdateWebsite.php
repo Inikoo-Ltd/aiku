@@ -141,6 +141,16 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, 'settings.recommender_web_block.max_amt_shown', Arr::pull($modelData, 'max_amt_shown_recommender', 100));
         }
 
+        if (Arr::has($modelData, 'title_product_category_recommender')) {
+            data_set($modelData, 'settings.recommender_product_category_web_block.title', Arr::pull($modelData, 'title_product_category_recommender'));
+        }
+        if (Arr::has($modelData, 'min_amt_shown_recommender_product_category')) {
+            data_set($modelData, 'settings.recommender_product_category_web_block.min_amt_shown', Arr::pull($modelData, 'min_amt_shown_recommender_product_category', 5));
+        }
+        if (Arr::has($modelData, 'max_amt_shown_recommender_product_category')) {
+            data_set($modelData, 'settings.recommender_product_category_web_block.max_amt_shown', Arr::pull($modelData, 'max_amt_shown_recommender_product_category', 100));
+        }
+
         // Handle LLMs.txt file upload
         if (Arr::has($modelData, 'llms_txt') && $modelData['llms_txt'] instanceof \Illuminate\Http\UploadedFile) {
             $file = Arr::pull($modelData, 'llms_txt');
@@ -286,6 +296,9 @@ class UpdateWebsite extends OrgAction
             'title_recommender'         =>  ['sometimes', 'nullable', 'string'],
             'min_amt_shown_recommender' =>  ['sometimes', 'numeric', 'min:1'],
             'max_amt_shown_recommender' =>  ['sometimes', 'numeric', 'min:1'],
+            'title_product_category_recommender'         =>  ['sometimes', 'nullable', 'string'],
+            'min_amt_shown_recommender_product_category' =>  ['sometimes', 'numeric', 'min:1'],
+            'max_amt_shown_recommender_product_category' =>  ['sometimes', 'numeric', 'min:1'],
         ];
 
         if (!$this->strict) {

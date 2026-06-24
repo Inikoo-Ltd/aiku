@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 02-07-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -20,11 +20,7 @@ class GetDataFeedsCsv extends RetinaApiAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel): string
     {
-        $action = DownloadPortfoliosCSV::make();
-        $action->customer = $this->customer;
-        $action->asAction = true;
-
-        return $action->handle($customerSalesChannel, 'csv_content');
+        return DownloadPortfoliosCSV::run($customerSalesChannel, 'csv_content');
     }
 
     public function asController(ActionRequest $request): Response

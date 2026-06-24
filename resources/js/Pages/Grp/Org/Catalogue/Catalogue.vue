@@ -11,9 +11,9 @@ import { capitalize } from '@/Composables/capitalize'
 import { useTabChange } from '@/Composables/tab-change'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faTrophy } from '@fal'
+import { faTrophy, faAlignLeft } from '@fal'
 
-library.add(faTrophy);
+library.add(faTrophy, faAlignLeft);
 
 type TabKey = 'showcase' | 'top_listed_families' | 'top_listed_products' | 'top_sold_products'
 

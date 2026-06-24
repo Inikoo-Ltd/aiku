@@ -59,14 +59,21 @@ class ShowIrisWebpage
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
+            'navigation'                  => $this->getIrisProductNavigation($webpage),
             'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
                 'title'         => $webpage->title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
-                'sub_type'      => $webpage->sub_type,
-                'model_type'    => $webpage->model_type
+                'sub_type'      => $webpage->sub_type,  // 'sub_department', 'department', 'product', 'category'
+                'model_type'    => $webpage->model_type,  // Product, ProductCategory, etc
+                'product_page'  => $webpage->model instanceof Product
+                    ? ['department' => [
+                        'name'          => $webpage->model->department?->name,
+                        'webpage_title' => $webpage->model->department?->webpage?->title,
+                    ]]
+                    : null,
             ],
             'webpage_img'                 => $webpageImg,
             'index_page'                  => $webpage->index_page,
@@ -86,6 +93,11 @@ class ShowIrisWebpage
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
+        if ($path == 'robots.txt') {
+            return 'robots';
+        }
+
+
         $loggedStatusFromHeader = $request->header('X-Logged-Status');
         if ($loggedStatusFromHeader !== null) {
             $loggedIn = $loggedStatusFromHeader === 'In';
@@ -199,9 +211,23 @@ class ShowIrisWebpage
     }
 
 
-    public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
+    public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response|string
     {
         if (is_string($webpageData)) {
+
+            if ($webpageData == 'robots') {
+                $robotText = ShowIrisRobotsTxt::make()->getRobotText(request()->website);
+                if (!$robotText) {
+                    $robotText = 'User-agent: *';
+                }
+
+                return response($robotText, 200, [
+                    'Content-Type'  => 'text/plain; charset=UTF-8',
+                    'Cache-Control' => 'public, max-age=3600',
+                ]);
+            }
+
+
             $queryParameters = Arr::except(request()->query(), [
                 'favicons',
                 'website',
@@ -211,16 +237,16 @@ class ShowIrisWebpage
                 'locale'
             ]);
 
-            $cacheRedirectInVarnish='1';
+            $cacheRedirectInVarnish = '1';
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
                 $webpageData = $webpageData.'?'.$queryString;
-                $cacheRedirectInVarnish='0';
+                $cacheRedirectInVarnish = '0';
             }
 
-            if(request()->url()==$webpageData){
-                $cacheRedirectInVarnish='0';
+            if (request()->url() == $webpageData) {
+                $cacheRedirectInVarnish = '0';
             }
 
 
@@ -341,6 +367,65 @@ class ShowIrisWebpage
         }
 
         return $breadcrumbs;
+    }
+
+    public function getIrisProductNavigation(Webpage $webpage): ?array
+    {
+        if (!$webpage->model instanceof Product) {
+            return null;
+        }
+
+        /** @var Product $product */
+        $product = $webpage->model;
+        if (!$product->family_id) {
+            return null;
+        }
+
+        $siblings = Product::query()
+            ->where('products.family_id', $product->family_id)
+            ->where(function ($query) {
+                $query->whereNull('products.variant_id')
+                    ->orWhere('products.is_variant_leader', true);
+            })
+            ->whereHas('webpage', function ($query) use ($webpage) {
+                $query->where('state', WebpageStateEnum::LIVE)
+                    ->where('website_id', $webpage->website_id);
+            })
+            ->with(['webpage' => function ($query) use ($webpage) {
+                $query->where('state', WebpageStateEnum::LIVE)
+                    ->where('website_id', $webpage->website_id);
+            }])
+            ->orderBy('index_under_family')
+            ->orderBy('code')
+            ->get();
+
+        $currentIndex = $siblings->search(fn (Product $sibling) => $sibling->id === $product->id);
+        if ($currentIndex === false) {
+            return null;
+        }
+
+        $navigation = [
+            'previous' => $this->getProductNavigationItem($siblings->get($currentIndex - 1)),
+            'next'     => $this->getProductNavigationItem($siblings->get($currentIndex + 1)),
+        ];
+
+        if (!$navigation['previous'] && !$navigation['next']) {
+            return null;
+        }
+
+        return $navigation;
+    }
+
+    private function getProductNavigationItem(?Product $product): ?array
+    {
+        if (!$product || !$product->webpage) {
+            return null;
+        }
+
+        return [
+            'label' => $product->name,
+            'url'   => $this->getEnvironmentUrl($product->webpage->canonical_url),
+        ];
     }
 
     public function getBreadcrumbShortLabel(Webpage $webpage): string

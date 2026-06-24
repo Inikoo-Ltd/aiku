@@ -14,6 +14,7 @@ enum EmailDeliveryChannelStateEnum: string
 {
     use EnumHelperTrait;
 
+    case IN_PROCESS = 'in_process';
     case READY      = 'ready';
     case SENDING    = 'sending';
     case SENT       = 'sent';

@@ -60,9 +60,9 @@ class ShowGroupDashboard extends OrgAction
                         'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
                     ],
                     'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($group, $userSettings),
+                        'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'       => $this->dashboardCurrencyTypeSettings($group, $userSettings),
                     ],
                     'blocks'    => [
                         [

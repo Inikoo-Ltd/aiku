@@ -13,7 +13,7 @@ namespace App\Actions\Maintenance\Web;
 
 
 use AllowDynamicProperties;
-use App\Actions\Masters\MasterProductCategory\SyncMasterProductCategoryRelatedMasterAssets;
+use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\SyncMasterProductCategoryRelatedMasterAssets;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;

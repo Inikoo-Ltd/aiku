@@ -52,17 +52,29 @@ class IndexLeaves extends OrgAction
         $leaves = $queryBuilder->paginate(request()->input($prefix . 'perPage', 10))
             ->withQueryString();
 
-        $balance = EmployeeLeaveBalance::firstOrCreate(
-            [
-                'employee_id' => $employee->id,
-                'year'        => now()->year,
-            ],
-            [
-                'group_id'     => $employee->group_id,
-                'annual_days'  => 14,
-                'unpaid_days'  => 0,
-            ]
-        );
+        $today = now()->toDateString();
+
+        $balance = EmployeeLeaveBalance::where('employee_id', $employee->id)
+            ->where(function ($q) use ($today) {
+                $q->where('period_start', '<=', $today)
+                  ->where(function ($q2) use ($today) {
+                      $q2->whereNull('period_end')
+                         ->orWhere('period_end', '>=', $today);
+                  });
+            })
+            ->whereNotNull('employee_contract_id')
+            ->first();
+
+        if (!$balance) {
+            $balance = EmployeeLeaveBalance::firstOrCreate(
+                ['employee_id' => $employee->id, 'employee_contract_id' => null],
+                [
+                    'annual_used'  => 0,
+                    'medical_used' => 0,
+                    'unpaid_used'  => 0,
+                ]
+            );
+        }
 
         return [
             'leaves'  => $leaves,

@@ -50,6 +50,8 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
                 'frequency' => $frequency,
                 'shop_id'   => $asset->shop_id
             ]);
+        } elseif ($timeSeries->shop_id === null && $asset->shop_id !== null) {
+            $timeSeries->update(['shop_id' => $asset->shop_id]);
         }
 
         $this->processTimeSeries($timeSeries, $from, $to);

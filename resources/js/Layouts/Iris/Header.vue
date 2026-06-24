@@ -84,8 +84,7 @@ provide("onLogout", onClickLogout);
    />
 
   <!-- Section: Header (logo, search, Title) -->
-  <component v-if="data?.header" :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue"
-             class="hidden md:block" />
+  <component v-if="data?.header" :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue" class="hidden md:block" />
 
   <!-- Section: Menu desktop -->
   <component v-if="menu?.code" :is="getIrisComponent(menu?.code)" :fieldValue="menu?.data?.fieldValue"

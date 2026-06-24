@@ -36,7 +36,7 @@ const activeComponent = computed(() => componentMap[props.tabs.current] ?? null)
 <template>
     <div class="max-w-7xl mx-auto my-8">
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <CatalogueTabs />
+            <CatalogueTabs :navigation="tabs.navigation" />
             <div class="p-3">
                 <component v-if="activeComponent" :is="activeComponent" :data="data" :tab="tabs.current" />
             </div>

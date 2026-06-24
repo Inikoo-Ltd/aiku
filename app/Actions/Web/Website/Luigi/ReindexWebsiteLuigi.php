@@ -56,11 +56,12 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
             ->where('state', 'live')
             ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
             ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
-            ->chunk(1000, function ($webpages) use ($website, $command) {
-
+            ->chunk(200, function ($webpages) use ($website, $command) {
                 if ($command) {
                     $objects = [];
+                    $index = 0;
                     foreach ($webpages as $webpage) {
+                        $command->line($index++.' '.$webpage->slug);
                         $object = $this->getObjectFromWebpage($webpage);
                         if ($object) {
                             $objects[] = $object;
@@ -70,12 +71,15 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
                     $body       = [
                         'objects' => $objects
                     ];
-                    $compressed = count($objects) >= 1000;
-                    $command?->info("Reindexing webpages $website->domain with ".count($objects)." objects");
+                    //$compressed = count($objects) >= 200;
+                    $compressed = false; // if not set as null, it fails, so do not change this
+                    $command->info("Reindexing webpages $website->domain with ".count($objects)." objects");
                     try {
                         $this->request($website, '/v1/content', $body, 'post', $compressed);
+                        $command->line("Success to reindex ".count($objects));
                     } catch (Exception $e) {
-                        print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
+                        $command->error("Failed to reindex website $website->domain: ".$e->getMessage());
+
 
                         return;
                     }
@@ -83,10 +87,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
                     foreach ($webpages as $webpage) {
                         ReindexWebpageLuigi::dispatch($webpage)->delay(1);
                     }
-
                 }
-
-
             });
     }
 
@@ -99,11 +100,14 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
     public function asCommand($command): int
     {
         if ($command->argument('website')) {
-            $website = Website::find($command->argument('website'));
+            $website = Website::where('slug', $command->argument('website'))->firstOrFail();
+            $this->handle($website, $command);
         } else {
-            $website = Website::first();
+            foreach (Website::where('migrated', true) as $website) {
+                $this->handle($website, $command);
+            }
         }
-        $this->handle($website, $command);
+
 
         return 0;
     }

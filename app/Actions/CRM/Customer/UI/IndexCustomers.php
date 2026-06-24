@@ -9,6 +9,8 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\CRM\Customer\GetCustomerFilterStructure;
+use App\Actions\CRM\Customer\GetCustomersQueryByRecipe;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
@@ -18,6 +20,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\UI\CRM\CustomersTabsEnum;
+use App\Exports\CRM\CustomersExport;
 use App\Http\Resources\CRM\CustomersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -45,9 +48,22 @@ class IndexCustomers extends OrgAction
 
     private Group|Shop|Organisation $parent;
 
+    private array $customerFilters = [];
+
+    private int $estimatedRecipients = 0;
+
+    private array $stateFilter = [];
+
+    private array $statusFilter = [];
+
+    protected function recipeHasFilters(array $recipe): bool
+    {
+        return count(array_diff_key($recipe, ['all_customers' => true])) > 0;
+    }
+
     protected function getElementGroups($parent): array
     {
-        return [
+        $groups = [
             'state'  => [
                 'label'    => __('State'),
                 'elements' => array_merge_recursive(
@@ -69,6 +85,68 @@ class IndexCustomers extends OrgAction
                 }
             ]
         ];
+
+        if ($parent instanceof Shop) {
+            unset($groups['state'], $groups['status']);
+        }
+
+        return $groups;
+    }
+
+    protected function getStateFilter(): array
+    {
+        $states = request()->input('state', []);
+
+        if (!is_array($states)) {
+            $states = [$states];
+        }
+
+        return array_values(array_intersect($states, array_keys(CustomerStateEnum::labels())));
+    }
+
+    protected function getStatusFilter(): array
+    {
+        $statuses = request()->input('status', []);
+
+        if (!is_array($statuses)) {
+            $statuses = [$statuses];
+        }
+
+        return array_values(array_intersect($statuses, array_keys(CustomerStatusEnum::labels())));
+    }
+
+    protected function getStateOptions(Shop $shop): array
+    {
+        $labels = CustomerStateEnum::labels();
+        $counts = CustomerStateEnum::count($shop);
+
+        return array_map(fn ($value) => [
+            'value' => $value,
+            'label' => $labels[$value],
+            'count' => $counts[$value] ?? 0,
+        ], array_keys($labels));
+    }
+
+    protected function getStatusOptions(Shop $shop): array
+    {
+        $labels = CustomerStatusEnum::labels();
+        $counts = CustomerStatusEnum::count($shop);
+
+        return array_map(fn ($value) => [
+            'value' => $value,
+            'label' => $labels[$value],
+            'count' => $counts[$value] ?? 0,
+        ], array_keys($labels));
+    }
+
+    protected function getExportFields(): array
+    {
+        $definitions = CustomersExport::fieldDefinitions();
+
+        return array_map(fn ($key) => [
+            'key'   => $key,
+            'label' => __($definitions[$key]['heading']),
+        ], array_keys($definitions));
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -140,6 +218,35 @@ class IndexCustomers extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Customer::class);
 
+        if ($parent instanceof Shop) {
+            $this->stateFilter = $this->getStateFilter();
+            $this->statusFilter = $this->getStatusFilter();
+
+            $recipe = request()->input('filters', []);
+
+            if (is_array($recipe) && $this->recipeHasFilters($recipe)) {
+                $this->customerFilters = $recipe;
+
+                $recipeQuery = GetCustomersQueryByRecipe::run($parent->id, $recipe);
+
+                $queryBuilder->whereIn('customers.id', (clone $recipeQuery)->select('customers.id'));
+
+                $estimateQuery = (clone $recipeQuery);
+            } else {
+                $estimateQuery = Customer::where('shop_id', $parent->id);
+            }
+
+            if (count($this->stateFilter) > 0) {
+                $estimateQuery->whereIn('customers.state', $this->stateFilter);
+            }
+
+            if (count($this->statusFilter) > 0) {
+                $estimateQuery->whereIn('customers.status', $this->statusFilter);
+            }
+
+            $this->estimatedRecipients = $estimateQuery->count('customers.id');
+        }
+
         if ($parent instanceof Organisation || $parent instanceof Shop) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
@@ -148,6 +255,16 @@ class IndexCustomers extends OrgAction
                     engine: $elementGroup['engine'],
                     prefix: $prefix
                 );
+            }
+        }
+
+        if ($parent instanceof Shop) {
+            if (count($this->stateFilter) > 0) {
+                $queryBuilder->whereIn('customers.state', $this->stateFilter);
+            }
+
+            if (count($this->statusFilter) > 0) {
+                $queryBuilder->whereIn('customers.status', $this->statusFilter);
             }
         }
 
@@ -384,6 +501,23 @@ class IndexCustomers extends OrgAction
         $scope  = $this->parent;
         $action = null;
 
+        $filterProps = [];
+
+        if ($this->parent instanceof Shop) {
+            $filterProps = [
+                'filtersStructure'    => GetCustomerFilterStructure::run($this->parent),
+                'filters'             => $this->customerFilters,
+                'estimatedRecipients' => $this->estimatedRecipients,
+                'shop_id'             => $this->parent->id,
+                'shop_slug'           => $this->parent->slug,
+                'stateOptions'        => $this->getStateOptions($this->parent),
+                'stateFilter'         => $this->stateFilter,
+                'statusOptions'       => $this->getStatusOptions($this->parent),
+                'statusFilter'        => $this->statusFilter,
+                'exportFields'        => $this->getExportFields(),
+            ];
+        }
+
         if (!$scope instanceof Group && $this->canEdit && $this->parent->engine !== ShopEngineEnum::FAIRE) {
             $action = [
                 [
@@ -439,7 +573,8 @@ class IndexCustomers extends OrgAction
                         ]
                     ]
                 ],
-                'customers' => CustomersResource::collection($customers)
+                'customers' => CustomersResource::collection($customers),
+                ...$filterProps,
             ]
         )->table($this->tableStructure(parent: $this->parent));
     }

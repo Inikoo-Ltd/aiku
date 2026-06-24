@@ -30,7 +30,7 @@ const layout: any = inject("layout", {})
     <div  :id="fieldValue?.id ? fieldValue?.id  : 'button' + indexBlock"  component="button">
         <div class="flex m-4" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-            ...getStyles(fieldValue.container?.properties, screenType),
+            ...getStyles(fieldValue?.container?.properties, screenType),
             
         }">
             <a typeof="button" :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target">

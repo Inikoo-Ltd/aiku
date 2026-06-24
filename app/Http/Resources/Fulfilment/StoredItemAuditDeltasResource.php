@@ -3,31 +3,36 @@
 /*
  * author Arya Permana - Kirin
  * created on 16-01-2025-14h-07m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
 namespace App\Http\Resources\Fulfilment;
 
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Models\Fulfilment\PalletDelivery;
-use App\Models\Fulfilment\PalletReturn;
-use App\Models\Fulfilment\StoredItemAudit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $stored_item_audit_id
+ * @property mixed $stored_item_audit_reference
+ * @property mixed $stored_item_audit_slug
+ * @property mixed $pallet_delivery_id
+ * @property mixed $pallet_delivery_reference
+ * @property mixed $pallet_delivery_slug
+ * @property mixed $pallet_returns_reference
+ */
 class StoredItemAuditDeltasResource extends JsonResource
 {
     public function toArray($request): array
     {
 
-        $desc_model = '';
-        $desc_title = '';
+
         $desc_after_title = '';
-        $route = null;
+
         $icon = null;
         $retina = str_starts_with($request->route()->getName(), 'retina.');
 
-        
+
         if ($this->stored_item_audit_id) {
             $desc_title = $this->stored_item_audit_reference;
             $desc_model = __('Stored Item Audit');

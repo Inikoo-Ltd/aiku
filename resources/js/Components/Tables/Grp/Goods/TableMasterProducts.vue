@@ -411,7 +411,6 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </div>
         </template>
 
-
         <template #cell(rrp)="{ item: product }">
             <div>
                 <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp"
@@ -425,8 +424,12 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </template>
                 </InputNumber>
 
-                <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
-
+                <span v-else>
+                    {{ locale.currencyFormat(product.currency_code, product.rrp) }}
+                    <span v-if="product.rrp_per_unit">
+                        {{ locale.currencyFormat(product.currency_code, product.rrp_per_unit) }}
+                    </span>
+                </span>
             </div>
 
         </template>

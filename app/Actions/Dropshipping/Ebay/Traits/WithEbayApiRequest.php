@@ -213,7 +213,21 @@ trait WithEbayApiRequest
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
-                    // Add more mappings as needed
+                case 'Item Height':
+                    $height = Arr::get($product->marketing_dimensions, 'h');
+                    $h = in_array($height, [null, 0]) ? 0.5 : $height;
+                    $attributes['Item Height'] = [$h * 100 . 'cm'];
+                    break;
+                case 'Item Width':
+                    $width = Arr::get($product->marketing_dimensions, 'w');
+                    $w = in_array($width, [null, 0]) ? 0.5 : $width;
+                    $attributes['Item Height'] = [$w * 100 . 'cm'];
+                    break;
+                case 'Item Length':
+                    $length = Arr::get($product->marketing_dimensions, 'l');
+                    $l = in_array($length, [null, 0]) ? 0.5 : $length;
+                    $attributes['Item Height'] = [$l * 100 . 'cm'];
+                    break;
                 default:
                     // Use generic mapping or default value
                     $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
@@ -248,6 +262,33 @@ trait WithEbayApiRequest
         preg_match('/item specific (\w+)/', $errorMessage, $matches);
 
         return $matches[1] ?? null;
+    }
+
+    public function getFormattedDescriptions(string $description): string
+    {
+        $descriptions = mb_substr($description, 0, 4000);
+        $descriptions = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $descriptions = strip_tags($descriptions);
+
+        $bannedWords = [
+            'heal', 'heals', 'healing', 'healed',
+            'cure', 'cures', 'cured', 'curing',
+            'treat', 'treats', 'treated', 'treatment', 'treatments',
+            'remedy', 'remedies',
+            'therapy', 'therapies', 'therapeutic',
+            'diagnose', 'diagnosis',
+            'prevent', 'prevents', 'prevention',
+            'medicine', 'medicinal', 'medicate',
+            'antibacterial', 'antimicrobial', 'antifungal', 'antiviral',
+            'detox', 'detoxify', 'detoxification',
+            'pain relief', 'pain killer', 'painkiller',
+        ];
+
+        $pattern = '/\b(' . implode('|', array_map('preg_quote', $bannedWords)) . ')\b/iu';
+        $descriptions = preg_replace($pattern, '', $descriptions);
+
+        $descriptions = preg_replace('/\s+/', ' ', $descriptions);
+        return trim($descriptions);
     }
 
     public function getItemAspectsForCategory($categoryId)
@@ -1123,11 +1164,9 @@ trait WithEbayApiRequest
                 $params['filter'] = $filter;
             }
 
+            $endpoint    = "/sell/fulfillment/v1/order";
 
-            $queryString = http_build_query($params);
-            $endpoint    = "/sell/fulfillment/v1/order?$queryString";
-
-            return $this->makeEbayRequest('get', $endpoint);
+            return $this->makeEbayRequest('get', $endpoint, [], $params);
         } catch (Exception $e) {
             Log::error('Get eBay Orders Error: '.$e->getMessage());
 
@@ -1406,6 +1445,23 @@ trait WithEbayApiRequest
             ]);
         } catch (Exception $e) {
             Log::error('Get Fulfilment Policy Error: '.$e->getMessage());
+
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    public function deleteFulfilmentPolicies($fulfilmentPolicyId)
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        try {
+            $endpoint = "/sell/account/v1/fulfillment_policy/$fulfilmentPolicyId";
+
+            return $this->makeEbayRequest('delete', $endpoint, [], [
+                'marketplace_id' => $marketplaceId
+            ]);
+        } catch (Exception $e) {
+            Log::error('Delete Fulfilment Policy Error: '.$e->getMessage());
 
             return ['error' => $e->getMessage()];
         }

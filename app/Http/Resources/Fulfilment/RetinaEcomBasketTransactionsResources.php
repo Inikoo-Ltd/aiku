@@ -53,22 +53,28 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
         }
 
         $webpageUrl = null;
+        $luigiIdentity = null;
         if ($transaction->model_type === class_basename(Product::class)) {
             $webpage = Webpage::where('model_id', $transaction->product_id)
             ->where('model_type', class_basename(Product::class))->first();
 
             $webpageUrl = $webpage?->getCanonicalUrl();
+
+            if ($transaction->product_id) {
+                $product = Product::with('webpage.website')->find($transaction->product_id);
+                $luigiIdentity = $product?->getLuigiIdentity();
+            }
         }
 
         return [
             'id'                  => $transaction->id,
             'state'               => $transaction->state,
             'status'              => $transaction->status,
-            'quantity_ordered'    => intVal($transaction->quantity_ordered),
-            'quantity_bonus'      => intVal($transaction->quantity_bonus),
-            'quantity_dispatched' => intVal($transaction->quantity_dispatched),
-            'quantity_fail'       => intVal($transaction->quantity_fail),
-            'quantity_cancelled'  => intVal($transaction->quantity_cancelled),
+            'quantity_ordered'    => floatval($transaction->quantity_ordered),
+            'quantity_bonus'      => floatval($transaction->quantity_bonus),
+            'quantity_dispatched' => floatval($transaction->quantity_dispatched),
+            'quantity_fail'       => floatval($transaction->quantity_fail),
+            'quantity_cancelled'  => floatval($transaction->quantity_cancelled),
             'gross_amount'        => $transaction->gross_amount,
             'net_amount'          => $transaction->net_amount,
             'asset_code'          => $transaction->asset_code,
@@ -82,7 +88,9 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'available_quantity'    => $transaction->available_quantity,
             'currency_code'       => $transaction->currency_code,
             'webpage_url'         => $webpageUrl,
+            'luigi_identity'      => $luigiIdentity,
             'offers_data'         => $transaction->offers_data,
+            'is_cut_view'         => $transaction->is_cut_view,
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
                 'parameters' => [

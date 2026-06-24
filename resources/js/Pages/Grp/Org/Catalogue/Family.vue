@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft} from "@fal"
+import { faBullhorn, faCameraRetro, faCube, faFolder, faMedal, faMoneyBillWave, faProjectDiagram, faStarfighter, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft} from "@fal"
 import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -31,6 +31,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
+import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 
 library.add(
     faFolder,
@@ -46,6 +47,8 @@ library.add(
     faFolderDownload,
     faQuoteLeft,
     faThumbtack,
+    faMedal,
+    faStarfighter
 )
 
 
@@ -79,9 +82,14 @@ const props = defineProps<{
         id: number
         slug: string
         currency_code: string
+        default_dates?: {
+            start: string
+        }
     }
     product_category_id: number
     related_products : object
+    related_product_category: object,
+
 }>()
 
 const layout = inject("layout", {})
@@ -105,7 +113,8 @@ const component = computed(() => {
         variants: TableVariants,
         offers: TableOffers,
         reviews: TableReviews,
-        related_products: ProductCategoryRecomendation
+        related_products: ProductCategoryRecomendation,
+        related_product_category: RelatedProductCategory,
     }
     return components[currentTab.value as keyof typeof components] ?? ModelDetails
 })

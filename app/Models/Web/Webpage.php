@@ -8,11 +8,14 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Analytics\WebUserRequest;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Deployment;
@@ -365,6 +368,48 @@ class Webpage extends Model implements Auditable, HasMedia
     public function redirect(): BelongsTo
     {
         return $this->belongsTo(Redirect::class);
+    }
+
+    public function luigiIdentity(): string
+    {
+        //todo simplify to use this instead
+        //return 'webpage-' . $this->slug;
+
+        if ($this->model instanceof Product) {
+            return "$this->group_id:$this->organisation_id:$this->shop_id:{$this->website->id}:$this->id";
+        } else {
+
+            $model = $this->model;
+
+            // Start with just the current webpage's URL
+            $segments = [];
+
+            if ($model instanceof ProductCategory) {
+                if ($model->type === ProductCategoryTypeEnum::DEPARTMENT) {
+                    $segments = [
+                        optional($model->webpage ?? null)->url,
+                    ];
+                } elseif ($model->type === ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    $segments = collect([
+                        optional($model->department?->webpage ?? null)->url,
+                        $this->url,
+                    ])->filter()->all();
+                } elseif ($model->type === ProductCategoryTypeEnum::FAMILY) {
+                    $segments = collect([
+                        optional($model->department?->webpage ?? null)->url,
+                        optional($model->subDepartment?->webpage ?? null)->url,
+                        $this->url,
+                    ])->filter()->all();
+                }
+            } else {
+                $segments = [$this->url];
+            }
+
+            return '/'.collect($segments)->implode('/');
+
+        }
+
+
     }
 
 }

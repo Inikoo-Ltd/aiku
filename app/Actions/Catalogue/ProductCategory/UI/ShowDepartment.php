@@ -8,15 +8,18 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
+use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
@@ -26,8 +29,6 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Catalogue\OffersResource;
-use App\Actions\Discounts\Offer\UI\IndexOffers;
 
 class ShowDepartment extends OrgAction
 {
@@ -147,6 +148,9 @@ class ShowDepartment extends OrgAction
                     'id'            => $department->shop->id,
                     'slug'          => $department->shop->slug,
                     'currency_code' => $department->shop->currency->code,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                    ],
                 ],
                 'product_category_id' => $department->id,
 
@@ -162,20 +166,13 @@ class ShowDepartment extends OrgAction
                     fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))),
 
-                DepartmentTabsEnum::CUSTOMERS->value => $this->tab == DepartmentTabsEnum::CUSTOMERS->value
-                    ?
-                    fn () => CustomersResource::collection(
-                        IndexCustomers::run(
-                            parent: $department->shop,
-                            prefix: 'customers'
-                        )
-                    )
-                    : Inertia::lazy(fn () => CustomersResource::collection(
-                        IndexCustomers::run(
-                            parent: $department->shop,
-                            prefix: 'customers'
-                        )
-                    )),
+                DepartmentTabsEnum::CUSTOMERS->value => $this->tab == DepartmentTabsEnum::CUSTOMERS->value ?
+                    fn () => CustomersResource::collection(IndexCustomers::run(parent: $department->shop, prefix: 'customers'))
+                    : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $department->shop, prefix: 'customers'))),
+
+                DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
+                    fn () => GetRelatedProductCategories::run($department)
+                    : Inertia::lazy(fn () => GetRelatedProductCategories::run($department)),
 
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
                     fn () =>  GetProductCategoryImages::run($department)
@@ -186,19 +183,15 @@ class ShowDepartment extends OrgAction
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($department))),
 
                 DepartmentTabsEnum::OFFERS->value => $this->tab == DepartmentTabsEnum::OFFERS->value ?
-                fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))
-                : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))),
+                    fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))
+                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))),
 
             ]
-        )->table(
-            IndexCustomers::make()->tableStructure(
-                parent: $department->shop,
-                prefix: 'customers'
-            )
         )
-            ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value))
-            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(DepartmentTabsEnum::SALES->value))
-            ->table(IndexOffers::make()->tableStructure(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value));
+        ->table(IndexCustomers::make()->tableStructure(parent: $department->shop, prefix: 'customers'))
+        ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value))
+        ->table(IndexProductCategoryTimeSeries::make()->tableStructure(DepartmentTabsEnum::SALES->value))
+        ->table(IndexOffers::make()->tableStructure(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value));
     }
 
 

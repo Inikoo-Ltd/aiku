@@ -53,6 +53,8 @@ class ProcessInvoiceCategoryTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(InvoiceCategoryTimeSeries $timeSeries, string $from, string $to): void
     {
+        $processedPeriods = [];
+
         $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.invoice_category_id', $timeSeries->invoice_category_id)
             ->where('invoices.in_process', false)
@@ -83,6 +85,38 @@ class ProcessInvoiceCategoryTimeSeriesRecords implements ShouldBeUnique
                     'customers_invoiced'          => $result->customers_invoiced,
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
+                ]
+            );
+
+            $processedPeriods[] = $period;
+        }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+    }
+
+    protected function processPeriodsWithoutInvoices(InvoiceCategoryTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'invoice_category_time_series_id' => $timeSeries->id,
+                    'period'                          => $periodData['period'],
+                    'frequency'                       => $timeSeries->frequency->singleLetter(),
+                ],
+                [
+                    'from'                        => $periodData['from'],
+                    'to'                          => $periodData['to'],
+                    'sales_external'              => 0,
+                    'sales_org_currency_external' => 0,
+                    'sales_grp_currency_external' => 0,
+                    'lost_revenue'                => 0,
+                    'lost_revenue_org_currency'   => 0,
+                    'lost_revenue_grp_currency'   => 0,
+                    'customers_invoiced'          => 0,
+                    'invoices'                    => 0,
+                    'refunds'                     => 0,
                 ]
             );
         }

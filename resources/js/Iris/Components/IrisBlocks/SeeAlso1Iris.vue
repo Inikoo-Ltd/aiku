@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
-import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
 import { get } from 'lodash-es'
 
 // Swiper
@@ -76,7 +76,7 @@ console.log('see also', layout)
   <div :id="fieldValue?.id ? fieldValue?.id  : 'see-also-1'+indexBlock"   class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
-    width: 'auto'
+    width: '100%'
   }" :dropdown-type="props.fieldValue?.settings?.products_data?.type">
     <!-- Title -->
     <div class="px-3 py-6 pb-2">
@@ -113,9 +113,7 @@ console.log('see also', layout)
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
-          :buttonStyle="layout?.buttonBasket?.buttonStyle"
-          :product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle":product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
           </div>

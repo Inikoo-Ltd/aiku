@@ -35,5 +35,5 @@ class RedirectStoredItemAudit extends GrpAction
 
         return $this->handle($storedItemAudit);
     }
-    
+
 }

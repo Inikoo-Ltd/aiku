@@ -46,8 +46,8 @@ class GetShopDashboardTimeSeriesData
     protected function fetchData(Shop $shop, $fromDate, $toDate): array
     {
         $data = [
-            'shops'  => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate),
-            'brands' => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'shops'        => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'brands'       => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate),
         ];
 
         if ($shop->type->value === 'dropshipping') {

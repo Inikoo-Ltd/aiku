@@ -36,7 +36,8 @@ class StoreWebsitePageView implements ShouldBeUnique
     ): WebsitePageView {
         $path = parse_url($url, PHP_URL_PATH) ?: '/';
 
-        $lastPageView = WebsitePageView::where('website_visitor_id', $visitor->id)
+        $lastPageView = WebsitePageView::on('aiku_no_sticky')
+            ->where('website_visitor_id', $visitor->id)
             ->latest('id')
             ->first();
 
@@ -47,7 +48,7 @@ class StoreWebsitePageView implements ShouldBeUnique
 
         $webpage = $this->resolveWebpage($website, $path);
 
-        return WebsitePageView::create([
+        return WebsitePageView::on('aiku_no_sticky')->create([
             'group_id'           => $visitor->group_id,
             'organisation_id'    => $visitor->organisation_id,
             'website_visitor_id' => $visitor->id,
@@ -67,7 +68,7 @@ class StoreWebsitePageView implements ShouldBeUnique
         $cacheKey = "webpage_resolve:$website->id:" . md5($path);
 
         return Cache::remember($cacheKey, 86400, function () use ($website, $path) {
-            return Webpage::query()
+            return Webpage::on('aiku_no_sticky')
                 ->where('website_id', $website->id)
                 ->where('state', WebpageStateEnum::LIVE)
                 ->where(function ($query) use ($path) {

@@ -40,6 +40,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
         data_set($fulfillmentOrder, 'shipping_address', $destination);
         data_set($fulfillmentOrder, 'customer', $fulfillmentOrder['order']['customer']);
         data_set($fulfillmentOrder, 'created_at', $fulfillmentOrder['order']['createdAt']);
+        data_set($fulfillmentOrder, 'placed_at', $fulfillmentOrder['order']['processedAt'] ?? null);
 
         foreach ($lineItems as $lineItemEdge) {
             $lineItem = $lineItemEdge['node'];

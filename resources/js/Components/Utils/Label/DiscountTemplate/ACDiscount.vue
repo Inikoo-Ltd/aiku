@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBadgePercent } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { formatPercentage } from '@/Composables/Utils'

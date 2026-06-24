@@ -1,27 +1,22 @@
 <script setup lang="ts">
 import { routeType } from '@/types/route';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faInfoCircle, faSave } from "@fas";
+import { faInfoCircle } from "@fas";
 import Message from "primevue/message";
-import { Link, router, useForm } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAlbumCollection, faEdit } from "@fal";
-import { faPlus } from "@far";
+import { faAlbumCollection, faStarfighter } from "@fal";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { trans } from 'laravel-vue-i18n';
-import Dialog from 'primevue/dialog';
 import { faExternalLink } from '@far';
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
-import { ref } from 'vue';
-import Button from '@/Components/Elements/Buttons/Button.vue';
-import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue';
 
-library.add(faAlbumCollection);
+library.add(faAlbumCollection, faStarfighter);
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
     data: {
         translation_box: {
             title: string
@@ -36,61 +31,36 @@ const props = withDefaults(defineProps<{
         routes: {
             detach_family: routeType
         }
+        is_shop_gr_active?: boolean
+        gr_offer_data?: any
+        follow_master_gr?: boolean
+        tags: Array<any>
+        show_gr_vol?: boolean
+        webpage_url?: string
     },
-    master_vol_gr_reward?: {
-        show_gr_vol: boolean
-        gr_vol_discount_quantity: number
-        gr_vol_discount_percentage: number
-    }
     salesData?: object
     actions?: any
-    isMaster?: boolean
-}>(), {
-    // Default values
-    isMaster: false,
-});
+}>();
 
 const navigateTo = () => {
-    let routeCurr = route().current();
-    let targetRoute;
-    let routeParams = route().params;
+    const routeParams = route().params;
 
-    switch (routeCurr) {
-        case "grp.masters.master_shops.show.master_departments.show.master_families.show":
-        case "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show" :
-            targetRoute = route("grp.masters.master_shops.show.master_departments.show.master_families.edit", {
-                ...routeParams,
-                section: 1
-            });
-            break;
-
-        case "grp.masters.master_shops.show.master_sub_departments.master_families.show":
-            targetRoute = route("grp.masters.master_shops.show.master_sub_departments.master_families.edit", {
-                ...routeParams,
-                section: 1
-            });
-            break;
-
-        case "grp.masters.master_shops.show.master_families.show":
-            targetRoute = route("grp.masters.master_shops.show.master_families.edit", {...routeParams, section: 1})
-            break;
-
+    switch (route().current()) {
         case "grp.org.shops.show.catalogue.families.show":
-            targetRoute = route("grp.org.shops.show.catalogue.families.edit", { ...routeParams, section: 1 })
+            router.visit(route("grp.org.shops.show.catalogue.families.edit", { ...routeParams, section: 1 }));
             break;
 
         case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show":
-            targetRoute = route("grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.edit", { ...routeParams, section: 1 })
+            router.visit(route("grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.edit", { ...routeParams, section: 1 }));
             break;
 
         default:
-            targetRoute = route("grp.org.shops.show.catalogue.departments.show.families.edit", {
+            router.visit(route("grp.org.shops.show.catalogue.departments.show.families.edit", {
                 ...routeParams,
                 section: 1
-            });
+            }));
             break;
     }
-    router.visit(targetRoute);
 }
 
 function offerRoute(offer: {}) {
@@ -106,38 +76,10 @@ function offerRoute(offer: {}) {
             return ""
     }
 }
-
-const isOpenModalMasterGROffer = ref(false);
-
-const grOfferForm = useForm({
-    vol_gr_offer: {
-        item_quantity: 0,
-        percentage_off: 0,
-    }
-})
-
-const openModalMasterGROffer = () => {
-    grOfferForm.vol_gr_offer = {
-        item_quantity: props.master_vol_gr_reward?.gr_vol_discount_quantity ?? 0,
-        percentage_off: props.master_vol_gr_reward?.gr_vol_discount_percentage ?? 0,
-    }
-    isOpenModalMasterGROffer.value = true
-}
-
-const saveGROffer = () => {
-    grOfferForm.patch(
-        route('grp.models.master_product_category.update', props.data.family?.data?.id),
-        {
-            onSuccess: () => {
-                isOpenModalMasterGROffer.value = false
-            }
-        }
-    )
-}
-
 </script>
 
 <template>
+   
     <div v-if="data.webpage_url"
 		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
 		<div class="flex items-center gap-2 text-blue-700 text-sm">
@@ -176,69 +118,34 @@ const saveGROffer = () => {
 
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                <dd v-if="data.tags && data.tags.length > 0" class="font-medium flex flex-wrap gap-1 pb-3">
+                    <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
+                        class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+                        {{ tag.name }}
+                    </span>
+                </dd>
                 <ProductCategoryCard :data="data.family?.data"  />
             </div>
 
             <div class="col-span-1 md:col-span-2 lg:col-span-4 offer">
-                <template v-if="master_vol_gr_reward?.show_gr_vol">
-                    <div class="mb-1 font-bold">
-                        {{ trans("Active Gold Reward offer") }}: 
-                    </div>
-                    <div 
-                        v-if="props.master_vol_gr_reward?.gr_vol_discount_percentage" 
-                        @click="openModalMasterGROffer" 
-                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold flex cursor-pointer" 
-                    >
-                        <div class="grid w-72">
-                            <div class="flex">
-                                {{ trans('Trigger Quantity') }} 
-                                <span class="ml-auto w-24">
-                                    : {{ props.master_vol_gr_reward?.gr_vol_discount_quantity }} Qty
-                                </span>
-                            </div>
-                            <div class="flex">
-                                {{ trans('Discount Percentage') }}
-                                <span class="ml-auto w-24">
-                                    : {{ props.master_vol_gr_reward?.gr_vol_discount_percentage }} %
-                                </span>
-                            </div>
-                        </div>
-                        <FontAwesomeIcon :icon="faEdit" class="ml-auto my-auto text-amber-500"/>
-                    </div>
-                    <div 
-                        v-else
-                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold text-white bg-gradient-to-br from-amber-300 to-amber-500 cursor-pointer" 
-                        @click="openModalMasterGROffer"
-                    >
-                        <FontAwesomeIcon :icon="faPlus" />
-                        {{ trans('Add Master GR Offer') }}
-                    </div>
-                    <Dialog v-model:visible="isOpenModalMasterGROffer" modal header="Gold Reward Offer" :style="{ width: '50rem' }" closable :draggable="false" dismissableMask closeOnEscape>
-                        <InputVolDiscount
-                            :form="grOfferForm"
-                            fieldName="vol_gr_offer"
-                            :fieldData="{ initial_value: { item_quantity: 0, percentage_off: 0 } }"
-                        />
-                        <div class="flex">
-                            <Button 
-                                :icon="faSave"
-                                :type="'save'"
-                                :class="'ml-auto'"
-                                :loading="grOfferForm.processing"
-                                @click="saveGROffer"
-                            />
-                        </div>
-                    </Dialog>
-                </template>
-
-                <template v-if="data.gr_offer_data">
+                <template v-if="data.show_gr_vol">
                     <div class="mb-1">
                         {{ trans("Active Gold Reward offer") }}:
                         <Link :href="offerRoute(data.gr_offer_data)" class="secondaryLink">
                             {{ data.gr_offer_data?.label }}
                         </Link>
                     </div>
-                    <FamilyOfferLabelDiscount :offer="data.gr_offer_data" />
+                    <div class="flex items-center gap-x-2">
+                        <FamilyOfferLabelDiscount :offer="data.gr_offer_data" :not-follow-master="data.follow_master_gr === false" />
+                        <FontAwesomeIcon
+                            v-if="data.follow_master_gr === false"
+                            :icon="faStarfighter"
+                            v-tooltip="trans('Not following master GR')"
+                            class="text-xl text-red-500"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                    </div>
                 </template>
             </div>
 
@@ -250,7 +157,7 @@ const saveGROffer = () => {
                 <ProductCategoryStats v-if="data.family?.data.stats" :stats="data.family?.data.stats" />
 
                 <!-- Review Content -->
-                <ReviewContent v-if="!isMaster" :data="data.family?.data"  />
+                <ReviewContent :data="data.family?.data"  />
             </div>
         </div>
     </div>

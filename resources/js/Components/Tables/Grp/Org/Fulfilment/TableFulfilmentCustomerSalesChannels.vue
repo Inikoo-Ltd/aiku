@@ -27,9 +27,12 @@ function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
 <template>
      <Table :resource="data" >
         <template #cell(reference)="{ item: customerSalesChannel }">
-            <Link :href="customerSalesChannelRoute(customerSalesChannel) as string" class="primaryLink">
-                {{ customerSalesChannel["reference"] }}
-            </Link>
-        </template>
+			<div class="flex">
+				<img class="w-8 h-8 mr-2" :src="customerSalesChannel['platform_image']" alt="Logo">
+				<Link :href="customerSalesChannelRoute(customerSalesChannel) as string" class="primaryLink">
+					{{ customerSalesChannel["reference"] }}
+            	</Link>
+			</div>
+		</template>
     </Table>
 </template>

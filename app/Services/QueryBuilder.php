@@ -15,6 +15,16 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @method self whereAnyWordStartWith(string $column, string|array $value)
+ * @method self whereStartWith(string $column, string|array $value)
+ * @method self whereEndWith(string $column, string|array $value)
+ * @method self whereWith(string $column, string|array $value)
+ * @method self orWhereAnyWordStartWith(string $column, string|array $value)
+ * @method self orWhereStartWith(string $column, string|array $value)
+ * @method self orWhereEndWith(string $column, string|array $value)
+ * @method self orWhereWith(string $column, string|array $value)
+ */
 class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 {
     public function whereElementGroup(

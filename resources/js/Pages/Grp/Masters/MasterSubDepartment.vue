@@ -26,7 +26,7 @@ import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
-import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
+import MasterSubDepartmentShowcase from "@/Components/Showcases/Grp/MasterSubDepartmentShowcase.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue"
@@ -36,6 +36,7 @@ import Breadcrumb from "primevue/breadcrumb"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
+import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 
 library.add(
     faFolder,
@@ -76,6 +77,7 @@ const props = defineProps<{
     images?: object
     sales?: object
     salesData?: object
+    related_product_category : object
     mini_breadcrumbs: any
 }>()
 
@@ -84,7 +86,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component: Component = computed(() => {
     const components = {
-        showcase: SubDepartmentShowcase,
+        showcase: MasterSubDepartmentShowcase,
         products: TableProducts,
         mailshots: TableMailshots,
         customers: TableCustomers,
@@ -92,7 +94,8 @@ const component: Component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         images: ImagesManagement,
-        sales: ProductCategoryTimeSeriesTable
+        sales: ProductCategoryTimeSeriesTable,
+        related_product_category: RelatedProductCategory,
     }
     return components[currentTab.value]
 

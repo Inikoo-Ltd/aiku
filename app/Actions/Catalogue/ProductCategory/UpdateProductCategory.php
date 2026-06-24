@@ -8,21 +8,31 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Discounts\Offer\FinishOffer;
+use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
+use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
+use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Discounts\Offer;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -34,12 +44,18 @@ class UpdateProductCategory extends OrgAction
     use WithNoStrictRules;
     use WithImageCatalogue;
     use WithProductCategoryHydrators;
+    use SanitizeInputs;
 
     private ProductCategory $productCategory;
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
         $originalImageId = $productCategory->image_id;
+        $oldState        = $productCategory->state;
+
+        if ($productCategory->type !== ProductCategoryTypeEnum::FAMILY) {
+            Arr::pull($modelData, 'trade_unit_family_id'); // Safeguard so only family would have relationship with TradeUnitFamilyId
+        }
 
         if ($chosenMainWebpageId = Arr::pull($modelData, 'set_main_webpage')) {
             $webpage = Webpage::find($chosenMainWebpageId);
@@ -76,12 +92,20 @@ class UpdateProductCategory extends OrgAction
             } else {
                 data_set($modelData, 'image_id', null, false);
             }
-
         }
 
         $originalMasterProductCategory = null;
         if (Arr::has($modelData, 'master_product_category_id')) {
             $originalMasterProductCategory = $productCategory->masterProductCategory;
+        }
+
+        if (Arr::has($modelData, 'vol_gr_offer')) {
+            $volGrData = Arr::pull($modelData, 'vol_gr_offer');
+            if ($volGrData) {
+                $this->updateFamilyGrOffer($productCategory, $volGrData);
+            } else {
+                $this->finishFamilyGrOffer($productCategory);
+            }
         }
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
@@ -117,15 +141,6 @@ class UpdateProductCategory extends OrgAction
             ]);
         }
 
-        //        if (Arr::has($changes, 'offers_data')) {
-        //            $offers = Offer::whereIn('id', array_keys($modelData['offers_data']))->get();
-        //            foreach ($offers as $offer) {
-        //                $offer->update([
-        //                    'label' => data_get($modelData, "offers_data.{$offer->id}.label")
-        //                ]);
-        //            }
-        //        }
-
         if (Arr::has($changes, 'description_title')) {
             UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
                 'translations' => [
@@ -158,11 +173,27 @@ class UpdateProductCategory extends OrgAction
             'name_i8n'
         ])) {
             $this->productCategoryHydrators($productCategory);
+
             if ($productCategory->webpage_id) {
                 ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60);
                 ClearCacheByWildcard::run("irisData:website:{$productCategory->webpage->website_id}:*");
             }
         }
+
+        if (Arr::has($changes, 'follow_master_gr') && $productCategory->follow_master_gr && $productCategory->masterProductCategory) {
+            UpdateVolumeGrOfferFromMaster::run($productCategory->masterProductCategory);
+        }
+
+        if ($oldState != $productCategory->state && $productCategory->webpage) {
+            if ($productCategory->state == ProductCategoryStateEnum::DISCONTINUED) {
+                CloseDiscontinuedWebpage::run($productCategory->webpage);
+            }
+
+            if ($productCategory->state == ProductCategoryStateEnum::ACTIVE && $oldState == ProductCategoryStateEnum::DISCONTINUED) {
+                ReopenDiscontinuedWebpage::run($productCategory->webpage);
+            }
+        }
+
         $productCategory->refresh();
 
         return $productCategory;
@@ -195,7 +226,7 @@ class UpdateProductCategory extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'              => [
+            'code'                          => [
                 'sometimes',
                 $this->strict ? 'max:32' : 'max:255',
                 new AlphaDashDot(),
@@ -210,46 +241,56 @@ class UpdateProductCategory extends OrgAction
                     ]
                 ),
             ],
-            'name'              => ['sometimes', 'max:250', 'string'],
-            'image_id'          => ['sometimes', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
-            'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
-            'description'       => ['sometimes', 'nullable', 'max:65500'],
-            'description_title' => ['sometimes', 'nullable', 'max:255'],
-            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
-            'department_id'     => [
+            'name'                          => ['sometimes', 'max:250', 'string'],
+            'image_id'                      => ['sometimes', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'state'                         => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
+            'description'                   => ['sometimes', 'nullable', 'max:65500'],
+            'description_title'             => ['sometimes', 'nullable', 'max:255'],
+            'description_extra'             => ['sometimes', 'nullable', 'max:65500'],
+            'department_id'                 => [
                 'sometimes',
                 Rule::exists('product_categories', 'id')
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
-            'sub_department_id' => [
+            'sub_department_id'             => [
                 'sometimes',
                 'nullable',
                 Rule::exists('product_categories', 'id')
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
-            'follow_master'              => ['sometimes', 'boolean'],
-            'image'                      => [
+            'follow_master'                 => ['sometimes', 'boolean'],
+            'follow_master_gr'              => ['sometimes', 'boolean'],
+            'vol_gr_offer'                  => ['sometimes', 'nullable', 'array'],
+            'vol_gr_offer.item_quantity'    => ['sometimes', 'integer', 'min:1'],
+            'vol_gr_offer.percentage_off'   => ['sometimes', 'numeric', 'min:1', 'max:100'],
+            'image'                         => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'webpage_id'                 => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
-            'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
-            'images'                     => ['sometimes', 'array'],
-            'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
-            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
-            'name_i8n' => ['sometimes', 'array'],
-            'description_title_i8n' => ['sometimes', 'array'],
-            'description_i8n' => ['sometimes', 'array'],
-            'description_extra_i8n' => ['sometimes', 'array'],
-            'is_name_reviewed' => ['sometimes', 'boolean'],
+            'webpage_id'                    => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                           => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'                        => ['sometimes', 'array'],
+            'master_product_category_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
+            'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
+            'name_i8n'                      => ['sometimes', 'array'],
+            'description_title_i8n'         => ['sometimes', 'array'],
+            'description_i8n'               => ['sometimes', 'array'],
+            'description_extra_i8n'         => ['sometimes', 'array'],
+            'is_name_reviewed'              => ['sometimes', 'boolean'],
             'is_description_title_reviewed' => ['sometimes', 'boolean'],
-            'is_description_reviewed' => ['sometimes', 'boolean'],
+            'is_description_reviewed'       => ['sometimes', 'boolean'],
             'is_description_extra_reviewed' => ['sometimes', 'boolean'],
-            'set_main_webpage'  => ['sometimes', 'string'],
+            'set_main_webpage'              => ['sometimes', 'string'],
+            'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
+            'faq'                           => ['sometimes', 'array'],
+            'faq.*.question'                => ['sometimes', 'string'],
+            'faq.*.answer'                  => ['sometimes', 'string'],
+            'faq.*.source_question'         => ['sometimes', 'nullable', 'string'],
+            'faq.*.source_answer'           => ['sometimes', 'nullable', 'string'],
         ];
 
         if (!$this->strict) {
@@ -258,9 +299,98 @@ class UpdateProductCategory extends OrgAction
             $rules                         = $this->noStrictUpdateRules($rules);
         }
 
+        if (!$this->asAction && $this->productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            // Hard limit for Family (To accommodate design) if it's via UI update
+            $rules['description']       = [
+                'sometimes',
+                'nullable',
+                function ($value, $fail) {
+                    $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
+                    if ($count > 100) {
+                        $fail(__("The description must not exceed 100 words."));
+                    }
+                }
+            ];
+            $rules['description_extra'] = [
+                'sometimes',
+                'nullable',
+                function ($value, $fail) {
+                    $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
+                    if ($count > 250) {
+                        $fail(__("The description extra must not exceed 250 words."));
+                    }
+                }
+            ];
+        }
+
         return $rules;
     }
 
+    private function updateFamilyGrOffer(ProductCategory $productCategory, ?array $volGrData): void
+    {
+        if (!$volGrData || empty($volGrData['item_quantity']) || empty($volGrData['percentage_off'])) {
+            $productCategory->updateQuietly(['has_gr_vol_discount' => false]);
+
+            return;
+        }
+
+        $itemQuantity  = (int)$volGrData['item_quantity'];
+        $percentageOff = (float)$volGrData['percentage_off'];
+
+        $offer = Offer::where('trigger_id', $productCategory->id)
+            ->where('trigger_type', class_basename(ProductCategory::class))
+            ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
+            ->with('offerAllowances')
+            ->first();
+
+        if (!$offer) {
+            StoreVolumeGRDiscount::make()->action($productCategory, [
+                'trigger_data_item_quantity' => $itemQuantity,
+                'percentage_off'             => $percentageOff / 100,
+                'interval'                   => 30,
+            ]);
+        } else {
+            $triggerData = $offer->trigger_data;
+            data_set($triggerData, 'item_quantity', $itemQuantity);
+
+            $offer->update([
+                'state'        => OfferStateEnum::ACTIVE,
+                'status'       => true,
+                'trigger_data' => $triggerData,
+            ]);
+
+            foreach ($offer->offerAllowances as $offerAllowance) {
+                $allowanceData = $offerAllowance->data;
+                data_set($allowanceData, 'percentage_off', $percentageOff / 100);
+
+                $offerAllowance->update([
+                    'state'  => $offer->state->value,
+                    'status' => $offer->status,
+                    'data'   => $allowanceData,
+                    'end_at' => null,
+                ]);
+            }
+
+            UpdateOfferAllowanceSignature::run($offer);
+        }
+
+        $productCategory->updateQuietly(['has_gr_vol_discount' => true]);
+    }
+
+    private function finishFamilyGrOffer(ProductCategory $productCategory): void
+    {
+        $offer = Offer::where('trigger_id', $productCategory->id)
+            ->where('trigger_type', class_basename(ProductCategory::class))
+            ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
+            ->with('offerAllowances')
+            ->first();
+
+        if ($offer) {
+            FinishOffer::run($offer);
+        }
+
+        $productCategory->updateQuietly(['has_gr_vol_discount' => false]);
+    }
 
     public function action(ProductCategory $productCategory, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): ProductCategory
     {

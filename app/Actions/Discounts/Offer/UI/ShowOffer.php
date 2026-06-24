@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 19-11-2025-13h-31m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2025
 */
 
@@ -19,6 +19,7 @@ use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -26,6 +27,7 @@ use App\Enums\UI\Discounts\OfferTabsEnum;
 use App\Http\Resources\Catalogue\OfferAllowanceResource;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -62,6 +64,16 @@ class ShowOffer extends OrgAction
             $editRoute = [
                 'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit_vol_gr_gift',
                 'parameters' => $request->route()->parameters()
+            ];
+        } else {
+            $editRoute = [
+                'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit',
+                'parameters' => [
+                    'organisation'      => $offer->shop->organisation->slug,
+                    'shop'              => $offer->shop->slug,
+                    'offerCampaign'     => $offer->offerCampaign->slug,
+                    'offer'             => $offer->slug,
+                ]
             ];
         }
 
@@ -128,6 +140,10 @@ class ShowOffer extends OrgAction
             OfferTabsEnum::ORDERS->value => $this->tab == OfferTabsEnum::ORDERS->value
                 ? fn () => OrderResource::collection(IndexOrders::run(parent: $offer, prefix: OfferTabsEnum::ORDERS->value, bucket: 'offer'))
                 : Inertia::lazy(fn () => OrderResource::collection(IndexOrders::run(parent: $offer, prefix: OfferTabsEnum::ORDERS->value, bucket: 'offer'))),
+
+            OfferTabsEnum::HISTORY->value => $this->tab == OfferTabsEnum::HISTORY->value
+                ? fn () => HistoryResource::collection(IndexHistory::run($offer))
+                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offer))),
         ];
 
         return Inertia::render(
@@ -138,9 +154,9 @@ class ShowOffer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'         => __('Offer').' '.$offer->code,
+                'title'         => '(' . __('Offer') . ') '.$offer->code,
                 'pageHead'      => [
-                    'title'     => $offer->name,
+                    'title'     => $offer->code,
                     'model'     => __('Offer'),
                     'iconRight' => OfferStateEnum::from($offer->state->value)->stateIcon()[$offer->state->value],
                     'icon'      => $icon,
@@ -152,7 +168,6 @@ class ShowOffer extends OrgAction
                     'navigation' => OfferTabsEnum::navigationExcept([
                         OfferTabsEnum::VOUCHERS,
                         OfferTabsEnum::SETTINGS,
-                        OfferTabsEnum::CHANGELOG,
                     ]),
                 ],
                 'url_master'    => $productCategory && $offer->type === 'Category Quantity Ordered Order Interval' ? [
@@ -168,8 +183,9 @@ class ShowOffer extends OrgAction
                 ...$tabComponentData,
             ]
         )
-            ->table(IndexCustomers::make()->tableStructure(parent: $offer, prefix: OfferTabsEnum::CUSTOMERS->value))
-            ->table(IndexOrders::make()->tableStructure(parent: $offer, prefix: OfferTabsEnum::ORDERS->value, bucket: 'offer'));
+        ->table(IndexCustomers::make()->tableStructure(parent: $offer, prefix: OfferTabsEnum::CUSTOMERS->value))
+        ->table(IndexOrders::make()->tableStructure(parent: $offer, prefix: OfferTabsEnum::ORDERS->value, bucket: 'offer'))
+        ->table(IndexHistory::make()->tableStructure(OfferTabsEnum::HISTORY->value));
     }
 
     public function asController(Organisation $organisation, Shop $shop, Offer $offer, ActionRequest $request): Offer
@@ -177,7 +193,6 @@ class ShowOffer extends OrgAction
         $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
             OfferTabsEnum::VOUCHERS,
             OfferTabsEnum::SETTINGS,
-            OfferTabsEnum::CHANGELOG,
         ]));
 
         return $this->handle($offer);
@@ -189,7 +204,6 @@ class ShowOffer extends OrgAction
         $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
             OfferTabsEnum::VOUCHERS,
             OfferTabsEnum::SETTINGS,
-            OfferTabsEnum::CHANGELOG,
         ]));
 
         return $this->handle($offer);
@@ -218,7 +232,6 @@ class ShowOffer extends OrgAction
         $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
             OfferTabsEnum::VOUCHERS,
             OfferTabsEnum::SETTINGS,
-            OfferTabsEnum::CHANGELOG,
         ]));
 
         return $this->handle($offer);
@@ -231,7 +244,6 @@ class ShowOffer extends OrgAction
         $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
             OfferTabsEnum::VOUCHERS,
             OfferTabsEnum::SETTINGS,
-            OfferTabsEnum::CHANGELOG,
         ]));
 
         return $this->handle($offer);
@@ -244,7 +256,6 @@ class ShowOffer extends OrgAction
         $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
             OfferTabsEnum::VOUCHERS,
             OfferTabsEnum::SETTINGS,
-            OfferTabsEnum::CHANGELOG,
         ]));
 
         return $this->handle($offer);
@@ -257,7 +268,6 @@ class ShowOffer extends OrgAction
         $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
             OfferTabsEnum::VOUCHERS,
             OfferTabsEnum::SETTINGS,
-            OfferTabsEnum::CHANGELOG,
         ]));
 
         return $this->handle($offer);

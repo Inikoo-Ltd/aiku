@@ -20,17 +20,19 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PickingItemActionsPanel from "@/Components/Warehouse/DeliveryNotes/PickingItemActionsPanel.vue"
 import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForCrm.vue"
+import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 library.add(faHandHoldingBox, faDolly, faMapMarkerAlt, faHourglassStart, faSkull, faCircle)
 
 const locale = inject('locale', aikuLocaleStructure)
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     allowStockControllerSetNotPicked: boolean
     isStillPicking: boolean
     isReadOnly?: boolean
+    waitingType?: string
 }>()
 
 const routeToDeliveryNote = (slug: string) => {
@@ -39,6 +41,16 @@ const routeToDeliveryNote = (slug: string) => {
         (route().params as RouteParams).warehouse,
         slug,
     ])
+}
+
+const routeItemsWaitingCrm = (item: any): string => {
+    if (!item.shop_slug || !(route().params as RouteParams).organisation) {
+        return '#'
+    }
+    return route('grp.org.shops.show.ordering.backlog.waiting_items', {
+        organisation: (route().params as RouteParams).organisation,
+        shop: item.shop_slug,
+    })
 }
 
 const generateLocationRoute = (location: any) => {
@@ -68,6 +80,12 @@ const generateLocationRoute = (location: any) => {
                     internal: 'delivery_note_internal_notes',
                     public:   'delivery_note_public_notes',
                 }" />
+                <WaitingOppositeCountBadge
+                    v-if="props.waitingType && Number(item.opposite_waiting_count) > 0"
+                    :count="Number(item.opposite_waiting_count)"
+                    :type="props.waitingType === 'crm' ? 'warehouse' : 'crm'"
+                    :href="routeToDeliveryNote(item.delivery_note_slug)"
+                />
             </div>
             <div class="flex gap-x-2 mt-1 flex-wrap">
                 <span v-if="item.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 border rounded px-1.5 py-0.5">
@@ -139,16 +157,9 @@ const generateLocationRoute = (location: any) => {
 
             <!-- Section: items are waiting for CRM -->
             <div v-if="Number(item.quantity_waiting_crm) > 0" class="mt-2 xmx-auto w-fit">
-                <LabelItemsWaitingForCrm v-if="Number(item.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
-                <!-- <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-purple-400 relative bg-purple-500/20 py-1 pr-2 pl-1 text-purple-700 whitespace-nowrap w-fit">
-                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
-                    <span>
-                        {{ trans(":quantityWaitingCRM items are waiting for CRM", { quantityWaitingCRM: Number(item.quantity_waiting_crm) }) }}
-                    </span>
-
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
-                </div> -->
+                <Link :href="routeItemsWaitingCrm(item)" class="hover:underline">
+                    <LabelItemsWaitingForCrm :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
+                </Link>
             </div>
         </template>
 

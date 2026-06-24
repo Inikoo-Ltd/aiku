@@ -18,11 +18,21 @@ use App\Models\Accounting\Invoice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRefund extends OrgAction
 {
     use WithActionUpdate;
     use WithDeleteInvoiceUI;
+
+    // Don't delete this Raul. We need a split asController, as we name it on the route as $refund, not $invoice.
+    public function asController(Invoice $refund, ActionRequest $request): Invoice
+    {
+        $this->set('deleted_by', $request->user()->id);
+        $this->initialisationFromShop($refund->shop, $request);
+
+        return $this->handle($refund, $this->validatedData);
+    }
 
     public function handle(Invoice $refund, array $modelData): Invoice
     {

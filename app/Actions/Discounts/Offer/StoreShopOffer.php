@@ -55,11 +55,6 @@ class StoreShopOffer extends OrgAction
             $type = 'any';
         }
 
-        data_set(
-            $modelData,
-            'type',
-            $this->getShopOfferType($type)->value
-        );
 
         $code = Str::lower($offerCampaign->code.'-'.$shop->code);
         data_set($modelData, 'code', $code, false);
@@ -76,6 +71,7 @@ class StoreShopOffer extends OrgAction
         //  data_set($modelData, 'trigger_id', $shop->id);
 
         if ($type == 'quantity' || $type == 'any') {
+            $type = OfferTypeEnum::SHOP_ORDERED;
             data_set(
                 $modelData,
                 'trigger_data',
@@ -84,6 +80,7 @@ class StoreShopOffer extends OrgAction
                 ]
             );
         } else {
+            $type = OfferTypeEnum::SHOP_AMOUNT_ORDERED;
             data_set(
                 $modelData,
                 'trigger_data',
@@ -92,6 +89,12 @@ class StoreShopOffer extends OrgAction
                 ]
             );
         }
+
+        data_set(
+            $modelData,
+            'type',
+            $type
+        );
 
         $targetType = OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER;
 
@@ -116,16 +119,6 @@ class StoreShopOffer extends OrgAction
 
         return $offer;
     }
-
-    private function getShopOfferType(bool $type): OfferTypeEnum
-    {
-        if ($type == 'amount') {
-            return OfferTypeEnum::SHOP_AMOUNT_ORDERED;
-        } else {
-            return OfferTypeEnum::SHOP_ORDERED;
-        }
-    }
-
 
     public function rules(): array
     {

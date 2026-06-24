@@ -19,7 +19,6 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -49,7 +48,7 @@ class AuthenticateAllegroAccount extends OrgAction
 
                 $tokenData = $this->exchangeCodeForTokens(
                     Arr::get($modelData, 'code'),
-                    route('retina.dropshipping.allegro.callback'),
+                    route('allegro.callback'),
                     $codeVerifier ?? null
                 );
 
@@ -68,11 +67,21 @@ class AuthenticateAllegroAccount extends OrgAction
 
                     $response = $http->json();
 
+                    if($http->failed()) {
+                        throw new \Exception('Failed to fetch user data: ' . $http->json());
+                    }
+
+                    $name = (Arr::get($response, 'firstName') && Arr::get($response, 'lastName'))
+                        ? Arr::get($response, 'firstName') . ' ' . Arr::get($response, 'lastName')
+                        : Arr::get($response, 'company.name');
+
+                    if( !$name) {
+                        $name = Arr::get($response, 'login');
+                    }
+
                     $userData = [
                         'allegro_id' => Arr::get($response, 'id'),
-                        'name' => (Arr::get($response, 'firstName') && Arr::get($response, 'lastName'))
-                            ? Arr::get($response, 'firstName') . ' ' . Arr::get($response, 'lastName')
-                            : Arr::get($response, 'company.name'),
+                        'name' => $name,
                         'access_token' => $tokenData['access_token'],
                         'access_token_expire_in' => $accessTokenExpiresAt,
                         'refresh_token' => $tokenData['refresh_token'] ?? null,
@@ -103,14 +112,17 @@ class AuthenticateAllegroAccount extends OrgAction
                         }
                     }
 
-                    return Redirect::route('retina.dropshipping.customer_sales_channels.show', [
-                        'customerSalesChannel' => $allegroUser->customerSalesChannel->slug
-                    ]);
+                    $customerSalesChannel = $allegroUser->customerSalesChannel;
+                    $domain = "https://{$customerSalesChannel->shop->website->domain}";
+                    $path = "/app/dropshipping/channels/$customerSalesChannel->slug";
+
+                    $fullUrl = $domain . $path;
+
+                    return Redirect::away($fullUrl);
                 }
 
             } catch (\Exception $e) {
                 dd($e->getMessage());
-                Log::error('Allegro authentication failed: ' . $e->getMessage());
 
                 \Sentry::captureException($e);
 
@@ -131,9 +143,9 @@ class AuthenticateAllegroAccount extends OrgAction
             'code_verifier' => $codeVerifier
         ]));
 
-        $redirectUri = route('retina.dropshipping.allegro.callback');
-        $scope = 'allegro:api:sale:offers:read allegro:api:sale:offers:write allegro:api:sale:settings:read allegro:api:sale:settings:write allegro:api:orders:read allegro:api:orders:write allegro:api:ratings allegro:api:disputes allegro:api:bids allegro:api:ads allegro:api:campaigns allegro:api:profile:read allegro:api:profile:write allegro:api:fulfillment:read allegro:api:fulfillment:write allegro:api:shipments:read allegro:api:shipments:write';
+        $redirectUri = route('allegro.callback');
 
+        $scope = 'allegro:api:sale:offers:read allegro:api:sale:offers:write allegro:api:sale:settings:read allegro:api:sale:settings:write allegro:api:orders:read allegro:api:orders:write allegro:api:profile:read allegro:api:profile:write allegro:api:fulfillment:read allegro:api:fulfillment:write allegro:api:shipments:read allegro:api:shipments:write';
         return $this->getAuthorizationUrl($redirectUri, $codeChallenge, $scope, $state);
     }
 

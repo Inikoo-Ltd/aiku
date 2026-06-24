@@ -86,11 +86,11 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
             ->selectRaw(
                 '(
-        SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
-        WHERE pickings.location_id = location_org_stocks.location_id
-        AND pickings.org_stock_id = location_org_stocks.org_stock_id
-        AND pickings.type = ? AND pickings.delivery_note_item_id = ?
-    ) as pickings_data',
+                    SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
+                    WHERE pickings.location_id = location_org_stocks.location_id
+                    AND pickings.org_stock_id = location_org_stocks.org_stock_id
+                    AND pickings.type = ? AND pickings.delivery_note_item_id = ?
+                ) as pickings_data',
                 ['pick', $this->id]
             )
             ->when(
@@ -118,7 +118,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 
         $pickings = Picking::where('delivery_note_item_id', $this->id)->with(['batchCode', 'orgStock.mainBatchCode'])->get();
 
-
         $warehouseArea = '';
         if ($this->warehouse_area_picking_position) {
             $warehouseArea = __('Sort:').': '.$this->warehouse_area_picking_position.' ';
@@ -145,6 +144,18 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
         }
 
+        /** @var DeliveryNoteItem $resource */
+        $resource = $this->resource;
+        $unNumbers = [];
+
+        if ($resource->relationLoaded('orgStock')) {
+            $orgStock = $resource->orgStock;
+
+            if ($orgStock->relationLoaded('tradeUnits')) {
+                $unNumbers = $orgStock->tradeUnits->whereNotNull('un_number')->where('un_number', '!=', 'None')->pluck('un_number', 'proper_shipping_name')->toArray();
+            }
+        }
+
         return [
             'id'                             => $this->id,
             'is_picked'                      => $isPicked,
@@ -154,7 +165,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_to_pick'               => $quantityToPick,
             'quantity_to_pick_fractional'    => $quantityToPickFractional,
             'quantity_to_pick_fractional_ds' => $quantityToPickFractionalDS,
-            'quantity_picked_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->quantity_picked),
+            'quantity_picked_fractional'     => $this->quantity_picked > 0 ? riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->quantity_picked) : null,
             'quantity_picked'                => $this->quantity_picked,
             'quantity_not_picked'            => $this->quantity_not_picked,
             'quantity_packed'                => $this->quantity_packed,
@@ -189,6 +200,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'packed_in_message'            => $packedInMessage,
             'notes'                        => $this->notes,
             'shop_slug'                    => $this->shop_slug,
+            'un_numbers'                   => $unNumbers,
 
 
             'upsert_picking_route' => [

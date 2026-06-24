@@ -9,7 +9,6 @@ import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
-import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -39,6 +38,7 @@ import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
 import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
+import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 
 
 
@@ -179,6 +179,11 @@ const showDiscount = computed(() => {
     )
 })
 
+const showIntervalOffer = computed(() => {
+    return getBestOfferfromComposable(props.product?.product_offers_data)?.type
+        === 'Category Quantity Ordered Order Interval'
+})
+
 
 
 
@@ -231,8 +236,7 @@ console.log(props)
 
             <!-- RIGHT: Product Info -->
             <div class="col-span-5 self-start">
-                
-                
+      
                 <div class="relative flex justify-between items-start mb-4 gap-x-3">
                     <div class="w-full">
                         <h1 class="text-3xl font-bold">
@@ -300,13 +304,6 @@ console.log(props)
                 </div>       
 
                 <!-- PRICE -->
-                <!-- <ProductPrices
-                    :field-value="fieldValue"
-                    :key="product.code"
-                    :offers_data="customerData?.offers_data"
-                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
-                    :offer_price_per_unit="customerData?.offer_price_per_unit"
-                /> -->
 
                 <ProductPrices2
                     v-if="layout?.iris?.is_logged_in"
@@ -326,6 +323,8 @@ console.log(props)
                                 <NonMemberPriceLabel v-else :product />
                             </template>
 
+
+                             <DiscountByType  v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type == 'Category Quantity Ordered Order Interval') && showDiscount" :offers_data="product?.offers_data" template="products_triggers_label" />
 
                             <DiscountByType
                                 v-if="showDiscount && bestOffer.type == 'Category Ordered'"

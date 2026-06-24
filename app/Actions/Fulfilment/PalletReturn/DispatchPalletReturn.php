@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\PalletReturn;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Dropshipping\Tiktok\Order\FulfillOrderToTiktok;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
@@ -102,6 +103,9 @@ class DispatchPalletReturn extends OrgAction
         WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+        if ($palletReturn->customerSalesChannel) {
+            CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+        }
         SendPalletReturnNotification::run($palletReturn);
 
         $pickingSessions = $palletReturn->pickingSessions()->get();

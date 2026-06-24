@@ -16,6 +16,10 @@ use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
+use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
+use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
+use App\Models\Masters\MasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -186,7 +190,8 @@ class UpdateProduct extends OrgAction
                 MasterAssetHydrateAssets::run($product->master_product_id);
             }
 
-            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
+            // Only reopen if it's also not in_process/discontinued
+            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED && !in_array($product->state, [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])) {
                 ReopenWebpage::run($product->webpage);
             }
 
@@ -194,7 +199,7 @@ class UpdateProduct extends OrgAction
                 CloseWebpage::make()->action(
                     $product->webpage,
                     [
-                        'redirect_type' => RedirectTypeEnum::TEMPORAL,
+                        'redirect_type' => RedirectTypeEnum::PERMANENT,
                         'to_webpage_id' => $product->webpage->website->storefront_id
                     ]
                 );
@@ -227,6 +232,12 @@ class UpdateProduct extends OrgAction
                     'description' => [$product->shop->language->code => Arr::pull($modelData, 'description')]
                 ]
             ]);
+
+            if ($product->master_product_id) {
+                MasterAssetHydrateMissingChildDescription::dispatch(
+                    MasterAsset::find($product->master_product_id)
+                )->delay($this->hydratorsDelay);
+            }
         }
 
         if (Arr::has($changed, 'description_extra')) {
@@ -332,6 +343,19 @@ class UpdateProduct extends OrgAction
 
         if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $oldState != $product->state) {
             $product = ProductHydrateAvailableQuantity::run($product);
+        }
+
+        if ($oldState != $product->state && $product->webpage) {
+
+            if ($product->state == ProductStateEnum::DISCONTINUED) {
+                CloseDiscontinuedWebpage::run($product->webpage);
+            }
+
+            if ($product->state == ProductStateEnum::ACTIVE && $oldState == ProductStateEnum::DISCONTINUED) {
+                ReopenDiscontinuedWebpage::run($product->webpage);
+            }
+
+
         }
 
         return $product;

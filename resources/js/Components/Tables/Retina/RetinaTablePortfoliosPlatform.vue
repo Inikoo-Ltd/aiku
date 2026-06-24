@@ -57,6 +57,7 @@ import { routeType } from "@/types/route"
 import { InputNumber, InputText, Message } from "primevue"
 import { EditorContent } from "@tiptap/vue-3"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import RetinaMatchStoredItemPicker from "@/Components/Tables/Retina/RetinaMatchStoredItemPicker.vue"
 
 library.add(
 	faHandshake,
@@ -107,8 +108,6 @@ const props = defineProps<{
 		products: number[]
 	}
 	routes: {
-		batch_upload: routeType
-		batch_match: routeType
 		fetch_products: routeType
 		single_create_new: routeType
 		single_match: routeType
@@ -140,12 +139,12 @@ function portfolioRoute(product: Product) {
 	}
 
 	const customerSalesChannelId = route().params["customerSalesChannel"] || props.customerSalesChannel?.slug
-	
+
 	if (!customerSalesChannelId) {
 		console.warn("customerSalesChannel ID is missing")
 		return "#"
 	}
-	
+
 	return route("retina.dropshipping.customer_sales_channels.portfolios.show", [
 		customerSalesChannelId,
 		product.id,
@@ -758,6 +757,7 @@ const percentageIncrease = ref(0);
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div> -->
 			</div>
+
 		</template>
 
 		<!-- Column: Status (repair) -->
@@ -1123,6 +1123,23 @@ const percentageIncrease = ref(0);
 					"
 					:disabled="disableButtons(item)" />
 			</div>
+		</template>
+
+		<!-- Column: Actions (fulfilment portfolios) -->
+		<template #cell(actions)="{ item }" v-if="!disabled">
+			<div class="mx-auto flex flex-wrap justify-center gap-2">
+				<RetinaMatchStoredItemPicker
+					v-if="(item as any).type === 'StoredItem'"
+					:portfolioId="item.id"
+					:currentItemId="(item as any).item_id"
+					:currentItemData="(item as any).item_id ? { id: (item as any).item_id, reference: item.code, name: item.name, total_quantity: item.quantity_left ?? 0 } : null" />
+			</div>
+		</template>
+
+		<!-- Column: Platform SKU (TikTok only) -->
+		<template #cell(platform_sku)="{ item }">
+			<span v-if="item.platform_sku" class="text-sm font-mono text-gray-700">{{ item.platform_sku }}</span>
+			<span v-else class="text-sm text-gray-400 italic">—</span>
 		</template>
 
 		<!-- Column: Actions 3 -->

@@ -43,6 +43,7 @@ const props = withDefaults(defineProps<{
     loading: 'lazy',
     decoding: 'async',
   }),
+  alt: 'image',
 })
 
 const emits = defineEmits<{
@@ -175,8 +176,8 @@ const sizes = computed(() => {
       :srcset="original"
       :sizes="sizes"
       :alt="alt"
-      :width="width"
-      :height="height"
+      :width="baseWidth"
+      :height="baseHeight"
       :style="{ height: 'inherit', ...style }"
       :class="imageCover ? 'w-full h-full object-cover' : undefined"
       v-bind="imgAttributes"

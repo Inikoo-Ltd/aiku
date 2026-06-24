@@ -12,7 +12,6 @@ namespace App\Actions\Helpers\Redirects;
 use App\Actions\GrpAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\Fulfilment\StoredItemAudit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -46,5 +45,5 @@ class RedirectPalletReturn extends GrpAction
 
         return $this->handle($palletReturn);
     }
-    
+
 }

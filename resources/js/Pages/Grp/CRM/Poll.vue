@@ -71,92 +71,106 @@ const component = computed(() => {
 
 
 <template>
+
     <Head :title="capitalize(title)" />
+
     <PageHeading :data="pageHead">
         <template #afterTitle2>
-            <FontAwesomeIcon
-                v-if="props.data.in_registration_required"
-                v-tooltip="trans('Is required in Registration page')"
-                :icon="faExclamationCircle"
-                class="text-red-500 text-xl animate-pulse"
-            />
+            <div v-if="props.data.in_registration_required"
+                class="flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm text-red-600">
+                <FontAwesomeIcon :icon="faExclamationCircle" class="animate-pulse" />
+                <span>{{ trans("Required in registration") }}</span>
+            </div>
         </template>
+
         <template #otherBefore>
-            <ModalConfirmationDelete
-                :routeDelete="{
-                    name: 'grp.models.poll.delete',
-                    parameters: {
-                        poll: data.id
-                    }
-                }"
-                :title="trans('Are you sure you want to this poll?')"
-                isFullLoading
-            >
-                <template #default="{ isOpenModal, changeModel }">
-                    <Button
-                        @click="changeModel"
-                        icon="fal fa-trash-alt"
-                        type="negative"
-                    />
+            <ModalConfirmationDelete :routeDelete="{
+                name: 'grp.models.poll.delete',
+                parameters: {
+                    poll: data.id
+                }
+            }" :title="trans('Are you sure you want to delete this poll?')" isFullLoading>
+                <template #default="{ changeModel }">
+                    <Button @click="changeModel" icon="fal fa-trash-alt" type="negative" />
                 </template>
             </ModalConfirmationDelete>
         </template>
     </PageHeading>
 
-    <div class="max-w-2xl mx-auto px-4 pt-4 italic text-sm text-gray-400">
-        {{ trans("Preview how it looks in registration form") }}
-    </div>
+    <div class="">
 
-    <div class="w-full max-w-xl mx-auto my-8" :class="data.in_registration ? 'opacity-60' : ''">
-
-        <div class="block text-sm font-medium text-gray-700">
-            <FontAwesomeIcon v-if="data.in_registration_required" v-tooltip="trans('Required')" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-            {{ data.label }}
-        </div>
-
-        <div class="mt-2">
-            <Select
-                v-if="data.type_value === 'option'"
-                xv-model="form.poll_replies[idx].answer"
-                :modelValue="'ewewqewqeq'"
-                xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-                :options="data.options"
-                optionLabel="label"
-                optionValue="id"
-                :placeholder="`Please Choose One`"
-                class="w-full" />
-            <Textarea
-                v-else
-                :modelValue="'hehehehe'"
-                xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-                rows="5"
-                cols="30"
-                placeholder="Your answer…"
-                class="w-full border rounded-md p-2" />
-        </div>
-    </div>
-
-    <hr class="my-5 border border-gray-200" />
-
-    <div class="xmx-auto grid max-w-7xl lg:grid-cols-2 mb-10">
-        <div class="px-6 xpb-24 xpt-16 xsm:pb-32 xsm:pt-20 lg:px-8 xlg:pt-32">
-            <div class="xmx-auto max-w-2xl lg:mr-0 lg:max-w-lg">
-                <dl class="mt-16 grid max-w-xl grid-cols-1 gap-8 sm:mt-20 sm:grid-cols-2 xl:mt-16">
-                    <div v-for="stat in stats" :key="stat.id" class="flex flex-col  border-l border-gray-900/10 pl-6">
-                        <dt class="text-sm/6 text-gray-600">{{ stat.name }}</dt>
-                        <dd class="text-2xl font-semibold tracking-tight">{{ stat.value }}</dd>
+        <!-- Preview Card -->
+        <div class=" max-w-2xl my-3 mx-4 rounded border border-gray-200 bg-white p-5 shadow-sm">
+            <div class="mb-4 flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                        {{ trans("Preview") }}
                     </div>
-                </dl>
+
+                    <div class="mt-1 text-sm text-gray-500">
+                        {{ trans("Registration form appearance") }}
+                    </div>
+                </div>
+
+                <div
+                    class="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600">
+                    {{
+                        data.type_value === "option"
+                            ? trans("Multiple Choice")
+                            : trans("Open Answer")
+                    }}
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4"
+                :class="data.in_registration ? 'opacity-70' : ''">
+                <!-- Label -->
+                <div class="mb-3 flex items-start gap-2">
+                    <FontAwesomeIcon v-if="data.in_registration_required" icon="fas fa-asterisk"
+                        class="mt-1 text-[9px] text-red-500" />
+
+                    <label class="text-sm font-medium leading-5 text-gray-800">
+                        {{ data.label }}
+                    </label>
+                </div>
+
+                <!-- Input -->
+                <Select v-if="data.type_value === 'option'" :modelValue="null" :options="data.options"
+                    optionLabel="label" optionValue="id" :placeholder="trans('Please choose one')" class="w-full" />
+
+                <Textarea v-else rows="4" :placeholder="trans('Your answer...')"
+                    class="w-full rounded-xl border border-gray-200 p-3 text-sm" />
+
+                <!-- Meta -->
+                <div class="mt-4 flex items-center justify-between border-t border-gray-200 pt-3">
+                    <div class="text-xs text-gray-500">
+                        {{ data.type }}
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <div v-if="data.in_registration_required"
+                            class="rounded-full bg-red-100 px-2 py-1 text-[11px] font-medium text-red-600">
+                            {{ trans("Required") }}
+                        </div>
+
+                        <div v-if="data.in_registration"
+                            class="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-medium text-amber-700">
+                            {{ trans("Registration") }}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+
+        <!-- Tabs -->
+        <template v-if="data.type !== 'open_question'">
+            <div class=" bg-white border-t">
+                <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+
+                <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
+                    :handleTabUpdate class="py-6" />
+            </div>
+        </template>
     </div>
-    <template v-if="data.type !== 'open_question'">
-        <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-        <component
-            :is="component"
-            :data="props[currentTab as keyof typeof props]"
-            :tab="currentTab"
-            :handleTabUpdate
-            />
-    </template>
 </template>

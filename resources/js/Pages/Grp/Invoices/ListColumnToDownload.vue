@@ -7,14 +7,14 @@ import { ref } from 'vue'
 
 const props = defineProps<{
     routeDownload: routeType | null
-    listColumn: {
+    listColumn?: {
         label: string
         is_checked: boolean
         value: string
     }[]
 }>()
 
-const selectedCheck = ref<string[]>(props.listColumn.map(check => check.is_checked ? check.value : null).filter(Boolean) as string[])
+const selectedCheck = ref<string[]>((props.listColumn || []).map(check => check.is_checked ? check.value : null).filter(Boolean) as string[])
 
 const compSelectedDeck = computed(() => {
     const xxx = selectedCheck.value?.reduce((acc, curr) => {
@@ -38,7 +38,7 @@ const compSelectedDeck = computed(() => {
 
         <div class="flex flex-col gap-2">
             <div>{{ ctrans("Select additional information to included:") }}</div>
-            <div v-for="check of props.listColumn" :key="check.value" class="flex items-center gap-2">
+            <div v-for="check of (props.listColumn || [])" :key="check.value" class="flex items-center gap-2">
                 <Checkbox v-model="selectedCheck" :inputId="check.value" :name="check.value" :value="check.value" />
                 <label :for="check.value" class="cursor-pointer">{{ check.label }}</label>
             </div>

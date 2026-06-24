@@ -3,10 +3,10 @@
 	"slug": "header-1",
 	"code": "header-1",
 	"name": "Header 1",
-	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
+	"website_type" : ["b2b","b2c","fulfilment"],
 	"is_in_test" : false,
 	"component": "header",
-	"fixed" : true,
+	"fixed" : false,
 	"data": {
 		"fieldValue": {
 			"container": {
@@ -137,115 +137,6 @@
 							"width": {
 								"value": "80",
 								"unit": "px"
-							}
-						}
-					}
-				}
-			},
-			"button_1": {
-				"link": {
-					"type": "external",
-					"url": "ancientwisdom.biz/login.sys",
-					"id": null,
-					"workshop_route": ""
-				},
-				"text": "Become Gold Reward Member",
-				"visible": "logout",
-				"container": {
-					"properties": {
-						"text": {
-							"color": "rgba(255, 255, 255, 1)"
-						},
-						"border": {
-							"top": {
-								"value": 0
-							},
-							"left": {
-								"value": 0
-							},
-							"unit": "px",
-							"color": "rgba(231, 231, 231, 1)",
-							"right": {
-								"value": 0
-							},
-							"bottom": {
-								"value": 0
-							},
-							"rounded": {
-								"unit": "px",
-								"topleft": {
-									"value": 5
-								},
-								"topright": {
-									"value": 5
-								},
-								"bottomleft": {
-									"value": 5
-								},
-								"bottomright": {
-									"value": 5
-								}
-							}
-						},
-						"margin": {
-							"top": {
-								"value": 0
-							},
-							"left": {
-								"value": 0
-							},
-							"unit": "px",
-							"right": {
-								"value": 0
-							},
-							"bottom": {
-								"value": 0
-							}
-						},
-						"padding": {
-							"top": {
-								"value": 5
-							},
-							"left": {
-								"value": 20
-							},
-							"unit": "px",
-							"right": {
-								"value": 20
-							},
-							"bottom": {
-								"value": 5
-							}
-						},
-						"background": {
-							"type": "color",
-							"color": "rgba(10, 10, 10, 1)",
-							"image": {
-								"original": null
-							}
-						}
-					}
-				}
-			},
-			"mobile": {
-				"profile": {
-					"icon": ["fal", "user-circle"],
-					"container": {
-						"properties": {
-							"text": {
-								"color": "rgb(0, 0, 0)",
-								"fontSize" : "1.5rem"
-							}
-						}
-					}
-				},
-				"menu": {
-					"icon": ["fal", "bars"],
-					"container": {
-						"properties": {
-							"text": {
-								"color": "rgb(0, 0, 0)",
-								"fontSize" : 20
 							}
 						}
 					}

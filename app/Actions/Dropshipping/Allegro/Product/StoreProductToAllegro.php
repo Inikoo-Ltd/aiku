@@ -57,7 +57,7 @@ class StoreProductToAllegro extends RetinaAction
             $product = $portfolio->item;
 
             $getRecommendedCategory = $allegroUser->getRecommendedCategory($product->family->name);
-            $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id');
+            $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id', '12');
 
             $getParameters = $allegroUser->getCategoryParameters($categoryId);
 
@@ -93,9 +93,17 @@ class StoreProductToAllegro extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
-            $targetCurrency = Currency::where('code', 'PLN')->first();
-            $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
-            $customerPrice = $portfolio->customer_price * $plnPriceExchange;
+            if (Arr::get($allegroUser->data, 'marketplace_id') === 'allegro-pl') {
+                $targetCurrency = Currency::where('code', 'PLN')->first();
+                $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
+                $customerPrice = $portfolio->customer_price * $plnPriceExchange;
+            } else {
+                $targetCurrency = $shop->currency;
+                $customerPrice = $portfolio->customer_price;
+            }
+
+            $responsibleProducerId = Arr::get($allegroUser->data, 'responsible_producer_id');
+            $responsiblePersonId = Arr::get($allegroUser->data, 'responsible_person_id');
 
             $offerData = [
                 'productSet' => [
@@ -105,10 +113,20 @@ class StoreProductToAllegro extends RetinaAction
                         ],
                         'quantity' => [
                             'value' => $availableQuantity
+                        ],
+                        'responsibleProducer' => [
+                            'id' => $responsibleProducerId
+                        ],
+                        'responsiblePerson' => [
+                            'id' => $responsiblePersonId
+                        ],
+                        'safetyInformation' => [
+                            'type' => 'TEXT',
+                            'description' => __('This product is safe for use.')
                         ]
                     ]
                 ],
-                'name'     => $portfolio->customer_product_name,
+                'name'     => Str::limit($portfolio->customer_product_name, 75),
                 'category' => [
                     'id' => $categoryId
                 ],
@@ -116,7 +134,7 @@ class StoreProductToAllegro extends RetinaAction
                     'format' => 'BUY_NOW',
                     'price'  => [
                         'amount'   => number_format((float) $customerPrice, 2, '.', ''),
-                        'currency' => 'PLN'
+                        'currency' => $targetCurrency->code
                     ]
                 ],
                 'stock' => [
@@ -168,11 +186,11 @@ class StoreProductToAllegro extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             } else {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $allegroOffer
                 ]);
@@ -187,7 +205,7 @@ class StoreProductToAllegro extends RetinaAction
             ]);
 
             if ($logs) {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $e->getMessage()
                 ]);

@@ -12,7 +12,6 @@ namespace App\Actions\Fulfilment\StoredItem\UI;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\StoredItemsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;

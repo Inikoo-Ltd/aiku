@@ -16,7 +16,6 @@ use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
-use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiDropshipping;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
@@ -39,9 +38,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/inventory', IndexRetinaStoredItems::class)->name('inventory');
 
 
-
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
-
     Route::get('/', IndexFulfilmentCustomerSalesChannels::class)->name('index');
 
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
@@ -62,7 +59,6 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
     });
 
     Route::prefix('{customerSalesChannel}')->group(function () {
-
         Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('show');
         Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
 
@@ -91,16 +87,9 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
         Route::prefix('api')->as('api.')->group(function () {
             Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
-            // Route::get('/history', IndexRetinaApiDropshipping::class)->name('index');
-
         });
-
-
     });
-
 });
-
-
 
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {

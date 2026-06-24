@@ -11,7 +11,7 @@ class SaveWebsiteRobotsTxt extends OrgAction
     public function handle(Website $website): void
     {
         $scheme  = app()->environment('production') ? 'https' : 'http';
-        $baseUrl = $scheme . '://' . $website->domain;
+        $baseUrl = $scheme . '://www.' . $website->domain;
 
         $groups = [
             'products',
@@ -26,12 +26,14 @@ class SaveWebsiteRobotsTxt extends OrgAction
 
         $lines = [
             'User-agent: *',
+            'Disallow: /*?variant',
             'Disallow: /*.pdf$',
             'Disallow: /return_policy',
             'Disallow: /privacy_policy',
             'Disallow: /cookie_policy',
             'Disallow: /cookies',
             'Disallow: /attachment.php*',
+            'Disallow: /attachment/*',
             'Disallow: /asset_label*',
             'Disallow: /page.php*',
             'Disallow: /*.sys$',

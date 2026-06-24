@@ -81,7 +81,8 @@ import {
     faUserAlien,
     faTombstone as faTombstoneLight,
     faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-    faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield, faCircle, faExchange
+    faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield, faCircle, faExchange,
+    faTrophy,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -96,7 +97,8 @@ import {
     faStar,
     faCheckCircle,
     faTimesCircle,
-    faSkull as fasSkull, faMonument, faCubes, faExclamationTriangle as fasExclamationTriangle, faCandleHolder, faMedal
+    faSkull as fasSkull, faMonument, faCubes, faExclamationTriangle as fasExclamationTriangle, faCandleHolder,
+    faMedal,
 } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
@@ -186,7 +188,8 @@ library.add(
     faUserAlien,
     faTombstoneLight,
     faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-    faBarcode
+    faBarcode,
+    faTrophy,
 )
 
 provide("layout", useLayoutStore())

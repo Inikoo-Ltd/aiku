@@ -14,11 +14,12 @@ import {
     faSkull,
     faRocket,
     faExternalLink,
-    faFolderDownload
+    faFolderDownload,
+    faDownload
 } from "@fal"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, ref, provide} from "vue"
+import { computed, ref, provide } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -38,6 +39,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import { useForm } from '@inertiajs/vue3'
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 
 library.add(
@@ -54,7 +56,8 @@ library.add(
     faSkull,
     faRocket,
     faExternalLink,
-    faFolderDownload
+    faFolderDownload,
+    faDownload
 )
 
 
@@ -66,6 +69,7 @@ const props = defineProps<{
         navigation: object
     }
     redirects: {}
+    download_route: routeType
     route_redirects: {
         submit: {
             name: string
@@ -90,6 +94,31 @@ const component = computed(() => {
     return components[currentTab.value]
 
 })
+
+const isDownloadingCsv = ref(false)
+
+const downloadCsv = () => {
+    if (isDownloadingCsv.value || !props.download_route?.name) return
+
+    isDownloadingCsv.value = true
+    
+
+    setTimeout(() => {
+        notify({
+            title: trans('Export CSV'),
+            text: trans('Download will start shortly...'),
+            type: 'info',
+        })
+        const url = route(props.download_route.name, { ...props.download_route.parameters, type: 'csv' })
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', '')
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        isDownloadingCsv.value = false
+    }, 1000)
+}
 
 const openModal = ref(false)
 const form = useForm({
@@ -126,7 +155,15 @@ const submitForm = () => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button type="create" label="Redirect" @click="openModal = true" />
+            <Button
+                v-if="download_route?.name"
+                :icon="faDownload"
+                :label="ctrans('Export CSV')"
+                type="tertiary"
+                :loading="isDownloadingCsv"
+                @click="downloadCsv"
+            />
+            <Button type="create" :label="trans('Redirect')" @click="openModal = true" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
@@ -140,13 +177,13 @@ const submitForm = () => {
         <slot name="modal" :closeModal="() => openModal = false">
             <div class="space-y-2">
                 <!-- Modal Title -->
-                <h2 class="text-xl font-semibold pb-2 border-b">Create Redirect</h2>
+                <h2 class="text-xl font-semibold pb-2 border-b">{{ trans("Create Redirect") }}</h2>
 
                 <!-- Form -->
                 <form @submit.prevent="submitForm" class="space-y-3">
                     <!-- From URL -->
                     <div>
-                        <div class="block text-sm font-medium py-2">From URL:</div>
+                        <div class="block text-sm font-medium py-2">{{ trans("From URL:") }}</div>
                         <PureInput
                             v-model="form.from_url"
                             placeholder="e.g. /old-page"
@@ -160,7 +197,7 @@ const submitForm = () => {
 
                     <!-- To URL -->
                     <div>
-                        <div class="block text-sm font-medium py-2">Target URL:</div>
+                        <div class="block text-sm font-medium py-2">{{ trans("Target URL:") }}</div>
                         <PureMultiselectInfiniteScroll
                             v-model="form.to_url"
                             :fetchRoute="route_redirects.fetch_live_webpages"

@@ -59,11 +59,21 @@ class StoreOfflineMessage
 
         $session->update([
             'status' => ChatSessionStatusEnum::ACTIVE,
+            'closed_at' => null,
         ]);
 
-        $session->assignments()->update([
-            'status' => ChatAssignmentStatusEnum::ACTIVE,
-        ]);
+        /** @var \App\Models\CRM\Livechat\ChatAssignment|null $lastAssignment */
+        $lastAssignment = $session->assignments()
+            ->where('status', ChatAssignmentStatusEnum::RESOLVED->value)
+            ->latest('resolved_at')
+            ->first();
+
+        if ($lastAssignment) {
+            $lastAssignment->update([
+                'status'      => ChatAssignmentStatusEnum::ACTIVE->value,
+                'resolved_at' => null,
+            ]);
+        }
 
         $this->logReopenEvent($session, $data);
     }

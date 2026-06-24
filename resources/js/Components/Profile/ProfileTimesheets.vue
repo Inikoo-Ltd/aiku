@@ -1,8 +1,6 @@
 <script setup lang='ts'>
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Row from 'primevue/row'
-import ColumnGroup from 'primevue/columngroup'
 
 import { Link } from '@inertiajs/vue3'
 import { useFormatTime, useSecondsToMS } from '@/Composables/useFormatTime'
@@ -12,27 +10,32 @@ import { Table } from '@/types/Table'
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
-const props = defineProps<{
+defineProps<{
     data: Table
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
 
 const timesheetRoute = (timesheet: Timesheet) => {
+    const params = route().params as Record<string, string | undefined>
+    const organisation = params.organisation ?? timesheet.organisation_slug
+
     switch (route().current()) {
         case "grp.org.hr.employees.show":
             return route(
                 "grp.org.hr.employees.show.timesheets.show",
-                [route().params["organisation"],
-                route().params["employee"],
-                timesheet?.id])
+                {
+                    organisation,
+                    employee: params.employee as string,
+                    timesheet: timesheet.id
+                })
         default:
             return route(
                 "grp.org.hr.timesheets.show",
-                [
-                    route().params["organisation"],
-                    timesheet?.id
-                ])
+                {
+                    organisation,
+                    timesheet: timesheet.id
+                })
     }
 }
 </script>
@@ -40,7 +43,6 @@ const timesheetRoute = (timesheet: Timesheet) => {
 <template>
     <div>
         <!-- Profile Visit Logs -->
-
         <DataTable
             v-if="data?.data?.length"
             ref="_dt"
@@ -57,8 +59,8 @@ const timesheetRoute = (timesheet: Timesheet) => {
             <Column field="date" header="Username" sortable class="overflow-hidden transition-all">
                 <template #body="{ data }">
                     <div class="text-gray-500">
-                        <Link :href="timesheetRoute(timesheet)" class="whitespace-nowrap primaryLink">
-                            {{ useFormatTime(timesheet.date, { localeCode: locale.language.code }) }}
+                        <Link :href="timesheetRoute(data)" class="whitespace-nowrap primaryLink">
+                            {{ useFormatTime(data.date, { localeCode: locale.language.code }) }}
                         </Link>
                     </div>
                 </template>

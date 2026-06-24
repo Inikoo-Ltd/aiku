@@ -116,7 +116,10 @@ class SendNewOrderEmailToCustomer extends OrgAction
 
         $productTransactions = $order->transactions()
             ->where('model_type', 'Product')
-            ->get();
+            ->get()
+            ->sortBy(fn ($transaction) => $transaction->historicAsset?->code)
+            ->values();
+
         $currency            = $order->shop->currency->symbol;
         foreach ($productTransactions as $transaction) {
 

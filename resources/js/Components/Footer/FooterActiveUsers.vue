@@ -45,7 +45,7 @@ const layout = useLayoutStore()
                                 >
                                     <Image :src="dataUser.avatar_thumbnail" :alt="dataUser.username" class="h-5 rounded-full shadow overflow-hidden" />
                                     <div class="flex flex-col items-start">
-                                        <span class="text-xs">{{ dataUser?.contact_name || dataUser?.username }}</span>
+                                        <span class="text-xs text-left">{{ dataUser?.contact_name || dataUser?.username }}</span>
                                         <div class="relative">
                                             <Transition name="spin-to-down">
                                                 <div v-if="dataUser.current_page?.label" :key="dataUser.current_page?.label" class="text-xxs opacity-70 text-left">

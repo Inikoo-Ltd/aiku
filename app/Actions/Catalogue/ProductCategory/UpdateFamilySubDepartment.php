@@ -32,14 +32,14 @@ class UpdateFamilySubDepartment extends OrgAction
     public function handle(ProductCategory $family, array $modelData): ProductCategory
     {
 
-        $newSubDepartmentId = ProductCategory::find(Arr::get($modelData, 'sub_department_id'));
+        $newSubDepartment = ProductCategory::find(Arr::get($modelData, 'sub_department_id'));
 
         $oldDepartment    = $family->department ?? null;
         $oldSubDepartment = $family->subDepartment ?? null;
 
-        data_set($modelData, 'parent_id', $newSubDepartmentId->id);
-        data_set($modelData, 'sub_department_id', $newSubDepartmentId->id);
-        data_set($modelData, 'department_id', $newSubDepartmentId->department_id);
+        data_set($modelData, 'parent_id', $newSubDepartment->id);
+        data_set($modelData, 'sub_department_id', $newSubDepartment->id);
+        data_set($modelData, 'department_id', $newSubDepartment->department_id);
 
         $family  = $this->update($family, $modelData);
         $changes = $family->getChanges();
@@ -56,11 +56,11 @@ class UpdateFamilySubDepartment extends OrgAction
             if ($family->webpage) {
                 UpdateWebpageCanonicalUrl::dispatch($family->webpage)->delay(2);
             }
-            DepartmentHydrateProducts::dispatch($family->department);
+            DepartmentHydrateProducts::dispatch($family->department_id)->delay(2);
             ProductCategoryHydrateFamilies::dispatch($family->department);
             if ($oldDepartment) {
-                DepartmentHydrateProducts::dispatch($oldDepartment);
-                ProductCategoryHydrateFamilies::dispatch($oldDepartment);
+                DepartmentHydrateProducts::dispatch($oldDepartment->id)->delay(2);
+                ProductCategoryHydrateFamilies::dispatch($oldDepartment)->delay(2);
             } else {
                 ShopHydrateFamiliesWithNoDepartment::dispatch($family->shop);
                 OrganisationHydrateFamiliesWithNoDepartment::dispatch($family->organisation);
@@ -72,11 +72,11 @@ class UpdateFamilySubDepartment extends OrgAction
             if ($family->webpage) {
                 UpdateWebpageCanonicalUrl::dispatch($family->webpage)->delay(2);
             }
-            ProductCategoryHydrateFamilies::dispatch($newSubDepartmentId);
-            SubDepartmentHydrateProducts::dispatch($newSubDepartmentId);
+            ProductCategoryHydrateFamilies::dispatch($newSubDepartment);
+            SubDepartmentHydrateProducts::dispatch($newSubDepartment->id)->delay(2);
             if ($oldSubDepartment) {
                 ProductCategoryHydrateFamilies::dispatch($oldSubDepartment);
-                SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
+                SubDepartmentHydrateProducts::dispatch($oldSubDepartment->id)->delay(2);
             }
         }
 

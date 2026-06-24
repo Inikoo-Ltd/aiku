@@ -8,15 +8,13 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
-use App\Actions\CRM\Prospect\Mailshots\ProspectMailshotSettings;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\InertiaAction;
 use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
-use App\Enums\Comms\SenderEmail\SenderEmailStateEnum;
 use App\Enums\UI\CRM\ProspectsMailshotsTabsEnum;
-use App\Http\Resources\Mail\MailshotsResource;
+use App\Http\Resources\Mail\ProspectMailshotsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
@@ -76,8 +74,28 @@ class IndexProspectMailshots extends InertiaAction
         }
 
         return $queryBuilder
-            ->defaultSort('mailshots.slug')
-            ->allowedSorts(['slug', 'subject', 'name', 'date'])
+            ->defaultSort('-mailshots.date')
+            ->select([
+                'mailshots.state',
+                'mailshots.date',
+                'mailshots.slug',
+                'mailshots.id',
+                'mailshots.subject',
+                'mailshots.name',
+                'mailshot_stats.number_deliveries_success',
+                'mailshot_stats.number_try_send_success',
+                'mailshot_stats.number_delivered_open_success',
+                'mailshot_stats.number_dispatched_emails as dispatched_emails',
+                'mailshot_stats.number_dispatched_emails_state_sent as sent',
+                'mailshot_stats.number_dispatched_emails_state_delivered as delivered',
+                'mailshot_stats.number_dispatched_emails_state_hard_bounce as hard_bounce',
+                'mailshot_stats.number_dispatched_emails_state_soft_bounce as soft_bounce',
+                'mailshot_stats.number_dispatched_emails_state_opened as opened',
+                'mailshot_stats.number_dispatched_emails_state_clicked as clicked',
+                'mailshot_stats.number_dispatched_emails_state_spam as spam',
+                'mailshot_stats.number_dispatched_emails_state_unsubscribed as unsubscribed',
+            ])
+            ->allowedSorts(['subject', 'name', 'date', 'number_try_send_success', 'hard_bounce', 'number_deliveries_success', 'soft_bounce', 'dispatched_emails', 'delivered', 'opened', 'clicked', 'spam', 'unsubscribed'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -121,17 +139,18 @@ class IndexProspectMailshots extends InertiaAction
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'date', label: __('Date'), sortable: true)
-                ->column(key: 'number_recipients', label: __('recipients'))
-                ->column(key: 'percentage_bounced', label: __('bounces'))
-                ->column(key: 'number_delivered', label: __('delivered'))
-                ->column(key: 'percentage_opened', label: __('opened'))
-                ->column(key: 'percentage_clicked', label: __('clicked'))
-                ->column(key: 'percentage_spam', label: __('spam'))
-                ->column(key: 'percentage_unsubscribe', label: __('unsubscribed'))
-                ->column(key: 'actions', label: ' ')
-                ->defaultSort('slug');
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'number_try_send_success', label: '', icon: 'fal fa-paper-plane', tooltip: __('Sent emails'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'hard_bounce', label: '', icon: 'fal fa-skull', tooltip: __('Hard Bounces'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'soft_bounce', label: '', icon: 'fal fa-dungeon', tooltip: __('Soft Bounces'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_deliveries_success', label: '', icon: 'fal fa-inbox-in', tooltip: __('Delivered'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'opened', label: '', icon: 'fal fa-envelope-open', tooltip: __('Opened'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'clicked', label: '', icon: 'fal fa-hand-pointer', tooltip: __('Clicked'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'spam', label: '', icon: 'fal fa-dumpster-fire', tooltip: __('Spam'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unsubscribed', label: '', icon: 'fal fa-thumbs-down', tooltip: __('Unsubscribed'), canBeHidden: false, sortable: true, searchable: true)
+                ->defaultSort('-date');
         };
     }
 
@@ -186,8 +205,8 @@ class IndexProspectMailshots extends InertiaAction
                 //     : Inertia::lazy(fn () => ProspectMailshotSettings::run($shop)),
 
                 ProspectsMailshotsTabsEnum::MAILSHOTS->value => $this->tab == ProspectsMailshotsTabsEnum::MAILSHOTS->value ?
-                    fn () => MailshotsResource::collection($mailshots)
-                    : Inertia::lazy(fn () => MailshotsResource::collection($mailshots)),
+                    fn () => ProspectMailshotsResource::collection($mailshots)
+                    : Inertia::lazy(fn () => ProspectMailshotsResource::collection($mailshots)),
 
 
             ]

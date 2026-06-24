@@ -12,7 +12,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'insert', url: string): void
+  (e: 'insert', url: string, alt?: string): void
 }>()
 
 const visible = ref(props.show)
@@ -29,13 +29,17 @@ function closeDialog() {
   emit('close')
 }
 
-function insertImage(url: string) {
-  emit('insert', url)
+function insertImage(url: string, alt?: string) {  
+  emit('insert', url, alt)
   closeDialog()
 }
 
 function onPick(e: any) {
-  insertImage(e[0].source.original)
+  insertImage(e[0].source.original, e[0].alt || e[0].name)
+}
+
+function onSuccessUpload(value: any) {
+  insertImage(value.data[0].source.original, value.data[0].alt || value.data[0].name)
 }
 </script>
 
@@ -52,7 +56,7 @@ function onPick(e: any) {
       :maxSelected="1"
       :closePopup="closeDialog"
       @submitSelectedImages="onPick"
-      @onSuccessUpload="(value) => insertImage(value.data[0].source.original)"
+      @onSuccessUpload="onSuccessUpload"
       :uploadRoute="uploadImageRoute"
     />
   </Dialog>

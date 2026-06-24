@@ -48,8 +48,6 @@ class ProductOfVariantResource extends JsonResource
             'unit'              => $product->unit,
         ];
 
-        $isOnDemand = $product->orgStocks()->where('is_on_demand', true)->exists();
-
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
         if (is_string($product->offers_data)) {
@@ -61,7 +59,7 @@ class ProductOfVariantResource extends JsonResource
         $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
         $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
 
-        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
+        [$marginDiscounted, , $profitDiscounted, $profitPerUnitDiscounted, , $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
 
 
         $back_in_stock = false;
@@ -113,7 +111,7 @@ class ProductOfVariantResource extends JsonResource
             'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
-            'is_on_demand'      => $isOnDemand,
+            'is_on_demand'      => $product->is_on_demand,
             'is_back_in_stock'  => $product->backInStockReminders,
             'back_in_stock'     => $back_in_stock,
 

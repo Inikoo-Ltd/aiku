@@ -74,12 +74,7 @@ class SendChatMessage
             $this->processMessageFile($chatMessage, $modelData['file']);
         }
 
-        $this->updateSessionTimestamps(
-            $chatSession,
-            $modelData['sender_type']
-        );
-
-        $this->logMessageEvent(
+        ProcessChatMessageSideEffects::dispatch(
             $chatSession,
             $modelData['sender_type'],
             $modelData['sender_id'] ?? null,

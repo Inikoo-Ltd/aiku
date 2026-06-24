@@ -27,6 +27,7 @@ enum FamilyTabsEnum: string
     case HISTORY = 'history';
     case CUSTOMERS = 'customers';
     case RELATED_PRODUCTS    = 'related_products';
+    case RELATED_PRODUCT_CATEGORY    = 'related_product_category';
 
     public function blueprint(): array
     {
@@ -72,8 +73,12 @@ enum FamilyTabsEnum: string
                 'icon'  => 'fal fa-shapes',
             ],
             FamilyTabsEnum::RELATED_PRODUCTS => [
-                'title' => __('Related Products'),
+                'title' => __('Related products'),
                 'icon'  => 'fal fa-repeat',
+            ],
+            FamilyTabsEnum::RELATED_PRODUCT_CATEGORY => [
+                'title' => __('Related families'),
+                'icon'  => 'fal fa-folder-tree',
             ],
         };
     }

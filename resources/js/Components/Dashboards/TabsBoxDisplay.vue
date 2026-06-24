@@ -164,6 +164,9 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
 const boxTotal = (box: { tabs: { value?: string | number }[] }) =>
     box.tabs.reduce((sum, t) => sum + Number(t.value || 0), 0)
 
+const boxAmountTotal = (box: { tabs: { information?: { label?: string | number, type?: string } }[] }) =>
+    box.tabs.reduce((sum, t) => sum + (t.information?.type === 'currency' ? Number(t.information.label || 0) : 0), 0)
+
 const childrenLabel = computed(() => {
     if (layoutStore.currentRoute === 'grp.dashboard.show') return trans('Organisation')
     if (layoutStore.currentRoute === 'grp.org.dashboard.show') return trans('Shop')
@@ -223,7 +226,7 @@ const clickVisitRoute = (visitRoute: {
             >
                 <div class="text-center mb-2 text-xs font-semibold">
                     <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="" fixed-width aria-hidden="true" />
-                    {{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }})</template>
+                    {{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }}<template v-if="boxAmountTotal(box) > 0"> - {{ renderLabelBasedOnType(boxAmountTotal(box), 'currency', { currency_code: box.currency_code }) }}</template>)</template>
                 </div>
 
                 <div class="flex gap-x-4 justify-center">
@@ -357,7 +360,7 @@ const clickVisitRoute = (visitRoute: {
                 <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center">
                     <div class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 flex-1">
                         <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="text-gray-500" fixed-width aria-hidden="true" />
-                        <span>{{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }})</template></span>
+                        <span>{{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }}<template v-if="boxAmountTotal(box) > 0"> - {{ renderLabelBasedOnType(boxAmountTotal(box), 'currency', { currency_code: box.currency_code }) }}</template>)</template></span>
                     </div>
                 </div>
 

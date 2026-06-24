@@ -1,16 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faInfoCircle } from "@fas";
 import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link, router } from "@inertiajs/vue3";
 import { trans } from "laravel-vue-i18n";
-// import TranslationBox from '@/Components/TranslationBox.vue';
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
 import Message from "primevue/message";
-import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue";
-import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
@@ -18,8 +14,9 @@ import { faExternalLink } from '@far';
 import { routeType } from "@/types/route"
 
 library.add(faAlbumCollection);
-const props = withDefaults(defineProps<{
+const props = defineProps<{
     data: {
+        webpage_url?: string;
         has_webpage?: boolean;
         department: {
             name: string;
@@ -50,46 +47,20 @@ const props = withDefaults(defineProps<{
                 image: Array<string>;
             }>;
         };
-        storeFamilyRoute: any
-        shopsData: any
     };
     salesData?: object;
-    isMaster?: boolean
-}>(), {
-    // Default values
-    isMaster: false,
-});
+}>();
 
 const navigateTo = () => {
-    let routeCurr = route().current();
-    let targetRoute;
-    let routeParams = route().params;
-
-    switch (routeCurr) {
-        case "grp.masters.master_shops.show.master_departments.show":
-            targetRoute = route("grp.masters.master_shops.show.master_departments.edit", {
-                ...routeParams,
-                section: 1
-            });
-            break;
-        default:
-            targetRoute = route("grp.org.shops.show.catalogue.departments.edit", {
-                ...routeParams,
-                section: 1
-            });
-            break;
-    }
-    router.visit(targetRoute);
-}
-
-const showDialog = ref<boolean>(false)
-
-const openFamilyModal = () => {
-    showDialog.value = true
+    const routeParams = route().params;
+    router.visit(route("grp.org.shops.show.catalogue.departments.edit", {
+        ...routeParams,
+        section: 1
+    }));
 }
 </script>
 
-<template>
+<template>    
     <div v-if="data.webpage_url"
 		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
 		<div class="flex items-center gap-2 text-blue-700 text-sm">
@@ -139,14 +110,9 @@ const openFamilyModal = () => {
                 <!-- Product State Stats -->
                 <ProductCategoryStats v-if="data.department.stats" :stats="data.department.stats" />
 
-                <!-- Master Navigation or Review Content -->
-                <MasterNavigation v-if="isMaster"
-                    sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
-                    :families-event="openFamilyModal" is-add-both />
-                <ReviewContent v-else :data="data.department" />
+                <!-- Review Content -->
+                <ReviewContent :data="data.department" />
             </div>
         </div>
     </div>
-    <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="data.storeFamilyRoute"
-        @update:show-dialog="(value) => showDialog = value" :shopsData="data.shopsData" />
 </template>

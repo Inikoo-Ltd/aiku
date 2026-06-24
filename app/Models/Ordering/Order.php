@@ -165,6 +165,8 @@ use App\Models\Dispatching\ReturnDeliveryNote;
  * @property string|null $phone
  * @property string|null $contact_name
  * @property string|null $company_name
+ * @property int|null $offer_voucher_id
+ * @property int|null $discounted_offer_id
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

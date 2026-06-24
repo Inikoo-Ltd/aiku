@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Traits\HasBucketImages;
+use App\Actions\Traits\WithLuigiAvailabilityChecklist;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
@@ -25,6 +26,7 @@ class GetProductShowcase
     use AsObject;
     use HasBucketImages;
     use HasBucketAttachment;
+    use WithLuigiAvailabilityChecklist;
 
     public function handle(Product $product): array
     {
@@ -90,7 +92,7 @@ class GetProductShowcase
                 OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'org_stocks'          => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'stats'               => $product->stats,
-            'images'              => $this->getImagesData($product),
+            'images'              => $this->getImagesData($product, true),
             'brand'               => $product->brand(),
             'tags'                => TagsResource::collection($product->tags)->toArray(request()),
             'main_image'          => $product->imageSources(),
@@ -104,8 +106,8 @@ class GetProductShowcase
                 'product_state_icon' => $product->state->stateIcon()[$product->state->value],
                 'parentLink'         => $parentLink,
             ],
+            'luigi_availability_checklist' => $product->webpage ? $this->getLuigiAvailabilityChecklist($product) : null,
         ];
     }
-
 
 }

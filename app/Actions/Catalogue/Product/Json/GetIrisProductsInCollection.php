@@ -21,7 +21,7 @@ class GetIrisProductsInCollection extends IrisAction
     public function handle(Collection $collection, $stockMode = 'all'): LengthAwarePaginator
     {
         $queryBuilder = $this->getBaseQuery($stockMode);
-        $queryBuilder->whereNotNull('products.webpage_id');
+
         $queryBuilder->join('collection_has_models', function ($join) use ($collection) {
             $join->on('products.id', '=', 'collection_has_models.model_id')
                 ->where('collection_has_models.model_type', '=', 'Product')
@@ -35,13 +35,6 @@ class GetIrisProductsInCollection extends IrisAction
         $queryBuilder->select(
             $this->getSelect([
                 DB::raw('products.variant_id IS NOT NULL as is_variant'),
-                DB::raw('exists (
-                        select os.is_on_demand
-                        from org_stocks os
-                        join product_has_org_stocks phos on phos.org_stock_id = os.id
-                        where phos.product_id = products.id
-                        and os.is_on_demand = true
-                    ) as is_on_demand')
             ])
         );
         $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');

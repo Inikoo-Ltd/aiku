@@ -49,7 +49,8 @@ class SearchTiktokProducts
             'page_size' => 100
         ]);
 
-        return array_map([$this, 'transformToStandardFormat'], Arr::get($products, 'data.products'));
+        // AIKU-18FR: Fallback fix
+        return array_map([$this, 'transformToStandardFormat'], Arr::get($products, 'data.products', []));
     }
 
     public function asController(TiktokUser $tiktokUser, ActionRequest $request): array

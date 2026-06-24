@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 06-05-2026-11h-27m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -25,13 +25,7 @@ class GetIrisProductsInRecommendation extends IrisAction
         $website = $productCategory->shop->website;
 
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
-        $queryBuilder
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from('webpages')
-                    ->whereColumn('webpages.id', 'products.webpage_id')
-                    ->where('webpages.state', 'live');
-            });
+
 
         $queryBuilder
             ->where(function ($query) {
@@ -43,13 +37,6 @@ class GetIrisProductsInRecommendation extends IrisAction
         $queryBuilder->select(
             $this->getSelect([
                 DB::raw('products.variant_id IS NOT NULL as is_variant'),
-                DB::raw('exists (
-                        select os.is_on_demand
-                        from org_stocks os
-                        join product_has_org_stocks phos on phos.org_stock_id = os.id
-                        where phos.product_id = products.id
-                        and os.is_on_demand = true
-                    ) as is_on_demand')
             ])
         );
 

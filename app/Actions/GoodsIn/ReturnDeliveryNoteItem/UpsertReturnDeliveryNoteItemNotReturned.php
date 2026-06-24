@@ -39,6 +39,10 @@ class UpsertReturnDeliveryNoteItemNotReturned extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request)
     {
+        if ($this->asAction) {
+            return;
+        }
+
         $returnDeliveryNoteItem = $request->returnDeliveryNoteItem;
 
         $maxQty = $returnDeliveryNoteItem->total_expected_qty - (
@@ -64,6 +68,14 @@ class UpsertReturnDeliveryNoteItemNotReturned extends OrgAction
         return [
             'quantity' => ['required', 'numeric', 'min:0'],
         ];
+    }
+
+    public function action(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): void
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($returnDeliveryNoteItem->shop, $modelData);
+
+        $this->handle($returnDeliveryNoteItem, $this->validatedData);
     }
 
     public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): void

@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, onUnmounted, computed } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -15,7 +15,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faMedal } from '@fal'
+import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faMedal, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes } from '@fal'
 import { faMedal as fasMedal, faCandleHolder, faCircle, faBoxFull } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -25,7 +25,7 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
-import IrisRightsideBasket from '@/Iris/Components/IrisRightsideBasket.vue'
+import IrisRightSideBasket from '@iris/Components/IrisRightSideBasket.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
@@ -43,7 +43,7 @@ interface ChatConfig {
 }
 
 const bundle = useBundle()
-library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
+library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes)
 
 initialiseIrisApp()
 
@@ -80,7 +80,14 @@ const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
 
-/* if(layout?.rightbasket?.show) set(layout, ['rightbasket', 'show'], false) */
+const fallbackTheme = theme
+
+const safeTheme = computed(() => {
+    const t = layout?.app?.theme
+
+    return (t && t.length >= 8) ? t : fallbackTheme
+})
+
 
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
@@ -144,11 +151,23 @@ onMounted(() => {
     if(layout?.iris?.is_logged_in){
         fetchHasInBasket()
     }
+
+    ;(window as any).aikuIris = {
+        // For Search result (app-iris.blade )
+        refreshCustomerData: async () => {
+            layout.reload_handle?.()
+            await fetchHasInBasket()
+        }
+    }
 })
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
     document.removeEventListener('visibilitychange', handleTabFocus)
+
+    if ((window as any).aikuIris) {
+        delete (window as any).aikuIris
+    }
 })
 
 
@@ -162,8 +181,7 @@ const fetchHasInBasket = async () => {
         }
 
         const response = await axios.get(apiUrl);
-        /* console.log('plmnbvc',response.data) */
-        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || {})
     } catch (error) {
         console.error('Failed to load product portfolio', error);
     } finally {
@@ -176,7 +194,7 @@ onBeforeMount(() => {
     initialiseIrisVarnish(useIrisLayoutStore)
 })
 
-// Watch: open Side Basket if cart have any changes
+// Watch: open Side Basket if cart has any changes
 watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     if (typeof layout.rightbasket?.show === 'undefined') {
         set(layout, 'rightbasket.show', true)
@@ -187,14 +205,6 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
     if (newVal <= 0) {
         set(layout, 'rightbasket.show', false)
     }
-})
-
-const fallbackTheme = theme
-
-const safeTheme = computed(() => {
-    const t = layout?.app?.theme
-
-    return (t && t.length >= 8) ? t : fallbackTheme
 })
 </script>
 
@@ -286,10 +296,10 @@ const safeTheme = computed(() => {
                 <!-- Layout: SideBasket (right) -->
                 <div
                     v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
-                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
+                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen transition-all"
                     :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent max-w-0'"
                 >
-                    <IrisRightsideBasket
+                    <IrisRightSideBasket
                         v-if="layout.iris_variables?.cart_count > 0"
                         :isOpen="layout.rightbasket?.show"
                     />  
@@ -305,7 +315,7 @@ const safeTheme = computed(() => {
                 </div>
 
                 <div
-                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app.name === 'iris' && layout.retina.type === 'dropshipping'"
+                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app?.name === 'iris' && layout.retina?.type === 'dropshipping'"
                     @click="bundle.open.value = !bundle.open.value"
                     class="fixed z-[60] w-8 aspect-square rounded-full flex items-center justify-center cursor-pointer
                         bg-[var(--theme-color-0)]
@@ -365,8 +375,14 @@ const safeTheme = computed(() => {
 }
 
 .basket-drawer {
-  width: min(92vw, 37%);
-  box-sizing: border-box;
+    width: min(92vw, 37%);
+    box-sizing: border-box;
+}
+
+@media (min-width: 1536px) {
+    .basket-drawer {
+        width: 25%;
+    }
 }
 
 // INI-562: live chat
@@ -376,6 +392,10 @@ iframe#launcher {
 
 .background-primary {
     background-color: var(--theme-color-4);
+}
+
+.border-primary {
+    border-color: var(--theme-color-4);
 }
 
 .text-primary {

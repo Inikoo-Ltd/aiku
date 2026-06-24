@@ -89,8 +89,10 @@ class PrepareMailshotSecondWaveRecipients
                 }
             }
 
-            ProcessSendMailshot::dispatch($mailshotId, $customerIds);
-            $this->countRecipients += $numValidEmails;
+            if (!empty($customerIds)) {
+                ProcessSendMailshot::dispatch($mailshotId, $customerIds);
+                $this->countRecipients += $numValidEmails;
+            }
         });
 
         $mailshot->update([

@@ -29,19 +29,16 @@ defineProps<{
 const locale = useLocaleStore()
 
 const timesheetRoute = (timesheet: Timesheet) => {
-    switch (route().current()) {
-        case "grp.clocking_employees.index":
-            return route(
-                "grp.clocking_employees.show",
-                [timesheet.id])
-        default:
-            return route(
-                "grp.org.hr.timesheets.show",
-                [
-                    (route().params as any)["organisation"],
-                    timesheet.id
-                ])
+    if (route().current()?.startsWith("grp.clocking_employees.")) {
+        return route("grp.clocking_employees.show", [timesheet.id])
     }
+
+    return route(
+        "grp.org.hr.timesheets.show",
+        [
+            (route().params as any)["organisation"],
+            timesheet.id
+        ])
 }
 
 function applyStatus(status: string | null) {

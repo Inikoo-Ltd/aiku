@@ -14,12 +14,12 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
-use App\Http\Resources\Accounting\PaymentAccountShopsResource;
+use App\Http\Resources\Accounting\PaymentAccountShopResource;
 use App\Models\Accounting\PaymentAccount;
+use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,18 +31,16 @@ class ShowPaymentAccountShop extends OrgAction
 
 
     /**
-     * @var \App\Models\Accounting\PaymentAccount|\App\Models\Catalogue\Shop|\App\Models\Fulfilment\Fulfilment
+     * @var Fulfilment|PaymentAccount|PaymentAccountShop|Shop
      */
-    private Fulfilment|PaymentAccount|Shop $parent;
+    private Fulfilment|PaymentAccount|Shop|PaymentAccountShop $parent;
 
-    public function handle(PaymentAccount|Shop|Fulfilment $parent, $prefix = null): LengthAwarePaginator
+    public function handle(PaymentAccountShop $parent, $prefix = null): PaymentAccountShop
     {
-
+        return $parent;
     }
 
-
-
-    public function htmlResponse(LengthAwarePaginator $paymentAccountShops, ActionRequest $request): Response
+    public function htmlResponse(PaymentAccountShop $paymentAccountShop, ActionRequest $request): Response
     {
         $subNavigation = [];
         if ($this->parent instanceof PaymentAccount) {
@@ -65,25 +63,38 @@ class ShowPaymentAccountShop extends OrgAction
                     'subNavigation' => $subNavigation,
                     'icon'          => ['fal', 'fa-store-alt'],
                     'title'         => __('Payment Account Shops'),
+                    'actions'       => [
+                    [
+                            'type'    => 'button',
+                            'icon'        => 'fal fa-pencil',
+                            'style'       => 'transparent',
+                            'tooltip' => __('Edit payment account shop'),
+                            'route' => [
+                                'name' => 'grp.org.accounting.payment-accounts.edit',
+                                'parameters' => [
+                                    'organisation' => $paymentAccountShop->shop->organisation->slug,
+                                    'paymentAccount' => $paymentAccountShop->paymentAccount->slug
+                                ]
+                            ],
+                        ],
+                    ],
                 ],
-                'data'        => PaymentAccountShopsResource::collection($paymentAccountShops)
-
-
+                'data'        => PaymentAccountShopResource::make($paymentAccountShop)
             ]
         );
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): LengthAwarePaginator
+    public function inShop(Organisation $organisation, Shop $shop, PaymentAccountShop $paymentAccountShop, ActionRequest $request): PaymentAccountShop
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop);
+        return $this->handle($paymentAccountShop);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): LengthAwarePaginator
+    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): PaymentAccountShop
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
@@ -92,7 +103,7 @@ class ShowPaymentAccountShop extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, PaymentAccount $paymentAccount, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, PaymentAccount $paymentAccount, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): PaymentAccountShop
     {
         $this->parent = $paymentAccount;
         $this->initialisation($organisation, $request);

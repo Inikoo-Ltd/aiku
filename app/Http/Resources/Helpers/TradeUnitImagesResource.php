@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $id
  * @property mixed $sub_scope
  * @property mixed $caption
+ * @property mixed $trade_unit_name
  */
 class TradeUnitImagesResource extends JsonResource
 {
@@ -34,14 +35,13 @@ class TradeUnitImagesResource extends JsonResource
         $image = $media->getImage()->resize(0, 100);
         $imageSources = GetPictureSources::run($image);
 
-
         return [
             'id'    => $this->id,
             'name'  => $this->name,
             'size'  => NaturalLanguage::make()->fileSize($this->size, 1, 'MB'),
             'image' => $imageSources,
             'sub_scope' => $this->sub_scope,
-            'alt'   => $this->caption ?? $this->name,
+            'alt'   => $this->caption ?? $this->trade_unit_name ?? $this->name,
             'dimensions' => [
                 'width'  => $this->width ?? 0,
                 'height' => $this->height ?? 0

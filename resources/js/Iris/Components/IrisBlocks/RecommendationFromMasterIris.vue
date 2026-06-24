@@ -4,8 +4,8 @@ import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { ctrans } from "@/Composables/useTrans"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
-import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
+import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 
@@ -72,7 +72,7 @@ const shouldShowNavigation = computed(() => products.value.length > slidesPerVie
 
 const componentId = computed(() => props.fieldValue?.id ?? `recommended-master${props.indexBlock ?? ''}`)
 
-const titleContent = computed(() => props.fieldValue?.recommendation_settings?.title ?? ctrans('Recommendations'))
+const titleContent = computed(() => props.fieldValue?.recommendation_settings?.title ?? ctrans('Related Products'))
 
 
 const prevEl = ref(null)
@@ -98,11 +98,11 @@ console.log('related product :', props)
     <div v-if="products.length" class="relative px-4 py-6">
       <!-- Navigation -->
       <button ref="prevEl" class="swiper-nav-button hidden lg:block left-12 top-1/2">
-        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg" />
+        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl" />
       </button>
 
       <button ref="nextEl" class="swiper-nav-button hidden lg:block right-12 top-1/2">
-        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg" />
+        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl" />
       </button>
 
       <!-- Swiper -->

@@ -13,6 +13,7 @@ enum OfferAllowanceType: string
     case PERCENTAGE_OFF = 'percentage_off';
     case GIFT = 'gift';
     case MIXED = 'mixed';
+    case SHIPPING = 'shipping';
     case UNKNOWN = 'unknown'; // user for aurora migrations
 
     public function label(): string
@@ -22,6 +23,7 @@ enum OfferAllowanceType: string
             OfferAllowanceType::GIFT => __('Gift'),
             OfferAllowanceType::UNKNOWN => __('Unknown'),
             OfferAllowanceType::MIXED => __('Mixed'),
+            OfferAllowanceType::SHIPPING => __('Shipping'),
         };
     }
 
@@ -32,6 +34,7 @@ enum OfferAllowanceType: string
             OfferAllowanceType::UNKNOWN => 'au',
             OfferAllowanceType::GIFT => 'gift',
             OfferAllowanceType::MIXED => 'mixed',
+            OfferAllowanceType::SHIPPING => 'shipping',
         };
     }
 

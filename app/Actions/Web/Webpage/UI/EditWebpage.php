@@ -22,6 +22,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 
 class EditWebpage extends OrgAction
@@ -184,10 +185,26 @@ class EditWebpage extends OrgAction
             ];
         }
 
+
+        $informationWarning = [];
+        if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY) {
+            $informationWarning = [
+                [
+                    'description' => "Structure @type 'ProductGroup' or @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
+                ]
+            ];
+        } elseif ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
+            $informationWarning = [
+                [
+                    'description' => "Structure @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
+                ]
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
-                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage's settings"),
+                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage :webpageCode settings", ['webpageCode' => $webpage->code]),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'warning'     => $warning,
                 'pageHead'    => [
@@ -199,7 +216,7 @@ class EditWebpage extends OrgAction
                     'model'      => $isBlog ? __('Blog') : __('Webpage'),
                     'iconRight'  => WebpageStateEnum::stateIcon()[$webpage->state->value],
                     'afterTitle' => [
-                        'label' => $webpage->getUrl(),
+                        'label' => $webpage->getCanonicalUrl(),
                     ],
                     'actions' => [
                         [
@@ -225,6 +242,7 @@ class EditWebpage extends OrgAction
                                     'type'     => 'structure_data_website',
                                     'value'    => Arr::get($webpage->seo_data, 'structured_data') ?? '',
                                     'required' => false,
+                                    'information_warning'   => $informationWarning,
                                 ],
                             ]
                         ] : null,

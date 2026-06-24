@@ -12,11 +12,12 @@ import StatsBox from '@/Components/Stats/StatsBox.vue'
 import StatsBoxNegativeList from '@/Components/Stats/StatsBoxNegativeList.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faWeight, faScarecrow, faAlignLeft, faTag } from '@fal'
+import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faWeight, faScarecrow, faAlignLeft, faTag, faBarcode } from '@fal'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { StatsBoxTS } from '@/types/Components/StatsBox'
+import { trans } from 'laravel-vue-i18n'
 
-library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faWeight, faScarecrow, faAlignLeft, faTag)
+library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faWeight, faScarecrow, faAlignLeft, faTag, faBarcode)
 
 defineProps<{
     title: string
@@ -24,6 +25,8 @@ defineProps<{
     flatTreeMaps?: {}
     statsBox?: StatsBoxTS[]
     statsBoxNegative?: StatsBoxTS[]
+    statsBoxTitle?: string
+    statsBoxNegativeTitle?: string
 }>()
 </script>
 
@@ -32,11 +35,17 @@ defineProps<{
     <PageHeading :data="pageHead" />
     <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" />
     <div class="py-6 px-4 flex flex-col gap-5">
-        <dl v-if="statsBox?.length" class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
-            <StatsBox v-for="(stat, index) in statsBox" :key="index" :stat="stat" />
-        </dl>
-        <div v-if="statsBoxNegative?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5 gap-2">
-            <StatsBoxNegativeList :stats="statsBoxNegative" />
+        <div v-if="statsBox?.length" class="flex flex-col gap-2">
+            <span class="font-semibold">{{ statsBoxTitle || trans('Trade Units') }}</span>
+            <dl class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+                <StatsBox v-for="(stat, index) in statsBox" :key="index" :stat="stat" />
+            </dl>
+        </div>
+        <div v-if="statsBoxNegative?.length" class="flex flex-col gap-2">
+            <span class="font-semibold">{{ statsBoxNegativeTitle || trans('Faulty Trade Units') }}</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5 gap-2">
+                <StatsBoxNegativeList :stats="statsBoxNegative" />
+            </div>
         </div>
     </div>
 </template>

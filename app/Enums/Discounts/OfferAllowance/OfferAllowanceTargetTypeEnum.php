@@ -14,6 +14,8 @@ enum OfferAllowanceTargetTypeEnum: string
     case ALL_PRODUCTS_IN_PRODUCT_CATEGORY = 'all_products_in_product_category';
     case ALL_PRODUCTS_IN_DEPARTMENT = 'all_products_in_department';
     case ALL_PRODUCTS_IN_SUB_DEPARTMENT = 'all_products_in_sub_department';
+    case ALL_PRODUCTS_IN_COLLECTION = 'all_products_in_collection';
+    case PRODUCT = 'product';
     case ORDER = 'order';
 
     public function label(): string
@@ -24,6 +26,8 @@ enum OfferAllowanceTargetTypeEnum: string
             OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT => __('All products in department'),
             OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT => __('All products in sub-department'),
             OfferAllowanceTargetTypeEnum::ORDER => __('Order'),
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION => __('All products in collection'),
+            OfferAllowanceTargetTypeEnum::PRODUCT => __('Product'),
         };
     }
 
@@ -35,6 +39,8 @@ enum OfferAllowanceTargetTypeEnum: string
             OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT => 'department',
             OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT => 'sub_department',
             OfferAllowanceTargetTypeEnum::ORDER => 'order',
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION => 'collection',
+            OfferAllowanceTargetTypeEnum::PRODUCT => 'product',
         };
     }
 

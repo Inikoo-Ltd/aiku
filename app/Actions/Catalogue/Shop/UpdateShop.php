@@ -59,6 +59,8 @@ class UpdateShop extends OrgAction
             $this->syncReviewRatingLabels($shop, Arr::pull($modelData, 'review_rating_labels'));
         }
 
+        $reHydrateChildPrices = false;
+
         if (Arr::has($modelData, 'invoice_serial_references')) {
             $shop = $this->updateInvoiceSerialReferences($shop, Arr::pull($modelData, 'invoice_serial_references'));
         }
@@ -90,6 +92,14 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
 
+        if (Arr::has($modelData, 'identity_document_number_label')) {
+            data_set($modelData, 'settings.customer.identity_document_number', Arr::pull($modelData, 'identity_document_number_label'));
+        }
+
+        if (Arr::has($modelData, 'identity_document_number_alt_label')) {
+            data_set($modelData, 'settings.customer.identity_document_number_alt', Arr::pull($modelData, 'identity_document_number_alt_label'));
+        }
+
         // Catalogue Descriptions etc
 
         if (Arr::has($modelData, 'collection_follow_master')) {
@@ -114,6 +124,15 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'related_product_follow_master')) {
             data_set($modelData, 'settings.catalog.related_product_follow_master', Arr::pull($modelData, 'related_product_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'related_product_categories_follow_master')) {
+            data_set($modelData, 'settings.catalog.related_product_categories_follow_master', Arr::pull($modelData, 'related_product_categories_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'follow_master_pricing')) {
+            $reHydrateChildPrices = true;
+            data_set($modelData, 'settings.catalog.follow_master_pricing', Arr::pull($modelData, 'follow_master_pricing'));
         }
 
         // Catalogue Indexing etc
@@ -149,7 +168,7 @@ class UpdateShop extends OrgAction
                     'faire_is_shipping_by_external' => 'settings.faire.is_shipping_by_external',
                     'faire_dont_send_first_orders_automatically_to_warehouse' => 'settings.faire.dont_send_first_orders_automatically_to_warehouse',
                     'wix_access_token' => 'settings.wix.access_token',
-                    'enable_chat' => 'settings.chat.enable_chat',
+                    'enable_chat'          => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'reviews' => 'settings.reviews',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
@@ -179,6 +198,25 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'reviews');
+
+        if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
+            $settings = $shop->settings ?? [];
+
+            if (Arr::exists($modelData, 'chat_slack_token')) {
+                $token = Arr::pull($modelData, 'chat_slack_token');
+                if (!empty($token)) {
+                    data_set($settings, 'chat.slack_token', $token);
+                }
+            }
+
+            if (Arr::exists($modelData, 'chat_slack_channels')) {
+                $channels = array_values(array_filter((array) Arr::pull($modelData, 'chat_slack_channels')));
+                data_set($settings, 'chat.slack_channels', $channels);
+            }
+
+            $shop->settings = $settings;
+            $shop->saveQuietly();
+        }
 
         if (Arr::exists($modelData, 'enable_chat')) {
             $enableChat = Arr::pull($modelData, 'enable_chat');
@@ -281,6 +319,11 @@ class UpdateShop extends OrgAction
             if ($oldMasterShop) {
                 MasterShopHydrateShops::dispatch($oldMasterShop)->delay($this->hydratorsDelay);
             }
+        }
+
+        if ($reHydrateChildPrices) {
+            // TODO MasterLevel Price RRP (Raul)
+            // TODO Rehydrate Child Prices according to their master counterpart prices & rrp here
         }
 
         return $shop;
@@ -418,7 +461,10 @@ class UpdateShop extends OrgAction
             'company_name'                                            => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'                                                   => ['sometimes', 'nullable', 'email'],
             'phone'                                                   => ['sometimes', 'nullable'],
+            'identity_document_number_label'                          => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt_label'                      => ['sometimes', 'nullable', 'string'],
             'identity_document_number'                                => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt'                            => ['sometimes', 'nullable', 'string'],
             'identity_document_type'                                  => ['sometimes', 'nullable', 'string'],
             'type'                                                    => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
             'currency_id'                                             => ['sometimes', 'required', 'exists:currencies,id'],
@@ -445,6 +491,9 @@ class UpdateShop extends OrgAction
             'faire_dont_send_first_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
             'wix_access_token'                                        => ['sometimes', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
+            'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
+            'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
+            'chat_slack_channels.*'                                   => ['string'],
             'is_shipping_by_external'                                 => ['sometimes', 'boolean'],
             'portal_link'                                             => ['sometimes', 'nullable', 'string'],
             'widget_key'                                              => ['sometimes', 'nullable', 'string'],
@@ -471,6 +520,7 @@ class UpdateShop extends OrgAction
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'related_product_follow_master'                           => ['sometimes', 'boolean'],
+            'related_product_categories_follow_master'                => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
@@ -481,6 +531,7 @@ class UpdateShop extends OrgAction
             'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'follow_master_pricing'                                   => ['sometimes', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

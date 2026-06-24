@@ -15,6 +15,7 @@ use App\Models\Helpers\Upload;
 use App\Models\Catalogue\Shop;
 use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -96,19 +97,19 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
                 'sometimes',
                 'nullable',
             ],
-            'company_name'    => ['nullable', 'nullable', 'string', 'max:255'],
-            'contact_name'    => ['nullable', 'nullable', 'string', 'max:255'],
+            'company_name'    => ['nullable', 'string', 'max:255'],
+            'contact_name'    => ['required', 'string', 'max:255'],
             'email'           => [
                 'present',
                 'nullable',
                 'email',
                 'max:500',
-
-
+                Rule::unique('prospects', 'email')->where('shop_id', $this->scope->id),
             ],
             'phone'           => [
                 'nullable',
-                'string'
+                'string',
+                Rule::unique('prospects', 'phone')->where('shop_id', $this->scope->id),
             ],
         ];
     }

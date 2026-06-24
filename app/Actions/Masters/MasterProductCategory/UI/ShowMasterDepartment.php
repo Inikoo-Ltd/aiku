@@ -13,6 +13,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
@@ -150,6 +151,10 @@ class ShowMasterDepartment extends GrpAction
                  MasterDepartmentTabsEnum::CONTENT->value => $this->tab == MasterDepartmentTabsEnum::CONTENT->value ?
                     fn () => GetMasterProductCategoryContent::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryContent::run($masterDepartment)),
+
+                MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab === MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
+                    fn () => GetRelatedMasterProductCategories::run($masterDepartment)
+                    : Inertia::lazy(fn () => GetRelatedMasterProductCategories::run($masterDepartment)),
 
                 // MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
                 //     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))

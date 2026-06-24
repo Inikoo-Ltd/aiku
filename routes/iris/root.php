@@ -23,12 +23,16 @@ use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
+use Laravel\Nightwatch\Http\Middleware\Sample;
 
-Route::get('{path}', function ($path) {
+// Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
+Route::get('hello_robot', ShowIrisRobotsTxt::class)->name('iris_robots_a');
+Route::get('hello_robot.txt', ShowIrisRobotsTxt::class)->name('iris_robots_b');
+
+Route::get('{path}', function () {
     return redirect('/image_not_found.png');
 })->where('path', '.*\.(png|jpe?g|gif)$');
 
-Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
 
 Route::name('webhooks.')->group(function () {
     Route::any('webhooks/checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
@@ -51,20 +55,20 @@ Route::prefix("disclosure")
     ->name("disclosure.")
     ->group(__DIR__."/disclosure.php");
 
-Route::prefix("unsubscribe")
+Route::middleware(Sample::always())->prefix("unsubscribe")
     ->name("unsubscribe.")
     ->group(__DIR__."/unsubscribe.php");
 
 
-Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora');
+Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora')->middleware(Sample::always());
 
-Route::prefix("json")
+Route::middleware(Sample::always())->prefix("json")
     ->name("json.")
     ->group(__DIR__."/json.php");
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
-    Route::prefix("models")
+    Route::middleware(Sample::always())->prefix("models")
         ->name("models.")
         ->group(__DIR__."/models.php");
 

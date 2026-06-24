@@ -194,12 +194,18 @@ trait CalculatesOrgStockHistories
         $groupStockHistory = GroupStockHistory::firstOrCreate(
             [
                 'group_id' => $orgStock->group_id,
-                'date'     => $date->format('Y-m-d')
+                'date'     => $date->format('Y-m-d'),
             ],
             [
-                'is_week'  => $date->isFriday(),
-                'is_month' => $date->isLastOfMonth(),
-                'is_year'  => $date->isEndOfYear(),
+                'is_week'                           => $date->isFriday(),
+                'is_month'                          => $date->isLastOfMonth(),
+                'is_year'                           => $date->isEndOfYear(),
+                'number_stocks'                     => 0,
+                'number_org_stocks_no_stock'        => 0,
+                'number_stocks_org_stocks_no_stock' => 0,
+                'number_org_stocks'                 => 0,
+                'number_out_of_stock_org_stocks'    => 0,
+                'number_location_org_stocks'        => 0,
             ]
         );
 
@@ -219,6 +225,7 @@ trait CalculatesOrgStockHistories
                 'grp_stock_commercial_value'     => 0,
                 'number_org_stocks'              => 0,
                 'number_out_of_stock_org_stocks' => 0,
+                'number_location_org_stocks'     => 0,
                 'is_week'                        => $date->isFriday(),
                 'is_month'                       => $date->isLastOfMonth(),
                 'is_year'                        => $date->isEndOfYear(),

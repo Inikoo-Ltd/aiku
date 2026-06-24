@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 09-06-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -70,7 +70,7 @@ class SaveWebsiteSitemap implements ShouldBeUnique
 
         $count   = 0;
         $scheme  = app()->environment('production') ? 'https' : 'http';
-        $baseUrl = $scheme.'://'.$website->domain;
+        $baseUrl = $scheme.'://www.'.$website->domain;
 
 
         $map   = [
@@ -185,15 +185,10 @@ class SaveWebsiteSitemap implements ShouldBeUnique
         return $count;
     }
 
-    public function asJob(Website $website): void
-    {
-        $this->handle($website);
-    }
-
     private function processWebpagesChunk(
         iterable $webpages,
         int &$count,
-        array &$groups,
+        array $groups,
         array &$groupsCount,
         int $limit,
         ?string $forcedGroupName = null,

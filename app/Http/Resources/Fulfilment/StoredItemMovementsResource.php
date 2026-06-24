@@ -9,9 +9,6 @@
 namespace App\Http\Resources\Fulfilment;
 
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Models\Fulfilment\PalletDelivery;
-use App\Models\Fulfilment\PalletReturn;
-use App\Models\Fulfilment\StoredItemAudit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -34,15 +31,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $pallet_return_id
  * @property mixed $fulfilment_customer_name
  * @property mixed $fulfilment_customer_slug
+ * @property mixed $stored_item_audit_id
  */
 class StoredItemMovementsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $desc_model = '';
-        $desc_title = '';
+
         $desc_after_title = '';
-        $route = null;
+
         $icon = null;
         $retina = str_starts_with($request->route()->getName(), 'retina.');
 

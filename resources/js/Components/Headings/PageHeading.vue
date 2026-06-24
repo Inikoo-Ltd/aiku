@@ -24,7 +24,9 @@ import {
     faPause,
     faPlay,
 	faStore,
-	faExchange
+	faExchange,
+    faFileCertificate,
+    faEnvelopeOpenText
 } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MetaLabel from "@/Components/Headings/MetaLabel.vue"
@@ -67,7 +69,9 @@ library.add(
     faPlay,
 	faStore,
 	faExchange,
-	faWarehouseAlt
+	faWarehouseAlt,
+    faFileCertificate,
+    faEnvelopeOpenText
 )
 
 const props = defineProps<{
@@ -83,7 +87,7 @@ if (props.dataToSubmit && props.data.actionActualMethod) {
 	props.dataToSubmit["_method"] = props.data.actionActualMethod
 }
 
-const originUrl = location.origin
+const originUrl = typeof window !== "undefined" ? window.location.origin : ""
 const layout = inject("layout", layoutStructure)
 
 const isShowDummySlotName = false

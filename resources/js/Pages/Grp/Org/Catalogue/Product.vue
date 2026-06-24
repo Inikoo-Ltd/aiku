@@ -124,7 +124,13 @@ const props = defineProps<{
     shop_data: {
         id: number
         slug: string
+        organisation: string
+        offercampaign: string
         currency_code: string
+        default_dates: {
+            start: string
+            end: string
+        }
     }
     product_id: number
 }>()
@@ -256,7 +262,7 @@ const saveProductReview = async () => {
                     icon="fal fa-atom"
                 />
             </Link>
-            
+
             <FontAwesomeIcon
                 v-if="is_dependent_trade_unit"
                 v-tooltip="trans('This product have independent Trade Unit setting')"
@@ -268,8 +274,8 @@ const saveProductReview = async () => {
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
                 <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
             </Link>
-            
-            
+
+
         </template>
 
         <template #button-reindex>
@@ -306,9 +312,20 @@ const saveProductReview = async () => {
 
          <template #button-create-review="{ action }">
             <div v-if="currentTab != 'reviews'"></div>
-            <div v-else> 
+            <div v-else>
                 <Button :style="action.style" :label="action.label" @click="openDialog" />
             </div>
+            </template>
+        <template #other>
+        </template>
+        <template #otherBefore>
+
+            <ModalCreateGiftOffers
+                v-if="currentTab === 'offers'"
+                v-tooltip="'Create New Offer'"
+                :shop_data="props.shop_data"
+                :product_id="props.product_id"
+                 />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />

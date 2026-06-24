@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
@@ -29,9 +30,58 @@ class UpdateBatchWooCustomerSalesChannelPortfolio implements ShouldBeUnique
     {
         $customerSalesChannel = $wooCommerceUser->customerSalesChannel;
 
+        $requestedQuantities = collect(Arr::get($productData, 'update', []))
+            ->filter(fn (array $product): bool => Arr::has($product, ['id', 'stock_quantity']))
+            ->mapWithKeys(fn (array $product): array => [
+                (string) Arr::get($product, 'id') => (int) Arr::get($product, 'stock_quantity')
+            ]);
+
         $stockUpdated = $wooCommerceUser->batchUpdateWooCommerceProducts($productData);
 
         if (Arr::get($stockUpdated, 'update')) {
+            $updatedQuantities = collect(Arr::get($stockUpdated, 'update', []))
+                ->filter(fn (array $product): bool => Arr::has($product, ['id', 'stock_quantity']))
+                ->mapWithKeys(fn (array $product): array => [
+                    (string) Arr::get($product, 'id') => (int) Arr::get($product, 'stock_quantity')
+                ]);
+
+            $successfulQuantities = $requestedQuantities->filter(
+                fn (int $stockQuantity, string $platformProductId): bool => $updatedQuantities->has($platformProductId)
+                    && $updatedQuantities->get($platformProductId) === $stockQuantity
+            );
+
+            $failedPlatformProductIds = $requestedQuantities
+                ->keys()
+                ->diff($successfulQuantities->keys())
+                ->values();
+
+            $updatedAt = now();
+
+            foreach ($successfulQuantities as $platformProductId => $stockQuantity) {
+                Portfolio::query()
+                    ->where('customer_sales_channel_id', $customerSalesChannel->id)
+                    ->where('platform_product_id', $platformProductId)
+                    ->update([
+                        'last_stock_value'      => $stockQuantity,
+                        'stock_last_updated_at' => $updatedAt
+                    ]);
+            }
+
+            if ($failedPlatformProductIds->isNotEmpty()) {
+                Portfolio::query()
+                    ->where('customer_sales_channel_id', $customerSalesChannel->id)
+                    ->whereIn('platform_product_id', $failedPlatformProductIds->all())
+                    ->update([
+                        'stock_last_fail_updated_at' => $updatedAt
+                    ]);
+
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => now()->addSeconds(10)
+                ]);
+
+                return;
+            }
+
             $customerSalesChannel->update([
                 'ban_stock_update_util' => null
             ]);
