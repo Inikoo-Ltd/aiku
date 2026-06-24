@@ -669,7 +669,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
 
     public function barcodes(): HasMany
     {
-        return $this->hasMany(Barcode::class);
+        return $this->hasMany(Barcode::class, 'group_id', 'id');
     }
 
     public function websites(): HasMany
