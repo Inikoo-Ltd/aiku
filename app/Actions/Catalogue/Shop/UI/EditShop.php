@@ -15,6 +15,9 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
+use App\Models\Reviews\ReviewRatingLabel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -715,33 +718,7 @@ class EditShop extends OrgAction
                         'review_rating_labels' => [
                             'type'  => 'review_rating_labels',
                             'label' => __('Review rating labels'),
-                            'value' => Arr::get(
-                                $shop->settings,
-                                'reviews.rating_labels',
-                                [
-                                    'product_reviews' => [
-                                        'a' => '',
-                                        'b' => '',
-                                        'c' => '',
-                                        'd' => '',
-                                        'e' => '',
-                                    ],
-                                    'shop_reviews' => [
-                                        'a' => '',
-                                        'b' => '',
-                                        'c' => '',
-                                        'd' => '',
-                                        'e' => '',
-                                    ],
-                                    'product_category_reviews' => [
-                                        'a' => '',
-                                        'b' => '',
-                                        'c' => '',
-                                        'd' => '',
-                                        'e' => '',
-                                    ],
-                                ]
-                            ),
+                            'value' => $this->loadReviewRatingLabels($shop),
                         ],
                         'review_publishing' => [
                             'type'        => 'review_publishing',
@@ -834,6 +811,31 @@ class EditShop extends OrgAction
 
             ]
         );
+    }
+
+    private function loadReviewRatingLabels(Shop $shop): array
+    {
+        $stored = ReviewRatingLabel::query()
+            ->where('model_type', 'shop')
+            ->where('model_id', $shop->id)
+            ->get()
+            ->groupBy(fn ($item) => $item->review_context instanceof ReviewContextEnum
+                ? $item->review_context->value
+                : (string) $item->review_context)
+            ->map(fn ($items) => $items->mapWithKeys(fn ($item) => [
+                $item->dimension instanceof ReviewRatingDimensionEnum
+                    ? $item->dimension->value
+                    : (string) $item->dimension => $item->label,
+            ])->all())
+            ->all();
+
+        $emptyDimensions = array_fill_keys(ReviewRatingDimensionEnum::values(), '');
+
+        return collect(ReviewContextEnum::values())
+            ->mapWithKeys(fn (string $context) => [
+                $context => [...$emptyDimensions, ...($stored[$context] ?? [])],
+            ])
+            ->all();
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
