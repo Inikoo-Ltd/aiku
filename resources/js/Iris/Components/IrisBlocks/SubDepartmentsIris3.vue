@@ -58,6 +58,7 @@ const orderBy = ref('-created_at')
 const sortOptions = computed(() => {
   const baseOptions = [
     { label: ctrans("New arrivals"), value: "created_at" },
+    { label: ctrans("Recommended"), value: "recommended" },
     { label: ctrans("Name"), value: "name" },
   ]
   return baseOptions
@@ -159,13 +160,15 @@ const toggleSort = (key: string) => {
         sortKey.value = key
         isAscending.value = true
     }
-    orderBy.value = isAscending.value ? key : `-${key}`
+    if ( key == 'recommended') orderBy.value = key
+    else orderBy.value = isAscending.value ? key : `-${key}`
     updateQueryParams()
     loadFamilies(1)
 }
 
 const getArrow = (key: typeof sortKey.value) => {
   if (sortKey.value !== key) return ""
+  if (sortKey.value == 'recommended') return ""
   return isAscending.value ? "↑" : "↓"
 }
 
