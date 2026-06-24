@@ -7,7 +7,7 @@
  * Copyright 2026
 */
 
-namespace App\Actions\Goods\Barcode;
+namespace App\Actions\Goods\Barcode\UI;
 
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
 use App\Actions\GrpAction;

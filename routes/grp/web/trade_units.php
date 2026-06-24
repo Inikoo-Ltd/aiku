@@ -6,8 +6,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Goods\Barcode\IndexBarcode;
-use App\Actions\Goods\Barcode\ShowBarcode;
+use App\Actions\Goods\Barcode\UI\IndexBarcode;
+use App\Actions\Goods\Barcode\UI\ShowBarcode;
 use App\Actions\Goods\TradeUnit\UI\EditTradeUnit;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingBarcodeTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingBrandTradeUnits;
