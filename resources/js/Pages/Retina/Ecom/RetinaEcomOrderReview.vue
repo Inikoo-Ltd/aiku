@@ -82,11 +82,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Component = {
-
-        order_reviews: OveralReview,
+        overall_review: OveralReview,
         family_reviews: RetinaTableOrderReview,
         product_reviews: RetinaTableOrderReview,
-
     }
 
     return components[currentTab.value]
