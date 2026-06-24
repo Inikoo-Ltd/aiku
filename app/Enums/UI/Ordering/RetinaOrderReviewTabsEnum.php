@@ -16,7 +16,7 @@ enum RetinaOrderReviewTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case OVERALL_REVIEW                      = 'overall_review';
+    case OVERALL_REVIEW                     = 'overall_review';
     case FAMILY_REVIEWS                     = 'family_reviews';
     case PRODUCT_REVIEWS                    = 'product_reviews';
 
