@@ -293,8 +293,9 @@ test('create product', function (ProductCategory $family) {
     $product = StoreProduct::make()->action($family, $productData);
     $product->refresh();
 
-
     expect($product)->toBeInstanceOf(Product::class)
+        ->and($product->family)->toBeInstanceOf(ProductCategory::class)
+        ->and($product->family->department)->toBeInstanceOf(ProductCategory::class)
         ->and($product->state)->toBe(ProductStateEnum::ACTIVE)
         ->and($product->asset)->toBeInstanceOf(Asset::class)
         ->and($product->historicAsset)->toBeInstanceOf(HistoricAsset::class)

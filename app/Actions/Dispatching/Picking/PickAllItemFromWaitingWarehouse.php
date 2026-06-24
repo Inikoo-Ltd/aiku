@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
+use App\Actions\Ordering\Transaction\Traits\WithCalculateTransactionDiscount;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
@@ -21,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class PickAllItemFromWaitingWarehouse extends OrgAction
 {
+    use WithCalculateTransactionDiscount;
+
     /**
      * @throws \Throwable
      */
@@ -33,14 +36,20 @@ class PickAllItemFromWaitingWarehouse extends OrgAction
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
-            $picking = PickAllItem::make()->action(
+            $picking = PickAllItem::run(
                 $deliveryNoteItem,
                 [
                     'location_org_stock_id' => Arr::get($modelData, 'location_org_stock_id'),
                     'picker_user_id'        => $user->id,
                 ]
             );
+
+
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
+
+            // To fix concurrent issue, discounts aren't applied after picking up from Waiting (reported by Erika)
+            $this->calculateTransactionDiscountTotal($deliveryNoteItem->transaction);
+
             return $picking;
         });
     }

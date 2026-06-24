@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -82,6 +82,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\Accounting\OrgPaymentServiceProvider $orgPaymentServiceProvider
  * @property-read Organisation $organisation
+ * @property-read Payment|null $originalPayment
  * @property-read \App\Models\Accounting\PaymentAccount|null $paymentAccount
  * @property-read \App\Models\Accounting\PaymentAccountShop|null $paymentAccountShop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Payment> $refunds
@@ -102,7 +103,7 @@ class Payment extends Model implements Auditable
     use HasFactory;
     use InCustomer;
     use HasHistory;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'              => 'array',
@@ -223,5 +224,10 @@ class Payment extends Model implements Auditable
     public function refunds(): HasMany
     {
         return $this->hasMany(Payment::class, 'original_payment_id');
+    }
+
+    public function originalPayment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class, 'original_payment_id');
     }
 }

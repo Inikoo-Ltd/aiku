@@ -135,7 +135,13 @@ const props = defineProps<{
     shop_data: {
         id: number
         slug: string
+        organisation: string
+        offercampaign: string
         currency_code: string
+        default_dates: {
+            start: string
+            end: string
+        }
     }
     product_id: number
 }>()
@@ -268,7 +274,7 @@ const goToEdit = () => {
         <template #otherBefore>
             
             <ModalCreateGiftOffers 
-                v-if="currentTab === 'offers' && layout.app.environment === 'local'"
+                v-if="currentTab === 'offers'"
                 v-tooltip="'Create New Offer'"
                 :shop_data="props.shop_data"
                 :product_id="props.product_id"

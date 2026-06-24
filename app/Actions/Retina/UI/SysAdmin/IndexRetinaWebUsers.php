@@ -113,7 +113,7 @@ class IndexRetinaWebUsers extends RetinaAction
                         [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('user'),
+                            'label' => __('User'),
                             'route' => [
                                 'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -140,7 +140,7 @@ class IndexRetinaWebUsers extends RetinaAction
             'retina.sysadmin.web-users.index',
             'retina.sysadmin.web-users.show' =>
             array_merge(
-                ShowRetinaFulfilmentSysAdminDashboard::make()->getBreadcrumbs(),
+                ShowRetinaSysAdminDashboard::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',

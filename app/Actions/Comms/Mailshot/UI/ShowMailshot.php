@@ -12,6 +12,7 @@ use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
+use App\Actions\Helpers\TimeZone\UI\GetTimeZoneSelectOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Actions\UI\Marketing\MarketingHub;
@@ -67,6 +68,8 @@ class ShowMailshot extends OrgAction
         $isShowStop = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENDING]);
 
         $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
+
+        $isShowEditName = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENT]);
 
         $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
             ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('customers.id') ?? 0)
@@ -131,7 +134,7 @@ class ShowMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
-                        $isShowActions ? [
+                        $isShowActions || $isShowEditName ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
@@ -299,6 +302,8 @@ class ShowMailshot extends OrgAction
                         'mailshot' => $mailshot->slug
                     ]
                 ],
+                'timeZoneOptions' => GetTimeZoneSelectOptions::run(),
+                'defaultShopTimezone' => $this->shop->timezone->name,
 
             ]
         )->table(

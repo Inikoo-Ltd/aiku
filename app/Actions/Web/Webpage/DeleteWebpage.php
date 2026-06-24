@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 20-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -38,6 +38,9 @@ class DeleteWebpage extends OrgAction
      */
     public function handle(Webpage $webpage, bool $forceDelete = false, array $modelData = []): Webpage
     {
+        DeleteReindexWebpageLuigiData::dispatch($webpage)->delay(5);
+
+        BreakWebpageCache::run($webpage);
         if ($forceDelete) {
             $webpage = DB::transaction(function () use ($webpage) {
                 DB::table('web_block_histories')->where('webpage_id', $webpage->id)->delete();
@@ -63,7 +66,6 @@ class DeleteWebpage extends OrgAction
                 return $webpage;
             });
         } else {
-
             $redirect = Arr::pull($modelData, 'redirects');
 
             $webpage->delete();
@@ -83,8 +85,8 @@ class DeleteWebpage extends OrgAction
                 DB::table('redirects')->where('from_path', $webpage->url)->delete();
 
                 StoreRedirect::make()->action($webpage, [
-                    'type'              => RedirectTypeEnum::PERMANENT,
-                    'to_webpage_id'     => $redirect
+                    'type' => RedirectTypeEnum::PERMANENT,
+                    'to_webpage_id' => $redirect
                 ]);
 
                 HydrateRedirect::run($webpage);
@@ -96,16 +98,15 @@ class DeleteWebpage extends OrgAction
             }
         }
 
-        DeleteReindexWebpageLuigiData::dispatch($webpage);
-
+        BreakWebpageCache::run($webpage);
         return $webpage;
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
-            'redirects'  => [
-                'required',
+            'redirects' => [
+                'sometimes',
                 Rule::exists(Webpage::class, 'id')->where('website_id', $this->webpage->website->id)->where('state', WebpageStateEnum::LIVE),
             ],
         ];
@@ -117,6 +118,7 @@ class DeleteWebpage extends OrgAction
     public function action(Webpage $webpage, bool $forceDelete = false): Webpage
     {
         $this->webpage = $webpage;
+
         return $this->handle($webpage, $forceDelete);
     }
 

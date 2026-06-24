@@ -26,6 +26,9 @@ use App\Actions\HumanResources\Employee\GetEmployeesByBirthMonth;
 use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
 use App\Actions\HumanResources\Employee\GetEmployeeContract;
 use App\Actions\HumanResources\Employee\UI\CreateEmployee;
+use App\Actions\HumanResources\EmployeeContract\UI\CreateEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\UI\EditEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\UI\IndexEmployeeContracts;
 use App\Actions\HumanResources\Employee\UI\EditEmployee;
 use App\Actions\HumanResources\Employee\UI\IndexEmployees;
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
@@ -55,6 +58,7 @@ use App\Actions\HumanResources\Leave\PrintCalendar;
 use App\Actions\HumanResources\Overtime\ExportOvertimeReport;
 use App\Actions\HumanResources\Leave\RejectLeave;
 use App\Actions\HumanResources\Leave\UpdateLeave;
+use App\Actions\HumanResources\Leave\DeleteLeave;
 use App\Actions\HumanResources\AttendanceAdjustment\UI\IndexAttendanceAdjustmentsAdmin;
 use App\Actions\HumanResources\AttendanceAdjustment\ApproveAttendanceAdjustment;
 use App\Actions\HumanResources\AttendanceAdjustment\RejectAttendanceAdjustment;
@@ -99,6 +103,10 @@ Route::prefix('employees')->as('employees.')->group(function () {
             Route::get('timesheets', [IndexTimesheets::class,'inEmployee'])->name('timesheets.index');
             Route::get('timesheets/export', ExportEmployeeTimesheets::class)->name('timesheets.export');
             Route::get('timesheets/{timesheet}', [ShowTimesheet::class, 'inEmployee'])->name('timesheets.show');
+
+            Route::get('contracts', IndexEmployeeContracts::class)->name('contracts.index');
+            Route::get('contracts/create', CreateEmployeeContract::class)->name('contracts.create');
+            Route::get('contracts/{contract}/edit', EditEmployeeContract::class)->name('contracts.edit');
         });
     });
 });
@@ -192,7 +200,9 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('print', [PrintCalendar::class, 'asController'])->name('print');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
+    Route::patch('{leave}/admin', UpdateLeave::class)->name('admin.update');
     Route::post('{leave}', UpdateLeave::class)->name('update');
+    Route::delete('{leave}', DeleteLeave::class)->name('delete');
 });
 
 Route::prefix('leave_approvers')->as('leave_approvers.')->group(function () {

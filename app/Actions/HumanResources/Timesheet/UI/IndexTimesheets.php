@@ -19,6 +19,7 @@ use App\Enums\Helpers\Period\PeriodEnum;
 use App\Enums\UI\HumanResources\TimesheetsTabsEnum;
 use App\Http\Resources\HumanResources\TimesheetsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
 use App\Models\SysAdmin\Group;
@@ -128,6 +129,12 @@ class IndexTimesheets extends OrgAction
             'timesheets.*',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
+            'first_clocking_notes' => Clocking::query()
+                ->select('notes')
+                ->whereColumn('timesheet_id', 'timesheets.id')
+                ->orderBy('clocked_at')
+                ->orderBy('id')
+                ->limit(1),
         ]);
 
         return $query
@@ -319,6 +326,7 @@ class IndexTimesheets extends OrgAction
 
             $table->column(key: 'start_at', label: __('Start At'))
                 ->column(key: 'end_at', label: __('End At'))
+                ->column(key: 'notes', label: __('Notes'))
                 ->column(key: 'working_duration', label: __('Working'), sortable: true)
                 ->column(key: 'breaks_duration', label: __('Breaks'), sortable: true)
                 ->column(key: 'clock_in_count', label: __('Clock In'))
@@ -345,6 +353,7 @@ class IndexTimesheets extends OrgAction
             $timesheet->setAttribute('job_position', $jobPositions ?: '-');
             $timesheet->setAttribute('clock_in_count', $timesheet->number_time_trackers);
             $timesheet->setAttribute('clock_out_count', $timesheet->number_time_trackers - $timesheet->number_open_time_trackers);
+            $timesheet->setAttribute('notes', $timesheet->first_clocking_notes);
 
             return $timesheet;
         });

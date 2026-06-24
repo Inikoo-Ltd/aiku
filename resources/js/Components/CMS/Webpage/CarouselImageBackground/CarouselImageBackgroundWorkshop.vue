@@ -5,7 +5,7 @@ import "swiper/css"
 import "swiper/css/navigation"
 import "swiper/css/pagination"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { inject, ref, watch, computed, nextTick, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import Blueprint from "./Blueprint"

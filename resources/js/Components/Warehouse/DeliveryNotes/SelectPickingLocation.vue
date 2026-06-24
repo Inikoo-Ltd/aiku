@@ -24,6 +24,7 @@ defineProps<{
         }[]
     }
     selectedLocationCode: string
+    ignoreNoQty?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -78,7 +79,7 @@ const generateLocationRoute = (location: any): string => {
                     @update:modelValue="(e: string) => emit('select', e)"
                     :size="twBreakPoint().includes('lg') ? undefined : 'large'"
                     :inputId="location.location_code"
-                    :disabled="location.quantity <= 0"
+                    :disabled="ignoreNoQty ? false : location.quantity <= 0 "
                     name="location"
                     :value="location.location_code"
                 />

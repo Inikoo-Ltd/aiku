@@ -29,6 +29,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property numeric|null $sales_internal
  * @property numeric|null $sales_org_currency_internal
  * @property numeric|null $sales_grp_currency_internal
+ * @property numeric|null $discount_amount_external
+ * @property numeric|null $discount_org_currency_external
+ * @property numeric|null $discount_grp_currency_external
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaignTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaignTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaignTimeSeriesRecord query()

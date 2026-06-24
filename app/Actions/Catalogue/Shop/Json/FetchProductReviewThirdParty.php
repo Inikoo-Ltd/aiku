@@ -33,7 +33,9 @@ class FetchProductReviewThirdParty extends IrisAction
 
         if ($this->provider == 'reviews.io') {
             return [
-                'reviews'    => ReviewIoResource::collection(data_get($reviewData, 'reviews', null)),
+                'reviews' => ReviewIoResource::collection(
+                    collect(data_get($reviewData, 'reviews', []))
+                ),
                 'store_data'   => [
                     'store_name'        => data_get($reviewData, 'store_name', null),
                     'review_count'      => data_get($reviewData, 'stats.company.review_count', null),

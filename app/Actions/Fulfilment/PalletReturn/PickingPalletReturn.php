@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -25,6 +26,7 @@ use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,10 +36,13 @@ class PickingPalletReturn extends OrgAction
     use WithActionUpdate;
 
 
-    public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
+    public function handle(PalletReturn $palletReturn, array $modelData, ?User $user = null): PalletReturn
     {
         $modelData[Str::replace('-', '_', PalletReturnStateEnum::PICKING->value).'_at'] = now();
         $modelData['state']                                                             = PalletReturnStateEnum::PICKING;
+        if ($user) {
+            $modelData['picker_user_id'] = $user->id;
+        }
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
             foreach ($palletReturn->pallets as $pallet) {
@@ -67,6 +72,10 @@ class PickingPalletReturn extends OrgAction
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
 
+        if ($palletReturn->customerSalesChannel) {
+            CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+        }
+
         SendPalletReturnNotification::run($palletReturn);
 
         return $palletReturn;
@@ -90,21 +99,25 @@ class PickingPalletReturn extends OrgAction
     {
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        $user = $request->user();
+
+        return $this->handle($palletReturn, $this->validatedData, $user);
     }
 
     public function maya(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        $user = $request->user();
+
+        return $this->handle($palletReturn, $this->validatedData, $user);
     }
 
-    public function action(PalletReturn $palletReturn): PalletReturn
+    public function action(PalletReturn $palletReturn, ?User $user = null): PalletReturn
     {
         $this->asAction = true;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, []);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        return $this->handle($palletReturn, $this->validatedData, $user);
     }
 }

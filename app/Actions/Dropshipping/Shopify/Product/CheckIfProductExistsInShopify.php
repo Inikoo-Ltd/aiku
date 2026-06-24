@@ -10,8 +10,8 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Sentry;
 
 class CheckIfProductExistsInShopify
 {
@@ -20,7 +20,6 @@ class CheckIfProductExistsInShopify
 
     public function handle(ShopifyUser $shopifyUser, ?string $productId): array
     {
-
         $result = [
             'exist' => false,
             'error' => false
@@ -37,8 +36,9 @@ class CheckIfProductExistsInShopify
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            Log::error("Failed to initialize Shopify GraphQL client");
             data_set($result, 'error', true);
+
             return $result;
         }
         try {
@@ -61,11 +61,9 @@ class CheckIfProductExistsInShopify
             $response = $client->request($query, $variables);
 
             if (!empty($response['errors']) || !isset($response['body'])) {
-                //$errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                // Sentry::captureMessage("Product existence check failed: shopifyUser  $shopifyUser->id    >$productId<  V2 ".$errorMessage);
                 data_set($result, 'error', true);
-                return $result;
 
+                return $result;
             }
 
             $body = $response['body']->toArray();
@@ -82,12 +80,7 @@ class CheckIfProductExistsInShopify
             }
 
             return $result;
-
-
-
-        } catch (\Exception $e) {
-            // Sentry::captureException($e);
-
+        } catch (\Exception) {
             return $result;
         }
     }

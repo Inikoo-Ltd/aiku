@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { faFragile, faGlobe, faLink, faSearch, faPencil } from "@fal"
+import { faFragile, faGlobe, faLink, faSearch, faPencil, faPlaneArrival, faUser, faChartLine } from "@fal"
 import { computed, ref, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -19,8 +19,9 @@ import { notify } from "@kyvg/vue3-notification"
 import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { faDoorOpen } from "@far"
 
-library.add(faGlobe, faLink, faSearch, faFragile)
+library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChartLine)
 
 const props = defineProps<{
     data: {
@@ -34,9 +35,12 @@ const props = defineProps<{
         layout: any
         stats: StatsBoxTS[]
         content_blog_stats: StatsBoxTS[]
+        website_stats: StatsBoxTS[]
         website_type: string
     }
     route_storefront: routeType
+    route_landing_page?: routeType
+    route_welcome?:routeType
     luigi_data: {
         last_reindexed: string
         luigisbox_tracker_id: string
@@ -114,20 +118,26 @@ const links = computed(() => {
                     <div class="grid grid-cols-2 gap-2 md:max-w-lg">
                         <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
                     </div>
+                    <div class="mt-6 font-semibold w-fit text-lg mb-2">
+                        {{ trans('Stats') }}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
+                        <StatsBox v-for="stat in props.data.website_stats" :stat />
+                    </div>
                 </div>
 
                 <!-- Section: PIC Webmaster and SEO -->
-                <div v-if="layout?.app?.environment === 'local'" class="mt-6">
+                <div v-if="props.data.pic?.webmaster?.length || props.data.pic?.seo?.length" class="mt-6">
                     <div class="font-semibold w-fit text-lg mb-2">
                         {{ trans('Person in Contact') }}
                     </div>
 
-                    <div>
-                        {{ trans("Webmaster") }}:  {{ props.data.pic?.webmaster?.map(x => x.name).join(', ') }}
+                    <div v-if="props.data.pic?.webmaster?.length">
+                        {{ trans("Webmaster") }}:  {{ props.data.pic.webmaster.map(x => x.name).join(', ') }}
                     </div>
 
-                    <div>
-                        {{ trans("SEO") }}:  {{ props.data.pic?.seo?.map(x => x.name).join(', ') }}
+                    <div v-if="props.data.pic?.seo?.length">
+                        {{ trans("SEO") }}:  {{ props.data.pic.seo.map(x => x.name).join(', ') }}
                     </div>
                 </div>
             </div>
@@ -138,6 +148,16 @@ const links = computed(() => {
                     <div class="p-2">
                         <ButtonWithLink :routeTarget="route_storefront" icon="fal fa-home" type="tertiary"
                             :label="trans('Storefront')" full />
+                    </div>
+
+                     <div class="p-2">
+                        <ButtonWithLink :routeTarget="route_welcome" :icon="faDoorOpen" type="tertiary"
+                            :label="trans('Welcome Page')" full />
+                    </div>
+                    
+                    <div class="p-2" v-if="route_landing_page.length">
+                        <ButtonWithLink :routeTarget="route_landing_page" icon="fal fa-plane-arrival" type="tertiary"
+                            :label="trans('Landing Page')" full />
                     </div>
 
                     <div v-for="(item, index) in links" :key="index" class="px-2 py-1">

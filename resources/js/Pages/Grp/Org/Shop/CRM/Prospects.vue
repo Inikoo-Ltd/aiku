@@ -119,7 +119,7 @@ const downloadUrl = (type: string) => {
         v-if="upload_spreadsheet"
         progressDescription="Adding Prospects to Shop"
         :upload_spreadsheet="upload_spreadsheet"
-
+        :propsRefreshAfterFinish="[currentTab]"
     />
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />

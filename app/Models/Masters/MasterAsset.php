@@ -143,6 +143,7 @@ use Spatie\Translatable\HasTranslations;
  * @property HealthRankEnum|null $health_rank
  * @property bool|null $mismatch_with_seeder_detected
  * @property int|null $index_under_master_family
+ * @property bool $has_missing_child_description True when at least one linked product has a null or empty description
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

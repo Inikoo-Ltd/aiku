@@ -85,6 +85,14 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property int|null $number_downside
  * @property int $number_orders_state_picked
  * @property int $number_orders_state_packing
+ * @property int $number_fulfilment_orders
+ * @property int $number_fulfilment_orders_state_in_process
+ * @property int $number_fulfilment_orders_state_submitted
+ * @property int $number_fulfilment_orders_state_confirmed
+ * @property int $number_fulfilment_orders_state_picking
+ * @property int $number_fulfilment_orders_state_picked
+ * @property int $number_fulfilment_orders_state_dispatched
+ * @property int $number_fulfilment_orders_state_cancel
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Bundle> $bundles
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients

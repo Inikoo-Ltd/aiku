@@ -39,21 +39,24 @@ class SubDepartmentResource extends JsonResource
         }
 
         return [
-            'slug'       => $subDepartment->slug,
-            'id'        => $subDepartment->id,
-            'image_id'   => $subDepartment->image_id,
-            'image'      => $subDepartment->imageSources(720, 720),
-            'code'       => $subDepartment->code,
-            'name'       => $subDepartment->name,
-            'state'      => $subDepartment->state,
-            'created_at' => $subDepartment->created_at,
-            'updated_at' => $subDepartment->updated_at,
-            'url_master'       => $urlMaster,
-             'is_name_reviewed' => $subDepartment->is_name_reviewed,
-             'is_description_title_reviewed' => $subDepartment->is_description_title_reviewed,
-             'is_description_reviewed' => $subDepartment->is_description_reviewed,
-             'is_description_extra_reviewed' => $subDepartment->is_description_extra_reviewed,
-            'stats' => $subDepartment->stats
+            'slug'                          => $subDepartment->slug,
+            'id'                            => $subDepartment->id,
+            'image_id'                      => $subDepartment->image_id,
+            'image'                         => $subDepartment->imageSources(720, 720),
+            'code'                          => $subDepartment->code,
+            'name'                          => $subDepartment->name,
+            'state'                         => $subDepartment->state,
+            'created_at'                    => $subDepartment->created_at,
+            'updated_at'                    => $subDepartment->updated_at,
+            'url_master'                    => $urlMaster,
+            'description'                   => $subDepartment->description,
+            'description_title'             => $subDepartment->description_title,
+            'description_extra'             => $subDepartment->description_extra,
+            'is_name_reviewed'              => $subDepartment->is_name_reviewed,
+            'is_description_title_reviewed' => $subDepartment->is_description_title_reviewed,
+            'is_description_reviewed'       => $subDepartment->is_description_reviewed,
+            'is_description_extra_reviewed' => $subDepartment->is_description_extra_reviewed,
+            'stats'                         => $subDepartment->stats
         ];
     }
 }

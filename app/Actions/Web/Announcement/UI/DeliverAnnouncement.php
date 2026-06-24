@@ -3,9 +3,9 @@
 namespace App\Actions\Web\Announcement\UI;
 
 use App\Actions\OrgAction;
-use App\Models\Announcement;
-use Lorisleiva\Actions\Concerns\AsController;
+use App\Models\Web\Announcement;
 use Inertia\Inertia;
+use Lorisleiva\Actions\Concerns\AsController;
 
 class DeliverAnnouncement extends OrgAction
 {

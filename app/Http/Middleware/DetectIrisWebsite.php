@@ -28,7 +28,7 @@ class DetectIrisWebsite
         if (config('iris.cache.website.ttl') == 0) {
             $websiteData = $this->getWebsiteData($domain);
         } else {
-            $key = config('iris.cache.website.prefix')."_$domain";
+            $key         = config('iris.cache.website.prefix').'_domain:'.$domain;
             $websiteData = Cache::remember(
                 $key,
                 config('iris.cache.website.ttl'),
@@ -37,7 +37,6 @@ class DetectIrisWebsite
                 }
             );
         }
-
 
         $request->merge($websiteData);
 
@@ -51,7 +50,7 @@ class DetectIrisWebsite
         if (!$website) {
             abort(404, 'Not found');
         }
-        $shop    = $website->shop;
+        $shop = $website->shop;
 
         return [
             'domain'        => $website->domain,
@@ -61,6 +60,7 @@ class DetectIrisWebsite
                 'symbol' => $shop->currency->symbol,
                 'name'   => $shop->currency->name,
             ],
+            'locale'        => $website->shop->language->code,
             'shop_type'     => $shop->type->value,
             'favicons'      => [
                 '16'  => $website->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png'),

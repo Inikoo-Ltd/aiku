@@ -13,6 +13,7 @@ use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplates;
 use App\Actions\CRM\Prospect\Mailshots\GetProspectMailshotRecipientsQueryBuilder;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
+use App\Actions\Helpers\TimeZone\UI\GetTimeZoneSelectOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\WithProspectsSubNavigation;
@@ -56,6 +57,8 @@ class ShowProspectMailshot extends OrgAction
         $isShowStop = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENDING]);
 
         $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
+
+        $isShowEditName = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENT]);
 
         $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_enabled;
         $mailshotSecondWave = null;
@@ -122,7 +125,7 @@ class ShowProspectMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
-                        $isShowActions ? [
+                        $isShowActions || $isShowEditName ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
@@ -273,6 +276,10 @@ class ShowProspectMailshot extends OrgAction
                         'mailshot' => $mailshot->slug
                     ]
                 ],
+                'mailshotId' => $mailshot->id,
+                'groupId' => $mailshot->group_id,
+                'timeZoneOptions' => GetTimeZoneSelectOptions::run(),
+                'defaultShopTimezone' => $this->shop->timezone->name,
 
             ]
         )->table(

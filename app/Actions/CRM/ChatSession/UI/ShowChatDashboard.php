@@ -46,9 +46,12 @@ class ShowChatDashboard extends OrgAction
                         'title' => $title,
                     ],
                 ],
-                'stats'            => $dashboardData['stats'],
-                'chatEnabledShops' => $dashboardData['chatEnabledShops'],
-                'table'            => $dashboardData['table'],
+                'stats'                 => $dashboardData['stats'],
+                'chatEnabledShops'      => $dashboardData['chatEnabledShops'],
+                'table'                 => $dashboardData['table'],
+                'visitorsByCountryRoute' => route('grp.org.chat.visitors-by-country', $organisation->slug),
+                'activeSessionsRoute'      => route('grp.org.chat.active-sessions', $organisation->slug),
+                'dashboardVisitorsRoute'   => route('grp.org.chat.dashboard-visitors', $organisation->slug),
             ]
         );
     }

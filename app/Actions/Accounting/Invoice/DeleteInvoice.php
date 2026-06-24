@@ -8,7 +8,9 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\Invoice\Traits\WithDeleteInvoiceUI;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Helpers\Dashboard\InvalidateDashboardCaches;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
@@ -31,18 +33,16 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
-use Exception;
-use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
 class DeleteInvoice extends OrgAction
 {
     use WithActionUpdate;
+    use WithDeleteInvoiceUI;
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
@@ -69,7 +69,7 @@ class DeleteInvoice extends OrgAction
 
         UpdateCustomerLastInvoicedDate::run($invoice->customer);
 
-        CustomerHydrateClv::dispatch($invoice->customer_id)->delay($this->hydratorsDelay);
+        CustomerHydrateClv::dispatch($invoice->customer_id)->delay(5);
 
         return $invoice;
     }
@@ -90,6 +90,8 @@ class DeleteInvoice extends OrgAction
 
     public function postDeleteInvoiceHydrators(Invoice $invoice): void
     {
+        InvalidateDashboardCaches::run($invoice);
+
         $customer = $invoice->customer;
         CustomerHydrateInvoices::dispatch($invoice->customer_id);
         ShopHydrateInvoices::dispatch($customer->shop);
@@ -117,11 +119,11 @@ class DeleteInvoice extends OrgAction
             $invoiceCategory->refresh();
             InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
 
-            RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            RedoInvoiceCategoryTimeSeries::dispatch($invoice->invoice_category_id, $invoiceDate->toDateString(), $invoiceDate->toDateString())->delay(2);
         }
 
         if ($invoice->sales_channel_id) {
-            RedoSalesChannelTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            RedoSalesChannelTimeSeries::dispatch($invoice->sales_channel_id, $invoiceDate->toDateString(), $invoiceDate->toDateString())->delay(2);
         }
 
         if ($invoice->shipping_zone_id) {
@@ -140,53 +142,5 @@ class DeleteInvoice extends OrgAction
         ];
     }
 
-    public function asController(Invoice $invoice, ActionRequest $request): Invoice
-    {
-        $this->set('deleted_by', $request->user()->id);
-        $this->initialisationFromShop($invoice->shop, $request);
-
-        return $this->handle($invoice, $this->validatedData);
-    }
-
-
-    public function action(Invoice $invoice, array $modelData): Invoice
-    {
-        $this->asAction = true;
-        $this->initialisationFromShop($invoice->shop, $modelData);
-
-        return $this->handle($invoice, $this->validatedData);
-    }
-
     public string $commandSignature = 'invoice:delete {slug} {--deleted_note= : Reason for deletion} {--deleted_by= : User who deleted the invoice}';
-
-
-    public function asCommand(Command $command): int
-    {
-        $this->asAction = true;
-
-        try {
-            /** @var Invoice $invoice */
-            $invoice = Invoice::where('slug', $command->argument('slug'))->firstOrFail();
-        } catch (Exception $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-
-
-        $modelData = [];
-
-        if ($command->option('deleted_note')) {
-            $modelData['deleted_note'] = $command->option('deleted_note');
-        }
-        if ($command->option('deleted_by')) {
-            $modelData['deleted_by'] = $command->option('deleted_by');
-        }
-
-        $this->action($invoice, $modelData);
-
-        return 0;
-    }
-
-
 }

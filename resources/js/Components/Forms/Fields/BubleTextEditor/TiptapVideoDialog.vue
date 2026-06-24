@@ -26,7 +26,7 @@ function onSubmit() {
 <template>
   <Dialog
     v-model:visible="props.show"
-    :header="trans('Add youtube video')"
+    :header="trans('Add YouTube video')"
     modal
     :style="{ width: '30rem' }"
     :breakpoints="{ '960px': '90vw', '640px': '95vw' }"

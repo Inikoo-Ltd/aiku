@@ -14,6 +14,7 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithNoDepartment;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithVolGrDiscount;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateNumberMismatches;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
@@ -37,6 +38,7 @@ class HydrateMasterShop extends HydrateModel
         MasterShopHydrateMasterFamilies::run($masterShop);
         MasterShopHydrateMasterAssets::run($masterShop);
         MasterShopHydrateMasterFamiliesWithNoDepartment::run($masterShop);
+        MasterShopHydrateMasterFamiliesWithVolGrDiscount::run($masterShop);
         MasterShopHydrateMasterCollections::run($masterShop);
         MasterShopHydrateNumberMismatches::run($masterShop);
     }

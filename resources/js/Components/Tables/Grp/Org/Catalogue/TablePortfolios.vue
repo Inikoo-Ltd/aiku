@@ -46,7 +46,7 @@ import Select from "primevue/select"
 import { faStar } from "@fas"
 import route from "../../../../../../../vendor/tightenco/ziggy/src/js/index"
 import Modal from "@/Components/Utils/Modal.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 library.add(
 	faConciergeBell,
@@ -411,7 +411,7 @@ watch(
 								</InputIcon>
 								<InputText
 									v-model="filters['global'].value"
-									placeholder="Search..."
+									:placeholder="trans('Search...')"
 									class="w-full" />
 							</IconField>
 						</div>

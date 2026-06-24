@@ -23,7 +23,10 @@ import {
 	faBoxes,
     faPause,
     faPlay,
-	faStore
+	faStore,
+	faExchange,
+    faFileCertificate,
+    faEnvelopeOpenText
 } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MetaLabel from "@/Components/Headings/MetaLabel.vue"
@@ -32,7 +35,7 @@ import Action from "@/Components/Forms/Fields/Action.vue"
 import SubNavigation from "@//Components/Navigation/SubNavigation.vue"
 import { kebabCase } from "lodash-es"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faNarwhal, faReceipt } from "@fas"
+import { faNarwhal, faReceipt, faWarehouseAlt } from "@fas"
 import { faLayerPlus } from "@far"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { inject, ref } from "vue"
@@ -64,7 +67,11 @@ library.add(
 	faBoxes,
     faPause,
     faPlay,
-	faStore
+	faStore,
+	faExchange,
+	faWarehouseAlt,
+    faFileCertificate,
+    faEnvelopeOpenText
 )
 
 const props = defineProps<{
@@ -80,7 +87,7 @@ if (props.dataToSubmit && props.data.actionActualMethod) {
 	props.dataToSubmit["_method"] = props.data.actionActualMethod
 }
 
-const originUrl = location.origin
+const originUrl = typeof window !== "undefined" ? window.location.origin : ""
 const layout = inject("layout", layoutStructure)
 
 const isShowDummySlotName = false
@@ -98,6 +105,7 @@ const setError = (e) => {
 <template>
 	<!-- Sub Navigation -->
 	<SubNavigation v-if="data.subNavigation?.length" :dataNavigation="data.subNavigation" />
+	<SubNavigation v-if="data.subNavigation2?.length" :dataNavigation="data.subNavigation2" />
 	<slot name="afterSubNav"></slot>
 
 	<div
@@ -352,17 +360,24 @@ const setError = (e) => {
 										class=""
 										:method="button.route?.method || 'get'"
 										@start="() => (isButtonLoading = 'buttonGroup' + index)"
+										@error="(err) => {
+											console.log(err);
+											let msg = trans('Error processing action.\n')
+											Object.entries(err).forEach(([key, value]) => {
+												msg += value + '. \n'
+											})
+
+											notify({
+												title: 'Failed',
+												text: msg,
+												type: 'error'
+											});
+										}"
 										@finish="
 											() =>
 												button.fullLoading
 													? false
 													: (isButtonLoading = false)
-										"
-										@error="
-											() =>
-												button.fullLoading
-													? (isButtonLoading = false)
-													: false
 										"
 										:as="button.target ? 'a' : 'div'"
 										:target="button.target">

@@ -17,6 +17,7 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
@@ -79,6 +80,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Inventory\PickedBay> $pickedBays
  * @property-read Collection<int, PickingRoute> $pickingRoutes
  * @property-read Collection<int, \App\Models\Inventory\PickingSession> $pickingSessions
+ * @property-read Collection<int, ReturnDeliveryNote> $returnDeliveryNotes
  * @property-read Collection<int, Role> $roles
  * @property-read \App\Models\Inventory\WarehouseStats|null $stats
  * @property-read Collection<int, \App\Models\Inventory\WarehouseTimeSeries> $timeSeries
@@ -239,5 +241,10 @@ class Warehouse extends Model implements Auditable
     public function orgStockHistories(): HasMany
     {
         return $this->hasMany(OrgStockHistory::class);
+    }
+
+    public function returnDeliveryNotes(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
     }
 }

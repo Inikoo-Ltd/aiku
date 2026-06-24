@@ -35,6 +35,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,12 +49,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Audits\Transformer\OrderSubmitSummaryTransformer;
 use App\Audits\Transformer\RelationTransformer;
+use App\Models\Dispatching\ReturnDeliveryNote;
 
 /**
  * @property int $id
@@ -163,6 +165,8 @@ use App\Audits\Transformer\RelationTransformer;
  * @property string|null $phone
  * @property string|null $contact_name
  * @property string|null $company_name
+ * @property int|null $offer_voucher_id
+ * @property int|null $discounted_offer_id
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -208,7 +212,7 @@ class Order extends Model implements HasMedia, Auditable
     use HasAddresses;
     use HasAttachments;
     use HasHistory;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                          => 'array',
@@ -385,6 +389,8 @@ class Order extends Model implements HasMedia, Auditable
             attributes: ['name']
         );
 
+        $data = OrderSubmitSummaryTransformer::execute($this, $data);
+
         return $data;
     }
 
@@ -501,5 +507,9 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(ShippingZone::class);
     }
 
+    public function returnedDeliveryNote(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
+    }
 
 }

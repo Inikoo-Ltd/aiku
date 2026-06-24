@@ -30,6 +30,54 @@ class EditOutboxInShop extends OrgAction
     {
 
         $fields = [];
+
+        $subjectField = [
+            'title' => '',
+            'fields' => [
+                'subject' => [
+                    'type' => 'input',
+                    'label' => __('subject'),
+                    'placeholder' => __('Email subject'),
+                    'required' => false,
+                    'value' => $outbox->emailOngoingRun?->email?->subject,
+                ],
+            ]
+        ];
+
+        $intervalField = [
+            'title' => '',
+            'fields' => [
+                'interval' => [
+                    'type' => 'input_number',
+                    'label' => __('Cooldown Period (in hours)'),
+                    'placeholder' => __('Cooldown Period (in hours)'),
+                    'required' => true,
+                    'value' => $outbox->interval,
+                ],
+            ]
+        ];
+
+        $isApplicableField = [
+            'title' => '',
+            'fields' => [
+                'is_applicable' => [
+                    'type' => 'select',
+                    'label' => __('Notification active'),
+                    'placeholder' => __('Notification active'),
+                    'options' => $outbox->is_applicable ? [
+                        ['label' => __('Yes'), 'value' => true],
+                        ['label' => __('No'), 'value' => false],
+                    ] : [
+                        ['label' => __('No'), 'value' => false],
+                        ['label' => __('Yes'), 'value' => true],
+                    ],
+                    'required' => true,
+                    'mode' => 'single',
+                    'value' => $outbox->is_applicable,
+                ],
+            ]
+        ];
+
         if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD])) {
             $fields[] = [
                 'title' => '',
@@ -41,113 +89,30 @@ class EditOutboxInShop extends OrgAction
                         'required' => false,
                         'value' => $outbox->days_after,
                     ],
-                    // 'send_time' => [
-                    //     'type' => 'select',
-                    //     'label' => __('Send Time'),
-                    //     'placeholder' => __('Send Time'),
-                    //     'options'  => [
-                    //         ['label' => '00:00', 'value' => '00:00:00'],
-                    //         ['label' => '01:00', 'value' => '01:00:00'],
-                    //         ['label' => '02:00', 'value' => '02:00:00'],
-                    //         ['label' => '03:00', 'value' => '03:00:00'],
-                    //         ['label' => '04:00', 'value' => '04:00:00'],
-                    //         ['label' => '05:00', 'value' => '05:00:00'],
-                    //         ['label' => '06:00', 'value' => '06:00:00'],
-                    //         ['label' => '07:00', 'value' => '07:00:00'],
-                    //         ['label' => '08:00', 'value' => '08:00:00'],
-                    //         ['label' => '09:00', 'value' => '09:00:00'],
-                    //         ['label' => '10:00', 'value' => '10:00:00'],
-                    //         ['label' => '11:00', 'value' => '11:00:00'],
-                    //         ['label' => '12:00', 'value' => '12:00:00'],
-                    //         ['label' => '13:00', 'value' => '13:00:00'],
-                    //         ['label' => '14:00', 'value' => '14:00:00'],
-                    //         ['label' => '15:00', 'value' => '15:00:00'],
-                    //         ['label' => '16:00', 'value' => '16:00:00'],
-                    //         ['label' => '17:00', 'value' => '17:00:00'],
-                    //         ['label' => '18:00', 'value' => '18:00:00'],
-                    //         ['label' => '19:00', 'value' => '19:00:00'],
-                    //         ['label' => '20:00', 'value' => '20:00:00'],
-                    //         ['label' => '21:00', 'value' => '21:00:00'],
-                    //         ['label' => '22:00', 'value' => '22:00:00'],
-                    //         ['label' => '23:00', 'value' => '23:00:00'],
-                    //     ],
-                    //     'value'    => substr($outbox->send_time ?? '', 0, 8),
-                    //     'required' => false,
-                    // ],
                 ]
             ];
         } elseif (in_array($outbox->code, [OutboxCodeEnum::BASKET_LOW_STOCK])) {
-            $fields = [
-                [
-                    'title' => '',
-                    'fields' => [
-                        'subject' => [
-                            'type' => 'input',
-                            'label' => __('subject'),
-                            'placeholder' => __('Email subject'),
-                            'required' => false,
-                            'value' => $outbox->emailOngoingRun?->email?->subject,
-                        ],
-                    ]
-                ],
-                [
-                    'title' => '',
-                    'fields' => [
-                        'threshold' => [
-                            'type' => 'input_number',
-                            'label' => __('Low Stock Threshold'),
-                            'placeholder' => __('Low Stock Threshold'),
-                            'required' => true,
-                            'value' => $outbox->threshold,
-                        ],
-                    ]
-                ],
-                [
-                    'title' => '',
-                    'fields' => [
-                        'interval' => [
-                            'type' => 'input_number',
-                            'label' => __('Cooldown Period (in hours)'),
-                            'placeholder' => __('Cooldown Period (in hours)'),
-                            'required' => true,
-                            'value' => $outbox->interval,
-                        ],
-                    ]
-                ],
-                [
-                    'title' => '',
-                    'fields' => [
-                        'is_applicable' => [
-                            'type' => 'select',
-                            'label' => __('Notification active'),
-                            'placeholder' => __('Notification active'),
-                            'options' => $outbox->is_applicable ? [
-                                ['label' => __('Yes'), 'value' => true],
-                                ['label' => __('No'), 'value' => false],
-                            ] : [
-                                ['label' => __('No'), 'value' => false],
-                                ['label' => __('Yes'), 'value' => true],
-                            ],
-                            'required' => true,
-                            'mode' => 'single',
-                            'value' => $outbox->is_applicable,
-                        ],
-                    ]
-                ]
-            ];
-        } else {
+            $fields[] = $subjectField;
             $fields[] = [
                 'title' => '',
                 'fields' => [
-                    'subject' => [
-                        'type' => 'input',
-                        'label' => __('subject'),
-                        'placeholder' => __('Email subject'),
-                        'required' => false,
-                        'value' => $outbox->emailOngoingRun?->email?->subject,
+                    'threshold' => [
+                        'type' => 'input_number',
+                        'label' => __('Low Stock Threshold'),
+                        'placeholder' => __('Low Stock Threshold'),
+                        'required' => true,
+                        'value' => $outbox->threshold,
                     ],
                 ]
             ];
+            $fields[] = $intervalField;
+            $fields[] = $isApplicableField;
+        } elseif (in_array($outbox->code, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION])) {
+            $fields[] = $subjectField;
+            $fields[] = $intervalField;
+            $fields[] = $isApplicableField;
+        } else {
+            $fields[] = $subjectField;
         }
 
 

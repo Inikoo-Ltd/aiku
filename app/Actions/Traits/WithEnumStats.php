@@ -18,7 +18,9 @@ trait WithEnumStats
         $enum,
         $models,
         $where = false,
-        $fieldStatsLabel = null
+        $fieldStatsLabel = null,
+        $modelCustomLabel = null,
+        $connection = 'aiku'
     ): array {
         $stats = [];
 
@@ -35,7 +37,8 @@ trait WithEnumStats
             $fieldStatsLabel = $field;
         }
 
-        $count = $models::selectRaw("$field, count(*) as total")
+        $count = $models::on($connection)
+            ->selectRaw("$field, count(*) as total")
             ->when(
                 $applyWhere,
                 $where
@@ -43,7 +46,11 @@ trait WithEnumStats
             ->groupBy($field)
             ->pluck('total', $field)->all();
         foreach ($enum::cases() as $case) {
-            $stats["number_{$model}_{$fieldStatsLabel}_".$case->snake()] = Arr::get($count, $case->value, 0);
+            if ($modelCustomLabel) {
+                $stats["number_{$modelCustomLabel}_{$fieldStatsLabel}_".$case->snake()] = Arr::get($count, $case->value, 0);
+            } else {
+                $stats["number_{$model}_{$fieldStatsLabel}_".$case->snake()] = Arr::get($count, $case->value, 0);
+            }
         }
 
         return $stats;

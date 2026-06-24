@@ -21,6 +21,7 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Illuminate\Http\RedirectResponse;
 
 class SyncStoredItemToPallet extends OrgAction
 {
@@ -36,6 +37,11 @@ class SyncStoredItemToPallet extends OrgAction
         Arr::map(Arr::get($modelData, 'stored_item_ids'), function (array $item, int|string $key) {
             if ($key == 'null') {
                 throw ValidationException::withMessages(['stored_item_ids' => __('The stored item is required')]);
+            }
+
+            $storedItem = StoredItem::find($key);
+            if ($storedItem && !$storedItem->state->canBeStored()) {
+                throw ValidationException::withMessages(['stored_item_ids' => __('The SKU ":reference" is :state and cannot be stored.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
             }
         });
 
@@ -97,6 +103,11 @@ class SyncStoredItemToPallet extends OrgAction
         $this->initialisation($pallet->organisation, $modelData);
 
         $this->handle($pallet, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
     public function jsonResponse(Pallet $pallet): PalletResource

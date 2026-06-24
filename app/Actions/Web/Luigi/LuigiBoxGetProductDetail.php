@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 27-01-2026-09h-22m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -25,7 +25,11 @@ class LuigiBoxGetProductDetail extends IrisAction
     public function handle(array $modelData): LengthAwarePaginator
     {
         $productIdString = data_get($modelData, 'product_ids');
-        $productIds = json_decode("[{$productIdString}]"); // Convert to an array of integers
+        $productIds      = json_decode("[$productIdString]"); // Convert to an array of integers
+
+        if ($productIds == null) {
+            $productIds = [];
+        }
 
         $queryBuilder = QueryBuilder::for(Product::class)
             ->whereIn('products.id', $productIds)
@@ -50,9 +54,9 @@ class LuigiBoxGetProductDetail extends IrisAction
         // To keep the order of products to like the original Luigi
         $caseStatement = '';
         foreach ($productIds as $index => $productId) {
-            $caseStatement .= "WHEN products.id = {$productId} THEN {$index} ";
+            $caseStatement .= "WHEN products.id = $productId THEN $index ";
         }
-        $queryBuilder->orderByRaw("CASE {$caseStatement} ELSE 9999 END");
+        $queryBuilder->orderByRaw("CASE $caseStatement ELSE 9999 END");
 
 
         return $queryBuilder
@@ -63,7 +67,7 @@ class LuigiBoxGetProductDetail extends IrisAction
     public function rules(): array
     {
         return [
-            'product_ids'   => ['required', 'string'],
+            'product_ids' => ['required', 'string'],
         ];
     }
 

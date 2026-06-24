@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
@@ -43,7 +44,7 @@ class DeactivateShopifyProduct
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            Log::error("Failed to initialize Shopify GraphQL client");
 
             return false;
         }
@@ -80,7 +81,7 @@ class DeactivateShopifyProduct
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Inventory level ID retrieval failed: ".$errorMessage);
+                Log::error("Inventory level ID retrieval failed: ".$errorMessage);
 
                 return false;
             }
@@ -114,7 +115,7 @@ class DeactivateShopifyProduct
 
                 if (!empty($mutationResponse['errors']) || !isset($mutationResponse['body'])) {
                     $errorMessage = 'Error in API response: '.json_encode($mutationResponse['errors'] ?? []);
-                    Sentry::captureMessage("Inventory deactivation failed: ".$errorMessage);
+                    Log::error("Inventory deactivation failed: ".$errorMessage);
 
                     return false;
                 }
@@ -125,7 +126,7 @@ class DeactivateShopifyProduct
                 if (!empty($mutationBody['data']['inventoryDeactivate']['userErrors'])) {
                     $errors       = $mutationBody['data']['inventoryDeactivate']['userErrors'];
                     $errorMessage = 'User errors: '.json_encode($errors);
-                    Sentry::captureMessage("Inventory deactivation failed: ".$errorMessage);
+                    Log::error("Inventory deactivation failed: ".$errorMessage);
 
                     return false;
                 }

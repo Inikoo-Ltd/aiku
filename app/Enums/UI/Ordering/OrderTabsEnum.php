@@ -25,6 +25,7 @@ enum OrderTabsEnum: string
     // case DISCOUNTS                   = 'discounts';
     case INVOICES                    = 'invoices';
     case DELIVERY_NOTES              = 'delivery_notes';
+    case RETURNS                     = 'returns';
 
     // case HISTORY                     = 'history';
 
@@ -72,6 +73,12 @@ enum OrderTabsEnum: string
             OrderTabsEnum::DELIVERY_NOTES => [
                 'title' => __('Delivery notes'),
                 'icon'  => 'fal fa-truck',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
+            OrderTabsEnum::RETURNS  => [
+                'title' => __('Returns'),
+                'icon'  => 'fal fa-exchange',
                 'type'  => 'icon',
                 'align' => 'right',
             ],

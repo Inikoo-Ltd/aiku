@@ -2,7 +2,7 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -11,18 +11,36 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
-import Image from '../Image.vue'
+import Image from '../../Common/Components/Image.vue'
+import axios from 'axios'
 
 const props = defineProps<{
     shop_data: {
         id: number
-        slug: string
+        slug?: string
+        organisation?: string
+        offercampaign?: string        
         currency_code: string
+        default_dates: {
+            start: string
+            end: string
+        }
     }
     product_id?: number
 }>()
 
+const today = new Date(new Date().setHours(0, 0, 0, 0))
 const isOpenModal = ref(false)
+const openModal = () => {
+    resetForm()
+    startDate.value = new Date(props.shop_data.default_dates.start)
+    endDate.value = new Date(props.shop_data.default_dates.end)
+    isOpenModal.value = true
+}
+const closeModal = () => {
+    isOpenModal.value = false
+    resetForm()
+}
 
 const offerLabel = ref('')
 const offerAmount = ref<number | null>(0)
@@ -30,10 +48,31 @@ const quantity = ref<number | null>(1)
 const productId = ref<number | null>(0)
 const selectedProduct = ref<any | null>(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
-const startDate = ref<Date | null>(null)
+const startDate = ref<Date | null>(today)
 const endDate = ref<Date | null>(null)
 
-const today = new Date(new Date().setHours(0, 0, 0, 0))
+const quickIntervalDays = ref<number | null>(null)
+
+const quickIntervalPresets = [1, 2, 3, 7]
+
+let isApplyingPreset = false
+
+const applyQuickInterval = (days: number) => {
+    isApplyingPreset = true
+    dateType.value = 'interval'
+
+    const start = startDate.value ? new Date(startDate.value) : new Date(today)
+    const end = new Date(start)
+    end.setDate(end.getDate() + days)
+
+    startDate.value = start
+    endDate.value = end
+    quickIntervalDays.value = days
+
+    nextTick(() => {
+        isApplyingPreset = false
+    })
+}
 
 function formatDate(date: Date | null) {
     if (!date) return null
@@ -46,51 +85,58 @@ function formatDate(date: Date | null) {
 }
 
 const isLoadingSubmit = ref(false)
-const submitCategoryOffer = () => {
+const submitGiftOffer = () => {
     // Section: Submit
-    router.post(
+    isLoadingSubmit.value = true
+
+    axios.post(
         route('grp.models.gift_offer.store', {
             shop: props.shop_data.id,
         }),
         {
             name: offerLabel.value,
-            productId: productId.value || props.product_id,
+            product_id: productId.value || props.product_id,
             quantity: quantity.value,
-            offer_amount: offerAmount.value,
-            date_type: dateType.value,
-            start_date: formatDate(startDate.value),
-            end_date: formatDate(endDate.value)
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                resetForm()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
+            min_order_amount: offerAmount.value,
+            duration: dateType.value,
+            start_at: formatDate(startDate.value),
+            end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null
         }
     )
+        .then((response) => {
+            notify({
+                title: trans("Success"),
+                text: trans("Successfully submit the data"),
+                type: "success"
+            })
+            resetForm()
+            isOpenModal.value = false
+            if (!props.product_id) {
+                router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                    organisation: props.shop_data.organisation,
+                    shop: props.shop_data.slug,
+                    offerCampaign: props.shop_data.offercampaign,
+                    offer: response.data.slug
+                }))
+            }
+            router.reload()
+        })
+        .catch((error) => {
+            const errors = error.response?.data?.errors || {}
+            const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again")
+            notify({
+                title: trans("Something went wrong"),
+                text: errMsg,
+                type: "error"
+            })
+        })
+        .finally(() => {
+            isLoadingSubmit.value = false
+        })
 }
 
 const productFetchRoute = {
-    name: 'grp.json.shop.products',
+    name: 'grp.json.shop.products_including_not_for_sale',
     parameters: {
         shop: (route().params as any).shop
     }
@@ -107,9 +153,24 @@ const resetForm = () => {
     selectedProduct.value = null
     quantity.value = 1
     dateType.value = 'permanent'
-    startDate.value = null
+    startDate.value = today
     endDate.value = null
+    quickIntervalDays.value = null
+    isLoadingSubmit.value = false
 }
+
+watch(dateType, (val) => {
+    if (val === 'permanent') {
+        endDate.value = null
+        quickIntervalDays.value = null
+    }
+})
+
+watch([startDate, endDate], () => {
+    if (!isApplyingPreset) {
+        quickIntervalDays.value = null
+    }
+})
 
 const isFormInvalid = computed(() => {
     if (!offerLabel.value) return true
@@ -125,9 +186,9 @@ resetForm()
 
 <template>
     <div>
-        <Button :label="trans('Create Gift Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Gift Offer')" @click="openModal" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Gift Offer') }}</h2>
 
@@ -148,7 +209,29 @@ resetForm()
                     </label>
                     <PureMultiselectInfiniteScroll v-model="productId" :fetchRoute="productFetchRoute"
                         labelProp="name" placeholder="Select product" valueProp="id" :required="true" mode="single"
-                        @selectedObject="(product) => selectedProduct = product" />
+                        @selectedObject="(product) => selectedProduct = product">
+                        <template #singlelabel="{ value }">
+                            <div class="w-full text-left pl-4 leading-4 truncate mr-2">
+                                {{ value.name }}
+                                <span v-if="value.code" class="text-sm text-gray-400">({{ value.code }})</span>
+                                <span class="text-sm text-gray-400"> · {{ trans('Stock') }}: {{ value.stock ?? 0 }}</span>
+                            </div>
+                        </template>
+
+                        <template #option="{ option, isSelected }">
+                            <div class="flex w-full items-center justify-between gap-x-2">
+                                <div>
+                                    {{ option.name }}
+                                    <span v-if="option.code" class="text-sm"
+                                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span>
+                                </div>
+                                <span class="text-sm whitespace-nowrap"
+                                    :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">
+                                    {{ trans('Stock') }}: {{ option.stock ?? 0 }}
+                                </span>
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
                 </div>
                 <div class="space-y-2" v-if="selectedProductImage">
                     <!-- Product Image -->
@@ -187,16 +270,32 @@ resetForm()
                         {{ trans('Offer Duration') }}:
                     </div>
 
-                    <div class="flex gap-x-4">
-                        <div class="flex items-center gap-x-2">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <label for="permanent"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'permanent'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
-                            <label for="permanent">{{ trans('Permanent') }}</label>
-                        </div>
+                            <span>{{ trans('Permanent') }}</span>
+                        </label>
 
-                        <div class="flex items-center gap-x-2">
+                        <label for="interval"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="dateType === 'interval'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
-                            <label for="interval">{{ trans('Interval') }}</label>
-                        </div>
+                            <span>{{ trans('Interval') }}</span>
+                        </label>
+                        <button v-if="dateType === 'interval'" v-for="days in quickIntervalPresets" :key="days" type="button"
+                            @click="applyQuickInterval(days)"
+                            class="px-3.5 py-2.5 rounded-lg border text-sm cursor-pointer transition-colors"
+                            :class="quickIntervalDays === days
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
+                            {{ trans(':count day', { count: String(days) }) }}
+                        </button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -231,8 +330,8 @@ resetForm()
 
 
                 <div class="mt-8 flex justify-end gap-x-4">
-                    <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitCategoryOffer"
+                    <Button @click="closeModal" type="cancel" />
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitGiftOffer"
                         :loading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit">
                     </Button>
                 </div>

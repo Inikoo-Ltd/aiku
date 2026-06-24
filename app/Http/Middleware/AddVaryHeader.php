@@ -11,6 +11,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 
+//todo: delete this is not longer needed
 class AddVaryHeader
 {
     public function handle(Request $request, Closure $next)

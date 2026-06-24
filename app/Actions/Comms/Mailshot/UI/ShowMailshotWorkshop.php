@@ -55,9 +55,10 @@ class ShowMailshotWorkshop extends OrgAction
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
         $email = $mailshot->email;
+        $hasPublishedVersion = $email?->liveSnapshot?->compiled_layout ? true : false;
 
         $templateLayout = null;
-        if ($request->has('template')) {
+        if ($request->has('template') && !$hasPublishedVersion) {
             $templateSlug = $request->get('template');
             $template = EmailTemplate::findBySlug($templateSlug);
             if ($template) {
@@ -134,6 +135,7 @@ class ShowMailshotWorkshop extends OrgAction
 
 
                 'unpublished_layout' => $templateLayout ?? $email->unpublishedSnapshot->layout,
+                'compiledLayout'     => $email?->liveSnapshot?->compiled_layout,
                 'snapshot'    => $email->unpublishedSnapshot,
                 'builder'     => $email->builder,
                 'imagesUploadRoute'   => [
@@ -181,6 +183,8 @@ class ShowMailshotWorkshop extends OrgAction
                 'mergeContents' => GetMailshotMergeContents::run(),
                 'status' => $email->outbox->state,
                 'organisationSlug' => $this->organisation->slug,
+                'shopSlug' => $mailshot->shop->slug,
+                'shopId' => $mailshot->shop_id,
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => EmailTemplateTabsEnum::navigation(),

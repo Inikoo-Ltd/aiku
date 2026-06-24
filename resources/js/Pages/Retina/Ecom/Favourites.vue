@@ -15,7 +15,7 @@ import { get, set  } from "lodash-es"
 import axios from "axios"
 
 import { GridProducts } from "@/Components/Product"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 
 library.add(faHeart, faBoxOpen, faImage)
 
@@ -212,7 +212,7 @@ const fetchHasInBasket = async () => {
 
 const handleTabFocus = () => {
     if (document.visibilityState === 'visible') {
-        fetchHasInBasket()
+        if(layout?.iris?.is_logged_in) fetchHasInBasket()
     }
 }
 
@@ -233,11 +233,11 @@ onMounted(() => {
         :resource="data"
         :basket-transactions="basketTransactions"
         :preserve-scroll="true"
-        class="mt-5 "
+         class="mt-5 "
 		:key="key"
     >
         <template #card="{ item }"> 
-            <div   class="offers">
+            <div class="offers h-full">
                 <ProductRenderEcom
                     :product="item"
                     :hasInBasket="item"
@@ -272,8 +272,10 @@ onMounted(() => {
 :deep(.discount .offer-trigger-label) {
   @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
 
-  border-color: v-bind("layout.iris.theme.color[4]") !important;
-  color: v-bind("layout.iris.theme.color[4]") !important;
+//   border-color: v-bind("layout.iris.theme.color[4]") !important;
+//   color: v-bind("layout.iris.theme.color[4]") !important;
+    color: #E87928 !important;
+    border-color: #E87928 !important;
 }
 
 

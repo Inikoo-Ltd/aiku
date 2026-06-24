@@ -63,6 +63,7 @@ class StoreFamilyFromMasterFamily extends GrpAction
                     'state'                      => $createWebpage ? ProductCategoryStateEnum::ACTIVE : ProductCategoryStateEnum::IN_PROCESS,
                     'type'                       => ProductCategoryTypeEnum::FAMILY,
                     'master_product_category_id' => $masterFamily->id,
+                    'trade_unit_family_id'       => $masterFamily->trade_unit_family_id,
                 ];
 
 

@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import Image from '@/Components/Image.vue'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import Image from "@common/Components/Image.vue"
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
@@ -34,7 +34,7 @@ const locale = inject('locale', retinaLayoutStructure)
 function productRoute(product) {
     switch (route().current()) {
         case 'retina.ecom.orders.show':
-            return product.webpage_url
+            return product.webpage_canonical_url
         default:
             return ''
     }
@@ -133,12 +133,12 @@ const debounceUpdateQuantity = debounce(
                 </div>
 
                 <div v-else>
-                    {{
+                    <!-- {{
                         Number.isInteger(Number(item.quantity_ordered)) && String(item.quantity_ordered).match(/^\d+(\.0+)?$/)
                             ? parseInt(item.quantity_ordered)
                             : parseFloat(item.quantity_ordered)
-                    }}
-                    <!-- <FractionDisplay :fractionData="item.quantity_ordered_fractional" /> -->
+                    }} -->
+                    <FractionDisplay :fractionData="item.quantity_ordered_fractional" />
                 </div>
                 
                 <!-- <Transition name="spin-to-down">

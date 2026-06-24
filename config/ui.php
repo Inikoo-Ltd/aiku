@@ -13,7 +13,9 @@ return [
         'records_per_page'     => 50,
         'min_records_per_page' => 10,
         'max_records_per_page' => 150
-
+    ],
+    'cache' => [
+        'layout' => env('UI_CACHE_LAYOUT', true)
     ]
 
 ];

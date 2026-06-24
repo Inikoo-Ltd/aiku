@@ -40,8 +40,6 @@ class StoreFulfilmentFromEbay extends OrgAction
         $deliveryAttributes = $this->getContactAttributes(Arr::get($modelData, 'fulfillmentStartInstructions.0.shippingStep.shipTo'));
         $deliveryAddress = Arr::get($deliveryAttributes, 'address');
 
-        $billingAddress = $ebayUser->customer->address->getFields();
-
         $customerEmail = Arr::get($deliveryAttributes, 'email');
         $customerClient = $ebayUser->customer?->clients()->where('email', $customerEmail)->first();
 

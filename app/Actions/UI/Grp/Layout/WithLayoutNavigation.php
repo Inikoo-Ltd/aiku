@@ -17,8 +17,11 @@ trait WithLayoutNavigation
 {
     public function getWarehouseNavs(User $user, Organisation $organisation, array $navigation): array
     {
-        if ($user->authTo(['org-supervisor.'.$organisation->id, 'warehouses-view.'.$organisation->id])) {
-
+        if ($user->authTo([
+            'org-supervisor.'.$organisation->id,
+            'warehouses-view.'.$organisation->id,
+            'inventory.'.$organisation->id.'.view',
+        ])) {
             $navigation['warehouses_index'] = [
                 'label'   => __('Warehouses'),
                 'scope'   => 'warehouses',
@@ -43,13 +46,11 @@ trait WithLayoutNavigation
 
         /** @var Warehouse $warehouse */
         foreach ($user->authorisedWarehouses()->where('organisation_id', $organisation->id)->get() as $warehouse) {
-
             if ($warehouse->organisation->type == OrganisationTypeEnum::AGENT) {
                 $navigation['warehouses_navigation'][$warehouse->slug] = GetAgentWarehouseNavigation::run($warehouse, $user);
             } else {
                 $navigation['warehouses_navigation'][$warehouse->slug] = GetWarehouseNavigation::run($warehouse, $user);
             }
-
         }
 
         return $navigation;
@@ -57,7 +58,6 @@ trait WithLayoutNavigation
 
     public function getAccountingNavs(User $user, Organisation $organisation, array $navigation): array
     {
-
         if ($user->authTo("accounting.$organisation->id.view")) {
             $navigation['accounting'] = [
                 'root'  => 'grp.org.accounting',
@@ -137,7 +137,8 @@ trait WithLayoutNavigation
                 ]
             ];
         }
-        return  $navigation;
+
+        return $navigation;
     }
 
     public function getHumanResourcesNavs(User $user, Organisation $organisation, array $navigation): array
@@ -182,7 +183,7 @@ trait WithLayoutNavigation
                         ],
 
                         [
-                            'label' => __('Holidays'),
+                            // 'label' => __('Holidays'),
                             'icon'  => ['fal', 'fa-umbrella'],
                             'root'  => 'grp.org.hr.holidays.',
                             'route' => [
@@ -192,7 +193,7 @@ trait WithLayoutNavigation
                         ],
 
                         [
-                            'label' => __('Employees'),
+                            // 'label' => __('Employees'),
                             'icon'  => ['fal', 'fa-user-hard-hat'],
                             'root'  => 'grp.org.hr.employees.',
                             'route' => [
@@ -247,7 +248,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
-                            'label' => __('Analytics'),
+                            // 'label' => __('Analytics'),
                             'icon'  => ['fal', 'fa-chart-line'],
                             'root'  => 'grp.org.hr.analytics.',
                             'route' => [
@@ -276,9 +277,9 @@ trait WithLayoutNavigation
     {
         if ($user->authTo('org-reports.'.$organisation->id)) {
             $navigation['reports'] = [
-                'label'   => __('Reports'),
-                'icon'    => ['fal', 'fa-chart-line'],
-                'root'    => 'grp.org.reports',
+                'label' => __('Reports'),
+                'icon'  => ['fal', 'fa-chart-line'],
+                'root'  => 'grp.org.reports',
 
                 'route' => [
                     'name'       => 'grp.org.reports.index',
@@ -293,6 +294,7 @@ trait WithLayoutNavigation
                 ],
             ];
         }
+
         return $navigation;
     }
 
@@ -353,10 +355,10 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
-                            "root"    => "grp.org.warehouses.show.infrastructure.locations.",
-                            "label"   => __("Locations"),
-                            "icon"    => ["fal", "fa-inventory"],
-                            "route"   => [
+                            "root"  => "grp.org.warehouses.show.infrastructure.locations.",
+                            "label" => __("Locations"),
+                            "icon"  => ["fal", "fa-inventory"],
+                            "route" => [
                                 "name"       => "grp.org.warehouses.show.infrastructure.locations.index",
                                 "parameters" => [$warehouse->organisation->slug, $warehouse->slug],
                             ],

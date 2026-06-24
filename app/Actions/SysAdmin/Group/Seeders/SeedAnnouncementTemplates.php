@@ -9,8 +9,8 @@
 namespace App\Actions\SysAdmin\Group\Seeders;
 
 use App\Actions\Helpers\Media\SaveModelImage;
-use App\Models\AnnouncementTemplate;
 use App\Models\SysAdmin\Group;
+use App\Models\Web\AnnouncementTemplate;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;

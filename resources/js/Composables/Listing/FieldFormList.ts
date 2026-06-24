@@ -52,6 +52,8 @@ const JobPosition = defineAsyncComponent(() => import('@/Components/Forms/Fields
 const Interest = defineAsyncComponent(() => import('@/Components/Forms/Fields/Interest.vue'))
 const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/Fields/EmployeePosition.vue'))
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
+const SelectCreate = defineAsyncComponent(() => import('@/Components/Forms/Fields/SelectCreate.vue'))
+const DynamicList = defineAsyncComponent(() => import('@/Components/Forms/Fields/DynamicList.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
@@ -81,6 +83,10 @@ import Ratio from '@/Components/Forms/Fields/Ratio.vue'
 import EmergencyContact from '@/Components/Forms/Fields/EmergencyContact.vue'
 import WebsiteReview from '@/Components/Forms/Fields/WebsiteReview.vue'
 import InputTranslationWithOptionLanguages from '@/Components/Forms/Fields/InputTranslationWithOptionLanguages.vue'
+import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQrExpiry.vue'
+import InputFaqMaster from '@/Components/Forms/Fields/InputFaqMaster.vue'
+import InputFaqShop from '@/Components/Forms/Fields/InputFaqShop.vue'
+import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -163,7 +169,13 @@ export const componentsList: { [key: string]: Component } = {
     'free_gift': FreeGift,
     'emergency_contact' : EmergencyContact,
     'website_reviews' : WebsiteReview,
-    'input_translation_use_option' : InputTranslationWithOptionLanguages
+    'input_translation_use_option' : InputTranslationWithOptionLanguages,
+    'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
+    'select_create': SelectCreate,
+    'dynamic_list': DynamicList,
+    'faq-master' : InputFaqMaster,
+    'faq-shop' : InputFaqShop,
+    'tags': TagsInput,
 }
 
 export const getComponent = (componentName: string) => {

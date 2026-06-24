@@ -9,7 +9,7 @@ import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
 import { RouteParams } from "@/types/route-params";
 import { MasterDepartment} from "@/types/master-department";
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTriangle, faEquals, faMinus } from "@fas"

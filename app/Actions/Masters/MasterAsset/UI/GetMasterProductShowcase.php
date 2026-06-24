@@ -83,7 +83,7 @@ class GetMasterProductShowcase
         return [
             'images'              => $this->getImagesData($masterAsset),
             'main_image'          => $masterAsset->imageSources(),
-            'masterProduct'       => MasterProductResource::make($masterAsset)->toArray(request()),
+            'masterProduct'       => MasterProductResource::make($masterAsset)->resolve(),
             'properties'          => $properties,
             'trade_units'         => $dataTradeUnits,
             'gpsr'                => $gpsr,

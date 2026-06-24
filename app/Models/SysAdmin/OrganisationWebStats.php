@@ -73,6 +73,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_web_user_requests
+ * @property int $number_webpages_type_landing_page
+ * @property int $number_webpages_sub_type_landing_page
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationWebStats newModelQuery()
  * @method static Builder<static>|OrganisationWebStats newQuery()

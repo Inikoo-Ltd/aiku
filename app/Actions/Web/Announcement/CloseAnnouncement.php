@@ -10,8 +10,8 @@ namespace App\Actions\Web\Announcement;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Announcement;
 use App\Models\CRM\Customer;
+use App\Models\Web\Announcement;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
 

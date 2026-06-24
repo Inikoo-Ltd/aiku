@@ -11,11 +11,24 @@ use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Iris\Catalogue\GetProductDetail;
 use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBulkProductImages;
 use App\Actions\Retina\Dropshipping\Bundle\UI\ShowRetinaBundle;
+use App\Actions\Web\Webpage\Iris\ShowIrisCollection;
+use App\Actions\Web\Webpage\Iris\ShowIrisDepartment;
+use App\Actions\Web\Webpage\Iris\ShowIrisFamily;
+use App\Actions\Web\Webpage\Iris\ShowIrisProduct;
+use App\Actions\Web\Webpage\Iris\ShowIrisSubDepartment;
+use Illuminate\Support\Facades\Route;
 
 Route::get('product/{product}', GetProductDetail::class)->name('product.resource');
-Route::get('bundles/{bundle:id}', ShowRetinaBundle::class)->name('bundles.show')->withoutScopedBindings();
+Route::get('bundles/{bundle:id}', ShowRetinaBundle::class)->name('bundles.show')->withoutScopedBindings()->whereNumber('bundle');
+
+Route::get('department/{department}', ShowIrisDepartment::class)->name('department.show');
+Route::get('sub-department/{subDepartment}', ShowIrisSubDepartment::class)->name('sub_department.show');
+Route::get('family/{family}', ShowIrisFamily::class)->name('family.show');
+Route::get('collection/{collection}', ShowIrisCollection::class)->name('collection.show');
+Route::get('products/{product}', ShowIrisProduct::class)->name('product.show');
 
 Route::prefix('feeds')->as('feeds.')->group(function () {
+    Route::get('product-category/{productCategory}/download.img', [DownloadIrisProduct::class, 'imagesInProductCategory'])->name('product_category.download_img');
     Route::get('product-category/{productCategory}/download.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.download');
     Route::get('shop/{shop}/download.csv', [DownloadIrisProduct::class, 'inShop'])->name('shop.download');
     Route::get('product/{product}/download.csv', [DownloadIrisProduct::class, 'inProduct'])->name('product.download');

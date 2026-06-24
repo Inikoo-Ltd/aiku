@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckCircle, faCircle, faQuestionCircle } from "@fal";
-import FamilySetOrderingPositionOfProduct from "@/Components/Master/FamilySetOrderingPositionOfProduct.vue";
-import Image from "@/Components/Image.vue";
+import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
+import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Icon from "@/Components/Icon.vue"
 import { inject } from "vue";
@@ -30,7 +30,7 @@ const locale = inject("locale", aikuLocaleStructure)
 </script>
 
 <template>
-    <FamilySetOrderingPositionOfProduct :data="data" @update:data="handleUpdate">
+    <SetOrderingPositionOfProduct :data="data" @update:data="handleUpdate">
         <template #list-content="{ item }">
             <div class="flex items-center gap-2 w-full py-1">
                 <!-- Image -->
@@ -101,5 +101,5 @@ const locale = inject("locale", aikuLocaleStructure)
             </div>
         </template>
 
-    </FamilySetOrderingPositionOfProduct>
+    </SetOrderingPositionOfProduct>
 </template>

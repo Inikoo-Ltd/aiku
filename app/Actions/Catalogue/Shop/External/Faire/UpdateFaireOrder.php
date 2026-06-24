@@ -63,7 +63,7 @@ class UpdateFaireOrder extends OrgAction
             }
             foreach ($order->deliveryNotes as $deliveryNote) {
                 if ($deliveryNote->state != DeliveryNoteStateEnum::CANCELLED) {
-                    CancelDeliveryNote::run($deliveryNote);
+                    CancelDeliveryNote::run($deliveryNote, null);
                 }
             }
 

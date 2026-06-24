@@ -26,7 +26,7 @@ class DeleteBatchCode extends OrgAction
         $batchCode->delete();
 
         if ($orgStockId) {
-            OrgStockHydrateCurrentBatchCodes::dispatch(OrgStock::find($orgStockId))->delay($this->hydratorsDelay);
+            OrgStockHydrateCurrentBatchCodes::run(OrgStock::find($orgStockId));
         }
 
         return $batchCode;

@@ -4,7 +4,7 @@ import { Link } from '@inertiajs/vue3'
 import { inject, onMounted, onUnmounted, ref } from 'vue'
 import SearchBar from "@/Components/SearchBar.vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 
 
 const showSearchDialog = ref(false)

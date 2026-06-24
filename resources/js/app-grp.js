@@ -4,7 +4,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-import { BrowserAgent } from "@newrelic/browser-agent/loaders/browser-agent";
+import { BrowserAgent } from '@newrelic/browser-agent/loaders/browser-agent'
 import "./bootstrap";
 import "../css/app.css";
 import { createApp, h } from "vue";
@@ -34,30 +34,46 @@ L.Icon.Default.mergeOptions({
     shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).href,
 })
 
-if (import.meta.env.VITE_NEW_RELIC_BROWSER_GRP_AGENT_ID) {
+if (import.meta.env.VITE_NEW_RELIC_BROWSER_ENABLED) {
   const options = {
-    init         : {
-      distributed_tracing: { enabled: true },
-      privacy            : { cookies_enabled: true },
-      ajax               : { deny_list: ["bam.nr-data.net"] }
+    "info": {
+      "applicationID": import.meta.env.VITE_NEW_RELIC_BROWSER_AIKU,
+      "beacon": "bam.nr-data.net",
+      "errorBeacon": "bam.nr-data.net",
+      "licenseKey": import.meta.env.VITE_NEW_RELIC_BROWSER_LICENCE_KEY,
+      "sa": 1
     },
-    info         : {
-      beacon       : "bam.nr-data.net",
-      errorBeacon  : "bam.nr-data.net",
-      licenseKey   : import.meta.env.VITE_NEW_RELIC_BROWSER_LICENCE_KEY,
-      applicationID: import.meta.env.VITE_NEW_RELIC_BROWSER_GRP_AGENT_ID,
-      sa           : 1
+    "init": {
+      "ajax": {
+        "deny_list": [
+          "bam.nr-data.net"
+        ]
+      },
+      "browser_consent_mode": {
+        "enabled": false
+      },
+      "distributed_tracing": {
+        "enabled": true
+      },
+      "performance": {
+        "capture_detail": false,
+        "capture_marks": false,
+        "capture_measures": true
+      },
+      "privacy": {
+        "cookies_enabled": true
+      }
     },
-    loader_config: {
-      accountID    : import.meta.env.VITE_NEW_RELIC_BROWSER_ACCOUNT_ID,
-      trustKey     : import.meta.env.VITE_NEW_RELIC_BROWSER_ACCOUNT_ID,
-      agentID      : import.meta.env.VITE_NEW_RELIC_BROWSER_GRP_AGENT_ID,
-      licenseKey   : import.meta.env.VITE_NEW_RELIC_BROWSER_LICENCE_KEY,
-      applicationID: import.meta.env.VITE_NEW_RELIC_BROWSER_GRP_AGENT_ID
+    "loader_config": {
+      "accountID": import.meta.env.VITE_NEW_RELIC_BROWSER_ACCOUNT_ID,
+      "agentID": import.meta.env.VITE_NEW_RELIC_BROWSER_AIKU,
+      "applicationID": import.meta.env.VITE_NEW_RELIC_BROWSER_AIKU,
+      "licenseKey": import.meta.env.VITE_NEW_RELIC_BROWSER_LICENCE_KEY,
+      "trustKey":  import.meta.env.VITE_NEW_RELIC_BROWSER_ACCOUNT_ID
     }
-  };
+  }
+  const nrba = new BrowserAgent(options)
 
-  new BrowserAgent(options);
 }
 
 const appName = "aiku";
@@ -94,15 +110,15 @@ createInertiaApp(
     setup({ el, App, props, plugin }) {
       const app = createApp({ render: () => h(App, props) });
 
-      if (import.meta.env.VITE_SENTRY_DSN) {
+      if (import.meta.env.VITE_SENTRY_GRP_DSN) {
         Sentry.init({
                       app,
-                      dsn                     : import.meta.env.VITE_SENTRY_DSN,
+                      dsn                     : import.meta.env.VITE_SENTRY_GRP_DSN,
                       environment             : import.meta.env.VITE_APP_ENV,
                       release                 : import.meta.env.VITE_RELEASE,
                       debug                   : false,
                       tracesSampleRate        : 1.0,
-                      replaysSessionSampleRate: 0.1,
+                      replaysSessionSampleRate: 0.01,
                       replaysOnErrorSampleRate: 1.0,
                       profilesSampleRate      : 1.0,
                       integrations            : [
@@ -152,6 +168,12 @@ createInertiaApp(
     }
   });
 
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
+
 //https://github.com/getsentry/sentry-javascript/issues/11362
 function inertiaRoutingInstrumentation(
   customStartTransaction,
@@ -176,7 +198,6 @@ function inertiaRoutingInstrumentation(
   }
 
   if (startTransactionOnLocationChange) {
-    console.info("Start transaction on location change");
 
     router.on("before", (_to, _from) => {
       if (activeTransaction) {
@@ -205,5 +226,3 @@ function inertiaRoutingInstrumentation(
   }
   console.info("inertiaRoutingInstrumentation Finished");
 }
-
-

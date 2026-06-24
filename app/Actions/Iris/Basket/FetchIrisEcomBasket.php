@@ -10,6 +10,7 @@ namespace App\Actions\Iris\Basket;
 
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\IrisAction;
+use App\Actions\Ordering\Order\GetVoucherData;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -55,6 +56,7 @@ class FetchIrisEcomBasket extends IrisAction
             'is_premium_dispatch' => $order->is_premium_dispatch,
             'has_extra_packing'   => $order->has_extra_packing,
             'has_insurance'       => $order->has_insurance,
+            'voucher_code'        => data_get($order->data, 'voucher_code'),
         ];
 
         $charges         = $this->getBasketCharges($order);
@@ -156,6 +158,10 @@ class FetchIrisEcomBasket extends IrisAction
                 'products.code',
                 'products.available_quantity',
                 'products.web_images',
+                'products.offers_data as product_offers_data',
+                'products.department_id',
+                'products.sub_department_id',
+                'products.family_id',
                 'webpages.url as canonical_url'
             )
             ->where('transactions.model_type', 'Product')
@@ -183,11 +189,14 @@ class FetchIrisEcomBasket extends IrisAction
                 'available_quantity'   => $productData->available_quantity,
                 'canonical_url'        => $productData->canonical_url,
                 'offers_data'          => json_decode($productData->offers_data, 1),
+                'product_offers_data'  => json_decode($productData->product_offers_data, true),
                 'name'                 => $productData->name,
                 'code'                 => $productData->code,
                 'units'                => (int)$productData->units,
                 'web_image_thumbnail'  => $webImageThumbnail,
-
+                'department_id'        => $productData->department_id,
+                'sub_department_id'    => $productData->sub_department_id,
+                'family_id'            => $productData->family_id,
             ];
         }
 
@@ -264,6 +273,15 @@ class FetchIrisEcomBasket extends IrisAction
         ];
 
         $orderArr['gr_gifts'] = $grGifts;
+
+        if ($grGifts['status']) {
+            $orderArr['gr_gifts']['route_gift_opt_out'] = [
+                'name'       => 'iris.models.customer.update',
+                'parameters' => [],
+            ];
+        }
+
+        $orderArr['voucher'] = GetVoucherData::run($order->offer_voucher_id);
 
         return $orderArr;
     }

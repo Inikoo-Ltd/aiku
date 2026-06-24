@@ -19,13 +19,12 @@ import { notify } from "@kyvg/vue3-notification"
 import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
-import { isArray } from "lodash-es"
 
 import { confetti } from '@tsparticles/confetti'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExclamationTriangle, faCheckCircle as falCheckCircle, faHeart, faSparkles, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt, faMedal } from "@fal"
-import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faSparkles as fasSparkles, faInfo, faCircle, faMedal as fasMedal, faCandleHolder } from '@fas'
+import { faExclamationTriangle, faCheckCircle as falCheckCircle, faHeart, faSparkles, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt, faGift, faMedal } from "@fal"
+import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faSparkles as fasSparkles, faInfo, faCircle, faMedal as fasMedal, faCandleHolder, faCartPlus } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 
 import Modal from "@/Components/Utils/Modal.vue"
@@ -40,8 +39,8 @@ import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
 
-library.add(faMedal, fasMedal, faCandleHolder, fadMedal, faLayerGroup)
-library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)
+library.add(faMedal, fasMedal, faCandleHolder, faCartPlus, fadMedal, faLayerGroup)
+library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt, faGift)
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
 
 
@@ -196,7 +195,7 @@ watch(
   () => usePage().url,
   (newUrl, oldUrl) => {
     if (layout.iris?.is_logged_in) {
-      layout?.log_user()
+      layout?.recordWebsiteHit()
     }
   },
   { immediate: true }
@@ -253,27 +252,7 @@ const getBgColorDependsOnStatus = (status: string) => {
     }
 }
 
-const isSidebarFetching = ref(false)
-const fetchSidebarOnce = async () => {
-    if (isSidebarFetching.value) return
-
-    isSidebarFetching.value = true
-
-    try {
-        const baseUrl = window.location.origin
-        const { data } = await axios.get(`${baseUrl}/json/sidebar`)
-
-        layout.iris.sidebar = data.sidebar
-        layout.isSidebarLoaded = true
-    } catch (e) {
-        console.error("[IrisSidebar] fetch failed", e)
-    } finally {
-        isSidebarFetching.value = false
-    }
-}
-
 onMounted(() => {
-    fetchSidebarOnce()
     // if (layout.iris?.is_have_gtm) {
     setColorStyleRoot(layout?.app?.theme)
     hideSuperchatWidget()
@@ -327,11 +306,7 @@ const safeTheme = computed(() => {
 
             <slot />
 
-            <IrisFooter
-                v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
-                :data="layout.iris.footer"
-                :colorThemed="irisTheme"
-            />
+            <IrisFooter :colorThemed="irisTheme" />
         </template>
         <!-- <main v-else
             class="bg-gray-50 min-h-screen pt-16 pb-10 mx-auto flex justify-center transition-all px-8 lg:px-0"

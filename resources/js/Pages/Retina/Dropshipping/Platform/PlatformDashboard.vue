@@ -43,7 +43,7 @@ const props = defineProps<{
     }
     ebay_warehouse_policy_msg: {
         show_msg: boolean
-        cust_country: string
+        customer_country: string
     }
     customer_sales_channel: CustomerSalesChannel
     error_captcha: any
@@ -262,7 +262,7 @@ const layout = inject('layout', layoutStructure)
                             <div class="sm:ml-3">
                                 <p class="text-sm text-red-700">
                                     <strong class="hidden sm:inline">{{ trans('Important Notice:') }}</strong>
-                                    {{ trans('We noticed your account is registered in') }} <strong> {{ ebay_warehouse_policy_msg.cust_country + '.' }} </strong>
+                                    {{ trans('We noticed your account is registered in') }} <strong> {{ ebay_warehouse_policy_msg.customer_country + '.' }} </strong>
                                     {{  trans('In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas.') }}
                                     <a href="https://export.ebay.com/en/fees-regulations-policies/ebay-policies/overseas-warehouse-block-policy-authorization-requirements-for-forward-deployed-inventory/"
                                        target="_blank"

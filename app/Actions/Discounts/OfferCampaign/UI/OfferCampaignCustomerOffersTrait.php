@@ -40,16 +40,6 @@ trait OfferCampaignCustomerOffersTrait
                     'title'         => $offerCampaign->name,
                     'model'         => __('Offer Campaign'),
                     'iconRight'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
-                    'actions' => app()->environment('local') ? [
-                        [
-                            'type'  => 'button',
-                            'key'   => 'customer_create_offer',
-                            // 'route' => [
-                            //     'name'       => preg_replace('/show$/', 'create_family_offer', request()->route()->getName()),
-                            //     'parameters' => array_values(request()->route()->originalParameters())
-                            // ]
-                        ]
-                    ] : [],
                 ],
                 'tabs'                                               => [
                     'current'    => $this->tab,
@@ -58,10 +48,15 @@ trait OfferCampaignCustomerOffersTrait
                     ])
                 ],
                 'shop_data' => [
+                    'id'            => $offerCampaign->shop_id,
                     'slug'          => $offerCampaign->shop->slug,
-                    'id'            => $offerCampaign->shop->shop_id,
                     'currency_code' => $offerCampaign->shop->currency->code,
-
+                    'organisation'  => $offerCampaign->shop->organisation->slug,
+                    'offercampaign' => $offerCampaign->slug,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                        'end'   => now()->addDays(7)->toDateString(),
+                    ],
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)

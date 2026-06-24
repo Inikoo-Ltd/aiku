@@ -1,11 +1,5 @@
 <?php
 
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 09 Dec 2024 00:41:31 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
- */
-
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
@@ -14,6 +8,7 @@ use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\Dashboards\WithLatestStockHistory;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
@@ -32,39 +27,26 @@ class ShowGroupDashboard extends OrgAction
     use WithDashboardCurrencyTypeSettings;
     use WithLatestStockHistory;
     use WithTabsBox;
+    use WithPerformanceDateResolution;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
 
-        $currentTab = Arr::get($userSettings, 'group_dashboard_tab', Arr::first(GroupDashboardSalesTableTabsEnum::values()));
+        $tabValues = GroupDashboardSalesTableTabsEnum::values();
+        $defaultTab = Arr::first($tabValues);
+        $currentTab = Arr::get($userSettings, 'group_dashboard_tab', $defaultTab);
 
-        if (!in_array($currentTab, GroupDashboardSalesTableTabsEnum::values())) {
-            $currentTab = Arr::first(GroupDashboardSalesTableTabsEnum::values());
-        }
+        $currentTabEnum = GroupDashboardSalesTableTabsEnum::tryFrom($currentTab) ?? GroupDashboardSalesTableTabsEnum::from($defaultTab);
+        $currentTab = $currentTabEnum->value;
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-
-        $performanceDates = [null, null];
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        } elseif ($saved_interval !== DateIntervalEnum::ALL) {
-            $intervalString = DashboardIntervalFilters::run($saved_interval);
-            if ($intervalString) {
-                $dates = explode('-', $intervalString);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        }
+        $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
         $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $tabNavigation = GroupDashboardSalesTableTabsEnum::navigation();
+        $primaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
+        $secondaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum], true);
 
         $tabsBox = $this->getTabsBox($group);
 
@@ -78,17 +60,20 @@ class ShowGroupDashboard extends OrgAction
                         'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
                     ],
                     'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($group, $userSettings),
+                        'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'       => $this->dashboardCurrencyTypeSettings($group, $userSettings),
                     ],
                     'blocks'    => [
                         [
                             'id'          => 'sales_table',
                             'type'        => 'table',
                             'current_tab' => $currentTab,
-                            'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData),
+                            'tabs'        => $tabNavigation,
+                            'tables'      => $primaryTables,
+                            'tab_fetch_route' => [
+                                'name' => 'grp.dashboard.tab-data',
+                            ],
                             'charts'      => [],
                         ]
                     ],
@@ -96,8 +81,8 @@ class ShowGroupDashboard extends OrgAction
                         [
                             'id'          => 'sales_table_2',
                             'type'        => 'table',
-                            'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData, true),
+                            'tabs'        => $tabNavigation,
+                            'tables'      => $secondaryTables,
                         ]
                     ],
                     'tabs_box'    => [

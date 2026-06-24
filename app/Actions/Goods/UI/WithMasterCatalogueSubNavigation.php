@@ -67,9 +67,6 @@ trait WithMasterCatalogueSubNavigation
                     'name'       => 'grp.masters.master_shops.show.master_families.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug,
-                        '_query' => [
-                            'index_elements[status]' => 'active'
-                        ]
                     ]
                 ],
                 'leftIcon' => [
@@ -85,9 +82,6 @@ trait WithMasterCatalogueSubNavigation
                     'name'       => 'grp.masters.master_shops.show.master_products.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug,
-                        '_query' => [
-                            'index_elements[status]' => 'active'
-                        ]
                     ]
                 ],
                 'leftIcon' => [
@@ -110,8 +104,8 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Master Collections')
                 ]
             ],
-            app()->environment('local') ? [
-                'number'   => $masterShop->stats->number_master_families_with_vol_gr_offer,
+            $masterShop->gold_reward_eligible ? [
+                'number'   => $masterShop->stats->number_master_families_with_vol_gr_discount,
                 'label'    => __('M. Vol/GR'),
                 'tooltip'    => __('Master Volume/Gold Reward Discount'),
                 'route'    => [

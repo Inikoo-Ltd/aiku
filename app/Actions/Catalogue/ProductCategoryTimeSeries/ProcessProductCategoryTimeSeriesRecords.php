@@ -23,7 +23,7 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $productCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -65,7 +65,7 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
             'family'         => 'family_id',
         };
 
-        $query = DB::table('invoice_transactions')
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where($categoryColumn, $timeSeries->product_category_id)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
@@ -159,7 +159,7 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
             'family'         => 'family_id',
         };
 
-        $assetIds = DB::table('products')
+        $assetIds = DB::connection('aiku_no_sticky')->table('products')
             ->where($categoryColumn, $productCategoryId)
             ->where('is_main', true)
             ->pluck('asset_id');
@@ -168,7 +168,7 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
             return ['dropshippers' => 0, 'listings' => 0];
         }
 
-        $result = DB::table('portfolios')
+        $result = DB::connection('aiku_no_sticky')->table('portfolios')
             ->selectRaw('COUNT(id) as total_listed, COUNT(DISTINCT customer_id) as total_customers')
             ->where('item_type', 'Product')
             ->whereIn('item_id', $assetIds)

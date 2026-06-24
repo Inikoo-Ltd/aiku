@@ -108,13 +108,13 @@ class IndexPalletsInDelivery extends OrgAction
                 ->withModelOperations($modelOperations);
 
 
-            $table->column(key: 'id', label: __('Id'), canBeHidden: false, sortable: true, searchable: true);
+            // $table->column(key: 'id', label: __('Id'), canBeHidden: false, sortable: true, searchable: true);
 
 
             if ($palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS) {
                 $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             } else {
-                $table->column(key: 'type_icon', label: ['fal', 'fa-yin-yang'], type: 'avatar');
+                $table->column(key: 'type_icon', label: ['fal', 'fa-yin-yang'], type: 'icon');
             }
 
 
@@ -162,11 +162,8 @@ class IndexPalletsInDelivery extends OrgAction
                     || ($palletDelivery instanceof PalletReturn && ($palletDelivery->state == PalletReturnStateEnum::DISPATCHED || $palletDelivery->state == PalletReturnStateEnum::CANCEL))
                 )
             ) {
-                $table->column(key: 'actions', label: ' ', canBeHidden: false, searchable: true);
+                $table->defaultSort('id');
             }
-
-
-            $table->defaultSort('id');
         };
     }
 

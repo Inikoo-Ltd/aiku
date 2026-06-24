@@ -53,7 +53,7 @@ class SetMailshotAsScheduled
     {
         return [
             // 'publisher_id'   => ['sometimes','exists:organisation_users,id'],
-            'scheduled_at'    => ['required', 'string', 'date_format:Y-m-d H:i:s']
+            'scheduled_at'    => ['required', 'date']
         ];
     }
 

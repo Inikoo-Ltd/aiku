@@ -10,12 +10,12 @@ use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\StoreEbayUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
+use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
-use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiDropshipping;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
@@ -38,14 +38,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/inventory', IndexRetinaStoredItems::class)->name('inventory');
 
 
-
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
-
     Route::get('/', IndexFulfilmentCustomerSalesChannels::class)->name('index');
 
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
 
-
+    Route::post('pallet-return/{palletReturn}/shipment-from-tiktok', [ProcessTiktokOrderShipment::class, 'inFulfilment'])->name('shipment.store_tiktok');
 
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
@@ -61,7 +59,6 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
     });
 
     Route::prefix('{customerSalesChannel}')->group(function () {
-
         Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('show');
         Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
 
@@ -90,16 +87,9 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
         Route::prefix('api')->as('api.')->group(function () {
             Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
-            // Route::get('/history', IndexRetinaApiDropshipping::class)->name('index');
-
         });
-
-
     });
-
 });
-
-
 
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {

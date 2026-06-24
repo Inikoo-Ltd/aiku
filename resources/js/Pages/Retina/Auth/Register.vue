@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { ref, onMounted, nextTick, watch} from 'vue';
+import { ref, onMounted, nextTick} from 'vue';
 import PureInput from '@/Components/Pure/PureInput.vue';
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue';
 import { trans } from 'laravel-vue-i18n'
-import Multiselect from '@vueform/multiselect'
 import Address from '@/Components/Forms/Fields/Address.vue';
-import FulfilmentCustomer from '@/Pages/Grp/Org/Fulfilment/FulfilmentCustomer.vue';
 import CustomerDataForm from '@/Components/CustomerDataForm.vue';
 
 
@@ -35,31 +33,16 @@ const form = useForm({
   password: '',
   password_confirmation: '',
   interest: [],
-/*   country_id: '',
-  postal_code : '',
-  post_town : '',
-  address_line_1 : '',
-  address_line_2 : '', */
   contact_address : {}
 });
 
 // Define reactive variables
 const isLoading = ref(false);
-/* const optionsSend = [
-  '0-50', "51-100", "100+"
-] */
+
 // Form submission handler
 const submit = () => {
   isLoading.value = true;
 
-  // Gabungkan field address
-  // form.contact_address = {
-  //   country_id: form.country_id,
-  //   postal_code: form.postal_code,
-  //   post_town: form.post_town,
-  //   address_line_1: form.address_line_1,
-  //   address_line_2: form.address_line_2,
-  // };
 
   if(form.password == form.password_confirmation){
     form.post(route(props.registerRoute.name,props.registerRoute.parameters ), {
@@ -100,11 +83,7 @@ const addressFieldData =
     },
     options: props.countriesAddressData
 }
-/* const countries = {}; */
 
-/* for (const item in props.countriesAddressData) {
-    countries[item] = props.countriesAddressData[item]['label']
-} */
 
 // Autofocus first PureInput on mount
 onMounted(async () => {
@@ -177,90 +156,13 @@ onMounted(async () => {
           <Address v-model="form[contact_address]" fieldName="contact_address" :form="form" :options="{countriesAddressData :countriesAddressData}" :fieldData="addressFieldData" />
         </div>
 
-       <!--  <div class="sm:col-span-6">
-        <label for="country_id" class="capitalize block text-sm font-medium text-gray-700">{{ trans("Country") }}</label>
-        <div class="mt-2">
-          <Multiselect 
-            v-model="form.country_id" 
-            :options="countries" 
-            placeholder="Select a country"
-            :searchable="true" 
-            :clearable="true" 
-          />
-          <p v-if="form.errors.country_id" class="text-sm text-red-600 mt-1">
-            {{ form.errors.country_id }}
-          </p>
-        </div>
-      </div>
 
-      <div class="sm:col-span-3">
-          <label for="post_town" class="capitalize block text-sm font-medium text-gray-700">{{trans("Post Town")}}</label>
-          <div class="mt-2">
-            <PureInput v-model="form.post_town" type="post_town" id="post_town" name="post_town" />
-            <p v-if="form.errors.email" class="text-sm text-red-600 mt-1">{{ form.errors.post_town }}</p>
-          </div>
-        </div>
-
-        <div class="sm:col-span-3">
-          <label for="postal_code" class="capitalize block text-sm font-medium text-gray-700">{{trans("Postal Code")}}</label>
-          <div class="mt-2">
-            <PureInput v-model="form.postal_code" type="text" id="postal_code" name="postal_code" />
-            <p v-if="form.errors.postal_code" class="text-sm text-red-600 mt-1">{{ form.errors.postal_code }}</p>
-          </div>
-        </div>
-
-        <div class="sm:col-span-6">
-          <label for="address_line_1" class="capitalize block text-sm font-medium text-gray-700">{{trans("Address")}}</label>
-          <div class="mt-2">
-            <PureInput v-model="form.address_line_1" type="text" id="address_line_1" name="address_line_1" />
-            <p v-if="form.errors.address_line_1" class="text-sm text-red-600 mt-1">{{ form.errors.address_line_1 }}</p>
-          </div>
-        </div>
-
-        <div class="sm:col-span-6">
-          <label for="address_line_2" class="capitalize block text-sm font-medium text-gray-700">{{trans("Address 2")}}</label>
-          <div class="mt-2">
-            <PureInput v-model="form.address_line_2" type="text" id="address_line_1" name="address_line_1" required />
-            <p v-if="form.errors.address_line_2" class="text-sm text-red-600 mt-1">{{ form.errors.address_line_2 }}</p>
-          </div>
-        </div> -->
 
         <div class="sm:col-span-6">
             <hr/>
         </div>
 
-        <!-- What Do You Sell -->
-       <!--  <div class="sm:col-span-6">
-          <label for="what-you-sell" class="capitalize block text-sm font-medium text-gray-700">{{trans("What Do You Sell")}}</label>
-          <div class="mt-2">
-            <PureInput v-model="form.product" type="text" id="what-you-sell" name="product"  />
-            <p v-if="form.errors.product" class="text-sm text-red-600 mt-1">{{ form.errors.product }}</p>
-          </div>
-        </div> -->
 
-        <!-- Shipments Sent Per Week -->
-       <!--  <div class="sm:col-span-3">
-          <label for="shipments-per-week" class="capitalize block text-sm font-medium text-gray-700">{{trans("Shipments Sent PerWeek")}}</label>
-          <div class="mt-2">
-            <select v-model="form.shipments_per_week" id="shipments-per-week" name="shipments_per_week" 
-              class="block w-full mt-1 py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="" disabled selected>Select shipments per week</option>
-              <option v-for="option in optionsSend" :key="option" :value="option">{{ option }}</option>
-            </select>
-            <p v-if="form.errors.shipments_per_week" class="text-sm text-red-600 mt-1">{{ form.errors.shipments_per_week }}</p>
-          </div>
-        </div> -->
-
-
-        <!-- Goods Size and Weight -->
-        <!-- <div class="sm:col-span-3">
-          <label for="goods-size-and-weight" class="capitalize block text-sm font-medium text-gray-700">{{trans("Size and Weight of Your Goods")}}</label>
-          <div class="mt-2">
-            <PureInput v-model="form.size_and_weight" type="text" id="goods-size-and-weight"
-              name="size_and_weight"  />
-              <p v-if="form.errors.size_and_weight" class="text-sm text-red-600 mt-1">{{ form.errors.size_and_weight }}</p>
-          </div>
-        </div> -->
         <div class="sm:col-span-6 flex flex-col">
           <CustomerDataForm :form="form" />
         </div>

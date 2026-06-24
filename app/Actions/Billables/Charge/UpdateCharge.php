@@ -98,8 +98,8 @@ class UpdateCharge extends OrgAction
                 ),
             ],
             'name'        => ['sometimes', 'required', 'max:250', 'string'],
-            'label'        => ['sometimes', 'string'],
-            'description' => ['sometimes', 'max:1024', 'string'],
+            'label'        => ['sometimes', 'string', 'nullable'],
+            'description' => ['sometimes', 'max:1024', 'string', 'nullable'],
 
             'data'     => ['sometimes', 'array'],
             'settings' => ['sometimes', 'array'],

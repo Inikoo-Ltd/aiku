@@ -16,7 +16,7 @@ import Dialog from 'primevue/dialog';
 import axios from "axios";
 import {notify} from "@kyvg/vue3-notification";
 import {trans} from "laravel-vue-i18n";
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

@@ -9,8 +9,8 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
+use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
@@ -23,7 +23,7 @@ use Illuminate\Console\Command;
 class UpdateOfferStatusFromDates extends OrgAction
 {
     use WithActionUpdate;
-
+    use HandlesOfferSideEffects;
 
     public function handle(Offer $offer, ?Command $command = null): Offer
     {
@@ -93,9 +93,12 @@ class UpdateOfferStatusFromDates extends OrgAction
         if ($currentStatus != $offer->status || $currentState != $offer->state) {
             OfferCampaignHydrateOffersState::run($offer->offerCampaign);
             ShopHydrateOffersData::run($offer->shop_id);
+            if ($offer->trigger_type == 'ProductCategory') {
+                UpdateProductCategoryOffersData::run($offer);
+            }
         }
         if ($currentStatus != $offer->status) {
-            RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
+            $this->handleOfferSideEffects($offer);
         }
 
 

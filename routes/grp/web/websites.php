@@ -6,13 +6,14 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
+use App\Actions\UI\Websites\WebsitesDashboard;
 use App\Actions\Web\Webpage\UI\ShowFooterPreview;
 use App\Actions\Web\Webpage\UI\ShowHeaderPreview;
 use App\Actions\Web\Webpage\UI\ShowSidebarPreview;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
 use App\Actions\Web\Webpage\UI\ShowWebsitePreview;
 
+Route::get('/', WebsitesDashboard::class)->name('index');
 Route::get('{website}/webpages/{webpage}/workshop/preview', [ShowWebpageWorkshopPreview::class, 'inWebsite'])->name('webpage.preview');
 Route::get('{website}/webpages/{webpage}/website/preview', ShowWebsitePreview::class)->name('preview');
 Route::get('{website}/footer/preview', ShowFooterPreview::class)->name('footer.preview');

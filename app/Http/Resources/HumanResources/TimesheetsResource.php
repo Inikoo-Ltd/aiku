@@ -61,6 +61,7 @@ class TimesheetsResource extends JsonResource
             'job_position'              => $jobPosition,
             'clock_in_count'            => $this->clock_in_count ?? $this->number_time_trackers,
             'clock_out_count'           => $this->clock_out_count ?? ($this->number_time_trackers - $this->number_open_time_trackers),
+            'notes'                     => $this->notes ?? $this->first_clocking_notes,
 
             'organisation_name'         => $this->organisation_name ?? null,
             'organisation_slug'         => $this->organisation_slug ?? null,

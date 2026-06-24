@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInOrganisation;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInOrganisation;
 use App\Actions\Catalogue\Shop\UI\IndexShopsInOrganisation;
 use App\Actions\CRM\Customer\UI\IndexCustomersInOverview;
+use App\Actions\CRM\Customer\UI\ShowCrmDashboardInOverview;
 use App\Actions\CRM\WebUser\UI\IndexWebUsersInOrganisation;
 use App\Actions\Ordering\Order\UI\IndexOrdersInBasketInOrganisation;
 use App\Actions\Ordering\Order\UI\IndexOrdersInOrganisation;
@@ -40,6 +41,7 @@ Route::get('/collections', IndexCollectionsInOrganisation::class)->name('collect
 
 
 Route::get('/customers', [IndexCustomersInOverview::class, 'inOrganisation'])->name('customers.index');
+Route::get('/customers/top-customers', ShowCrmDashboardInOverview::class)->name('customers.top_customers');
 
 Route::get('/web-users', IndexWebUsersInOrganisation::class)->name('web_users.index');
 Route::get('/web-user-requests', IndexWebUserRequestsInOrganisation::class)->name('web_user_requests.index');

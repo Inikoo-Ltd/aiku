@@ -20,7 +20,10 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\SetAsPickedWithPickingBaysD
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingWithTrolleyDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay;
@@ -35,9 +38,14 @@ use App\Actions\Dispatching\Trolley\ChangeTrolleyDeliveryNote;
 use App\Actions\Dispatching\Trolley\DetachTrolleyFromDeliveryNote;
 use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
+    Route::name('return.')->prefix('return')->group(function () {
+        Route::patch('process', ProcessReturnDeliveryNote::class)->name('process');
+    });
+
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
     Route::patch('update-address', UpdateDeliveryNoteDeliveryAddress::class)->name('update_address');
     Route::patch('update-shipping-fields-retry-store-shipping/{shipper:id}', SaveDeliveryNoteShippingFieldsAndRetryStoreShipping::class)
@@ -64,6 +72,10 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('handling-blocked-with-picked-bay', UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay::class)->name('handling_blocked_with_picked_bay');
         Route::patch('packing', StartPackingDeliveryNote::class)->name('packing');
         Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
+        Route::patch('undo-packing', UndoPackingDeliveryNote::class)->name('undo_packing');
+        Route::patch('undo-set-as-picked', UndoSetAsPickedDeliveryNote::class)->name('undo_set_as_picked');
+        Route::patch('auto-finish-waiting', AutoFinishWaitingDeliveryNote::class)->name('auto_finish_waiting');
+
         Route::patch('packed', UpdateDeliveryNoteStatePacked::class)->name('packed');
         Route::patch('set-as-picked-with-picked-bay', SetAsPickedWithPickingBaysDeliveryNote::class)->name('set_as_picked_with_picked_bay');
         Route::patch('change-picked-bay', ChangePickingBaysDeliveryNote::class)->name('change_picked_bay');

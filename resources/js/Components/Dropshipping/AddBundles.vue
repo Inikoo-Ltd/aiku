@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Textarea, Dialog, Checkbox, InputText, Skeleton } from "primevue"
 import { debounce } from 'lodash-es'
 import { route } from 'ziggy-js'
-import Image from '../Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import { faLayerGroup, faSparkles, faTrash, faImages, faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { router } from '@inertiajs/vue3';

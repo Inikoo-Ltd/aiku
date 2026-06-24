@@ -7,6 +7,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import { ref, computed } from "vue"
+import Select from "primevue/select"
+import DatePicker from "primevue/datepicker"
+import Textarea from "primevue/textarea"
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup } from "@fal";
@@ -88,7 +91,7 @@ const applyDateFilters = () => {
 		params.requested_date = undefined
 	}
 
-	router.get(route("grp.clocking_employees.index", params), {}, {
+	router.get(route("grp.clocking_employees.index", params as any), {}, {
 		preserveState: true,
 		preserveScroll: true,
 	})
@@ -108,10 +111,14 @@ const resetDateFilters = () => {
 	params.month = undefined
 	params.year = undefined
 
-	router.get(route("grp.clocking_employees.index", params), {}, {
+	router.get(route("grp.clocking_employees.index", params as any), {}, {
 		preserveState: true,
 		preserveScroll: true,
 	})
+}
+
+const getOvertimeError = (key: string): string | undefined => {
+	return (overtimeForm.errors as Record<string, string | undefined>)[key]
 }
 
 const overtimeForm = useForm<{
@@ -139,6 +146,38 @@ const hourOptions = Array.from({ length: 24 }, (_, index) =>
 const minuteOptions = Array.from({ length: 60 }, (_, index) =>
 	index < 10 ? `0${index}` : `${index}`
 )
+
+const durationBaseMinutes = ["0", "15", "30", "45"]
+
+const hourSelectOptions = computed(() =>
+	hourOptions.map((hour) => ({
+		label: hour,
+		value: hour,
+	}))
+)
+
+const minuteSelectOptions = computed(() =>
+	minuteOptions.map((minute) => ({
+		label: minute,
+		value: minute,
+	}))
+)
+
+const durationHourOptions = computed(() =>
+	Array.from({ length: 13 }, (_, index) => ({
+		label: String(index),
+		value: String(index),
+	}))
+)
+
+const durationMinuteOptions = computed(() =>
+	durationBaseMinutes.map((minute) => ({
+		label: minute,
+		value: minute,
+	}))
+)
+
+const overtimeTypeSelectOptions = computed(() => props.overtimeTypeOptions ?? [])
 
 const formatDuration = (minutes?: number | null): string => {
 	if (!minutes) {
@@ -204,6 +243,38 @@ const toLocalISOString = (date: Date) => {
         ':' + pad(date.getSeconds()) +
         dif + pad(tzo / 60) + ':' + pad(tzo % 60);
 }
+
+const parseYmdDate = (value: string): Date | null => {
+	if (!value) {
+		return null
+	}
+
+	const [year, month, day] = value.split("-").map(Number)
+	if (!year || !month || !day) {
+		return null
+	}
+
+	return new Date(year, month - 1, day)
+}
+
+const formatYmdDate = (date: Date | null): string => {
+	if (!date) {
+		return ""
+	}
+
+	const year = date.getFullYear()
+	const month = String(date.getMonth() + 1).padStart(2, "0")
+	const day = String(date.getDate()).padStart(2, "0")
+
+	return `${year}-${month}-${day}`
+}
+
+const overtimeRequestedDateModel = computed<Date | null>({
+	get: () => parseYmdDate(overtimeForm.requested_date),
+	set: (value) => {
+		overtimeForm.requested_date = formatYmdDate(value)
+	},
+})
 
 const resetFormState = () => {
 	overtimeForm.reset()
@@ -458,19 +529,13 @@ const submitOvertimeRequest = () => {
 					<label class="block text-sm font-medium text-gray-700">
 						{{ trans("What type of overtime do you want to submit?") }}
 					</label>
-					<select
+					<Select
 						v-model="overtimeForm.overtime_type_id"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-						<option :value="null" disabled>
-							{{ trans("Select overtime type") }}
-						</option>
-						<option
-							v-for="overtimeType in overtimeTypeOptions ?? []"
-							:key="overtimeType.value"
-							:value="overtimeType.value">
-							{{ overtimeType.label }}
-						</option>
-					</select>
+						:options="overtimeTypeSelectOptions"
+						optionLabel="label"
+						optionValue="value"
+						:placeholder="trans('Select overtime type')"
+						class="mt-1 w-full" />
 					<div v-if="overtimeForm.errors.overtime_type_id" class="mt-1 text-sm text-red-600">
 						{{ overtimeForm.errors.overtime_type_id }}
 					</div>
@@ -480,10 +545,12 @@ const submitOvertimeRequest = () => {
 					<label class="block text-sm font-medium text-gray-700">
 						{{ trans("What date did the overtime occur?") }}
 					</label>
-					<input
-						v-model="overtimeForm.requested_date"
-						type="date"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+					<DatePicker
+						v-model="overtimeRequestedDateModel"
+						class="mt-1 w-full"
+						dateFormat="yy-mm-dd"
+						:placeholder="trans('Choose date')"
+						showIcon />
 					<div v-if="overtimeForm.errors.requested_date" class="mt-1 text-sm text-red-600">
 						{{ overtimeForm.errors.requested_date }}
 					</div>
@@ -495,20 +562,18 @@ const submitOvertimeRequest = () => {
 							{{ trans("What time did it start?") }}
 						</label>
 						<div class="mt-1 flex gap-2">
-							<select
+							<Select
 								v-model="overtimeForm.start_hour"
-								class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-								<option v-for="hour in hourOptions" :key="hour" :value="hour">
-									{{ hour }}
-								</option>
-							</select>
-							<select
+								:options="hourSelectOptions"
+								optionLabel="label"
+								optionValue="value"
+								class="w-full" />
+							<Select
 								v-model="overtimeForm.start_minute"
-								class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-								<option v-for="minute in minuteOptions" :key="minute" :value="minute">
-									{{ minute }}
-								</option>
-							</select>
+								:options="minuteSelectOptions"
+								optionLabel="label"
+								optionValue="value"
+								class="w-full" />
 						</div>
 					</div>
 
@@ -517,23 +582,21 @@ const submitOvertimeRequest = () => {
 							{{ trans("How long was the overtime?") }}
 						</label>
 						<div class="mt-1 flex gap-2">
-							<select
+							<Select
 								v-model="overtimeForm.duration_hours"
-								class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-								<option v-for="hour in Array.from({ length: 13 }, (_, index) => String(index))" :key="hour" :value="hour">
-									{{ hour }}
-								</option>
-							</select>
-							<select
+								:options="durationHourOptions"
+								optionLabel="label"
+								optionValue="value"
+								class="w-full" />
+							<Select
 								v-model="overtimeForm.duration_minutes"
-								class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-								<option v-for="minute in ['0', '15', '30', '45']" :key="minute" :value="minute">
-									{{ minute }}
-								</option>
-							</select>
+								:options="durationMinuteOptions"
+								optionLabel="label"
+								optionValue="value"
+								class="w-full" />
 						</div>
-						<div v-if="overtimeForm.errors.requested_duration_minutes" class="mt-1 text-sm text-red-600">
-							{{ overtimeForm.errors.requested_duration_minutes }}
+						<div v-if="getOvertimeError('requested_duration_minutes')" class="mt-1 text-sm text-red-600">
+							{{ getOvertimeError("requested_duration_minutes") }}
 						</div>
 					</div>
 				</div>
@@ -542,10 +605,10 @@ const submitOvertimeRequest = () => {
 					<label class="block text-sm font-medium text-gray-700">
 						{{ trans("Why did you work overtime?") }}
 					</label>
-					<textarea
+					<Textarea
 						v-model="overtimeForm.reason"
 						rows="3"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+						class="mt-1 w-full text-gray-700 placeholder:text-gray-400 dark:text-gray-100 dark:placeholder:text-gray-500"
 						:placeholder="trans('Please provide a reason for your overtime request')" />
 					<div v-if="overtimeForm.errors.reason" class="mt-1 text-sm text-red-600">
 						{{ overtimeForm.errors.reason }}

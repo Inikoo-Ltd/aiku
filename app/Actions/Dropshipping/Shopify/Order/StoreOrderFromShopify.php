@@ -43,7 +43,7 @@ class StoreOrderFromShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-        $deliveryAddress = Arr::get($modelData, 'shipping_address');
+        $deliveryAddress = Arr::get($modelData, 'shipping_address', []); // AIKU-Z20: fallback empty array
 
         $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
         $shopifyProducts = collect($modelData['line_items']);
@@ -66,7 +66,13 @@ class StoreOrderFromShopify extends OrgAction
                     'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
                     'date'                      => $modelData['created_at'],
                     'delivery_address'          => new Address($deliveryAddress),
-                    'data'                      => ['shopify_data' => $modelData],
+                    'data'                      => [
+                        'shopify_data' => $modelData,
+                        'platform_milestones' => [
+                            'draft_created_at' => Arr::get($modelData, 'created_at'),
+                            'placed_at'        => Arr::get($modelData, 'placed_at'),
+                        ]
+                    ],
                     'platform_order_id'         => Arr::get($modelData, 'id'),
 
                 ]);

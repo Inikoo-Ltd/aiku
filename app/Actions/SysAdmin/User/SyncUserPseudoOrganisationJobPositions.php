@@ -20,6 +20,7 @@ class SyncUserPseudoOrganisationJobPositions
 
     public function handle(User $user, Organisation $organisation, array $jobPositions): User
     {
+        setPermissionsTeamId($user->group->id);
         $jobPositionsIds = array_keys($jobPositions);
 
         $currentJobPositions = $user->pseudoJobPositions()->where('job_positions.organisation_id', $organisation->id)->pluck('job_positions.id')->all();

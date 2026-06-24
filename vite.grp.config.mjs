@@ -46,6 +46,9 @@ export default ({ mode }) => {
       },
       resolve: {
         alias: {
+          "@": fileURLToPath(new URL("./resources/js", import.meta.url)),
+          "@iris": fileURLToPath(new URL("./resources/js/Iris", import.meta.url)),
+          "@common": fileURLToPath(new URL("./resources/js/Common", import.meta.url)),
           "@fad"  : fileURLToPath(
             new URL("./private/fa/pro-duotone-svg-icons",
                     import.meta.url)),
@@ -58,8 +61,8 @@ export default ({ mode }) => {
           "@fas"  : fileURLToPath(
             new URL("./private/fa/pro-solid-svg-icons",
                     import.meta.url)),
-          "@fonts": path.resolve(__dirname, "./public/assets/Fonts/"),
-          "@art"  : path.resolve(__dirname, "./public/art/")
+          "@fonts": fileURLToPath(new URL("./public/assets/Fonts/", import.meta.url)),
+          "@art"  : fileURLToPath(new URL("./public/art/", import.meta.url))
         }
       },
 

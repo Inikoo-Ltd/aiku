@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Upload\UI;
 
 use App\Http\Resources\Helpers\UploadRecordsResource;
 use App\Models\Helpers\Upload;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -64,6 +65,13 @@ class ShowUpload
             ],
 
         ];
+    }
+
+    public function jsonResponse(Upload $upload): AnonymousResourceCollection
+    {
+        return UploadRecordsResource::collection(
+            $upload->records()->where('status', 'failed')->get()
+        );
     }
 
     public function asController(Upload $upload, ActionRequest $request): Upload

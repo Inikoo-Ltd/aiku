@@ -60,10 +60,12 @@ trait WithImport
 
     public function collection(Collection $collection): void
     {
+        $rowNumber = 2;
         foreach ($collection as $row) {
             $row          = $this->cleanRow($row);
-            $uploadRecord = $this->createUploadRecord($row);
+            $uploadRecord = $this->createUploadRecord($row, $rowNumber);
             $this->storeModel($row, $uploadRecord);
+            $rowNumber++;
         }
     }
 
@@ -74,13 +76,14 @@ trait WithImport
         });
     }
 
-    public function createUploadRecord(Collection $row): UploadRecord
+    public function createUploadRecord(Collection $row, ?int $rowNumber = null): UploadRecord
     {
         /** @var UploadRecord $record */
         $record = $this->upload->records()->create(
             [
-                'values' => $row,
-                'status' => UploadRecordStatusEnum::PROCESSING
+                'values'     => $row,
+                'row_number' => $rowNumber,
+                'status'     => UploadRecordStatusEnum::PROCESSING
             ]
         );
         $this->updateStats();

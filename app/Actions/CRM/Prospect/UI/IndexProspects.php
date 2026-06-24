@@ -270,8 +270,8 @@ class IndexProspects extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_opt_in', label: __('Opt In'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'phone', label: __('phone'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'website', label: __('website'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'phone', label: __('Phone'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'website', label: __('Website'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -302,10 +302,10 @@ class IndexProspects extends OrgAction
                 'channel'         => 'grp.personal.'.$this->group->id,
                 'required_fields' => [
                     "id_prospect_key",
-                    "company",
+                    "company_name",
                     "contact_name",
                     "email",
-                    "telephone"
+                    "phone"
                 ],
                 'route'           => [
                     'upload' => [
@@ -448,33 +448,21 @@ class IndexProspects extends OrgAction
                     'icon'          => ['fal', 'fa-user-plus'],
                     'title'         => __('Prospects'),
                     'actions'       => [
-                        $this->canEdit ? [
-                            'type'    => 'buttonGroup',
-                            'buttons' =>
-                                match (class_basename($this->parent)) {
-                                    'Shop' => [
-                                        [
-                                            'style' => 'primary',
-                                            'icon'  => ['fal', 'fa-upload'],
-                                            'label' => 'Upload',
-                                            'route' => [
-                                                'name'       => 'grp.org.models.shop.prospects.upload',
-                                                'parameters' => $this->parent->id
-                                            ],
-                                        ],
-                                        [
-                                            'type'  => 'button',
-                                            'style' => 'create',
-                                            'label' => __('Prospect'),
-                                            'route' => [
-                                                'name'       => 'grp.org.shops.show.prospects.create',
-                                                'parameters' => $request->route()->originalParameters()
-                                            ]
-                                        ]
-                                    ],
-                                    default => []
-                                }
-                        ] : false
+                        $this->canEdit ?
+                            match (class_basename($this->parent)) {
+                                'Shop' => [
+                                    'type'  => 'button',
+                                    'style' => 'create',
+                                    'label' => __('Create Prospect'),
+                                    'route' => [
+                                        'name'       => 'grp.org.shops.show.crm.prospects.create',
+                                        'parameters' => $request->route()->originalParameters()
+                                    ]
+
+                                ],
+                                default => []
+                            }
+                            : false
                     ],
                     'subNavigation' => $subNavigation,
                 ]),

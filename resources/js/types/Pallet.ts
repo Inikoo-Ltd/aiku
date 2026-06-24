@@ -112,6 +112,15 @@ export interface PalletReturn {
     }
     reference: string
     state: string
+    type: string
+    picker_user?: {
+        id: number
+        contact_name: string | null
+    } | null
+    packer_user?: {
+        id: number
+        contact_name: string | null
+    } | null
     timeline: {
         [key: string]: Timeline
     }

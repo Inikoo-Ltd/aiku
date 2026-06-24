@@ -240,6 +240,9 @@ class IndexBlogWebpages extends OrgAction
             ];
         }
 
+        /** @var Website $website */
+        $website = request()->route()->parameter('website');
+
         return Inertia::render(
             'Org/Web/Webpages',
             [
@@ -249,7 +252,7 @@ class IndexBlogWebpages extends OrgAction
                 ),
                 'title'       => __('Webpages'),
                 'pageHead'    => [
-                    'model'         => __('webpages'),
+                    'model'         => strtoupper($website?->code ?? '') . ' ' . __('Webpages'),
                     'title'         => ucfirst($this->bucket),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],

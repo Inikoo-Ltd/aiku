@@ -243,4 +243,69 @@ watch(filterBlock, () => {
 #jsd-widget {
   display: none !important;
 }
+
+#iris_breadcrumbs ol,
+#iris_breadcrumbs ul {
+    margin-left: 0;
+    margin-top: 0;
+    list-style-position: outside;
+}
+
+#iris_breadcrumbs ol li,
+#iris_breadcrumbs ul li {
+    margin-left: 0;
+    margin-top: 0;
+    padding-left: 0;
+    padding-top: 0;
+}
+
+.vue-notification-group {
+    width: 300px !important;
+
+    @media (min-width: 640px) {
+        width: 500px !important;
+    }
+}
+
+.basket-drawer {
+    width: min(92vw, 37%);
+    box-sizing: border-box;
+}
+
+@media (min-width: 1536px) {
+    .basket-drawer {
+        width: 25%;
+    }
+}
+
+// INI-562: live chat
+iframe#launcher {
+    bottom: 30px !important;
+}
+
+.background-primary {
+    background-color: var(--theme-color-4);
+}
+
+.border-primary {
+    border-color: var(--theme-color-4);
+}
+
+.text-primary {
+    color: var(--theme-color-4) !important;
+}
+
+.primaryLink {
+    background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
+
+    &:hover,
+    &:focus {
+        color: #374151;
+    }
+
+    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
+}
+
+
+
 </style>

@@ -12,6 +12,7 @@ use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
 use App\Actions\Web\Banner\UI\ShowBanner;
 use App\Actions\Web\Banner\UI\ShowBannerWorkshop;
+use App\Actions\Web\Redirect\ExportRedirects;
 use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
@@ -28,6 +29,7 @@ use App\Actions\Web\Webpage\UI\ShowMenuWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
+use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
@@ -60,6 +62,7 @@ Route::name('websites.')->group(function () {
 
 Route::name('redirect')->prefix('{website}/redirect')->group(function () {
     Route::get('/', [IndexRedirects::class, 'inFulfilment'])->name('.index');
+    Route::get('/export', [ExportRedirects::class, 'inFulfilment'])->name('.export');
     Route::get('/{redirect}', [ShowRedirect::class, 'inWebsite'])->name('.show');
     Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebsiteInFulfilment'])->name('.edit');
 });
@@ -104,6 +107,10 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
     Route::get('/{banner}/workshop', [ShowBannerWorkshop::class, 'inFulfilment'])->name('workshop');
     Route::get('/{banner}', [ShowBanner::class, 'inFulfilment'])->name('show');
     Route::get('/{banner}/edit', [EditBanner::class, 'inFulfilment'])->name('edit');
+});
+
+Route::prefix('{website}/crawls')->name('crawls.')->group(function () {
+    Route::get('', [IndexCrawls::class, 'inFulfilment'])->name('index');
 });
 
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {

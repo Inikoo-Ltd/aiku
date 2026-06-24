@@ -40,6 +40,7 @@ use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Dispatching\BatchCode\UI\CreateBatchCode;
 use App\Actions\Dispatching\BatchCode\UI\EditBatchCode;
+use App\Actions\Dispatching\BatchCode\UI\ExportBatchCodeDeliveryNotes;
 use App\Actions\Dispatching\BatchCode\UI\IndexBatchCodes;
 use App\Actions\Dispatching\BatchCode\UI\ShowBatchCode;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
@@ -236,6 +237,7 @@ Route::prefix('batch-codes')->as('batch_codes.')->group(function () {
     Route::prefix('{batchCode:id}')->withoutScopedBindings()->group(function () {
         Route::get('', ShowBatchCode::class)->name('show');
         Route::get('edit', EditBatchCode::class)->name('edit');
+        Route::get('delivery-notes/export', ExportBatchCodeDeliveryNotes::class)->name('delivery_notes.export');
     });
 });
 

@@ -12,8 +12,8 @@ use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Announcement\AnnouncementStatusEnum;
-use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
+use App\Models\Web\Announcement;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
 

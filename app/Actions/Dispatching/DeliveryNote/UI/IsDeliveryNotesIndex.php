@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -32,7 +33,7 @@ trait IsDeliveryNotesIndex
     private Group|Warehouse|Shop|Order|Customer|CustomerClient $parent;
     private string $bucket;
 
-    public function handle(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all'): LengthAwarePaginator
+    public function handle(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false, $replacementsOnly = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -43,6 +44,25 @@ trait IsDeliveryNotesIndex
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
+        $currentSort = request('sort');
+
+        // Ensure all / dispatched bucket order is not disturbed, otherwise would be hard to navigate
+        $forceSortByPremiumDispatch = !in_array($bucket, ['all', 'dispatched']);
+
+        if ($currentSort && $forceSortByPremiumDispatch) {
+            $modifiedSort = is_array($currentSort) ? [
+                '-is_premium_dispatch',
+                ...$currentSort,
+            ] : [
+                '-is_premium_dispatch',
+                $currentSort,
+            ];
+
+            request()->merge([
+                'sort'  => $modifiedSort
+            ]);
         }
 
         $query = QueryBuilder::for(DeliveryNote::class);
@@ -94,12 +114,19 @@ trait IsDeliveryNotesIndex
             $query->where('delivery_note_order.order_id', $parent->id);
         } elseif ($parent instanceof Customer) {
             $query->where('delivery_notes.customer_id', $parent->id);
+            if (!$replacementsOnly) {
+                $query->whereNot('delivery_notes.type', DeliveryNoteTypeEnum::REPLACEMENT);
+            }
         } elseif ($parent instanceof CustomerClient) {
             $query->where('delivery_notes.customer_client_id', $parent->id);
         } elseif ($parent instanceof Shop) {
             $query->where('delivery_notes.shop_id', $parent->id);
         } else {
             abort(419);
+        }
+
+        if ($replacementsOnly) {
+            $query->where('delivery_notes.type', DeliveryNoteTypeEnum::REPLACEMENT);
         }
 
 
@@ -178,11 +205,11 @@ trait IsDeliveryNotesIndex
             'delivery_notes.updated_at',
             'delivery_notes.slug',
             'delivery_notes.type',
-            'delivery_notes.state',
             'delivery_notes.number_items',
             'delivery_notes.weight',
             'delivery_notes.effective_weight',
             'delivery_notes.estimated_weight',
+            'delivery_notes.parcels',
             'customers.slug as customer_slug',
             'customers.name as customer_name',
             'shops.name as shop_name',
@@ -197,12 +224,28 @@ trait IsDeliveryNotesIndex
             'orders.in_warehouse_at',
         ];
 
+        if ($isReturn) {
+            $selectColumns[] = 'delivery_notes.is_returned';
+            $query
+                ->where('delivery_notes.is_returned', true);
+        }
+
         if ($bucket == 'dispatched') {
             $selectColumns[] = 'countries.name as country_name';
             $selectColumns[] = 'countries.code as country_code';
         }
 
-        return $query->defaultSort('-delivery_notes.date')
+        return $query
+            ->defaultSort(
+                // Ensure all / dispatched bucket order is not disturbed, otherwise would be hard to navigate
+                $forceSortByPremiumDispatch ? [
+                    '-delivery_notes.is_premium_dispatch',
+                    'delivery_notes.date',
+                ] : [
+                    '-delivery_notes.date',
+                ]
+            )
+            ->with('trolleys')
             ->select($selectColumns)
             ->selectRaw(
                 "
@@ -214,6 +257,8 @@ trait IsDeliveryNotesIndex
             )
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
+            ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_w WHERE dni_w.delivery_note_id = delivery_notes.id AND dni_w.has_waiting_warehouse = true) as waiting_warehouse_count")
+            ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_c WHERE dni_c.delivery_note_id = delivery_notes.id AND dni_c.has_waiting_crm = true) as waiting_crm_count")
             ->allowedSorts([
                 'reference',
                 'date',
@@ -226,8 +271,9 @@ trait IsDeliveryNotesIndex
                 'sort_picker',
                 'sort_packer',
                 'sort_trolleys',
-                'sort_picked_bays'
-
+                'is_premium_dispatch',
+                'sort_picked_bays',
+                'parcels'
             ])
             ->allowedFilters($allowedFilters)
             ->withBetweenDates(['date'])
@@ -235,7 +281,7 @@ trait IsDeliveryNotesIndex
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all'): Closure
+    public function tableStructure(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): Closure
     {
         $employee = null;
         if (!request()->user() instanceof WebUser) {
@@ -246,7 +292,7 @@ trait IsDeliveryNotesIndex
             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
         }
 
-        return function (InertiaTable $table) use ($parent, $prefix, $bucket, $pickerEmployee, $shopType) {
+        return function (InertiaTable $table) use ($isReturn, $parent, $prefix, $bucket, $pickerEmployee, $shopType) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -311,13 +357,13 @@ trait IsDeliveryNotesIndex
 
             if ($bucket == 'dispatched' && $parent instanceof Warehouse) {
                 $weightBracketOptions = [
-                    'up_to_1kg'  => __('Up to 1 kg'),
-                    '1_to_3kg'   => __('1 - 3 kg'),
-                    '3_to_6kg'   => __('3 - 6 kg'),
-                    '6_to_10kg'  => __('6 - 10 kg'),
-                    '10_to_20kg' => __('10 - 20 kg'),
-                    '20_to_31kg' => __('20 - 31 kg'),
-                    'over_31kg'  => __('Over 31 kg'),
+                    'up_to_1kg'  => __('Up to').' 1 kg',
+                    '1_to_3kg'   => '1-3 kg',
+                    '3_to_6kg'   => '3-6 kg',
+                    '6_to_10kg'  => '6-10 kg',
+                    '10_to_20kg' => '10-20 kg',
+                    '20_to_31kg' => '10-31 kg',
+                    'over_31kg'  => __('Over').' 31 kg',
                 ];
 
                 $countryOptions = DB::table('delivery_notes')
@@ -393,6 +439,8 @@ trait IsDeliveryNotesIndex
             }
             $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
+            $table->column(key: 'parcels', label: __('Parcel'), canBeHidden: false, sortable: true, searchable: true);
+
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
@@ -403,7 +451,7 @@ trait IsDeliveryNotesIndex
                 $table->column(key: 'sort_packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {
+            if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])  && !$isReturn) {
                 $table->column(key: 'delivery', label: __('Shipping'));
             }
 

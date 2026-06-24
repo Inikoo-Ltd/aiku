@@ -69,7 +69,7 @@ class GetRetinaFulfilmentHomeData
                     'parameters' => []
                 ]
             ],
-            [
+            app()->isLocal() ? [
                 'type'    => 'button',
                 'style'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? 'create' : 'gray',
                 'disabled' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? false : true,
@@ -80,7 +80,7 @@ class GetRetinaFulfilmentHomeData
                     'name'       => 'retina.models.pallet-return-stored-items.store',
                     'parameters' => []
                 ]
-            ]
+            ] : []
         ];
 
 

@@ -9,7 +9,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { User } from "@/types/user"
 import { trans } from "laravel-vue-i18n"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Icon from '@/Components/Icon.vue'
 
 import { faCheck, faTimes, faUserCircle, faYinYang, faKey, faCheckCircle, faTimesCircle } from "@fal"

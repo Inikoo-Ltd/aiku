@@ -1,0 +1,107 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 13 Jun 2025 15:31:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Web\Webpage;
+
+use App\Actions\Web\WebBlock\Workshop\GetBlockSubDepartment;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockCollection;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamiliesOverview;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartments;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilies;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilyDescription;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockSeeAlso;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsCRB;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartmentDescription;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategoriesFromMaster;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartmentsThree;
+use App\Actions\Web\WebBlock\Workshop\GetFaqDepartment;
+use App\Actions\Web\WebBlock\Workshop\GetTopFamilies;
+use Illuminate\Support\Arr;
+
+trait WithFillWorkshopWebBlocks
+{
+    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isIris = true)
+    {
+        $webBlockType = Arr::get($webBlock, 'type');
+
+
+        if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
+            $departmentData = GetWebBlockDepartmentDescription::run($webpage, $webBlock);
+            if ($departmentData) {
+                $parsedWebBlocks[$key] = $departmentData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
+        } elseif ($webBlockType == 'sub-department-description-1') {
+            $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'collection-description-1') {
+            $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
+        } elseif (str_starts_with($webBlockType, 'families-') && str_ends_with($webBlockType, '-overview')) {
+            $parsedWebBlocks[$key] = GetWebBlockFamiliesOverview::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'sub-departments-3') {
+            $webBlockData = GetWebBlockSubDepartmentsThree::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
+        } elseif (str_contains($webBlockType, 'sub-departments-')) {
+            $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
+        } elseif (str_contains($webBlockType, 'families-')) {
+            $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
+        } elseif (str_contains($webBlockType, 'products-')) {
+            $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'family-1') {
+            $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
+        } elseif (in_array($webBlockType, ['family-2', 'family-2-extra-description', 'family-3', 'family-3-extra-description'])) {
+            $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
+        } elseif (str_starts_with($webBlockType, 'product-')) {
+            $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
+        } elseif ($webBlockType == 'see-also-1') {
+            $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'blog') {
+            $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
+            $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'recommendation-from-master') {
+            $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'recommendation-product-category-from-master') {
+            $webBlockData = GetWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
+        } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
+            $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'faq-department') {
+            $webBlockData = GetFaqDepartment::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
+        } elseif ($webBlockType == 'top-families') {
+            $webBlockData = GetTopFamilies::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
+        } else {
+            $parsedWebBlocks[$key] = $webBlock;
+        }
+
+        return $parsedWebBlocks;
+    }
+}

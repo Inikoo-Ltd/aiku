@@ -14,6 +14,7 @@ use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -77,6 +78,11 @@ class EditShop extends OrgAction
             ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
 
+        $firstMasterFamily = $shop->masterShop?->masterProductCategories()
+            ->where('type', MasterProductCategoryTypeEnum::FAMILY)
+            ->orderBy('id')
+            ->first();
+
         $helpPortalFields = [
             'portal_link'  => [
                 'type'          => 'input',
@@ -113,7 +119,7 @@ class EditShop extends OrgAction
 
             $typeLabel = $channel->type->labels()[$channel->type->value] ?? $channel->type->value;
             $salesChannelFields['sales_channel_' . $channel->id] = [
-                'label'       => $channel->name,
+                'label'       => __($channel->name),
                 'type'        => 'toggle',
                 'value'       => $shop->salesChannels->contains($channel->id),
                 'information' => __('Enable the :name sales channel. Active means it is available for this shop; inactive means it is not available for this shop.', ['name' => $channel->name]),
@@ -216,45 +222,77 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-books',
                     'fields' => [
                         'collection_follow_master' => [
-                            'label'         => 'Collection Content Follow Master',
+                            'label'         => __('Collection Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.collection_follow_master', false),
                             'information'   => __('This would force all Collections under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'department_follow_master' => [
-                            'label'         => 'Department Content Follow Master',
+                            'label'         => __('Department Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.department_follow_master', false),
                             'information'   => __('This would force all Departments under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'sub_department_follow_master' => [
-                            'label'         => 'Sub Department Content Follow Master',
+                            'label'         => __('Sub Department Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.sub_department_follow_master', false),
                             'information'   => __('This would force all Sub Departments under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'family_follow_master' => [
-                            'label'         => 'Family Content Follow Master',
+                            'label'         => __('Family Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.family_follow_master', false),
                             'information'   => __('This would force all Families under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'product_follow_master' => [
-                            'label'         => 'Product Content Follow Master',
+                            'label'         => __('Product Content Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.product_follow_master', false),
                             'information'   => __('This would force all Products under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'family_indexing_follow_master' => [
-                            'label'         => 'Family Page Product Index Follow Master',
+                            'label'         => __('Family Page Product Index Follow Master'),
                             'type'          => 'toggle',
                             'value'         => data_get($shop->settings, 'catalog.family_indexing_follow_master', true),
                             'information'   => __('This would force all Products under this shop to follow the family indexing updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'related_product_follow_master' => [
+                            'label'         => __('Related Product Follow Master'),
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.related_product_follow_master', false),
+                            'information'   => __('This would force related products under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?'),
+                            'description'   => [
+                                __('Related products are the products that are recommended to customers when they view a product category page.'),
+                                __('Enabling this would force all of this shop related products to follow master shop related products.'),
+                                $firstMasterFamily ? __('You can setup the products listed in @manage_related_products@ (Family: ') . $firstMasterFamily->code . __(')') : '',
+                            ],
+                            'descriptionLinks' => [
+                                'manage_related_products' => [
+                                    'label' => __('related products tab'),
+                                    'route' => $firstMasterFamily ? [
+                                        'name'       => 'grp.masters.master_shops.show.master_families.show',
+                                        'parameters' => [
+                                            'masterShop'   => $shop->masterShop->slug,
+                                            'masterFamily' => $firstMasterFamily->slug,
+                                            'tab'          => 'related_products',
+                                        ],
+                                    ] : null,
+                                ],
+                            ],
+                        ],
+                        'related_product_categories_follow_master' => [
+                            'label'         => __('Related Product Category Follow Master'),
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.related_product_categories_follow_master', true),
+                            'information'   => __('This would force related product categories under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                     ]
@@ -285,6 +323,14 @@ class EditShop extends OrgAction
                             'value'       => $shop->price_rrp_ratio,
                             'min'         => 0
                         ],
+                        'follow_master_pricing' => [
+                            'label'         => __('Follow Master Pricing'),
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.follow_master_pricing', false),
+                            'information'   => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio'),
+                            'warningText'   => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio') .
+                                '. ' . __(':__amountProducts Products would be updated', ['__amountProducts' => $shop->products()->count()]) . '. ' . __('Are you sure you want to do this?'),
+                        ],
                         'product_price_currency_exchange'  => [
                             'type'        => 'input_number',
                             'bind'        => [
@@ -295,7 +341,7 @@ class EditShop extends OrgAction
                             'saveConfirmation'  => [
                                 'title'     => __('Are you sure want to update currency exchange?'),
                                 'description'   => __("This will affect all products in the shop, including the product that in customer's basket. Products that already purchased in Order will not affected."),
-                                'yesLabel'  => __('Yes, update currency exchane')
+                                'yesLabel'  => __('Yes, update currency exchange')
                             ],
                             'label'       => __('Product Currency Exchange'),
                             'placeholder' => __('Product Currency Exchange'),
@@ -305,6 +351,24 @@ class EditShop extends OrgAction
                                 ?? GetCurrencyExchange::run($shop->currency, $shop->currency),
                         ]
                     ]
+                ],
+                [
+                    'label'  => __('Customers'),
+                    'icon'   => 'fal fa-user',
+                    'fields' => [
+                        'identity_document_number_label' => [
+                            'type'          => 'input',
+                            'label'         => __('Identity Document Number Label'),
+                            'information'   => __('The label would replace all of the Identity Document Number text under this shop'),
+                            'value'         => data_get($shop->settings, 'customer.identity_document_number', ''),
+                        ],
+                        'identity_document_number_alt_label' => [
+                            'type'          => 'input',
+                            'label'         => __('Identity Document Number Alt. Label'),
+                            'information'   => __('The label would replace all of the Identity Document Number Alt. text under this shop'),
+                            'value'         => data_get($shop->settings, 'customer.identity_document_number_alt', ''),
+                        ],
+                    ],
                 ],
                 [
                     'label'  => __('Registration'),
@@ -394,7 +458,7 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
-                                [
+                [
                     'label'  => __('Invoices footer'),
                     'icon'   => 'fa-light fa-shoe-prints',
                     'fields' => [
@@ -403,6 +467,19 @@ class EditShop extends OrgAction
                             'label' => __('Invoice footer'),
                             'full'  => true,
                             'value' => $shop->invoice_footer
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Bank Transfer Instructions for Email'),
+                    'icon'   => 'fa-light fa-envelope',
+                    'information' => __('This information will be appended to the order confirmation email when the customer selects bank transfer as the payment method'),
+                    'fields' => [
+                        'bank_transfer_instructions_for_email' => [
+                            'type'  => 'textEditor',
+                            'label' => __('Bank Transfer Instructions for Email'),
+                            'full'  => true,
+                            'value' => $shop->settings['bank_transfer_instructions_for_email'] ?? ''
                         ],
                     ],
                 ],
@@ -427,6 +504,7 @@ class EditShop extends OrgAction
                                     ['label' => __('Hide Payment Status'), 'key' => 'hide_payment_status'],
                                     ['label' => __('CPNP'), 'key' => 'cpnp'],
                                     ['label' => __('Group by Tariff Code'), 'key' => 'group_by_tariff_code'],
+                                    ['label' => __('Show Dispatch Totals (SKO & Units)'), 'key' => 'show_dispatch_totals'],
                                 ];
 
                                 return array_map(fn ($col) => [
@@ -582,7 +660,21 @@ class EditShop extends OrgAction
                             'information'   => __('If active, will enable the Chat feature on this shop website'),
                             'label'         => __('Enable Chat Feature'),
                             'value'         => Arr::get($shop->settings, 'chat.enable_chat', false),
-                        ]
+                        ],
+                        'chat_slack_token' => [
+                            'type'        => 'input',
+                            'label'       => __('Slack Bot Token'),
+                            'placeholder' => 'xoxb-xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx',
+                            'information' => __('Bot User OAuth Token from your Slack App. Used to share conversations to Slack.'),
+                            'value'       => Arr::get($shop->settings, 'chat.slack_token') ?? '',
+                        ],
+                        'chat_slack_channels' => [
+                            'type'        => 'tags',
+                            'label'       => __('Slack Channels'),
+                            'placeholder' => '#general',
+                            'information' => __('Slack channels where chat conversations will be shared. Press Enter to add each channel.'),
+                            'value'       => Arr::get($shop->settings, 'chat.slack_channels') ?? [],
+                        ],
                     ],
                 ],
                 [

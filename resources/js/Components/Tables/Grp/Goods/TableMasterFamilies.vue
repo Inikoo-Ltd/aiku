@@ -16,7 +16,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import Dialog from 'primevue/dialog';
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import axios from "axios";
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -62,7 +62,11 @@ function familyRoute(masterFamily: MasterFamily) {
                 masterDepartment: (route().params as RouteParams).masterDepartment,
                 masterFamily: masterFamily.slug
             });
-    } else if (route().current() == "grp.masters.master_shops.show.master_gr.index" || route().current() == 'grp.masters.master_shops.show.master_collections.show') {
+    } else if (
+        route().current() == "grp.masters.master_shops.show.master_gr.index" ||
+        route().current() == "grp.masters.master_shops.show.master_families.vol_gr_reward.index" ||
+        route().current() == 'grp.masters.master_shops.show.master_collections.show'
+    ) {
         return route(
             "grp.masters.master_shops.show.master_families.show",
             {
@@ -321,6 +325,24 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <Link :href="ProductRoute(family)" class="primaryLink">
                 {{ family["products"] }}
             </Link>
+        </template>
+
+        <template #cell(gr_detail)="{ item: family }">
+            <div v-if="family.gr_detail && (family.gr_detail.percentage || family.gr_detail.quantity)"
+                class="whitespace-nowrap tabular-nums">
+                <span v-tooltip="trans('Percentage off')">{{ family.gr_detail.percentage }}%</span>
+                <span class="text-gray-400 mx-1">·</span>
+                <span v-tooltip="trans('Trigger quantity')">{{ family.gr_detail.quantity }}</span>
+            </div>
+            <span v-else class="text-gray-400 italic">-</span>
+        </template>
+
+        <template #cell(number_following_master_gr)="{ item: family }">
+            <span class="tabular-nums">{{ family.number_following_master_gr ?? 0 }}</span>
+        </template>
+
+        <template #cell(number_not_following_master_gr)="{ item: family }">
+            <span class="tabular-nums">{{ family.number_not_following_master_gr ?? 0 }}</span>
         </template>
 
         <template #cell(actions)="{ item }">

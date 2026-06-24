@@ -13,7 +13,7 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ulid } from "ulid"
 
 import { GridProducts } from "@/Components/Product"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 
 library.add(faHeart, faBoxOpen, faImage)
 
@@ -233,8 +233,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
 :deep(.discount .offer-trigger-label) {
   @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
 
-  border-color: v-bind("layout.iris.theme.color[4]") !important;
-  color: v-bind("layout.iris.theme.color[4]") !important;
+//   border-color: v-bind("layout.iris.theme.color[4]") !important;
+//   color: v-bind("layout.iris.theme.color[4]") !important;
+    color: #E87928 !important;
+    border-color: #E87928 !important;
 }
 
 

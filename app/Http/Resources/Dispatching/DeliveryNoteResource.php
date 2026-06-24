@@ -19,7 +19,7 @@ class DeliveryNoteResource extends JsonResource
     public function toArray($request): array
     {
         /** @var DeliveryNote $deliverNote */
-        $deliverNote = $this;
+        $deliverNote = $this->resource;
 
         return [
             'id'                             => $deliverNote->id,
@@ -27,6 +27,7 @@ class DeliveryNoteResource extends JsonResource
             'reference'                      => $deliverNote->reference,
             'date'                           => $deliverNote->date,
             'state'                          => $deliverNote->state,
+            'state_icon'                     => $deliverNote->state->stateIcon()[$deliverNote->state->value],
             'type'                           => $deliverNote->type,
             'weight'                         => $deliverNote->weight,
             'created_at'                     => $deliverNote->created_at,
@@ -36,6 +37,7 @@ class DeliveryNoteResource extends JsonResource
             'is_cash_on_delivery'            => $deliverNote->is_cash_on_delivery,
             'number_items_waiting_warehouse' => $deliverNote->number_items_waiting_warehouse,
             'number_items_waiting_crm'       => $deliverNote->number_items_waiting_crm,
+            'dispatched_at'                  => $deliverNote->dispatched_at,
 
 
         ];

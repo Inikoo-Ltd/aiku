@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import EmptyState from "@/Components/Utils/EmptyState.vue";
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import { getStyles } from "@/Composables/styles";
 import { routeType } from "@/types/route";
 import FormEditProductCategory from "@/Components/DepartmentAndFamily/FormEditProductCategory.vue";

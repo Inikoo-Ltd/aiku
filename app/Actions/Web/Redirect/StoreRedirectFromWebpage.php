@@ -3,14 +3,17 @@
 /*
  * author Louis Perez
  * created on 28-04-2026-11h-01m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Web\Webpage\PurgeVarnishPath;
 use App\Actions\Web\Website\HydrateRedirect;
+use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -18,13 +21,17 @@ use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect as FacadesRedirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRedirectFromWebpage extends OrgAction
 {
+    use WithStoreRedirect;
+
     private Webpage $webpage;
+    private mixed $disableReload;
 
     public function handle(Webpage $webpage, array $modelData): Redirect
     {
@@ -35,17 +42,6 @@ class StoreRedirectFromWebpage extends OrgAction
         data_set($modelData, 'website_id', $website->id);
 
         data_set($modelData, 'type', RedirectTypeEnum::PERMANENT->value); // Todo: check this
-
-        $fromUrl = Arr::get($modelData, 'from_url', '');
-
-        if (str_starts_with($fromUrl, '/')) {
-            $fromUrl = ltrim($fromUrl, '/');
-        }
-
-        $url = 'https://' . $website->domain . '/' . $fromUrl;
-
-        data_set($modelData, 'from_url', $url);
-        data_set($modelData, 'from_path', $fromUrl);
         data_set($modelData, 'to_webpage_id', $webpage->id);
 
         $this->disableReload = Arr::pull($modelData, 'disableReload', false);
@@ -54,24 +50,44 @@ class StoreRedirectFromWebpage extends OrgAction
 
         HydrateRedirect::run($webpage);
 
+        $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.$redirect->from_path;
+        Cache::forget($key);
+
+        PurgeVarnishPath::run($website, $redirect->from_path);
+        if ($redirect->from_webpage_id) {
+            $fromWebpage = Webpage::find($redirect->from_webpage_id);
+            if ($fromWebpage) {
+                BreakWebpageCache::run($fromWebpage);
+            }
+        }
+
         return $redirect;
     }
 
     public function rules(): array
     {
         return [
-            'type'                     => [
+            'type'          => [
                 'required',
                 Rule::enum(RedirectTypeEnum::class)
             ],
-            'from_url'                => [
+            'from_path'     => [
                 'required',
                 'string',
                 'max:2048',
+                Rule::unique(Webpage::class, 'url')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')->where('deleted_at')),
                 Rule::unique(Redirect::class, 'from_path')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
+            ],
+            'from_url'      => [
+                'required',
+                'string',
+                'max:2048',
+                Rule::unique(Redirect::class, 'from_url')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)),
             ],
-            'disableReload'            => [
+            'disableReload' => [
                 'sometimes',
                 'boolean'
             ]
@@ -82,8 +98,8 @@ class StoreRedirectFromWebpage extends OrgAction
     {
         if ($this->disableReload) {
             return redirect()->back()->with('notification', [
-                'status' => 'success',
-                'title' => __('Success!'),
+                'status'      => 'success',
+                'title'       => __('Success!'),
                 'description' => __('Created new redirect route for this webpage'),
             ]);
         }
@@ -92,11 +108,11 @@ class StoreRedirectFromWebpage extends OrgAction
             return FacadesRedirect::route(
                 'grp.org.fulfilments.show.web.webpages.show',
                 [
-                    'organisation'  => $redirect->organisation->slug,
-                    'fulfilment'    => $redirect->shop->fulfilment->slug,
-                    'website'       => $redirect->website->slug,
-                    'webpage'       => $this->webpage->slug,
-                    'tab'           => WebpageTabsEnum::REDIRECTS->value,
+                    'organisation' => $redirect->organisation->slug,
+                    'fulfilment'   => $redirect->shop->fulfilment->slug,
+                    'website'      => $redirect->website->slug,
+                    'webpage'      => $this->webpage->slug,
+                    'tab'          => WebpageTabsEnum::REDIRECTS->value,
                 ]
             );
         }
@@ -104,11 +120,11 @@ class StoreRedirectFromWebpage extends OrgAction
         return FacadesRedirect::route(
             'grp.org.shops.show.web.webpages.show',
             [
-                'organisation'  => $this->webpage->organisation->slug,
-                'shop'          => $this->webpage->shop->slug,
-                'website'       => $this->webpage->website->slug,
-                'webpage'       => $this->webpage->slug,
-                'tab'           => WebpageTabsEnum::REDIRECTS->value,
+                'organisation' => $this->webpage->organisation->slug,
+                'shop'         => $this->webpage->shop->slug,
+                'website'      => $this->webpage->website->slug,
+                'webpage'      => $this->webpage->slug,
+                'tab'          => WebpageTabsEnum::REDIRECTS->value,
             ]
         );
     }
@@ -117,6 +133,15 @@ class StoreRedirectFromWebpage extends OrgAction
     {
         $this->webpage = $webpage;
         $this->initialisationFromShop($webpage->shop, $request);
+
+        return $this->handle($webpage, $this->validatedData);
+    }
+
+    public function action(Webpage $webpage, array $modelData): Redirect
+    {
+        $this->asAction = true;
+        $this->webpage = $webpage;
+        $this->initialisationFromShop($webpage->shop, $modelData);
 
         return $this->handle($webpage, $this->validatedData);
     }

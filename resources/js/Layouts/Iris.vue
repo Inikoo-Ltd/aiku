@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import Notification from '@/Components/Utils/Notification.vue'
 import IrisHeader from '@/Layouts/Iris/Header.vue'
-import { isArray, set } from 'lodash-es'
+import { set } from 'lodash-es'
 import "@/../css/iris_styling.css"
 import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, onUnmounted, computed } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -15,7 +15,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faMedal } from '@fal'
+import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faMedal, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes } from '@fal'
 import { faMedal as fasMedal, faCandleHolder, faCircle, faBoxFull } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -25,7 +25,7 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
-import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vue'
+import IrisRightSideBasket from '@iris/Components/IrisRightSideBasket.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
@@ -43,7 +43,7 @@ interface ChatConfig {
 }
 
 const bundle = useBundle()
-library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
+library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes)
 
 initialiseIrisApp()
 
@@ -63,19 +63,31 @@ const bundleToggleStyle = computed(() => {
     }
 })
 
-const propsAnnouncementsTopbar = ref([])
-const propsAnnouncementsBottomMenu =  ref([])
-const propsAnnouncementsTopFooter =  ref([])
+const announcementsByPosition = (position: string) =>
+    computed(() => {
+        const list = (usePage().props?.announcements ?? []) as any[]
+        return list.filter(a => a?.settings?.position === position)
+    })
+
+const propsAnnouncementsTopbar = announcementsByPosition('top-bar')
+const propsAnnouncementsBottomMenu = announcementsByPosition('bottom-menu')
+const propsAnnouncementsTopFooter = announcementsByPosition('top-footer')
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
-const footer = usePage().props?.iris?.footer
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
 
-/* if(layout?.rightbasket?.show) set(layout, ['rightbasket', 'show'], false) */
+const fallbackTheme = theme
+
+const safeTheme = computed(() => {
+    const t = layout?.app?.theme
+
+    return (t && t.length >= 8) ? t : fallbackTheme
+})
+
 
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
@@ -112,24 +124,15 @@ const checkScreenType = () => {
 }
 
 
-const getAnnouncements = async () => {
-    try {
-    const response = await axios.get(route("iris.json.announcements.index"))
-    propsAnnouncementsTopbar.value = response.data.top_bar
-    propsAnnouncementsBottomMenu.value = response.data.bottom_menu
-    propsAnnouncementsTopFooter.value = response.data.top_footer
-  } catch (error: any) {
-    console.error(error)
-  }
-}
-
 provide('screenType', screenType)
 
 
 const handleTabFocus = () => {
     if (document.visibilityState === 'visible') {
         checkScreenType()
-        fetchHasInBasket()
+        if (layout?.iris?.is_logged_in) {
+            fetchHasInBasket()
+        }
     }
 }
 
@@ -148,32 +151,25 @@ onMounted(() => {
     if(layout?.iris?.is_logged_in){
         fetchHasInBasket()
     }
+
+    ;(window as any).aikuIris = {
+        // For Search result (app-iris.blade )
+        refreshCustomerData: async () => {
+            layout.reload_handle?.()
+            await fetchHasInBasket()
+        }
+    }
 })
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
     document.removeEventListener('visibilitychange', handleTabFocus)
+
+    if ((window as any).aikuIris) {
+        delete (window as any).aikuIris
+    }
 })
 
-const isSidebarFetching = ref(false)
-
-const fetchSidebarOnce = async () => {
-    if (layout.isSidebarLoaded.value || isSidebarFetching.value) return
-
-    isSidebarFetching.value = true
-
-    try {
-        const { data } = await axios.get(route("iris.json.sidebar"))
-
-        layout.iris.sidebar  = data.sidebar
-
-        layout.isSidebarLoaded = true
-    } catch (e) {
-        console.error("[IrisSidebar] fetch failed", e)
-    } finally {
-        isSidebarFetching.value = false
-    }
-}
 
 const fetchHasInBasket = async () => {
     set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
@@ -185,8 +181,7 @@ const fetchHasInBasket = async () => {
         }
 
         const response = await axios.get(apiUrl);
-        /* console.log('plmnbvc',response.data) */
-        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || {})
     } catch (error) {
         console.error('Failed to load product portfolio', error);
     } finally {
@@ -195,13 +190,11 @@ const fetchHasInBasket = async () => {
     }
 };
 
-onBeforeMount(()=>{
-initialiseIrisVarnish(useIrisLayoutStore)
-getAnnouncements()
-fetchSidebarOnce()
+onBeforeMount(() => {
+    initialiseIrisVarnish(useIrisLayoutStore)
 })
 
-// Watch: open Side Basket if cart have any changes
+// Watch: open Side Basket if cart has any changes
 watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     if (typeof layout.rightbasket?.show === 'undefined') {
         set(layout, 'rightbasket.show', true)
@@ -213,8 +206,6 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
         set(layout, 'rightbasket.show', false)
     }
 })
-
-
 </script>
 
 <template>
@@ -304,11 +295,11 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
 
                 <!-- Layout: SideBasket (right) -->
                 <div
-                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile'"
-                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
-                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-md' : 'border-transparent max-w-0'"
+                    v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
+                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen transition-all"
+                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent max-w-0'"
                 >
-                    <IrisRightsideBasket
+                    <IrisRightSideBasket
                         v-if="layout.iris_variables?.cart_count > 0"
                         :isOpen="layout.rightbasket?.show"
                     />  
@@ -324,7 +315,7 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                 </div>
 
                 <div
-                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app.name === 'iris' && layout.retina.type === 'dropshipping'"
+                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app?.name === 'iris' && layout.retina?.type === 'dropshipping'"
                     @click="bundle.open.value = !bundle.open.value"
                     class="fixed z-[60] w-8 aspect-square rounded-full flex items-center justify-center cursor-pointer
                         bg-[var(--theme-color-0)]
@@ -344,12 +335,7 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                 </template>
             </template>
 
-            <Footer
-                v-if="footer && !isArray(footer)"
-                v-once  
-                :data="footer"
-                :colorThemed="theme"
-            />
+            <Footer :colorThemed="theme" />
         </div>
     </div>
 
@@ -388,6 +374,16 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
     }
 }
 
+.basket-drawer {
+    width: min(92vw, 37%);
+    box-sizing: border-box;
+}
+
+@media (min-width: 1536px) {
+    .basket-drawer {
+        width: 25%;
+    }
+}
 
 // INI-562: live chat
 iframe#launcher {
@@ -398,8 +394,35 @@ iframe#launcher {
     background-color: var(--theme-color-4);
 }
 
+.border-primary {
+    border-color: var(--theme-color-4);
+}
+
 .text-primary {
     color: var(--theme-color-4) !important;
 }
+
+.primaryLink {
+    background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
+
+    &:hover,
+    &:focus {
+        color: #374151;
+    }
+
+    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
+}
+
+.secondaryLink {
+    background: v-bind('`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "AA"})`');
+
+    &:hover,
+    &:focus {
+        color: v-bind('`${safeTheme[7]}`');
+    }
+
+    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
+}
+
 
 </style>

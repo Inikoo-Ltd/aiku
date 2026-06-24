@@ -80,7 +80,7 @@ const lastPage = ref(2)
 const internalValue = ref(props.object ? props.value : props.value?.[props.fieldName])
 
 const getOptions = async () => {
-  const filterQuery = props.prefixQuery ? `${props.prefixQuery}_filter[global]` : "filter[global]"
+  const filterQuery = "filter[global]"
   loading.value = true
   try {
     const response = await axios.get(props.urlRoute, {

@@ -1,21 +1,17 @@
 <script setup lang="ts">
-import { useFormatTime } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedling, faTrash } from "@fal"
 import { faBan, faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { InputNumber, AutoComplete } from 'primevue'
-import { ref, computed, inject, nextTick } from 'vue'
+import { ref, inject, nextTick } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { router, useForm } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { StockLocation, StockManagementRoutes } from '@/types/Inventory/StocksManagement'
 import { notify } from '@kyvg/vue3-notification'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import { stockLocation } from '@/types/StockLocation'
 library.add(faDotCircle, fasDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedling, faTrash)
 

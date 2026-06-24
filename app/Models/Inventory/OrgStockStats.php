@@ -103,6 +103,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $on_the_way_po_count
  * @property float|null $week_of_cover
  * @property int $number_products
+ * @property int $number_stock_deliveries_state_booking_in
+ * @property int $number_stock_deliveries_state_booked_in
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newQuery()

@@ -1,0 +1,61 @@
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Wed, 07 Jun 2023 02:45:27 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2023, Raul A Perusquia Flores
+  -->
+
+<script setup lang="ts">
+import { faCube, faLink } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { inject } from "vue"
+import { getStyles } from "@/Composables/styles"
+import Button from "@iris/Components/IrisButton.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
+
+library.add(faCube, faLink)
+
+const props = defineProps<{
+	fieldValue: {
+		headline: String,
+		button: {
+			text: String
+			container: {
+				properties: object
+			}
+		}
+	},
+	container: {
+		properties: Object
+	}
+	screenType: "mobile" | "tablet" | "desktop"
+	indexBlock:number
+}>()
+
+const layout: any = inject("layout", {})
+
+
+</script>
+
+<template>
+	<div :id="fieldValue?.id ? fieldValue?.id  : 'cta2'+indexBlock"  component="cta2" >
+		<div :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			...getStyles(fieldValue.container?.properties, screenType)
+		}">
+			<div class="relative  px-6 py-24 text-center sm:px-16">
+				<section v-html="fieldValue.headline" />
+
+				<div class="mt-10 flex items-center justify-center gap-x-6">
+					<LinkIris :href="fieldValue?.button?.link?.href" :canonical_url="fieldValue?.button?.link?.canonical_url" :target="fieldValue?.button?.link?.target" :type="fieldValue?.button?.link?.type"
+						typeof="button">
+						<template #default>
+							<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+								:label="fieldValue?.button?.text" />
+						</template>
+					</LinkIris>
+				</div>
+			</div>
+		</div>
+	</div>
+
+</template>

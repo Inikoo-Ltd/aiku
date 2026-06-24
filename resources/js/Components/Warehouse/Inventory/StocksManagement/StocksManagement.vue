@@ -67,7 +67,7 @@ const setActivePickingLocation = (location: StockLocation, scope: string) => {
     if (scope == 'wholesale') {
         if (activePickingLocationWholesale.value === location.id) return;
         activePickingLocationWholesale.value = location.id;
-    
+
         updateStockLocation(location, {
             set_as_priority_wholesale: true
         });
@@ -75,7 +75,7 @@ const setActivePickingLocation = (location: StockLocation, scope: string) => {
 
         if (activePickingLocationDropshipping.value === location.id) return;
         activePickingLocationDropshipping.value = location.id;
-    
+
         updateStockLocation(location, {
             set_as_priority_dropshipping: true
         });
@@ -141,7 +141,7 @@ const toggleQuestionPopover = async (locationId: number, event: Event) => {
 
 const saveMinMaxStock = (location: StockLocation) => {
     // Initialize if not exists
-    const locationId = location.id; 
+    const locationId = location.id;
 
     if (!tempMinMaxStock.value[locationId]) {
         tempMinMaxStock.value[locationId] = { min_stock: null, max_stock: null, replenishment_stock: null }
@@ -177,10 +177,10 @@ const cancelMinMaxStock = (locationId: number) => {
 
         let currLocSetting = props.stocks_management.locations.find((data) => data.id == locationId)?.settings ?? null;
 
-        tempMinMaxStock.value[locationId] = { 
-            min_stock: currLocSetting?.min_stock ?? null, 
-            max_stock: currLocSetting?.max_stock ?? null, 
-            replenishment_stock: currLocSetting?.replenishment_stock ?? null 
+        tempMinMaxStock.value[locationId] = {
+            min_stock: currLocSetting?.min_stock ?? null,
+            max_stock: currLocSetting?.max_stock ?? null,
+            replenishment_stock: currLocSetting?.replenishment_stock ?? null
         }
     }
 
@@ -293,7 +293,7 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
 
     router.patch(route('grp.models.location_org_stock.update', {
         locationOrgStock: stockLoc.id
-    }), body, 
+    }), body,
     {
         preserveScroll: true,
         onSuccess: () => {
@@ -404,7 +404,7 @@ const onAddLocationShow = () => {
 
 <template>
     <div class="mx-auto bg-white shadow-md rounded-lg p-4 space-y-4">
-        
+
         <!-- Header Section -->
         <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold flex items-center gap-2">
@@ -437,7 +437,7 @@ const onAddLocationShow = () => {
 
         <!-- Section: Location Grid -->
         <div class="border-t pt-2 gap-2 items-center text-gray-700">
-            
+
                 <Dialog
                     v-model:visible="isStockCheckModalOpen"
                     :header="`${trans('Audit Stock')} - ${props.trade_units[0]?.code}`"
@@ -454,14 +454,14 @@ const onAddLocationShow = () => {
                     }"
                     :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }"
                 >
-                    <StockCheck                        
+                    <StockCheck
                         :selectedLocationId="selectedLocationId"
                         :locations="props.stocks_management.locations"
                         @close="isStockCheckModalOpen = false"
                         :auditRoute="props.stocks_management?.routes?.audit_route"
                     />
                 </Dialog>
-                
+
                  <Dialog v-model:visible="isMoveStockModalOpen" modal :header="trans('Move Stock')"
                     :style="{ width: '50vw' }"
                     :dismissableMask="true"
@@ -658,7 +658,7 @@ const onAddLocationShow = () => {
                             class="col-span-2 text-center text-sm italic opacity-60 whitespace-nowrap">
                             {{ trans("Never audited") }}
                         </div>
-                        
+
                         <div class="text-center font-semibold border-l">
                             <span
                                 v-tooltip="trans('Stock quantity')"
@@ -668,7 +668,7 @@ const onAddLocationShow = () => {
                                 {{ Number(loc.quantity) }}
                             </span>
                         </div>
-                </div>            
+                </div>
         </div>
 
         <!-- Action Buttons -->

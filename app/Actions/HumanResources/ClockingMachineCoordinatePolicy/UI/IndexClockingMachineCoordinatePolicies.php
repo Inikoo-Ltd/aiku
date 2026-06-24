@@ -133,15 +133,15 @@ class IndexClockingMachineCoordinatePolicies extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->withLabelRecord([__('policy'), __('policies')])
-                ->column(key: 'number', label: __('#'), canBeHidden: false, sortable: false)
+                ->column(key: 'number', label: '#', canBeHidden: false)
                 ->column(key: 'scope_type', label: __('Scope'), canBeHidden: false, sortable: true)
-                ->column(key: 'scope_name', label: __('Name'), canBeHidden: false, sortable: false)
+                ->column(key: 'scope_name', label: __('Name'), canBeHidden: false)
                 ->column(key: 'mode', label: __('Mode'), canBeHidden: false, sortable: true)
                 ->column(key: 'is_active', label: __('Active'), canBeHidden: false, sortable: true)
                 ->column(key: 'rules_count', label: __('Rules'), canBeHidden: false, sortable: true)
-                ->column(key: 'start_at', label: __('Start At'), canBeHidden: true, sortable: true)
-                ->column(key: 'end_at', label: __('End At'), canBeHidden: true, sortable: true)
-                ->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'start_at', label: __('Start At'), sortable: true)
+                ->column(key: 'end_at', label: __('End At'), sortable: true)
+                ->column(key: 'actions', label: __('Actions'), canBeHidden: false)
                 ->defaultSort('id');
         };
     }

@@ -13,6 +13,7 @@ use App\Actions\Dispatching\PickingSession\Traits\WithPickingSessionsSubNavigati
 use App\Actions\OrgAction;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Http\Resources\Dispatching\PickingSessionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\PickingSession;
@@ -31,9 +32,41 @@ class IndexPickingSessions extends OrgAction
     use WithPickingSessionsSubNavigation;
 
     private ?PickingSessionStateEnum $restriction = null;
+    private ?PickingSessionTypeEnum $typeRestriction = null;
+    protected ?string $tab = PickingSessionTypeEnum::DROPSHIPPING->value;
+    protected array $typeCounts = [];
 
     public function handle(Warehouse $warehouse, $prefix = null): LengthAwarePaginator
     {
+        if (request()->has('tab')) {
+            $tab = request()->get('tab');
+            if (in_array($tab, PickingSessionTypeEnum::values(), true)) {
+                $this->tab = $tab;
+            }
+        }
+
+        $this->typeRestriction = $this->tab === PickingSessionTypeEnum::FULFILMENT->value
+            ? PickingSessionTypeEnum::FULFILMENT
+            : PickingSessionTypeEnum::DROPSHIPPING;
+
+        $baseQuery = PickingSession::query()
+            ->where('warehouse_id', $warehouse->id);
+
+        if ($this->restriction) {
+            $baseQuery->where('state', $this->restriction);
+        }
+
+        $this->typeCounts = [
+            PickingSessionTypeEnum::DROPSHIPPING->value => (clone $baseQuery)
+                ->where(function ($q) {
+                    $q->whereNull('type')
+                        ->orWhere('type', PickingSessionTypeEnum::DROPSHIPPING->value);
+                })
+                ->count(),
+            PickingSessionTypeEnum::FULFILMENT->value   => (clone $baseQuery)
+                ->where('type', PickingSessionTypeEnum::FULFILMENT->value)
+                ->count(),
+        ];
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('picking_Sessions.reference', $value);
@@ -52,15 +85,26 @@ class IndexPickingSessions extends OrgAction
             $query->where('picking_sessions.state', $this->restriction);
         }
 
+        if ($this->typeRestriction === PickingSessionTypeEnum::FULFILMENT) {
+            $query->where('picking_sessions.type', PickingSessionTypeEnum::FULFILMENT->value);
+        } elseif ($this->typeRestriction === PickingSessionTypeEnum::DROPSHIPPING) {
+            $query->where(function ($q) {
+                $q->whereNull('picking_sessions.type')
+                    ->orWhere('picking_sessions.type', PickingSessionTypeEnum::DROPSHIPPING->value);
+            });
+        }
+
         return $query->defaultSort('-picking_sessions.id')
                 ->select([
                     'picking_sessions.id',
                     'picking_sessions.reference',
                     'picking_sessions.slug',
                     'picking_sessions.state',
+                    'picking_sessions.type',
                     'picking_sessions.start_at',
                     'picking_sessions.end_at',
                     'picking_sessions.number_delivery_notes',
+                    'picking_sessions.number_pallet_returns',
                     'picking_sessions.number_items',
                     'picking_sessions.quantity_picked',
                     'picking_sessions.quantity_packed',
@@ -88,6 +132,10 @@ class IndexPickingSessions extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $pickingSessions, ActionRequest $request): Response
     {
+        $navigation = PickingSessionTypeEnum::navigation();
+        $navigation[PickingSessionTypeEnum::DROPSHIPPING->value]['number'] = $this->typeCounts[PickingSessionTypeEnum::DROPSHIPPING->value] ?? 0;
+        $navigation[PickingSessionTypeEnum::FULFILMENT->value]['number']   = $this->typeCounts[PickingSessionTypeEnum::FULFILMENT->value] ?? 0;
+
         return Inertia::render(
             'Org/Inventory/PickingSessions',
             [
@@ -101,6 +149,10 @@ class IndexPickingSessions extends OrgAction
                     'iconRight'     => [
                         'icon' => 'fal fa-truck',
                     ],
+                ],
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => $navigation,
                 ],
                 'data'        => PickingSessionsResource::collection($pickingSessions),
             ]
@@ -123,7 +175,11 @@ class IndexPickingSessions extends OrgAction
             }
 
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_delivery_notes', label: __('Delivery Notes'), canBeHidden: false, sortable: true, searchable: true);
+            if ($this->typeRestriction === PickingSessionTypeEnum::FULFILMENT) {
+                $table->column(key: 'number_pallet_returns', label: __('Pallet returns'), canBeHidden: false, sortable: true, searchable: true);
+            } else {
+                $table->column(key: 'number_delivery_notes', label: __('Delivery Notes'), canBeHidden: false, sortable: true, searchable: true);
+            }
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'picking_percentage', label: __('Picking'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'packing_percentage', label: __('Packing'), canBeHidden: false, sortable: true, searchable: true);

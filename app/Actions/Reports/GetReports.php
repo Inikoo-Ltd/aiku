@@ -94,6 +94,12 @@ class GetReports extends OrgAction
                 'route' => route('grp.org.reports.uk-manufacturing-survey', $organisation),
                 'count' => null,
             ],
+            [
+                'name'  => __('Customer Credit'),
+                'icon'  => 'fal fa-credit-card',
+                'route' => route('grp.org.reports.customer-credit', $organisation),
+                'count' => null,
+            ],
         ];
     }
 }

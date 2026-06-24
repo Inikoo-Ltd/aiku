@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { ref, watch, computed } from 'vue'
 import { faChevronDown, faFilter, faTimes, faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableTemplateProspectRecipients from '@/Components/Tables/TableTemplateProspectRecipients.vue'

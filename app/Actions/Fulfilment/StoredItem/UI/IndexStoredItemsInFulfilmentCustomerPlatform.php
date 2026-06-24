@@ -12,7 +12,6 @@ namespace App\Actions\Fulfilment\StoredItem\UI;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\StoredItemsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -52,32 +51,10 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
             ->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id)
             ->where('portfolios.item_type', class_basename(StoredItem::class));
 
-        if ($customerSalesChannel->platform->type === PlatformTypeEnum::MANUAL) {
-            $query->leftJoin('stored_items', function ($join) {
-                $join->on('portfolios.item_id', '=', 'stored_items.id')
-                    ->where('portfolios.item_type', '=', class_basename(StoredItem::class));
-            });
-
-        } elseif ($customerSalesChannel->platform->type === PlatformTypeEnum::SHOPIFY) {
-            $query->leftJoin('stored_items', function ($join) {
-                $join->on('portfolios.item_id', '=', 'stored_items.id')
-                    ->where('portfolios.item_type', '=', class_basename(StoredItem::class));
-            });
-
-            // repair this bacuse is damaged
-        } elseif ($customerSalesChannel->platform->type === PlatformTypeEnum::TIKTOK) {
-            $query->leftJoin('stored_items', function ($join) {
-                $join->on('portfolios.item_id', '=', 'stored_items.id')
-                    ->where('portfolios.item_type', '=', class_basename(StoredItem::class));
-            });
-
-            $query->leftJoin('tiktok_user_has_products', function ($join) {
-                $join->on('tiktok_user_has_products.product_id', '=', 'stored_items.id')
-                    ->where('tiktok_user_has_products.product_type', '=', class_basename(StoredItem::class));
-            });
-
-            $query->where('tiktok_user_has_products.shopify_user_id', $customerSalesChannel->customer->tiktokUser->id);
-        }
+        $query->leftJoin('stored_items', function ($join) {
+            $join->on('portfolios.item_id', '=', 'stored_items.id')
+                ->where('portfolios.item_type', '=', class_basename(StoredItem::class));
+        });
 
         return $query
             ->defaultSort('stored_items.id')

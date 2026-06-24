@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
+use App\Models\Bundle;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
@@ -43,7 +44,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -182,6 +183,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $mismatch_with_master_detected
  * @property bool $not_follow_master_trade_units
  * @property int|null $index_under_family
+ * @property bool $is_on_demand
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -194,6 +196,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read Media|null $bottomImage
  * @property-read LaravelCollection<int, Brand> $brands
+ * @property-read Bundle|null $bundle
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
@@ -256,7 +259,7 @@ class Product extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasAttachments;
-    use Searchable;
+    use HasSearch;
 
     protected $guarded = [];
 
@@ -264,6 +267,7 @@ class Product extends Model implements Auditable, HasMedia
 
 
     protected $casts = [
+        'units'                         => 'decimal:3',
         'variant_ratio'                 => 'decimal:3',
         'price'                         => 'decimal:2',
         'rrp'                           => 'decimal:2',
@@ -289,6 +293,7 @@ class Product extends Model implements Auditable, HasMedia
         'is_for_sale'                   => 'boolean',
         'not_for_sale_from_master'      => 'boolean',
         'mismatch_with_master_detected' => 'boolean',
+        'is_on_demand'                  => 'boolean',
 
     ];
 
@@ -310,6 +315,7 @@ class Product extends Model implements Auditable, HasMedia
                 'description_extra',
                 'state',
                 'is_for_sale',
+                'is_on_demand',
                 'created_at'
             ]);
     }
@@ -326,6 +332,7 @@ class Product extends Model implements Auditable, HasMedia
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
             'is_for_sale'       => $this->is_for_sale,
+            'is_on_demand'      => $this->is_on_demand,
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
@@ -355,6 +362,7 @@ class Product extends Model implements Auditable, HasMedia
         'auto_assign_subject_type',
         'auto_assign_status',
         'is_main',
+        'is_on_demand',
     ];
 
     public function getRouteKeyName(): string
@@ -521,7 +529,10 @@ class Product extends Model implements Auditable, HasMedia
 
     public function getLuigiIdentity(): string
     {
-        return $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->webpage?->website?->id.':'.$this->webpage?->id;
+        if ($this->webpage) {
+            return $this->webpage->luigiIdentity();
+        }
+        return 'unknown';
     }
 
     public function frontImage(): HasOne
@@ -597,5 +608,10 @@ class Product extends Model implements Auditable, HasMedia
     public function variant(): BelongsTo
     {
         return $this->belongsTo(Variant::class, 'variant_id');
+    }
+
+    public function bundle(): MorphOne
+    {
+        return $this->morphOne(Bundle::class, 'bundleable');
     }
 }

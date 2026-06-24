@@ -30,7 +30,11 @@ const props = defineProps<{
 }>()
 
 function palletRoutes(pallet: Pallet) {
-    console.log("test123")
+    const palletSlug = pallet.pallet_slug ?? pallet.slug
+    if (!palletSlug) {
+        return undefined
+    }
+
     switch (route().current()) {
         case 'grp.org.fulfilments.show.crm.customers.show.stored-items.index':
             return route(
@@ -39,7 +43,7 @@ function palletRoutes(pallet: Pallet) {
                     route().params['organisation'],
                     route().params['fulfilment'],
                     route().params['fulfilmentCustomer'],
-                    pallet.pallet_slug
+                    palletSlug
                 ])
         case 'grp.org.warehouses.show.inventory.pallets.current.index':
             return route(
@@ -47,8 +51,16 @@ function palletRoutes(pallet: Pallet) {
                 [
                     route().params['organisation'],
                     route().params['warehouse'],
-                    pallet['pallet_slug']
+                    palletSlug
                 ])
+        case 'grp.org.warehouses.show.inventory.stored_items.current.show':
+            return route(
+                'grp.org.warehouses.show.inventory.pallets.current.show',
+                {
+                    organisation: route().params['organisation'],
+                    warehouse: route().params['warehouse'],
+                    pallet: palletSlug
+                })
 
         case 'grp.org.warehouses.show.infrastructure.locations.show':
             return route(
@@ -57,7 +69,7 @@ function palletRoutes(pallet: Pallet) {
                     route().params['organisation'],
                     route().params['warehouse'],
                     route().params['location'],
-                    pallet['pallet_slug']
+                    palletSlug
                 ])
         case 'grp.org.fulfilments.show.crm.customers.show':
             return route(
@@ -66,7 +78,7 @@ function palletRoutes(pallet: Pallet) {
                     route().params['organisation'],
                     route().params['fulfilment'],
                     route().params['fulfilmentCustomer'],
-                    pallet['pallet_slug']
+                    palletSlug
                 ])
         case 'grp.org.fulfilments.show.crm.customers.show.stored-items.show':
             return route(
@@ -75,11 +87,16 @@ function palletRoutes(pallet: Pallet) {
                     route().params['organisation'],
                     route().params['fulfilment'],
                     route().params['fulfilmentCustomer'],
-                    pallet['pallet_slug']
+                    palletSlug
                 ])
-
+        case 'retina.fulfilment.itemised_storage.stored_items.show':
+            return route(
+                'retina.fulfilment.storage.pallets.show',
+                [
+                    palletSlug
+                ])
         default:
-            return []
+            return undefined
     }
 }
 
@@ -111,7 +128,7 @@ const generateLinkStoredItems = (storedItem: {}) => {
                     storedItem['slug']
                 ])
         default:
-            '#'
+            return '#'
     }
 }
 </script>
@@ -119,9 +136,10 @@ const generateLinkStoredItems = (storedItem: {}) => {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(pallet_reference)="{ item: pallet }">
-            <Link :href="palletRoutes(pallet)" class="primaryLink">
+            <Link v-if="palletRoutes(pallet)" :href="palletRoutes(pallet)" class="primaryLink">
                 {{ pallet['pallet_reference'] }}
             </Link>
+            <div v-else>{{ pallet['pallet_reference'] }}</div>
         </template>
 
         <template #cell(stored_item_state)="{ item: pallet }">
@@ -129,16 +147,16 @@ const generateLinkStoredItems = (storedItem: {}) => {
             <Icon :data="pallet['stored_item_state_icon']" class="px-1" />
         </template>
 
-        <template #cell(state)="{ item: pallet }">
-            <Icon :data="pallet['state_icon']" class="px-1" />
+        <template #cell(type_icon)="{ item: pallet }">
+            <Icon :data="pallet['type_icon']" class="px-1" />
         </template>
 
         <template #cell(reference)="{ item: pallet }">
-            <Link v-if="pallet?.slug" :href="generateLinkStoredItems(pallet)" class="primaryLink">
-                {{ pallet['reference'] }}
+            <Link v-if="palletRoutes(pallet)" :href="palletRoutes(pallet)" class="primaryLink">
+                {{ pallet['reference'] ?? pallet['pallet_reference'] }}
             </Link>
             <div v-else>
-                {{ pallet['reference'] }}
+                {{ pallet['reference'] ?? pallet['pallet_reference'] }}
             </div>
         </template>
 

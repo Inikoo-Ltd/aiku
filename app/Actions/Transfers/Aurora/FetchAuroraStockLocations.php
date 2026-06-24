@@ -52,7 +52,7 @@ class FetchAuroraStockLocations extends FetchAuroraAction
             ], 2, false);
 
 
-            OrgStockHydrateQuantityInLocations::run($orgStock);
+            OrgStockHydrateQuantityInLocations::run($orgStock->id);
         }
 
         return [];

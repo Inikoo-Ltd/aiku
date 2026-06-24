@@ -40,7 +40,7 @@ class DeliveryNoteHydrateWaitingItems implements ShouldBeUnique
             'number_items_waiting_crm'       => $deliveryNote->deliveryNoteItems()->where('has_waiting_crm', true)->count(),
         ]);
 
-        SendWaitingCountUpdateToWarehouseUsers::run($deliveryNote->warehouse);
+        SendWaitingCountUpdateToWarehouseUsers::dispatch($deliveryNote->warehouse_id)->delay(1);
     }
 
 

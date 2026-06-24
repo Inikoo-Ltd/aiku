@@ -19,19 +19,16 @@ import { PalletDelivery, BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { PageHeadingTypes } from  '@/types/PageHeading'
 import type { Component } from 'vue'
-import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
-
+import { Menu, MenuButton, MenuItems } from '@headlessui/vue'
 import TableFulfilmentTransactions from "@/Components/Tables/Grp/Org/Fulfilment/TableFulfilmentTransactions.vue"
 import RetinaTablePalletDeliveryPallets from '@/Components/Tables/Retina/RetinaTablePalletDeliveryPallets.vue'
-// import TableServices from "@/Components/Tables/Grp/Org/Fulfilment/TableServices.vue"
-// import TablePhysicalGoods from "@/Components/Tables/Grp/Org/Fulfilment/TablePhysicalGoods.vue"
+
 import TableStoredItems from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItems.vue"
 import RetinaBoxStatsDelivery from "@/Components/Retina/Storage/RetinaBoxStatsDelivery.vue"
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue";
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
-import { Table as TableTS } from '@/types/Table'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -870,6 +867,4 @@ const isModalUploadStoredItemOpen = ref(false)
         :options="props.option_attach_file"
     />
 
-    <!-- <pre>{{ props.pallets }}</pre> -->
-    <!-- <pre>{{ $inertia.page.props.queryBuilderProps.pallets.columns }}</pre> -->
 </template>

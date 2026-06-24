@@ -17,7 +17,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 
-import Family1Render from '@/Components/CMS/Webpage/Families1/Families1Render.vue'
+import Family1Render from "@/Iris/Components/Families1Render.vue"
 
 const props = withDefaults(defineProps<{
   title: string

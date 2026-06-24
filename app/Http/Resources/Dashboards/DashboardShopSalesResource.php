@@ -51,7 +51,7 @@ class DashboardShopSalesResource extends JsonResource
             $migrationTooltip .= ' on ' . $data['migrated_to_aiku_on'];
         }
 
-        $migrationIcon = ($data['is_aiku'] ?? false) ? [
+        $migrationIcon = ($data['migrated_to_aiku_on'] ?? false) ? [
             'icon_right' => [
                 'img'   => '/favicon.svg' ?? null,
                 'tooltip' => $migrationTooltip,
@@ -59,6 +59,12 @@ class DashboardShopSalesResource extends JsonResource
         ] : [];
 
         $columns = [
+            'link' => [
+                'clickable_icon' => $data['website_url'] ? [
+                    'url'  => $data['website_url'],
+                    'icon' => ['icon' => 'fal fa-external-link'],
+                ] : null,
+            ],
             'label' => [
                 'formatted_value' => $data['name'] ?? 'Unknown',
                 'align'           => 'left',

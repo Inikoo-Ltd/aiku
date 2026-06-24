@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\Redirect;
 
+use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\OrgAction;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -37,10 +38,10 @@ class StoreRedirect extends OrgAction
 
         $webpage->update(['redirect_webpage_id' => data_get($modelData, 'to_webpage_id')]);
 
-
+        /** @var Redirect $redirect */
         $redirect = $webpage->redirectedTo()->create($modelData);
         HydrateRedirect::run($webpage);
-
+        BreakProductInWebpagesCache::make()->breakCache($webpage);
         return $redirect;
 
     }

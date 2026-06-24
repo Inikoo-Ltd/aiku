@@ -6,7 +6,7 @@ import { faUnlink } from "@far";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { trans } from "laravel-vue-i18n";
 
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import CollectionSelector from "@/Components/DepartmentAndFamily/CollectionSelector.vue";

@@ -54,13 +54,45 @@ class EditStoredItem extends OrgAction
 
     public function htmlResponse(StoredItem $storedItem, ActionRequest $request): Response
     {
-        $stateOptions = collect(StoredItemStateEnum::labels())
-            ->map(fn ($label, $value) => [
-                'value' => $value,
-                'label' => $label,
-            ])
-            ->values()
-            ->all();
+        $fields = [
+            'reference' => [
+                'type'    => 'input',
+                'label'   => __('Reference'),
+                'value'   => $storedItem->reference,
+                'required' => true
+            ],
+            'name' => [
+                'type'    => 'input',
+                'label'   => __('Name'),
+                'placeholder'   => __("Customer's SKU name"),
+                'value'   => $storedItem->name,
+                // 'required' => true
+            ],
+        ];
+
+        if ($storedItem->state == StoredItemStateEnum::ACTIVE) {
+            $fields['mark_as_discontinuing'] = [
+                'type'                => 'button',
+                'label'               => __('State'),
+                'label_button'        => __('Mark as discontinuing'),
+                'icon'                => 'fal fa-sign-out-alt',
+                'type_button'         => 'delete',
+                'noSaveButton'        => true,
+                'confirmation' => [
+                    'title'       => __('Mark as discontinuing'),
+                    'description' => __("Once discontinuing, no more quantity can be added to this SKU. When its quantity reaches 0 it will be automatically discontinued."),
+                    'confirm'     => __('Mark as discontinuing'),
+                    'cancel'      => __('Cancel'),
+                ],
+                'route'        => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.stored-items.mark-as-discontinuing',
+                    'parameters' => [
+                        'storedItem' => $storedItem->id
+                    ]
+                ]
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
@@ -91,28 +123,7 @@ class EditStoredItem extends OrgAction
                         [
                             'label'  => __('Basic information'),
                             // 'icon'   => ['fal', 'fa-narwhal'],
-                            'fields' => [
-                                'reference' => [
-                                    'type'    => 'input',
-                                    'label'   => __('Reference'),
-                                    'value'   => $storedItem->reference,
-                                    'required' => true
-                                ],
-                                'name' => [
-                                    'type'    => 'input',
-                                    'label'   => __('Name'),
-                                    'placeholder'   => __("Customer's SKU name"),
-                                    'value'   => $storedItem->name,
-                                    // 'required' => true
-                                ],
-                                'state' => [
-                                    'type'        => 'select',
-                                    'label'       => __('State'),
-                                    'placeholder' => __('Select state'),
-                                    'options'     => $stateOptions,
-                                    'value'       => $storedItem->state->value,
-                                ],
-                            ],
+                            'fields' => $fields,
                         ]
                     ],
                     'args' => [

@@ -14,6 +14,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Models\CRM\TrafficSource;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
 use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -100,6 +102,7 @@ class StoreCustomer extends OrgAction
         );
 
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
+        $trafficSourcesData = Arr::pull($modelData, 'traffic_sources');
 
         $customer = DB::transaction(function () use ($shop, $modelData, $contactAddressData, $deliveryAddressData, $taxNumberData, $emailSubscriptionsData) {
             /** @var Customer $customer */
@@ -178,8 +181,8 @@ class StoreCustomer extends OrgAction
             }
         }
 
-        if ($customer?->trafficSource) {
-            TrafficSourceHydrateCustomers::dispatch($customer->trafficSource);
+        if ($trafficSourcesData) {
+            $this->processTrafficSources($customer, $trafficSourcesData);
         }
 
         if ($customer->shop->is_aiku) {
@@ -213,6 +216,75 @@ class StoreCustomer extends OrgAction
             'is_subscribed_to_basket_reminder'  => true,
 
         ];
+    }
+
+    private function processTrafficSources(Customer $customer, mixed $trafficSourcesData): void
+    {
+        if (!is_string($trafficSourcesData) || blank($trafficSourcesData)) {
+            return;
+        }
+
+        $abbreviations = $this->extractTrafficSourceAbbreviations($trafficSourcesData);
+
+        if (empty($abbreviations)) {
+            return;
+        }
+
+        $typeValues = [];
+
+        foreach ($abbreviations as $abbreviation) {
+            $enum = TrafficSourcesTypeEnum::fromAbbr($abbreviation);
+            if ($enum !== null) {
+                $typeValues[] = $enum->value;
+            }
+        }
+
+        $typeValues = array_unique($typeValues);
+
+        if (empty($typeValues)) {
+            return;
+        }
+
+        $trafficSources = TrafficSource::where('shop_id', $customer->shop_id)
+            ->whereIn('type', $typeValues)
+            ->get();
+
+        if ($trafficSources->isEmpty()) {
+            return;
+        }
+
+        $share = round(1 / $trafficSources->count(), 2);
+
+        foreach ($trafficSources as $trafficSource) {
+            $customer->trafficSources()->syncWithoutDetaching([
+                $trafficSource->id => ['share' => $share],
+            ]);
+            TrafficSourceHydrateCustomers::dispatch($trafficSource);
+        }
+    }
+
+    private function extractTrafficSourceAbbreviations(string $data): array
+    {
+        $segments = preg_split('/[|,]/', $data);
+        $abbreviations = [];
+
+        foreach ($segments as $segment) {
+            $segment = trim($segment);
+
+            if (blank($segment)) {
+                continue;
+            }
+
+            $withoutTimestamp = ltrim($segment, '0123456789');
+
+            if (strlen($withoutTimestamp) === 0) {
+                continue;
+            }
+
+            $abbreviations[] = $withoutTimestamp[0];
+        }
+
+        return $abbreviations;
     }
 
     public function rules(): array

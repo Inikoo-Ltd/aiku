@@ -10,11 +10,7 @@
 
 namespace App\Actions\Maintenance\SysAdmin;
 
-use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
-use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
-use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -35,26 +31,8 @@ class AddMissingStatsToDigitalAgencyOrganisation
         /** @var Organisation $organisation */
         foreach ($organisations as $organisation) {
             DB::transaction(function () use ($organisation) {
-                $organisation->crmStats()->create();
-                $organisation->catalogueStats()->create();
-                $organisation->discountsStats()->create();
-                $organisation->mailshotsIntervals()->create();
+                $organisation->orderingStats()->create();
 
-                $paymentServiceProvider = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::ACCOUNT)->first();
-
-                StoreOrgPaymentServiceProvider::make()->action(
-                    $paymentServiceProvider,
-                    organisation: $organisation,
-                    modelData: [
-                        'code' => 'account-'.$organisation->code,
-                    ]
-                );
-
-                $otherOrganisations = Organisation::where('type', OrganisationTypeEnum::SHOP)->where('group_id', $organisation->group->id)->where('id', '!=', $organisation->id)->get();
-                foreach ($otherOrganisations as $otherOrganisation) {
-                    StoreOrgPartner::make()->action($otherOrganisation, $organisation);
-                    StoreOrgPartner::make()->action($organisation, $otherOrganisation);
-                }
             });
         }
     }

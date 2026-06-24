@@ -3,7 +3,6 @@
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\TradeUnit\HydrateTradeUnitBrandTagsFromFamily;
-use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;

@@ -186,10 +186,6 @@ class FetchAuroraWebBlocks
         $models = [];
         $group  = $webpage->group;
 
-
-
-        //print "***>>".$auroraBlock["type"]."<<<***\n";
-
         switch ($auroraBlock["type"]) {
             case "images":
                 $webBlockType = $group->webBlockTypes()->where("code", "images")->first();

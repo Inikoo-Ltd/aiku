@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Allegro\Order\FulfilOrderToAllegro;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
+use App\Actions\Dropshipping\Tiktok\Order\FulfillOrderToTiktok;
 use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -80,7 +81,7 @@ class DispatchOrder extends OrgAction
                         PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
                         PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
                         PlatformTypeEnum::MAGENTO => FulfillOrderToMagento::run($order),
-                        // PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($order),
+                        PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($order),
                         //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
                         PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order, $deliveryNote),
                         PlatformTypeEnum::ALLEGRO => FulfilOrderToAllegro::run($order),

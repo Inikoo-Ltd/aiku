@@ -70,7 +70,7 @@ trait HasOrderHydrators
         }
 
         if ($order->platform_id) {
-            PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
+            PlatformHydrateOrders::dispatch($order->platform_id)->delay($this->hydratorsDelay);
             ShopPlatformStatsHydrateOrders::dispatch($order->shop, $order->platform)->delay($this->hydratorsDelay);
         }
 

@@ -18,6 +18,6 @@ class ShowUnderMaintenance
 
     public function handle(): Response
     {
-        return Inertia::render('Disclosure/UnderMaintenance');
+        return Inertia::render('Disclosure/UnderMaintenance', []);
     }
 }

@@ -11,6 +11,7 @@
 namespace App\Actions\Accounting\Payment\Json;
 
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Http\Resources\Accounting\RefundPaymentsResource;
@@ -44,11 +45,11 @@ class GetRefundOriginalInvoicePayments extends OrgAction
             ->leftJoin('model_has_payments', 'payments.id', 'model_has_payments.payment_id')
             ->where('model_has_payments.model_id', $refund->original_invoice_id)
             ->where('model_has_payments.model_type', 'Invoice')
-            ->where('payments.status', PaymentStatusEnum::SUCCESS);
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED);
 
 
         $queryBuilder->leftJoin('currencies', 'payments.currency_id', 'currencies.id');
-
 
         return $queryBuilder
             ->defaultSort('-date')
@@ -56,6 +57,7 @@ class GetRefundOriginalInvoicePayments extends OrgAction
                 'payments.id',
                 'payments.reference',
                 'payments.status',
+                'payments.state',
                 'payments.total_refund as refunded',
                 'payments.date',
                 'payments.amount',

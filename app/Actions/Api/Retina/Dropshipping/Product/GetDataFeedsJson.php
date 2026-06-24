@@ -22,8 +22,8 @@ class GetDataFeedsJson extends RetinaApiAction
     {
         $customer = $customerSalesChannel->customer;
         $fileName = 'data_feed_' . $customer->slug . '_' . now()->format('Ymd') . '_json.txt';
-        return response()->streamDownload(function () use ($customer, $customerSalesChannel) {
-            $jsonData = PortfoliosJsonExport::make()->handle($customer, $customerSalesChannel);
+        return response()->streamDownload(function () use ($customerSalesChannel) {
+            $jsonData = PortfoliosJsonExport::make()->handle($customerSalesChannel);
             echo json_encode($jsonData, JSON_PRETTY_PRINT);
         }, $fileName, [
             'Content-Type' => 'application/json; charset=utf-8',

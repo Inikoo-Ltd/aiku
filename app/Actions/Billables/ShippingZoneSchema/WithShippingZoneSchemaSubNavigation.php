@@ -32,8 +32,11 @@ trait WithShippingZoneSchemaSubNavigation
             $current      = [
                 'label'    => __('Current'),
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.billables.shipping.show',
-                    'parameters' => [$this->organisation->slug, $shop->slug, $shop->currentShippingZoneSchema->slug]
+                    'name'       => 'grp.org.shops.show.billables.shipping.current.show',
+                    'parameters' => [
+                        $this->organisation->slug,
+                        $shop->slug,
+                        $shop->currentShippingZoneSchema->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-cube'],
@@ -47,8 +50,11 @@ trait WithShippingZoneSchemaSubNavigation
             $discount     = [
                 'label'    => __('Discount'),
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.billables.shipping.show',
-                    'parameters' => [$this->organisation->slug, $shop->slug, $shop->discountShippingZoneSchema->slug]
+                    'name'       => 'grp.org.shops.show.billables.shipping.discount.show',
+                    'parameters' => [
+                        $this->organisation->slug,
+                        $shop->slug,
+                        $shop->discountShippingZoneSchema->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-cube'],

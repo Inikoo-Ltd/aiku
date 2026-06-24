@@ -34,7 +34,6 @@ enum OrdersBacklogTabsEnum: string
 
     case DISPATCHED_TODAY = 'dispatched_today';
 
-
-
+    case RETURNED = 'returned';
 
 }

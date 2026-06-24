@@ -102,7 +102,6 @@ Route::get('accounting-dashboard/accounts/{paymentAccountShop}', [ShowPaymentAcc
 Route::get('accounting-dashboard/payments', [IndexPayments::class, 'inFulfilment'])->name('accounting.payments.index');
 Route::get('accounting-dashboard/customer-balances', [IndexCustomerBalances::class, 'inFulfilment'])->name('accounting.customer_balances.index');
 
-
 Route::prefix('statements')->as('invoices')->group(function () {
     Route::get('', [IndexInvoices::class, 'inFulfilment'])->name('.all.index');
 

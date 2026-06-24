@@ -6,7 +6,14 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Goods\Barcode\UI\IndexBarcode;
+use App\Actions\Goods\Barcode\UI\ShowBarcode;
 use App\Actions\Goods\TradeUnit\UI\EditTradeUnit;
+use App\Actions\Goods\TradeUnit\UI\IndexMissingBarcodeTradeUnits;
+use App\Actions\Goods\TradeUnit\UI\IndexMissingBrandTradeUnits;
+use App\Actions\Goods\TradeUnit\UI\IndexMissingDescriptionTradeUnits;
+use App\Actions\Goods\TradeUnit\UI\IndexMissingDimensionsTradeUnits;
+use App\Actions\Goods\TradeUnit\UI\IndexMissingWeightTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexOrphanTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnit;
@@ -30,9 +37,15 @@ Route::prefix('units')->as('units.')->group(function () {
     Route::get('/all', IndexTradeUnits::class)->name('index');
     Route::get('/active', [IndexTradeUnits::class, 'active'])->name('active');
     Route::get('/in-process', [IndexTradeUnits::class, 'inProcess'])->name('in_process');
+    Route::get('/discontinuing', [IndexTradeUnits::class, 'discontinuing'])->name('discontinuing');
     Route::get('/discontinued', [IndexTradeUnits::class, 'discontinued'])->name('discontinued');
     Route::get('/anomality', [IndexTradeUnits::class, 'anomality'])->name('anomality');
     Route::get('/orphan', IndexOrphanTradeUnits::class)->name('orphan');
+    Route::get('/missing-weight', IndexMissingWeightTradeUnits::class)->name('missing_weight');
+    Route::get('/missing-dimensions', IndexMissingDimensionsTradeUnits::class)->name('missing_dimensions');
+    Route::get('/missing-description', IndexMissingDescriptionTradeUnits::class)->name('missing_description');
+    Route::get('/missing-brand', IndexMissingBrandTradeUnits::class)->name('missing_brand');
+    Route::get('/missing-barcode', IndexMissingBarcodeTradeUnits::class)->name('missing_barcode');
     Route::prefix('{tradeUnit:slug}')->group(function () {
         Route::get('', ShowTradeUnit::class)->name('show');
         Route::get('edit', EditTradeUnit::class)->name('edit');
@@ -64,4 +77,9 @@ Route::prefix('tags')->as('tags.')->group(function () {
     Route::prefix('{tag:slug}')->group(function () {
         Route::get('edit', [EditTag::class, 'inProductProperty'])->name('edit');
     });
+});
+
+Route::prefix('barcodes')->as('barcodes.')->group(function () {
+    Route::get('/', IndexBarcode::class)->name('index');
+    Route::get('/{barcode}', ShowBarcode::class)->name('show');
 });

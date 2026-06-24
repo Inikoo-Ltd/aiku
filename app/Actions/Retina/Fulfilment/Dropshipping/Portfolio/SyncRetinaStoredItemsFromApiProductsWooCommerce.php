@@ -15,11 +15,13 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
+use App\Events\FetchProductFromPlatformProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -36,48 +38,88 @@ class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
     {
         $shopType = $wooCommerceUser->customer->shop->type;
         $products = [];
-        $nextPage = null;
+        $page = 1;
 
         do {
-            $response = $wooCommerceUser->getWooCommerceProducts();
+            $response = $wooCommerceUser->getWooCommerceProducts([
+                'page' => $page
+            ]);
 
-            $products = $response;
+            if (!empty($response)) {
+                $products = array_merge($products, $response);
+            }
+
+            if (count($response) === 10) {
+                $nextPage = true;
+                $page++;
+            } else {
+                $nextPage = false;
+            }
+
         } while ($nextPage);
 
-        foreach ($products as $product) {
-            DB::transaction(function () use ($product, $wooCommerceUser, $shopType) {
-                $storedItem = StoredItem::where('fulfilment_customer_id', $wooCommerceUser->customer->fulfilmentCustomer->id)
-                    ->where('reference', $product['slug'])->first();
-                $storedItemShopify = $wooCommerceUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'id'))->first();
+        DB::transaction(function () use ($products, $wooCommerceUser, $shopType) {
+            $numberSuccess = 0;
+            $numberFails = 0;
+            $numberTotal = count($products);
 
-                if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
-                    if (!$storedItem) {
-                        $storedItem = StoreStoredItem::make()->action($wooCommerceUser->customer->fulfilmentCustomer, [
-                            'reference' => $product['slug'],
-                            'name' => $product['name'],
-                            'total_quantity' => Arr::get($product, 'stock_quantity')
+            foreach ($products as $product) {
+                try {
+                    $name = Arr::get($product, 'name');
+                    $reference = Arr::get($product, 'slug');
+
+                    if (!$reference) {
+                        $reference = Str::slug($name);
+                    }
+
+                    $storedItem = StoredItem::where('fulfilment_customer_id', $wooCommerceUser->customer->fulfilmentCustomer->id)
+                        ->where('reference', $reference)->first();
+                    $storedItemShopify = $wooCommerceUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'id'))->first();
+
+                    if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
+                        if (!$storedItem) {
+                            $storedItem = StoreStoredItem::make()->action($wooCommerceUser->customer->fulfilmentCustomer, [
+                                'reference' => $reference,
+                                'name' => $name,
+                                'total_quantity' => Arr::get($product, 'stock_quantity')
+                            ]);
+                        }
+
+                        $portfolio = $storedItem->portfolio;
+                        if (!$portfolio) {
+
+                            StorePortfolio::make()->action(
+                                $wooCommerceUser->customerSalesChannel,
+                                $storedItem,
+                                [
+                                    'platform_product_id' => (string)Arr::get($product, 'id'),
+                                ]
+                            );
+                        }
+
+                        UpdateStoredItem::run($storedItem, [
+                            'state' => StoredItemStateEnum::ACTIVE
                         ]);
                     }
 
-                    $portfolio = $storedItem->portfolio;
-                    if (!$portfolio) {
-
-                        StorePortfolio::make()->action(
-                            $wooCommerceUser->customerSalesChannel,
-                            $storedItem,
-                            [
-                                'platform_product_id' => Arr::get($product, 'id'),
-                            ]
-                        );
-                    }
-
-                    UpdateStoredItem::run($storedItem, [
-                        'state' => StoredItemStateEnum::ACTIVE
-                    ]);
+                    $numberSuccess++;
+                } catch (\Throwable $th) {
+                    $numberFails++;
                 }
-            });
 
-        }
+                FetchProductFromPlatformProgressEvent::dispatch($wooCommerceUser, [
+                    'number_total' => $numberTotal,
+                    'number_success' => $numberSuccess,
+                    'number_fails' => $numberFails
+                ]);
+            }
+
+            FetchProductFromPlatformProgressEvent::dispatch($wooCommerceUser, [
+                'number_total' => $numberTotal,
+                'number_success' => $numberTotal,
+                'number_fails' => $numberFails
+            ]);
+        });
     }
 
     /**
@@ -88,6 +130,6 @@ class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
         /** @var WooCommerceUser $wooCommerce */
         $wooCommerce = $customerSalesChannel->user;
 
-        $this->handle($wooCommerce);
+        SyncRetinaStoredItemsFromApiProductsWooCommerce::dispatch($wooCommerce);
     }
 }

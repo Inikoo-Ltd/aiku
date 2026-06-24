@@ -20,11 +20,11 @@ import { faTriangle, faEquals, faMinus } from "@fas"
 import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 library.add(faCheck)
 
-const props = defineProps<{
+defineProps<{
     data: object
     tab?: string,
     routes: {
@@ -95,7 +95,7 @@ function familyRoute(family: Family) {
         default:
             return route(
                 'grp.helpers.redirect_product_category',
-                [family.slug])
+                [family.id])
 
     }
 }
@@ -267,6 +267,16 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <Link :href="shopRoute(family)" class="secondaryLink">
             {{ family["shop_code"] }}
             </Link>
+        </template>
+
+        <template #cell(gr_detail)="{ item: family }">
+            <div v-if="family.gr_detail && (family.gr_detail.percentage || family.gr_detail.quantity)"
+                class="whitespace-nowrap tabular-nums">
+                <span v-tooltip="trans('Percentage off')">{{ family.gr_detail.percentage }}%</span>
+                <span class="text-gray-400 mx-1">·</span>
+                <span v-tooltip="trans('Trigger quantity')">{{ family.gr_detail.quantity }}</span>
+            </div>
+            <span v-else class="text-gray-400 italic">-</span>
         </template>
 
         <template #cell(current_products)="{ item: family }">

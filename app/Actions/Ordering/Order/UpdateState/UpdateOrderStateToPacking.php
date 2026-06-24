@@ -46,12 +46,9 @@ class UpdateOrderStateToPacking extends OrgAction
                 );
             }
 
-
             $data['packing_at'] = now();
 
             $this->update($order, $data);
-
-
 
             $this->orderHydrators($order);
             $this->orderHandlingHydrators($order, $oldState);

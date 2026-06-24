@@ -23,6 +23,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +33,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -66,19 +68,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $can_contact_by_address
  * @property array<array-key, mixed> $data
  * @property string|null $contacted_at
- * @property \Illuminate\Support\Carbon|null $last_contacted_at
- * @property \Illuminate\Support\Carbon|null $last_opened_at
- * @property \Illuminate\Support\Carbon|null $last_clicked_at
- * @property \Illuminate\Support\Carbon|null $dont_contact_me_at
- * @property \Illuminate\Support\Carbon|null $failed_at
- * @property \Illuminate\Support\Carbon|null $registered_at
- * @property \Illuminate\Support\Carbon|null $invoiced_at
- * @property \Illuminate\Support\Carbon|null $last_soft_bounced_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $last_contacted_at
+ * @property Carbon|null $last_opened_at
+ * @property Carbon|null $last_clicked_at
+ * @property Carbon|null $dont_contact_me_at
+ * @property Carbon|null $failed_at
+ * @property Carbon|null $registered_at
+ * @property Carbon|null $invoiced_at
+ * @property Carbon|null $last_soft_bounced_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property bool $is_opt_in
@@ -112,6 +114,7 @@ class Prospect extends Model implements Auditable
     use HasAddress;
     use HasAddresses;
     use HasHistory;
+    use HasSearch;
 
     protected $casts = [
         'data'                    => 'array',
@@ -142,6 +145,38 @@ class Prospect extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'shop_id',
+                'state',
+                'name',
+                'contact_name',
+                'company_name',
+                'email',
+                'phone',
+                'contact_website',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'shop_id'         => $this->shop_id,
+            'state'           => $this->state->value,
+            'name'            => (string)$this->name,
+            'contact_name'    => (string)$this->contact_name,
+            'company_name'    => (string)$this->company_name,
+            'email'           => (string)$this->email,
+            'phone'           => (string)$this->phone,
+            'contact_website' => (string)$this->contact_website,
+            'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {

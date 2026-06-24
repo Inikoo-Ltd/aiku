@@ -39,6 +39,7 @@ use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Goods\Stock;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
@@ -70,7 +71,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -143,6 +144,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
  * @property string|null $eori
  * @property string|null $ukims
+ * @property string|null $identity_document_number_alt
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AllegroUser> $allegroUsers
@@ -180,6 +182,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Portfolio> $portfolios
  * @property-read Collection<int, Asset> $products
  * @property-read Collection<int, \App\Models\CRM\Prospect> $prospects
+ * @property-read Collection<int, ReturnDeliveryNote> $returnDeliveryNotes
  * @property-read Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read ShopifyUser|null $shopifyUser
@@ -190,10 +193,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Tag> $tags
  * @property-read TaxNumber|null $taxNumber
  * @property-read Collection<int, TiktokUser> $tiktokUsers
+ * @property-read Collection<int, \App\Models\CRM\CustomerTimeSeries> $timeSeries
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read Collection<int, TopUpPaymentApiPoint> $topUpPaymentApiPoint
  * @property-read Collection<int, TopUp> $topUps
  * @property-read \App\Models\CRM\TrafficSource|null $trafficSource
+ * @property-read Collection<int, \App\Models\CRM\TrafficSource> $trafficSources
  * @property-read Collection<int, Transaction> $transactions
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
  * @property-read WooCommerceUser|null $wooCommerceUser
@@ -221,7 +226,7 @@ class Customer extends Model implements HasMedia, Auditable
     use HasApiTokens;
     use Notifiable;
     use HasSearchableText;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                        => 'array',
@@ -554,6 +559,11 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(BackInStockReminder::class);
     }
 
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(CustomerTimeSeries::class);
+    }
+
     public function pollReplies(): HasMany
     {
         return $this->hasMany(PollReply::class);
@@ -594,6 +604,13 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
     }
 
+    public function trafficSources(): MorphToMany
+    {
+        return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
+            ->withPivot('share')
+            ->withTimestamps();
+    }
+
     public function tags(): MorphToMany
     {
         return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
@@ -602,5 +619,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function dispatchedEmails(): BelongsToMany
     {
         return $this->belongsToMany(DispatchedEmail::class, 'customer_has_dispatched_emails');
+    }
+
+    public function returnDeliveryNotes(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class, 'customer_id', 'id');
     }
 }

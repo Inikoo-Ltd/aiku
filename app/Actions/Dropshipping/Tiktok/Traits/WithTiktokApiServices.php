@@ -8,11 +8,12 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Traits;
 
+use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 
 trait WithTiktokApiServices
 {
@@ -83,6 +84,14 @@ trait WithTiktokApiServices
     public function makeApiRequest(string $method, string $path, array $productData = [], bool $requireShopCipher = true, array $headers = [], bool $requireSign = true, array $params = [])
     {
         try {
+            if ($this->access_token_expire_in) {
+                $expiredTokenAt = now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($this->access_token_expire_in));
+
+                if ($expiredTokenAt) {
+                    AuthenticateTiktokAccount::make()->getAccessTokenViaRefreshToken($this);
+                }
+            }
+
             $apiRequest = $this->restApi($path, $productData, $requireShopCipher, $headers, $requireSign, $params);
 
             $response = match (strtoupper($method)) {
@@ -99,8 +108,7 @@ trait WithTiktokApiServices
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('API Request failed: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            return ['error' => true, 'data' => $e->getMessage()];
         }
     }
 
@@ -125,6 +133,15 @@ trait WithTiktokApiServices
     public function getShippingProviders(string $deliveryOptionId): array
     {
         $path = "/logistics/$this->version/delivery_options/$deliveryOptionId/shipping_providers";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getShippingTemplates(): array
+    {
+        $path = "/logistics/202510/seller_templates";
 
         return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
@@ -164,6 +181,15 @@ trait WithTiktokApiServices
     public function uploadProductToTiktok(array $productData): array
     {
         $path = '/product/'.$this->version.'/products';
+
+        return $this->makeApiRequest('POST', $path, $productData, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function activateProduct(array $productData): array
+    {
+        $path = '/product/'.$this->version.'/products/activate';
 
         return $this->makeApiRequest('POST', $path, $productData, true, [
             'content-type' => 'application/json'
@@ -240,12 +266,22 @@ trait WithTiktokApiServices
         ]);
     }
 
+    private function handleUnauthorized(): void
+    {
+        Log::warning('Unauthorized access detected. Refreshing token or taking necessary action.');
+        // Add your logic here for handling unauthorized access, e.g., refreshing the token.
+    }
+
     public function shipPackage(string $packageId): array
     {
         $path = "/fulfillment/$this->version/packages/$packageId/ship";
 
         return $this->makeApiRequest('POST', $path, [
-            'handover_method' => 'PICKUP'
+            'handover_method' => 'PICKUP',
+            'pickup_slot' => [
+                'start_time' => now()->toIso8601String(),
+                'end_time' => now()->addDays(5)->toIso8601String()
+            ]
         ], true, [
             'content-type' => 'application/json'
         ]);
@@ -254,6 +290,24 @@ trait WithTiktokApiServices
     public function getPackageDetail(string $packageId): array
     {
         $path = "/fulfillment/$this->version/packages/$packageId";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getPackageHandoverTimeslot(string $packageId): array
+    {
+        $path = "/fulfillment/$this->version/packages/$packageId/handover_time_slots";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getTracking(string $orderId): array
+    {
+        $path = "/fulfillment/$this->version/orders/$orderId/tracking";
 
         return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
@@ -275,12 +329,76 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function rejectFulfilOrder(string $orderId): array
+    {
+        $path = "/return_refund/$this->version/cancellations";
+
+        return $this->makeApiRequest('POST', $path, [
+            'order_id' => $orderId,
+            'cancel_reason' => match ($this->customerSalesChannel?->shop?->country?->code) {
+                'GB' => 'seller_cancel_paid_reason_address_not_deliver_uk',
+                default => 'seller_cancel_paid_reason_address_not_deliver'
+            }
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function updateProductInventory(string $productId, array $attributes): array
     {
         $path = "/product/$this->version/products/$productId/inventory/update";
 
         return $this->makeApiRequest('POST', $path, $attributes, true, [
             'content-type' => 'application/json'
+        ]);
+    }
+
+    public function recommendCategory(array $attributes)
+    {
+        $path = "/product/$this->version/categories/recommend";
+
+        return $this->makeApiRequest('POST', $path, $attributes, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getCategories()
+    {
+        $path = "/product/$this->version/categories";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getCategoryRules(string $leafCategoryId)
+    {
+        $path = "/product/$this->version/categories/$leafCategoryId/rules";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getCategoryAttributes(string $leafCategoryId)
+    {
+        $path = "/product/$this->version/categories/$leafCategoryId/attributes";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getPersonResponsible()
+    {
+        $path = "/product/202501/compliance/responsible_persons/search";
+
+        return $this->makeApiRequest('POST', $path, [
+            'keyword' => '',
+        ], false, [
+            'content-type' => 'application/json'
+        ], true, [
+            'page_size' => 10
         ]);
     }
 }

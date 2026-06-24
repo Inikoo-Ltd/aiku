@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $number_portfolios
  * @property mixed $number_customer_clients
  * @property mixed $number_orders
+ * @property mixed $number_fulfilment_orders
  * @property mixed $platform_id
  * @property mixed $reference
  * @property mixed $id
@@ -49,6 +50,7 @@ class CustomerSalesChannelsResourceTOFIX extends JsonResource
             'number_clients'                      => $this->number_customer_clients,
             'number_customer_clients'             => $this->number_customer_clients,
             'number_orders'                       => $this->number_orders,
+            'number_fulfilment_orders'            => $this->number_fulfilment_orders,
             'type'                                => $this->type,
             'status'                              => $this->status,
             'platform_status'                     => $this->platform_status,

@@ -8,6 +8,8 @@
 
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
+use App\Actions\UI\Dashboards\GetOrganisationDashboardTabData;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowOrganisationDashboard::class)->name('show');
+Route::get('/tab-data', GetOrganisationDashboardTabData::class)->name('tab-data');

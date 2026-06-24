@@ -88,7 +88,7 @@ class EditCharge extends OrgAction
                 'fields' => [
                     'name'        => [
                         'type'        => 'input',
-                        'information' => __("Charge name for internal use"),
+                        'information' => __("Charge name for internal use. But will be displayed to user if the label is empty"),
                         'label'       => __('Name'),
                         'value'       => $charge->name
                     ],

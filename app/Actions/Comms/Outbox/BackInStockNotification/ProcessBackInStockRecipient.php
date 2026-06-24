@@ -15,6 +15,7 @@ use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePendingBackInStockReminders;
+use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\CRM\Customer;
@@ -44,7 +45,9 @@ class ProcessBackInStockRecipient
             return;
         }
 
-        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
+        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun, [
+            'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
+        ]);
 
         $reminderIdsArray = [];
 
@@ -83,12 +86,13 @@ class ProcessBackInStockRecipient
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
-                'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count()
+                'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count(),
+                'state'         => EmailDeliveryChannelStateEnum::READY->value
             ]
         );
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
 
         if (!empty($reminderIdsArray)) {
             BulkDeleteBackInStockReminder::run($reminderIdsArray);

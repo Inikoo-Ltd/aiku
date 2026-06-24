@@ -62,7 +62,10 @@ const setError = (e: {}) => {
         type: "error",
     })
 }
-const dataToSend = props.body ?? props.routeTarget?.body
+const dataToSend = {
+  ...(props.body ?? {}),
+  ...(props.routeTarget?.body ?? {}),
+}
 </script>
 
 <template>

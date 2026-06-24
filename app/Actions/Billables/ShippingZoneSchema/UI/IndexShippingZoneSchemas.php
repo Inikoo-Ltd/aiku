@@ -70,6 +70,7 @@ class IndexShippingZoneSchemas extends OrgAction
                 'shipping_zone_schemas.name',
                 'shipping_zone_schemas.created_at',
                 'shipping_zone_schemas.state',
+                'shipping_zone_schemas.is_current',
                 'shipping_zone_schema_stats.number_customers',
                 'shipping_zone_schema_stats.number_orders',
                 'shipping_zone_schema_stats.number_shipping_zones',
@@ -136,6 +137,7 @@ class IndexShippingZoneSchemas extends OrgAction
         ];
         $afterTitle = null;
         $iconRight  = null;
+        $modelPageHeading = null;
 
         $actions = [
             [
@@ -152,6 +154,7 @@ class IndexShippingZoneSchemas extends OrgAction
 
         if ($this->parent instanceof Shop) {
             $subNavigation = $this->getShippingZoneSchemaSubNavigation($this->parent);
+            $modelPageHeading = $this->parent->code;
         } elseif ($this->parent instanceof Group) {
             $actions = null;
         }
@@ -166,6 +169,7 @@ class IndexShippingZoneSchemas extends OrgAction
                 'title'       => __('Shipping'),
                 'pageHead'    => array_filter([
                     'title'         => $title,
+                    'model'         => $modelPageHeading,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
@@ -173,8 +177,6 @@ class IndexShippingZoneSchemas extends OrgAction
                     'subNavigation' => $subNavigation,
                 ]),
                 'data'        => ShippingZoneSchemasResource::collection($shippingZoneSchemas),
-
-
             ]
         )->table($this->tableStructure($this->parent));
     }

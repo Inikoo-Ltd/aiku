@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
+use App\Actions\Ordering\Transaction\Traits\WithCalculateTransactionDiscount;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpsertPickingFromWaitingWarehouse extends OrgAction
 {
+    use WithCalculateTransactionDiscount;
     /**
      * @var \App\Models\Dispatching\DeliveryNoteItem
      */
@@ -66,7 +68,11 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
             } else {
                 StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
             }
+
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
+
+            // To fix concurrent issue discount not applied after picking up from Waiting (reported by Erika)
+            $this->calculateTransactionDiscountTotal($deliveryNoteItem->transaction);
         });
 
         return true;

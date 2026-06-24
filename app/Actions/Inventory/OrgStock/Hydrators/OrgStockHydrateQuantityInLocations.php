@@ -18,14 +18,25 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
 {
     use AsAction;
 
-    public function getJobUniqueId(OrgStock $orgStock): int
+    public string $jobQueue = 'hydrators-slave';
+
+    public function getJobUniqueId(int|null $orgStockId): string
     {
-        return $orgStock->id;
+        return $orgStockId ?? 'empty';
     }
 
-    public function handle(OrgStock $orgStock): void
+    public function handle(int|null $orgStockId): void
     {
-        $oldQuantityAvailable = $orgStock->quantity_available;
+        if (!$orgStockId) {
+            return;
+        }
+        $orgStock = OrgStock::find($orgStockId);
+
+        if (!$orgStock) {
+            return;
+        }
+
+        $oldQuantityAvailable   = $orgStock->quantity_available;
         $oldQuantityInLocations = $orgStock->quantity_in_locations;
 
         $quantityInLocations = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->sum('quantity');
@@ -66,8 +77,6 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         if ($orgStock->wasChanged('quantity_in_locations')) {
             OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock);
         }
-
-
     }
 
 

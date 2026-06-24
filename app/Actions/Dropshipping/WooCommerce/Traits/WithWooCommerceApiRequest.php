@@ -108,6 +108,25 @@ trait WithWooCommerceApiRequest
         return ['message' => 'Unknown error occurred'];
     }
 
+    protected function isWooCommerceUnauthorizedResponse(array $response): bool
+    {
+        foreach ($response as $item) {
+            if (is_string($item)) {
+                $item = json_decode($item, true);
+            }
+
+            if (!is_array($item)) {
+                continue;
+            }
+
+            if (Arr::get($item, 'data.status') === 401 || Arr::get($item, 'status') === 401) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Initialize the WooCommerce API credentials
      *
@@ -178,6 +197,10 @@ trait WithWooCommerceApiRequest
             if ($response->successful()) {
                 $data = $response->json();
 
+                if (!$data) {
+                    $data = json_decode(preg_replace('/^\xEF\xBB\xBF/', '', $response->body()), true);
+                }
+
                 // Cache GET requests if enabled
                 if ($method === 'GET' && $useCache) {
                     Cache::put($cacheKey, $data, Carbon::now()->addMinutes($this->cacheDuration));
@@ -197,8 +220,6 @@ trait WithWooCommerceApiRequest
                 'method' => $method,
                 'error'  => $e->getMessage()
             ]);
-
-            // Sentry::captureMessage($e->getMessage());
 
             return [
                 ['message' => 'WooCommerce API Connection Error: '.$e->getMessage()],
@@ -613,16 +634,30 @@ trait WithWooCommerceApiRequest
                 $this->initWooCommerceApi();
             }
             $result = $this->makeWooCommerceRequest('GET', 'settings');
-
             if ($result === null) {
+                return false;
+            }
+
+            if ($this->isWooCommerceUnauthorizedResponse($result)) {
                 return false;
             }
 
             return count($result) > 0;
         } catch (\Exception $e) {
             \Sentry::captureMessage($e->getMessage());
-
             return false;
+        }
+    }
+
+    public function checkSettings(): array
+    {
+        try {
+            if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
+                $this->initWooCommerceApi();
+            }
+            return $this->makeWooCommerceRequest('GET', 'settings');
+        } catch (\Exception $e) {
+            return [];
         }
     }
 

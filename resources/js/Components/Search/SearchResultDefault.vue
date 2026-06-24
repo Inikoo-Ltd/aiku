@@ -7,7 +7,7 @@ import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Icon from "@/Components/Icon.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

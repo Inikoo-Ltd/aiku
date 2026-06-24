@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Comms\Email\SendDispatchedReplacementOrderEmailToCustomer;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrderFromDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -59,6 +60,8 @@ class DispatchDeliveryNote extends OrgAction
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::DISPATCHED);
+
+        DeliveryNoteHydrateDispatchTotals::dispatch($deliveryNote);
 
         return $deliveryNote;
     }

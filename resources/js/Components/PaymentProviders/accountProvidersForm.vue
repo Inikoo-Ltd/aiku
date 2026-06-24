@@ -5,13 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { useForm, router } from '@inertiajs/vue3';
 import { faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref } from 'vue'
-import Input from '@/Components/Forms/Fields/Input.vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import Select from '@/Components/Forms/Fields/Select.vue';
+
 import Schemaform from '@/Components/SchemaForm/SchemaForm.vue';
 
 library.add(faPlus)
@@ -24,14 +20,6 @@ const props = defineProps<{
 }>()
 
 
-
-/* const onSubmit = () => {
-    form.post(
-        route(props.provider.storeRoute.name, props.provider.storeRoute.parameters), {
-        onSuccess: () => { props.onCloseModal() },
-    }
-    )
-} */
 </script>
 
 

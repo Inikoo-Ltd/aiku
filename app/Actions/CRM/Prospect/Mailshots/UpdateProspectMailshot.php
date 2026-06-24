@@ -36,6 +36,10 @@ class UpdateProspectMailshot extends OrgAction
             $mailshot->email->update(['subject' => $mailshot->subject]);
         }
 
+        if ($mailshot->wasChanged('preview_text') && $mailshot->secondWave) {
+            $mailshot->secondWave->update(['preview_text' => $mailshot->preview_text]);
+        }
+
         // TODO: check and make sure later
         // if ($mailshot->wasChanged('state')) {
         //     GroupHydrateMailshots::dispatch($mailshot->group)->delay($this->hydratorsDelay);
@@ -53,6 +57,8 @@ class UpdateProspectMailshot extends OrgAction
     {
         $rules = [
             'subject'           => ['sometimes', 'string', 'max:255'],
+            'name'              => ['sometimes', 'nullable', 'string', 'max:255'],
+            'preview_text'      => ['nullable', 'string', 'max:255'],
             'state'             => ['sometimes', Rule::enum(MailshotStateEnum::class)],
             'recipients_recipe' => ['sometimes', 'array']
         ];

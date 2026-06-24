@@ -22,23 +22,31 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
-    public function getJobUniqueId(int $offerCampaignId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
+    public function getJobUniqueId(?int $offerCampaignId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
+        if (!$offerCampaignId) {
+            $offerCampaignId = 'empty';
+        }
+
         return "$offerCampaignId:$frequency->value:$from:$to";
     }
 
-    public function handle(int $offerCampaignId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
+    public function handle(?int $offerCampaignId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        if (!$offerCampaignId) {
+            return;
+        }
 
         $offerCampaign = OfferCampaign::find($offerCampaignId);
 
         if (!$offerCampaign) {
             return;
         }
+
+        $from .= ' 00:00:00';
+        $to   .= ' 23:59:59';
 
         $timeSeries = OfferCampaignTimeSeries::where('offer_campaign_id', $offerCampaign->id)->where('frequency', $frequency->value)->first();
 
@@ -55,18 +63,22 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoice_transactions')
-            ->whereExists(function ($query) use ($offerCampaignId) {
-                $query->select(DB::raw(1))
-                      ->from('transaction_has_offer_allowances')
-                      ->whereColumn('transaction_has_offer_allowances.transaction_id', 'invoice_transactions.transaction_id')
-                      ->where('transaction_has_offer_allowances.offer_campaign_id', $offerCampaignId);
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
+            ->join('invoice_transaction_has_offer_allowances as itoha', function ($join) use ($offerCampaignId) {
+                $join->on('itoha.invoice_transaction_id', '=', 'invoice_transactions.id')
+                    ->where('itoha.offer_campaign_id', $offerCampaignId);
             })
-            ->where('date', '>=', $from)
-            ->where('date', '<=', $to)
-            ->whereNull('deleted_at');
+            ->where('invoice_transactions.date', '>=', $from)
+            ->where('invoice_transactions.date', '<=', $to)
+            ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $discountSelects = [
+            DB::raw('SUM(itoha.discounted_amount) as discount_amount_external'),
+            DB::raw('SUM(itoha.discounted_amount * invoice_transactions.org_exchange) as discount_org_currency_external'),
+            DB::raw('SUM(itoha.discounted_amount * invoice_transactions.grp_exchange) as discount_grp_currency_external'),
+        ];
+
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, array_merge($this->fullInvoiceTransactionSelects(), $discountSelects))->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -78,15 +90,18 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
                     'frequency'                     => $timeSeries->frequency->singleLetter()
                 ],
                 [
-                    'from'                        => $periodFrom,
-                    'to'                          => $periodTo,
-                    'sales_external'              => $result->sales_external,
-                    'sales_org_currency_external' => $result->sales_org_currency_external,
-                    'sales_grp_currency_external' => $result->sales_grp_currency_external,
-                    'customers_invoiced'          => $result->customers_invoiced,
-                    'invoices'                    => $result->invoices,
-                    'refunds'                     => $result->refunds,
-                    'orders'                      => $result->orders,
+                    'from'                           => $periodFrom,
+                    'to'                             => $periodTo,
+                    'sales_external'                 => $result->sales_external,
+                    'sales_org_currency_external'    => $result->sales_org_currency_external,
+                    'sales_grp_currency_external'    => $result->sales_grp_currency_external,
+                    'customers_invoiced'             => $result->customers_invoiced,
+                    'invoices'                       => $result->invoices,
+                    'refunds'                        => $result->refunds,
+                    'orders'                         => $result->orders,
+                    'discount_amount_external'       => $result->discount_amount_external,
+                    'discount_org_currency_external' => $result->discount_org_currency_external,
+                    'discount_grp_currency_external' => $result->discount_grp_currency_external,
                 ]
             );
 
@@ -108,15 +123,18 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
                     'frequency'                     => $timeSeries->frequency->singleLetter()
                 ],
                 [
-                    'from'                        => $periodData['from'],
-                    'to'                          => $periodData['to'],
-                    'sales_external'              => 0,
-                    'sales_org_currency_external' => 0,
-                    'sales_grp_currency_external' => 0,
-                    'customers_invoiced'          => 0,
-                    'invoices'                    => 0,
-                    'refunds'                     => 0,
-                    'orders'                      => 0,
+                    'from'                           => $periodData['from'],
+                    'to'                             => $periodData['to'],
+                    'sales_external'                 => 0,
+                    'sales_org_currency_external'    => 0,
+                    'sales_grp_currency_external'    => 0,
+                    'customers_invoiced'             => 0,
+                    'invoices'                       => 0,
+                    'refunds'                        => 0,
+                    'orders'                         => 0,
+                    'discount_amount_external'       => 0,
+                    'discount_org_currency_external' => 0,
+                    'discount_grp_currency_external' => 0,
                 ]
             );
         }

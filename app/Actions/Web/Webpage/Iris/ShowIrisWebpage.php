@@ -17,7 +17,6 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -56,23 +55,42 @@ class ShowIrisWebpage
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
+        $website = $webpage->website;
+
+        $title = $webpage->title;
+        // Prioritize webpage prefix/suffix -> website prefix/suffix
+        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null)); 
+        $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
+
+        $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        
         $baseWebpageData = [
-            'breadcrumbs'  => $this->getIrisBreadcrumbs(
+            'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
-            'webpage_data' => [
+            'navigation'                  => $this->getIrisProductNavigation($webpage),
+            'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
-                'title'         => $webpage->title,
+                'title'         => $title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
-                'sub_type'      => $webpage->sub_type,
-                'model_type'    => $webpage->model_type
+                'sub_type'      => $webpage->sub_type,  // 'sub_department', 'department', 'product', 'category'
+                'model_type'    => $webpage->model_type,  // Product, ProductCategory, etc
+                'product_page'  => $webpage->model instanceof Product
+                    ? ['department' => [
+                        'name'          => $webpage->model->department?->name,
+                        'webpage_title' => $webpage->model->department?->webpage?->title,
+                    ]]
+                    : null,
             ],
-            'webpage_img'  => $webpageImg,
-            'index_page'    => $webpage->index_page,
-            'follow_link'   => $webpage->follow_link
+            'webpage_img'                 => $webpageImg,
+            'index_page'                  => $webpage->index_page,
+            'follow_link'                 => $webpage->follow_link,
+            'webpage_slug'                => $webpage->slug,
+            'is_different_when_logged_in' => $webpage->is_different_when_logged_in,
+
         ];
 
         return array_merge($baseWebpageData, [
@@ -85,9 +103,14 @@ class ShowIrisWebpage
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
-        $xLoggedStatus = $request->header('X-Logged-Status');
-        if ($xLoggedStatus !== null) {
-            $loggedIn = $xLoggedStatus === 'In';
+        if ($path == 'robots.txt') {
+            return 'robots';
+        }
+
+
+        $loggedStatusFromHeader = $request->header('X-Logged-Status');
+        if ($loggedStatusFromHeader !== null) {
+            $loggedIn = $loggedStatusFromHeader === 'In';
         } else {
             $loggedIn = auth()->check();
         }
@@ -198,30 +221,54 @@ class ShowIrisWebpage
     }
 
 
-    public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
+    public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response|string
     {
         if (is_string($webpageData)) {
+
+            if ($webpageData == 'robots') {
+                $robotText = ShowIrisRobotsTxt::make()->getRobotText(request()->website);
+                if (!$robotText) {
+                    $robotText = 'User-agent: *';
+                }
+
+                return response($robotText, 200, [
+                    'Content-Type'  => 'text/plain; charset=UTF-8',
+                    'Cache-Control' => 'public, max-age=3600',
+                ]);
+            }
+
+
             $queryParameters = Arr::except(request()->query(), [
                 'favicons',
                 'website',
                 'domain',
                 'currency_data',
-                'shop_type'
+                'shop_type',
+                'locale'
             ]);
+
+            $cacheRedirectInVarnish = '1';
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
                 $webpageData = $webpageData.'?'.$queryString;
+                $cacheRedirectInVarnish = '0';
             }
+
+            if (request()->url() == $webpageData) {
+                $cacheRedirectInVarnish = '0';
+            }
+
 
             return redirect()->to($webpageData, 301)
                 ->withHeaders([
-                    'x-original-referer' => request()->headers->get('referer', ''),
-                ])
-                ->with('from-iris-redirect', true);
+                    'Cache-Control'             => 'public, s-maxage=300, max-age=0',
+                    'X-Aiku-Cacheable-Redirect' => $cacheRedirectInVarnish,
+                ]);
         }
 
-        $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
+        $browserTitle            = Arr::get($webpageData, 'webpage_data.title', '');
+        $isDifferentWhenLoggedIn = Arr::pull($webpageData, 'is_different_when_logged_in');
 
         $response = Inertia::render(
             'IrisWebpage',
@@ -229,6 +276,10 @@ class ShowIrisWebpage
         )->withViewData([
             'browserTitle' => $browserTitle,
         ])->toResponse(request());
+
+        $response->headers->set('Cache-Control', 'public, s-maxage=300, max-age=0');
+        $response->headers->set('X-Aiku-Cacheable-Inertia', '1');
+        $response->headers->set('X-Is-Diff', $isDifferentWhenLoggedIn ? 'Y' : 'N');
 
         $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
         if (isset($webpageData['webpage_id'])) {
@@ -257,12 +308,7 @@ class ShowIrisWebpage
                     ->where('from_path', $path)
                     ->where('website_id', $website->id)
                     ->first()?->to_webpage_id;
-
-                Log::error('Initial WebpageID failed');
-                Log::error("Path: {$path}");
-                Log::error("WebpageID: {$webpageID}");
             }
-
         }
 
 
@@ -331,6 +377,65 @@ class ShowIrisWebpage
         }
 
         return $breadcrumbs;
+    }
+
+    public function getIrisProductNavigation(Webpage $webpage): ?array
+    {
+        if (!$webpage->model instanceof Product) {
+            return null;
+        }
+
+        /** @var Product $product */
+        $product = $webpage->model;
+        if (!$product->family_id) {
+            return null;
+        }
+
+        $siblings = Product::query()
+            ->where('products.family_id', $product->family_id)
+            ->where(function ($query) {
+                $query->whereNull('products.variant_id')
+                    ->orWhere('products.is_variant_leader', true);
+            })
+            ->whereHas('webpage', function ($query) use ($webpage) {
+                $query->where('state', WebpageStateEnum::LIVE)
+                    ->where('website_id', $webpage->website_id);
+            })
+            ->with(['webpage' => function ($query) use ($webpage) {
+                $query->where('state', WebpageStateEnum::LIVE)
+                    ->where('website_id', $webpage->website_id);
+            }])
+            ->orderBy('index_under_family')
+            ->orderBy('code')
+            ->get();
+
+        $currentIndex = $siblings->search(fn (Product $sibling) => $sibling->id === $product->id);
+        if ($currentIndex === false) {
+            return null;
+        }
+
+        $navigation = [
+            'previous' => $this->getProductNavigationItem($siblings->get($currentIndex - 1)),
+            'next'     => $this->getProductNavigationItem($siblings->get($currentIndex + 1)),
+        ];
+
+        if (!$navigation['previous'] && !$navigation['next']) {
+            return null;
+        }
+
+        return $navigation;
+    }
+
+    private function getProductNavigationItem(?Product $product): ?array
+    {
+        if (!$product || !$product->webpage) {
+            return null;
+        }
+
+        return [
+            'label' => $product->name,
+            'url'   => $this->getEnvironmentUrl($product->webpage->canonical_url),
+        ];
     }
 
     public function getBreadcrumbShortLabel(Webpage $webpage): string

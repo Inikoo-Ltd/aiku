@@ -25,7 +25,7 @@ enum RolesEnum: string
 
     case HUMAN_RESOURCES_SUPERVISOR = 'human-resources-supervisor';
     case HUMAN_RESOURCES_CLERK = 'human-resources-clerk';
-
+    case HUMAN_RESOURCES_VIEWER = 'human-resources-viewer';
 
     case SYSTEM_ADMIN = 'system-admin';
 
@@ -90,6 +90,7 @@ enum RolesEnum: string
     case FULFILMENT_WAREHOUSE_WORKER = 'fulfilment-warehouse-worker';
 
     case WAREHOUSE_ADMIN = 'warehouse-admin';
+    case WAREHOUSE_VIEWER = 'warehouse-viewer';
 
     case STOCK_CONTROLLER = 'stock-controller';
 
@@ -126,6 +127,7 @@ enum RolesEnum: string
             RolesEnum::ORG_ADMIN => __('Organisation admin'),
             RolesEnum::HUMAN_RESOURCES_CLERK => __('Human resources clerk'),
             RolesEnum::HUMAN_RESOURCES_SUPERVISOR => __('Human resources supervisor'),
+            RolesEnum::HUMAN_RESOURCES_VIEWER => __('Human resources viewer'),
             RolesEnum::STOCK_CONTROLLER => __('Stock controller'),
             RolesEnum::ACCOUNTING_CLERK => __('Accounting clerk'),
             RolesEnum::ACCOUNTING_SUPERVISOR => __('Accounting supervisor'),
@@ -135,6 +137,7 @@ enum RolesEnum: string
             RolesEnum::FULFILMENT_WAREHOUSE_SUPERVISOR => __('Fulfilment warehouse supervisor'),
             RolesEnum::FULFILMENT_WAREHOUSE_WORKER => __('Fulfilment warehouse worker'),
             RolesEnum::WAREHOUSE_ADMIN => __('Warehouse admin'),
+            RolesEnum::WAREHOUSE_VIEWER => __('Warehouse viewer'),
             RolesEnum::CUSTOMER_SERVICE_CLERK => __('Customer service clerk'),
             RolesEnum::CUSTOMER_SERVICE_SUPERVISOR => __('Customer service supervisor'),
             RolesEnum::ORGANISATIONS_MANAGER => __('Organisations manager'),
@@ -217,6 +220,8 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::HUMAN_RESOURCES,
                 OrganisationPermissionsEnum::SUPERVISOR,
                 OrganisationPermissionsEnum::ACCOUNTING,
+                OrganisationPermissionsEnum::ACCOUNTING_VIEW,
+                OrganisationPermissionsEnum::ACCOUNTING_EDIT,
                 OrganisationPermissionsEnum::SUPERVISOR_ACCOUNTING,
                 OrganisationPermissionsEnum::INVENTORY,
                 OrganisationPermissionsEnum::SEO,
@@ -257,6 +262,9 @@ enum RolesEnum: string
                 WarehousePermissionsEnum::SUPERVISOR_INCOMING,
                 OrganisationPermissionsEnum::INVENTORY_VIEW
             ],
+            RolesEnum::HUMAN_RESOURCES_VIEWER => [
+                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
+            ],
             RolesEnum::HUMAN_RESOURCES_CLERK => [
                 OrganisationPermissionsEnum::HUMAN_RESOURCES
             ],
@@ -266,10 +274,18 @@ enum RolesEnum: string
             ],
             RolesEnum::ACCOUNTING_CLERK => [
                 OrganisationPermissionsEnum::ACCOUNTING,
+                OrganisationPermissionsEnum::ACCOUNTING_VIEW,
+                OrganisationPermissionsEnum::ACCOUNTING_EDIT,
+                OrganisationPermissionsEnum::INVENTORY_VIEW,
+                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
             ],
             RolesEnum::ACCOUNTING_SUPERVISOR => [
                 OrganisationPermissionsEnum::ACCOUNTING,
-                OrganisationPermissionsEnum::SUPERVISOR_ACCOUNTING
+                OrganisationPermissionsEnum::ACCOUNTING_VIEW,
+                OrganisationPermissionsEnum::ACCOUNTING_EDIT,
+                OrganisationPermissionsEnum::SUPERVISOR_ACCOUNTING,
+                OrganisationPermissionsEnum::INVENTORY_VIEW,
+                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
             ],
             RolesEnum::PROCUREMENT_SUPERVISOR => [
                 OrganisationPermissionsEnum::PROCUREMENT,
@@ -318,6 +334,10 @@ enum RolesEnum: string
                 WarehousePermissionsEnum::SUPERVISOR_DISPATCHING,
                 WarehousePermissionsEnum::SUPERVISOR_INCOMING
 
+            ],
+            RolesEnum::WAREHOUSE_VIEWER => [
+                WarehousePermissionsEnum::STOCKS_VIEW,
+                WarehousePermissionsEnum::LOCATIONS_VIEW,
             ],
             RolesEnum::STOCK_CONTROLLER => [
                 WarehousePermissionsEnum::STOCKS,
@@ -511,6 +531,7 @@ enum RolesEnum: string
             RolesEnum::FULFILMENT_WAREHOUSE_SUPERVISOR,
             RolesEnum::FULFILMENT_WAREHOUSE_WORKER,
             RolesEnum::WAREHOUSE_ADMIN,
+            RolesEnum::WAREHOUSE_VIEWER,
             RolesEnum::DISPATCH_CLERK,
             RolesEnum::DISPATCH_EXCEPTION_CLERK,
             RolesEnum::DISPATCH_SUPERVISOR,
@@ -565,6 +586,7 @@ enum RolesEnum: string
             RolesEnum::DISPATCH_EXCEPTION_CLERK,
             RolesEnum::DISPATCH_SUPERVISOR,
             RolesEnum::WAREHOUSE_ADMIN,
+            RolesEnum::WAREHOUSE_VIEWER,
             RolesEnum::STOCK_CONTROLLER,
 
             => [OrganisationTypeEnum::AGENT, OrganisationTypeEnum::SHOP],

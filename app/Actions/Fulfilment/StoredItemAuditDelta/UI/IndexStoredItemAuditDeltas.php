@@ -61,7 +61,6 @@ class IndexStoredItemAuditDeltas extends OrgAction
         $query->leftJoin('pallet_deliveries', 'pallet_deliveries.id', 'stored_item_movements.pallet_delivery_id');
         $query->leftJoin('pallet_returns', 'pallet_returns.id', 'stored_item_movements.pallet_return_id');
 
-
         if ($parent instanceof StoredItem) {
             $query->where('stored_item_audit_deltas.stored_item_id', $parent->id)
                 ->where('stored_item_audit_deltas.state', StoredItemAuditDeltaStateEnum::COMPLETED->value);
@@ -69,25 +68,35 @@ class IndexStoredItemAuditDeltas extends OrgAction
             $query->where('stored_item_audit_deltas.stored_item_audit_id', $parent->id);
         }
 
-
-        $query->defaultSort('-stored_item_audit_deltas.audited_at')
+        $query
+            ->defaultSort('-stored_item_audit_deltas.audited_at')
             ->select(
                 'stored_item_audit_deltas.id',
                 'stored_item_audit_deltas.pallet_id as pallet_id',
                 'pallets.customer_reference as pallet_customer_reference',
                 'stored_item_audit_deltas.stored_item_id as stored_item_id',
+                'stored_items.id as stored_item_id',
+                'stored_items.slug as stored_item_slug',
                 'stored_items.reference as stored_item_reference',
                 'stored_item_audit_deltas.audited_at',
                 'stored_item_audit_deltas.original_quantity',
                 'stored_item_audit_deltas.audited_quantity',
                 'stored_item_audit_deltas.state',
                 'stored_item_audit_deltas.audit_type',
+                'stored_item_audits.id as stored_item_audit_id',
                 'stored_item_audits.reference as stored_item_audit_reference',
+                'stored_item_audits.slug as stored_item_audit_slug',
+                'pallet_deliveries.id as pallet_delivery_id',
                 'pallet_deliveries.reference as pallet_delivery_reference',
+                'pallet_deliveries.slug as pallet_delivery_slug',
+                'pallet_returns.id as pallet_returns_id',
+                'pallet_returns.type as pallet_returns_type',
+                'pallet_returns.reference as pallet_returns_reference',
+                'pallet_returns.slug as pallet_returns_slug'
             );
 
-
-        return $query->allowedSorts(['id', 'audited_at', 'original_quantity', 'audited_quantity', 'state', 'audit_type'])
+        return $query
+            ->allowedSorts(['id', 'audited_at', 'original_quantity', 'audited_quantity', 'state', 'audit_type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -120,22 +129,22 @@ class IndexStoredItemAuditDeltas extends OrgAction
             $table->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'state', label: __('state'), canBeHidden: false, searchable: true, type: 'icon');
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             if ($parent instanceof StoredItemAudit) {
                 if ($parent->scope_type != 'Pallet') {
-                    $table->column(key: 'pallet_customer_reference', label: __('pallet'), canBeHidden: false, searchable: true);
+                    $table->column(key: 'pallet_customer_reference', label: __('Pallet'), canBeHidden: false, searchable: true);
                 }
             }
             if ($parent instanceof StoredItemAudit) {
-                $table->column(key: 'stored_item_reference', label: __('stored item'), canBeHidden: false, searchable: true);
+                $table->column(key: 'stored_item_reference', label: __('Stored item'), canBeHidden: false, searchable: true);
             } elseif ($parent instanceof StoredItem) {
-                $table->column(key: 'description', label: __('parent'), canBeHidden: false, searchable: true);
+                $table->column(key: 'description', label: __('Parent'), canBeHidden: false, searchable: true);
             }
 
-            $table->column(key: 'original_quantity', label: __('original quantity'), canBeHidden: false, searchable: true)
-                ->column(key: 'audited_quantity', label: __('audited quantity'), canBeHidden: false, searchable: true)
-                ->column(key: 'audit_type_label', label: __('audit type'), canBeHidden: false, searchable: true)
-                ->column(key: 'audited_at', label: __('audited at'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'original_quantity', label: __('Original Quantity'), canBeHidden: false, searchable: true)
+                ->column(key: 'audited_quantity', label: __('Audited Quantity'), canBeHidden: false, searchable: true)
+                ->column(key: 'audit_type_label', label: __('Audit Type'), canBeHidden: false, searchable: true)
+                ->column(key: 'audited_at', label: __('Audited at'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 

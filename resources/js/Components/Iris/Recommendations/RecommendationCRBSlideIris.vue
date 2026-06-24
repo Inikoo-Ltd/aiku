@@ -1,28 +1,17 @@
 <script setup lang="ts">
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
-//import { useFormatTime, useRangeFromNow } from '@/Composables/useFormatTime'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { LastOrderedProduct } from '@/types/Resource/LastOrderedProductsResource'
-import { faCircle } from '@fas'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link } from '@inertiajs/vue3'
-//import { formatDistance } from 'date-fns'
-import { trans } from 'laravel-vue-i18n'
-import { SwiperSlide } from 'swiper/vue'
 import { inject, ref } from 'vue'
 
-const props = defineProps<{
+defineProps<{
     product: LastOrderedProduct
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-const locale = inject('locale', aikuLocaleStructure)
-
-const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
-
 const isLoadingVisit = ref(false)
 </script>
 
@@ -50,15 +39,15 @@ const isLoadingVisit = ref(false)
             <!-- Section: Title -->
             <component :is="product.canonical_url ? Link : 'div'"
                 :href="product.canonical_url"
-                class="text-[13px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em] block hover:!underline !cursor-pointer text-pretty"
+                class="text-[13px] md:text-[16px] text-center font-semibold leading-snug line-clamp-2 min-h-[3em] block hover:!underline !cursor-pointer text-pretty"
             >
                 {{ product.name }}
             </component>
 
             <!-- Section: code -->
-            <div class="text-xs text-gray-400 mb-2">
+          <!--   <div class="text-xs text-gray-400 mb-2">
                 {{ product.code }}
-            </div>
+            </div> -->
 
             <!-- Section:  and date -->
             <div v-if="layout?.iris?.is_logged_in" class="mt-auto">

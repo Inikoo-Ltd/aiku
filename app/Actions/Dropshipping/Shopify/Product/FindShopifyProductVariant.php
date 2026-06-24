@@ -13,7 +13,6 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Sentry;
 
 class FindShopifyProductVariant
 {
@@ -26,14 +25,12 @@ class FindShopifyProductVariant
         $shopifyUser = $customerSalesChannel->user;
 
         if (!$shopifyUser) {
-            // Sentry::captureMessage("Shopify user not found");
             return null;
         }
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            // Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
             return null;
         }
 
@@ -130,9 +127,7 @@ class FindShopifyProductVariant
             }
 
             return ['products' => $products];
-        } catch (\Exception $e) {
-            // Sentry::captureException($e);
-
+        } catch (\Exception) {
             return null;
         }
     }

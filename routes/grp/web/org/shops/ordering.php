@@ -13,6 +13,8 @@ use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\Shipper\UI\IndexCouriersInShop;
+use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
+use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Ordering\Order\PdfProformaInvoice;
 use App\Actions\Ordering\Order\UI\EditOrder;
@@ -22,6 +24,7 @@ use App\Actions\Ordering\Purge\UI\CreatePurge;
 use App\Actions\Ordering\Purge\UI\EditPurge;
 use App\Actions\Ordering\Purge\UI\IndexPurges;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
+use App\Actions\Ordering\UI\IndexTopCountriesInShop;
 use App\Actions\Ordering\UI\IndexWaitingCrmItemsGrouped;
 use App\Actions\Ordering\WaitingCrmItem\SetWaitingCrmItemAsNotPick;
 use App\Actions\Ordering\UI\ShowOrderingDashboard;
@@ -41,6 +44,7 @@ Route::get('/orders/', IndexOrders::class)->name('orders.index');
 
 Route::get('/orders/delivery_notes', IndexDeliveryNotesInOrdering::class)->name('delivery-notes.index');
 Route::get('/orders/couriers', IndexCouriersInShop::class)->name('couriers.index');
+Route::get('/orders/countries', IndexTopCountriesInShop::class)->name('countries.index');
 Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderingInShop'])->name('delivery-notes.show');
 Route::patch('delivery-note/{deliveryNote}/set-temp-picker', SetTempPickerToDeliveryNote::class)->name('orders.show.delivery-note.temp-picker');
 
@@ -65,4 +69,9 @@ Route::prefix('purges/{purge:id}')->group(function () {
     Route::get('', ShowPurge::class)->name('purges.show');
     Route::get('edit', EditPurge::class)->name('purges.edit');
     Route::get('order/{order}', [ShowOrder::class, 'inPurge'])->name('purges.order')->withoutScopedBindings();
+});
+
+Route::name('return_delivery_notes.')->prefix('returns-dn')->group(function () {
+    Route::get('/', [IndexReturnDeliveryNotes::class, 'inShop'])->name('index');
+    Route::get('/{returnDeliveryNote}', [ShowReturnDeliveryNote::class, 'inShop'])->name('show');
 });

@@ -18,14 +18,13 @@ class CheckBulkShopifyPortfolios extends OrgAction
 {
     use AsAction;
 
-    public string $jobQueue = 'shopify';
+    public string $jobQueue = 'shopify-bulk';
 
     private array $tableData = [];
 
 
     public function handle($collections, ?Command $command = null): void
     {
-
         $count = 0;
         foreach ($collections as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);

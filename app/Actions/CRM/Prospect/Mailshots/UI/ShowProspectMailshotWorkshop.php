@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
-use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Models\Catalogue\Shop;
@@ -21,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\UI\Mail\EmailTemplateTabsEnum;
 use App\Actions\Comms\EmailTemplate\UI\IndexEmailTemplates;
+use App\Actions\Comms\EmailTemplate\UI\IndexOtherStoreEmailTemplates;
+use App\Actions\Comms\Mailshot\GetProspectMailshotMergeTags;
 use App\Http\Resources\Comms\MailshotTemplatesResource;
 use App\Http\Resources\Mail\EmailTemplateResource;
 use App\Actions\Comms\Mailshot\UI\IndexPreviousMailshotTemplates;
@@ -56,9 +57,10 @@ class ShowProspectMailshotWorkshop extends OrgAction
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
         $email = $mailshot->email;
+        $hasPublishedVersion = $email?->liveSnapshot?->compiled_layout ? true : false;
 
         $templateLayout = null;
-        if ($request->has('template')) {
+        if ($request->has('template') && !$hasPublishedVersion) {
             $templateSlug = $request->get('template');
             $template = EmailTemplate::findBySlug($templateSlug);
             if ($template) {
@@ -103,6 +105,14 @@ class ShowProspectMailshotWorkshop extends OrgAction
                         IndexEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::TEMPLATES->value)
                     )),
 
+                EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value => $this->tab == EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value ?
+                    fn () => EmailTemplateResource::collection(
+                        IndexOtherStoreEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value)
+                    )
+                    : Inertia::lazy(fn () => EmailTemplateResource::collection(
+                        IndexOtherStoreEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value)
+                    )),
+
                 EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS->value => $this->tab == EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS->value
                     ?
                     fn () => MailshotTemplatesResource::collection(
@@ -128,6 +138,7 @@ class ShowProspectMailshotWorkshop extends OrgAction
 
 
                 'unpublished_layout' => $templateLayout ?? $email->unpublishedSnapshot->layout,
+                'compiledLayout'     => $email?->liveSnapshot?->compiled_layout,
                 'snapshot'    => $email->unpublishedSnapshot,
                 'builder'     => $email->builder,
                 'imagesUploadRoute'   => [
@@ -162,7 +173,16 @@ class ShowProspectMailshotWorkshop extends OrgAction
                     ],
                     'method' => 'post'
                 ],
-                'mergeTags' => GetMailshotMergeTags::run(),
+                'sendTestRoute' => [
+                    'name' => 'grp.org.shops.show.marketing.mailshots.send-test',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug,
+                        'mailshot' => $mailshot->slug
+                    ],
+                    'method' => 'post'
+                ],
+                'mergeTags' => GetProspectMailshotMergeTags::run(),
                 'status' => $email->outbox->state,
                 'organisationSlug' => $this->organisation->slug,
                 'tabs' => [
@@ -173,6 +193,10 @@ class ShowProspectMailshotWorkshop extends OrgAction
         )->table(
             IndexEmailTemplates::make()->tableStructure(
                 prefix: EmailTemplateTabsEnum::TEMPLATES->value
+            )
+        )->table(
+            IndexOtherStoreEmailTemplates::make()->tableStructure(
+                prefix: EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value
             )
         )->table(
             IndexPreviousMailshotTemplates::make()->tableStructure(

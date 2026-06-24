@@ -188,6 +188,7 @@ class FixAuroraCategoryOffers
                         'type'          => 'percentage_off',
                         'target_id'     => $family->id,
                         'target_data'   => [],
+                        //todo: need to use all_products_in_department  if is a department
                         'target_type'   => 'all_products_in_product_category',
                         'trigger_id'    => null,
                         'trigger_type'  => null,

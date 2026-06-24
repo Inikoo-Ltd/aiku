@@ -60,6 +60,10 @@ watch(isOpenModal, (newVal) => {
 const selectedBay = ref<number | null>(null)
 const isLoadingSubmitBay = ref<number|null|undefined>(undefined)
 const submitSelectBay = (bayId?: number|null) => {
+    if (bayId !== null) {
+        if (isLoadingSubmitBay.value == bayId) return;
+    }
+
     // Section: Submit
     router.patch(
         route(

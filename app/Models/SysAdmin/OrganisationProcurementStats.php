@@ -101,6 +101,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stock_delivery_items_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_return_delivery_notes
+ * @property int $number_return_delivery_notes_state_received
+ * @property int $number_return_delivery_notes_state_returning
+ * @property int $number_return_delivery_notes_state_returned
+ * @property int $number_return_delivery_notes_state_done
+ * @property int $number_return_delivery_notes_state_cancelled
+ * @property int $number_stock_deliveries_state_booking_in
+ * @property int $number_stock_deliveries_state_booked_in
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationProcurementStats newModelQuery()
  * @method static Builder<static>|OrganisationProcurementStats newQuery()

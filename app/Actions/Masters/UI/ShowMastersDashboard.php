@@ -14,6 +14,7 @@ use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Dashboards\MastersDashboardSalesTableTabsEnum;
@@ -31,6 +32,7 @@ class ShowMastersDashboard extends OrgAction
     use WithDashboardIntervalOption;
     use WithDashboardSettings;
     use WithMastersAuthorisation;
+    use WithPerformanceDateResolution;
 
     public function handle(Group $group): Group
     {
@@ -39,43 +41,29 @@ class ShowMastersDashboard extends OrgAction
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisationFromGroup(app('group'), $request);
+        $group = group();
 
-        return $this->handle($this->group);
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($group);
     }
 
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
 
-        $currentTab = Arr::get($userSettings, 'masters_dashboard_tab', Arr::first(MastersDashboardSalesTableTabsEnum::values()));
-
-        if (! in_array($currentTab, MastersDashboardSalesTableTabsEnum::values())) {
-            $currentTab = Arr::first(MastersDashboardSalesTableTabsEnum::values());
-        }
+        $tabValues = MastersDashboardSalesTableTabsEnum::values();
+        $defaultTab = Arr::first($tabValues);
+        $currentTab = Arr::get($userSettings, 'masters_dashboard_tab', $defaultTab);
+        $currentTabEnum = MastersDashboardSalesTableTabsEnum::tryFrom((string)$currentTab) ?? MastersDashboardSalesTableTabsEnum::from($defaultTab);
+        $currentTab = $currentTabEnum->value;
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-
-        $performanceDates = [null, null];
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        } elseif ($saved_interval !== DateIntervalEnum::ALL) {
-            $intervalString = DashboardIntervalFilters::run($saved_interval);
-            if ($intervalString) {
-                $dates = explode('-', $intervalString);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        }
+        $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
         $timeSeriesData = GetMastersDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $tabNavigation = MastersDashboardSalesTableTabsEnum::navigation();
+        $tables = MastersDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
 
         $dashboard = [
             'super_blocks' => [
@@ -100,12 +88,15 @@ class ShowMastersDashboard extends OrgAction
                     ],
                     'blocks'    => [
                         [
-                            'id'          => 'sales_table',
-                            'type'        => 'table',
-                            'current_tab' => $currentTab,
-                            'tabs'        => MastersDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => MastersDashboardSalesTableTabsEnum::tables($group, $timeSeriesData),
-                            'charts'      => [],
+                            'id'              => 'sales_table',
+                            'type'            => 'table',
+                            'current_tab'     => $currentTab,
+                            'tabs'            => $tabNavigation,
+                            'tables'          => $tables,
+                            'charts'          => [],
+                            'tab_fetch_route' => [
+                                'name' => 'grp.masters.dashboard.tab-data',
+                            ],
                         ],
                     ],
                 ],

@@ -18,6 +18,7 @@ import { useTabChange } from "@/Composables/tab-change";
 import ProspectsDashboard from "@/Pages/Grp/Org/Shop/CRM/ProspectsDashboard.vue";
 import TableCustomerCountries from '@/Components/Tables/Grp/Org/CRM/TableCustomerCountries.vue';
 import TableChatSessions from '@/Components/Tables/Grp/Org/CRM/TableChatSessions.vue';
+import TableTopCustomers from '@/Components/Tables/Grp/Org/CRM/TableTopCustomers.vue';
 
 library.add(
     faShoppingCart,
@@ -37,6 +38,7 @@ const props = defineProps<{
     prospects?: {};
     countries?: {};
     chats?: {};
+    top_customers?: {};
 }>();
 
 const currentTab = ref<string>(props.tabs.current);
@@ -48,6 +50,7 @@ const component = computed(() => {
         prospects: ProspectsDashboard,
         countries: TableCustomerCountries,
         chats: TableChatSessions,
+        top_customers: TableTopCustomers,
     }
 
     return components[currentTab.value];

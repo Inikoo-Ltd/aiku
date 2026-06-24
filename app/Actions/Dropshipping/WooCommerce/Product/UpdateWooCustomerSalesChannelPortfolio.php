@@ -36,55 +36,60 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             return;
         }
 
-        $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
+        Portfolio::query()
+            ->select([
+                'id',
+                'item_id',
+                'item_type',
+                'platform_product_id',
+                'platform_status',
+                'stock_last_updated_at',
+            ])
+            ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->whereNotNull('platform_product_id')
             ->where('item_type', 'Product')
             ->where('platform_status', true)
-            ->get();
+            ->with('item:id,available_quantity,is_for_sale,available_quantity_updated_at')
+            ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel, $wooCommerceUser): void {
+                $updates = [];
 
+                foreach ($portfolioChunk as $portfolio) {
+                    if (!$this->checkIfApplicable($portfolio)) {
+                        continue;
+                    }
 
-        $portfoliosID = [];
+                    $product = $portfolio->item;
 
-        foreach ($portfolios->chunk(100) as $portfolioChunk) {
-            foreach ($portfolioChunk as $portfolio) {
-                /**  @var Portfolio $portfolio */
-                if ($this->checkIfApplicable($portfolio)) {
-                    $portfoliosID[$portfolio->id] = $portfolio->id;
-                }
-            }
-        }
+                    if (!$product instanceof Product || $portfolio->platform_product_id === null || !$portfolio->platform_status) {
+                        continue;
+                    }
 
-        foreach (collect($portfoliosID)->chunk(20) as $portfolioIdChunk) {
-            $productData = [];
-            foreach ($portfolioIdChunk as $portfolio) {
-                $portfolio = Portfolio::find($portfolio);
+                    $availableQuantity = $product->available_quantity ?? 0;
 
-                if (!$portfolio || $portfolio->platform_product_id == null || !$portfolio->customerSalesChannel || !$portfolio->platform_status) {
-                    return;
-                }
+                    if (!$product->is_for_sale) {
+                        $availableQuantity = 0;
+                    }
 
-                /** @var Product $product */
-                $product = $portfolio->item;
+                    if ($customerSalesChannel->max_quantity_advertise > 0) {
+                        $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
+                    }
 
-                $availableQuantity = $product->available_quantity ?? 0;
-
-                if (!$product->is_for_sale) {
-                    $availableQuantity = 0;
-                }
-
-                if ($customerSalesChannel->max_quantity_advertise > 0) {
-                    $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
-                }
-
-                $productData['update'][] =
-                    [
-                        "id"             => $portfolio->platform_product_id,
-                        "stock_quantity" => $availableQuantity
+                    $updates[] = [
+                        'id'             => $portfolio->platform_product_id,
+                        'stock_quantity' => $availableQuantity,
                     ];
-            }
+                }
 
-            UpdateBatchWooCustomerSalesChannelPortfolio::dispatch($wooCommerceUser, $productData);
-        }
+                foreach (collect($updates)->chunk(20) as $updateChunk) {
+                    if ($updateChunk->isEmpty()) {
+                        continue;
+                    }
+
+                    UpdateBatchWooCustomerSalesChannelPortfolio::dispatch($wooCommerceUser, [
+                        'update' => $updateChunk->values()->all(),
+                    ]);
+                }
+            });
     }
 
     public function checkIfApplicable(Portfolio $portfolio): bool
@@ -95,8 +100,11 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
         if (!$portfolio->stock_last_updated_at) {
             $applicable = true;
         } else {
-            /** @var Product $product */
             $product = $portfolio->item;
+
+            if (!$product instanceof Product) {
+                return false;
+            }
 
             if (!$product->available_quantity_updated_at || !$portfolio->stock_last_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
                 $applicable = true;

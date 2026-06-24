@@ -4,7 +4,7 @@
 	"code": "see-also-1",
 	"name": "See Also (recommendations)",
 	"website_type" : ["b2b","b2c","dropshipping"],
-	"category": "block",
+	"category": "element",
 	"is_in_test" : false,
 	"data": {
 		"fieldValue": {

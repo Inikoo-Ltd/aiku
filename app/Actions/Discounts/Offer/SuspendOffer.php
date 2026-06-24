@@ -8,9 +8,8 @@
 
 namespace App\Actions\Discounts\Offer;
 
+use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\Discounts\OfferAllowance\SuspendOfferAllowance;
-use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -21,10 +20,20 @@ use Lorisleiva\Actions\ActionRequest;
 class SuspendOffer extends OrgAction
 {
     use WithActionUpdate;
-
+    use HandlesOfferSideEffects;
 
     public function handle(Offer $offer): Offer
     {
+        if ($offer->state == OfferStateEnum::SUSPENDED || $offer->state == OfferStateEnum::FINISHED) {
+            return $offer;
+        }
+
+        if ($offer->state != OfferStateEnum::ACTIVE) {
+            abort(422);
+        }
+
+        $currentStatus = $offer->status;
+
         $modelData = [
             'state'             => OfferStateEnum::SUSPENDED,
             'status'            => false,
@@ -40,13 +49,13 @@ class SuspendOffer extends OrgAction
 
 
         $offer->update($modelData);
-        OfferCampaignHydrateOffersState::run($offer->offerCampaign);
 
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id);
+        if ($currentStatus != $offer->status) {
+            $this->handleOfferSideEffects($offer);
+        }
 
         return $offer;
     }
-
 
     public function asController(Offer $offer, ActionRequest $request): Offer
     {

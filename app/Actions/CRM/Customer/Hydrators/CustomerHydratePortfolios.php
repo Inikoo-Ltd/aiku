@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Customer\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +16,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CustomerHydratePortfolios implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
+
+    public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(int|null $customerId): string
     {
@@ -30,15 +30,15 @@ class CustomerHydratePortfolios implements ShouldBeUnique
             return;
         }
 
-        $customer = Customer::find($customerId);
+        $customer = Customer::on('aiku_no_sticky')->find($customerId);
 
         if (!$customer) {
             return;
         }
 
         $stats = [
-            'number_portfolios'         => DB::table('portfolios')->where('customer_id', $customer->id)->count(),
-            'number_current_portfolios' => DB::table('portfolios')->where('customer_id', $customer->id)->where('status', true)->count(),
+            'number_portfolios'         => DB::connection('aiku_no_sticky')->table('portfolios')->where('customer_id', $customer->id)->count(),
+            'number_current_portfolios' => DB::connection('aiku_no_sticky')->table('portfolios')->where('customer_id', $customer->id)->where('status', true)->count(),
         ];
 
         $customer->stats->update($stats);

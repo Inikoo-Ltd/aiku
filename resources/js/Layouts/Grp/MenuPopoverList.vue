@@ -8,11 +8,12 @@ import { capitalize } from "@/Composables/capitalize"
 import { inject, computed, nextTick, watch } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { trans } from "laravel-vue-i18n"
+import { get } from "lodash"
 library.add(faStoreAlt)
 
 const props = defineProps<{
     // icon: string | string[]
-    navKey: string  // shop | warehouse
+    navKey: string  // shop | warehouse | fulfilment
     closeMenu: () => void
 }>()
 
@@ -62,6 +63,93 @@ watch(() => layout.value?.organisationsState, () => {
     scrollToActiveItem()
 }, { immediate: true })
 
+
+// Section: Dropdown Shops/Fulfilments/Warehouses
+const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
+    console.log('menu popover list', showare)
+    const visitNormally = () => {
+        router.visit(route(showare.route?.name, showare.route?.parameters))
+    }
+
+    const paramsLength = Object.keys(layout.currentParams || route().routeParams || {}).length
+
+    if (layout.currentParams?.organisation && paramsLength === 1) { // ✅
+        visitNormally()
+    } else if (paramsLength === 2) {
+        if (layout.currentParams?.organisation && props.navKey === 'fulfilment') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: showare.org_slug, fulfilment: showare.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && props.navKey === 'warehouse') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: showare.org_slug, warehouse: showare.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && props.navKey === 'shop') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: showare.org_slug, shop: showare.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else { // ✅
+            visitNormally()
+        }
+    } else if (paramsLength === 3 && layout.currentParams?.website) {
+        // const targetWebsite = layout.organisationsState?.[showare.org_slug || '']?.currentWebsite
+        const targetWebsite = get(layout, ['organisationsState', showare.org_slug, 'currentWebsite'], null)
+
+        if (layout.currentParams?.organisation && props.navKey === 'fulfilment') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: showare.org_slug, fulfilment: showare.slug, website: showare.website_slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && props.navKey === 'warehouse') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: showare.org_slug, warehouse: showare.slug, website: showare.website_slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && props.navKey === 'shop') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: showare.org_slug, shop: showare.slug, website: showare.website_slug }))
+            } catch {
+                visitNormally()
+            }
+        } else { // ✅
+            visitNormally()
+        }
+    } else if (paramsLength > 2) {
+        if (layout.currentParams?.organisation && props.navKey === 'shop') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: showare.org_slug, shop: showare.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && props.navKey === 'warehouse') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: showare.org_slug, warehouse: showare.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else if (layout.currentParams?.organisation && props.navKey === 'fulfilment') {
+            try {
+                router.visit(route(layout.currentRoute, { organisation: showare.org_slug, fulfilment: showare.slug }))
+            } catch {
+                visitNormally()
+            }
+        } else {
+            visitNormally()
+        }
+    } else {
+        visitNormally()
+    }
+
+}
+
 </script>
 
 <template>
@@ -72,7 +160,7 @@ watch(() => layout.value?.organisationsState, () => {
             <template v-for="(showare, idxSH) in sortedShowareList" :key="showare.id || idxSH">
                 <!-- {{showare}} -->
                 <MenuItem v-if="showare.state != 'closed'" v-slot="{ active }" as="div"
-                    @click="() => router.visit(route(showare.route?.name, showare.route?.parameters))" :class="[
+                    @click="() => navigateToShoware(showare)" :class="[
                         showare.slug == layout.organisationsState?.[layout.currentParams.organisation]?.[`current${capitalize(navKey)}`] && (navKey == layout.organisationsState?.[layout.currentParams.organisation]?.currentType)
                             ? 'navigationDropdownActive'
                             : 'rounded text-slate-600 hover:bg-slate-200/30 cursor-pointer',

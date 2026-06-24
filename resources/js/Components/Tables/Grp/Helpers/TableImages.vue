@@ -9,7 +9,7 @@ import Table from "@/Components/Table/Table.vue"
 import { routeType } from "@/types/route"
 import { faTrashAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 library.add(faTrashAlt)
 

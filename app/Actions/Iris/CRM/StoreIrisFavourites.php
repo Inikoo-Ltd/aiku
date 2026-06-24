@@ -20,6 +20,9 @@ class StoreIrisFavourites extends RetinaAction
     use WithActionUpdate;
 
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Customer $customer, Product $product): void
     {
         StoreFavourite::make()->action($customer, $product, []);
@@ -35,9 +38,14 @@ class StoreIrisFavourites extends RetinaAction
         return true;
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(Product $product, ActionRequest $request): void
     {
         $this->initialisation($request);
-        $this->handle($this->customer, $product);
+        if ($this->customer) {
+            $this->handle($this->customer, $product);
+        }
     }
 }

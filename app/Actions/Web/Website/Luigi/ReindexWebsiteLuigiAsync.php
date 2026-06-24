@@ -22,7 +22,7 @@ class ReindexWebsiteLuigiAsync extends OrgAction
     public function handle(Website $website): void
     {
         Log::info("Running ReindexWebsiteLuigiAsync");
-        ReindexWebsiteLuigi::dispatch($website);
+        ReindexWebsiteLuigi::dispatch($website)->delay(60);
 
         UpdateWebsite::run($website, [
             'last_reindex_at' => now()

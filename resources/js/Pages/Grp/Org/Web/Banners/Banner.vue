@@ -13,7 +13,6 @@ import {useTabChange} from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {capitalize} from "@/Composables/capitalize"
-//import TableCustomerHistories from "@/Components/Tables/TableCustomerHistories.vue";
 import {faSign, faGlobe, faPencil, faSeedling, faPaste, faLayerGroup} from '@fal'
 import { faRocketLaunch } from '@far'
 import TableSnapshots from '@/Components/Tables/TableSnapshots.vue';
@@ -44,7 +43,6 @@ const component = computed(() => {
         showcase: BannerShowcase,
         snapshots: TableSnapshots,
         details: ModelDetails,
-        // changelog: TableCustomerHistories,
     };
     return components[currentTab.value];
 

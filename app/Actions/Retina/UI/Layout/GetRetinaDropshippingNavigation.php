@@ -242,6 +242,15 @@ class GetRetinaDropshippingNavigation
                         ]
                     ],
                     [
+                        'label' => __('Email management'),
+                        'icon'  => ['fal', 'fa-envelope'],
+                        'root'  => 'retina.sysadmin.email.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.email.edit',
+
+                        ]
+                    ],
+                    [
                         'label' => __('users'),
                         'icon'  => ['fal', 'fa-user-circle'],
                         'root'  => 'retina.sysadmin.web-users.',
@@ -251,36 +260,16 @@ class GetRetinaDropshippingNavigation
                         ]
                     ],
                     [
-                        'label' => __('VAT Validation History'),
+                        'label' => __('History'),
                         'icon'  => ['fal', 'fa-history'],
+                        'type'  => 'icon',
+                        'align' => 'right',
                         'root'  => 'retina.sysadmin.vat-validation-history',
                         'route' => [
                             'name' => 'retina.sysadmin.vat-validation-history',
 
                         ]
                     ],
-                ]
-            ]
-        ];
-
-        $groupNavigation['marketing'] = [
-            'label'   => __('manage email'),
-            'icon'    => ['fal', 'fa-envelope'],
-            'root'    => 'retina.email.',
-            'route'   => [
-                'name' => 'retina.email.settings.edit'
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label' => __('Email'),
-                        'icon'  => ['fal', 'fa-cog'],
-                        'root'  => 'retina.email.settings.',
-                        'route' => [
-                            'name' => 'retina.email.settings.edit',
-
-                        ]
-                    ]
                 ]
             ]
         ];

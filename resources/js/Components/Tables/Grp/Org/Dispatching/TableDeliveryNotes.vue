@@ -18,11 +18,12 @@ import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTruck } from "@fal"
+import { faTruck, faYinYang } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faTruck)
+library.add(faTruck, faYinYang)
 
 defineProps<{
 	data: TableTS
@@ -68,9 +69,15 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 				route().params["shop"],
 				deliveryNote.slug,
 			])
-
 		case "grp.org.shops.show.crm.customers.show.delivery_notes.index":
 			return route("grp.org.shops.show.crm.customers.show.delivery_notes.show", [
+				route().params["organisation"],
+				route().params["shop"],
+				route().params["customer"],
+				deliveryNote.slug,
+			])
+		case "grp.org.shops.show.crm.customers.show.replacements.index":
+			return route("grp.org.shops.show.crm.customers.show.replacements.show", [
 				route().params["organisation"],
 				route().params["shop"],
 				route().params["customer"],
@@ -92,6 +99,35 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 			])
 		default:
 			return route("grp.helpers.redirect_delivery_notes", [deliveryNote.id])
+	}
+}
+
+function returnNoteRoute(returnDeliveryNote) {
+	switch(route().current()) {
+		case "grp.org.warehouses.show.incoming.return_delivery_notes.index":
+			return route('grp.org.warehouses.show.incoming.return_delivery_notes.show', [
+				route().params["organisation"],
+				route().params["warehouse"],
+				returnDeliveryNote.slug,
+			])
+		case "grp.org.shops.show.ordering.backlog":
+		case "grp.org.shops.show.ordering.return_delivery_notes.index":
+			return route("grp.org.shops.show.ordering.return_delivery_notes.show", [
+				route().params["organisation"],
+				route().params["shop"],
+				returnDeliveryNote.slug,
+
+			])
+		case "grp.org.shops.show.crm.customers.show.return_delivery_notes.index":
+			return route("grp.org.shops.show.crm.customers.show.return_delivery_notes.show", [
+				route().params["organisation"],
+				route().params["shop"],
+				route().params["customer"],
+				returnDeliveryNote.slug,
+
+			])
+		default:
+			return route("grp.helpers.redirect_return_notes", returnDeliveryNote.id)
 	}
 }
 
@@ -203,6 +239,26 @@ const generateRouteDeliveryNote = (id: string) => {
 					fixed-width
 					aria-hidden="true" />
 				<NotesDisplay :item="deliveryNote" reference-field="reference" />
+				<WaitingOppositeCountBadge
+					v-if="Number(deliveryNote.waiting_warehouse_count) > 0"
+					:count="Number(deliveryNote.waiting_warehouse_count)"
+					type="warehouse"
+					:href="deliveryNoteRoute(deliveryNote)"
+				/>
+				<WaitingOppositeCountBadge
+					v-if="Number(deliveryNote.waiting_crm_count) > 0"
+					:count="Number(deliveryNote.waiting_crm_count)"
+					type="crm"
+					:href="deliveryNoteRoute(deliveryNote)"
+				/>
+			</div>
+		</template>
+
+		<template #cell(reference_return)="{ item: deliveryNote }">
+			<div class="flex gap-2 flex-wrap items-center">
+				<Link :href="returnNoteRoute(deliveryNote)" class="primaryLink">
+					{{ deliveryNote["reference"] }}
+				</Link>
 			</div>
 		</template>
 
@@ -336,6 +392,20 @@ const generateRouteDeliveryNote = (id: string) => {
 			<span v-if="deliveryNote.weight_bracket" class="text-sm text-gray-700">
 				{{ deliveryNote.weight_bracket }}
 			</span>
+		</template>
+
+		<template #cell(batch_code_sku)="{ item: deliveryNote }">
+			<Link
+				v-if="deliveryNote.org_stock_route"
+				:href="route(deliveryNote.org_stock_route.name, deliveryNote.org_stock_route.parameters)"
+				class="primaryLink">
+				{{ deliveryNote.batch_code_sku }}
+			</Link>
+			<span v-else class="text-sm text-gray-700">{{ deliveryNote.batch_code_sku || '—' }}</span>
+		</template>
+
+		<template #cell(batch_code_expiry_date)="{ item: deliveryNote }">
+			<span class="text-sm text-gray-700">{{ useFormatTime(deliveryNote.batch_code_expiry_date) || '—' }}</span>
 		</template>
 	</Table>
 

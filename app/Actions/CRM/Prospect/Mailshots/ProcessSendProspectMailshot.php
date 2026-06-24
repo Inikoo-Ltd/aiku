@@ -13,8 +13,10 @@ use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
+use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Actions\Comms\Mailshot\StoreMailshotRecipient;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientsStoredAt;
+use App\Actions\Comms\Traits\WithDispatchedEmailEncryption;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Prospect;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,6 +24,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessSendProspectMailshot
 {
     use AsAction;
+    use WithDispatchedEmailEncryption;
 
     public string $jobQueue = 'ses';
 
@@ -41,7 +44,9 @@ class ProcessSendProspectMailshot
         }
 
         $outboxId = $mailshot->outbox_id;
-        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
+        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot, [
+            'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
+        ]);
 
         foreach ($prospectIds as $prospectId) {
             $prospect = Prospect::find($prospectId);
@@ -60,9 +65,17 @@ class ProcessSendProspectMailshot
                     $prospect,
                     [
                         'outbox_id'     => $outboxId,
-                        'email_address' => $prospect->email
+                        'email_address' => $prospect->email,
+                        'data->additional_data' => [
+                            'prospect_name' => $prospect->contact_name ?? $prospect->name ?? " ",
+                            'prospect_email' => $prospect->email,
+                            'prospect_phone' => $prospect->phone ?? " ",
+                            'prospect_company_name' => $prospect->company_name ?? " ",
+                        ]
                     ]
                 );
+
+                $this->encryptAndStoreDispatchedEmailId($dispatchedEmail);
 
                 StoreMailshotRecipient::run(
                     $mailshot,
@@ -70,7 +83,7 @@ class ProcessSendProspectMailshot
                         'dispatched_email_id' => $dispatchedEmail->id,
                         'recipient_type'      => class_basename($prospect),
                         'recipient_id'        => $prospect->id,
-                        'recipient_name'      => $prospect->name ?? $prospect->contact_name ?? " ",
+                        'recipient_name'      => $prospect->contact_name ?? $prospect->name ?? " ",
                         'channel'             => $emailDeliveryChannel->id,
                     ]
                 );
@@ -80,13 +93,14 @@ class ProcessSendProspectMailshot
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
-                'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
+                'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count(),
+                'state'         => EmailDeliveryChannelStateEnum::READY->value
             ]
         );
 
         UpdateMailshotRecipientsStoredAt::run($mailshot);
         MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds(5));
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
     }
 }

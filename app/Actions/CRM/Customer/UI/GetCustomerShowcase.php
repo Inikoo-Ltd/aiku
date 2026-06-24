@@ -8,10 +8,13 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Models\CRM\Customer;
+use App\Models\Discounts\Offer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
@@ -92,6 +95,36 @@ class GetCustomerShowcase
             ],
         ] : null;
 
+        $firstAllowance = DB::table('offer_allowances')
+            ->selectRaw("DISTINCT ON (offer_id) offer_id, type AS allowance_type, class AS allowance_class, target_type AS allowance_target_type, (data->>'percentage_off')::numeric AS allowance_percentage_off, (data->>'category_id')::integer AS allowance_category_id")
+            ->where('type', '!=', 'unknown')
+            ->orderByRaw('offer_id, id');
+
+        $customerOffers = Offer::query()
+            ->where('offers.trigger_id', $customer->id)
+            ->where('offers.trigger_type', 'Customer')
+            ->leftJoinSub($firstAllowance, 'fa', 'fa.offer_id', '=', 'offers.id')
+            ->leftJoin('product_categories', DB::raw('product_categories.id'), '=', DB::raw('fa.allowance_category_id'))
+            ->select([
+                'offers.id',
+                'offers.slug',
+                'offers.code',
+                'offers.name',
+                'offers.type',
+                'offers.state',
+                'offers.start_at',
+                'offers.end_at',
+                'offers.trigger_data',
+                'fa.allowance_type',
+                'fa.allowance_class',
+                'fa.allowance_target_type',
+                'fa.allowance_percentage_off',
+                'product_categories.name as allowance_category_name',
+            ])
+            ->orderByRaw("CASE offers.state WHEN 'active' THEN 0 WHEN 'in_process' THEN 1 ELSE 2 END, offers.id")
+            ->limit(10)
+            ->get();
+
         return [
             'customer' => CustomerResource::make($customer)->getArray(),
             'address_management' => GetCustomerAddressManagement::run(customer:$customer),
@@ -115,6 +148,13 @@ class GetCustomerShowcase
                 'parameters' => [
                     'customer' => $customer->id
                 ]
+            ],
+            'store_note_route' => [
+                'name'       => 'grp.models.customer.note.store',
+                'parameters' => [
+                    'customer' => $customer->id
+                ],
+                'method'     => 'post'
             ],
             'shop'              => [
                 'id' => $customer->shop->id,
@@ -158,7 +198,8 @@ class GetCustomerShowcase
             'editWebUser' => $webUserRoute,
             'tag_routes' => $tagRoute,
             'tags_selected_id' => $customer->tags->pluck('id')->toArray(),
-            'tags' =>  TagsResource::collection($customer->tags)->toArray(request()),
+            'tags'             => TagsResource::collection($customer->tags)->toArray(request()),
+            'offers'           => OffersResource::collection($customerOffers)->toArray(request()),
         ];
     }
 }

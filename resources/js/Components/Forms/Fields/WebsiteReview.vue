@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { trans } from 'laravel-vue-i18n'
 import { ref, watch, computed } from 'vue'
 import { isNull, get } from 'lodash-es'
 import { faTimes, faCheck } from '@fas'
@@ -17,15 +18,15 @@ const emits = defineEmits(['update:form'])
 
 const providerSchemas: Record<string, Array<{ key: string; label: string; type: string }>> = {
     "reviews.io": [
-        { key: "url", label: "API URL", type: "text" },
-        { key: "store", label: "Store", type: "text" },
-        { key: "apikey", label: "API Key", type: "text" },
+        { key: "url", label: trans("API URL"), type: "text" },
+        { key: "store", label: trans("Store"), type: "text" },
+        { key: "apikey", label: trans("API Key"), type: "text" },
     ],
     "trust_pilot": [
-        { key: "template_id", label: "Template ID", type: "text" },
-        { key: "business_unit_id", label: "Business Unit ID", type: "text" },
-        { key: "url", label: "Review URL", type: "text" },
-        { key: "email", label: "Email", type: "text" },
+        { key: "template_id", label: trans("Template ID"), type: "text" },
+        { key: "business_unit_id", label: trans("Business Unit ID"), type: "text" },
+        { key: "url", label: trans("Review URL"), type: "text" },
+        { key: "email", label: trans("Email"), type: "text" },
     ],
 }
 
@@ -118,15 +119,15 @@ const currentSchema = computed(() => {
     <div class="flex flex-col gap-4">
 
         <div class="flex flex-col gap-1">
-            <label class="text-sm">Enable</label>
+            <label class="text-sm">{{ trans('Enable') }}</label>
             <InputSwitch v-model="enabled" />
         </div>
 
         <!-- PROVIDER SELECT -->
         <div  class="flex flex-col gap-1" :class="{ 'opacity-50 pointer-events-none': !enabled }">
-            <label class="text-sm">Provider</label>
+            <label class="text-sm">{{ trans('Provider') }}</label>
             <select v-model="provider" class="border rounded px-3 py-2">
-                <option disabled value="">Select Provider</option>
+                <option disabled value="">{{ trans('Select Provider') }}</option>
                 <option value="reviews.io">reviews.io</option>
                 <option value="trust_pilot">trust_pilot</option>
             </select>

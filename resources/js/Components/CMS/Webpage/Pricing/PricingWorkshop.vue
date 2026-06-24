@@ -6,7 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck } from "@fal"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from "@/Components/CMS/Webpage/Pricing/Blueprint"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 library.add(faCheck)
 

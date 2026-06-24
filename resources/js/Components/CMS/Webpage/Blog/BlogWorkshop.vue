@@ -4,7 +4,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, onMounted, computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { getStyles } from "@/Composables/styles"
 

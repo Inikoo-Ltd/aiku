@@ -8,7 +8,7 @@
 import { ref, Ref } from 'vue'
 import FooterLanguage from '@/Components/Footer/FooterLanguage.vue'
 import { usePage } from "@inertiajs/vue3"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { faHeart, faComputerClassic } from '@fas'
 import { faDiscord } from '@fortawesome/free-brands-svg-icons'
 import { library } from "@fortawesome/fontawesome-svg-core"

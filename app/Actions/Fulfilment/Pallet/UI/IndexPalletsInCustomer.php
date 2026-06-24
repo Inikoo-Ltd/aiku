@@ -191,6 +191,23 @@ class IndexPalletsInCustomer extends OrgAction
 
         $actions = [];
 
+        $actions[] = [
+            'type'   => 'button',
+            'style'  => 'tertiary',
+            'icon'   => 'fal fa-file-excel',
+            'label'  => __('Export'),
+            'target' => '_blank',
+            'route'  => [
+                'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.index.export',
+                'parameters' => [
+                    'organisation'       => $this->parent->organisation->slug,
+                    'fulfilment'         => $this->parent->fulfilment->slug,
+                    'fulfilmentCustomer' => $this->parent->slug,
+                    'type'               => 'xlsx',
+                ],
+            ],
+        ];
+
         if ($this->parent->number_pallets_status_storing) {
             $actions[] = [
                 'type'        => 'button',

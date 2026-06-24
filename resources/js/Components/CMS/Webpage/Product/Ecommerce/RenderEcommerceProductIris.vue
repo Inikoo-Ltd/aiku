@@ -2,7 +2,7 @@
 import { faCube, faLink } from "@fal"
 import { faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, inject, onMounted, computed, watch } from "vue"
+import { ref, inject, onMounted, onBeforeUnmount, computed, watch } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
@@ -11,9 +11,10 @@ import { ulid } from "ulid"
 import { usePage } from '@inertiajs/vue3'
 
 import { Image as ImageTS } from "@/types/Image"
-import { getProductRenderB2bComponent } from "@/Composables/getIrisComponents"
+import { getProductRenderB2bComponent } from "@/Iris/Composables/getIrisComponents"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import { ProductViewCollector } from "@/Composables/Unique/LuigiDataCollector"
+import { useProductStructuredData } from "@/Iris/Composables/useProductStructuredData"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -52,6 +53,7 @@ const props = withDefaults(
 
 const layout = inject("layout", {})
 const page = usePage()
+const injectedWebpageData = inject<any>("webpage_data", null)
 
 const variant = ref<any>(props.fieldValue?.variant ?? null)
 const selected_product = ref<ProductResource>(props.fieldValue.product)
@@ -78,18 +80,20 @@ const getOrderingProduct = async (productId: number) => {
   }
 
   try {
-    const response = await axios.get(
-      route("iris.json.product.ecom_ordering_data", {
-        product: productId,
-      })
-    )
+    if(productId){
+      const response = await axios.get(
+        route("iris.json.product.ecom_ordering_data", {
+          product: productId,
+        })
+      )
 
-    customerData.value = {
-      ...customerData.value,
-      [productId]: response.data,
-    }
+      customerData.value = {
+        ...customerData.value,
+        [productId]: response.data,
+      }
 
-    keyCustomer.value = ulid()
+      keyCustomer.value = ulid()
+    } else throw new Error("Product ID is required")
   } catch (error) {
     notify({
       title: trans("Something went wrong"),
@@ -338,12 +342,30 @@ watch(
   { deep: true }
 )
 
+// Section: Product structured data (SEO)
+// Mounted independently here instead of inside the page structured data (useStructuredData),
+// so the product schema lives in its own <script> and is easier to maintain.
+const { mountProductStructuredData, removeStructuredDataScript } = useProductStructuredData()
+const productStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
 onMounted(() => {
   if (props.fieldValue?.product?.luigi_identity) {
     ProductViewCollector(props.fieldValue.product.luigi_identity)
   }
 
+  productStructuredDataScript.value = mountProductStructuredData({
+    product: props.fieldValue?.product,
+    variant: props.fieldValue?.variant,
+    webpageData: props.webpageData ?? injectedWebpageData,
+    currencyCode: layout?.iris?.currency?.code,
+    websiteName: layout?.iris?.website?.name,
+  })
+
   getAllProductFromVariant()
+})
+
+onBeforeUnmount(() => {
+  removeStructuredDataScript(productStructuredDataScript.value)
 })
 
 watch(

@@ -31,6 +31,17 @@ class UpdateTransaction extends OrgAction
 
     public function handle(Transaction $transaction, array $modelData, $calculateShipping = true): Transaction
     {
+        if (Arr::has($modelData, 'units_ordered')) {
+            $unitsOrders = Arr::pull($modelData, 'units_ordered');
+            $product     = $transaction->model;
+            $units       = $product->units;
+            if ($units == 0) {
+                abort(423);
+            }
+
+            $modelData['quantity_ordered'] = round($unitsOrders / $units, 6);
+        }
+
         if (Arr::has($modelData, 'is_cut_view') && !Arr::get($modelData, 'is_cut_view')) {
             $modelData['quantity_ordered'] = (int)ceil($transaction->quantity_ordered);
         }
@@ -45,12 +56,15 @@ class UpdateTransaction extends OrgAction
                 /** @var Product $product */
                 $product         = $transaction->model;
                 $estimatedWeight = (int)ceil(Arr::get($modelData, 'quantity_ordered') * $product->gross_weight);
+                if ($estimatedWeight > 1000000000) {
+                    $estimatedWeight = 1000000000;
+                }
                 data_set($modelData, 'estimated_weight', $estimatedWeight);
             }
 
             $historicAsset = $transaction->historicAsset;
             $net           = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-            // here we are going to deal with discounts 15/09/24
+
             $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
 
             data_set($modelData, 'gross_amount', $gross);
@@ -96,6 +110,7 @@ class UpdateTransaction extends OrgAction
         $numericRule = ['sometimes', 'numeric'];
 
         $rules = [
+            'units_ordered'       => ['sometimes', 'numeric', 'integer', 'min:0'],
             'quantity_ordered'    => $qtyRule,
             'quantity_picked'     => $qtyRule,
             'quantity_bonus'      => $qtyRule,

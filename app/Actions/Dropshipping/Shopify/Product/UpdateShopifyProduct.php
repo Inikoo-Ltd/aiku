@@ -19,6 +19,7 @@ use App\Models\Helpers\Media;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Sentry;
 
 class UpdateShopifyProduct extends RetinaAction
@@ -35,7 +36,7 @@ class UpdateShopifyProduct extends RetinaAction
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            Log::error("Failed to initialize Shopify GraphQL client");
 
             return [false, 'Failed to initialize Shopify GraphQL client'];
         }
@@ -116,7 +117,7 @@ class UpdateShopifyProduct extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product update failed: ".$errorMessage);
+                Log::error("Product update failed: ".$errorMessage);
 
                 return [false, $errorMessage];
             }
@@ -130,7 +131,7 @@ class UpdateShopifyProduct extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product update failed: ".$errorMessage);
+                Log::error("Product update failed: ".$errorMessage);
 
                 return [false, $errorMessage];
             }
@@ -142,7 +143,7 @@ class UpdateShopifyProduct extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => ['No product data in response']
                 ]);
-                Sentry::captureMessage("Product update failed: No product data in response");
+                Log::error("Product update failed: No product data in response");
 
                 return [false, 'No product data in response'];
             }

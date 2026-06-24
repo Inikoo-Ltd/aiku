@@ -9,7 +9,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Http\Resources\HasSelfCall;
-use App\Models\Announcement;
+use App\Models\Web\Announcement;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AnnouncementResource extends JsonResource

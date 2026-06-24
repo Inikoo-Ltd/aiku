@@ -54,6 +54,11 @@ trait WithPrintNode
     public function isExistPrinter(int|null $printerId): bool
     {
         $this->ensureClientInitialized();
+
+        if (!$printerId) {
+            return false;
+        }
+
         try {
             Printer::retrieve($printerId);
 

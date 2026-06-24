@@ -21,6 +21,7 @@ use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
@@ -121,6 +122,9 @@ class UpdateTradeUnit extends GrpAction
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
         $tradeUnit->refresh();
 
+        if (Arr::has($modelData, 'description')) {
+            GroupHydrateTradeUnits::dispatch($tradeUnit->group)->delay(10);
+        }
 
         if ($tradeUnit->wasChanged('type')) {
             foreach ($tradeUnit->masterAssets as $masterAsset) {

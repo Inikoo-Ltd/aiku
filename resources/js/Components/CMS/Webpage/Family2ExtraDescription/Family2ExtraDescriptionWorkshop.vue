@@ -1,20 +1,14 @@
 <script setup lang="ts">
+import { computed, inject, ref } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed, inject, ref, watch } from "vue"
-import { get, isPlainObject, debounce } from "lodash-es"
-import axios from "axios"
-
-import Image from "@/Components/Image.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
-
-import { getStyles } from "@/Composables/styles"
-import { getBestOffer } from "@/Composables/useOffers"
-import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
+import { ctrans } from "@/Composables/useTrans"
+import { getStyles } from "@/Composables/styles"
+import About from "@/Components/CMS/Webpage/Family2ExtraDescription/AboutWorkshop.vue"
+import FaqWorkshop from "./FaqWorkshop.vue"
+import MarketingMaterialsWorkshop from "./MarketingMaterialsWorkshop.vue"
 
 library.add(
   faCube,
@@ -32,129 +26,142 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
-  indexBlock:number
+  indexBlock: number
 }>()
 
-const layout: any = inject("layout", {})
+const layout = inject("layout", {}) as any
+const activeTab = ref("about")
 
+const tabs = computed(() =>
+  [
+    { key: "about", label: ctrans("About the Range") },
+    { key: "marketing", label: ctrans("Marketing Materials") },
+    { key: "faq", label: ctrans("FAQ") },
+  ])
 
+const sectionId = computed(
+  () => props.modelValue?.id ?? `family-1-iris-${props.indexBlock}`
+)
 
-const description = ref("")
+const containerStyle = computed(() => ({
+  ...getStyles(
+    layout?.app?.webpage_layout?.container?.properties,
+    props.screenType
+  ),
+  ...getStyles(props.modelValue?.container?.properties),
+  width: "auto",
+}))
 
-const cleanHtml = (html: string) => {
-  return (html || "").replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+const component = (tab: string) => {
+  switch (tab) {
+    case "about":
+      return About
+    case "marketing":
+      return MarketingMaterialsWorkshop
+    case "faq":
+      return FaqWorkshop
+    default:
+      return null
+  }
 }
 
-watch(
-  () => props.modelValue?.family?.description_extra,
-  (val) => {
-    description.value = cleanHtml(val)
-  },
-  { immediate: true }
-)
+/* Responsive Classes */
 
+const containerClass = computed(() => {
+  switch (props.screenType) {
+    case "mobile":
+      return "px-4 py-4"
 
+    case "tablet":
+      return "px-8 py-4"
 
-const bestOffer = computed(() => {
-  return getBestOffer(props.modelValue?.family?.offers_data)
-})
-
-
-
-const columnPosition = computed(() => {
-  const rawVal = get(props.modelValue, ["column_position"])
-
-  if (!isPlainObject(rawVal)) return rawVal
-
-  const view = props.screenType
-  return rawVal?.[view] ?? rawVal?.desktop ?? "Image-right"
-})
-
-const isImageLeft = computed(() => columnPosition.value === "Image-right")
-
-const gridClass = computed(() =>
-  isImageLeft.value
-    ? "md:grid-cols-[40%_60%]"
-    : "md:grid-cols-[60%_40%]"
-)
-
-const imageOrder = computed(() =>
-  isImageLeft.value ? "order-1" : "order-2"
-)
-
-const textOrder = computed(() =>
-  isImageLeft.value ? "order-2" : "order-1"
-)
-
-
-
-const hideImageOnMobile = computed(() => props.screenType === "mobile")
-
-const textAlignClass = computed(() =>
-  props.screenType === "mobile" ? "text-center" : "text-left"
-)
-
-const buttonJustifyClass = computed(() =>
-  props.screenType === "mobile" ? "justify-center" : "justify-start"
-)
-
-
-
-const saveDescription = debounce(async (key: string, value: string) => {
-  try {
-    const url = route("grp.models.product_category.update", {
-      productCategory: props.modelValue?.family?.id,
-    })
-
-    await axios.patch(url, { [key]: value })
-  } catch (error: any) {
-    console.error("Save failed:", error)
+    default:
+      return "px-6 py-4"
   }
-}, 1000)
+})
+
+const tabsWrapperClass = computed(() => {
+  switch (props.screenType) {
+    case "mobile":
+      return "justify-center gap-3"
+
+    case "tablet":
+      return "justify-center gap-6"
+
+    default:
+      return "justify-end gap-14"
+  }
+})
+
+const tabButtonClass = computed(() => {
+  switch (props.screenType) {
+    case "mobile":
+      return "px-1 py-3 text-[10px]"
+
+    case "tablet":
+      return "px-2 py-4 text-[12px]"
+
+    default:
+      return "px-2 py-4 text-[12px]"
+  }
+})
+
+const sectionStyle = computed(() => {
+  const bg = props.modelValue?.container?.properties?.background[props.screenType]
+
+  return {
+    backgroundColor: bg?.color || undefined,
+    backgroundImage: bg?.image?.original
+      ? `url(${bg.image.original})`
+      : undefined,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }
+})
+
 </script>
 
 <template>
-  <div :id="modelValue?.id || 'family-2'+indexBlock" class="w-full">
-    <div :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(modelValue?.container?.properties, screenType)
-    }">
-      <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
-        <!-- IMAGE -->
-            <div
-          class="w-full h-full flex items-center justify-center"
-          :class="[imageOrder]"
-          :style="getStyles(modelValue?.image?.container?.properties, screenType)"
+  <section
+    class="w-full bg-[#D8D9DB] "
+    :id="sectionId"
+     :style="sectionStyle"
+  >
+    <div
+      class="mx-auto w-full  bg-white editor-class"
+      :class="containerClass"
+      :style="containerStyle"
+    >
+      <!-- TOP NAV -->
+      <div class="border-b border-[#9a9a9a]">
+        <div
+          class="flex flex-wrap items-center"
+          :class="tabsWrapperClass"
         >
-          <Image
-            :src="modelValue?.family?.extra_description_image"
-            :alt="modelValue?.family?.extra_description_image?.alt || 'Image preview'"
-            :imageCover="false"
-            class="max-h-full w-auto object-contain"
-          />
-        </div>
-
-
-        <!-- TEXT -->
-        <div class="flex flex-col justify-center m-auto p-4 mx-4" :class="[textOrder, textAlignClass]"
-          :style="getStyles(modelValue?.text_block?.properties, screenType)">
-          <div class="w-full">
-            <EditorV2 v-model="description" placeholder="Family Description"
-              @update:model-value="(e) => saveDescription('description_extra', e)" :uploadImageRoute="{
-                name: webpageData?.images_upload_route?.name,
-                parameters: { modelHasWebBlocks: blockData?.id }
-              }" />
-
-            <div class="flex mt-6" :class="buttonJustifyClass">
-              <LinkIris :href="modelValue?.button?.link?.href" :canonical_url="modelValue?.button?.link?.canonical_url"
-                :target="modelValue?.button?.link?.target" :type="modelValue?.button?.link?.type">
-                <Button :label="modelValue?.button?.text"
-                  :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)" />
-              </LinkIris>
-            </div>
-          </div>
+          <button
+            v-for="tab in tabs"
+            :key="tab.key"
+            @click="activeTab = tab.key"
+            class="relative -mb-px border-b transition-all duration-200"
+            :class="[
+              tabButtonClass,
+              activeTab === tab.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-[#9a9a9a]'
+            ]"
+          >
+            {{ tab.label }}
+          </button>
         </div>
       </div>
+
+      <!-- CONTENT -->
+      <component
+        :is="component(activeTab)"
+        :field-value="modelValue"
+        :screen-type="screenType"
+        :faqs="modelValue.family.faq"
+      />
     </div>
-  </div>
+  </section>
 </template>

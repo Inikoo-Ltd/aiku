@@ -46,6 +46,9 @@ class StoreEcomBasketTransaction extends IrisAction
             );
         }
 
+        $order->update([
+            'updated_by_customer_at' => now()
+        ]);
 
         return StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
@@ -84,9 +87,14 @@ class StoreEcomBasketTransaction extends IrisAction
 
     public function jsonResponse(Transaction $transaction): array
     {
+        $product = $transaction->model;
+
         return [
-            'transaction_id' => $transaction->id,
-            'quantity_ordered' => (int)$transaction->quantity_ordered
+            'transaction_id'    => $transaction->id,
+            'quantity_ordered'  => (int)$transaction->quantity_ordered,
+            'department_id'     => $product?->department_id,
+            'sub_department_id' => $product?->sub_department_id,
+            'family_id'         => $product?->family_id,
         ];
     }
 }

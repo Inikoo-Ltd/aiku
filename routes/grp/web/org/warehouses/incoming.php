@@ -8,6 +8,8 @@
 
 use App\Actions\GoodsIn\Return\UI\IndexReturns;
 use App\Actions\GoodsIn\Return\UI\ShowReturn;
+use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
+use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Inventory\GoodsIn\UI\IndexWarehousePalletDeliveries;
@@ -26,3 +28,17 @@ Route::get('fulfilment-deliveries/{palletDelivery}', ShowWarehousePalletDelivery
 
 Route::get('returns', IndexReturns::class)->name('returns.index');
 Route::get('returns/{return}', ShowReturn::class)->name('returns.show');
+
+Route::name('return_delivery_notes.')->prefix('returns-dn')->group(function () {
+    Route::get('/', IndexReturnDeliveryNotes::class)->name('index');
+
+    Route::name('state.')->prefix('/state')->group(function () {
+        Route::get('/received', [IndexReturnDeliveryNotes::class, 'received'])->name('received');
+        Route::get('/returning', [IndexReturnDeliveryNotes::class, 'returning'])->name('returning');
+        Route::get('/returned', [IndexReturnDeliveryNotes::class, 'returned'])->name('returned');
+        Route::get('/processed', [IndexReturnDeliveryNotes::class, 'processed'])->name('processed');
+    });
+
+
+    Route::get('/returns-dn/{returnDeliveryNote}', [ShowReturnDeliveryNote::class, 'inWarehouse'])->name('show');
+});

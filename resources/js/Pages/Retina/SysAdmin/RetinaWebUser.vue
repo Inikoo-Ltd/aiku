@@ -54,11 +54,6 @@
           key: 'status',
           value: props.data.status
       },
-    //   {
-    //       label: 'Location',
-    //       key: 'location',
-    //       value: props.data.customer?.location
-    //   },
   ]
   console.log(props)
   </script>
@@ -84,10 +79,6 @@
                   </div>
               </div>
           </div>
-  
-
-
       </div>
-          <!-- <pre>{{ data }}</pre> -->
   </template>
   

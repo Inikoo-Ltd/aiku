@@ -15,6 +15,8 @@ import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCh
 import { ref } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
+import TableDeliveryNotes from '@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue'
+import { computed } from 'vue'
 
 library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen)
 
@@ -41,11 +43,30 @@ const props = defineProps<{
     cancelled: {}
     picked: {}
     packing: {}
+    returned: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
+const component = computed(() => {
+    const components: any = {
+      in_basket: TableOrders,
+      submitted_paid: TableOrders,
+      submitted_unpaid: TableOrders,
+      in_warehouse: TableOrders,
+      handling: TableOrders,
+      handling_blocked: TableOrders,
+      picked: TableOrders,
+      packing: TableOrders,
+      packed: TableOrders,
+      finalised: TableOrders,
+      dispatched_today: TableOrders,
+      returned: TableDeliveryNotes
+    }
+
+    return components[currentTab.value]
+})
 </script>
 
 <template>
@@ -56,6 +77,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
     <KeepAlive>
       <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
     </KeepAlive>
-    <TableOrders :key="currentTab" :tab="currentTab" :data="props[currentTab]"></TableOrders>
+    <!-- <TableOrders :key="currentTab" :tab="currentTab" :data="props[currentTab]"></TableOrders> -->
+    <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
 
 </template>

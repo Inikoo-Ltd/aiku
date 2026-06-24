@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import AppLogin from "@/Components/Forms/Fields/AppLogin.vue"
 import { ref } from "vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faEye, faEyeSlash } from "@fal"

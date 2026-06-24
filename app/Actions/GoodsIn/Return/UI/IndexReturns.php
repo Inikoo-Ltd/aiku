@@ -86,7 +86,7 @@ class IndexReturns extends OrgAction
                     'count' => 0,
                 ]);
 
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true);
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], sortable: true, type: 'icon');
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true);

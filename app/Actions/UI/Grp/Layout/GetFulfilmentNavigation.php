@@ -19,6 +19,7 @@ class GetFulfilmentNavigation
     public function handle(Fulfilment $fulfilment, User $user): array
     {
         $navigation = [];
+        $appendedNavigation = [];
 
         if ($user->authTo([
             "fulfilment-shop.$fulfilment->id.view",
@@ -75,16 +76,16 @@ class GetFulfilmentNavigation
                                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                             ],
                         ],
-                        [
-                            'label'   => __('Returns'),
-                            'tooltip' => __('Returns'),
-                            'icon'    => ['fal', 'fa-sign-out'],
-                            'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
-                            'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
-                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-                            ],
-                        ],
+                        // [
+                        //     'label'   => __('Returns'),
+                        //     'tooltip' => __('Returns'),
+                        //     'icon'    => ['fal', 'fa-sign-out'],
+                        //     'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
+                        //     'route'   => [
+                        //         'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
+                        //         'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                        //     ],
+                        // ],
                         [
                             'label'   => __('Next bills'),
                             'tooltip' => __('Next bills'),
@@ -110,7 +111,6 @@ class GetFulfilmentNavigation
                 ]
 
             ];
-
 
             $navigation['assets'] = [
                 'root'  => 'grp.org.fulfilments.show.catalogue.',
@@ -155,7 +155,74 @@ class GetFulfilmentNavigation
 
                     ]
                 ]
+            ];
 
+            $appendedNavigation['return_backlog_wholesale'] = [
+                'root'  => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.',
+                'label' => __('Return Wholesale'),
+                'icon'  => ['fal', 'fa-sign-out'],
+                'route' => [
+                    'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
+                    'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label'   => __('Return Wholesale Backlog'),
+                            'tooltip' => __('Return Wholesale Backlog'),
+                            'icon'    => ['fal', 'fa-sign-out'],
+                            'root'    => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
+                            'route'   => [
+                                'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
+                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                            ],
+                        ],
+                        [
+                            'label'   => __('Return DS Backlog'),
+                            'tooltip' => __('Return DS Backlog'),
+                            'icon'    => ['fal', 'fa-sign-out'],
+                            'root'    => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
+                            'route'   => [
+                                'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
+                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                            ],
+                        ],
+                    ]
+                ]
+            ];
+
+            $appendedNavigation['return_backlog_ds'] = [
+                'root'  => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.',
+                'label' => __('Return DS'),
+                'icon'  => ['fal', 'fa-sign-out'],
+                'route' => [
+                    'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
+                    'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label'   => __('Return Wholesale Backlog'),
+                            'tooltip' => __('Return Wholesale Backlog'),
+                            'icon'    => ['fal', 'fa-sign-out'],
+                            'root'    => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
+                            'route'   => [
+                                'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
+                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                            ],
+                        ],
+                        [
+                            'label'   => __('Return DS Backlog'),
+                            'tooltip' => __('Return DS Backlog'),
+                            'icon'    => ['fal', 'fa-sign-out'],
+                            'root'    => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
+                            'route'   => [
+                                'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
+                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                            ],
+                        ],
+                    ]
+                ]
             ];
         }
 
@@ -283,7 +350,7 @@ class GetFulfilmentNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label'   => __('customers'),
+                            'label'   => __('Customers'),
                             'tooltip' => __('Customers'),
                             'icon'    => ['fal', 'fa-user'],
                             'root'    => 'grp.org.fulfilments.show.crm.customers.',
@@ -296,43 +363,46 @@ class GetFulfilmentNavigation
                 ]
 
             ];
-            if ($user->authTo([
-                "fulfilment-shop.$fulfilment->id.view",
-                "supervisor-fulfilment-shop.".$fulfilment->id
-            ])) {
-                $navigation['setting'] = [
-                    "root"    => "grp.org.fulfilments.show.settings.",
-                    "icon"    => ["fal", "fa-sliders-h"],
-                    "label"   => __("Setting"),
-                    "route"   => [
-                        "name"       => 'grp.org.fulfilments.show.settings.edit',
-                        "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug],
-                    ],
-                    "topMenu" => [
-                        "subSections" => [
-                            [
-                                "tooltip" => __("Fulfilment Setting"),
-                                "icon"    => ["fal", "fa-sliders-h"],
-                                'root'    => 'grp.org.fulfilments.show.settings.edit',
-                                "route"   => [
-                                    "name"       => 'grp.org.fulfilments.show.settings.edit',
-                                    "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug],
-                                ],
+        }
+
+        $navigation = array_merge($navigation, $appendedNavigation);
+
+        if ($user->authTo([
+            "fulfilment-shop.$fulfilment->id.view",
+            "supervisor-fulfilment-shop.".$fulfilment->id
+        ])) {
+            $navigation['setting'] = [
+                "root"    => "grp.org.fulfilments.show.settings.",
+                "icon"    => ["fal", "fa-sliders-h"],
+                "label"   => __("Setting"),
+                "route"   => [
+                    "name"       => 'grp.org.fulfilments.show.settings.edit',
+                    "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug],
+                ],
+                "topMenu" => [
+                    "subSections" => [
+                        [
+                            "tooltip" => __("Fulfilment Setting"),
+                            "icon"    => ["fal", "fa-sliders-h"],
+                            'root'    => 'grp.org.fulfilments.show.settings.edit',
+                            "route"   => [
+                                "name"       => 'grp.org.fulfilments.show.settings.edit',
+                                "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug],
                             ],
-                            [
-                                "label"   => __("outboxes"),
-                                "tooltip" => __("outboxes"),
-                                "icon"    => ["fal", "fa-comment-dollar"],
-                                'root'    => 'grp.org.fulfilments.show.settings.outboxes.index',
-                                "route"   => [
-                                    "name"       => "grp.org.fulfilments.show.settings.outboxes.index",
-                                    "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug],
-                                ],
+                        ],
+                        [
+                            "label"   => __("outboxes"),
+                            "tooltip" => __("outboxes"),
+                            "icon"    => ["fal", "fa-comment-dollar"],
+                            'root'    => 'grp.org.fulfilments.show.settings.outboxes.index',
+                            "route"   => [
+                                "name"       => "grp.org.fulfilments.show.settings.outboxes.index",
+                                "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug],
                             ],
                         ],
                     ],
-                ];
-            }
+                ],
+            ];
         }
 
         return $navigation;

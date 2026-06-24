@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Table from "@/Components/Table/Table.vue"
 import Tag from "@/Components/Tag.vue"
@@ -14,7 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import { debounce, get, set } from "lodash-es"
 import { inject, ref } from "vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import GridProducts from "@/Components/Product/GridProducts/GridProducts.vue"
 
@@ -131,11 +131,22 @@ const isOffersData = (offersData: any): boolean => {
         <template #cell(quantity_ordered)="{ item }">
             <div class="px-2 relative text-right w-full">
                 <div class="w-fit ml-auto">
-                    <NumberWithButtonSave :modelValue="item.quantity_ordered" @update:modelValue="(value: number) => {
-                        console.log('item.quantity_ordered', item.quantity_ordered, value)
-                        item.quantity_ordered != value ? debounceUpdateQuantity(item.updateRoute, item.id, value) : null
-                    }" :routeSubmit="item.updateRoute" key-submit="quantity_ordered" isWithRefreshModel
-                        noSaveButton noUndoButton :min="1" :max="item.available_quantity" />
+                    <NumberWithButtonSave
+                        :modelValue="item.quantity_ordered"
+                        @update:modelValue="(value: number) => {
+                            console.log('item.quantity_ordered', item.quantity_ordered, value)
+                            item.quantity_ordered != value ? debounceUpdateQuantity(item.updateRoute, item.id, value) : null
+                        }"
+                        :routeSubmit="item.updateRoute"
+                        key-submit="quantity_ordered"
+                        isWithRefreshModel
+                        noSaveButton
+                        noUndoButton
+                        :min="0"
+                        :max="item.available_quantity"
+                        :denominator="(item.quantity_ordered % 1 !== 0 || item.is_cut_view) ? Number(item.units) : undefined"
+                        :disableInput="item.quantity_ordered % 1 !== 0"
+                    />
                 </div>
 
                 <ConditionIcon class="absolute ml-2 top-1/2 -translate-y-1/2 text-base"
@@ -204,7 +215,9 @@ const isOffersData = (offersData: any): boolean => {
                                             item.quantity_ordered != value ? debounceUpdateQuantity(item.updateRoute, item.id, value) : null
                                         }" :routeSubmit="item.updateRoute" key-submit="quantity_ordered"
                                             isWithRefreshModel noSaveButton noUndoButton :min="1"
-                                            :max="item.available_quantity" />
+                                            :max="item.available_quantity"
+                                            :denominator="item.quantity_ordered % 1 !== 0 ? Number(item.units) : undefined"
+                                            :disableInput="item.quantity_ordered % 1 !== 0" />
                                     </div>
 
                                     <ConditionIcon class="absolute ml-1 top-[65%] right-[40%] -translate-y-1/2 text-base"

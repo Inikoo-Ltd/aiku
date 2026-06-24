@@ -17,8 +17,8 @@ enum ShopDashboardSalesTableTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case BRANDS = 'brands';
     case DS_PLATFORMS = 'ds_platforms';
+    case BRANDS = 'brands';
 
     public function blueprint(): array
     {
@@ -84,6 +84,21 @@ enum ShopDashboardSalesTableTabsEnum: string
                 return true;
             })
             ->mapWithKeys(fn ($case) => [$case->value => $case->table($shop, $timeSeriesData)])
+            ->all();
+    }
+
+    public static function tablesForTabs(Shop $shop, array $timeSeriesData, array $tabs): array
+    {
+        return collect($tabs)
+            ->map(function ($tab) {
+                if ($tab instanceof self) {
+                    return $tab;
+                }
+                return self::tryFrom((string) $tab);
+            })
+            ->filter()
+            ->mapWithKeys(fn (self $tab) => [$tab->value => $tab->table($shop, $timeSeriesData)])
+            ->filter()
             ->all();
     }
 }

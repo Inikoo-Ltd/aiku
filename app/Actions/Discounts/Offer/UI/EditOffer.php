@@ -3,13 +3,16 @@
 /*
  * author Louis Perez
  * created on 19-11-2025-13h-31m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2025
 */
 
 namespace App\Actions\Discounts\Offer\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -28,7 +31,6 @@ class EditOffer extends OrgAction
      */
     public function handle(Offer $offer, ActionRequest $request): Response
     {
-
         $getCategoryId = $this->getCategoryId($offer->allowance_signature);
 
         $productCategory = null;
@@ -36,10 +38,8 @@ class EditOffer extends OrgAction
             $productCategory = ProductCategory::find($getCategoryId);
         }
 
-        $offerResource = OfferResource::make($offer)->resolve();
+        $offerResource  = OfferResource::make($offer)->resolve();
         $percentage_off = $offerResource['data_allowance_signature']['percentage_off'] * 100;
-
-        // dd($offer);
 
         $warning = null;
         if ($productCategory) {
@@ -53,12 +53,12 @@ class EditOffer extends OrgAction
 
         // Section: Trigger
         $triggerValue = null;
-        if (in_array($offer->type, ['Category Quantity Ordered'])) {
+        if ($offer->type == 'Category Quantity Ordered') {
             $triggerValue['trigger_item_quantity'] = $offer->trigger_data['item_quantity'] ?? 0;
         }
-        if (in_array($offer->type, ['Amount AND Order Number'])) {
+        if ($offer->type == 'Amount AND Order Number') {
             $triggerValue['trigger_order_number'] = $offer->trigger_data['order_number'] ?? 0;
-            $triggerValue['trigger_min_amount'] = $offer->trigger_data['min_amount'] ?? 0;
+            $triggerValue['trigger_min_amount']   = $offer->trigger_data['min_amount'] ?? 0;
         }
 
         // Section: Discount
@@ -67,7 +67,88 @@ class EditOffer extends OrgAction
             $discountValue['percentage_off'] = $percentage_off;
         }
 
-        // dd($request->route()->originalParameters());
+        $blueprint = [];
+
+        $triggerEdit = [];
+
+        data_set($triggerEdit, 'start_at', [
+            'type'              => 'date',
+            'information'       => __('The date from which the offer is valid. From this date, the offer will be applicable.'),
+            'label'             => __('Start Date'),
+            'placeholder'       => __('date'),
+            'required'          => true,
+            'readonly'          => now()->gt($offer->start_at),
+            'extraInformation'  => now()->gt($offer->start_at) ? __('Offer is started already. Unable to modify start date') : null,
+            'minDate'           => now()->gt($offer->start_at) ? $offer->start_at : now(),
+            'value'             => $offer->start_at,
+        ]);
+
+        if ($offer->duration === OfferDurationEnum::INTERVAL) {
+            $minEnd = $offer->start_at->addDay();
+            data_set($triggerEdit, 'end_at', [
+                'type'              => 'date',
+                'information'       => __('The date until which the offer is valid. After this date, the offer will no longer be applicable.'),
+                'label'             => __('End Date'),
+                'placeholder'       => __('date'),
+                'minDate'           => now()->gt($minEnd) ? now() : $minEnd,
+                'required'          => true,
+                'value'             => $offer->end_at,
+            ]);
+        }
+
+        if ($triggerValue) {
+            data_set($triggerEdit, 'edit_offer_trigger', [
+                'type'          => 'editOffer',
+                'label'         => __('Trigger'),
+                'required'      => true,
+                'currency_code' => $this->organisation->currency->code,
+                'offer'         => $offer,
+                'value'         => $triggerValue,
+            ]);
+        }
+        if ($discountValue) {
+            data_set($triggerEdit, 'edit_offer_discount', [
+                'type'          => 'editOffer',
+                'label'         => __('Discount'),
+                'required'      => true,
+                'currency_code' => $this->organisation->currency->code,
+                'offer'         => $offer,
+                'value'         => $discountValue,
+            ]);
+        }
+
+        if ($offer->state != OfferStateEnum::FINISHED) {
+            $blueprint = [
+                [
+                    'label'  => __('Properties'),
+                    'icon'   => 'fa-light fa-fingerprint',
+                    'fields' => [
+                        'name'                => [
+                            'type'        => 'input',
+                            'label'       => __('Name'),
+                            'placeholder' => __('Name'),
+                            'required'    => true,
+                            'value'       => $offer->name,
+                        ],
+                        'label'               => $offer->offerCampaign->type !== OfferCampaignTypeEnum::VOUCHERS ? [
+                            'type'        => 'input',
+                            'information' => __('Label to put on the discount coupon, if empty will take offer name'),
+                            'label'       => __('Label'),
+                            'placeholder' => __('Label'),
+                            'required'    => true,
+                            'value'       => $offer->label,
+                        ] : null,
+                    ]
+                ],
+                [
+                    'label'  => __('Offer Triggers'),
+                    'icon'   => 'fa-light fa-bullseye-pointer',
+                    'fields' => $triggerEdit
+                ],
+            ];
+        }
+
+
         return Inertia::render(
             'EditModel',
             [
@@ -76,103 +157,51 @@ class EditOffer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit Offer') . ' ' . $offer->code,
+                'title'       => __('Editing Offer').' '.$offer->code,
                 'pageHead'    => [
-                    'title' => $offer->name,
-                    'model' => __('Edit Offer'),
-                    'icon'  => 'fal fa-pencil',
-                    'actions' => array_filter([
-                        app()->environment('local') ? [
-                            'type'  => 'button',
-                            'label' => __('Finish Now'),
-                            'style' => 'indigo',
-                            'icon'  => 'fal fa-check',
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.discounts.offers.finish',
-                                'parameters' => $request->route()->originalParameters(),
-                            ],
-                        ] : null,
+                    'title'     => $offer->name,
+                    'model'     => __('Edit Offer'),
+                    'icon'      => 'fal fa-pencil',
+                    'iconRight' => $offer->state->stateIcon()[$offer->state->value],
+                    'actions'   => array_filter(
                         [
-                            'type'  => 'button',
-                            'style' => 'exitEdit',
-                            'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters()),
+                            $offer->state == OfferStateEnum::ACTIVE ? [
+                                'type'  => 'button',
+                                'label' => __('Finish Now'),
+                                'style' => 'red',
+                                'icon'  => 'fal fa-skull',
+                                'route' => [
+                                    'method'     => 'post',
+                                    'name'       => 'grp.models.offer.finish',
+                                    'parameters' => $offer->id,
+                                ],
+                            ] : null,
+                            $offer->state == OfferStateEnum::IN_PROCESS ? [
+                                'type'  => 'button',
+                                'label' => __('Delete Offer'),
+                                'style' => 'red',
+                                'icon'  => 'fal fa-trash-alt',
+                                'route' => [
+                                    'method'     => 'post',
+                                    'name'       => 'grp.models.offer.delete',
+                                    'parameters' => $offer->id,
+                                ],
+                            ] : null,
+                            [
+                                'type'  => 'button',
+                                'style' => 'exitEdit',
+                                'route' => [
+                                    'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                    'parameters' => array_values($request->route()->originalParameters()),
+                                ]
                             ]
                         ]
-                    ]),
+                    ),
                 ],
-                'warning'   => $warning,
+                'warning'     => $warning,
                 'formData'    => [
-                    'fullLayout' => true,
-                    'blueprint'  =>
-                        [
-                            [
-                                'title'  => __('Properties'),
-                                'fields' => [
-                                    // 'type'      => [
-                                    //     'label' => __('Offer type'),
-                                    //     'type'  => 'select',
-                                    //     'readonly' => true,
-                                    //     'required' => true,
-                                    //     'options'   => [
-                                    //         $offer->type
-                                    //     ],
-                                    //     'value' => $offer->type
-                                    // ],
-                                    // 'category'      => $productCategory ? [
-                                    //     'label' => __('Product category'),
-                                    //     'type'  => 'select',
-                                    //     'readonly' => true,
-                                    //     'required' => true,
-                                    //     'options'   => [
-                                    //         $productCategory->name
-                                    //     ],
-                                    //     'value' => $productCategory->name
-                                    // ] : null,
-                                    'name'        => [
-                                        'type'        => 'input',
-                                        'label'       => __('Name'),
-                                        'placeholder' => __('Name'),
-                                        'required'    => true,
-                                        'value'       => $offer->name,
-                                    ],
-                                    'label'        => [
-                                        'type'        => 'input',
-                                        'information' => __('Label to put on the discount coupon, if empty will take offer name'),
-                                        'label'       => __('Label'),
-                                        'placeholder' => __('Label'),
-                                        'required'    => true,
-                                        'value'       => $offer->label,
-                                    ],
-                                    'date'        => app()->environment('local') ? [
-                                        'type'        => 'date',
-                                        'information' => __('The date until which the offer is valid. After this date, the offer will no longer be applicable.'),
-                                        'label'       => __('End Date'),
-                                        'placeholder' => __('date'),
-                                        'required'    => true,
-                                        'value'       => $offer->end_at,
-                                    ] : null,
-                                    'edit_offer_trigger'        => $triggerValue ? [
-                                        'type'        => 'editOffer',
-                                        'label'       => __('Trigger'),
-                                        'required'    => true,
-                                        'currency_code' => $this->organisation->currency->code,
-                                        'offer'         => $offer,
-                                        'value'       => $triggerValue,
-                                    ] : null,
-                                    'edit_offer_discount'        => $discountValue ? [
-                                        'type'          => 'editOffer',
-                                        'label'         => __('Discount'),
-                                        'required'      => true,
-                                        'currency_code' => $this->organisation->currency->code,
-                                        'offer'         => $offer,
-                                        'value'         => $discountValue,
-                                    ] : null,
-                                ]
-                            ],
-                        ],
-                    'args'      => [
+                    'blueprint'  => $blueprint,
+                    'args'       => [
                         'updateRoute' => [
                             'name'       => 'grp.org.shops.show.discounts.offers.update',
                             'parameters' => $request->route()->originalParameters(),
@@ -184,11 +213,15 @@ class EditOffer extends OrgAction
         );
     }
 
-    public function getCategoryId(String $str): String|null
+    public function getCategoryId(string $str): string|null
     {
         if (preg_match('/^all_products_in_product_category(?::(\d+))?:/', $str, $m)) {
             return $m[1] ?? null;
         }
+        if (preg_match('/^all_products_in_department(?::(\d+))?:/', $str, $m)) {
+            return $m[1] ?? null;
+        }
+
         return null;
     }
 
@@ -207,6 +240,10 @@ class EditOffer extends OrgAction
         return $this->handle($offer, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Exception
+     */
     public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Response
     {
         $this->initialisationFromShop($shop, $request);
@@ -214,6 +251,10 @@ class EditOffer extends OrgAction
         return $this->handle($offer, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Exception
+     */
     public function inGiftCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Response
     {
         $this->initialisationFromShop($shop, $request);
@@ -221,6 +262,10 @@ class EditOffer extends OrgAction
         return $this->handle($offer, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Exception
+     */
     public function inAmnestyCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Response
     {
         $this->initialisationFromShop($shop, $request);

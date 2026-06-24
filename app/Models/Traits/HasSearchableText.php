@@ -13,10 +13,14 @@ use Illuminate\Support\Str;
 
 trait HasSearchableText
 {
-    public function normalizeSearchableText(?string $value): string
+    public function normalizeSearchableText(string|array|null $value): string
     {
         if (empty($value)) {
             return '';
+        }
+
+        if (is_array($value)) {
+            $value = implode(', ', $value);
         }
 
         $value = Str::ascii($value);

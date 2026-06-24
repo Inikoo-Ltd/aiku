@@ -37,7 +37,7 @@ const props = defineProps<{
         faqs: boolean
     }
     templateEdit : string
-    styleData : object
+    styleData?: object
 }>()
 
 const confirm = useConfirm()

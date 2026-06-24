@@ -43,11 +43,15 @@ class StoreBulkDispatchProductToCurrentWooCommerce extends OrgAction
         }
 
         foreach ($portfolios as $portfolio) {
-            $portfolio = StoreNewProductToCurrentWooCommerce::run($customerSalesChannel->user, $portfolio, $needCheckConnection);
+            try {
+                $portfolio = StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio, $needCheckConnection);
 
-            if ($portfolio->platform_status) {
-                Cache::increment($cacheKey . '_success');
-            } else {
+                if ($portfolio->platform_status) {
+                    Cache::increment($cacheKey . '_success');
+                } else {
+                    Cache::increment($cacheKey . '_fail');
+                }
+            } catch (\Exception $e) {
                 Cache::increment($cacheKey . '_fail');
             }
 

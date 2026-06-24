@@ -10,9 +10,11 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 
 class HydrateDeliveryNotes
@@ -31,5 +33,9 @@ class HydrateDeliveryNotes
         DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
         DeliveryNoteHydrateItems::run($deliveryNote);
         DeliveryNoteHydrateShipments::run($deliveryNote->id);
+
+        if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
+            DeliveryNoteHydrateDispatchTotals::run($deliveryNote);
+        }
     }
 }

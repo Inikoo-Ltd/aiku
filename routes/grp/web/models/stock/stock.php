@@ -8,6 +8,7 @@
 
 use App\Actions\Goods\TradeUnit\DeleteImageFromTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
+use App\Actions\Goods\TradeUnit\UpdateTradeUnitImageAlt;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitImages;
 use App\Actions\Goods\TradeUnit\UploadImagesToTradeUnit;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
@@ -19,6 +20,7 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit:id}')->group(function 
     Route::patch('update-images', UpdateTradeUnitImages::class)->name('update_images')->withoutScopedBindings();
     Route::post('upload-images', UploadImagesToTradeUnit::class)->name('upload_images');
     Route::delete('detach-image/{media:id}', DeleteImageFromTradeUnit::class)->name('detach_image')->withoutScopedBindings();
+    Route::patch('media/{media:id}/alt', UpdateTradeUnitImageAlt::class)->name('update_image_alt')->withoutScopedBindings();
 
     Route::name('attachment.')->prefix('attachment')->group(function () {
         Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inTradeUnit'])->name('attach');

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Helpers\Media;
 use App\Actions\Helpers\Images\GetPictureSources;
@@ -49,12 +50,13 @@ use Illuminate\Support\Arr;
  * @property mixed $image_id
  * @property mixed $currency_code
  * @property mixed $health_rank
+ * @property mixed $webpage_state
  */
 class FamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var \App\Models\Catalogue\ProductCategory $department */
+        /** @var ProductCategory $department */
         $imageSources = null;
         $media        = Media::find($this->image_id);
         if ($media) {
@@ -88,7 +90,7 @@ class FamiliesResource extends JsonResource
             'description'                   => $this->description,
             'created_at'                    => $this->created_at,
             'updated_at'                    => $this->updated_at,
-            'number_current_products'       => $this->number_current_products,
+            'number_current_products'       => $this->number_current_products ?? 0,
             'collections'                   => $collections,
             'sales_grp_currency_external'   => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
@@ -110,6 +112,15 @@ class FamiliesResource extends JsonResource
             'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
             'image_thumbnail'               => Arr::get($this->web_images, 'main.thumbnail'),
             'health_rank'                   => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'public_url'                    => $this->canonical_url,
+            'gr_detail'                     => $this->whenLoaded('getGROffer', function () {
+                $offer = $this->getGROffer;
+
+                return [
+                    'percentage' => $offer ? (float) data_get($offer->offerAllowances->first()?->data, 'percentage_off', 0) * 100 : 0,
+                    'quantity'   => $offer ? (int) data_get($offer->trigger_data, 'item_quantity', 0) : 0,
+                ];
+            }),
         ];
     }
 

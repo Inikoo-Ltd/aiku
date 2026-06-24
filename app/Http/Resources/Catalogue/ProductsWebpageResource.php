@@ -40,7 +40,7 @@ class ProductsWebpageResource extends JsonResource
         if (!is_array($this->web_images)) {
             $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
         } else {
-            $webImages = $this->web_images;
+            $webImages = $this->web_images ?? [];
         }
 
         $productOffersData = is_string($this->offers_data)
@@ -60,6 +60,7 @@ class ProductsWebpageResource extends JsonResource
             'code'                          => $this->code,
             'name'                          => $this->name,
             'stock'                         => $this->available_quantity,
+            'slug'                         => $this->slug,
             'price'                         => $this->price,
             'price_per_unit'                => $pricePerUnit,
             'profit'                        => $profit,

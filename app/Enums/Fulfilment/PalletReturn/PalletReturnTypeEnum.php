@@ -27,6 +27,15 @@ enum PalletReturnTypeEnum: string
         ];
     }
 
+    public function labelsNew(): string
+    {
+        return match($this) {
+            self::PALLET        => __('Wholesale'),
+            self::STORED_ITEM   => __('Dropshipping'),
+            self::DROPSHIPPING  => "",
+        };
+    }
+
     public static function stateIcon(): array
     {
         return [

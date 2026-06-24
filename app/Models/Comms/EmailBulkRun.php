@@ -128,6 +128,11 @@ class EmailBulkRun extends Model
         return $this->hasMany(EmailBulkRunRecipient::class);
     }
 
+    public function requiresUnsubscribeLink(): bool
+    {
+        return $this->outbox->code->requiresUnsubscribeLink();
+    }
+
     public function sender(): string
     {
         if (app()->environment('production')) {

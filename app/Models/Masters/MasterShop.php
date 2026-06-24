@@ -41,6 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $price_rrp_ratio
  * @property array<array-key, mixed>|null $offers_data
  * @property float $price_rrp_warning_ratio
+ * @property bool $gold_reward_eligible
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group|null $group
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets

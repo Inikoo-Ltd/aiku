@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
@@ -30,7 +31,7 @@ class DeleteShopifyProduct
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            Log::error("Failed to initialize Shopify GraphQL client");
             return false;
         }
 
@@ -63,7 +64,7 @@ class DeleteShopifyProduct
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product deletion failed: ".$errorMessage);
+                Log::error("Product deletion failed: ".$errorMessage);
                 return false;
             }
 
@@ -73,14 +74,14 @@ class DeleteShopifyProduct
             if (!empty($body['data']['productDelete']['userErrors'])) {
                 $errors = $body['data']['productDelete']['userErrors'];
                 $errorMessage = 'User errors: '.json_encode($errors);
-                Sentry::captureMessage("Product deletion failed: ".$errorMessage);
+                Log::error("Product deletion failed: ".$errorMessage);
                 return false;
             }
 
             // Check if the product was actually deleted
             $deletedProductId = $body['data']['productDelete']['deletedProductId'] ?? null;
             if (!$deletedProductId) {
-                Sentry::captureMessage("No deleted product ID returned in response");
+                Log::error("No deleted product ID returned in response");
                 return false;
             }
 

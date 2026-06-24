@@ -24,7 +24,7 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $shopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -57,7 +57,7 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoices')
+        $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.shop_id', $timeSeries->shop_id)
             ->where('invoices.in_process', false)
             ->where('invoices.date', '>=', $from)
@@ -165,7 +165,7 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
         //     ->whereNull('deleted_at')
         //     ->count();
 
-        $registrationsBase = DB::table('customers')
+        $registrationsBase = DB::connection('aiku_no_sticky')->table('customers')
             ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
             ->where('customers.shop_id', $shopId)
             ->where('customers.registered_at', '>=', $periodFrom)

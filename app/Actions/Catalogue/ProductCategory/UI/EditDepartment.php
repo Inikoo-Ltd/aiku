@@ -130,6 +130,32 @@ class EditDepartment extends OrgAction
                                         ],
                                     ]
                                 ],
+                               [
+                                'label'  => __('FAQ'),
+                                'icon'   => 'fa-light fa-question-circle',
+                                'fields' => [
+                                    'faq' => $department->masterProductCategory
+                                        ? [
+                                            'type'          => 'faq-shop',
+                                            'label'         => __('FAQ'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'noSaveButton'  => true,
+                                            'main'          => $department->masterProductCategory->faq,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $department->faq,
+                                            'toogle'        => [
+                                               'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
+                                        ]
+                                        : [
+                                            'type'  => 'faq-shop',
+                                            'label' => __('FAQ'),
+                                            'value' => $department->faq,
+                                        ],
+                                ]
+                            ],
                                 [
                                     'label'  => __('Name/Description'),
                                     'icon'   => 'fa-light fa-tag',

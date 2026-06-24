@@ -88,7 +88,10 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
             $query->where('pallets.pallet_return_id', $palletReturn->id);
         }
 
-        $query->leftJoin('pallet_return_items', 'pallet_return_items.pallet_id', 'pallets.id');
+        $query->leftJoin('pallet_return_items', function ($join) use ($palletReturn) {
+            $join->on('pallet_return_items.pallet_id', '=', 'pallets.id')
+                ->where('pallet_return_items.pallet_return_id', '=', $palletReturn->id);
+        });
         $query->leftJoin('locations', 'locations.id', 'pallets.location_id');
 
         if ($palletReturn->state === PalletReturnStateEnum::IN_PROCESS) {
@@ -200,12 +203,14 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
 
             $table->column(key: 'customer_reference', label: $customersReferenceLabel, canBeHidden: false, sortable: true, searchable: true);
 
+            $table->column(key: 'stored_items', label: __("Customer's SKUs"), canBeHidden: false);
+
             if (!$request->user() instanceof WebUser) {
                 $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
             }
 
 
-            $table->column(key: 'actions', label: 'actions', canBeHidden: false, searchable: true);
+            // $table->column(key: 'Actions', label: 'actions', canBeHidden: false, searchable: true);
 
 
             $table->defaultSort('reference');

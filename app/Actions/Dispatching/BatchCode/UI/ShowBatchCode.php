@@ -62,10 +62,40 @@ class ShowBatchCode extends OrgAction
                             ],
                         ] : false,
                     ],
+                    'exports' => [
+                        [
+                            'routes' => [
+                                [
+                                    'label'   => __('Excel'),
+                                    'key'     => 'xlsx',
+                                    'icon'    => ['fal', 'fa-file-excel'],
+                                    'popover' => false,
+                                    'route'   => [
+                                        'name'       => 'grp.org.warehouses.show.inventory.batch_codes.delivery_notes.export',
+                                        'parameters' => array_merge($request->route()->originalParameters(), ['type' => 'xlsx']),
+                                    ],
+                                ],
+                                [
+                                    'label'          => __('CSV'),
+                                    'key'            => 'csv',
+                                    'icon'           => ['fal', 'fa-file-csv'],
+                                    'inside_popover' => true,
+                                    'route'          => [
+                                        'name'       => 'grp.org.warehouses.show.inventory.batch_codes.delivery_notes.export',
+                                        'parameters' => array_merge($request->route()->originalParameters(), ['type' => 'csv']),
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => BatchCodeTabsEnum::navigation(),
+                ],
+                'download_route' => [
+                    'name'       => 'grp.org.warehouses.show.inventory.batch_codes.delivery_notes.export',
+                    'parameters' => $request->route()->originalParameters(),
                 ],
                 'batch_code' => BatchCodeResource::make($batchCode->load('orgStock'))->resolve(),
 
@@ -73,7 +103,17 @@ class ShowBatchCode extends OrgAction
                     ? fn () => DeliveryNotesResource::collection(IndexDeliveryNotesInBatchCode::run($batchCode, BatchCodeTabsEnum::DELIVERY_NOTES->value))
                     : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotesInBatchCode::run($batchCode, BatchCodeTabsEnum::DELIVERY_NOTES->value))),
             ]
-        )->table(IndexDeliveryNotesInBatchCode::make()->tableStructure(prefix: BatchCodeTabsEnum::DELIVERY_NOTES->value));
+        )->table(IndexDeliveryNotesInBatchCode::make()->tableStructure(
+            prefix: BatchCodeTabsEnum::DELIVERY_NOTES->value,
+            exportLinks: [
+                'export' => [
+                    'route' => [
+                        'name'       => 'grp.org.warehouses.show.inventory.batch_codes.delivery_notes.export',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                ],
+            ]
+        ));
     }
 
     public function getBreadcrumbs(BatchCode $batchCode, array $routeParameters, ?string $suffix = null): array

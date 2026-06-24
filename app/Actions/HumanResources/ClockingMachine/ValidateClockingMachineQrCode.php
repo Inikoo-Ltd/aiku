@@ -117,7 +117,7 @@ class ValidateClockingMachineQrCode
             ->latest('clocked_at')
             ->first();
 
-        if ($lastClocking && $lastClocking->clocked_at->diffInSeconds(now()) < 60) {
+        if ($lastClocking && $lastClocking->clocked_at->diffInSeconds(now()) < 5) {
             throw new Exception(__('Scan too frequent. Please wait a moment.'));
         }
 

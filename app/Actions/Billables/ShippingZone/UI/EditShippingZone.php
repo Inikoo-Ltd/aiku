@@ -64,7 +64,7 @@ class EditShippingZone extends OrgAction
                             'style' => 'exitEdit',
                             'route' => [
                                 // 'name'       => preg_replace('/edit$/', 'index', $request->route()->getName()),
-                                'name'  => 'grp.org.shops.show.billables.shipping.show',
+                                'name'  => $shippingZone->schema->is_current ? 'grp.org.shops.show.billables.shipping.current.show' : 'grp.org.shops.show.billables.shipping.discount.show',
                                 'parameters' => [
                                     'organisation' => $shippingZone->organisation->slug,
                                     'shop' => $shippingZone->shop->slug,
@@ -79,7 +79,8 @@ class EditShippingZone extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Edit schema'),
+                            'label'  => __('Territory & Price'),
+                            'icon'   => 'fa-light fa-shipping-fast',
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
@@ -88,14 +89,15 @@ class EditShippingZone extends OrgAction
                                 ],
                                 'territories' => [
                                     'type'  => 'territory_zone',
-                                    'label' => __('territory'),
+                                    'label' => __('Territory'),
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),
                                 ],
                                 'price' => [
                                     'type'  => 'pricing_zone',
                                     'label' => __('Price'),
-                                    'value' => $shippingZone->price
+                                    'value' => $shippingZone->price,
+                                    'currency' =>  $shippingZone->shop->currency
                                 ],
                             ],
                         ]
@@ -143,7 +145,8 @@ class EditShippingZone extends OrgAction
 
 
         return match ($routeName) {
-            'grp.org.shops.show.billables.shipping.show.shipping-zone.edit' => [
+            'grp.org.shops.show.billables.shipping.current.show.shipping-zone.edit',
+            'grp.org.shops.show.billables.shipping.discount.show.shipping-zone.edit' => [
                 'label' => $shippingZone->name,
                 'route' => [
                     'name'       => $routeName,
@@ -155,6 +158,7 @@ class EditShippingZone extends OrgAction
                     ]
                 ]
             ],
+            default => [],
         };
     }
 }

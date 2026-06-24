@@ -37,17 +37,31 @@ class CreateMailshot extends OrgAction
         $fields[] = [
             'title'  => '',
             'fields' => [
+                'name' => [
+                    'type'        => 'input',
+                    'label'       => __('Name'),
+                    'placeholder' => __('Mailshot name'),
+                    'required'    => false,
+                    'value'       => '',
+                ],
                 'subject' => [
                     'type'        => 'input',
-                    'label'       => __('subject'),
+                    'label'       => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required'    => true,
+                    'value'       => '',
+                ],
+                'preview_text' => [
+                    'type'        => 'input',
+                    'label'       => __('Preview text'),
+                    'placeholder' => __('Email preview text'),
+                    'required'    => false,
                     'value'       => '',
                 ],
                 // add default value all customers
                 'recipients_recipe' => [
                     'type'        => 'input',
-                    'label'       => __('recipients recipe'),
+                    'label'       => __('Recipients recipe'),
                     'placeholder' => __('Email recipients recipe'),
                     'required'    => true,
                     'hidden'      => true,
@@ -76,12 +90,12 @@ class CreateMailshot extends OrgAction
                     'fullLayout' => true,
                     'submitLabel' => __('Continue'),
                     'blueprint'  =>
+                    [
                         [
-                            [
-                                'title'  => __('Name'),
-                                'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
-                            ]
-                        ],
+                            'title'  => '',
+                            'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
+                        ]
+                    ],
                     'route' => [
                         'name'       => 'grp.models.outbox.mailshot.store',
                         'parameters' => [
