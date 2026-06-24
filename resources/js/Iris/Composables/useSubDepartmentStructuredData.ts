@@ -12,31 +12,31 @@ import {
     type StructuredDataValue,
 } from "@/Iris/Composables/useStructuredData"
 
-type DepartmentStructuredDataWebpageData = {
+type SubDepartmentStructuredDataWebpageData = {
     seo_data?: {
         structured_data?: unknown
     }
     canonical_url?: string
 }
 
-type BuildDepartmentStructuredDataOptions = {
-    subDepartments?: any[] | null
+type BuildSubDepartmentStructuredDataOptions = {
+    families?: any[] | null
     collections?: any[] | null
-    webpageData?: DepartmentStructuredDataWebpageData
+    webpageData?: SubDepartmentStructuredDataWebpageData
     listId?: string | number | null
 }
 
-const getDepartmentSourceItems = ({
-    subDepartments,
+const getSubDepartmentSourceItems = ({
+    families,
     collections,
-}: Pick<BuildDepartmentStructuredDataOptions, "subDepartments" | "collections">): Record<string, any>[] => {
+}: Pick<BuildSubDepartmentStructuredDataOptions, "families" | "collections">): Record<string, any>[] => {
     return [
-        ...(Array.isArray(subDepartments) ? subDepartments : []),
+        ...(Array.isArray(families) ? families : []),
         ...(Array.isArray(collections) ? collections : []),
     ].filter((item): item is Record<string, any> => isPlainObject(item))
 }
 
-const getDepartmentItemName = (item: Record<string, any>): string | undefined => {
+const getSubDepartmentItemName = (item: Record<string, any>): string | undefined => {
     return (
         stripHtml(item.title) ??
         stripHtml(item.name) ??
@@ -45,18 +45,37 @@ const getDepartmentItemName = (item: Record<string, any>): string | undefined =>
     )
 }
 
-const getDepartmentItemUrl = (item: Record<string, any>): string | undefined => {
+const getSubDepartmentItemUrl = (item: Record<string, any>): string | undefined => {
     return normalizeUrl(item.url ?? item.canonical_url ?? item.slug)
 }
 
-const buildDepartmentRelatedNodes = (
-    options: Pick<BuildDepartmentStructuredDataOptions, "subDepartments" | "collections">
+const getSubDepartmentItemImageUrls = (item: Record<string, any>): string[] => {
+    const imageUrls = getEntityImageUrls(item)
+    if (imageUrls.length) {
+        return imageUrls
+    }
+
+    if (Array.isArray(item.images)) {
+        return [
+            ...new Set(
+                item.images
+                    .map((image: any) => image?.source ?? image)
+                    .filter((source: unknown): source is string => typeof source === "string" && source.length > 0)
+            ),
+        ]
+    }
+
+    return []
+}
+
+const buildSubDepartmentRelatedNodes = (
+    options: Pick<BuildSubDepartmentStructuredDataOptions, "families" | "collections">
 ): StructuredDataNode[] => {
     const relatedNodes = new Map<string, StructuredDataNode>()
 
-    for (const item of getDepartmentSourceItems(options)) {
-        const url = getDepartmentItemUrl(item)
-        const name = getDepartmentItemName(item)
+    for (const item of getSubDepartmentSourceItems(options)) {
+        const url = getSubDepartmentItemUrl(item)
+        const name = getSubDepartmentItemName(item)
 
         if (!url || !name) continue
 
@@ -67,7 +86,7 @@ const buildDepartmentRelatedNodes = (
             url,
         }
 
-        const imageUrls = getEntityImageUrls(item)
+        const imageUrls = getSubDepartmentItemImageUrls(item)
         if (imageUrls.length) {
             node.image = imageUrls
         }
@@ -80,13 +99,13 @@ const buildDepartmentRelatedNodes = (
     return Array.from(relatedNodes.values())
 }
 
-export const buildDepartmentItemListNode = ({
-    subDepartments,
+export const buildSubDepartmentItemListNode = ({
+    families,
     collections,
     webpageData,
     listId,
-}: BuildDepartmentStructuredDataOptions): StructuredDataNode | null => {
-    const itemListElement = buildDepartmentRelatedNodes({ subDepartments, collections }).map((item, index) => ({
+}: BuildSubDepartmentStructuredDataOptions): StructuredDataNode | null => {
+    const itemListElement = buildSubDepartmentRelatedNodes({ families, collections }).map((item, index) => ({
         "@type": "ListItem",
         position: index + 1,
         name: item.name,
@@ -102,7 +121,7 @@ export const buildDepartmentItemListNode = ({
 
     const pageUrl = normalizeUrl(webpageData?.canonical_url)
     if (pageUrl) {
-        node["@id"] = `${pageUrl}#department-list${isFilledValue(listId) ? `-${listId}` : ""}`
+        node["@id"] = `${pageUrl}#sub-department-list${isFilledValue(listId) ? `-${listId}` : ""}`
         node.url = pageUrl
     }
 
@@ -136,10 +155,10 @@ const appendGraphNode = (
     data["@graph"] = [currentNode, node]
 }
 
-export const buildDepartmentStructuredData = (
-    options: BuildDepartmentStructuredDataOptions
+export const buildSubDepartmentStructuredData = (
+    options: BuildSubDepartmentStructuredDataOptions
 ): StructuredDataValue | null => {
-    const itemListNode = buildDepartmentItemListNode(options)
+    const itemListNode = buildSubDepartmentItemListNode(options)
     const baseStructuredData = parseStructuredData(options.webpageData?.seo_data?.structured_data)
 
     if (!baseStructuredData) {
@@ -163,24 +182,26 @@ export const buildDepartmentStructuredData = (
             (node) => node?.["@type"] === "ItemList" && node?.["@id"] === itemListNode["@id"]
         )
     }
-// console.log('ereeeeeeeeeee', structuredData)
+
+    console.log('pfldpslpf', structuredData)
+
     return structuredData
 }
 
-export const useDepartmentStructuredData = () => {
-    const mountDepartmentStructuredData = (
-        options: BuildDepartmentStructuredDataOptions
+export const useSubDepartmentStructuredData = () => {
+    const mountSubDepartmentStructuredData = (
+        options: BuildSubDepartmentStructuredDataOptions
     ): HTMLScriptElement | null => {
-        const structuredData = buildDepartmentStructuredData(options)
+        const structuredData = buildSubDepartmentStructuredData(options)
         if (!structuredData) return null
 
         return injectStructuredDataScript(structuredData)
     }
 
     return {
-        buildDepartmentItemListNode,
-        buildDepartmentStructuredData,
-        mountDepartmentStructuredData,
+        buildSubDepartmentItemListNode,
+        buildSubDepartmentStructuredData,
+        mountSubDepartmentStructuredData,
         removeStructuredDataScript,
     }
 }
