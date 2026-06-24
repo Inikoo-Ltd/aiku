@@ -90,7 +90,11 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => RetinaOrderTabsEnum::navigation()
+                    'navigation' => RetinaOrderTabsEnum::navigationExcept([
+                        RetinaOrderTabsEnum::ORDER_REVIEWS,
+                        RetinaOrderTabsEnum::FAMILY_REVIEWS,
+                        RetinaOrderTabsEnum::PRODUCT_REVIEWS,
+                    ])
                 ],
 
                 'routes' => [

@@ -18,7 +18,11 @@ enum RetinaOrderTabsEnum: string
 
     case TRANSACTIONS                       = 'transactions';
 
-    case REVIEWS                            = 'reviews';
+    case ORDER_REVIEWS                      = 'order_reviews';
+
+    case FAMILY_REVIEWS                     = 'family_reviews';
+
+    case PRODUCT_REVIEWS                    = 'product_reviews';
 
 
 
@@ -32,8 +36,18 @@ enum RetinaOrderTabsEnum: string
                 'icon'  => 'fal fa-bars',
             ],
 
-            RetinaOrderTabsEnum::REVIEWS => [
-                'title' => __('Reviews'),
+            RetinaOrderTabsEnum::ORDER_REVIEWS => [
+                'title' => __('Order review'),
+                'icon'  => 'fal fa-star',
+            ],
+
+            RetinaOrderTabsEnum::FAMILY_REVIEWS => [
+                'title' => __('Families review'),
+                'icon'  => 'fal fa-star',
+            ],
+
+            RetinaOrderTabsEnum::PRODUCT_REVIEWS => [
+                'title' => __('Products review'),
                 'icon'  => 'fal fa-star',
             ],
 

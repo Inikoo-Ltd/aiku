@@ -39,24 +39,11 @@ class IndexReviewProductsInOrder extends OrgAction
             ->where('transactions.order_id', $parent->id)
             ->where('transactions.model_type', 'Product')
             ->leftJoin('products', 'transactions.model_id', '=', 'products.id')
-            ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
             ->leftJoin('product_reviews', function ($join) use ($parent, $customerId) {
                 $join->on('product_reviews.product_id', '=', 'products.id')
                     ->whereNull('product_reviews.deleted_at')
                     ->where('product_reviews.order_id', $parent->id)
                     ->where('product_reviews.customer_id', $customerId);
-            })
-            ->leftJoin('product_category_reviews', function ($join) use ($parent, $customerId) {
-                $join->on('product_category_reviews.product_category_id', '=', 'products.family_id')
-                    ->whereNull('product_category_reviews.deleted_at')
-                    ->where('product_category_reviews.order_id', $parent->id)
-                    ->where('product_category_reviews.customer_id', $customerId);
-            })
-            ->leftJoin('shop_reviews', function ($join) use ($parent, $customerId) {
-                $join->on('shop_reviews.shop_id', '=', 'transactions.shop_id')
-                    ->whereNull('shop_reviews.deleted_at')
-                    ->where('shop_reviews.order_id', $parent->id)
-                    ->where('shop_reviews.customer_id', $customerId);
             })
             ->leftJoin('media as product_media', 'product_media.id', '=', 'products.image_id')
             ->leftJoin('media as product_review_media', function ($join) {
@@ -64,71 +51,39 @@ class IndexReviewProductsInOrder extends OrgAction
                     ->where('product_review_media.model_type', '=', 'App\Models\Reviews\ProductReview')
                     ->where('product_review_media.collection_name', '=', 'review_images');
             })
-            ->defaultSort('products.code')
+            ->defaultSort('asset_code')
             ->select([
-                'products.id as id',
-                'products.id as product_id',
+                'products.id as reviewable_id',
+                DB::raw("'Product' as reviewable_type"),
                 'products.slug as product_slug',
-                'products.code as product_code',
-                'products.name as product_name',
-                DB::raw("CASE WHEN product_media.id IS NOT NULL THEN json_build_object('id', product_media.id, 'uuid', product_media.uuid, 'disk', product_media.disk, 'conversions_disk', product_media.conversions_disk, 'file_name', product_media.file_name, 'mime_type', product_media.mime_type, 'is_animated', product_media.is_animated, 'slug', product_media.slug, 'name', product_media.name, 'size', product_media.size, 'generated_conversions', product_media.generated_conversions) END as product_image_data"),
                 'products.code as asset_code',
                 'products.name as asset_name',
                 'products.price as price',
-                'products.family_id as product_category_id',
-                'product_categories.name as product_category_name',
                 'transactions.order_id as order_id',
-                'transactions.shop_id as shop_id',
-                'transactions.net_amount as net_amount',
+                DB::raw("CASE WHEN product_media.id IS NOT NULL THEN json_build_object('id', product_media.id, 'uuid', product_media.uuid, 'disk', product_media.disk, 'conversions_disk', product_media.conversions_disk, 'file_name', product_media.file_name, 'mime_type', product_media.mime_type, 'is_animated', product_media.is_animated, 'slug', product_media.slug, 'name', product_media.name, 'size', product_media.size, 'generated_conversions', product_media.generated_conversions) END as row_image_data"),
                 DB::raw('SUM(transactions.quantity_ordered) as quantity_ordered'),
-
-                DB::raw('MAX(product_reviews.id) as product_review_id'),
-                DB::raw('MAX(product_reviews.status) as product_review_status'),
-                DB::raw('MAX(product_reviews.rating_main) as product_review_rating'),
-                DB::raw('MAX(product_reviews.rating_a) as product_review_rating_a'),
-                DB::raw('MAX(product_reviews.rating_b) as product_review_rating_b'),
-                DB::raw('MAX(product_reviews.rating_c) as product_review_rating_c'),
-                DB::raw('MAX(product_reviews.rating_d) as product_review_rating_d'),
-                DB::raw('MAX(product_reviews.rating_e) as product_review_rating_e'),
-                DB::raw('MAX(product_reviews.message) as product_review_message'),
-
-                DB::raw('MAX(product_category_reviews.id) as product_category_review_id'),
-                DB::raw('MAX(product_category_reviews.status) as product_category_review_status'),
-                DB::raw('MAX(product_category_reviews.rating_main) as product_category_review_rating'),
-                DB::raw('MAX(product_category_reviews.rating_a) as product_category_review_rating_a'),
-                DB::raw('MAX(product_category_reviews.rating_b) as product_category_review_rating_b'),
-                DB::raw('MAX(product_category_reviews.rating_c) as product_category_review_rating_c'),
-                DB::raw('MAX(product_category_reviews.rating_d) as product_category_review_rating_d'),
-                DB::raw('MAX(product_category_reviews.rating_e) as product_category_review_rating_e'),
-                DB::raw('MAX(product_category_reviews.message) as product_category_review_message'),
-
-                DB::raw('MAX(shop_reviews.id) as shop_review_id'),
-                DB::raw('MAX(shop_reviews.status) as shop_review_status'),
-                DB::raw('MAX(shop_reviews.rating_main) as shop_review_rating'),
-                DB::raw('MAX(shop_reviews.rating_a) as shop_review_rating_a'),
-                DB::raw('MAX(shop_reviews.rating_b) as shop_review_rating_b'),
-                DB::raw('MAX(shop_reviews.rating_c) as shop_review_rating_c'),
-                DB::raw('MAX(shop_reviews.rating_d) as shop_review_rating_d'),
-                DB::raw('MAX(shop_reviews.rating_e) as shop_review_rating_e'),
-                DB::raw('MAX(shop_reviews.message) as shop_review_message'),
-
-                DB::raw("json_agg(json_build_object('id', product_review_media.id, 'uuid', product_review_media.uuid, 'disk', product_review_media.disk, 'conversions_disk', product_review_media.conversions_disk, 'file_name', product_review_media.file_name, 'mime_type', product_review_media.mime_type, 'is_animated', product_review_media.is_animated, 'slug', product_review_media.slug, 'name', product_review_media.name, 'size', product_review_media.size, 'generated_conversions', product_review_media.generated_conversions)) FILTER (WHERE product_review_media.id IS NOT NULL) as product_review_media_data"),
+                DB::raw('MAX(product_reviews.id) as review_id'),
+                DB::raw('MAX(product_reviews.status) as review_status'),
+                DB::raw('MAX(product_reviews.rating_main) as review_rating'),
+                DB::raw('MAX(product_reviews.rating_a) as review_rating_a'),
+                DB::raw('MAX(product_reviews.rating_b) as review_rating_b'),
+                DB::raw('MAX(product_reviews.rating_c) as review_rating_c'),
+                DB::raw('MAX(product_reviews.rating_d) as review_rating_d'),
+                DB::raw('MAX(product_reviews.rating_e) as review_rating_e'),
+                DB::raw('MAX(product_reviews.message) as review_message'),
+                DB::raw("bool_or((product_reviews.meta->>'is_public')::boolean) as review_is_public"),
+                DB::raw("json_agg(json_build_object('id', product_review_media.id, 'uuid', product_review_media.uuid, 'disk', product_review_media.disk, 'conversions_disk', product_review_media.conversions_disk, 'file_name', product_review_media.file_name, 'mime_type', product_review_media.mime_type, 'is_animated', product_review_media.is_animated, 'slug', product_review_media.slug, 'name', product_review_media.name, 'size', product_review_media.size, 'generated_conversions', product_review_media.generated_conversions)) FILTER (WHERE product_review_media.id IS NOT NULL) as review_media_data"),
             ])
             ->groupBy([
                 'products.id',
                 'products.slug',
                 'products.code',
                 'products.name',
-                'products.image_id',
-                'products.family_id',
                 'products.price',
-                'product_categories.name',
                 'product_media.id',
                 'transactions.order_id',
-                'transactions.shop_id',
-                'transactions.net_amount',
             ])
-            ->allowedSorts(['asset_code', 'asset_name', 'product_review_rating'])
+            ->allowedSorts(['asset_code', 'asset_name', 'review_rating'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -148,13 +103,13 @@ class IndexReviewProductsInOrder extends OrgAction
                 ->withEmptyState([
                     'title' => __('No products found'),
                 ])
-                ->defaultSort('product_code');
+                ->defaultSort('asset_code');
 
             $table->column(key: 'image', label: '', canBeHidden: false, sortable: false, searchable: false);
             $table->column(key: 'asset_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
-            $table->column(key: 'product_review_rating', label: __('Rating'), sortable: true, searchable: false, align: 'right', type: 'number');
+            $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: false, searchable: false, type: 'number');
+            $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: false, searchable: false, type: 'currency');
+            $table->column(key: 'review_rating', label: __('Rating'), sortable: true, searchable: false, align: 'right', type: 'number');
         };
     }
 }

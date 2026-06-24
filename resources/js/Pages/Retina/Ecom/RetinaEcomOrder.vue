@@ -38,7 +38,7 @@ import EcomCheckoutSummary from '@/Components/Retina/Ecom/EcomCheckoutSummary.vu
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
-import RetinaTableReviewsProduct from '@/Components/Tables/Retina/RetinaTableReviewsProduct.vue'
+import RetinaTableOrderReview from '@/Components/Tables/Retina/RetinaTableOrderReview.vue'
 
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
@@ -90,7 +90,9 @@ const props = defineProps<{
             shipping_notes?: string
         }
     }
-    reviews : {}
+    order_reviews?: {}
+    family_reviews?: {}
+    product_reviews?: {}
     transactions: {} // TransactionsResource
     invoices?: {}
     delivery_notes: {
@@ -108,7 +110,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: EcomTableOrderTransactions,
-        reviews : RetinaTableReviewsProduct
+        order_reviews: RetinaTableOrderReview,
+        family_reviews: RetinaTableOrderReview,
+        product_reviews: RetinaTableOrderReview,
         // delivery_notes: TableDeliveryNotes,
         // attachments: TableAttachments,
         // invoices: TableInvoices,
