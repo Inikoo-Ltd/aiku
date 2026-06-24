@@ -12,6 +12,7 @@ use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
+use App\Models\Ordering\Order;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -55,7 +56,7 @@ class ProcessReviewReminderRecipients implements ShouldQueue
                     'outbox_id'     => $emailBulkRun->outbox_id,
                     'email_address' => $customerModel->email,
                     'data->additional_data' => [
-                        'review_reminder_items' => $this->generateReviewLinks($customer['product_ids'])
+                        'review_reminder_items' => $this->generateReviewLinks($customer['order_ids'])
                     ]
                 ]
             );
@@ -86,10 +87,34 @@ class ProcessReviewReminderRecipients implements ShouldQueue
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
     }
 
-    public function generateReviewLinks(string $productIds): string
+    public function generateReviewLinks(string $orderIds): string
     {
-        return "Hello, please review the following products: " . $productIds;
-        // retina.ecom.orders.show
+        try {
+            $orderIds = explode(',', $orderIds);
+        } catch (\Throwable $th) {
+            \Log::error('Error parsing order IDs: ' . $th->getMessage());
+            return '';
+        }
+
+
+        $html = '<ul>';
+        foreach ($orderIds as $orderId) {
+            $order = Order::find($orderId);
+            if (!$order) {
+                continue;
+            }
+
+            $url = $order?->shop?->website?->getUrl() . '/review/' . $order->id ?? '#';
+
+
+            $html .= sprintf(
+                '<li><a href="%s">%s</a></li>',
+                $url,
+                __('Review your order').' #' . $order->id
+            );
+        }
+        $html .= '</ul>';
+
         return $html;
     }
 }
