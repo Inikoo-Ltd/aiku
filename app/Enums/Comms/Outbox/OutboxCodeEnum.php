@@ -315,7 +315,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::TEST,
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::NEW_OFFER,
-            OutboxCodeEnum::FINISH_OFFER
+            OutboxCodeEnum::FINISH_OFFER,
+            OutboxCodeEnum::NEW_REVIEW
             => OutboxStateEnum::ACTIVE,
             default => OutboxStateEnum::IN_PROCESS
         };
@@ -337,7 +338,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_OFFER,
             OutboxCodeEnum::FINISH_OFFER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
-            OutboxCodeEnum::INVOICE_DATE_CHANGED
+            OutboxCodeEnum::INVOICE_DATE_CHANGED,
+            OutboxCodeEnum::NEW_REVIEW
             => OutboxBuilderEnum::BLADE,
             default => null
         };
