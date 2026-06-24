@@ -112,6 +112,7 @@ class IndexReviews extends OrgAction
                 $table . '.rating_e',
                 $table . '.message',
                 $table . '.like_count',
+                $table . '.meta',
                 $table . '.created_at',
                 'customers.contact_name as contact_name',
             ])
