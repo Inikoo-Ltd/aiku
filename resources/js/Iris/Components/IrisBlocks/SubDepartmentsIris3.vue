@@ -2,16 +2,18 @@
 import Image from '@/Common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import axios from 'axios'
-import { ref, watch, computed, inject, onMounted } from 'vue'
+import { ref, watch, computed, inject, onMounted, onBeforeUnmount } from 'vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from "@/Composables/useTrans";
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { useDepartmentStructuredData } from "@/Iris/Composables/useDepartmentStructuredData"
 
 interface FilterOptions {
 	name: string
 	code: string
+    url: string
 }
 
 const props = defineProps<{
@@ -39,11 +41,14 @@ const props = defineProps<{
   webpageData?: any
   blockData?: object
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock?: number | string
 }>()
 
 const loading = ref(false)
 const loadingMore = ref(false)
 const layout: any = inject("layout", {})
+const injectedWebpageData = inject<any>("webpage_data", null)
+
 const selectedOption = ref<string | null>(null)
 const sortKey = ref('created_at')
 const families = ref(props.fieldValue?.families?.data ?? [])
@@ -53,6 +58,7 @@ const orderBy = ref('-created_at')
 const sortOptions = computed(() => {
   const baseOptions = [
     { label: ctrans("New arrivals"), value: "created_at" },
+    { label: ctrans("Name"), value: "name" },
   ]
   return baseOptions
 })
@@ -174,16 +180,37 @@ onMounted(() => {
     }
 })
 
+
+// Section: Department structured data (SEO)
+// Mounted independently here instead of inside the page structured data (useStructuredData),
+// so the sub-departments + collections ItemList lives in its own <script> and is easier to maintain.
+const { mountDepartmentStructuredData, removeStructuredDataScript } = useDepartmentStructuredData()
+const departmentStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
+onMounted(() => {
+  departmentStructuredDataScript.value = mountDepartmentStructuredData({
+    subDepartments: props.fieldValue.sub_department_list,
+    collections: props.fieldValue.collections_list,
+    webpageData: (props.webpageData ?? injectedWebpageData) as any,
+    listId: props.fieldValue.id ?? props.indexBlock,
+  })
+})
+
+onBeforeUnmount(() => {
+  removeStructuredDataScript(departmentStructuredDataScript.value)
+})
+
 console.log('sdsd',props)
 </script>
 
 <template>
-  <section :id="'sub-department'"
+  <section :id="'sub-department-iris-3-' + (props.indexBlock ?? '')"
     class="editor-class pt-12 mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14"
     :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType),
     }">
+
     <!-- Header -->
     <div class="mb-10">
       <span :style="{ fontSize: '2rem' }" class="font-medium text-[#1d2d44]">

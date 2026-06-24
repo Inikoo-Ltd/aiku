@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, onMounted, onBeforeUnmount } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faGalaxy, faTimesCircle } from "@fas"
@@ -8,6 +8,7 @@ import { getStyles } from "@/Composables/styles"
 import Image from "@common/Components/Image.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { useDepartmentStructuredData } from "@/Iris/Composables/useDepartmentStructuredData"
 import {
   faBaby,
   faCactus,
@@ -130,6 +131,7 @@ interface LayoutContext {
 }
 
 const layout = inject<LayoutContext>("layout", {})
+const injectedWebpageData = inject<any>("webpage_data", null)
 
 type ScreenType = "mobile" | "tablet" | "desktop"
 
@@ -216,6 +218,25 @@ const title = computed<string>(() => {
 const textVisible = computed<boolean>(() => {
   const visible = props.fieldValue.text?.visible
   return visible === null || visible === undefined ? true : visible
+})
+
+// Section: Department structured data (SEO)
+// Mounted independently here instead of inside the page structured data (useStructuredData),
+// so the sub-departments + collections ItemList lives in its own <script> and is easier to maintain.
+const { mountDepartmentStructuredData, removeStructuredDataScript } = useDepartmentStructuredData()
+const departmentStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
+onMounted(() => {
+  departmentStructuredDataScript.value = mountDepartmentStructuredData({
+    subDepartments: props.fieldValue.sub_departments,
+    collections: props.fieldValue.collections,
+    webpageData: (props.webpageData ?? injectedWebpageData) as any,
+    listId: props.fieldValue.id ?? props.indexBlock,
+  })
+})
+
+onBeforeUnmount(() => {
+  removeStructuredDataScript(departmentStructuredDataScript.value)
 })
 </script>
 

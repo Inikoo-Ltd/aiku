@@ -54,6 +54,16 @@ class ShowIrisWebpage
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
+
+        $website = $webpage->website;
+
+        $title = $webpage->title;
+        // Prioritize webpage prefix/suffix -> website prefix/suffix
+        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null)); 
+        $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
+
+        $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -62,16 +72,16 @@ class ShowIrisWebpage
             'navigation'                  => $this->getIrisProductNavigation($webpage),
             'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
-                'title'         => $webpage->title,
+                'title'         => $title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
                 'sub_type'      => $webpage->sub_type,  // 'sub_department', 'department', 'product', 'category'
                 'model_type'    => $webpage->model_type,  // Product, ProductCategory, etc
-                'product_page'  => $webpage->sub_type?->value === 'product' && $webpage->model_type === 'Product'
+                'product_page'  => $webpage->model instanceof Product
                     ? ['department' => [
-                        'name'          => $webpage->model?->department?->name,
-                        'webpage_title' => $webpage->model?->department?->webpage?->title,
+                        'name'          => $webpage->model->department?->name,
+                        'webpage_title' => $webpage->model->department?->webpage?->title,
                     ]]
                     : null,
             ],
@@ -371,13 +381,13 @@ class ShowIrisWebpage
 
     public function getIrisProductNavigation(Webpage $webpage): ?array
     {
-        if ($webpage->model_type !== 'Product') {
+        if (!$webpage->model instanceof Product) {
             return null;
         }
 
         /** @var Product $product */
         $product = $webpage->model;
-        if (!$product || !$product->family_id) {
+        if (!$product->family_id) {
             return null;
         }
 
@@ -396,7 +406,7 @@ class ShowIrisWebpage
                     ->where('website_id', $webpage->website_id);
             }])
             ->orderBy('index_under_family')
-            ->orderBy('name')
+            ->orderBy('code')
             ->get();
 
         $currentIndex = $siblings->search(fn (Product $sibling) => $sibling->id === $product->id);

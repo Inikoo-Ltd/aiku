@@ -92,7 +92,7 @@ class SaveShopDataAllegroChannel
 
                 if (Arr::get($data, 'responsible_producer_id') === null) {
                     $responsibleProducer = $allegroUser->createResponsibleProducer([
-                        'name' => trim($shop->name),
+                        'name' => trim($shop->name . '-' . rand(1000, 9999)),
                         'producerData' => [
                             'tradeName' => $shop->name,
                             'address' => [
@@ -113,7 +113,7 @@ class SaveShopDataAllegroChannel
 
                 if (Arr::get($data, 'responsible_person_id') === null) {
                     $responsiblePerson = $allegroUser->createResponsiblePerson([
-                        'name' => trim($shop->name),
+                        'name' => trim($shop->name . '-' . rand(1000, 9999)),
                         'personalData' => [
                             'name' => $shop->name,
                             'address' => [

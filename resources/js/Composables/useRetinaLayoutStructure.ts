@@ -5,6 +5,8 @@
  * Copyright: 2025
 */
 
+// Pinia: Fallback structure, if primary data is not provided (Iris and Retina Ecom)
+
 import { useColorTheme } from '@/Composables/useStockList'
 
 import { StackedComponent} from '@/types/LayoutRules'

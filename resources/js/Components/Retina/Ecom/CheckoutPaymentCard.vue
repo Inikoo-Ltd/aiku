@@ -13,6 +13,7 @@ import { trans } from "laravel-vue-i18n"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { CheckoutTranslations } from "@/Composables/Unique/CheckoutFlowTranslation"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 library.add(faCopy)
 
 const props = defineProps<{
@@ -21,6 +22,7 @@ const props = defineProps<{
         environment: 'sandbox' | 'production'
         locale: string
         data: {
+            id: string
             payment_session_token: string
             payment_method: string
             payment_method_type: string
@@ -202,6 +204,13 @@ const onClickCopy = (textToCopy: string) => {
                 {{ trans("Retrying payment... Attempt :retryCount of :max_entries", { retryCount: retryCount, max_entries: MAX_RETRIES }) }}
             </div>
         </Transition>
+        
+        <!-- Section: payment session id -->
+        <div v-if="props.data?.data?.id" class="italic opacity-50 text-[10px] mt-5">
+           <span @click="useCopyText(props.data.data.id)" class="cursor-pointer">
+                {{ props.data.data.id }}
+            </span>
+        </div>
     </div>
 </template>
 

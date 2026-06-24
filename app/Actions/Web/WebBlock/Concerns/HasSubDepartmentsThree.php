@@ -15,6 +15,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockFamilyResourceForDepartmentWebpage;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,7 @@ trait HasSubDepartmentsThree
                 [
                     'product_categories.code',
                     'product_categories.name',
+                    'webpages.canonical_url as url',
                 ]
             )
             ->orderBy('product_categories.code')
@@ -50,11 +52,22 @@ trait HasSubDepartmentsThree
             ->get()
             ->toArray();
 
-        $collectionList = $parent->collections()->where('state', CollectionStateEnum::ACTIVE)
+        $collectionList = $parent->collections()->where('collections.state', CollectionStateEnum::ACTIVE)
+            ->leftJoin('webpages', function ($join) {
+                $join->on('collections.id', '=', 'webpages.model_id')
+                    ->where('webpages.model_type', '=', 'Collection');
+            })
             ->select([
                 'collections.code',
-                'collections.name'
+                'collections.name',
+                'webpages.canonical_url as url',
             ])
+            ->whereExists(function ($query) {
+                $query->selectRaw(1)
+                    ->from('collection_has_models as chm')
+                    ->whereColumn('chm.collection_id', 'collections.id')
+                    ->where('chm.model_type', class_basename(ProductCategory::class));
+            })
             ->get()
             ->toArray();
 

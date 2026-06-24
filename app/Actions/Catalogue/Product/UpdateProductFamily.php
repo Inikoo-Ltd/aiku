@@ -94,10 +94,10 @@ class UpdateProductFamily extends OrgAction
             }
             if ($product->department) {
                 BreakProductInWebpagesCache::make()->breakCache($product->department->webpage);
-                DepartmentHydrateProducts::dispatch($product->department);
+                DepartmentHydrateProducts::dispatch($product->department_id)->delay(2);
             }
             if ($oldDepartment) {
-                DepartmentHydrateProducts::dispatch($oldDepartment);
+                DepartmentHydrateProducts::dispatch($oldDepartment->id)->delay(2);
                 BreakProductInWebpagesCache::make()->breakCache($oldDepartment->webpage);
             }
         }
@@ -108,10 +108,10 @@ class UpdateProductFamily extends OrgAction
             }
             if ($product->subDepartment) {
                 BreakProductInWebpagesCache::make()->breakCache($product->subDepartment->webpage);
-                SubDepartmentHydrateProducts::dispatch($product->subDepartment);
+                SubDepartmentHydrateProducts::dispatch($product->sub_department_id)->delay(2);
             }
             if ($oldSubDepartment) {
-                SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
+                SubDepartmentHydrateProducts::dispatch($oldSubDepartment->id)->delay(2);
                 BreakProductInWebpagesCache::make()->breakCache($oldSubDepartment->webpage);
             }
         }

@@ -27,14 +27,14 @@ trait WithProductHydrators
         GroupHydrateProducts::dispatch($product->group)->delay($this->hydratorsDelay);
         OrganisationHydrateProducts::dispatch($product->organisation)->delay($this->hydratorsDelay);
         ShopHydrateProducts::dispatch($product->shop)->delay($this->hydratorsDelay);
-        if ($product->department) {
-            DepartmentHydrateProducts::dispatch($product->department)->delay($this->hydratorsDelay);
+        if ($product->department_id) {
+            DepartmentHydrateProducts::dispatch($product->department_id)->delay(2);
         }
         if ($product->family) {
             FamilyHydrateProducts::dispatch($product->family)->delay($this->hydratorsDelay);
         }
-        if ($product->subDepartment) {
-            SubDepartmentHydrateProducts::dispatch($product->subDepartment)->delay($this->hydratorsDelay);
+        if ($product->sub_department_id) {
+            SubDepartmentHydrateProducts::dispatch($product->sub_department_id)->delay(2);
         }
     }
 }

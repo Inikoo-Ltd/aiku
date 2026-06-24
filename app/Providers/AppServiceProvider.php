@@ -23,6 +23,7 @@ use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Facades\Actions;
 use Illuminate\Support\Facades\Event;
 use Laravel\Nightwatch\Records\QueuedJob;
+use Laravel\Nightwatch\Records\OutgoingRequest;
 use Vemcogroup\Translation\Translation as BaseTranslation;
 
 /**
@@ -80,7 +81,8 @@ class AppServiceProvider extends ServiceProvider
                 'fetch:dispatched_emails',
                 'fetch:stock_locations',
                 'fetch:email_tracking_events',
-                'clone:aurora_vol_gr_offers'
+                'clone:aurora_vol_gr_offers',
+                'inertia:start-ssr --runtime bun'
             ])) {
                 Nightwatch::dontSample();
             }
@@ -88,6 +90,10 @@ class AppServiceProvider extends ServiceProvider
 
         Nightwatch::rejectQueuedJobs(function (QueuedJob $job) {
             return $job->queue == 'aurora';
+        });
+
+        Nightwatch::rejectOutgoingRequests(function (OutgoingRequest $request) {
+            return str_contains($request->url, '10.0.0.');
         });
 
         ParallelTesting::setUpTestCase(function ($token, $testCase) {
@@ -100,6 +106,10 @@ class AppServiceProvider extends ServiceProvider
                 DB::connection('aiku');
                 DB::purge('aiku');
                 DB::reconnect('aiku');
+                config(['database.connections.aiku_no_sticky.database' => $databaseName]);
+                DB::connection('aiku_no_sticky');
+                DB::purge('aiku_no_sticky');
+                DB::reconnect('aiku_no_sticky');
             }
         });
 

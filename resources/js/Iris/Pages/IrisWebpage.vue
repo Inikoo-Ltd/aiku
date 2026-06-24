@@ -58,11 +58,13 @@ const robotsContent = computed(() => {
 onMounted(() => {
     currentUrl.value = window.location.href
 
-    // Structure data (Department, Sub-department, Family, Product)
+    // Structure data (Family)
+    // Breadcrumbs structured data is mounted independently in BreadcrumbsIris.vue
+    // Product structured data is mounted independently in the product components (product-1 / product-2)
+    // Department structured data is mounted independently in SubDepartmentsIris.vue
     structuredDataScript.value = mountStructuredData({
         webpageData: props.webpage_data,
         webBlocks: props.web_blocks,
-        breadcrumbs: usePage().props?.breadcrumbs as any[] | undefined,
         currencyCode: layout.iris?.currency?.code,
         websiteName: layout.iris?.website?.name,
     })
