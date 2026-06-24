@@ -14,6 +14,9 @@ return new class () extends Migration {
         Schema::create('reviews', function (Blueprint $table) {
             $table->id();
             $this->groupOrgRelationship($table);
+            $table->string('state')->index();
+            $table->boolean('is_online')->index()->default(false);
+
             $table->unsignedSmallInteger('shop_id')->nullable()->index();
             $table->foreign('shop_id')->references('id')->on('shops')->nullOnDelete();
             $table->unsignedInteger('customer_id')->nullable()->index();
@@ -41,14 +44,44 @@ return new class () extends Migration {
             $table->unsignedTinyInteger('rating_d')->index()->nullable();
             $table->unsignedTinyInteger('rating_e')->index()->nullable();
             $table->timestampTz('show_after')->nullable()->index();
-            $table->timestampTz('published_at')->nullable()->index();
 
 
             $table->boolean('is_public')->default(true)->index();
-            $table->enum('review_status', ReviewStatusEnum::values())->index()->default(ReviewStatusEnum::PENDING->value);
+
             $table->string('title')->nullable()->index();
             $table->text('message')->nullable();
-            $table->unsignedInteger('like_count')->default(0);
+            $table->unsignedSmallInteger('language_id')->nullable()->index();
+            $table->foreign('language_id')->references('id')->on('languages')->nullOnDelete();
+
+            $table->string('review_status')->index()->default(ReviewStatusEnum::PENDING->value);
+
+            $table->boolean('approved')->default(false)->index();
+            $table->boolean('auto_approved')->default(false)->index();
+            $table->unsignedSmallInteger('approved_by')->nullable()->index();
+            $table->foreign('approved_by')->references('id')->on('users')->nullOnDelete();
+            $table->timestampTz('published_at')->nullable()->index();
+
+
+            $table->boolean('removed')->default(false)->index();
+            $table->unsignedSmallInteger('removed_by')->nullable()->index();
+            $table->foreign('removed_by')->references('id')->on('users')->nullOnDelete();
+            $table->timestampTz('removed_at')->nullable()->index();
+            $table->string('removed_reason')->nullable();
+
+            $table->boolean('replied')->index()->default(false);
+            $table->text('reply_message')->nullable();
+            $table->timestampTz('reply_at')->nullable()->index();
+            $table->unsignedSmallInteger('reply_by')->nullable()->index();
+            $table->foreign('reply_by')->references('id')->on('users')->nullOnDelete();
+
+
+            $table->unsignedInteger('likes')->default(0);
+            $table->unsignedInteger('dislikes')->default(0);
+
+            $table->unsignedInteger('replay_likes')->default(0);
+            $table->unsignedInteger('replay_dislikes')->default(0);
+
+
             $table->jsonb('meta')->default('{}');
             $table->timestampsTz();
             $table->softDeletesTz();

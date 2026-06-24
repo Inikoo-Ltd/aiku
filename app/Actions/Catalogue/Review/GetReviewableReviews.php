@@ -161,7 +161,7 @@ class GetReviewableReviews
             return [
                 'total'                   => (int)($reviewStat->number_reviews ?? 0),
                 'average_rating'          => (float)($reviewStat->average_rating_main ?? 0),
-                'like_count'              => (int)((clone $reviewQuery)->sum('like_count')),
+                'likes'              => (int)((clone $reviewQuery)->sum('likes')),
                 'status_approved'         => (int)($reviewStat->number_reviews_approved ?? 0),
                 'status_pending'          => (int)($reviewStat->number_reviews_pending ?? 0),
                 'status_rejected'         => (int)($reviewStat->number_reviews_rejected ?? 0),
@@ -179,7 +179,7 @@ class GetReviewableReviews
         return [
             'total'                   => $total,
             'average_rating'          => round((float)((clone $reviewQuery)->avg('rating_main') ?? 0), 1),
-            'like_count'              => (int)((clone $reviewQuery)->sum('like_count')),
+            'likes'              => (int)((clone $reviewQuery)->sum('likes')),
             'status_approved'         => $total,
             'status_pending'          => 0,
             'status_rejected'         => 0,

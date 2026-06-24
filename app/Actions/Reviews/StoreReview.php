@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 24 Jun 2026 12:03:27 Malaysia Time, Kuala Lumpur, Malaysia
@@ -16,11 +17,8 @@ use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Review;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
@@ -76,7 +74,7 @@ class StoreReview
                 'status'          => data_get($modelData, 'status', ReviewStatusEnum::APPROVED->value),
                 'title'           => data_get($modelData, 'title'),
                 'message'         => data_get($modelData, 'message'),
-                'like_count'      => data_get($modelData, 'like_count', 0),
+                'likes'      => data_get($modelData, 'likes', 0),
                 'meta'            => data_get($modelData, 'meta', []),
             ];
 
@@ -133,7 +131,7 @@ class StoreReview
             'show_after'      => ['sometimes', 'nullable', 'date'],
             'is_public'       => ['sometimes', 'boolean'],
             'order_id'        => ['nullable', 'integer', 'exists:orders,id'],
-            'like_count'      => ['sometimes', 'integer', 'min:0'],
+            'likes'      => ['sometimes', 'integer', 'min:0'],
             'meta'            => ['sometimes', 'array'],
             'images'          => ['sometimes', 'array'],
             'images.*'        => ['sometimes', File::image()->max(50 * 1024)],
@@ -186,7 +184,7 @@ class StoreReview
             data_get($modelData, 'rating_c'),
             data_get($modelData, 'rating_d'),
             data_get($modelData, 'rating_e'),
-        ])->filter(fn($value): bool => is_numeric($value))->map(fn($value): float => (float)$value)->values();
+        ])->filter(fn ($value): bool => is_numeric($value))->map(fn ($value): float => (float)$value)->values();
 
         if ($detailedRatings->isNotEmpty()) {
             return round((float)$detailedRatings->avg(), 2);

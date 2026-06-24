@@ -67,7 +67,7 @@ class UpdateReview extends OrgAction
                 'show_after'           => data_get($modelData, 'show_after', $review->show_after),
                 'is_public'            => data_get($modelData, 'is_public', $review->is_public),
                 'order_id'             => data_get($modelData, 'order_id', $review->order_id),
-                'like_count'           => data_get($modelData, 'like_count', $review->like_count),
+                'likes'           => data_get($modelData, 'likes', $review->likes),
                 'meta'                 => data_get($modelData, 'meta', $review->meta ?? []),
             ]);
 
@@ -133,7 +133,7 @@ class UpdateReview extends OrgAction
             'show_after'            => ['sometimes', 'nullable', 'date'],
             'is_public'             => ['sometimes', 'boolean'],
             'order_id'              => ['sometimes', 'nullable', 'integer', 'exists:orders,id'],
-            'like_count'            => ['sometimes', 'integer', 'min:0'],
+            'likes'            => ['sometimes', 'integer', 'min:0'],
             'meta'                  => ['sometimes', 'array'],
             'images'                => ['sometimes', 'array'],
             'images.*'              => ['sometimes', File::image()->max(50 * 1024)],

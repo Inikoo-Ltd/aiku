@@ -9,6 +9,7 @@
 
 namespace App\Models\Reviews;
 
+use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Enums\Catalogue\Review\ReviewTypeEnum;
 use App\Models\Catalogue\Product;
@@ -45,7 +46,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property ReviewStatusEnum $status
  * @property string|null $title
  * @property string|null $message
- * @property int $like_count
+ * @property int $likes
  * @property array<array-key, mixed> $meta
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -79,9 +80,10 @@ class Review extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
+        'state'         => ReviewStateEnum::class,
         'type'          => ReviewTypeEnum::class,
         'review_status' => ReviewStatusEnum::class,
-        'like_count'    => 'integer',
+        'likes'         => 'integer',
         'meta'          => 'array',
         'show_after'    => 'datetime'
     ];

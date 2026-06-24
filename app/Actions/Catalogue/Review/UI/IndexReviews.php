@@ -66,7 +66,7 @@ class IndexReviews extends OrgAction
             'total' => (int) ($reviewStat?->number_reviews ?? 0),
             'average_rating' => (float) ($reviewStat?->average_rating_main ?? 0),
             'verified' => 0,
-            'like_count' => (int) $reviewModel::query()->where($foreignKey, $parent->id)->sum('like_count'),
+            'likes' => (int) $reviewModel::query()->where($foreignKey, $parent->id)->sum('likes'),
             'status_approved' => (int) ($reviewStat?->number_reviews_approved ?? 0),
             'status_pending' => (int) ($reviewStat?->number_reviews_pending ?? 0),
             'status_rejected' => (int) ($reviewStat?->number_reviews_rejected ?? 0),
@@ -111,12 +111,12 @@ class IndexReviews extends OrgAction
                 $table . '.rating_d',
                 $table . '.rating_e',
                 $table . '.message',
-                $table . '.like_count',
+                $table . '.likes',
                 $table . '.meta',
                 $table . '.created_at',
                 'customers.contact_name as contact_name',
             ])
-            ->allowedSorts(['id', 'created_at', 'rating', 'like_count'])
+            ->allowedSorts(['id', 'created_at', 'rating', 'likes'])
             ->allowedFilters([$globalSearch, 'status', 'rating', 'contact_name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -147,7 +147,7 @@ class IndexReviews extends OrgAction
             }
 
             $table
-                ->defaultSort('like_count')
+                ->defaultSort('likes')
                 ->withGlobalSearch()
                 ->withEmptyState([
                     'title' => __('No reviews found'),
@@ -160,7 +160,7 @@ class IndexReviews extends OrgAction
             $table->column(key: 'rating', label: __('Rating'), sortable: true, searchable: false, align: 'right');
             $table->column(key: 'message', label: __('Message'), sortable: false, searchable: true);
             $table->column(key: 'reply_status', label: __('Reply Status'), sortable: false, searchable: false, align: 'center');
-            $table->column(key: 'like_count', label: __('Like'), sortable: true, searchable: false, align: 'right');
+            $table->column(key: 'likes', label: __('Like'), sortable: true, searchable: false, align: 'right');
             $table->column(key: 'action', label: __('Actions'), sortable: false, searchable: false, align: 'right');
         };
     }

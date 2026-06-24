@@ -113,7 +113,7 @@ class GetReviews
                 return [
                     'total'                   => (int)($reviewableStat->number_reviews ?? 0),
                     'average_rating'          => (float)($reviewableStat->average_rating_main ?? 0),
-                    'like_count'              => (int)((clone $query)->sum('like_count')),
+                    'likes'              => (int)((clone $query)->sum('likes')),
                     'status_approved'         => (int)($reviewableStat->number_reviews_approved ?? 0),
                     'status_pending'          => (int)($reviewableStat->number_reviews_pending ?? 0),
                     'status_rejected'         => (int)($reviewableStat->number_reviews_rejected ?? 0),
@@ -136,7 +136,7 @@ class GetReviews
         return [
             'total'                   => $total,
             'average_rating'          => round((float)((clone $query)->avg('rating_main') ?? 0), 1),
-            'like_count'              => (int)((clone $query)->sum('like_count')),
+            'likes'              => (int)((clone $query)->sum('likes')),
             'status_approved'         => (int)($statusCounts[ReviewStatusEnum::APPROVED->value] ?? 0),
             'status_pending'          => (int)($statusCounts[ReviewStatusEnum::PENDING->value] ?? 0),
             'status_rejected'         => (int)($statusCounts[ReviewStatusEnum::REJECTED->value] ?? 0),

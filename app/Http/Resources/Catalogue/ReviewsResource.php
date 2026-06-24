@@ -71,7 +71,7 @@ class ReviewsResource extends JsonResource
             'rating_d'             => $this->rating_d !== null ? (int) $this->rating_d : null,
             'rating_e'             => $this->rating_e !== null ? (int) $this->rating_e : null,
             'message'              => $this->message,
-            'like_count'           => (int) $this->like_count,
+            'likes'           => (int) $this->likes,
             'image_thumbnail'      => $imageThumbnails[0] ?? null,
             'image_thumbnails'     => $imageThumbnails,
             'image_gallery'        => $imageGallery,

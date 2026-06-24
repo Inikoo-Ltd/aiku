@@ -43,7 +43,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property ReviewStatusEnum $status
  * @property string|null $title
  * @property string|null $message
- * @property int $like_count
+ * @property int $likes
  * @property array<array-key, mixed> $meta
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -80,7 +80,7 @@ class ProductReview extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'status'                => ReviewStatusEnum::class,
-        'like_count'            => 'integer',
+        'likes'            => 'integer',
         'meta'                  => 'array',
         'show_after'            => 'datetime'
     ];
