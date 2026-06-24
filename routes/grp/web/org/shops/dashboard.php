@@ -25,9 +25,3 @@ Route::prefix("payments")
 Route::prefix("statements")
     ->name("invoices.")
     ->group(__DIR__."/invoices.php");
-
-Route::prefix('reviews')
-    ->name('reviews.')
-    ->group(function () {
-        Route::get('/', [IndexShopReviews::class, 'inShop'])->name('index');
-    });
