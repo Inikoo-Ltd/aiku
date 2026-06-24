@@ -67,7 +67,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
 
         $action = [];
 
-        $this->tab = $this->tab ?: RetinaOrderReviewTabsEnum::TRANSACTIONS->value;
+        $this->tab = $this->tab ?: RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value;
 
         $ratingLabels = [
             ReviewContextEnum::ORDER->value   => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ORDER),
@@ -104,23 +104,23 @@ class ShowRetinaEcomOrderReview extends RetinaAction
 
                 'currency'          => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'              => OrderResource::make($order),
-                'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
+
 
 
                 RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value => $this->tab == RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value ?
-                    fn() => $this->getOverallReview()
-                    : Inertia::lazy(fn() => $this->getOverallReview()),
+                    fn () => $this->getOverallReview()
+                    : Inertia::lazy(fn () => $this->getOverallReview()),
 
 
                 RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value
-                    ? fn() => RetinaOrderReviewableResource::collection(IndexReviewFamiliesInOrder::run(parent: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
+                    ? fn () => RetinaOrderReviewableResource::collection(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
                             'context'       => ReviewContextEnum::FAMILY->value,
                             'rating_labels' => $ratingLabels[ReviewContextEnum::FAMILY->value],
                         ])
-                    : Inertia::lazy(fn() => RetinaOrderReviewableResource::collection(IndexReviewFamiliesInOrder::run(parent: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
+                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
@@ -129,14 +129,14 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                         ])),
 
                 RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value
-                    ? fn() => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(parent: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value))
+                    ? fn () => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value))
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
                             'context'       => ReviewContextEnum::PRODUCT->value,
                             'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
                         ])
-                    : Inertia::lazy(fn() => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(parent: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value))
+                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value))
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
@@ -200,7 +200,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             ->orderBy('sort_order')
             ->orderBy('dimension')
             ->get(['dimension', 'label', 'is_required', 'weight'])
-            ->map(fn(ReviewRatingLabel $reviewRatingLabel): array => [
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
                 'dimension'   => $reviewRatingLabel->dimension?->value ?? (string)$reviewRatingLabel->dimension,
                 'label'       => (string)$reviewRatingLabel->label,
                 'is_required' => (bool)$reviewRatingLabel->is_required,

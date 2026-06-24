@@ -38,7 +38,6 @@ import EcomCheckoutSummary from '@/Components/Retina/Ecom/EcomCheckoutSummary.vu
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
-import RetinaTableOrderReview from "@/Components/Tables/Retina/RetinaTableOrderReview.vue"
 
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)

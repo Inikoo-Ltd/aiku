@@ -50,6 +50,7 @@ return new class () extends Migration {
 
             $table->string('title')->nullable()->index();
             $table->text('message')->nullable();
+            $table->json('web_images')->nullable();
             $table->unsignedSmallInteger('language_id')->nullable()->index();
             $table->foreign('language_id')->references('id')->on('languages')->nullOnDelete();
 
@@ -93,6 +94,6 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('shop_reviews');
+        Schema::dropIfExists('reviews');
     }
 };

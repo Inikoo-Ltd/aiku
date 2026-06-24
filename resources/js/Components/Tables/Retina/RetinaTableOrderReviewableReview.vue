@@ -127,6 +127,17 @@ const saveReview = async () => {
             </div>
         </template>
 
+        <template #cell(family_name)="{ item }">
+            <div class="flex items-center gap-2 text-sm">
+                <span v-tooltip="trans('code')" class="px-2 py-1 rounded-md bg-gray-100 text-gray-700 font-medium">
+                    {{ item.family_code }}
+                </span>
+                <span v-tooltip="trans('name')">
+                    {{ item.family_name }}
+                </span>
+            </div>
+        </template>
+
         <template #cell(price)="{ item }">
             <div class="text-right">
                 <span v-if="item.price !== null">{{ locale.currencyFormat(item.currency_code || '', item.price) }}</span>

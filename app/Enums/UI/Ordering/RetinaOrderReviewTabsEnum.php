@@ -17,8 +17,8 @@ enum RetinaOrderReviewTabsEnum: string
     use HasTabs;
 
     case OVERALL_REVIEW                     = 'overall_review';
-    case FAMILY_REVIEWS                     = 'family_reviews';
     case PRODUCT_REVIEWS                    = 'product_reviews';
+    case FAMILY_REVIEWS                     = 'family_reviews';
 
 
     public function blueprint(): array
@@ -33,12 +33,12 @@ enum RetinaOrderReviewTabsEnum: string
 
             RetinaOrderReviewTabsEnum::FAMILY_REVIEWS => [
                 'title' => __('Families review'),
-                'icon'  => 'fal fa-star',
+                'icon'  => 'fal fa-galaxy',
             ],
 
             RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS => [
                 'title' => __('Products review'),
-                'icon'  => 'fal fa-star',
+                'icon'  => 'fal fa-stars',
             ],
 
 

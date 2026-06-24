@@ -11,7 +11,7 @@ namespace App\Models\Reviews;
 
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
-use App\Enums\Catalogue\Review\ReviewTypeEnum;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
@@ -35,7 +35,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property int|null $shop_id
  * @property int|null $customer_id
  * @property int|null $order_id
- * @property ReviewTypeEnum $scope
+ * @property ReviewScopeEnum $scope
  * @property ReviewStateEnum $state
  * @property bool $is_online
  * @property bool $is_public
@@ -103,7 +103,7 @@ class Review extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'scope'         => ReviewTypeEnum::class,
+        'scope'         => ReviewScopeEnum::class,
         'state'         => ReviewStateEnum::class,
         'review_status' => ReviewStatusEnum::class,
         'likes'         => 'integer',

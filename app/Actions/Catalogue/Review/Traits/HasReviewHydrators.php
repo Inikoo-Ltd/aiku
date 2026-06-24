@@ -14,7 +14,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateReviewStats;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateReviewStats;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateReviewStats;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateReviewStats;
-use App\Enums\Catalogue\Review\ReviewTypeEnum;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Models\Reviews\Review;
 
 trait HasReviewHydrators
@@ -23,16 +23,16 @@ trait HasReviewHydrators
     {
         GroupHydrateReviewStats::dispatch($review->group_id)->delay($this->hydratorsDelay);
 
-        if ($review->type == ReviewTypeEnum::SHOP) {
+        if ($review->type == ReviewScopeEnum::SHOP) {
             ShopHydrateReviewStats::dispatch($review->shop_id)->delay($this->hydratorsDelay);
         }
 
-        if ($review->type == ReviewTypeEnum::FAMILY) {
+        if ($review->type == ReviewScopeEnum::FAMILY) {
             ProductCategoryHydrateReviewStats::dispatch($review->product_category_id)->delay($this->hydratorsDelay);
             MasterProductCategoryHydrateReviewStats::dispatch($review->master_product_category_id)->delay($this->hydratorsDelay);
         }
 
-        if ($review->type == ReviewTypeEnum::PRODUCT) {
+        if ($review->type == ReviewScopeEnum::PRODUCT) {
             ProductHydrateReviewStats::dispatch($review->product_id)->delay($this->hydratorsDelay);
             MasterAssetHydrateReviewStats::dispatch($review->master_product_id)->delay($this->hydratorsDelay);
         }

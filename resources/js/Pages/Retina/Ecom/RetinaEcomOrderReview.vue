@@ -6,29 +6,29 @@
 -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, inject, ref } from 'vue'
-import type { Component } from 'vue'
+import { computed, ref } from "vue"
+import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import { routeType } from '@/types/route'
-import { PageHeadingTypes } from '@/types/PageHeading'
-import { Tabs as TSTabs } from '@/types/Tabs'
+import { routeType } from "@/types/route"
+import { PageHeadingTypes } from "@/types/PageHeading"
+import { Tabs as TSTabs } from "@/types/Tabs"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation } from '@fas'
-import { faStar,faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
-import { Currency } from '@/types/LayoutRules'
-import { faSpinnerThird } from '@far'
-import EcomReviewSummary from '@/Components/Retina/Ecom/EcomReviewSummary.vue'
-import RetinaTableOrderReview from '@/Components/Tables/Retina/RetinaTableOrderReview.vue'
-import OveralReview from '@/Components/OveralReview.vue'
+import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
+import { faExclamationTriangle, faExclamation } from "@fas"
+import { faStars, faGalaxy, faStar, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle } from "@fal"
+import { Currency } from "@/types/LayoutRules"
+import { faSpinnerThird } from "@far"
+import EcomReviewSummary from "@/Components/Retina/Ecom/EcomReviewSummary.vue"
+import RetinaTableOrderReviewableReview from "../../../Components/Tables/Retina/RetinaTableOrderReviewableReview.vue"
+import OverallReview from "../../../Components/OverallReview.vue"
 
 
-library.add(faStar,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
+library.add(faStars, faGalaxy, faStar, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
 const props = defineProps<{
@@ -82,9 +82,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Component = {
-        overall_review: OveralReview,
-        family_reviews: RetinaTableOrderReview,
-        product_reviews: RetinaTableOrderReview,
+        overall_review: OverallReview,
+        family_reviews: RetinaTableOrderReviewableReview,
+        product_reviews: RetinaTableOrderReviewableReview
     }
 
     return components[currentTab.value]
@@ -104,14 +104,14 @@ const component = computed(() => {
     />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
-        @update:tab="handleTabUpdate" />
+          @update:tab="handleTabUpdate" />
 
     <div class="mb-12 mx-4 mt-4 overflow-x-auto">
-        <component 
-            :is="component" 
-            :data="props[currentTab as keyof typeof props]" 
+        <component
+            :is="component"
+            :data="props[currentTab as keyof typeof props]"
             :tab="currentTab"
-            @update:tab="handleTabUpdate" 
+            @update:tab="handleTabUpdate"
         />
     </div>
 
