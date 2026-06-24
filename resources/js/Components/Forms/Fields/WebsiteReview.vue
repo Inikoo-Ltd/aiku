@@ -28,6 +28,7 @@ const providerSchemas: Record<string, Array<{ key: string; label: string; type: 
         { key: "url", label: trans("Review URL"), type: "text" },
         { key: "email", label: trans("Email"), type: "text" },
     ],
+    "aiku": [],
 }
 
 const getNestedValue = (obj: any, keys: string[]) => {
@@ -85,19 +86,16 @@ watch(provider, (newProvider) => {
     updateFormValue(newValue)
 })
 
-
-watch(data, (newData) => {
-    updateFormValue({
-        provider: provider.value,
-        data: newData
-    })
-}, { deep: true })
-
 const updateDataField = (key: string, value: any) => {
     data.value = {
         ...data.value,
         [key]: value
     }
+
+    updateFormValue({
+        provider: provider.value,
+        data: data.value,
+    })
 }
 
 const enabled = ref(initialValue?.enabled ?? false)
@@ -110,9 +108,18 @@ watch(enabled, (val) => {
     })
 })
 
+const approvalRequired = computed({
+    get: () => data.value?.approval_required ?? false,
+    set: (val: boolean) => updateDataField('approval_required', val),
+})
+
 const currentSchema = computed(() => {
     return providerSchemas[provider.value] || []
 })
+
+const fieldNameString = computed(() =>
+    Array.isArray(props.fieldName) ? props.fieldName.join('.') : props.fieldName
+)
 </script>
 
 <template>
@@ -128,13 +135,23 @@ const currentSchema = computed(() => {
             <label class="text-sm">{{ trans('Provider') }}</label>
             <select v-model="provider" class="border rounded px-3 py-2">
                 <option disabled value="">{{ trans('Select Provider') }}</option>
+                <option value="aiku">Aiku Reviews</option>
                 <option value="reviews.io">reviews.io</option>
                 <option value="trust_pilot">trust_pilot</option>
             </select>
         </div>
 
+        <!-- AIKU INTERNAL PROVIDER SETTINGS -->
+        <div v-if="provider === 'aiku'" class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
+            <div class="flex flex-col gap-1">
+                <label class="text-sm">{{ trans('Require Approval Before Publishing') }}</label>
+                <p class="text-xs text-gray-500">{{ trans('When enabled, customer reviews must be approved by an admin before they are published.') }}</p>
+                <InputSwitch v-model="approvalRequired" />
+            </div>
+        </div>
+
         <!-- DYNAMIC FIELDS -->
-        <div v-if="provider" class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
+        <div v-if="provider && currentSchema.length" class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
             <div v-for="field in currentSchema" :key="field.key" class="flex flex-col gap-1">
                 <label class="text-xs">
                     {{ field.label }}
@@ -146,7 +163,7 @@ const currentSchema = computed(() => {
         </div>
 
     </div>
-    <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
-        {{ form.errors[fieldName] }}
+    <p v-if="get(form, ['errors', fieldNameString])" class="mt-2 text-sm text-red-600" :id="`${fieldNameString}-error`">
+        {{ form.errors[fieldNameString] }}
     </p>
 </template>
