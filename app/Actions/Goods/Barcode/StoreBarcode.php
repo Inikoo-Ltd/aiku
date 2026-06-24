@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Helpers\Barcode;
+namespace App\Actions\Goods\Barcode;
 
 use App\Actions\GrpAction;
 use App\Enums\Helpers\Barcode\BarcodeStatusEnum;

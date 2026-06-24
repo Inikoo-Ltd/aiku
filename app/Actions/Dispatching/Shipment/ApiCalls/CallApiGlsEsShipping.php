@@ -50,10 +50,11 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
         $countryCode = Arr::get($parentResource, 'to_address.country_code');
-        $limit = ($countryCode == 'ES') ?: 31.5;
+        $limit = 31.5;
         $totalWeight = $parent->effective_weight / 1000;
+        $totalParcel = count($parent->parcels ?? []);
 
-        if ($totalWeight > $limit) {
+        if ($totalWeight > $limit || ($countryCode !== 'ES' && $totalParcel > 1)) {
             return $this->splitByWeightLimit($parent, $shipper, $limit, $totalWeight);
         }
 
@@ -98,8 +99,8 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
         $xmlPayloads = [];
-        foreach ($weightsToShip as $splitWeight) {
-            $xmlPayloads[] = $this->getCreateLabelXml($parent, $shipper, $splitWeight);
+        foreach ($weightsToShip as $index => $splitWeight) {
+            $xmlPayloads[] = $this->getCreateLabelXml($parent, $shipper, $splitWeight, $index);
         }
 
         $headers = ["Content-Type: text/xml; charset=UTF-8"];
@@ -417,7 +418,7 @@ class CallApiGlsEsShipping extends OrgAction
         return $modelData;
     }
 
-    public function getCreateLabelXml(DeliveryNote|PalletReturn $parent, Shipper $shipper, ?float $splitWeight = null): string
+    public function getCreateLabelXml(DeliveryNote|PalletReturn $parent, Shipper $shipper, ?float $splitWeight = null, ?int $suffix = null): string
     {
         $uidClient = $this->getAccessToken($shipper);
 
@@ -484,7 +485,7 @@ class CallApiGlsEsShipping extends OrgAction
         if (app()->environment('local')) {
             $shipmentData["RefC"] = 'test+' . rand(1000, 9999) . ' ' . strtoupper($parent->reference) . ' V2';
         } else {
-            $shipmentData["RefC"] = strtoupper($parent->reference) . ' V2';
+            $shipmentData["RefC"] = strtoupper($parent->reference) . ' V2' . ($suffix !== null ? '-b-' . ($suffix + 1) : '');
         }
 
 

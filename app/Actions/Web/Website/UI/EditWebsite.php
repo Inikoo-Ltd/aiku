@@ -176,13 +176,31 @@ class EditWebsite extends OrgAction
         if (in_array($website->type, [WebsiteTypeEnum::B2B, WebsiteTypeEnum::DROPSHIPPING])) {
             $blueprints[] = [
                 'label'  => __('Catalogue Pages'),
-                'icon'   => 'fa-light fa-browser',
+                'icon'   => 'fa-solid fa-browser',
                 'fields' => [
                     'description_has_overview'  => [
                         'type'          => 'toggle',
                         'information'   => __('Toggle whether or not Department Pages have a dedicated overview page that lists all of the families under that department'),
                         'label'         => __('Department Pages has Family Overview'),
                         'value'         => data_get($website->settings, 'catalogue_pages.description_has_overview', false),
+                    ]
+                ]
+            ];
+            $blueprints[] = [
+                'label'  => __('Webpage'),
+                'icon'   => 'fa-light fa-browser',
+                'fields' => [
+                    'webpage_title_prefix'  => [
+                        'type'          => 'input',
+                        'information'   => __('Would add the set prefix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                        'label'         => __('Title Prefix'),
+                        'value'         => data_get($website->settings, 'webpage.title_prefix', null),
+                    ],
+                    'webpage_title_suffix'  => [
+                        'type'          => 'input',
+                        'information'   => __('Would add the set suffix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                        'label'         => __('Title Suffix'),
+                        'value'         => data_get($website->settings, 'webpage.title_prefix', null),
                     ]
                 ]
             ];
