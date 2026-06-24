@@ -54,7 +54,7 @@ class CallApiGlsEsShipping extends OrgAction
         $totalWeight = $parent->effective_weight / 1000;
         $totalParcel = count($parent->parcels ?? []);
 
-        if ($totalWeight > $limit || ($countryCode !== 'ES' && $totalParcel > 1)) {
+        if ($totalWeight > $limit && ($countryCode !== 'ES' && $totalParcel > 1)) {
             return $this->splitByWeightLimit($parent, $shipper, $limit, $totalWeight);
         }
 
@@ -379,17 +379,46 @@ class CallApiGlsEsShipping extends OrgAction
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
         $postResult = curl_exec($ch);
-        curl_close($ch); // Note : will deprecated in PHP 9+
+        if (curl_errno($ch)) {
+            $errorMsg = curl_error($ch);
+            curl_close($ch);
+            $modelData['error'] = 'No se pudo llamar al WS de GLS: ' . $errorMsg;
+
+            return $modelData;
+        }
+        curl_close($ch);
+
+        if ($postResult === false || $postResult === '') {
+            $modelData['error'] = 'No response from GLS Spain API';
+
+            return $modelData;
+        }
 
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($postResult, null, null, "http://http://www.w3.org/2003/05/soap-envelope");
 
+        if ($xml === false) {
+            $modelData['error'] = 'Invalid XML response from GLS Spain API';
+
+            return $modelData;
+        }
 
         $xml->registerXPathNamespace('asm', 'http://www.asmred.com/');
         $arr = $xml->xpath("//asm:GrabaServiciosResponse/asm:GrabaServiciosResult");
 
+        if (empty($arr)) {
+            $modelData['error'] = 'GrabaServiciosResult not found in response';
+
+            return $modelData;
+        }
 
         $ret = $arr[0]->xpath("//Servicios/Envio");
+
+        if (empty($ret)) {
+            $modelData['error'] = 'Envio not found in response';
+
+            return $modelData;
+        }
 
         $error = (string)$ret[0]->Errores->Error;
 
