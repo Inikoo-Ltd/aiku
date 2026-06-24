@@ -9,6 +9,7 @@ import { trans } from "laravel-vue-i18n"
 import PureMultiselectInfiniteScroll from "../Pure/PureMultiselectInfiniteScroll.vue"
 import Organisation from "@/Pages/Grp/Organisations/Organisation.vue"
 import Image from "@/Common/Components/Image.vue"
+import ToggleSwitch from "primevue/toggleswitch"
 
 interface SchemaItem {
     dimension: string
@@ -42,6 +43,7 @@ const props = defineProps<{
         image_thumbnail?: ImageProxy | string | null
         images?: File[] | null
         review_images? : any
+        is_public?: boolean | null
     }
     | null
 }>()
@@ -67,6 +69,7 @@ const form = useForm({
     status: props.modelValue?.status ?? 'approved',
     images: props.modelValue?.images ?? [],
     customer_id: props.modelValue?.customer_id ?? null,
+    is_public: props.modelValue?.is_public ?? false,
 })
 
 const totalSize = computed(() =>
@@ -262,6 +265,7 @@ watch(
         rating: form.rating,
         images: form.images,
         customer_id: form.customer_id,
+        is_public: form.is_public,
     }),
     (value) => {
         emit("update:modelValue", {
@@ -359,6 +363,18 @@ watch(
 
                 <Textarea v-model="form.message" rows="4" :autoResize="true"
                     :placeholder="trans('Tell people what you liked or disliked...')" class="w-full rounded-xl" />
+            </div>
+
+            <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 pt-1">
+                <div>
+                    <div class="text-sm font-medium text-gray-800">
+                        {{ trans("Make this review public") }}
+                    </div>
+                    <div class="text-[11px] text-gray-500">
+                        {{ form.is_public ? trans("Visible to everyone on the store.") : trans("Only visible to the shop, kept private.") }}
+                    </div>
+                </div>
+                <ToggleSwitch v-model="form.is_public" />
             </div>
 
 
