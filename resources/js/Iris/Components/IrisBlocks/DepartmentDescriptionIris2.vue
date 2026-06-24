@@ -101,7 +101,7 @@ const embedUrl = computed(() => {
 			const id = u.pathname.split("/").filter(Boolean).pop()
 
 			return id
-				? `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&autopause=0&background=1&playsinline=1`
+				? `https://player.vimeo.com/video/${id}?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1`
 				: v
 		}
 	} catch (e) {
@@ -325,11 +325,11 @@ watch(
 									<div
 										class="video-cover w-full h-[220px] md:h-[280px] lg:h-[360px] 2xl:h-[500px]">
 										<iframe
-											v-once
 											v-if="screenType === 'desktop'"
 											:src="embedUrl"
 											frameborder="0"
-											allow="autoplay; fullscreen; picture-in-picture"
+											allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+											referrerpolicy="strict-origin-when-cross-origin"
 											allowfullscreen
 											class="video-iframe"
 											@load="calculateDescriptionHeight" />
@@ -395,26 +395,28 @@ watch(
 					}">
 						<!-- Image -->
 						<div class="aspect-[4/3] overflow-hidden" ref="mobileMediaRef">
-							<template v-if="fieldValue.department.showcase_image">
+							<template v-if="fieldValue.department.showcase_video">
+								<div class="relative w-full h-full">
+									<iframe
+									    v-if="screenType === 'mobile'"
+										:src="embedUrl"
+										class="absolute inset-0 w-full h-full"
+										frameborder="0"
+										allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+										referrerpolicy="strict-origin-when-cross-origin"
+  										@load="console.log('iframe loaded')"
+									/>
+								</div>
+							</template>
+
+							<template v-else-if="fieldValue.department.showcase_image">
 								<Image
 									:src="fieldValue.department.showcase_image"
 									:alt="fieldValue.department.name"
 									class="w-full h-full object-cover" />
 							</template>
 
-							<template v-else-if="fieldValue.department.showcase_video">
-								<div class="relative w-full h-full">
-									<iframe
-									    v-if="screenType === 'mobile'"
-										v-once
-										:src="embedUrl"
-										class="absolute inset-0 w-full h-full"
-										frameborder="0"
-										allow="autoplay; fullscreen; picture-in-picture"
-  										@load="console.log('iframe loaded')"
-									/>
-								</div>
-							</template>
+							
 
 							<template v-else>
 								<div
@@ -492,17 +494,10 @@ watch(
 			<div class="aspect-video overflow-hidden rounded-xl">
 				<iframe
 					v-if="videoDialogVisible && embedUrl"
-					v-once
 					:src="`${embedUrl}${embedUrl.includes('?') ? '&' : '?'}autoplay=1`"
 					frameborder="0"
-					allow="
-						accelerometer;
-						autoplay;
-						clipboard-write;
-						encrypted-media;
-						gyroscope;
-						picture-in-picture;
-					"
+					allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+					referrerpolicy="strict-origin-when-cross-origin"
 					allowfullscreen
 					@load="console.log('iframe loaded')"
 					class="w-full h-full" />
