@@ -81,6 +81,7 @@ return new class () extends Migration {
             $table->unsignedInteger('replay_likes')->default(0);
             $table->unsignedInteger('replay_dislikes')->default(0);
 
+            $table->string('external_id')->nullable()->unique();
 
             $table->jsonb('meta')->default('{}');
             $table->timestampsTz();
