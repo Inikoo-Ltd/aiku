@@ -29,6 +29,7 @@ return new class () extends Migration {
             $table->unsignedTinyInteger('rating_d')->index()->nullable();
             $table->unsignedTinyInteger('rating_e')->index()->nullable();
             $table->timestampTz('show_after')->nullable()->index();
+            $table->boolean('is_public')->default(true)->index();
             $table->enum('status', ReviewStatusEnum::values())->index()->default(ReviewStatusEnum::Pending->value);
             $table->string('title')->nullable()->index();
             $table->text('message')->nullable();
