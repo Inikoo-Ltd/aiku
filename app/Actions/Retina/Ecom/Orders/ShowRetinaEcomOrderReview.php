@@ -2,19 +2,24 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 28 Aug 2025 14:56:22 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2025, Raul A Perusquia Flores
+ * Created: Wed, 24 Jun 2026 15:00:37 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Retina\Ecom\Orders;
 
+use App\Actions\CRM\Customer\UI\GetCustomerShowcase;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\Order\UI\IndexReviewProductsInOrder;
+use App\Actions\Ordering\Order\UI\IndexReviewFamiliesInOrder;
+use App\Actions\Ordering\Order\UI\IndexReviewOrderInOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
-use App\Enums\UI\Ordering\RetinaOrderTabsEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Enums\UI\Ordering\RetinaOrderReviewTabsEnum;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerResource;
@@ -22,17 +27,19 @@ use App\Http\Resources\Dispatching\RetinaShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
+use App\Http\Resources\Ordering\RetinaOrderReviewableResource;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use App\Models\Reviews\ReviewRatingLabel;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
 
-class ShowRetinaEcomOrder extends RetinaAction
+class ShowRetinaEcomOrderReview extends RetinaAction
 {
     use GetPlatformLogo;
 
@@ -53,7 +60,7 @@ class ShowRetinaEcomOrder extends RetinaAction
 
     public function asController(Order $order, ActionRequest $request): Order
     {
-        $this->initialisation($request)->withTab(RetinaOrderTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaOrderReviewTabsEnum::values());
 
         return $this->handle($order);
     }
@@ -61,87 +68,116 @@ class ShowRetinaEcomOrder extends RetinaAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-        $finalTimeline = ShowOrder::make()->getOrderTimeline($order);
-
-
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
         $action = [];
 
-        $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
+        $this->tab = $this->tab ?: RetinaOrderReviewTabsEnum::TRANSACTIONS->value;
 
-
+        $ratingLabels = [
+            ReviewContextEnum::ORDER->value   => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ORDER),
+            ReviewContextEnum::PRODUCT->value => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::PRODUCT),
+            ReviewContextEnum::FAMILY->value  => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::FAMILY),
+        ];
 
 
         return Inertia::render(
-            'Ecom/RetinaEcomOrder',
+            'Ecom/RetinaEcomOrderReview',
             [
-                'title'       => __('order'),
+                'title'       => __('Review Order'),
                 'breadcrumbs' => $this->getBreadcrumbs($order),
                 'pageHead'    => [
                     'title'   => $order->reference,
-                    'model'   => __('Order'),
+                    'model'   => __('Review Order'),
                     'icon'    => [
-                        'icon'  => 'fal fa-shopping-basket',
-                        'title' => __('Order')
+                        'icon'  => 'fal fa-star',
+                        'title' => __('Review Order')
                     ],
                     'actions' => $action,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => RetinaOrderTabsEnum::navigation()
+                    'navigation' => RetinaOrderReviewTabsEnum::navigation()
                 ],
 
-                'routes'        => [
-                    'update_route'        => [
-                        'name'       => 'retina.models.order.update',
-                        'parameters' => [
-                            'order' => $order->id
-                        ],
-                        'method'     => 'patch'
-                    ],
-                    'submit_route'        => [
-                        'name'       => 'retina.models.order.submit',
-                        'parameters' => [
-                            'order' => $order->id
-                        ],
-                        'method'     => 'patch'
-                    ],
-                    'route_to_pay_unpaid' => [
-                        'name'       => 'retina.json.get_checkout_com_token_to_pay_order',
-                        'parameters' => [
-                            'order' => $order->id,
-                        ],
-                    ],
+                'routes'  => [
 
 
                 ],
-                'summary'       => $this->getOrderBoxStats($order),
+                'summary' => $this->getOrderBoxStats($order),
 
 
-                'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
-                'timelines'          => $finalTimeline,
-                'balance'            => $this->customer->balance,
-                'currency'           => CurrencyResource::make($order->currency)->toArray(request()),
-                'data'               => OrderResource::make($order),
-                'is_notes_editable'  => false,  // TODO: make it dynamic, only disable on 'after' state
-
-                RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
-                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
+                'currency'          => CurrencyResource::make($order->currency)->toArray(request()),
+                'data'              => OrderResource::make($order),
+                'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
 
 
+                RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value => $this->tab == RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value ?
+                    fn() => $this->getOverallReview()
+                    : Inertia::lazy(fn() => $this->getOverallReview()),
+
+
+                RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value
+                    ? fn() => RetinaOrderReviewableResource::collection(IndexReviewFamiliesInOrder::run(parent: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
+                        ->additional([
+                            'order_id'      => $order->id,
+                            'shop_id'       => $order->shop_id,
+                            'context'       => ReviewContextEnum::FAMILY->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::FAMILY->value],
+                        ])
+                    : Inertia::lazy(fn() => RetinaOrderReviewableResource::collection(IndexReviewFamiliesInOrder::run(parent: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
+                        ->additional([
+                            'order_id'      => $order->id,
+                            'shop_id'       => $order->shop_id,
+                            'context'       => ReviewContextEnum::FAMILY->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::FAMILY->value],
+                        ])),
+
+                RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value
+                    ? fn() => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(parent: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value))
+                        ->additional([
+                            'order_id'      => $order->id,
+                            'shop_id'       => $order->shop_id,
+                            'context'       => ReviewContextEnum::PRODUCT->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
+                        ])
+                    : Inertia::lazy(fn() => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(parent: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value))
+                        ->additional([
+                            'order_id'      => $order->id,
+                            'shop_id'       => $order->shop_id,
+                            'context'       => ReviewContextEnum::PRODUCT->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
+                        ])),
             ]
         )
-            ->table(
-                IndexTransactions::make()->tableStructure(
-                    parent: $order,
-                    tableRows: $nonProductItems,
-                    prefix: RetinaOrderTabsEnum::TRANSACTIONS->value
-                )
-            );
+            ->table(IndexReviewFamiliesInOrder::make()->tableStructure(prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
+            ->table(IndexReviewProductsInOrder::make()->tableStructure(prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value));
     }
 
+    public function getOverallReview(): array
+    {
+        return [];
+    }
+
+    private function ratingLabelsForShop(int $shopId, ReviewContextEnum $context): array
+    {
+        return ReviewRatingLabel::query()
+            ->whereRaw('LOWER(model_type) = ?', ['shop'])
+            ->where('model_id', $shopId)
+            ->whereRaw('LOWER(review_context) = ?', [$context->value])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('dimension')
+            ->get(['dimension', 'label', 'is_required', 'weight'])
+            ->map(fn(ReviewRatingLabel $reviewRatingLabel): array => [
+                'dimension'   => $reviewRatingLabel->dimension?->value ?? (string)$reviewRatingLabel->dimension,
+                'label'       => (string)$reviewRatingLabel->label,
+                'is_required' => (bool)$reviewRatingLabel->is_required,
+                'weight'      => (float)$reviewRatingLabel->weight,
+            ])
+            ->values()
+            ->all();
+    }
 
     public function jsonResponse(Order $order): OrderResource
     {
@@ -179,44 +215,9 @@ class ShowRetinaEcomOrder extends RetinaAction
 
         $invoicesData = [];
 
-        foreach ($order->invoices as $invoice) {
-            $routeShow = [
-                'name'       => 'retina.ecom.invoices.show',
-                'parameters' => [
-                    'invoice' => $invoice->slug,
-                ],
-            ];
-
-            $routeDownload = [
-                'name'       => 'retina.ecom.invoices.pdf',
-                'parameters' => [
-                    'invoice' => $invoice->slug,
-                ],
-            ];
-
-            $invoicesData[] = [
-                'reference' => $invoice->reference,
-                'routes'    => [
-                    'show'     => $routeShow,
-                    'download' => $routeDownload,
-                ],
-            ];
-        }
-
 
         $deliveryNotes     = $order->deliveryNotes;
         $deliveryNotesData = [];
-
-        if ($deliveryNotes) {
-            foreach ($deliveryNotes as $deliveryNote) {
-                $deliveryNotesData[] = [
-                    'id'        => $deliveryNote->id,
-                    'reference' => $deliveryNote->reference,
-                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
-                ];
-            }
-        }
 
 
         $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
@@ -227,32 +228,24 @@ class ShowRetinaEcomOrder extends RetinaAction
         $numberOrders = $numberOrders + 1;
 
         return [
-            'customer'         => array_merge(
+            'customer' => array_merge(
                 CustomerResource::make($order->customer)->getArray(),
                 [
                     'addresses' => [
                         'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
                         'billing'  => AddressResource::make($order->billingAddress ?? new Address())
                     ],
-                    'route'     => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show',
-                        'parameters' => [
-                            'organisation' => $order->organisation->slug,
-                            'shop'         => $order->shop->slug,
-                            'customer'     => $order->customer->slug,
-                        ]
-                    ]
                 ]
             ),
-            'invoices'         => $invoicesData,
+
             'order_properties' => [
                 'weight'                         => NaturalLanguage::make()->weight($order->estimated_weight),
                 'customer_order_number'          => $numberOrders,
                 'customer_order_ordinal'         => ordinal($numberOrders)." ".__('order'),
                 'customer_order_ordinal_tooltip' => __('This is the nth order this customer has placed with this shop.')
             ],
-            'delivery_notes'   => $deliveryNotesData,
-            'products'         => [
+
+            'products' => [
                 'payment'          => [
                     'routes'       => [
                         'fetch_payment_accounts' => [

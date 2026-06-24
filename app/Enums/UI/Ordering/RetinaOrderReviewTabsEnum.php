@@ -11,42 +11,32 @@ namespace App\Enums\UI\Ordering;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 
-enum RetinaReviewsTabsEnum: string
+enum RetinaOrderReviewTabsEnum: string
 {
     use EnumHelperTrait;
     use HasTabs;
 
-    case TRANSACTIONS                       = 'transactions';
-
-    case ORDER_REVIEWS                      = 'order_reviews';
-
+    case OVERALL_REVIEW                      = 'overall_review';
     case FAMILY_REVIEWS                     = 'family_reviews';
-
     case PRODUCT_REVIEWS                    = 'product_reviews';
-
-
 
 
     public function blueprint(): array
     {
         return match ($this) {
 
-            RetinaOrderTabsEnum::TRANSACTIONS => [
-                'title' => __('Transactions'),
-                'icon'  => 'fal fa-bars',
-            ],
 
-            RetinaOrderTabsEnum::ORDER_REVIEWS => [
-                'title' => __('Order review'),
+            RetinaOrderReviewTabsEnum::OVERALL_REVIEW => [
+                'title' => __('Overall review'),
                 'icon'  => 'fal fa-star',
             ],
 
-            RetinaOrderTabsEnum::FAMILY_REVIEWS => [
+            RetinaOrderReviewTabsEnum::FAMILY_REVIEWS => [
                 'title' => __('Families review'),
                 'icon'  => 'fal fa-star',
             ],
 
-            RetinaOrderTabsEnum::PRODUCT_REVIEWS => [
+            RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS => [
                 'title' => __('Products review'),
                 'icon'  => 'fal fa-star',
             ],

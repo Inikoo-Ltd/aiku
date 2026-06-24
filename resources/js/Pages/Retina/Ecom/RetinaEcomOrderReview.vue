@@ -23,8 +23,8 @@ import EcomTableOrderTransactions from "@/Components/Retina/Ecom/EcomTableOrderT
 import { AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt } from '@fas'
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
+import { faExclamationTriangle, faExclamation, faBoxHeart, faShieldAlt } from '@fas'
+import { faStar,faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
 import { Currency } from '@/types/LayoutRules'
 import { faSpinnerThird } from '@far'
 import Timeline from '@/Components/Utils/Timeline.vue'
@@ -34,14 +34,13 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { debounce } from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import EcomCheckoutSummary from '@/Components/Retina/Ecom/EcomCheckoutSummary.vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
+import EcomReviewSummary from '@/Components/Retina/Ecom/EcomReviewSummary.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
-import RetinaTableOrderReview from "@/Components/Tables/Retina/RetinaTableOrderReview.vue"
+import RetinaTableOrderReview from '@/Components/Tables/Retina/RetinaTableOrderReview.vue'
 
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
+library.add(faStar,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
 const props = defineProps<{
@@ -90,6 +89,9 @@ const props = defineProps<{
             shipping_notes?: string
         }
     }
+    order_reviews?: {}
+    family_reviews?: {}
+    product_reviews?: {}
     transactions: {} // TransactionsResource
     invoices?: {}
     delivery_notes: {
@@ -107,6 +109,13 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: EcomTableOrderTransactions,
+        order_reviews: RetinaTableOrderReview,
+        family_reviews: RetinaTableOrderReview,
+        product_reviews: RetinaTableOrderReview,
+        // delivery_notes: TableDeliveryNotes,
+        // attachments: TableAttachments,
+        // invoices: TableInvoices,
+		// products: TableProductList
     }
 
     return components[currentTab.value]
@@ -157,23 +166,6 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead">
-        <template #other>
-            <a v-if="['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state || 'vcxzvcx')"
-                :href="route('retina.ecom.orders.proforma_invoice.download', {
-                    order: props.data?.data?.slug
-                })"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-block"
-            >
-                <Button
-                    
-                    type="tertiary"
-                    :label="trans('Proforma Invoice')"
-                    icon="fal fa-file-pdf"
-                />
-            </a>
-        </template>
     </PageHeading>
 
     <div v-if="data?.data?.has_insurance || data?.data?.is_premium_dispatch || data?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
@@ -208,10 +200,8 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
         </div>
     </Message>
 
-    <EcomCheckoutSummary
+    <EcomReviewSummary
         :summary
-        :balance
-        :address_management
         :order="data?.data"
     />
 

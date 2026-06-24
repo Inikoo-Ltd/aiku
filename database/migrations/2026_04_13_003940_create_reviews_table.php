@@ -86,7 +86,7 @@ return new class () extends Migration {
             $table->jsonb('meta')->default('{}');
             $table->timestampsTz();
             $table->softDeletesTz();
-            $table->index(['status', 'created_at'], 'shop_reviews_status_created_idx');
+            $table->index(['review_status', 'created_at'], 'shop_reviews_status_created_idx');
         });
     }
 
