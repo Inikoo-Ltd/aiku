@@ -37,100 +37,104 @@ class AuthenticateAllegroAccount extends OrgAction
      */
     public function handle(array $modelData)
     {
-        return DB::transaction(function () use ($modelData) {
-            try {
-                $customer = null;
-                if (Arr::get($modelData, 'state')) {
-                    $stateData = json_decode(base64_decode(Arr::get($modelData, 'state')), true);
-                    $customer = Customer::find(Arr::get($stateData, 'customer_id'));
-                    $codeVerifier = Arr::get($stateData, 'code_verifier');
-                }
-
-                $tokenData = $this->exchangeCodeForTokens(
-                    Arr::get($modelData, 'code'),
-                    route('allegro.callback'),
-                    $codeVerifier ?? null
-                );
-
-                if (isset($tokenData['access_token'])) {
-                    $accessTokenExpiresAt = now()->addSeconds($tokenData['expires_in'])->timestamp;
-                    $refreshTokenExpiresAt = isset($tokenData['refresh_token'])
-                        ? now()->addDays(90)->timestamp
-                        : null;
-
-                    $http = Http::withHeaders([
-                        'Authorization'  => 'Bearer ' . $tokenData['access_token'],
-                        'Accept'         => $this->allegroApiVersion,
-                        'Content-Type'   => $this->allegroApiVersion,
-                    ])->baseUrl(config('services.allegro.base_url'))
-                        ->get('/me');
-
-                    $response = $http->json();
-
-                    if($http->failed()) {
-                        throw new \Exception('Failed to fetch user data: ' . $http->json());
+        try {
+            return DB::transaction(function () use ($modelData) {
+                    $customer = null;
+                    if (Arr::get($modelData, 'state')) {
+                        $stateData = json_decode(base64_decode(Arr::get($modelData, 'state')), true);
+                        $customer = Customer::find(Arr::get($stateData, 'customer_id'));
+                        $codeVerifier = Arr::get($stateData, 'code_verifier');
                     }
 
-                    $name = (Arr::get($response, 'firstName') && Arr::get($response, 'lastName'))
-                        ? Arr::get($response, 'firstName') . ' ' . Arr::get($response, 'lastName')
-                        : Arr::get($response, 'company.name');
+                    $tokenData = $this->exchangeCodeForTokens(
+                        Arr::get($modelData, 'code'),
+                        $this->getRedirectUrl(),
+                        $codeVerifier ?? null
+                    );
 
-                    if( !$name) {
-                        $name = Arr::get($response, 'login');
-                    }
+                    if (isset($tokenData['access_token'])) {
+                        $accessTokenExpiresAt = now()->addSeconds($tokenData['expires_in'])->timestamp;
+                        $refreshTokenExpiresAt = isset($tokenData['refresh_token'])
+                            ? now()->addDays(90)->timestamp
+                            : null;
 
-                    $userData = [
-                        'allegro_id' => Arr::get($response, 'id'),
-                        'name' => $name,
-                        'access_token' => $tokenData['access_token'],
-                        'access_token_expire_in' => $accessTokenExpiresAt,
-                        'refresh_token' => $tokenData['refresh_token'] ?? null,
-                        'refresh_token_expire_in' => $refreshTokenExpiresAt,
-                        'auth_type' => 'oauth',
-                    ];
+                        $http = Http::withHeaders([
+                            'Authorization'  => 'Bearer ' . $tokenData['access_token'],
+                            'Accept'         => $this->allegroApiVersion,
+                            'Content-Type'   => $this->allegroApiVersion,
+                        ])->baseUrl(config('services.allegro.base_url'))
+                            ->get('/me');
 
-                    $allegroUser = AllegroUser::where('customer_id', $customer?->id)
-                        ->where('allegro_id', $userData['allegro_id'])
-                        ->first();
+                        $response = $http->json();
 
-                    if (!$allegroUser && $customer?->id) {
-                        $allegroUser = StoreAllegroUser::run($customer, $userData);
-                    } elseif (!$allegroUser && $customer === null) {
-                        $allegroUser = AllegroUser::create($userData);
-                    }
-
-                    if ($customer?->id && $allegroUser) {
-                        $allegroUser = UpdateAllegroUser::run($allegroUser, $userData);
-                    }
-
-                    if ($allegroUser) {
-                        SaveShopDataAllegroChannel::run($allegroUser);
-                        $allegroUser->refresh();
-
-                        if ($customer?->id) {
-                            CheckAllegroChannel::run($allegroUser);
+                        if($http->failed()) {
+                            throw ValidationException::withMessages($http->json());
                         }
+
+                        $name = (Arr::get($response, 'firstName') && Arr::get($response, 'lastName'))
+                            ? Arr::get($response, 'firstName') . ' ' . Arr::get($response, 'lastName')
+                            : Arr::get($response, 'company.name');
+
+                        if( !$name) {
+                            $name = Arr::get($response, 'login');
+                        }
+
+                        $userData = [
+                            'allegro_id' => Arr::get($response, 'id'),
+                            'name' => $name,
+                            'access_token' => $tokenData['access_token'],
+                            'access_token_expire_in' => $accessTokenExpiresAt,
+                            'refresh_token' => $tokenData['refresh_token'] ?? null,
+                            'refresh_token_expire_in' => $refreshTokenExpiresAt,
+                            'auth_type' => 'oauth',
+                        ];
+
+                        $allegroUser = AllegroUser::where('customer_id', $customer?->id)
+                            ->where('allegro_id', $userData['allegro_id'])
+                            ->first();
+
+                        if (!$allegroUser && $customer?->id) {
+                            $allegroUser = StoreAllegroUser::run($customer, $userData);
+                        } elseif (!$allegroUser && $customer === null) {
+                            $allegroUser = AllegroUser::create($userData);
+                        }
+
+                        if ($customer?->id && $allegroUser) {
+                            $allegroUser = UpdateAllegroUser::run($allegroUser, $userData);
+                        }
+
+                        if ($allegroUser) {
+                            SaveShopDataAllegroChannel::run($allegroUser);
+                            $allegroUser->refresh();
+
+                            if ($customer?->id) {
+                                CheckAllegroChannel::run($allegroUser);
+                            }
+                        }
+
+                        $customerSalesChannel = $allegroUser->customerSalesChannel;
+                        $domain = "https://{$customerSalesChannel->shop->website->domain}";
+                        $path = "/app/dropshipping/channels/$customerSalesChannel->slug";
+
+                        $fullUrl = $domain . $path;
+
+                        return Redirect::away($fullUrl);
                     }
 
-                    $customerSalesChannel = $allegroUser->customerSalesChannel;
-                    $domain = "https://{$customerSalesChannel->shop->website->domain}";
-                    $path = "/app/dropshipping/channels/$customerSalesChannel->slug";
 
-                    $fullUrl = $domain . $path;
 
-                    return Redirect::away($fullUrl);
-                }
+                return null;
+            });
+        } catch (\Exception $e) {
+            \Sentry::captureException($e);
 
-            } catch (\Exception $e) {
-                dd($e->getMessage());
+            return $e->getMessage();
+        }
+    }
 
-                \Sentry::captureException($e);
-
-                return $e->getMessage();
-            }
-
-            return null;
-        });
+    public function getRedirectUrl(): string
+    {
+        return route('allegro.callback');
     }
 
     public function redirectToAllegro(Customer $customer): string
@@ -143,7 +147,7 @@ class AuthenticateAllegroAccount extends OrgAction
             'code_verifier' => $codeVerifier
         ]));
 
-        $redirectUri = route('allegro.callback');
+        $redirectUri = $this->getRedirectUrl();
 
         $scope = 'allegro:api:sale:offers:read allegro:api:sale:offers:write allegro:api:sale:settings:read allegro:api:sale:settings:write allegro:api:orders:read allegro:api:orders:write allegro:api:profile:read allegro:api:profile:write allegro:api:fulfillment:read allegro:api:fulfillment:write allegro:api:shipments:read allegro:api:shipments:write';
         return $this->getAuthorizationUrl($redirectUri, $codeChallenge, $scope, $state);
