@@ -5,6 +5,7 @@ namespace App\Actions\Goods\TradeUnit\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -90,6 +91,57 @@ class ShowTradeUnitsDashboard extends OrgAction
                         'color' => '#7DA78C',
                         'icon'  => 'fal fa-atom',
                         'value' => $this->group->goodsStats->number_stock_families_state_active,
+                    ],
+                    [
+                        'label' => __('Barcodes'),
+                        'route' => [
+                            'name'       => 'grp.trade_units.barcodes.index',
+                            'parameters' => []
+                        ],
+                        'color' => '#075192',
+                        'icon'  => 'fal fa-barcode',
+                        'value' => $this->group->goodsStats->number_barcodes,
+                        'metas' => [
+                            [
+                                'icon'    => BarcodeStatusEnum::AVAILABLE->icon(),
+                                'count'   => $this->group->goodsStats->number_barcodes_status_available,
+                                'tooltip' => __('Available'),
+                                'route'   => [
+                                    'name' => 'grp.trade_units.barcodes.index',
+                                    'parameters' => [
+                                        'index_elements' => [
+                                            'state' => 'available'
+                                        ]
+                                    ]
+                                ],
+                            ],
+                            [
+                                'icon'    => BarcodeStatusEnum::USED->icon(),
+                                'count'   => $this->group->goodsStats->number_barcodes_status_used,
+                                'tooltip' => __('Used'),
+                                'route'   => [
+                                    'name' => 'grp.trade_units.barcodes.index',
+                                    'parameters' => [
+                                        'index_elements' => [
+                                            'state' => 'used'
+                                        ]
+                                    ]
+                                ],
+                            ],
+                            [
+                                'icon'    => BarcodeStatusEnum::RESERVED->icon(),
+                                'count'   => $this->group->goodsStats->number_barcodes_status_reserved,
+                                'tooltip' => __('Reserved'),
+                                'route'   => [
+                                    'name' => 'grp.trade_units.barcodes.index',
+                                    'parameters' => [
+                                        'index_elements' => [
+                                            'state' => 'reserved'
+                                        ]
+                                    ]
+                                ],
+                            ],
+                        ],
                     ],
                 ],
                 'statsBoxNegative' => [

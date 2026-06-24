@@ -36,6 +36,7 @@ trait HasSubDepartmentsThree
                 [
                     'product_categories.code',
                     'product_categories.name',
+                    'webpages.canonical_url as url',
                 ]
             )
             ->orderBy('product_categories.code')
@@ -51,10 +52,15 @@ trait HasSubDepartmentsThree
             ->get()
             ->toArray();
 
-        $collectionList = $parent->collections()->where('state', CollectionStateEnum::ACTIVE)
+        $collectionList = $parent->collections()->where('collections.state', CollectionStateEnum::ACTIVE)
+            ->leftJoin('webpages', function ($join) {
+                $join->on('collections.id', '=', 'webpages.model_id')
+                    ->where('webpages.model_type', '=', 'Collection');
+            })
             ->select([
                 'collections.code',
-                'collections.name'
+                'collections.name',
+                'webpages.canonical_url as url',
             ])
             ->whereExists(function ($query) {
                 $query->selectRaw(1)
