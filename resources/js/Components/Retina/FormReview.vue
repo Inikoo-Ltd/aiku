@@ -421,8 +421,8 @@ watch(
                     </div>
 
 
-                     <div v-if="modelValue.review_images.length" class="grid gap-3 pt-4 sm:grid-cols-3">
-                        <div v-for="(item, index) in modelValue.review_images" :key="item.name + item.size"
+                     <div v-if="modelValue?.review_images?.length" class="grid gap-3 pt-4 sm:grid-cols-3">
+                        <div v-for="(item, index) in modelValue?.review_images" :key="item.name + item.size"
                             class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
                             <Image :src="item.thumbnail" :alt="item.name" class="h-36 w-full object-cover" />
 
