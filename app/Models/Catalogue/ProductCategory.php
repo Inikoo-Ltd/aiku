@@ -443,6 +443,15 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->withTimestamps();
     }
 
+    public function indexFamiliesOrdering(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(ProductCategory::class, 'department_has_family', foreignPivotKey: 'department_id', relatedPivotKey: 'family_id')
+            ->orderByPivot('position')
+            ->withPivot('id', 'position')
+            ->withTimestamps();
+    }
+
     public function tradeUnitFamily(): BelongsTo
     {
         return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');

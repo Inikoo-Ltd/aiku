@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\IndexFamiliesOrderingUnderDepartment\GetIndexFamiliesOrderingUnderDepartment;
 use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
@@ -174,9 +175,9 @@ class ShowDepartment extends OrgAction
                     fn () => GetRelatedProductCategories::run($department)
                     : Inertia::lazy(fn () => GetRelatedProductCategories::run($department)),
 
-                DepartmentTabsEnum::INDEX_RECOMENDERS_FAMILIES->value => $this->tab == DepartmentTabsEnum::INDEX_RECOMENDERS_FAMILIES->value ?
-                    fn () => GetDepartmentFamiliesFromMasterOrdering::run($department)
-                    : Inertia::lazy(fn () => GetDepartmentFamiliesFromMasterOrdering::run($department)),
+                DepartmentTabsEnum::INDEX_ORDERING->value => $this->tab == DepartmentTabsEnum::INDEX_ORDERING->value ?
+                    fn () => GetIndexFamiliesOrderingUnderDepartment::run($department)
+                    : Inertia::lazy(fn () => GetIndexFamiliesOrderingUnderDepartment::run($department)),
 
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
                     fn () =>  GetProductCategoryImages::run($department)

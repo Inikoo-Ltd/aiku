@@ -79,7 +79,7 @@ const props = defineProps<{
     sales?: object
     salesData?: object
     product_category_id?: number
-      index_recomenders_families : any;
+    index_ordering : any;
     shop_data: {
         id: number
         slug: string
@@ -108,7 +108,7 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         offers: TableOffers,
         related_product_category: RelatedProductCategory,
-        index_recomenders_families : SetIndexRecomendersFamily,
+        index_ordering : SetIndexRecomendersFamily,
     };
     return components[currentTab.value];
 

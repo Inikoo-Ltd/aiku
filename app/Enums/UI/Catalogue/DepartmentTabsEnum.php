@@ -20,13 +20,13 @@ enum DepartmentTabsEnum: string
     case IMAGES = 'images';
     case SALES = 'sales';
     case OFFERS = 'offers';
-    case RELATED_CATEGORIES = 'related_categories';
+    // case RELATED_CATEGORIES = 'related_categories';
 
     case HISTORY = 'history';
     // case DATA = 'data';
     case CUSTOMERS = 'customers';
     case RELATED_PRODUCT_CATEGORY      = 'related_product_category';
-    case INDEX_RECOMENDERS_FAMILIES    = 'index_recomenders_families';
+    case INDEX_ORDERING   = 'index_ordering';
 
 
     public function blueprint(): array
@@ -52,10 +52,10 @@ enum DepartmentTabsEnum: string
                 'title' => __('Offers'),
                 'icon'  => 'fal fa-tags',
             ],
-            DepartmentTabsEnum::RELATED_CATEGORIES => [
-                'title' => __('Related categories'),
-                'icon'  => 'fal fa-project-diagram',
-            ],
+            // DepartmentTabsEnum::RELATED_CATEGORIES => [
+            //     'title' => __('Related categories'),
+            //     'icon'  => 'fal fa-project-diagram',
+            // ],
             DepartmentTabsEnum::IMAGES => [
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
@@ -75,9 +75,9 @@ enum DepartmentTabsEnum: string
                 'title' => __('Related Product Category'),
                 'icon'  => 'fal fa-folder-tree',
             ],
-            DepartmentTabsEnum::INDEX_RECOMENDERS_FAMILIES => [
-                'title' => __('Index Recommenders'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+            DepartmentTabsEnum::INDEX_ORDERING => [
+                'title' => __('Index Families Ordering'),
+                'icon'  => 'fal fa-sort-shapes-up-alt',
             ],
         };
     }

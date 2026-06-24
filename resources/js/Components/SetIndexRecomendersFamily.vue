@@ -8,12 +8,14 @@ import Image from "@common/Components/Image.vue";
 import { routeType } from "@/types/route";
 import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
+import { faInfoCircle } from "@fal";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const props = defineProps<{
     data: {
         data: any,
         editable: boolean
-        route_sync_related_products?: {
+        route_sync_index_families_ordering?: {
             name: string,
             parameters: Record<string, any>
         }
@@ -38,12 +40,12 @@ const openAddProduct = () => {
 
 const SaveOrder = async () => {
     if (!props.data?.editable) return
-    if (!props.data?.route_sync_related_products?.name) return
+    if (!props.data?.route_sync_index_families_ordering?.name) return
 
     loadingOrder.value = true
 
     console.log(
-        'Saving order with the following products:',
+        'Saving order with the following families:',
         listProducts.value.data
     )
 
@@ -64,8 +66,8 @@ const SaveOrder = async () => {
     try {
         await axios.patch(
             route(
-                props.data.route_sync_related_products.name,
-                props.data.route_sync_related_products.parameters
+                props.data.route_sync_index_families_ordering.name,
+                props.data.route_sync_index_families_ordering.parameters
             ),
             payload
         )
@@ -100,7 +102,7 @@ console.log('plm',props)
         <!-- HEADER ACTION -->
         <div class="flex justify-between items-center">
             <div class="text-xl font-semibold text-gray-700">
-                {{ trans('Related Families') }}
+                {{ trans('Index Families Ordering') }} <FontAwesomeIcon :icon="faInfoCircle" v-tooltip="ctrans('This would only be applied when you set the website to use Sub-Department-3 style')" class="cursor-pointer"/>
             </div>
 
             <Button v-if="props.data?.editable" label="Save" :disabled="!saveActive" @click="SaveOrder"   :loading="loadingOrder" type="save" />
