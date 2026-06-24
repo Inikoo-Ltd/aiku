@@ -10,24 +10,24 @@ enum ShopReviewsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case PRODUCTS = 'products';
-    case FAMILIES = 'families';
     case SHOP = 'shop';
+    case FAMILIES = 'families';
+    case PRODUCTS = 'products';
 
     public function blueprint(): array
     {
         return match ($this) {
-            ShopReviewsTabsEnum::PRODUCTS => [
-                'title' => __('Products'),
-                'icon'  => 'fal fa-cube',
+            ShopReviewsTabsEnum::SHOP => [
+                'title' => __('Shop'),
+                'icon'  => 'fal fa-store-alt',
             ],
             ShopReviewsTabsEnum::FAMILIES => [
                 'title' => __('Families'),
                 'icon'  => 'fal fa-folder-tree',
             ],
-            ShopReviewsTabsEnum::SHOP => [
-                'title' => __('Shop'),
-                'icon'  => 'fal fa-store-alt',
+            ShopReviewsTabsEnum::PRODUCTS => [
+                'title' => __('Products'),
+                'icon'  => 'fal fa-cube',
             ],
         };
     }
@@ -35,9 +35,9 @@ enum ShopReviewsTabsEnum: string
     public function scope(): string
     {
         return match ($this) {
-            ShopReviewsTabsEnum::PRODUCTS => 'product',
-            ShopReviewsTabsEnum::FAMILIES => 'family',
             ShopReviewsTabsEnum::SHOP     => 'overall',
+            ShopReviewsTabsEnum::FAMILIES => 'family',
+            ShopReviewsTabsEnum::PRODUCTS => 'product',
         };
     }
 }
