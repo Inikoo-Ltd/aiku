@@ -18,6 +18,8 @@ enum RetinaOrderTabsEnum: string
 
     case TRANSACTIONS                       = 'transactions';
 
+    case REVIEWS                            = 'reviews';
+
 
 
 
@@ -28,6 +30,11 @@ enum RetinaOrderTabsEnum: string
             RetinaOrderTabsEnum::TRANSACTIONS => [
                 'title' => __('Transactions'),
                 'icon'  => 'fal fa-bars',
+            ],
+
+            RetinaOrderTabsEnum::REVIEWS => [
+                'title' => __('Reviews'),
+                'icon'  => 'fal fa-star',
             ],
 
 
