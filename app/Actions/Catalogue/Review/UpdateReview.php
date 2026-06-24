@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\Review;
 
 use App\Actions\Catalogue\Review\Traits\HasReviewHydrators;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Models\Reviews\Review;
@@ -55,7 +56,8 @@ class UpdateReview extends OrgAction
             $ratingMain = $this->resolveRatingMain($review, $modelData);
             $review->update([
                 'customer_id'          => data_get($modelData, 'customer_id', $review->customer_id),
-                'status'               => data_get($modelData, 'status', $review->status?->value),
+                'state'                => data_get($modelData, 'state', $review->state?->value),
+                'review_status'        => data_get($modelData, 'review_status', $review->review_status?->value),
                 'rating_main'          => $ratingMain,
                 'rating_a'             => data_get($modelData, 'rating_a', $review->rating_a),
                 'rating_b'             => data_get($modelData, 'rating_b', $review->rating_b),
@@ -67,7 +69,7 @@ class UpdateReview extends OrgAction
                 'show_after'           => data_get($modelData, 'show_after', $review->show_after),
                 'is_public'            => data_get($modelData, 'is_public', $review->is_public),
                 'order_id'             => data_get($modelData, 'order_id', $review->order_id),
-                'likes'           => data_get($modelData, 'likes', $review->likes),
+                'likes'                => data_get($modelData, 'likes', $review->likes),
                 'meta'                 => data_get($modelData, 'meta', $review->meta ?? []),
             ]);
 
@@ -119,9 +121,10 @@ class UpdateReview extends OrgAction
     public function rules(): array
     {
         return [
-            'reviewable_type'        => ['required', Rule::in(['Product', 'ProductCategory', 'Shop', 'product_reviews', 'product_category_reviews', 'shop_reviews'])],
+            'reviewable_type'        => ['sometimes', Rule::in(['Order', 'Product', 'ProductCategory', 'Shop'])],
             'customer_id'           => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
-            'status'                => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
+            'review_status'         => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
+            'state'                 => ['sometimes', Rule::enum(ReviewStateEnum::class)],
             'rating'                => ['sometimes', 'numeric', 'min:1', 'max:5'],
             'rating_a'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_b'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
@@ -133,7 +136,7 @@ class UpdateReview extends OrgAction
             'show_after'            => ['sometimes', 'nullable', 'date'],
             'is_public'             => ['sometimes', 'boolean'],
             'order_id'              => ['sometimes', 'nullable', 'integer', 'exists:orders,id'],
-            'likes'            => ['sometimes', 'integer', 'min:0'],
+            'likes'                 => ['sometimes', 'integer', 'min:0'],
             'meta'                  => ['sometimes', 'array'],
             'images'                => ['sometimes', 'array'],
             'images.*'              => ['sometimes', File::image()->max(50 * 1024)],

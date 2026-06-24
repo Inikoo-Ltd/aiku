@@ -26,7 +26,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Traits\IsReviews;
 use App\Models\Traits\HasImage;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
@@ -36,22 +35,46 @@ use Spatie\MediaLibrary\HasMedia;
  * @property int|null $shop_id
  * @property int|null $customer_id
  * @property int|null $order_id
- * @property int $rating_main
- * @property int $rating_a
- * @property int $rating_b
- * @property int $rating_c
- * @property int $rating_d
- * @property int $rating_e
+ * @property ReviewTypeEnum $scope
+ * @property ReviewStateEnum $state
+ * @property bool $is_online
+ * @property bool $is_public
+ * @property int|null $master_product_category_id
+ * @property int|null $product_category_id
+ * @property int|null $master_product_id
+ * @property int|null $product_id
+ * @property float $rating_main
+ * @property int|null $rating_a
+ * @property int|null $rating_b
+ * @property int|null $rating_c
+ * @property int|null $rating_d
+ * @property int|null $rating_e
  * @property \Illuminate\Support\Carbon|null $show_after
- * @property ReviewStatusEnum $status
+ * @property ReviewStatusEnum $review_status
  * @property string|null $title
  * @property string|null $message
+ * @property int|null $language_id
+ * @property bool $approved
+ * @property bool $auto_approved
+ * @property int|null $approved_by
+ * @property \Illuminate\Support\Carbon|null $published_at
+ * @property bool $removed
+ * @property int|null $removed_by
+ * @property \Illuminate\Support\Carbon|null $removed_at
+ * @property string|null $removed_reason
+ * @property bool $replied
+ * @property string|null $reply_message
+ * @property \Illuminate\Support\Carbon|null $reply_at
+ * @property int|null $reply_by
  * @property int $likes
+ * @property int $dislikes
+ * @property int $replay_likes
+ * @property int $replay_dislikes
+ * @property string|null $external_id
  * @property array<array-key, mixed> $meta
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Helpers\Media|null $image
@@ -80,18 +103,23 @@ class Review extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
+        'scope'         => ReviewTypeEnum::class,
         'state'         => ReviewStateEnum::class,
-        'type'          => ReviewTypeEnum::class,
         'review_status' => ReviewStatusEnum::class,
         'likes'         => 'integer',
+        'dislikes'      => 'integer',
+        'replay_likes'  => 'integer',
+        'replay_dislikes' => 'integer',
         'meta'          => 'array',
-        'show_after'    => 'datetime'
+        'show_after'    => 'datetime',
+        'published_at'  => 'datetime',
+        'removed_at'    => 'datetime',
+        'reply_at'      => 'datetime',
     ];
 
     protected $attributes = [
         'meta' => '{}',
     ];
-
 
     public function getRouteKeyName(): string
     {
@@ -103,12 +131,6 @@ class Review extends Model implements Auditable, HasMedia
         static::saving(function (Review $model) {
             $model->calculateAverageRating();
         });
-    }
-
-    public function replies(): HasMany
-    {
-        return $this->hasMany(ReviewReply::class, 'reviewable_id')
-            ->where('review_replies.reviewable_type', $this->getTable());
     }
 
     public function masterProduct(): BelongsTo
@@ -130,6 +152,4 @@ class Review extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(ProductCategory::class, 'product_category_id');
     }
-
-
 }

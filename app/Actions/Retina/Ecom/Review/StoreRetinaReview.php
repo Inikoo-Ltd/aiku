@@ -2,42 +2,50 @@
 
 namespace App\Actions\Retina\Ecom\Review;
 
-use App\Actions\Catalogue\Review\StoreReview;
+use App\Actions\Reviews\StoreReview;
 use App\Actions\RetinaAction;
-use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\Reviews\ProductCategoryReview;
-use App\Models\Reviews\ProductReview;
-use App\Models\Reviews\ShopReview;
+use App\Enums\Catalogue\Review\ReviewStatusEnum;
+use App\Models\Ordering\Order;
+use App\Models\Reviews\Review;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaReview extends RetinaAction
 {
-    public function handle(Product|ProductCategory|Shop $reviewable, array $modelData): ProductReview|ProductCategoryReview|ShopReview
+    public function handle(Order $order, array $modelData): Review
     {
-        return StoreReview::run($reviewable, $modelData);
+        return StoreReview::run($order, $modelData);
     }
 
-    public function asController(ActionRequest $request): ProductReview|ProductCategoryReview|ShopReview
+    public function rules(): array
+    {
+        return [
+            'rating'   => ['required', 'numeric', 'min:1', 'max:5'],
+            'rating_a' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_b' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_c' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_d' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_e' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'title'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'message'  => ['sometimes', 'nullable', 'string', 'max:5000'],
+        ];
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        $order = $request->route('order');
+
+        return $order instanceof Order && $order->customer_id === $this->customer?->id;
+    }
+
+    public function asController(Order $order, ActionRequest $request): Review
     {
         $this->initialisation($request);
 
-        return $this->handle(
-            $this->resolveReviewable(
-                (string) data_get($this->validatedData, 'reviewable_type'),
-                (int) data_get($this->validatedData, 'reviewable_id')
-            ),
-            $this->validatedData
-        );
-    }
-
-    private function resolveReviewable(string $reviewableType, int $reviewableId): Product|ProductCategory|Shop
-    {
-        return match ($reviewableType) {
-            'Product', 'product_reviews'                         => Product::query()->findOrFail($reviewableId),
-            'ProductCategory', 'product_category_reviews'        => ProductCategory::query()->findOrFail($reviewableId),
-            default                                              => Shop::query()->findOrFail($reviewableId),
-        };
+        return $this->handle($order, [
+            ...$this->validatedData,
+            'customer_id' => $this->customer?->id,
+            'status'      => ReviewStatusEnum::PENDING->value,
+            'order_id'    => $order->id,
+        ]);
     }
 }
