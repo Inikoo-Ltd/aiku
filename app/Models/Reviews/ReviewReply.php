@@ -37,7 +37,7 @@ class ReviewReply extends Model
 
     public function shopReview(): BelongsTo
     {
-        return $this->belongsTo(ShopReview::class, 'reviewable_id')
+        return $this->belongsTo(Review::class, 'reviewable_id')
             ->where('review_replies.reviewable_type', 'shop_reviews');
     }
 

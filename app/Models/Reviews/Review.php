@@ -3,17 +3,23 @@
 /*
  * author Louis Perez
  * created on 13-04-2026-09h-36m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Models\Reviews;
 
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
+use App\Enums\Catalogue\Review\ReviewTypeEnum;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
+use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use App\Models\Ordering\Order;
@@ -54,15 +60,15 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopReview newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopReview newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopReview onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopReview query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopReview withTrashed(bool $withTrashed = true)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopReview withoutTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Review onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Review query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Review withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Review withoutTrashed()
  * @mixin \Eloquent
  */
-class ShopReview extends Model implements Auditable, HasMedia
+class Review extends Model implements Auditable, HasMedia
 {
     use InShop;
     use SoftDeletes;
@@ -73,10 +79,11 @@ class ShopReview extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'status'                => ReviewStatusEnum::class,
-        'like_count'            => 'integer',
-        'meta'                  => 'array',
-        'show_after'            => 'datetime'
+        'type'          => ReviewTypeEnum::class,
+        'review_status' => ReviewStatusEnum::class,
+        'like_count'    => 'integer',
+        'meta'          => 'array',
+        'show_after'    => 'datetime'
     ];
 
     protected $attributes = [
@@ -91,7 +98,7 @@ class ShopReview extends Model implements Auditable, HasMedia
 
     protected static function booted(): void
     {
-        static::saving(function (ShopReview $model) {
+        static::saving(function (Review $model) {
             $model->calculateAverageRating();
         });
     }
@@ -101,4 +108,26 @@ class ShopReview extends Model implements Auditable, HasMedia
         return $this->hasMany(ReviewReply::class, 'reviewable_id')
             ->where('review_replies.reviewable_type', $this->getTable());
     }
+
+    public function masterProduct(): BelongsTo
+    {
+        return $this->belongsTo(MasterAsset::class, 'master_product_id');
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function masterProductCategory(): BelongsTo
+    {
+        return $this->belongsTo(MasterProductCategory::class, 'master_product_category_id');
+    }
+
+    public function productCategory(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class, 'product_category_id');
+    }
+
+
 }

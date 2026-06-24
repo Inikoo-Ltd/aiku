@@ -77,9 +77,9 @@ class ShowRetinaEcomOrder extends RetinaAction
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
 
         $ratingLabels = [
-            ReviewContextEnum::ShopReviews->value => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ShopReviews),
-            ReviewContextEnum::ProductReviews->value => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ProductReviews),
-            ReviewContextEnum::ProductCategoryReviews->value => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ProductCategoryReviews),
+            ReviewContextEnum::ORDER->value   => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ORDER),
+            ReviewContextEnum::PRODUCT->value => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::PRODUCT),
+            ReviewContextEnum::FAMILY->value  => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::FAMILY),
         ];
 
 
@@ -146,15 +146,15 @@ class ShowRetinaEcomOrder extends RetinaAction
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
-                            'context'       => ReviewContextEnum::ShopReviews->value,
-                            'rating_labels' => $ratingLabels[ReviewContextEnum::ShopReviews->value],
+                            'context'       => ReviewContextEnum::ORDER->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::ORDER->value],
                         ])
                     : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection(IndexReviewOrderInOrder::run(parent: $order, prefix: RetinaOrderTabsEnum::ORDER_REVIEWS->value))
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
-                            'context'       => ReviewContextEnum::ShopReviews->value,
-                            'rating_labels' => $ratingLabels[ReviewContextEnum::ShopReviews->value],
+                            'context'       => ReviewContextEnum::ORDER->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::ORDER->value],
                         ])),
 
                 RetinaOrderTabsEnum::FAMILY_REVIEWS->value => $this->tab == RetinaOrderTabsEnum::FAMILY_REVIEWS->value
@@ -162,15 +162,15 @@ class ShowRetinaEcomOrder extends RetinaAction
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
-                            'context'       => ReviewContextEnum::ProductCategoryReviews->value,
-                            'rating_labels' => $ratingLabels[ReviewContextEnum::ProductCategoryReviews->value],
+                            'context'       => ReviewContextEnum::FAMILY->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::FAMILY->value],
                         ])
                     : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection(IndexReviewFamiliesInOrder::run(parent: $order, prefix: RetinaOrderTabsEnum::FAMILY_REVIEWS->value))
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
-                            'context'       => ReviewContextEnum::ProductCategoryReviews->value,
-                            'rating_labels' => $ratingLabels[ReviewContextEnum::ProductCategoryReviews->value],
+                            'context'       => ReviewContextEnum::FAMILY->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::FAMILY->value],
                         ])),
 
                 RetinaOrderTabsEnum::PRODUCT_REVIEWS->value => $this->tab == RetinaOrderTabsEnum::PRODUCT_REVIEWS->value
@@ -178,15 +178,15 @@ class ShowRetinaEcomOrder extends RetinaAction
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
-                            'context'       => ReviewContextEnum::ProductReviews->value,
-                            'rating_labels' => $ratingLabels[ReviewContextEnum::ProductReviews->value],
+                            'context'       => ReviewContextEnum::PRODUCT->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
                         ])
                     : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(parent: $order, prefix: RetinaOrderTabsEnum::PRODUCT_REVIEWS->value))
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
-                            'context'       => ReviewContextEnum::ProductReviews->value,
-                            'rating_labels' => $ratingLabels[ReviewContextEnum::ProductReviews->value],
+                            'context'       => ReviewContextEnum::PRODUCT->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
                         ])),
             ]
         )

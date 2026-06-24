@@ -35,7 +35,7 @@ return new class () extends Migration {
             $table->text('body');
             $table->boolean('is_public')->default(true)->index();
             $table->enum('status', ReviewStatusEnum::values())
-                ->default(ReviewStatusEnum::Approved->value)->index();
+                ->default(ReviewStatusEnum::APPROVED->value)->index();
             $table->timestampsTz();
 
             $table->unique(

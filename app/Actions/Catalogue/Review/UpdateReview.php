@@ -3,11 +3,10 @@
 namespace App\Actions\Catalogue\Review;
 
 use App\Actions\Catalogue\Review\Traits\HasReviewHydrators;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
-use App\Models\Reviews\ProductCategoryReview;
-use App\Models\Reviews\ProductReview;
-use App\Models\Reviews\ShopReview;
+use App\Models\Reviews\Review;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -18,11 +17,9 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateReview
+class UpdateReview extends OrgAction
 {
-    use AsAction;
     use HasReviewHydrators;
 
     public function prepareForValidation(ActionRequest $request): void
@@ -46,11 +43,14 @@ class UpdateReview
         }
     }
 
-    public function handle(ProductReview|ProductCategoryReview|ShopReview $review, array $modelData): ProductReview|ProductCategoryReview|ShopReview
+    /**
+     * @throws \Throwable
+     */
+    public function handle(Review $review, array $modelData): Review
     {
         $updatedReview = DB::transaction(function () use ($review, $modelData) {
-            $images = Arr::pull($modelData, 'images', null);
-            $videos = Arr::pull($modelData, 'videos', null);
+            $images = Arr::pull($modelData, 'images');
+            $videos = Arr::pull($modelData, 'videos');
 
             $ratingMain = $this->resolveRatingMain($review, $modelData);
             $review->update([
@@ -87,29 +87,17 @@ class UpdateReview
         return $updatedReview;
     }
 
-    public function asController(ActionRequest $request): ProductReview|ProductCategoryReview|ShopReview
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Review $review, ActionRequest $request): Review
     {
-        $review = $this->resolveReview((string) $request->validated('reviewable_type'), (int) $request->route('review'));
+        $this->initialisationFromShop($review->shop, $request);
 
-        $modelData = $request->validated();
-        if ($this->isCustomerRequest($request)) {
-            abort_unless(auth('retina')->check(), 401);
-
-            $customerId = auth('retina')->user()?->customer_id;
-            abort_unless(is_numeric($customerId), 403);
-
-            abort_unless((int) $review->customer_id === (int) $customerId, 403);
-
-            $modelData['customer_id'] = (int) $customerId;
-            $modelData['status'] = data_get($modelData, 'status', $review->status?->value);
-        }
-
-        $updatedReview = $this->handle($review, $modelData);
-
-        return $updatedReview;
+        return $this->handle($review, $this->validatedData);
     }
 
-    public function jsonResponse(ProductReview|ProductCategoryReview|ShopReview $review): JsonResponse
+    public function jsonResponse(Review $review): JsonResponse
     {
         return response()->json([
             'status' => 'success',
@@ -117,7 +105,7 @@ class UpdateReview
         ]);
     }
 
-    public function htmlResponse(ProductReview|ProductCategoryReview|ShopReview $review, ActionRequest $request): RedirectResponse
+    public function htmlResponse(Review $review, ActionRequest $request): RedirectResponse
     {
         $request->route()?->getName();
 
@@ -190,21 +178,9 @@ class UpdateReview
         }
     }
 
-    private function resolveReview(string $reviewableType, int $reviewId): ProductReview|ProductCategoryReview|ShopReview
-    {
-        return match ($reviewableType) {
-            'Product', 'product_reviews' => ProductReview::query()->findOrFail($reviewId),
-            'ProductCategory', 'product_category_reviews' => ProductCategoryReview::query()->findOrFail($reviewId),
-            'Shop', 'shop_reviews' => ShopReview::query()->findOrFail($reviewId),
-        };
-    }
 
-    private function isCustomerRequest(ActionRequest $request): bool
-    {
-        return $request->routeIs('iris.models.review.*', 'retina.models.review.*');
-    }
 
-    private function resolveRatingMain(ProductReview|ProductCategoryReview|ShopReview $review, array $modelData): float
+    private function resolveRatingMain(Review $review, array $modelData): float
     {
         $dimensionKeys = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
         $dimensionsWereProvided = collect($dimensionKeys)->contains(fn (string $key): bool => array_key_exists($key, $modelData));

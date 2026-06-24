@@ -14,6 +14,7 @@ return new class () extends Migration {
         $this->createProductCategoryReviewStatsTable();
         $this->createMasterAssetReviewStatsTable();
         $this->createProductReviewStatsTable();
+        $this->createOrderReviewStatsTable();
     }
 
     public function down(): void
@@ -25,6 +26,7 @@ return new class () extends Migration {
         Schema::dropIfExists('shop_review_stats');
         Schema::dropIfExists('organisation_review_stats');
         Schema::dropIfExists('group_review_stats');
+        Schema::dropIfExists('order_review_stats');
     }
 
     private function createGroupReviewStatsTable(): void
@@ -104,6 +106,17 @@ return new class () extends Migration {
         });
     }
 
+    private function createOrderReviewStatsTable(): void
+    {
+        Schema::create('order_review_stats', function (Blueprint $table) {
+            $table->increments('id');
+            $table->unsignedBigInteger('order_id');
+            $table->unique('order_id', 'ors_order_id_uq');
+            $table->foreign('order_id', 'ors_order_id_fk')->references('id')->on('orders')->onUpdate('cascade')->onDelete('cascade');
+            $this->addReviewStatsFields($table);
+        });
+    }
+
     private function addReviewStatsFields(Blueprint $table): void
     {
         $table->unsignedInteger('number_reviews')->default(0)->index();
@@ -117,12 +130,12 @@ return new class () extends Migration {
         $table->unsignedInteger('number_rating_4')->default(0)->index();
         $table->unsignedInteger('number_rating_5')->default(0)->index();
 
-        $table->decimal('average_rating_main', 5, 2)->default(0)->index();
-        $table->decimal('average_rating_a', 5, 2)->default(0)->index();
-        $table->decimal('average_rating_b', 5, 2)->default(0)->index();
-        $table->decimal('average_rating_c', 5, 2)->default(0)->index();
-        $table->decimal('average_rating_d', 5, 2)->default(0)->index();
-        $table->decimal('average_rating_e', 5, 2)->default(0)->index();
+        $table->decimal('average_rating_main', 5)->default(0)->index();
+        $table->decimal('average_rating_a', 5)->default(0)->index();
+        $table->decimal('average_rating_b', 5)->default(0)->index();
+        $table->decimal('average_rating_c', 5)->default(0)->index();
+        $table->decimal('average_rating_d', 5)->default(0)->index();
+        $table->decimal('average_rating_e', 5)->default(0)->index();
 
         $table->timestampsTz();
     }

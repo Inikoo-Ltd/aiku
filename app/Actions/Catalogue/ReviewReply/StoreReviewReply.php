@@ -7,7 +7,7 @@ use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Models\Reviews\ProductCategoryReview;
 use App\Models\Reviews\ProductReview;
 use App\Models\Reviews\ReviewReply;
-use App\Models\Reviews\ShopReview;
+use App\Models\Reviews\Review;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +20,7 @@ class StoreReviewReply
     use AsAction;
 
     public function handle(
-        ProductReview|ShopReview|ProductCategoryReview $reviewable,
+        ProductReview|Review|ProductCategoryReview $reviewable,
         array $modelData,
         ?User $user = null
     ): ReviewReply {
@@ -32,7 +32,7 @@ class StoreReviewReply
             'replier_type' => data_get($modelData, 'replier_type', ReviewReplyReplierTypeEnum::Merchant->value),
             'body' => data_get($modelData, 'body'),
             'is_public' => $this->resolveIsPublic($modelData),
-            'status' => data_get($modelData, 'status', ReviewStatusEnum::Approved->value),
+            'status' => data_get($modelData, 'status', ReviewStatusEnum::APPROVED->value),
         ]);
     }
 
@@ -55,7 +55,7 @@ class StoreReviewReply
             $existingReply->update([
                 'body' => data_get($validated, 'body', $existingReply->body),
                 'is_public' => $this->resolveIsPublic($validated),
-                'status' => data_get($validated, 'status', $existingReply->status?->value ?? ReviewStatusEnum::Approved->value),
+                'status' => data_get($validated, 'status', $existingReply->status?->value ?? ReviewStatusEnum::APPROVED->value),
             ]);
 
             return response()->json([
@@ -78,7 +78,7 @@ class StoreReviewReply
                 $latestReply->update([
                     'body' => data_get($validated, 'body', $latestReply->body),
                     'is_public' => $this->resolveIsPublic($validated),
-                    'status' => data_get($validated, 'status', $latestReply->status?->value ?? ReviewStatusEnum::Approved->value),
+                    'status' => data_get($validated, 'status', $latestReply->status?->value ?? ReviewStatusEnum::APPROVED->value),
                 ]);
 
                 return response()->json([
@@ -118,11 +118,11 @@ class StoreReviewReply
         ];
     }
 
-    private function resolveReviewable(string $reviewableType, int $reviewableId): ProductReview|ShopReview|ProductCategoryReview
+    private function resolveReviewable(string $reviewableType, int $reviewableId): ProductReview|Review|ProductCategoryReview
     {
         return match ($reviewableType) {
             'product_reviews' => ProductReview::query()->findOrFail($reviewableId),
-            'shop_reviews' => ShopReview::query()->findOrFail($reviewableId),
+            'shop_reviews' => Review::query()->findOrFail($reviewableId),
             'product_category_reviews' => ProductCategoryReview::query()->findOrFail($reviewableId),
         };
     }

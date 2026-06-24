@@ -10,7 +10,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Reviews\ProductReview;
 use App\Models\Reviews\ProductCategoryReview;
-use App\Models\Reviews\ShopReview;
+use App\Models\Reviews\Review;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Services\QueryBuilder;
 use Closure;
@@ -172,7 +172,7 @@ class IndexReviews extends OrgAction
         }
 
         if ($parent instanceof Shop) {
-            return ShopReview::class;
+            return Review::class;
         }
 
         return ProductCategoryReview::class;
@@ -194,14 +194,14 @@ class IndexReviews extends OrgAction
     private function reviewContext(ProductCategory|Product|Shop $parent): ReviewContextEnum
     {
         if ($parent instanceof Product) {
-            return ReviewContextEnum::ProductReviews;
+            return ReviewContextEnum::PRODUCT;
         }
 
         if ($parent instanceof Shop) {
-            return ReviewContextEnum::ShopReviews;
+            return ReviewContextEnum::ORDER;
         }
 
-        return ReviewContextEnum::ProductCategoryReviews;
+        return ReviewContextEnum::FAMILY;
     }
 
     private function shopId(ProductCategory|Product|Shop $parent): int

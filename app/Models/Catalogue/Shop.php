@@ -71,7 +71,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
-use App\Models\Reviews\ShopReview;
+use App\Models\Reviews\Review;
 use App\Models\Reviews\ShopReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -389,7 +389,7 @@ class Shop extends Model implements HasMedia, Auditable
 
     public function reviews(): HasMany
     {
-        return $this->hasMany(ShopReview::class);
+        return $this->hasMany(Review::class);
     }
 
     public function accountingStats(): HasOne

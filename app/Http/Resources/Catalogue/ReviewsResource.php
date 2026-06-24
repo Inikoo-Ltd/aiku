@@ -238,14 +238,14 @@ class ReviewsResource extends JsonResource
     private static function reviewContext(ProductCategory|Product|Shop $reviewable): ReviewContextEnum
     {
         if ($reviewable instanceof Product) {
-            return ReviewContextEnum::ProductReviews;
+            return ReviewContextEnum::PRODUCT;
         }
 
         if ($reviewable instanceof Shop) {
-            return ReviewContextEnum::ShopReviews;
+            return ReviewContextEnum::ORDER;
         }
 
-        return ReviewContextEnum::ProductCategoryReviews;
+        return ReviewContextEnum::FAMILY;
     }
 
     private static function reviewCustomersRouteName(ProductCategory|Product|Shop $reviewable): string

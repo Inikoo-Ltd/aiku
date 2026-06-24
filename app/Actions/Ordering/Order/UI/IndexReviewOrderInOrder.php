@@ -38,7 +38,7 @@ class IndexReviewOrderInOrder extends OrgAction
             ->leftJoin('media as shop_media', 'shop_media.id', '=', 'shops.image_id')
             ->leftJoin('media as shop_review_media', function ($join) {
                 $join->on('shop_review_media.model_id', '=', 'shop_reviews.id')
-                    ->where('shop_review_media.model_type', '=', 'App\Models\Reviews\ShopReview')
+                    ->where('shop_review_media.model_type', '=', 'App\Models\Reviews\Review')
                     ->where('shop_review_media.collection_name', '=', 'review_images');
             })
             ->select([
