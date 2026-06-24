@@ -79,7 +79,7 @@ class IndexReviews extends OrgAction
         ];
     }
 
-    public function handle(ProductCategory|Product|Shop $parent, ?string $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory|Product|Shop $parent, ?string $prefix = null, ?string $scope = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -99,11 +99,14 @@ class IndexReviews extends OrgAction
             ->with(['media', 'replies'])
             ->leftJoin('customers', 'customers.id', '=', $table . '.customer_id')
             ->where($table . '.' . $foreignKey, $parent->id)
+            ->when($scope === 'product', fn ($query) => $query->whereNotNull($table . '.product_id'))
+            ->when($scope === 'family', fn ($query) => $query->whereNotNull($table . '.product_category_id'))
+            ->when($scope === 'overall', fn ($query) => $query->whereNull($table . '.product_id')->whereNull($table . '.product_category_id'))
             ->defaultSort('-' . $table . '.created_at')
             ->select([
                 $table . '.id',
                 $table . '.customer_id',
-                $table . '.status',
+                $table . '.review_status as status',
                 $table . '.rating_main as rating',
                 $table . '.rating_a',
                 $table . '.rating_b',

@@ -18,6 +18,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -300,6 +301,22 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
         }
 
+        if (Arr::exists($modelData, 'review_auto_publishing')) {
+            data_set($modelData, 'settings.reviews.auto_publishing', Arr::pull($modelData, 'review_auto_publishing'));
+        }
+
+        if (Arr::exists($modelData, 'review_auto_publishing_delay_hours')) {
+            data_set($modelData, 'settings.reviews.auto_publishing_delay_hours', Arr::pull($modelData, 'review_auto_publishing_delay_hours'));
+        }
+
+        if (Arr::exists($modelData, 'review_allow_reactions')) {
+            data_set($modelData, 'settings.reviews.allow_reactions', Arr::pull($modelData, 'review_allow_reactions'));
+        }
+
+        if (Arr::exists($modelData, 'review_allow_reply_reactions')) {
+            data_set($modelData, 'settings.reviews.allow_reply_reactions', Arr::pull($modelData, 'review_allow_reply_reactions'));
+        }
+
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
         $shop->refresh();
@@ -531,6 +548,10 @@ class UpdateShop extends OrgAction
             'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],
             'review_rating_labels.*'                                  => ['sometimes', 'array'],
             'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],
+            'review_auto_publishing'                                  => ['sometimes', 'required', Rule::enum(ReviewAutoPublishingEnum::class)],
+            'review_auto_publishing_delay_hours'                      => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'review_allow_reactions'                                  => ['sometimes', 'boolean'],
+            'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],

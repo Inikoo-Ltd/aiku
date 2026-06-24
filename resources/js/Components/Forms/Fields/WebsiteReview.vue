@@ -132,19 +132,9 @@ const fieldNameString = computed(() =>
             <InputSwitch v-model="enabled" />
         </div>
 
-        <!-- PROVIDER SELECT -->
-        <div  class="flex flex-col gap-1" :class="{ 'opacity-50 pointer-events-none': !enabled }">
-            <label class="text-sm">{{ trans('Provider') }}</label>
-            <select v-model="provider" class="border rounded px-3 py-2">
-                <option disabled value="">{{ trans('Select Provider') }}</option>
-                <option value="aiku">Aiku Reviews</option>
-                <option value="reviews.io">reviews.io</option>
-                <option value="trust_pilot">trust_pilot</option>
-            </select>
-        </div>
 
         <!-- AIKU INTERNAL PROVIDER SETTINGS -->
-        <div v-if="provider === 'aiku'" class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
+        <div class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
             <div class="flex flex-col gap-1">
                 <label class="flex items-center gap-1 text-sm">
                     {{ trans('Require Approval Before Publishing') }}
@@ -162,17 +152,6 @@ const fieldNameString = computed(() =>
             </div>
         </div>
 
-        <!-- DYNAMIC FIELDS -->
-        <div v-if="provider && currentSchema.length" class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
-            <div v-for="field in currentSchema" :key="field.key" class="flex flex-col gap-1">
-                <label class="text-xs">
-                    {{ field.label }}
-                </label>
-
-                <PureInput :type="field.type" :modelValue="data[field.key] || ''"
-                    @update:modelValue="updateDataField(field.key, $event)" />
-            </div>
-        </div>
 
     </div>
     <p v-if="get(form, ['errors', fieldNameString])" class="mt-2 text-sm text-red-600" :id="`${fieldNameString}-error`">

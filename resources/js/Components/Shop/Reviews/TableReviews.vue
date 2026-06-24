@@ -130,7 +130,7 @@ const approveReview = (item: any) => {
         <template #cell(action)="{ item }">
             <div class="flex items-center justify-end gap-1">
                 <Button
-                    v-if="item.is_public && item.status !== 'approved'"
+                    v-if="item.is_public"
                     type="positive"
                     :icon="faCheck"
                     size="xs"

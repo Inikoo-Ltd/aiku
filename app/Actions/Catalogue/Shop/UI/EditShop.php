@@ -14,6 +14,7 @@ use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -741,6 +742,33 @@ class EditShop extends OrgAction
                                     ],
                                 ]
                             ),
+                        ],
+                        'review_auto_publishing' => [
+                            'type'        => 'select',
+                            'label'       => __('Auto publishing'),
+                            'information' => __('When customer reviews are published after submission.'),
+                            'required'    => true,
+                            'value'       => Arr::get($shop->settings, 'reviews.auto_publishing', ReviewAutoPublishingEnum::IMMEDIATELY->value),
+                            'options'     => ReviewAutoPublishingEnum::selectOptions(),
+                        ],
+                        'review_auto_publishing_delay_hours' => [
+                            'type'        => 'input_number',
+                            'label'       => __('Auto publishing delay (hours)'),
+                            'information' => __('Number of hours to wait before publishing when auto publishing is set to delay.'),
+                            'value'       => Arr::get($shop->settings, 'reviews.auto_publishing_delay_hours', 24),
+                            'min'         => 1,
+                        ],
+                        'review_allow_reactions' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Allow review reactions'),
+                            'information' => __('Allow customers to like or dislike reviews left by other customers.'),
+                            'value'       => Arr::get($shop->settings, 'reviews.allow_reactions', true),
+                        ],
+                        'review_allow_reply_reactions' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Allow reply reactions'),
+                            'information' => __('Allow customers to like or dislike replies to reviews.'),
+                            'value'       => Arr::get($shop->settings, 'reviews.allow_reply_reactions', true),
                         ],
                     ],
                 ]
