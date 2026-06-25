@@ -17,8 +17,8 @@ const props = defineProps<{
     <Link
         :href="href"
         v-tooltip="type === 'warehouse'
-            ? trans(':count items waiting for warehouse', { count: props.count })
-            : trans(':count items waiting for CRM', { count: props.count })"
+            ? ctrans(':count items waiting for warehouse', { count: props.count })
+            : ctrans(':count items waiting for CRM', { count: props.count })"
         :class="[
             'inline-flex items-center gap-x-1 rounded  px-1.5 py-0 text-xs font-semibold tabular-nums ',
             type === 'warehouse'

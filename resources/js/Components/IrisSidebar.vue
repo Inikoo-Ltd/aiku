@@ -422,7 +422,6 @@ const fetchSidebarOnce = async () => {
 </script>
 
 <template>
-	{{ layout?.iris?.sidebar?.product_categories  }}
 	<div class="mobile-menu editor-class">
 
 		<!-- Button: hamburger (showed on mobile) -->
