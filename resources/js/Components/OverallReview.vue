@@ -21,13 +21,12 @@ const props = defineProps<{
 }>()
 
 const locale = inject("locale", retinaLayoutStructure)
-const selectedItem = ref<any>(null)
 const loadingSave = ref(false)
 
 
 
 const saveReview = async () => {
-    const review = selectedItem.value?.review || {}
+    const review = props.data || {}
     const isUpdate = !!review.review_id
 
     const routeName = isUpdate
@@ -76,7 +75,6 @@ const saveReview = async () => {
             headers: { "Content-Type": "multipart/form-data" },
         })
 
-        isOpenDialog.value = false
         router.reload({ only: ["pageHead", props.tab as string] })
         notify({
             title: trans("Success"),
