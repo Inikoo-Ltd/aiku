@@ -21,20 +21,19 @@ trait HasReviewHydrators
 {
     protected function reviewHydrators(Review $review): void
     {
-        GroupHydrateReviewStats::dispatch($review->group_id)->delay($this->hydratorsDelay);
+        GroupHydrateReviewStats::dispatch($review->group_id)->delay(5);
 
-        if ($review->scope == ReviewScopeEnum::SHOP) {
-            ShopHydrateReviewStats::dispatch($review->shop_id)->delay($this->hydratorsDelay);
-        }
+        ShopHydrateReviewStats::dispatch($review->shop_id)->delay(5);
+
 
         if ($review->scope == ReviewScopeEnum::FAMILY) {
-            ProductCategoryHydrateReviewStats::dispatch($review->product_category_id)->delay($this->hydratorsDelay);
-            MasterProductCategoryHydrateReviewStats::dispatch($review->master_product_category_id)->delay($this->hydratorsDelay);
+            ProductCategoryHydrateReviewStats::dispatch($review->product_category_id)->delay(10);
+            MasterProductCategoryHydrateReviewStats::dispatch($review->master_product_category_id)->delay(10);
         }
 
         if ($review->scope == ReviewScopeEnum::PRODUCT) {
-            ProductHydrateReviewStats::dispatch($review->product_id)->delay($this->hydratorsDelay);
-            MasterAssetHydrateReviewStats::dispatch($review->master_product_id)->delay($this->hydratorsDelay);
+            ProductHydrateReviewStats::dispatch($review->product_id)->delay(10);
+            MasterAssetHydrateReviewStats::dispatch($review->master_product_id)->delay(10);
         }
     }
 }

@@ -10,7 +10,6 @@
 namespace App\Actions\Reviews\Import;
 
 use App\Actions\Reviews\StoreReview;
-use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Models\Catalogue\Shop;
@@ -42,8 +41,6 @@ class TrustPilotImport implements ToCollection
 
         $languages = Language::all()->keyBy('code');
 
-        $sysUser = User::all()->keyBy('username');
-
         $first = true;
         foreach ($collection as $row) {
             if ($first) {
@@ -66,11 +63,16 @@ class TrustPilotImport implements ToCollection
             $replay    = $row[10];
 
             if ($replay) {
-                $user = $sysUser->get(strtolower($row[11]));
+                $user     = null;
+                $username = strtolower($row[11]);
+
+                if ($username) {
+                    $user = User::where('username', $username)->first();
+                }
 
                 $replyData = [
                     'replied'       => true,
-                    'reply_message' => $replyData,
+                    'reply_message' => $replay,
                     'reply_at'      => $row[17],
                     'reply_by'      => $user?->id,
                 ];
@@ -78,11 +80,13 @@ class TrustPilotImport implements ToCollection
 
             $scope = $this->shop;
 
+            $orderId        = null;
             $orderReference = $row[9];
             if ($orderReference) {
-                $order = Order::where('reference', $orderReference)->first();
+                $order = Order::where('customer_id', $customer->id)->where('reference', $orderReference)->first();
                 if ($order) {
-                    $scope = $order;
+                    $scope   = $order;
+                    $orderId = $order->id;
                 }
             }
 
@@ -102,6 +106,7 @@ class TrustPilotImport implements ToCollection
                 'language_id' => $languages->get($row[12])->id,
                 'external_id' => $row[0],
                 'meta'        => $meta,
+                'order_id'    => $orderId,
             ];
 
             $review = StoreReview::make()->action($scope, $reviewData);
@@ -111,7 +116,7 @@ class TrustPilotImport implements ToCollection
                     'is_online'     => true,
                     'published_at'  => $row[1],
                     'review_status' => ReviewStatusEnum::APPROVED->value,
-                    'auto_approve'  => true,
+                    'auto_approved' => true,
                     'approved'      => true,
                     'state'         => ReviewStateEnum::PUBLISHED->value
                 ]

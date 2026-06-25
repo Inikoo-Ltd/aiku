@@ -90,7 +90,7 @@ const saveReview = async () => {
         })
 
         isOpenDialog.value = false
-        router.reload({ only: ["pageHead", props.tab as string] })
+        router.reload()
         notify({
             title: trans("Success"),
             text: trans("Review submitted successfully"),
