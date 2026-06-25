@@ -2,12 +2,19 @@
 import Image from '@/Common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import axios from 'axios'
-import { ref, watch, computed, inject } from 'vue'
+import { ref, watch, computed, inject, onMounted, onBeforeUnmount } from 'vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from "@/Composables/useTrans";
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { useDepartmentStructuredData } from "@/Iris/Composables/useDepartmentStructuredData"
+
+interface FilterOptions {
+	name: string
+	code: string
+    url: string
+}
 
 const props = defineProps<{
   fieldValue: {
@@ -27,19 +34,34 @@ const props = defineProps<{
         total: number
       }
     }
-    sub_department_list: Array<any>
+    sub_department_list?: FilterOptions[]
+    collections_list?: FilterOptions[]
+    filter_options?: FilterOptions[]
   }
   webpageData?: any
   blockData?: object
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock?: number | string
 }>()
 
 const loading = ref(false)
 const loadingMore = ref(false)
 const layout: any = inject("layout", {})
-const selectedSubDepartment = ref<number | null>(null)
+const injectedWebpageData = inject<any>("webpage_data", null)
 
+const selectedOption = ref<string | null>(null)
+const sortKey = ref('created_at')
 const families = ref(props.fieldValue?.families?.data ?? [])
+const isAscending = ref(true)
+const orderBy = ref('-created_at')
+
+const sortOptions = computed(() => {
+  const baseOptions = [
+    { label: ctrans("New arrivals"), value: "created_at" },
+    { label: ctrans("Name"), value: "name" },
+  ]
+  return baseOptions
+})
 
 const meta = ref(
   props.fieldValue?.families?.meta ?? {
@@ -48,7 +70,7 @@ const meta = ref(
     last_page: 1,
     links: [],
     path: '',
-    per_page: 50,
+    per_page: 500,
     to: 0,
     total: families.value.length,
   }
@@ -65,24 +87,25 @@ const loadFamilies = async (
       loading.value = true
     }
 
+    const isSubDepartment = props.fieldValue.sub_department_list?.some((item) => item.code === selectedOption.value);
+    const filter: Record<string, string> = {[isSubDepartment ? 'category' : 'collection']: selectedOption.value};
+
     const response = await axios.get(
       route(
         'iris.json.website.category.family_under_department',
         {
-          productCategory:
-            props.fieldValue.department?.slug,
+          productCategory: props.fieldValue.department?.slug,
         }
       ),
       {
         params: {
-          filter: {
-            category:
-              selectedSubDepartment.value,
-          },
+          filter,
+          sort: orderBy.value,
           page,
+          per_page : 250
         },
       }
-    )
+    );
 
     if (append) {
       families.value = [
@@ -105,27 +128,89 @@ const loadFamilies = async (
   }
 }
 
-watch(selectedSubDepartment, () => {
+watch(selectedOption, () => {
   loadFamilies(1)
 })
 
 const perRow = computed(() => ({
-	mobile: props.fieldValue?.settings?.per_row?.mobile ?? 2,
-	tablet: props.fieldValue?.settings?.per_row?.tablet ?? 3,
-	desktop: props.fieldValue?.settings?.per_row?.desktop ?? 5,
+  mobile: props.fieldValue?.settings?.per_row?.mobile ?? 2,
+  tablet: props.fieldValue?.settings?.per_row?.tablet ?? 3,
+  desktop: props.fieldValue?.settings?.per_row?.desktop ?? 5,
 }))
 
-console.log(props)
+const updateQueryParams = () => {
+    const url = new URL(window.location.href)
+
+    if (orderBy.value) {
+        url.searchParams.set("order_by", orderBy.value)
+    } else {
+        url.searchParams.delete("order_by")
+    }
+
+
+    window.history.replaceState({}, "", url.toString())
+}
+
+
+const toggleSort = (key: string) => {
+    if (sortKey.value === key) {
+        isAscending.value = !isAscending.value
+    } else {
+        sortKey.value = key
+        isAscending.value = true
+    }
+    orderBy.value = isAscending.value ? key : `-${key}`
+    updateQueryParams()
+    loadFamilies(1)
+}
+
+const getArrow = (key: typeof sortKey.value) => {
+  if (sortKey.value !== key) return ""
+  return isAscending.value ? "↑" : "↓"
+}
+
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const sortParam = urlParams.get("order_by")
+    if (sortParam) {
+        orderBy.value = sortParam
+        const key = sortParam.replace("-", "")
+        sortKey.value = key as typeof sortKey.value
+        isAscending.value = !sortParam.startsWith("-")
+    }
+})
+
+
+// Section: Department structured data (SEO)
+// Mounted independently here instead of inside the page structured data (useStructuredData),
+// so the sub-departments + collections ItemList lives in its own <script> and is easier to maintain.
+const { mountDepartmentStructuredData, removeStructuredDataScript } = useDepartmentStructuredData()
+const departmentStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
+onMounted(() => {
+  departmentStructuredDataScript.value = mountDepartmentStructuredData({
+    subDepartments: props.fieldValue.sub_department_list,
+    collections: props.fieldValue.collections_list,
+    webpageData: (props.webpageData ?? injectedWebpageData) as any,
+    listId: props.fieldValue.id ?? props.indexBlock,
+  })
+})
+
+onBeforeUnmount(() => {
+  removeStructuredDataScript(departmentStructuredDataScript.value)
+})
+
+console.log('sdsd',props)
 </script>
 
 <template>
-  <section :id="'sub-department'"
+  <section :id="'sub-department-iris-3-' + (props.indexBlock ?? '')"
     class="editor-class pt-12 mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1900px] 2xl:px-14"
-    	:style="{
-			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-			...getStyles(fieldValue.container?.properties, screenType),
-		}"
-    >
+    :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(fieldValue.container?.properties, screenType),
+    }">
+
     <!-- Header -->
     <div class="mb-10">
       <span :style="{ fontSize: '2rem' }" class="font-medium text-[#1d2d44]">
@@ -136,44 +221,57 @@ console.log(props)
       <div class="flex items-center justify-between gap-4 lg:hidden">
         <div class="text-2xl text-slate-700">
           {{ meta.total }}
-          {{ ctrans('products Found') }}
+          {{ ctrans('Families Found') }}
         </div>
 
-        <select v-model.number="selectedSubDepartment"
+        <select v-model.number="selectedOption"
           class="h-[58px] w-[170px] rounded-[18px] border border-[#B8B8B8] bg-white px-4 text-center text-xl text-slate-800 shadow-[0_4px_0_0_rgba(0,0,0,0.15)]">
           <option :value="null">
             {{ ctrans('All') }}
           </option>
 
-          <option v-for="department in fieldValue.sub_department_list" :key="department.code" :value="department.code">
-            {{ department.name }}
+          <option v-for="option in fieldValue.filter_options" :key="option.code" :value="option.code">
+            {{ option.name }}
           </option>
         </select>
       </div>
 
       <!-- Desktop -->
-      <div class="hidden lg:flex lg:flex-row lg:items-center lg:gap-20">
-        <div class="text-2xl text-slate-700">
-          {{ meta.total }}
-          {{ ctrans('products Found') }}
+      <div class="hidden lg:flex justify-between">
+        <div class="lg:flex lg:flex-row lg:items-center lg:gap-20">
+          <div class="text-2xl text-slate-700">
+            {{ meta.total }}
+            {{ ctrans('Families Found') }}
+          </div>
+
+          <div class="flex items-center gap-4">
+            <span class="text-xl text-slate-700">
+              {{ ctrans('Filter By Category') }} :
+            </span>
+
+            <select v-model.number="selectedOption"
+              class="h-11 min-w-[180px] rounded-md border border-slate-400 bg-white px-4">
+              <option :value="null">
+                {{ ctrans('All') }}
+              </option>
+
+              <option v-for="option in fieldValue.filter_options" :key="option.code"
+                :value="option.code">
+                {{ option.name }}
+              </option>
+            </select>
+          </div>
         </div>
-
-        <div class="flex items-center gap-4">
-          <span class="text-xl text-slate-700">
-            {{ ctrans('Filter By Category') }} :
-          </span>
-
-          <select v-model.number="selectedSubDepartment"
-            class="h-11 min-w-[180px] rounded-md border border-slate-400 bg-white px-4">
-            <option :value="null">
-              {{ ctrans('All') }}
-            </option>
-
-            <option v-for="department in fieldValue.sub_department_list" :key="department.code"
-              :value="department.code">
-              {{ department.name }}
-            </option>
-          </select>
+        <div class="flex space-x-6 w-fit overflow-x-auto mt-2 md:mt-0 justify-end">
+          <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
+            class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
+            :class="[
+              sortKey === option.value
+                ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
+                : `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
+            ]">
+            {{ option.label }} {{ getArrow(option.value) }}
+          </button>
         </div>
       </div>
     </div>
@@ -189,17 +287,14 @@ console.log(props)
     </div>
 
     <!-- Family Grid -->
-    <div v-else
-			class="grid gap-5"
-			:style="{
-				gridTemplateColumns: `repeat(${
-					screenType === 'mobile'
-						? perRow.mobile
-						: screenType === 'tablet'
-							? perRow.tablet
-							: perRow.desktop
-				}, minmax(0, 1fr))`,
-			}">
+    <div v-else class="grid gap-5" :style="{
+      gridTemplateColumns: `repeat(${screenType === 'mobile'
+        ? perRow.mobile
+        : screenType === 'tablet'
+          ? perRow.tablet
+          : perRow.desktop
+        }, minmax(0, 1fr))`,
+    }">
       <LinkIris v-for="family in families" :key="family.id" :href="family.url" class="group block" type="internal">
         <div class="aspect-square overflow-hidden bg-gray-100 relative xflex items-center justify-center">
           <div v-if="!family.image" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -207,8 +302,7 @@ console.log(props)
           </div>
           <Image :src="family.image" :alt="family.name"
             class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-            :class="!family.image ? 'opacity-0' : ''"
-          />
+            :class="!family.image ? 'opacity-0' : ''" />
         </div>
 
         <span class="mt-2 line-clamp-2 text-lg leading-snug text-slate-900 font-semibold">

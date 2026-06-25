@@ -67,8 +67,8 @@ const applyQuickInterval = (days: number) => {
     isApplyingPreset = true
     dateType.value = 'interval'
 
-    const start = new Date(today)
-    const end = new Date(today)
+    const start = startDate.value ? new Date(startDate.value) : new Date(today)
+    const end = new Date(start)
     end.setDate(end.getDate() + days)
 
     startDate.value = start
@@ -451,7 +451,7 @@ const isFormInvalid = computed(() => {
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :minDate="startDate" :placeholder="trans('Select end date')" />
+                                :minDate="startDate ?? undefined" :placeholder="trans('Select end date')" />
                         </div>
                     </div>
                 </div>

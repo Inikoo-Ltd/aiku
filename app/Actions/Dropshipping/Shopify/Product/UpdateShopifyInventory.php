@@ -13,36 +13,28 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\AsCommand;
 
-class UpdateInventoryInShopifyPortfolio
+class UpdateShopifyInventory
 {
-    use AsCommand;
     use AsAction;
 
     public string $commandSignature = 'shopify:update-inventory';
 
-    public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
+    public function handle(): void
     {
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
-        if ($customerSalesChannel === null) {
-            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
-                ->where('stock_update', true)
-                ->where('platform_status', true)
-                ->where('status', CustomerSalesChannelStatusEnum::OPEN)
-                ->get();
-        } else {
-            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
-                ->where('id', $customerSalesChannel->id)
-                ->get();
-        }
+        $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
+            ->where('stock_update', true)
+            ->where('platform_status', true)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->get();
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
             if ($customerSalesChannel->user) {
                 BulkUpdateShopifyPortfolio::dispatch($customerSalesChannel->id)
-                    ->delay(now()->addSeconds(rand(0, 7200)));
+                    ->delay(now()->addSeconds(rand(0, 21600)));
             }
         }
     }

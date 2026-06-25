@@ -2,7 +2,7 @@
 
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { ref, computed } from "vue"
+import { ref, computed, watch, nextTick } from "vue"
 import { DatePicker, InputNumber } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
@@ -10,12 +10,15 @@ import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
 import PureInput from "../Pure/PureInput.vue"
 import InformationIcon from "../Utils/InformationIcon.vue"
+import axios from "axios"
 
 const props = defineProps<{
     shop_data: {
         id: number
         slug: string
         currency_code: string
+        organisation?: string
+        offercampaign?: string
         default_dates: {
             start: string
             end: string
@@ -27,49 +30,53 @@ const isOpenModal = ref(false)
 
 const offerLabel = ref("")
 const offerAmount = ref<number | null>(0)
-// const startDate = ref(null)
-// const endDate = ref(null)
 
 const isLoadingSubmit = ref(false)
-const submitCategoryOffer = () => {
+const submitShippingOffer = () => {
+    isLoadingSubmit.value = true
     // Section: Submit
-    router.post(
+    const payload = {
+        name: offerLabel.value,
+        min_order_amount: offerAmount.value,
+        start_at: formatDate(startDate.value),
+        end_at: formatDate(endDate.value)
+    }
+
+    axios.post(
         route("grp.models.shipping_offer.store", {
             shop: props.shop_data.id
-
         }),
-        {
-            name: offerLabel.value,
-            min_order_amount: offerAmount.value,
-            start_at: startDate.value,
-            end_at: endDate.value
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                resetForm()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            }
-        }
+        payload
     )
+    .then((response) => {
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully submit the data"),
+            type: "success"
+        })
+        resetForm();
+        isOpenModal.value = false
+
+        router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+            organisation: props.shop_data.organisation,
+            shop: props.shop_data.slug,
+            offerCampaign: props.shop_data.offercampaign,
+            offer: response.data.slug
+        }))
+        router.reload()
+    })
+    .catch((error) => {
+        const errors = error.response?.data?.errors || {}
+        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+        notify({
+            title: trans("Something went wrong"),
+            text: errMsg,
+            type: "error"
+        })
+    })
+    .finally(() => {
+        isLoadingSubmit.value = false
+    })
 }
 
 const startDate = ref<Date | null>(
@@ -84,11 +91,42 @@ const endDate = ref<Date | null>(
         : null
 )
 
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
+const quickApplyPresets = [1, 2, 3, 7]
+const quickApplyDays = ref<number | null>(null)
+
+let isApplyingPreset = false
+
+const applyQuickApply = (days: number) => {
+    isApplyingPreset = true
+
+    const start = startDate.value ? new Date(startDate.value) : new Date(today)
+    const end = new Date(start)
+    end.setDate(end.getDate() + days)
+
+    startDate.value = start
+    endDate.value = end
+    quickApplyDays.value = days
+
+    nextTick(() => {
+        isApplyingPreset = false
+    })
+}
+
+watch([startDate, endDate], () => {
+    if (!isApplyingPreset) {
+        quickApplyDays.value = null
+    }
+})
+
 const resetForm = () => {
     offerLabel.value = ""
-    offerAmount.value = null
+    offerAmount.value = 0
     startDate.value = null
     endDate.value = null
+    quickApplyDays.value = null
+    isLoadingSubmit.value = false
 }
 
 const openModal = () => {
@@ -97,9 +135,24 @@ const openModal = () => {
     isOpenModal.value = true
 }
 
+const closeModal = () => {
+    isOpenModal.value = false
+    resetForm()
+}
+
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
 const isFormInvalid = computed(() => {
     if (!offerLabel.value) return true
-    // if (!offerAmount.value || offerAmount.value <= 0) return true
+    if (offerAmount.value === null || offerAmount.value === undefined || offerAmount.value < 0) return true
     if (!endDate.value) return true
     if (startDate.value && endDate.value < startDate.value) return true
     return false
@@ -110,11 +163,10 @@ const isFormInvalid = computed(() => {
     <div>
         <Button :label="trans('Create Discount Shipping')" @click="openModal" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
             <div class="px-6">
-                <h2 class="text-2xl font-bold mxb-4 text-center">{{ trans("Create Discount Shipping") }}</h2>
-                <div class="mt-8 space-y-8">
-
+                <h2 class="text-2xl font-bold mb-4 text-center">{{ trans("Create Discount Shipping") }}</h2>
+                <div class="mt-2 space-y-4">
                     <!-- offer name -->
                     <div>
                         <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
@@ -144,6 +196,25 @@ const isFormInvalid = computed(() => {
                         </div>
                     </div>
 
+                    <!-- Quick apply -->
+                    <div>
+                        <label class="font-medium mb-2 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-bolt"
+                                             class="text-xs text-amber-400 align-middle" />
+                            {{ trans("Quick apply") }}:
+                        </label>
+                        <div class="pl-4 flex flex-wrap gap-2">
+                            <button v-for="days in quickApplyPresets" :key="days" type="button"
+                                    @click="applyQuickApply(days)"
+                                    class="px-3.5 py-2 rounded-lg border text-sm cursor-pointer transition-colors"
+                                    :class="quickApplyDays === days
+                                        ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                        : 'border-gray-200 hover:border-gray-300'">
+                                {{ trans(':count day', { count: String(days) }) }}
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Start date - end date -->
                     <div class="grid grid-cols-2 gap-x-6 ">
                         <div>
@@ -170,7 +241,7 @@ const isFormInvalid = computed(() => {
                                 :
                             </label>
                             <div class="pl-4">
-                                <DatePicker v-model="endDate" showButtonBar showIcon />
+                                <DatePicker v-model="endDate" showButtonBar showIcon :minDate="startDate ?? undefined"/>
                             </div>
                             <p v-if="startDate && endDate && endDate < startDate" class="text-red-500 text-sm">
                                 End date must be after start date
@@ -181,9 +252,9 @@ const isFormInvalid = computed(() => {
                 </div>
 
                 <div class="pl-4 mt-8 flex justify-end gap-x-4">
-                    <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                            :isLoading="isLoadingSubmit" :disabled="isFormInvalid" />
+                    <Button @click="closeModal" type="cancel" />
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitShippingOffer"
+                            :loading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit" />
                 </div>
 
             </div>

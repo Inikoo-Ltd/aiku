@@ -42,8 +42,8 @@ const props = defineProps<{
         id: number
         slug: string
         currency_code: string
-        organisation: string
-        offercampaign: string
+        organisation?: string
+        offercampaign?: string
     }
 }>()
 
@@ -64,7 +64,7 @@ const component = computed(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-create-offer-shop>
+        <template #other>
             <ModalCreateStoreOffers  :shop_data="props.shop_data" />
         </template>
     </PageHeading>

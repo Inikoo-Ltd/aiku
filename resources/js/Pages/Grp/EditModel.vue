@@ -70,8 +70,9 @@ import {
     faBullseyePointer
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
-import { faExclamationTriangle } from "@fas"
+import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
 import { faBan } from "@far"
+import { faTh, faFolderTree } from "@fad"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import Message from 'primevue/message';
@@ -133,6 +134,9 @@ library.add(
     faMapMarkedAlt,
     faBullseyePointer,
     faMedal,
+    faBrowserSolid,
+    faTh,
+    faFolderTree
 )
 
 const props = defineProps<{

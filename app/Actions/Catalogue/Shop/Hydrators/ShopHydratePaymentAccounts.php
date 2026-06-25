@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,6 +28,7 @@ class ShopHydratePaymentAccounts implements ShouldBeUnique
         $stats = [
             'number_org_payment_service_providers' => $shop->orgPaymentServiceProviders()->count(),
             'number_payment_accounts'              => $shop->paymentAccountShops()->count(),
+            'number_current_payment_accounts'      => $shop->paymentAccountShops()->where('state', PaymentAccountShopStateEnum::ACTIVE)->count(),
         ];
 
         $shop->accountingStats()->update($stats);

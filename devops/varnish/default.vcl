@@ -427,6 +427,7 @@ sub vcl_deliver {
 
     if (req.http.X-Web-State) {
         set resp.http.X-Web-State = req.http.X-Web-State;
+        set resp.http.X-Web-State-Debug = req.http.X-Web-State;
     }
 
     if (resp.status == 301 || resp.status == 302 || resp.status == 303 || resp.status == 307 || resp.status == 308) {

@@ -60,7 +60,7 @@ const activeCustomTopSubIndex = ref<number | null>(null) // active custom menu t
 
 
 const sortedProductCategories = computed(() => {
-	const fromFetch = (sidebarMenu?.value ?? (irisLayout as any).iris?.sidebar)?.data?.fieldValue?.product_categories
+	const fromFetch = (sidebarMenu?.value ?? (irisLayout as any).iris?.sidebar)?.product_categories
 	const source = Array.isArray(fromFetch) && fromFetch.length ? fromFetch : props.productCategories
 	if (!source) return []
 	return [...source].sort((a, b) =>
@@ -418,6 +418,7 @@ const fetchSidebarOnce = async () => {
         isSidebarFetching.value = false
     }
 }
+
 </script>
 
 <template>
@@ -503,7 +504,6 @@ const fetchSidebarOnce = async () => {
 					</span>
 				</div>
 			</template>
-
 			<!-- Sidebar Menu: Mobile -->
 			<IrisSidebarMobile
 				v-if="isMobile"
@@ -511,7 +511,7 @@ const fetchSidebarOnce = async () => {
 					props.sidebar?.data?.fieldValue?.container?.properties ||
 					props.menu?.container?.properties
 				"
-				:productCategories
+				:productCategories="layout?.iris?.sidebar?.product_categories ||product_categories "
 				:customMenusTop
 				:customTopSubDepartments
 				:customMenusBottom
@@ -545,7 +545,7 @@ const fetchSidebarOnce = async () => {
 					props.sidebar?.data?.fieldValue?.container?.properties ||
 					props.menu?.container?.properties
 				"
-				:productCategories
+				:productCategories="layout?.iris?.sidebar?.product_categories ||product_categories "
 				:customMenusTop
 				:customTopSubDepartments
 				:customMenusBottom

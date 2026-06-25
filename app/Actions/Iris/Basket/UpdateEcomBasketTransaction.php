@@ -45,4 +45,17 @@ class UpdateEcomBasketTransaction extends IrisAction
     {
         return back();
     }
+
+    public function jsonResponse(Transaction $transaction): array
+    {
+        $product = $transaction->model;
+
+        return [
+            'transaction_id'    => $transaction->id,
+            'quantity_ordered'  => (int)$transaction->quantity_ordered,
+            'department_id'     => $product?->department_id,
+            'sub_department_id' => $product?->sub_department_id,
+            'family_id'         => $product?->family_id,
+        ];
+    }
 }

@@ -68,6 +68,12 @@ return [
         'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     ],
+    'google_ads' => [
+        'developer_token' => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
+        'client_id'       => env('GOOGLE_CLIENT_ID'),
+        'client_secret'   => env('GOOGLE_CLIENT_SECRET'),
+        'api_version'     => env('GOOGLE_ADS_API_VERSION', 'v18'),
+    ],
     'slack'     => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
