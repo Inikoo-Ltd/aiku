@@ -44,31 +44,28 @@ trait HasReviewCommonLogic
     protected function commonRules(): array
     {
         return [
-            'customer_id'   => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
-            'review_status' => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
-            'state'         => ['sometimes', Rule::enum(ReviewStateEnum::class)],
-            'rating'        => ['sometimes', 'numeric', 'min:1', 'max:5'],
-            'rating_a'      => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_b'      => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_c'      => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_d'      => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_e'      => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'title'         => ['sometimes', 'nullable', 'string', 'max:255'],
-            'message'       => ['sometimes', 'nullable', 'string', 'max:5000'],
-            'auto_approve_at'    => ['sometimes', 'nullable', 'date'],
-            'is_public'     => ['sometimes', 'boolean'],
-            'order_id'      => ['sometimes', 'nullable', 'integer', 'exists:orders,id'],
-            'likes'         => ['sometimes', 'integer', 'min:0'],
-            'meta'          => ['sometimes', 'array'],
-            'images'        => ['sometimes', 'array'],
-            'images.*'      => ['sometimes', File::image()->max(50 * 1024)],
-            'videos'        => ['sometimes', 'array'],
-            'videos.*'      => ['sometimes', File::types(['mp4', 'webm'])->max(50 * 1024)],
-            'language_id'   => ['sometimes', 'nullable', 'exists:languages,id'],
-            'external_id'   => ['sometimes', 'string'],
+            'customer_id'     => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
+            'review_status'   => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
+            'state'           => ['sometimes', Rule::enum(ReviewStateEnum::class)],
+            'rating'          => ['sometimes', 'numeric', 'min:1', 'max:5'],
+            'rating_a'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_b'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_c'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_d'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_e'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'message'         => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'auto_approve_at' => ['sometimes', 'nullable', 'date'],
+            'is_public'       => ['sometimes', 'boolean'],
+            'order_id'        => ['sometimes', 'nullable', 'integer', 'exists:orders,id'],
+            'likes'           => ['sometimes', 'integer', 'min:0'],
+            'meta'            => ['sometimes', 'array'],
+            'images'          => ['sometimes', 'array'],
+            'images.*'        => ['sometimes', File::image()->max(50 * 1024)],
+            'videos'          => ['sometimes', 'array'],
+            'videos.*'        => ['sometimes', File::types(['mp4', 'webm'])->max(50 * 1024)],
+            'language_id'     => ['sometimes', 'nullable', 'exists:languages,id'],
+            'external_id'     => ['sometimes', 'string'],
         ];
-
-
     }
 
     protected function storeUploadedImages(Model $review, array $images): void
@@ -109,30 +106,30 @@ trait HasReviewCommonLogic
 
     protected function resolveRatingMain(array $modelData, ?Review $review = null): float
     {
-        $dimensionKeys = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
-        $dimensionsWereProvided = collect($dimensionKeys)->contains(fn (string $key): bool => array_key_exists($key, $modelData));
+        $dimensionKeys          = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
+        $dimensionsWereProvided = collect($dimensionKeys)->contains(fn(string $key): bool => array_key_exists($key, $modelData));
 
-        $rating = data_get($modelData, 'rating');
+        $rating            = data_get($modelData, 'rating');
         $ratingWasProvided = array_key_exists('rating', $modelData) && is_numeric($rating);
 
         if (!$dimensionsWereProvided && !$ratingWasProvided) {
-            return (float) ($review?->rating_main ?? ($review ? 0 : 5));
+            return (float)($review?->rating_main ?? ($review ? 0 : 5));
         }
 
         $detailedRatings = collect($dimensionKeys)
-            ->map(fn (string $key) => data_get($modelData, $key))
-            ->filter(fn ($value): bool => is_numeric($value))
-            ->map(fn ($value): float => (float) $value)
+            ->map(fn(string $key) => data_get($modelData, $key))
+            ->filter(fn($value): bool => is_numeric($value))
+            ->map(fn($value): float => (float)$value)
             ->values();
 
         if ($detailedRatings->isNotEmpty()) {
-            return round((float) $detailedRatings->avg(), 2);
+            return round((float)$detailedRatings->avg(), 2);
         }
 
         if ($ratingWasProvided) {
-            return round((float) $rating, 2);
+            return round((float)$rating, 2);
         }
 
-        return (float) ($review?->rating_main ?? ($review ? 0 : 5));
+        return (float)($review?->rating_main ?? ($review ? 0 : 5));
     }
 }
