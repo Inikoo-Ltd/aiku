@@ -98,12 +98,16 @@ class SyncCustomersToGoogleAds
 
         $customerId      = $this->onlyDigits((string) Arr::get($settings, 'customer_id'));
         $loginCustomerId = $this->onlyDigits((string) Arr::get($settings, 'login_customer_id')) ?: $customerId;
-        $developerToken  = (string) Arr::get($settings, 'developer_token');
+        $developerToken  = (string) config('services.google_ads.developer_token');
         $userListId      = $this->onlyDigits((string) Arr::get($settings, 'user_list_id'));
-        $apiVersion      = (string) Arr::get($settings, 'api_version') ?: self::DEFAULT_API_VERSION;
+        $apiVersion      = (string) config('services.google_ads.api_version') ?: self::DEFAULT_API_VERSION;
 
-        if ($customerId === '' || $developerToken === '' || $userListId === '') {
-            throw new Exception("Google Ads is not configured for shop $shop->slug: customer_id, developer_token and user_list_id are required.");
+        if ($developerToken === '') {
+            throw new Exception('Google Ads developer token is not configured. Set GOOGLE_ADS_DEVELOPER_TOKEN.');
+        }
+
+        if ($customerId === '' || $userListId === '' || blank(Arr::get($settings, 'refresh_token'))) {
+            throw new Exception("Google Ads is not configured for shop $shop->slug: connect the shop's Google account and set customer_id and user_list_id.");
         }
 
         return [
@@ -111,22 +115,21 @@ class SyncCustomersToGoogleAds
             'login_customer_id' => $loginCustomerId,
             'developer_token'   => $developerToken,
             'user_list'         => "customers/$customerId/userLists/$userListId",
-            'access_token'      => $this->fetchAccessToken($settings),
+            'access_token'      => $this->fetchAccessToken((string) Arr::get($settings, 'refresh_token')),
             'api_version'       => $apiVersion,
         ];
     }
 
     /**
-     * @param array<string, mixed> $settings
      * @throws ConnectionException
      * @throws Exception
      */
-    private function fetchAccessToken(array $settings): string
+    private function fetchAccessToken(string $refreshToken): string
     {
         $response = Http::asForm()->post(self::OAUTH_TOKEN_URL, [
-            'client_id'     => Arr::get($settings, 'client_id'),
-            'client_secret' => Arr::get($settings, 'client_secret'),
-            'refresh_token' => Arr::get($settings, 'refresh_token'),
+            'client_id'     => config('services.google_ads.client_id'),
+            'client_secret' => config('services.google_ads.client_secret'),
+            'refresh_token' => $refreshToken,
             'grant_type'    => 'refresh_token',
         ]);
 
