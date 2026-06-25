@@ -26,6 +26,7 @@ const props = defineProps<{
         context?: string
     }
     tab?: string
+    review_settings : any
 }>()
 
 const locale = inject("locale", retinaLayoutStructure)
@@ -140,20 +141,31 @@ const saveReview = async () => {
 
         <template #cell(price)="{ item }">
             <div class="text-right">
-                <span v-if="item.price !== null">{{ locale.currencyFormat(item.currency_code || '', item.price) }}</span>
+                <span v-if="item.price !== null">{{ locale.currencyFormat(item.currency_code || '', item.price)
+                    }}</span>
             </div>
         </template>
 
         <template #cell(review_rating)="{ item }">
             <div class="flex justify-end cursor-pointer rating" @click="openDialog(item)">
-                <Rating v-model="item.review_rating" :disabled="true" />
+                <Rating v-if="item.review.review_id" v-model="item.review_rating" :disabled="true" />
+                <Button v-else
+                    :label="ctrans('Rate this :type', { type: tab === 'product_reviews' ? 'product' : 'family' })" />
             </div>
         </template>
     </Table>
 
-    <Dialog v-model:visible="isOpenDialog" modal :header="trans('Review')"  :content-style="{ overflow: 'auto' }">
-        <FormReview v-if="selectedItem" v-model="selectedItem.review" :type="data.context || ''" :schema="data.rating_labels"  :disabled="selectedItem?.review?.review_id ? true : false"/>
-        <template #footer v-if="!selectedItem?.review?.review_id ">
+    <Dialog v-model:visible="isOpenDialog" modal :header="`${ctrans('Rate this :type', {
+        type: tab === 'product_reviews' ? 'product' : 'family',
+    })} (${tab === 'product_reviews' ? selectedItem?.asset_code : selectedItem?.family_code})`"
+        :style="{ width: '60rem' }" :breakpoints="{
+            '1200px': '70vw',
+            '992px': '85vw',
+            '576px': '95vw'
+        }" :content-style="{ overflow: 'auto' }">
+        <FormReview v-if="selectedItem" v-model="selectedItem.review" :review_settings :type="data.context || ''"
+            :schema="data.rating_labels" :disabled="selectedItem?.review?.review_id ? true : false" />
+        <template #footer v-if="!selectedItem?.review?.review_id">
             <div class="flex justify-end gap-5">
                 <Button :label="trans('Close')" type="secondary" @click="isOpenDialog = false" />
                 <Button :label="trans('Save')" type="save" :loading="loadingSave" @click="saveReview" />

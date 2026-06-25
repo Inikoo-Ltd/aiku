@@ -35,6 +35,7 @@ const props = defineProps<{
     title: string
     tabs: TSTabs
     pageHead: PageHeadingTypes
+    review_settings : object
     summary: {
         order_summary: {
             net_amount: string
@@ -68,10 +69,11 @@ const props = defineProps<{
         overall_review: number
         average_review: number
     }
+  
     attachments?: {}
 }>()
 
-
+console.log('sdsdsd',props.review_settings)
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -112,6 +114,7 @@ const component = computed(() => {
             :data="props[currentTab as keyof typeof props]"
             :tab="currentTab"
             @update:tab="handleTabUpdate"
+            :review_settings
         />
     </div>
 
