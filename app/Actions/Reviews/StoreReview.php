@@ -10,14 +10,16 @@ namespace App\Actions\Reviews;
 
 use App\Actions\Catalogue\Review\Traits\HasReviewCommonLogic;
 use App\Actions\Catalogue\Review\Traits\HasReviewHydrators;
+use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
-use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Review;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -31,8 +33,11 @@ class StoreReview
     public function handle(Product|ProductCategory|Order|Shop $reviewable, array $modelData): Review
     {
         $review = DB::transaction(function () use ($reviewable, $modelData) {
-            $images     = data_get($modelData, 'images', []);
-            $videos     = data_get($modelData, 'videos', []);
+            $images = data_get($modelData, 'images', []);
+            $videos = data_get($modelData, 'videos', []);
+
+            $shop = $this->resolveShop($reviewable);
+
             $reviewData = [
                 'group_id'        => $reviewable->group_id,
                 'organisation_id' => $reviewable->organisation_id,
@@ -44,33 +49,14 @@ class StoreReview
                 'rating_c'        => data_get($modelData, 'rating_c'),
                 'rating_d'        => data_get($modelData, 'rating_d'),
                 'rating_e'        => data_get($modelData, 'rating_e'),
-                'show_after'      => data_get($modelData, 'show_after'),
                 'is_public'       => data_get($modelData, 'is_public', true),
-                'state'           => data_get($modelData, 'state', ReviewStateEnum::WAITING_APPROVAL->value),
-                'review_status'   => data_get($modelData, 'review_status', ReviewStatusEnum::PENDING->value),
                 'title'           => data_get($modelData, 'title'),
                 'message'         => data_get($modelData, 'message'),
                 'likes'           => data_get($modelData, 'likes', 0),
                 'meta'            => data_get($modelData, 'meta', []),
+                ...$this->resolveScopeData($reviewable),
+                ...$this->resolvePublishingData($shop, $modelData),
             ];
-
-            if ($reviewable instanceof Order) {
-                $reviewData['scope']   = ReviewScopeEnum::ORDER->value;
-                $reviewData['shop_id'] = $reviewable->shop_id;
-            } elseif ($reviewable instanceof Product) {
-                $reviewData['scope']             = ReviewScopeEnum::PRODUCT->value;
-                $reviewData['master_product_id'] = $reviewable->master_product_id;
-                $reviewData['product_id']        = $reviewable->id;
-                $reviewData['shop_id']           = $reviewable->shop_id;
-            } elseif ($reviewable instanceof ProductCategory) {
-                $reviewData['scope']                      = ReviewScopeEnum::FAMILY->value;
-                $reviewData['master_product_category_id'] = $reviewable->master_product_category_id;
-                $reviewData['product_category_id']        = $reviewable->id;
-                $reviewData['shop_id']                    = $reviewable->shop_id;
-            } elseif ($reviewable instanceof Shop) {
-                $reviewData['scope']   = ReviewScopeEnum::SHOP->value;
-                $reviewData['shop_id'] = $reviewable->id;
-            }
 
             $review = Review::create($reviewData);
 
@@ -88,6 +74,107 @@ class StoreReview
         $this->reviewHydrators($review);
 
         return $review;
+    }
+
+    private function resolveShop(Product|ProductCategory|Order|Shop $reviewable): ?Shop
+    {
+        if ($reviewable instanceof Shop) {
+            return $reviewable;
+        }
+
+        return Shop::find($reviewable->shop_id);
+    }
+
+    private function resolveScopeData(Product|ProductCategory|Order|Shop $reviewable): array
+    {
+        if ($reviewable instanceof Order) {
+            return [
+                'scope'   => ReviewScopeEnum::ORDER->value,
+                'shop_id' => $reviewable->shop_id,
+            ];
+        }
+
+        if ($reviewable instanceof Product) {
+            return [
+                'scope'             => ReviewScopeEnum::PRODUCT->value,
+                'master_product_id' => $reviewable->master_product_id,
+                'product_id'        => $reviewable->id,
+                'shop_id'           => $reviewable->shop_id,
+            ];
+        }
+
+        if ($reviewable instanceof ProductCategory) {
+            return [
+                'scope'                      => ReviewScopeEnum::FAMILY->value,
+                'master_product_category_id' => $reviewable->master_product_category_id,
+                'product_category_id'        => $reviewable->id,
+                'shop_id'                    => $reviewable->shop_id,
+            ];
+        }
+
+        return [
+            'scope'   => ReviewScopeEnum::SHOP->value,
+            'shop_id' => $reviewable->id,
+        ];
+    }
+
+    private function resolvePublishingData(?Shop $shop, array $modelData): array
+    {
+        $settings         = $shop?->settings ?? [];
+        $approvalRequired = (bool) Arr::get($settings, 'reviews.data.approval_required', false);
+        $isPublic         = (bool) data_get($modelData, 'is_public', true);
+
+        if (!$isPublic) {
+            return [
+                'state'         => ReviewStateEnum::PRIVATE->value,
+                'review_status' => $approvalRequired ? ReviewStatusEnum::PENDING->value : ReviewStatusEnum::APPROVED->value,
+                'approved'      => !$approvalRequired,
+                'auto_approved' => !$approvalRequired,
+                'published_at'  => null,
+                'show_after'    => null,
+            ];
+        }
+
+        if ($approvalRequired) {
+            return [
+                'state'         => ReviewStateEnum::WAITING_APPROVAL->value,
+                'review_status' => ReviewStatusEnum::PENDING->value,
+                'approved'      => false,
+                'auto_approved' => false,
+                'published_at'  => null,
+                'show_after'    => null,
+            ];
+        }
+
+        $mode       = Arr::get($settings, 'reviews.auto_publishing.mode', ReviewAutoPublishingEnum::IMMEDIATELY->value);
+        $delayHours = (int) Arr::get($settings, 'reviews.auto_publishing.delay_hours', 24);
+
+        return match ($mode) {
+            ReviewAutoPublishingEnum::DELAY->value => [
+                'state'         => ReviewStateEnum::WAITING_APPROVAL->value,
+                'review_status' => ReviewStatusEnum::APPROVED->value,
+                'approved'      => true,
+                'auto_approved' => true,
+                'published_at'  => null,
+                'show_after'    => now()->addHours($delayHours),
+            ],
+            ReviewAutoPublishingEnum::NEVER->value => [
+                'state'         => ReviewStateEnum::WAITING_APPROVAL->value,
+                'review_status' => ReviewStatusEnum::APPROVED->value,
+                'approved'      => true,
+                'auto_approved' => true,
+                'published_at'  => null,
+                'show_after'    => null,
+            ],
+            default => [
+                'state'         => ReviewStateEnum::PUBLISHED->value,
+                'review_status' => ReviewStatusEnum::APPROVED->value,
+                'approved'      => true,
+                'auto_approved' => true,
+                'published_at'  => now(),
+                'show_after'    => null,
+            ],
+        };
     }
 
     public function rules(): array
