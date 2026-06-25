@@ -33,7 +33,7 @@ class RetinaOrderReviewableResource extends JsonResource
     {
         $orderId        = (int)($this->order_id ?? 0);
         $reviewableId   = (int)($this->reviewable_id ?? 0);
-        $reviewableType = (string)($this->reviewable_type ?? 'Product');
+        $reviewableType = (string)($this->reviewable_type ?? '');
 
 
         return [
