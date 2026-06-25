@@ -25,13 +25,13 @@ class ReadTrustPilotCSVReview
 
         Excel::import(
             new TrustPilotImport($shop),
-            Storage::disk('local')->path($filename),
+            base_path($filename),
             null,
             \Maatwebsite\Excel\Excel::CSV
         );
     }
 
-    public string $commandSignature   = 'import:trust_pilot_csv {filename} {shop}';
+    public string $commandSignature   = 'import:trustpilot_csv {filename} {shop}';
 
     public function asCommand(Command $command): int
     {
@@ -40,7 +40,8 @@ class ReadTrustPilotCSVReview
             return 1;
         }
 
-        if (!Storage::disk('local')->exists($command->argument('filename'))) {
+
+        if (!file_exists(base_path($command->argument('filename')))) {
             $command->error('File doesnt exists');
             return 1;
         }

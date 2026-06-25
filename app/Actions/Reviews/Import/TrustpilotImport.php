@@ -11,7 +11,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 
-class TrustpilotImport implements ToCollection
+class TrustPilotImport implements ToCollection
 {
     private Shop $shop;
 
@@ -36,7 +36,8 @@ class TrustpilotImport implements ToCollection
                 $first = false;
                 continue;
             }
-            
+
+            /** @var Customer $customer */
             $customer = $customers->get($row[4]);
 
             if (!$customer) {
@@ -48,29 +49,29 @@ class TrustpilotImport implements ToCollection
             }
 
             $replyData = $sysUser->get($row[11]) ? [
-                'reply_message'     => $row[10],
-                'reply_at'          => $row[17],
-                'reply_by'          => $sysUser->get($row[11])->id,
+                'reply_message' => $row[10],
+                'reply_at'      => $row[17],
+                'reply_by'      => $sysUser->get($row[11])->id,
             ] : [];
 
             $meta = [
-                'source'                    => 'trustpilot',
-                'review_consumer_user_id'   => $row[2],
-                'review_created'            => $row[1],
+                'source'                  => 'trustpilot',
+                'review_consumer_user_id' => $row[2],
+                'review_created'          => $row[1],
             ];
 
             $reviewData = [
-                'customer_id'       => $customer->id,
-                'rating'            => $row[7],
-                'is_public'         => (($row[7] ?? 0) > 3),
-                'title'             => $row[5],
-                'message'           => $row[6],
-                'language_id'       => $languages->get($row[12])->id,
+                'customer_id'     => $customer->id,
+                'rating'          => $row[7],
+                'is_public'       => (($row[7] ?? 0) > 3),
+                'title'           => $row[5],
+                'message'         => $row[6],
+                'language_id'     => $languages->get($row[12])->id,
                 ...$replyData,
-                'external_id'       => $row[0],
-                'meta'              => $meta,
-                'reviewable_type'   => 'shop',
-                'reviewable_id'     => $this->shop->id
+                'external_id'     => $row[0],
+                'meta'            => $meta,
+                'reviewable_type' => 'shop',
+                'reviewable_id'   => $this->shop->id
             ];
 
             StoreReview::make()->action($this->shop, $reviewData, false);
