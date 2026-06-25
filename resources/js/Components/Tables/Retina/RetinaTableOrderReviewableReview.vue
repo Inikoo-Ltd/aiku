@@ -109,7 +109,7 @@ const saveReview = async () => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" :key="tab" class="mt-5">
         <template #cell(image)="{ item }">
             <div class="flex relative w-8 aspect-square overflow-hidden">
                 <Image :src="item.image?.thumbnail" class="w-full h-full object-contain" />

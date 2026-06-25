@@ -10,7 +10,6 @@ namespace App\Actions\Retina\Ecom\Orders;
 
 use App\Actions\Ordering\Order\UI\IndexReviewProductsInOrder;
 use App\Actions\Ordering\Order\UI\IndexReviewFamiliesInOrder;
-use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
@@ -21,7 +20,6 @@ use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
-use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\RetinaOrderReviewableResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Helpers\Address;
@@ -88,7 +86,21 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                         'icon'  => 'fal fa-star',
                         'title' => __('Review Order')
                     ],
-                    'actions' => [],
+                    'actions' => [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'secondary',
+                        'tooltip' => __('Back to order'),
+                        'label'   => __('Back to order'),
+                        'icon'    => 'fal fa-arrow-left',
+                        'route'   => [
+                            'name'       => 'retina.ecom.orders.show',
+                            'parameters' => [
+                                'order' => $order->slug,
+                            ],
+                        ],
+                    ],
+                ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
