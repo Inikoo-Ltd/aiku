@@ -18,7 +18,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateReview extends OrgAction
@@ -28,10 +27,7 @@ class UpdateReview extends OrgAction
 
     public function rules(): array
     {
-        return [
-            ...$this->commonRules(),
-            'reviewable_type' => ['sometimes', Rule::in(['Order', 'Product', 'ProductCategory', 'Shop'])],
-        ];
+        return $this->commonRules();
     }
 
     /**
