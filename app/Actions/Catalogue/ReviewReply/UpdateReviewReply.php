@@ -24,15 +24,15 @@ class UpdateReviewReply
     public function rules(): array
     {
         return [
-            'message' => ['required', 'string', 'max:10000'],
+            'body' => ['required', 'string', 'max:10000'],
         ];
     }
 
-    public function asController(Review $review, ActionRequest $request): JsonResponse
+    public function asController(Review $reviewReply, ActionRequest $request): JsonResponse
     {
         $validated = $request->validated();
 
-        $updatedReview = $this->handle($review, $validated['message']);
+        $updatedReview = $this->handle($reviewReply, $validated['body']);
 
         return response()->json([
             'status' => 'success',

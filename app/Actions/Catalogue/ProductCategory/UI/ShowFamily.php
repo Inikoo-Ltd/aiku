@@ -332,9 +332,8 @@ class ShowFamily extends OrgAction
     private function getReviewsTabData(ProductCategory $family): array
     {
         return [
-            'data' => ReviewsResource::collectionWithTabMeta(
-                IndexReviews::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value),
-                $family
+            'data' => ReviewsResource::collection(
+                IndexReviews::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value)
             ),
             'rating_labels' => $this->ratingLabelsForShop($family->shop->id, ReviewContextEnum::FAMILY),
             'reviewable_type' => 'ProductCategory',
