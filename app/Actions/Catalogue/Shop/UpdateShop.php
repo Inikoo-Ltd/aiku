@@ -161,6 +161,8 @@ class UpdateShop extends OrgAction
                     'faire_is_shipping_by_external' => 'settings.faire.is_shipping_by_external',
                     'faire_dont_send_first_orders_automatically_to_warehouse' => 'settings.faire.dont_send_first_orders_automatically_to_warehouse',
                     'wix_access_token' => 'settings.wix.access_token',
+                    'gads_customer_id' => 'settings.google_ads.customer_id',
+                    'gads_user_list_id' => 'settings.google_ads.user_list_id',
                     'enable_chat'          => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'reviews' => 'settings.reviews',
@@ -188,6 +190,8 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'faire_dont_send_first_orders_automatically_to_warehouse');
         data_forget($modelData, 'is_shipping_by_external');
         data_forget($modelData, 'wix_access_token');
+        data_forget($modelData, 'gads_customer_id');
+        data_forget($modelData, 'gads_user_list_id');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'reviews');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
@@ -425,6 +429,8 @@ class UpdateShop extends OrgAction
             'faire_is_shipping_by_external'                           => ['sometimes', 'boolean'],
             'faire_dont_send_first_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
             'wix_access_token'                                        => ['sometimes', 'string'],
+            'gads_customer_id'                                  => ['sometimes', 'nullable', 'string'],
+            'gads_user_list_id'                                 => ['sometimes', 'nullable', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],

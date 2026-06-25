@@ -29,6 +29,7 @@ use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
+use App\Actions\Web\Webpage\ExportWebpages;
 use App\Actions\Web\Webpage\UI\CreateBlogWebpage;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
@@ -125,6 +126,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
 
     Route::get('/{webpage}/redirect-options', [IndexWebpages::class, 'asRedirectOption'])->name('index.redirect-options');
 
+    Route::get('export', ExportWebpages::class)->name('export');
     Route::get('create', CreateWebpage::class)->name('create');
     Route::prefix('{webpage}')
         ->group(function () {
