@@ -159,7 +159,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
     {
         $existingReview = Review::query()
             ->where('order_id', $order->id)
-            ->where('scope', ReviewScopeEnum::SHOP->value)
+            ->where('scope', ReviewScopeEnum::ORDER->value)
             ->first();
 
         $reviewMediaData = is_string($this->review_media_data)
@@ -181,10 +181,10 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             'message'         => $existingReview?->message,
             'is_public'       => $existingReview ? (bool) $existingReview->is_public : true,
             'review_images'   => $reviewImages,
-            'reviewable_type' => ReviewScopeEnum::SHOP->value,
-            'reviewable_id'   => $order->shop_id,
+            'reviewable_type' => ReviewScopeEnum::ORDER->value,
+            'reviewable_id'   => $order->id,
             'order_id'        => $order->id,
-            'rating_labels'   => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::SHOP),
+            'rating_labels'   => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ORDER),
         ];
     }
 
