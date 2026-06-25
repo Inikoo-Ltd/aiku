@@ -9,7 +9,9 @@ namespace App\Actions\CRM\Customer;
 
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -25,15 +27,16 @@ class SyncCustomersToGoogleAds
 
     public string $commandSignature = 'sync:customers-to-google-ads {shop : The shop slug} {--chunk=10000 : Customers per addOperations request}';
 
-    private const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+    private const string OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
-    private const DEFAULT_API_VERSION = 'v18';
+    private const string DEFAULT_API_VERSION = 'v18';
 
     /**
      * Upload the shop's customers' hashed identifiers to a Google Ads Customer Match user list
      * through an OfflineUserDataJob, using the credentials stored in the shop settings.
      *
      * @return array{uploaded: int, job: string|null}
+     * @throws Exception
      */
     public function handle(Shop $shop, int $chunkSize = 10000): array
     {
@@ -87,6 +90,7 @@ class SyncCustomersToGoogleAds
 
     /**
      * @return array{customer_id: string, login_customer_id: string, developer_token: string, user_list: string, access_token: string, api_version: string}
+     * @throws Exception
      */
     private function resolveConfig(Shop $shop): array
     {
@@ -99,7 +103,7 @@ class SyncCustomersToGoogleAds
         $apiVersion      = (string) Arr::get($settings, 'api_version') ?: self::DEFAULT_API_VERSION;
 
         if ($customerId === '' || $developerToken === '' || $userListId === '') {
-            throw new \RuntimeException("Google Ads is not configured for shop {$shop->slug}: customer_id, developer_token and user_list_id are required.");
+            throw new Exception("Google Ads is not configured for shop $shop->slug: customer_id, developer_token and user_list_id are required.");
         }
 
         return [
@@ -113,7 +117,9 @@ class SyncCustomersToGoogleAds
     }
 
     /**
-     * @param  array<string, mixed>  $settings
+     * @param array<string, mixed> $settings
+     * @throws ConnectionException
+     * @throws Exception
      */
     private function fetchAccessToken(array $settings): string
     {
@@ -125,7 +131,7 @@ class SyncCustomersToGoogleAds
         ]);
 
         if ($response->failed() || !$response->json('access_token')) {
-            throw new \RuntimeException('Failed to obtain Google Ads access token: ' . $response->body());
+            throw new Exception('Failed to obtain Google Ads access token: ' . $response->body());
         }
 
         return $response->json('access_token');
@@ -141,6 +147,10 @@ class SyncCustomersToGoogleAds
             ->baseUrl("https://googleads.googleapis.com/{$config['api_version']}");
     }
 
+    /**
+     * @throws ConnectionException
+     * @throws Exception
+     */
     private function createOfflineUserDataJob(PendingRequest $client, array $config): string
     {
         $response = $client->post("customers/{$config['customer_id']}/offlineUserDataJobs:create", [
@@ -153,14 +163,16 @@ class SyncCustomersToGoogleAds
         ]);
 
         if ($response->failed() || !$response->json('resourceName')) {
-            throw new \RuntimeException('Failed to create Google Ads offline user data job: ' . $response->body());
+            throw new Exception('Failed to create Google Ads offline user data job: ' . $response->body());
         }
 
         return $response->json('resourceName');
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $operations
+     * @param array<int, array<string, mixed>> $operations
+     * @throws ConnectionException
+     * @throws Exception
      */
     private function addOperations(PendingRequest $client, string $jobResourceName, array $operations): void
     {
@@ -170,22 +182,26 @@ class SyncCustomersToGoogleAds
         ]);
 
         if ($response->failed()) {
-            throw new \RuntimeException('Failed to add operations to Google Ads job: ' . $response->body());
+            throw new Exception('Failed to add operations to Google Ads job: ' . $response->body());
         }
     }
 
+    /**
+     * @throws ConnectionException
+     * @throws Exception
+     */
     private function runOfflineUserDataJob(PendingRequest $client, string $jobResourceName): void
     {
         $response = $client->post("$jobResourceName:run");
 
         if ($response->failed()) {
-            throw new \RuntimeException('Failed to run Google Ads offline user data job: ' . $response->body());
+            throw new Exception('Failed to run Google Ads offline user data job: ' . $response->body());
         }
     }
 
     /**
      * Build hashed user identifiers for a customer, following Google Customer Match
-     * normalization rules (lowercase + trim email, E.164 phone, SHA-256 hex).
+     * normalization rules (lowercase and trim email, E.164 phone, SHA-256 hex).
      *
      * @return array<int, array<string, string>>
      */
@@ -236,6 +252,9 @@ class SyncCustomersToGoogleAds
         return preg_replace('/\D/', '', $value);
     }
 
+    /**
+     * @throws Exception
+     */
     public function asCommand(Command $command): int
     {
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
