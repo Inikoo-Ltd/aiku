@@ -591,8 +591,17 @@ class CallApiGlsEsShipping extends OrgAction
                 $pageCount = $mpdf->setSourceFile($tempFile);
                 for ($i = 1; $i <= $pageCount; $i++) {
                     $tplId = $mpdf->importPage($i);
-                    $mpdf->AddPage();
-                    $mpdf->useTemplate($tplId);
+                    $size = $mpdf->getTemplateSize($tplId);
+                    $orientation = ($size['height'] > $size['width']) ? 'P' : 'L';
+                    $mpdf->AddPageByArray([
+                        'orientation' => $orientation,
+                        'newformat' => [$size['width'], $size['height']],
+                        'mgl' => 0,
+                        'mgr' => 0,
+                        'mgt' => 0,
+                        'mgb' => 0,
+                    ]);
+                    $mpdf->useTemplate($tplId, 0, 0, $size['width'], $size['height']);
                 }
             } finally {
                 @unlink($tempFile);
