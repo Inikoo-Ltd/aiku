@@ -21,34 +21,26 @@ class ProcessReviewReminderPerOutbox
     {
         $currentDateTime = Carbon::now()->utc();
         $compareDate = $currentDateTime->copy()->subDays($outbox->days_after)->endOfDay();
+        $lastSentAt = $outbox->last_sent_at ?? null;
 
-        // update this query to use the customers table instead of the customer model to avoid loading all the customer models into memory
         $baseQuery = DB::table('customers');
         $baseQuery->where('customers.shop_id', $outbox->shop_id);
 
-        $baseQuery->rightJoin('orders', function ($join) use ($compareDate) {
+        $baseQuery->rightJoin('orders', function ($join) use ($compareDate, $lastSentAt) {
             $join->on('customers.id', '=', 'orders.customer_id')
                 ->where('orders.state', OrderStateEnum::DISPATCHED->value)
                 ->whereNull('orders.deleted_at')
                 ->whereDate('orders.dispatched_at', '=', $compareDate->toDateString());
+
+            if ($lastSentAt) {
+                $join->where('orders.dispatched_at', '>', $lastSentAt);
+            }
         });
 
         $baseQuery->whereNotExists(function ($query) {
             $query->select('id')
-                ->from('product_reviews')
-                ->whereColumn('product_reviews.order_id', 'orders.id');
-        });
-
-        $baseQuery->whereNotExists(function ($query) {
-            $query->select('id')
-                ->from('product_category_reviews')
-                ->whereColumn('product_category_reviews.order_id', 'orders.id');
-        });
-
-        $baseQuery->whereNotExists(function ($query) {
-            $query->select('id')
-                ->from('shop_reviews')
-                ->whereColumn('shop_reviews.order_id', 'orders.id');
+                ->from('reviews')
+                ->whereColumn('reviews.order_id', 'orders.id');
         });
 
         $baseQuery->select(
