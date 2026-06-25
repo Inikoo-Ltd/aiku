@@ -24,6 +24,7 @@ use App\Http\Resources\Ordering\RetinaOrderReviewableResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use App\Models\Reviews\Review;
 use App\Models\Reviews\ReviewRatingLabel;
 use Inertia\Inertia;
@@ -107,15 +108,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                     'navigation' => RetinaOrderReviewTabsEnum::navigation()
                 ],
                 'summary' => $this->getOrderBoxStats($order),
-                'review_summary'  => [
-                    'family_review' => 3,
-                    'total_family_review' => 5,
-                    'total_product_review' => 4,
-                    'total_product_review' => 5,
-                    'product_review' => 1,
-                    'overall_review' => 1,
-                    'average_review' => 4
-                ],
+                'review_summary' => $this->getReviewSummary($order),
                 'currency'          => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'              => OrderResource::make($order),
 
@@ -197,6 +190,42 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             'reviewable_id'   => $order->id,
             'order_id'        => $order->id,
             'rating_labels'   => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ORDER),
+        ];
+    }
+
+    private function getReviewSummary(Order $order): array
+    {
+        $reviewStats = Review::query()
+            ->where('order_id', $order->id)
+            ->selectRaw('scope, COUNT(*) as count, AVG(rating_main) as avg_rating')
+            ->groupBy('scope')
+            ->get()
+            ->keyBy('scope');
+
+        $totalProducts = Transaction::query()
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->distinct('model_id')
+            ->count('model_id');
+
+        $totalFamilies = Transaction::query()
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->whereNotNull('family_id')
+            ->distinct('family_id')
+            ->count('family_id');
+
+        $overallAvg = Review::query()
+            ->where('order_id', $order->id)
+            ->avg('rating_main');
+
+        return [
+            'overall_review'       => (int) ($reviewStats->get(ReviewScopeEnum::SHOP->value)?->count ?? 0),
+            'product_review'       => (int) ($reviewStats->get(ReviewScopeEnum::PRODUCT->value)?->count ?? 0),
+            'total_product_review' => $totalProducts,
+            'family_review'        => (int) ($reviewStats->get(ReviewScopeEnum::FAMILY->value)?->count ?? 0),
+            'total_family_review'  => $totalFamilies,
+            'average_review'       => $overallAvg ? round((float) $overallAvg, 1) : 0.0,
         ];
     }
 
