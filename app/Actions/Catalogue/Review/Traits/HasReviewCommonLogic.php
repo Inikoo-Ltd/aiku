@@ -41,9 +41,9 @@ trait HasReviewCommonLogic
         }
     }
 
-    protected function commonRules(): array
+    protected function commonRules($strict = true): array
     {
-        return [
+        $rules = [
             'customer_id'   => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
             'review_status' => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
             'state'         => ['sometimes', Rule::enum(ReviewStateEnum::class)],
@@ -65,6 +65,19 @@ trait HasReviewCommonLogic
             'videos'        => ['sometimes', 'array'],
             'videos.*'      => ['sometimes', File::types(['mp4', 'webm'])->max(50 * 1024)],
         ];
+
+        if (!$strict) {
+            $rules = [
+                ...$rules,
+                'external_id'   => ['sometimes', 'string'],
+                'reply_message' => ['sometimes', 'string'],
+                'reply_at'      => ['sometimes', 'date'],
+                'reply_by'      => ['sometimes', 'exists:users,id'],
+                'language_id'   => ['sometimes', 'nullable', 'exists:languages,id'],
+            ];
+        }
+
+        return $rules;
     }
 
     protected function storeUploadedImages(Model $review, array $images): void
