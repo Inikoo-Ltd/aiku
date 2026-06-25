@@ -53,6 +53,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property ReviewStatusEnum $review_status
  * @property string|null $title
  * @property string|null $message
+ * @property array|null $web_images
  * @property int|null $language_id
  * @property bool $approved
  * @property bool $auto_approved

@@ -43,9 +43,9 @@ class StoreRetinaReview extends RetinaAction
 
         return $this->handle($order, [
             ...$this->validatedData,
-            'customer_id' => $this->customer?->id,
-            'status'      => ReviewStatusEnum::PENDING->value,
-            'order_id'    => $order->id,
+            'customer_id'   => $this->customer?->id,
+            'review_status' => ReviewStatusEnum::PENDING->value,
+            'order_id'      => $order->id,
         ]);
     }
 }
