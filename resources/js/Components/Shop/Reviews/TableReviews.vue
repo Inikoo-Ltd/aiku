@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
-import ReviewStatsPanel from "@/Components/Shop/Reviews/ReviewStatsPanel.vue"
 import Image from "@/Common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
@@ -14,33 +13,12 @@ import Dialog from "primevue/dialog"
 import { ref } from "vue"
 import { Rating } from "primevue"
 
-
 library.add(
     faPencil,
     faReply,
     faEye,
-    faCheck
+    faCheck,
 )
-
-type ReviewTablePayload = TableTS & {
-    stats?: {
-        total?: number
-        average_rating?: number
-        status_approved?: number
-        status_pending?: number
-        status_rejected?: number
-        number_reviews_rating_1?: number
-        number_reviews_rating_2?: number
-        number_reviews_rating_3?: number
-        number_reviews_rating_4?: number
-        number_reviews_rating_5?: number
-        category_ratings?: Array<{
-            dimension: string
-            label: string
-            average: number
-        }>
-    }
-}
 
 type RatingLabel = {
     dimension: string
@@ -51,7 +29,7 @@ type RatingLabel = {
 
 const props = defineProps<{
     data: {
-        data: ReviewTablePayload
+        data: TableTS
         reviewable_type?: "ProductCategory" | "Product" | "Shop"
         rating_labels?: RatingLabel[]
         replier_type:String
@@ -63,7 +41,6 @@ const isDialogVisible = ref(false)
 const selectedItem = ref<any | null>(null)
 
 const openModal = (item: any) => {
-    console.log(item)
     selectedItem.value = item
     isDialogVisible.value = true
 }
@@ -73,10 +50,9 @@ const closeModal = () => {
     selectedItem.value = null
 }
 
-
 const aftreReply = () => {
     isDialogVisible.value = false
-    router.reload({only: ['pageHead', 'reviews']})
+    router.reload({preserveScroll: true})
 }
 
 const approvingId = ref<number | null>(null)
@@ -87,6 +63,7 @@ const approveReview = (item: any) => {
     }
 
     approvingId.value = item.id
+
     router.patch(
         route(item.update_route.name, item.update_route.parameters),
         { status: 'approved' },
@@ -99,15 +76,9 @@ const approveReview = (item: any) => {
         }
     )
 }
-
-
 </script>
 
 <template>
-    <div class="p-4">
-        <ReviewStatsPanel :stats="data.stats" :rating-labels="rating_labels" />
-    </div>
-
     <Table :resource="data.data" :name="tab">
         <template #cell(image_thumbnails)="{ item }">
             <div class="flex items-center gap-1">
@@ -119,14 +90,17 @@ const approveReview = (item: any) => {
                 <div v-else class="h-8 w-8 rounded border border-gray-200" />
             </div>
         </template>
+
         <template #cell(rating)="{ item }">
             <div class="rating">
                 <Rating :modelValue="item.rating" readonly />
             </div>
         </template>
+
         <template #cell(reply_status)="{ item }">
             <Tag :theme="item.has_reply ? 3 : 99" :label="item.has_reply ? trans('Yes') : trans('No')" />
         </template>
+
         <template #cell(action)="{ item }">
             <div class="flex items-center justify-end gap-1">
                 <Button
@@ -143,7 +117,6 @@ const approveReview = (item: any) => {
         </template>
     </Table>
 
-
     <Dialog v-model:visible="isDialogVisible" modal header="Review Detail" :style="{ width: '40rem' }"
         :breakpoints="{ '960px': '75vw', '641px': '90vw' }" @hide="closeModal">
         <div v-if="selectedItem" class="space-y-3">
@@ -157,9 +130,7 @@ const approveReview = (item: any) => {
             />
         </div>
     </Dialog>
-
 </template>
-
 
 <style scoped>
 :deep(.rating .p-rating-option-active .p-rating-icon) {

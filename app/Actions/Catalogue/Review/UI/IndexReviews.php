@@ -3,13 +3,12 @@
 namespace App\Actions\Catalogue\Review\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Reviews\Review;
-use App\Models\Reviews\ReviewRatingLabel;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -17,63 +16,49 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexReviews extends OrgAction
 {
-    public function getStats(ProductCategory|Product|Shop $parent): array
+    public function getStats(Shop $shop): array
     {
-        $reviewStat = $parent->reviewStats()->first();
-        $ratingLabels = ReviewRatingLabel::query()
-            ->whereRaw('LOWER(model_type) = ?', ['shop'])
-            ->where('model_id', $this->shopId($parent))
-            ->whereRaw('LOWER(review_context) = ?', [$this->reviewContext($parent)->value])
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('dimension')
-            ->get(['dimension', 'label'])
-            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
-                'dimension' => $reviewRatingLabel->dimension?->value ?? (string) $reviewRatingLabel->dimension,
-                'label' => (string) $reviewRatingLabel->label,
+        $row = Review::query()
+            ->where('shop_id', $shop->id)
+            ->selectRaw('
+                COUNT(*) as total,
+                COALESCE(AVG(rating_main), 0) as average_rating,
+                COUNT(*) FILTER (WHERE review_status = ?) as status_approved,
+                COUNT(*) FILTER (WHERE review_status = ?) as status_pending,
+                COUNT(*) FILTER (WHERE review_status = ?) as status_rejected,
+                COUNT(*) FILTER (WHERE ROUND(rating_main) = 1) as number_reviews_rating_1,
+                COUNT(*) FILTER (WHERE ROUND(rating_main) = 2) as number_reviews_rating_2,
+                COUNT(*) FILTER (WHERE ROUND(rating_main) = 3) as number_reviews_rating_3,
+                COUNT(*) FILTER (WHERE ROUND(rating_main) = 4) as number_reviews_rating_4,
+                COUNT(*) FILTER (WHERE ROUND(rating_main) = 5) as number_reviews_rating_5,
+                COALESCE(AVG(rating_a), 0) as average_rating_a,
+                COALESCE(AVG(rating_b), 0) as average_rating_b,
+                COALESCE(AVG(rating_c), 0) as average_rating_c,
+                COALESCE(AVG(rating_d), 0) as average_rating_d,
+                COALESCE(AVG(rating_e), 0) as average_rating_e
+            ', [
+                ReviewStatusEnum::APPROVED->value,
+                ReviewStatusEnum::PENDING->value,
+                ReviewStatusEnum::REJECTED->value,
             ])
-            ->values()
-            ->all();
-
-        $averageByDimension = [
-            'a' => round((float) ($reviewStat?->average_rating_a ?? 0), 2),
-            'b' => round((float) ($reviewStat?->average_rating_b ?? 0), 2),
-            'c' => round((float) ($reviewStat?->average_rating_c ?? 0), 2),
-            'd' => round((float) ($reviewStat?->average_rating_d ?? 0), 2),
-            'e' => round((float) ($reviewStat?->average_rating_e ?? 0), 2),
-        ];
-
-        $categoryRatings = collect($ratingLabels)
-            ->map(function (array $label) use ($averageByDimension): array {
-                $dimension = strtolower((string) data_get($label, 'dimension'));
-
-                return [
-                    'dimension' => $dimension,
-                    'label' => (string) data_get($label, 'label', strtoupper($dimension)),
-                    'average' => (float) ($averageByDimension[$dimension] ?? 0),
-                ];
-            })
-            ->filter(fn (array $item): bool => in_array($item['dimension'], ['a', 'b', 'c', 'd', 'e'], true))
-            ->values()
-            ->all();
-
-        $reviewModel = $this->reviewModel($parent);
-        $foreignKey = $this->foreignKey($parent);
+            ->first();
 
         return [
-            'total' => (int) ($reviewStat?->number_reviews ?? 0),
-            'average_rating' => (float) ($reviewStat?->average_rating_main ?? 0),
-            'verified' => 0,
-            'likes' => (int) $reviewModel::query()->where($foreignKey, $parent->id)->sum('likes'),
-            'status_approved' => (int) ($reviewStat?->number_reviews_approved ?? 0),
-            'status_pending' => (int) ($reviewStat?->number_reviews_pending ?? 0),
-            'status_rejected' => (int) ($reviewStat?->number_reviews_rejected ?? 0),
-            'number_reviews_rating_1' => (int) ($reviewStat?->number_rating_1 ?? 0),
-            'number_reviews_rating_2' => (int) ($reviewStat?->number_rating_2 ?? 0),
-            'number_reviews_rating_3' => (int) ($reviewStat?->number_rating_3 ?? 0),
-            'number_reviews_rating_4' => (int) ($reviewStat?->number_rating_4 ?? 0),
-            'number_reviews_rating_5' => (int) ($reviewStat?->number_rating_5 ?? 0),
-            'category_ratings' => $categoryRatings,
+            'total'                   => (int) $row->total,
+            'average_rating'          => (float) $row->average_rating,
+            'status_approved'         => (int) $row->status_approved,
+            'status_pending'          => (int) $row->status_pending,
+            'status_rejected'         => (int) $row->status_rejected,
+            'number_reviews_rating_1' => (int) $row->number_reviews_rating_1,
+            'number_reviews_rating_2' => (int) $row->number_reviews_rating_2,
+            'number_reviews_rating_3' => (int) $row->number_reviews_rating_3,
+            'number_reviews_rating_4' => (int) $row->number_reviews_rating_4,
+            'number_reviews_rating_5' => (int) $row->number_reviews_rating_5,
+            'average_rating_a'        => (float) $row->average_rating_a,
+            'average_rating_b'        => (float) $row->average_rating_b,
+            'average_rating_c'        => (float) $row->average_rating_c,
+            'average_rating_d'        => (float) $row->average_rating_d,
+            'average_rating_e'        => (float) $row->average_rating_e,
         ];
     }
 
@@ -89,12 +74,11 @@ class IndexReviews extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $reviewModel = $this->reviewModel($parent);
-        $table = (new $reviewModel())->getTable();
+        $table = (new Review())->getTable();
         $foreignKey = $this->foreignKey($parent);
 
-        return QueryBuilder::for($reviewModel)
-            ->with(['media', 'replies'])
+        return QueryBuilder::for(Review::class)
+            ->with('media')
             ->leftJoin('customers', 'customers.id', '=', $table . '.customer_id')
             ->where($table . '.' . $foreignKey, $parent->id)
             ->when($scope === 'product', fn ($query) => $query->whereNotNull($table . '.product_id'))
@@ -113,6 +97,9 @@ class IndexReviews extends OrgAction
                 $table . '.rating_e',
                 $table . '.message',
                 $table . '.likes',
+                $table . '.replied',
+                $table . '.reply_message',
+                $table . '.reply_at',
                 $table . '.meta',
                 $table . '.created_at',
                 'customers.contact_name as contact_name',
@@ -166,19 +153,6 @@ class IndexReviews extends OrgAction
         };
     }
 
-    private function reviewModel(ProductCategory|Product|Shop $parent): string
-    {
-        if ($parent instanceof Product) {
-            return Review::class;
-        }
-
-        if ($parent instanceof Shop) {
-            return Review::class;
-        }
-
-        return Review::class;
-    }
-
     private function foreignKey(ProductCategory|Product|Shop $parent): string
     {
         if ($parent instanceof Product) {
@@ -190,27 +164,5 @@ class IndexReviews extends OrgAction
         }
 
         return 'product_category_id';
-    }
-
-    private function reviewContext(ProductCategory|Product|Shop $parent): ReviewContextEnum
-    {
-        if ($parent instanceof Product) {
-            return ReviewContextEnum::PRODUCT;
-        }
-
-        if ($parent instanceof Shop) {
-            return ReviewContextEnum::ORDER;
-        }
-
-        return ReviewContextEnum::FAMILY;
-    }
-
-    private function shopId(ProductCategory|Product|Shop $parent): int
-    {
-        if ($parent instanceof Shop) {
-            return $parent->id;
-        }
-
-        return $parent->shop_id;
     }
 }
