@@ -6,9 +6,10 @@ use App\Actions\Comms\Traits\WithSendSubscribersOutboxEmail;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
+use App\Models\Reviews\Review;
 
 class SendNewReviewEmailToSubscribers extends OrgAction
 {
@@ -16,24 +17,39 @@ class SendNewReviewEmailToSubscribers extends OrgAction
     use WithNoStrictRules;
     use WithSendSubscribersOutboxEmail;
 
-    public function handle(Shop $shop, array $reviewData = []): void
+    public function handle(int $reviewId): void
     {
+
+        $review = Review::find($reviewId);
+        if (!$review) {
+            return;
+        }
+
+        if ($review->shop->type === ShopTypeEnum::EXTERNAL) {
+            return;
+        }
+
         /** @var Outbox $outbox */
-        $outbox = $shop->outboxes()->where('code', OutboxCodeEnum::NEW_REVIEW->value)->first();
+        $outbox = $review->shop->outboxes()->where('code', OutboxCodeEnum::NEW_REVIEW->value)->first();
 
         if (!$outbox) {
             return;
         }
 
+        $customer = $review->customer ?? null;
+
         $this->sendOutboxEmailToSubscribers(
             $outbox,
             additionalData: [
-                'customer_name'   => $reviewData['customer_name'] ?? '',
-                'customer_link'   => $reviewData['customer_link'] ?? '',
-                'product_name'    => $reviewData['product_name'] ?? '',
-                'product_link'    => $reviewData['product_link'] ?? '',
-                'rating'          => $reviewData['rating'] ?? '',
-                'review_comment'  => $reviewData['review_comment'] ?? '',
+                'customer_name'   => $customer?->name ?? '',
+                'customer_link'   => $customer ? route('grp.org.shops.show.crm.customers.show', [
+                    $review->organisation->slug,
+                    $review->shop->slug,
+                    $customer?->slug
+                ]) : '#',
+                'review_link'      =>  'https://app.aiku.test/org/sk',// update Later
+                'review_title'     => $review->title ?? '',
+                'review_message'   => $review->message ?? '',
             ]
         );
     }

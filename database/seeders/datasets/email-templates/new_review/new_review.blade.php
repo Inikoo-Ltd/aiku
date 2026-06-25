@@ -110,9 +110,8 @@
                                         <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                                             valign="top">
                                             <strong>Customer:</strong> <a href="[Customer Link]" style="color: #3498DB; text-decoration: none;">[Customer Name]</a><br />
-                                            <strong>Product:</strong> <a href="[Product Link]" style="color: #3498DB; text-decoration: none;">[Product Name]</a><br />
-                                            <strong>Rating:</strong> [Rating]<br />
-                                            <strong>Comment:</strong> [Review Comment]
+                                            <strong>Review Link:</strong> <a href="[Review Link]" style="color: #3498DB; text-decoration: none;">[Review Title]</a><br />
+                                            <strong>Review Message:</strong> [Review Message]<br />
                                         </td>
                                     </tr>
                                 </table>
