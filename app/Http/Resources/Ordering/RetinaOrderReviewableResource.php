@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Http\Resources\Catalogue\ReviewMediaResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -26,6 +27,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $review_message
  * @property mixed $quantity_ordered
  * @property mixed $review_is_public
+ * @property mixed $review_images
  */
 class RetinaOrderReviewableResource extends JsonResource
 {
@@ -34,6 +36,10 @@ class RetinaOrderReviewableResource extends JsonResource
         $orderId      = (int)($this->order_id ?? 0);
         $reviewableId = $this->reviewable_id;
         $scope        = (string)($this->reviewable_type ?? '');
+
+        $reviewImages = $this->review_images
+            ? ReviewMediaResource::collection($this->review_images)->toArray(request())
+            : [];
 
         return [
             'id'               => $reviewableId,
@@ -53,10 +59,11 @@ class RetinaOrderReviewableResource extends JsonResource
                 'rating_d'     => $this->review_rating_d !== null ? (int)$this->review_rating_d : null,
                 'rating_e'     => $this->review_rating_e !== null ? (int)$this->review_rating_e : null,
                 'message'      => $this->review_message,
-                'is_public'    => !($this->review_is_public !== null) || $this->review_is_public,
-                'scope'        => $scope,
+                'is_public'     => !($this->review_is_public !== null) || $this->review_is_public,
+                'scope'         => $scope,
                 'reviewable_id' => $reviewableId,
-                'order_id'     => $orderId,
+                'order_id'      => $orderId,
+                'review_images' => $reviewImages,
             ],
         ];
     }
