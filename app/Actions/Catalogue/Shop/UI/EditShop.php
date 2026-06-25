@@ -678,6 +678,56 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
+                    'label'  => __('Google Ads'),
+                    'icon'   => 'fa-brands fa-google',
+                    'information' => __('Customer Match credentials used to sync this shop customers to a Google Ads user list. Each shop uses its own credentials.'),
+                    'fields' => [
+                        'google_ads_developer_token' => [
+                            'type'        => 'input',
+                            'label'       => __('Developer Token'),
+                            'value'       => Arr::get($shop->settings, 'google_ads.developer_token', ''),
+                        ],
+                        'google_ads_client_id' => [
+                            'type'        => 'input',
+                            'label'       => __('Client ID'),
+                            'value'       => Arr::get($shop->settings, 'google_ads.client_id', ''),
+                        ],
+                        'google_ads_client_secret' => [
+                            'type'        => 'input',
+                            'label'       => __('Client Secret'),
+                            'value'       => Arr::get($shop->settings, 'google_ads.client_secret', ''),
+                        ],
+                        'google_ads_refresh_token' => [
+                            'type'        => 'input',
+                            'label'       => __('Refresh Token'),
+                            'value'       => Arr::get($shop->settings, 'google_ads.refresh_token', ''),
+                        ],
+                        'google_ads_login_customer_id' => [
+                            'type'        => 'input',
+                            'label'       => __('Login Customer ID'),
+                            'placeholder' => '123-456-7890',
+                            'value'       => Arr::get($shop->settings, 'google_ads.login_customer_id', ''),
+                        ],
+                        'google_ads_customer_id' => [
+                            'type'        => 'input',
+                            'label'       => __('Customer ID'),
+                            'placeholder' => '123-456-7890',
+                            'value'       => Arr::get($shop->settings, 'google_ads.customer_id', ''),
+                        ],
+                        'google_ads_user_list_id' => [
+                            'type'        => 'input',
+                            'label'       => __('User List ID'),
+                            'value'       => Arr::get($shop->settings, 'google_ads.user_list_id', ''),
+                        ],
+                        'google_ads_api_version' => [
+                            'type'        => 'input',
+                            'label'       => __('API Version'),
+                            'placeholder' => 'v18',
+                            'value'       => Arr::get($shop->settings, 'google_ads.api_version', ''),
+                        ],
+                    ],
+                ],
+                [
                     'label'  => __('HELP Portal'),
                     'icon'   => 'fal fa-life-ring',
                     'fields' => $helpPortalFields,
