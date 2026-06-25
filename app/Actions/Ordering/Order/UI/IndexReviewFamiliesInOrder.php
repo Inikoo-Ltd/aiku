@@ -48,6 +48,8 @@ class IndexReviewFamiliesInOrder extends OrgAction
             ->select(
                 [
                     'product_categories.id as reviewable_id',
+                    DB::raw("'".ReviewScopeEnum::FAMILY->value."' as reviewable_type"),
+                    'transactions.order_id as order_id',
                     'product_categories.slug as family_slug',
                     'product_categories.code as family_code',
                     'product_categories.name as family_name',
@@ -63,6 +65,7 @@ class IndexReviewFamiliesInOrder extends OrgAction
                 ]
             )->groupBy([
                 'product_categories.id',
+                'transactions.order_id',
                 'product_categories.slug',
                 'product_categories.code',
                 'product_categories.name',
