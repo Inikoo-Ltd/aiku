@@ -20,6 +20,7 @@ use App\Models\Helpers\Language;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Review;
 use App\Models\SysAdmin\User;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\RemembersRowNumber;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -140,11 +141,14 @@ class ReviewIOImport implements ToCollection
             }
 
             $review = StoreReview::make()->action($scope, $reviewData);
-
+                
             $review->update(
                 [
                     'is_online'     => true,
-                    'published_at'  => $row[$isShopCSV ? 6 : 5],
+                    'published_at'  => Carbon::createFromFormat(
+                            'd/m/Y H:i',
+                            $row[$isShopCSV ? 6 : 5]
+                        ),
                     'review_status' => ReviewStatusEnum::APPROVED->value,
                     'auto_approved' => true,
                     'approved'      => true,
