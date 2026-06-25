@@ -23,8 +23,8 @@ import EcomTableOrderTransactions from "@/Components/Retina/Ecom/EcomTableOrderT
 import { AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt } from '@fas'
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
+import { faExclamationTriangle, faExclamation, faBoxHeart, faShieldAlt } from '@fas'
+import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faStar } from '@fal'
 import { Currency } from '@/types/LayoutRules'
 import { faSpinnerThird } from '@far'
 import Timeline from '@/Components/Utils/Timeline.vue'

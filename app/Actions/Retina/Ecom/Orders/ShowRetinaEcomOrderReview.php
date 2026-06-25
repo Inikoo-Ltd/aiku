@@ -154,19 +154,12 @@ class ShowRetinaEcomOrderReview extends RetinaAction
         $orderId        = (int) ($this->order_id ?? 0);
         $reviewableId   = (int) ($this->reviewable_id ?? 0);
         $reviewableType = (string) ($this->reviewable_type ?? 'Product');
-
-        $imageData = is_string($this->row_image_data)
-            ? json_decode($this->row_image_data, true)
-            : (array) ($this->row_image_data ?? []);
-        $rowMedia = $imageData ? Media::hydrate([$imageData])->first() : null;
-
         $reviewMediaData = is_string($this->review_media_data)
             ? json_decode($this->review_media_data, true)
             : ($this->review_media_data ?? []);
         $reviewImages = $reviewMediaData
             ? Media::hydrate($reviewMediaData)->map(fn ($media) => ImageResource::make($media)->getArray())->values()->all()
             : [];
-
         $ratingLabels = [
             ReviewContextEnum::SHOP->value   => $this->ratingLabelsForShop($this->order->shop_id, ReviewContextEnum::SHOP),
         ];

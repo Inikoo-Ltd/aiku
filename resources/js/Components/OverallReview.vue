@@ -9,6 +9,7 @@ import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faStar, falStar)
 
@@ -20,13 +21,12 @@ const props = defineProps<{
 }>()
 
 const locale = inject("locale", retinaLayoutStructure)
-const selectedItem = ref<any>(null)
 const loadingSave = ref(false)
 
 
 
 const saveReview = async () => {
-    const review = selectedItem.value?.review || {}
+    const review = props.data || {}
     const isUpdate = !!review.review_id
 
     const routeName = isUpdate
@@ -75,7 +75,6 @@ const saveReview = async () => {
             headers: { "Content-Type": "multipart/form-data" },
         })
 
-        isOpenDialog.value = false
         router.reload({ only: ["pageHead", props.tab as string] })
         notify({
             title: trans("Success"),
@@ -94,12 +93,14 @@ const saveReview = async () => {
     }
 }
 
-console.log('data', props.data.rating_labels)
 </script>
 
 <template>
     <div>
         <FormReview v-model="props.data" :type="data.context || ''" :schema="data.rating_labels" />
+        <div class="border-t mt-3 py-3 gap-4 border-gray-200 flex justify-end">
+            <Button type="save" @click="saveReview"></Button>
+        </div>
     </div>
 
 </template>
