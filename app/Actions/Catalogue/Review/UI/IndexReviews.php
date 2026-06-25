@@ -101,6 +101,7 @@ class IndexReviews extends OrgAction
                 'reviews.id',
                 'reviews.customer_id',
                 'reviews.review_status as status',
+                'reviews.state',
                 'reviews.rating_main as rating',
                 'reviews.rating_a',
                 'reviews.rating_b',
@@ -109,6 +110,7 @@ class IndexReviews extends OrgAction
                 'reviews.rating_e',
                 'reviews.message',
                 'reviews.likes',
+                'reviews.dislikes',
                 'reviews.scope',
                 'reviews.replied',
                 'reviews.reply_message',
@@ -116,6 +118,7 @@ class IndexReviews extends OrgAction
                 'reviews.meta',
                 'reviews.created_at',
                 'customers.name as customer_name',
+                'customers.slug as customer_slug',
             ])
             ->allowedSorts(['id', 'created_at', 'rating', 'likes'])
             ->allowedFilters([$globalSearch, 'status', 'rating', 'customer_name'])
@@ -140,11 +143,12 @@ class IndexReviews extends OrgAction
                     'count' => 0,
                 ]);
 
+            $table->column(key: 'state_icon', label: '', type: 'icon');
             $table->column(key: 'created_at', label: __('Date'), sortable: true, type: 'date');
             $table->column(key: 'customer_name', label: __('Customer'), searchable: true);
             $table->column(key: 'rating', label: __('Rating'), sortable: true, align: 'right');
             $table->column(key: 'message', label: __('Message'), searchable: true);
-            $table->column(key: 'likes', label: __('Likes'), sortable: true, align: 'right');
+            $table->column(key: 'likes', label: __('Likes / Dislikes'), sortable: true, align: 'right');
             $table->column(key: 'action', label: __('Actions'), align: 'right');
         };
     }

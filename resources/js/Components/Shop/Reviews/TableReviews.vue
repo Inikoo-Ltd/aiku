@@ -3,12 +3,12 @@ import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import Image from "@/Common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Tag from "@/Components/Tag.vue"
-import { router } from "@inertiajs/vue3"
+import { router, Link } from "@inertiajs/vue3"
 import ReviewReply from "@/Components/Reviews/ReviewReply.vue"
 import { trans } from "laravel-vue-i18n"
-import { faPencil, faReply, faEye, faCheck } from "@fal"
+import { faPencil, faReply, faCheck, faReplyAll, faArrowUp, faArrowDown } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Dialog from "primevue/dialog"
 import { ref } from "vue"
 import { Rating } from "primevue"
@@ -16,8 +16,10 @@ import { Rating } from "primevue"
 library.add(
     faPencil,
     faReply,
-    faEye,
+    faReplyAll,
     faCheck,
+    faArrowUp,
+    faArrowDown,
 )
 
 type RatingLabel = {
@@ -91,14 +93,50 @@ const approveReview = (item: any) => {
             </div>
         </template>
 
+        <template #cell(customer_name)="{ item }">
+            <Link
+                v-if="item.customer_route"
+                :href="route(item.customer_route.name, item.customer_route.parameters)"
+                class="primaryLink"
+            >
+                {{ item.customer_name }}
+            </Link>
+            <span v-else>{{ item.customer_name }}</span>
+        </template>
+
+        <template #cell(message)="{ item }">
+            <div class="space-y-1">
+                <div class="border-l-2 border-sky-600 pl-3 text-sm italic text-gray-500">
+                    <span class="font-medium not-italic text-sky-600">{{ trans('Message') }}:</span>
+                    {{ item.message }}
+                </div>
+                <div
+                    v-if="item.has_reply && item.existing_reply?.body"
+                    class="border-l-2 border-gray-200 pl-3 text-sm italic text-gray-500"
+                >
+                    <span class="font-medium not-italic text-gray-400">{{ trans('Reply') }}:</span>
+                    {{ item.existing_reply.body }}
+                </div>
+            </div>
+        </template>
+
         <template #cell(rating)="{ item }">
             <div class="rating">
                 <Rating :modelValue="item.rating" readonly />
             </div>
         </template>
 
-        <template #cell(reply_status)="{ item }">
-            <Tag :theme="item.has_reply ? 3 : 99" :label="item.has_reply ? trans('Yes') : trans('No')" />
+        <template #cell(likes)="{ item }">
+            <div class="flex items-center justify-end gap-3">
+                <span class="flex items-center gap-1">
+                    {{ item.likes }}
+                    <FontAwesomeIcon :icon="faArrowUp" class="text-green-500" fixed-width />
+                </span>
+                <span class="flex items-center gap-1">
+                    {{ item.dislikes }}
+                    <FontAwesomeIcon :icon="faArrowDown" class="text-red-500" fixed-width />
+                </span>
+            </div>
         </template>
 
         <template #cell(action)="{ item }">
@@ -112,7 +150,7 @@ const approveReview = (item: any) => {
                     v-tooltip="trans('Approve')"
                     @click="() => approveReview(item)"
                 />
-                <Button type="tertiary" :icon="faEye" size="xs" @click="() => openModal(item)" />
+                <Button type="tertiary" :icon="faReplyAll" size="xs" v-tooltip="trans('Reply')" @click="() => openModal(item)" />
             </div>
         </template>
     </Table>
