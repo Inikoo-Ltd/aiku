@@ -686,7 +686,7 @@ class EditShop extends OrgAction
                         ? __('This shop is connected to Google Ads. Set the Customer ID and User List ID below to sync customers to your Google Ads user list.')
                         : __('Connect your Google account to authorize syncing customers, then set the Customer ID and User List ID below.'),
                     'fields' => [
-                        'google_ads_connect' => [
+                        'gads__connect' => [
                             'type'   => 'action',
                             'label'  => __('Google Account'),
                             'information' => $isGoogleAdsConnected
@@ -702,13 +702,13 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
-                        'google_ads_customer_id' => [
+                        'gads_customer_id' => [
                             'type'        => 'input',
                             'label'       => __('Customer ID'),
                             'placeholder' => '123-456-7890',
                             'value'       => Arr::get($shop->settings, 'google_ads.customer_id', ''),
                         ],
-                        'google_ads_user_list_id' => [
+                        'gads_user_list_id' => [
                             'type'        => 'input',
                             'label'       => __('User List ID'),
                             'value'       => Arr::get($shop->settings, 'google_ads.user_list_id', ''),
