@@ -27,9 +27,11 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Reviews\OrderReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
@@ -55,7 +57,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Audits\Transformer\OrderSubmitSummaryTransformer;
 use App\Audits\Transformer\RelationTransformer;
-use App\Models\Dispatching\ReturnDeliveryNote;
 
 /**
  * @property int $id
@@ -510,6 +511,11 @@ class Order extends Model implements HasMedia, Auditable
     public function returnedDeliveryNote(): HasMany
     {
         return $this->hasMany(ReturnDeliveryNote::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(OrderReviewStat::class);
     }
 
 }

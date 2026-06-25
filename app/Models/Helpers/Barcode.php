@@ -8,7 +8,9 @@
 
 namespace App\Models\Helpers;
 
+use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Models\Catalogue\Asset;
+use App\Models\Goods\ModelHasBarcode;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Traits\HasHistory;
@@ -17,6 +19,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -30,7 +33,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $group_id
  * @property string $slug
  * @property string $type
- * @property string $status
+ * @property \App\Enums\Helpers\Barcode\BarcodeStatusEnum $status
  * @property string $number
  * @property string|null $note
  * @property string|null $assigned_at
@@ -65,6 +68,9 @@ class Barcode extends Model implements Auditable
         'data'                        => 'array',
         'fetched_at'                  => 'datetime',
         'last_fetched_at'             => 'datetime',
+        'created_at'                  => 'datetime',
+        'assigned_at'                 => 'datetime',
+        'status'                      => BarcodeStatusEnum::class
     ];
 
     protected $attributes = [
@@ -112,5 +118,15 @@ class Barcode extends Model implements Auditable
     public function product(): MorphToMany
     {
         return $this->morphedByMany(Asset::class, 'model', 'model_has_barcodes');
+    }
+
+    public function tradeUnitActive(): MorphToMany
+    {
+        return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_barcodes')->where('model_has_barcodes.status', true);
+    }
+
+    public function modelHasBarcodes(): HasMany
+    {
+        return $this->hasMany(ModelHasBarcode::class, 'barcode_id', 'id');
     }
 }

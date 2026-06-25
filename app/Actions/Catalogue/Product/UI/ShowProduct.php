@@ -269,7 +269,7 @@ class ShowProduct extends OrgAction
             ]
         ];
 
-        
+
 
         if ($product->webpage) {
             $actions = array_merge($actions, [
@@ -461,7 +461,7 @@ class ShowProduct extends OrgAction
                 ...$componentData,
                 'variant'       => $product->variant,
                 'is_variant_leader' => $product->is_variant_leader,
-                'rating_labels'     => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::ProductReviews),
+                'rating_labels'     => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::PRODUCT),
             ]
         )
             ->table(IndexAssetTimeSeries::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
@@ -497,7 +497,7 @@ class ShowProduct extends OrgAction
                 ),
                 $product
             ),
-            'rating_labels' => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::ProductReviews),
+            'rating_labels' => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::PRODUCT),
             'reviewable_type' => 'product_reviews',
             'replier_type' => 'merchant'
         ];

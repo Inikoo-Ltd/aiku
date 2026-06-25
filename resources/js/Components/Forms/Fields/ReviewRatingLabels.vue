@@ -10,9 +10,10 @@ const props = defineProps<{
 }>()
 
 const contexts = [
-    { key: 'product_reviews', label: 'Product Reviews' },
-    { key: 'shop_reviews', label: 'Shop Reviews' },
-    { key: 'product_category_reviews', label: 'Product Category Reviews' },
+    { key: 'product', label: 'Product Reviews' },
+    { key: 'order', label: 'Order Reviews' },
+    { key: 'family', label: 'Category Reviews' },
+    { key: 'shop', label: 'Shop Reviews' },
 ]
 
 const dimensions = ['a', 'b', 'c', 'd', 'e']

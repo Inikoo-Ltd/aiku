@@ -23,7 +23,7 @@ class ReviewResource extends JsonResource
             'status'               => $review->status?->value ?? $review->status,
             'rating'               => (int) $review->rating,
             'message'              => $review->message,
-            'like_count'           => (int) $review->like_count,
+            'likes'           => (int) $review->likes,
             'meta'                 => $review->meta ?? [],
             'customer'             => $this->whenLoaded('customer', function () use ($review): array {
                 return [

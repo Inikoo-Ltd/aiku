@@ -16,10 +16,10 @@ class ReviewRatingLabel extends Model
 
     protected $casts = [
         'review_context' => ReviewContextEnum::class,
-        'dimension' => ReviewRatingDimensionEnum::class,
-        'is_active' => 'boolean',
-        'is_required' => 'boolean',
-        'weight' => 'decimal:2',
+        'dimension'      => ReviewRatingDimensionEnum::class,
+        'is_active'      => 'boolean',
+        'is_required'    => 'boolean',
+        'weight'         => 'decimal:2',
     ];
 
     public static function dimensionOptions(): array

@@ -3,9 +3,9 @@
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Catalogue\Review\Hydrators\Concerns\BuildsReviewStats;
+use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GroupHydrateReviewStats implements ShouldBeUnique
@@ -29,27 +29,9 @@ class GroupHydrateReviewStats implements ShouldBeUnique
             return;
         }
 
-        $baseQuery = DB::query()->fromSub(
-            DB::table('shop_reviews')
-                ->select(['status', 'rating_main', 'rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'])
-                ->where('group_id', $group->id)
-                ->whereNull('deleted_at')
-                ->unionAll(
-                    DB::table('product_reviews')
-                        ->select(['status', 'rating_main', 'rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'])
-                        ->where('group_id', $group->id)
-                        ->whereNull('deleted_at')
-                )
-                ->unionAll(
-                    DB::table('product_category_reviews')
-                        ->select(['status', 'rating_main', 'rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'])
-                        ->where('group_id', $group->id)
-                        ->whereNull('deleted_at')
-                ),
-            'reviews'
+        $stats = $this->buildReviewStats(
+            Review::query()->where('group_id', $group->id)
         );
-
-        $stats = $this->buildReviewStats($baseQuery);
 
         $group->reviewStats()->updateOrCreate([], $stats);
     }

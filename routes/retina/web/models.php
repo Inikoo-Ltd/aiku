@@ -36,8 +36,6 @@ use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
 use App\Actions\Iris\UpdateIrisLocale;
-use App\Actions\Catalogue\Review\StoreReview;
-use App\Actions\Catalogue\Review\UpdateReview;
 use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
@@ -81,11 +79,11 @@ use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalanceAfterSubmitt
 use App\Actions\Retina\Dropshipping\Orders\RemoveRetinaOrderVoucher;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrderVoucher;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
-use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrderVoucher;
 use App\Actions\Retina\Dropshipping\Orders\UpdateOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
@@ -180,6 +178,8 @@ use App\Actions\Retina\Woo\MatchRetinaBulkNewProductToCurrentWooCommerce;
 use App\Actions\Retina\Woo\MatchRetinaPortfolioToCurrentWooProduct;
 use App\Actions\Retina\Woo\StoreRetinaNewProductToCurrentWoo;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Retina\Ecom\Review\StoreRetinaReview;
+use App\Actions\Retina\Ecom\Review\UpdateRetinaReview;
 
 Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place_order_pay_by_bank');
 Route::post('place-order-pay-by-cash-on-delivery', PlaceOrderPayByCashOnDelivery::class)->name('place_order_pay_by_cash_on_delivery');
@@ -202,8 +202,8 @@ Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->whe
 Route::post('favourite/{product:id}', StoreRetinaFavourite::class)->name('favourites.store')->whereNumber('product');
 Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('favourites.delete')->whereNumber('product');
 
-Route::post('review/store', StoreReview::class)->name('review.store');
-Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
+Route::post('review/{order:id}/store', StoreRetinaReview::class)->name('review.store');
+Route::patch('review/{review:id}/update', UpdateRetinaReview::class)->name('review.update');
 
 Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings()->whereNumber('product');
 Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings()->whereNumber('product');

@@ -12,9 +12,11 @@ namespace App\Actions\Web;
 use App\Actions\Maintenance\Web\WithRepairWebpages;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Events\BroadcastUpdateWeblocks;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,12 +31,14 @@ class UpdateDescriptionBlockToWebsiteAndChild
     {
         $marginalData = match($marginal) {
             'family_description'    => [
-                'subType'   => 'family',
-                'codes'     => WebBlockTemplateEnum::FAMILY_DESCRIPTION->templateCodes()
+                'model_type'    => class_basename(ProductCategory::class),
+                'subType'       => ProductCategoryTypeEnum::FAMILY->value,
+                'codes'         => WebBlockTemplateEnum::FAMILY_DESCRIPTION->templateCodes()
             ],
             'department_description'    => [
-                'subType'   => 'department',
-                'codes'     => WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes()
+                'model_type'    => class_basename(ProductCategory::class),
+                'subType'       => ProductCategoryTypeEnum::DEPARTMENT->value,
+                'codes'         => WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION->templateCodes()
             ],
             default                 => null
         };
@@ -44,6 +48,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
         }
 
         $webpages = $website->webpages()
+            ->where('model_type', data_get($marginalData, 'model_type'))
             ->where('sub_type', data_get($marginalData, 'subType'))
             ->orderBy('id');
 

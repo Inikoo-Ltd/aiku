@@ -24,8 +24,8 @@ use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
-use App\Models\Reviews\ProductReview;
 use App\Models\Reviews\ProductReviewStat;
+use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
@@ -481,7 +481,7 @@ class Product extends Model implements Auditable, HasMedia
 
     public function reviews(): HasMany
     {
-        return $this->hasMany(ProductReview::class, 'product_id');
+        return $this->hasMany(Review::class, 'product_id');
     }
 
     public function favourites(): HasMany
@@ -544,6 +544,7 @@ class Product extends Model implements Auditable, HasMedia
         if ($this->webpage) {
             return $this->webpage->luigiIdentity();
         }
+
         return 'unknown';
     }
 

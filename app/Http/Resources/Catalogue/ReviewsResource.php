@@ -71,7 +71,7 @@ class ReviewsResource extends JsonResource
             'rating_d'             => $this->rating_d !== null ? (int) $this->rating_d : null,
             'rating_e'             => $this->rating_e !== null ? (int) $this->rating_e : null,
             'message'              => $this->message,
-            'like_count'           => (int) $this->like_count,
+            'likes'           => (int) $this->likes,
             'image_thumbnail'      => $imageThumbnails[0] ?? null,
             'image_thumbnails'     => $imageThumbnails,
             'image_gallery'        => $imageGallery,
@@ -238,14 +238,14 @@ class ReviewsResource extends JsonResource
     private static function reviewContext(ProductCategory|Product|Shop $reviewable): ReviewContextEnum
     {
         if ($reviewable instanceof Product) {
-            return ReviewContextEnum::ProductReviews;
+            return ReviewContextEnum::PRODUCT;
         }
 
         if ($reviewable instanceof Shop) {
-            return ReviewContextEnum::ShopReviews;
+            return ReviewContextEnum::ORDER;
         }
 
-        return ReviewContextEnum::ProductCategoryReviews;
+        return ReviewContextEnum::FAMILY;
     }
 
     private static function reviewCustomersRouteName(ProductCategory|Product|Shop $reviewable): string

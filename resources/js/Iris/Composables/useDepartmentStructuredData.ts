@@ -163,7 +163,7 @@ export const buildDepartmentStructuredData = (
             (node) => node?.["@type"] === "ItemList" && node?.["@id"] === itemListNode["@id"]
         )
     }
-
+// console.log('ereeeeeeeeeee', structuredData)
     return structuredData
 }
 

@@ -23,8 +23,8 @@ import EcomTableOrderTransactions from "@/Components/Retina/Ecom/EcomTableOrderT
 import { AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt, faEllipsisH } from '@fas'
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
+import { faExclamationTriangle, faExclamation, faBoxHeart, faShieldAlt } from '@fas'
+import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faStar } from '@fal'
 import { Currency } from '@/types/LayoutRules'
 import { faSpinnerThird } from '@far'
 import Timeline from '@/Components/Utils/Timeline.vue'
@@ -38,7 +38,6 @@ import EcomCheckoutSummary from '@/Components/Retina/Ecom/EcomCheckoutSummary.vu
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
-import RetinaTableReviewsProduct from '@/Components/Tables/Retina/RetinaTableReviewsProduct.vue'
 
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
@@ -90,7 +89,6 @@ const props = defineProps<{
             shipping_notes?: string
         }
     }
-    reviews : {}
     transactions: {} // TransactionsResource
     invoices?: {}
     delivery_notes: {
@@ -108,11 +106,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: EcomTableOrderTransactions,
-        reviews : RetinaTableReviewsProduct
-        // delivery_notes: TableDeliveryNotes,
-        // attachments: TableAttachments,
-        // invoices: TableInvoices,
-		// products: TableProductList
     }
 
     return components[currentTab.value]

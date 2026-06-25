@@ -54,6 +54,16 @@ class ShowIrisWebpage
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
+
+        $website = $webpage->website;
+
+        $title = $webpage->title;
+        // Prioritize webpage prefix/suffix -> website prefix/suffix
+        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null)); 
+        $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
+
+        $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -62,7 +72,7 @@ class ShowIrisWebpage
             'navigation'                  => $this->getIrisProductNavigation($webpage),
             'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
-                'title'         => $webpage->title,
+                'title'         => $title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
@@ -462,7 +472,7 @@ class ShowIrisWebpage
         $label = $webpage->breadcrumb_label;
 
         if (!$label) {
-            $label = $webpage->code;
+            $label = $webpage->title ?? $webpage->code;
         }
 
         return $label ?? '';

@@ -32,9 +32,9 @@ trait BuildsReviewStats
     protected function buildReviewStats(EloquentBuilder|QueryBuilder $baseQuery): array
     {
         $statusCounts = (clone $baseQuery)
-            ->selectRaw('status, count(*) as aggregate')
-            ->groupBy('status')
-            ->pluck('aggregate', 'status');
+            ->selectRaw('review_status, count(*) as aggregate')
+            ->groupBy('review_status')
+            ->pluck('aggregate', 'review_status');
 
         $ratingBuckets = (clone $baseQuery)
             ->selectRaw('
@@ -48,9 +48,9 @@ trait BuildsReviewStats
 
         return [
             'number_reviews' => (int) (clone $baseQuery)->count(),
-            'number_reviews_pending' => (int) ($statusCounts[ReviewStatusEnum::Pending->value] ?? 0),
-            'number_reviews_approved' => (int) ($statusCounts[ReviewStatusEnum::Approved->value] ?? 0),
-            'number_reviews_rejected' => (int) ($statusCounts[ReviewStatusEnum::Rejected->value] ?? 0),
+            'number_reviews_pending' => (int) ($statusCounts[ReviewStatusEnum::PENDING->value] ?? 0),
+            'number_reviews_approved' => (int) ($statusCounts[ReviewStatusEnum::APPROVED->value] ?? 0),
+            'number_reviews_rejected' => (int) ($statusCounts[ReviewStatusEnum::REJECTED->value] ?? 0),
             'number_rating_1' => (int) ($ratingBuckets?->number_rating_1 ?? 0),
             'number_rating_2' => (int) ($ratingBuckets?->number_rating_2 ?? 0),
             'number_rating_3' => (int) ($ratingBuckets?->number_rating_3 ?? 0),

@@ -8,7 +8,7 @@ import Tag from "@/Components/Tag.vue"
 import { router } from "@inertiajs/vue3"
 import ReviewReply from "@/Components/Reviews/ReviewReply.vue"
 import { trans } from "laravel-vue-i18n"
-import { faPencil, faReply, faEye } from "@fal"
+import { faPencil, faReply, faEye, faCheck } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Dialog from "primevue/dialog"
 import { ref } from "vue"
@@ -18,7 +18,8 @@ import { Rating } from "primevue"
 library.add(
     faPencil,
     faReply,
-    faEye
+    faEye,
+    faCheck
 )
 
 type ReviewTablePayload = TableTS & {
@@ -78,6 +79,27 @@ const aftreReply = () => {
     router.reload({only: ['pageHead', 'reviews']})
 }
 
+const approvingId = ref<number | null>(null)
+
+const approveReview = (item: any) => {
+    if (!item?.update_route) {
+        return
+    }
+
+    approvingId.value = item.id
+    router.patch(
+        route(item.update_route.name, item.update_route.parameters),
+        { status: 'approved' },
+        {
+            preserveScroll: true,
+            only: ['pageHead', 'reviews'],
+            onFinish: () => {
+                approvingId.value = null
+            },
+        }
+    )
+}
+
 
 </script>
 
@@ -107,6 +129,15 @@ const aftreReply = () => {
         </template>
         <template #cell(action)="{ item }">
             <div class="flex items-center justify-end gap-1">
+                <Button
+                    v-if="item.is_public"
+                    type="positive"
+                    :icon="faCheck"
+                    size="xs"
+                    :loading="approvingId === item.id"
+                    v-tooltip="trans('Approve')"
+                    @click="() => approveReview(item)"
+                />
                 <Button type="tertiary" :icon="faEye" size="xs" @click="() => openModal(item)" />
             </div>
         </template>

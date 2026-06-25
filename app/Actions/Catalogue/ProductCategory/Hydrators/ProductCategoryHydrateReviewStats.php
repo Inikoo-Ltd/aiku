@@ -4,7 +4,7 @@ namespace App\Actions\Catalogue\ProductCategory\Hydrators;
 
 use App\Actions\Catalogue\Review\Hydrators\Concerns\BuildsReviewStats;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Reviews\ProductCategoryReview;
+use App\Models\Reviews\Review;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -30,7 +30,7 @@ class ProductCategoryHydrateReviewStats implements ShouldBeUnique
         }
 
         $stats = $this->buildReviewStats(
-            ProductCategoryReview::query()->where('product_category_id', $productCategory->id)
+            Review::query()->where('product_category_id', $productCategory->id)
         );
 
         $productCategory->reviewStats()->updateOrCreate([], $stats);

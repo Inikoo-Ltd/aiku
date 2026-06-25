@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 24 Jun 2026 12:54:27 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 namespace App\Enums\Catalogue\Review;
 
 use App\Enums\EnumHelperTrait;
@@ -8,16 +14,16 @@ enum ReviewStatusEnum: string
 {
     use EnumHelperTrait;
 
-    case Pending = 'pending';
-    case Approved = 'approved';
-    case Rejected = 'rejected';
+    case PENDING = 'pending';
+    case APPROVED = 'approved';
+    case REJECTED = 'rejected';
 
     public static function labels(): array
     {
         return [
-            self::Pending->value => __('Pending'),
-            self::Approved->value => __('Approved'),
-            self::Rejected->value => __('Rejected'),
+            self::PENDING->value  => __('Pending'),
+            self::APPROVED->value => __('Approved'),
+            self::REJECTED->value => __('Rejected'),
         ];
     }
 }

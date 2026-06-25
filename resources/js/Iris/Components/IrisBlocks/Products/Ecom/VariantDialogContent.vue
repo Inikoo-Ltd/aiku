@@ -3,12 +3,12 @@ import { ProductResource } from '@/types/Iris/Products'
 import { ref, inject, computed, onMounted, onBeforeUnmount } from 'vue';
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n';
-import { faChevronCircleLeft, faChevronDown, faCircle } from '@fas';
+import { faChevronDown, faCircle } from '@fas';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue';
 import EcomAddToBasketv2 from '@/Components/Iris/Products/EcomAddToBasketv2.vue';
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons';
-import { faChevronCircleDown, faEnvelope, faShoppingCart } from '@far';
+import {  faEnvelope } from '@far';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 
 const props = withDefaults(defineProps<{
