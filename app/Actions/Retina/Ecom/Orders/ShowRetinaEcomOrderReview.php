@@ -34,6 +34,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Helpers\Media;
+use Illuminate\Support\Arr;
 
 class ShowRetinaEcomOrderReview extends RetinaAction
 {
@@ -74,7 +75,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             ReviewContextEnum::FAMILY->value  => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::FAMILY),
         ];
 
-
+        
         return Inertia::render(
             'Ecom/RetinaEcomOrderReview',
             [
@@ -90,7 +91,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                     'actions' => [
                     [
                         'type'    => 'button',
-                        'style'   => 'secondary',
+                        'style'   => 'exitEdit',
                         'tooltip' => __('Back to order'),
                         'label'   => __('Back to order'),
                         'icon'    => 'fal fa-arrow-left',
@@ -111,8 +112,9 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                 'review_summary' => $this->getReviewSummary($order),
                 'currency'          => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'              => OrderResource::make($order),
+                'review_settings' =>  Arr::get($order->shop->settings, 'reviews'),
 
-
+         
 
                 RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value => $this->tab == RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value ?
                     fn () => $this->getOverallReview($order)

@@ -177,13 +177,13 @@ const updateCollection = (value: boolean) => {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2 rounded-lg border  px-3 py-2">
-                    <div class="text-right">
+                <div class="flex items-center gap-2 rounded-lg border  px-3 py-2 rating">
+                    <div class="text-center">
                         <div class="text-lg font-bold leading-none ">
                             {{ review_summary?.average_review?.toFixed(1) ?? "0.0" }}
                         </div>
                         <div class="text-[10px] text-gray-500">
-                            Avg
+                            Avg Rating
                         </div>
                     </div>
 
@@ -233,3 +233,9 @@ const updateCollection = (value: boolean) => {
         </Modal>
     </div>
 </template>
+
+<style scoped>
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+	color: #f59e0b !important;
+}
+</style>

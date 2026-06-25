@@ -32,7 +32,7 @@ class RetinaOrderReviewableResource extends JsonResource
     public function toArray($request): array
     {
         $orderId        = (int)($this->order_id ?? 0);
-        $reviewableId   = (int)($this->reviewable_id ?? 0);
+        $reviewableId   = $this->reviewable_id;
         $reviewableType = (string)($this->reviewable_type ?? '');
 
 
