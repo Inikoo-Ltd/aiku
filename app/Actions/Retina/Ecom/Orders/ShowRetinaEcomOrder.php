@@ -76,7 +76,7 @@ class ShowRetinaEcomOrder extends RetinaAction
             && $order->dispatched_at !== null
             && now()->diffInHours($order->dispatched_at, false) <= -$hoursAfterDispatched;
 
-        $action = $reviewAvailable ? [
+        $action =  [
             [
                 'type'    => 'button',
                 'style'   => '',
@@ -90,7 +90,7 @@ class ShowRetinaEcomOrder extends RetinaAction
                     ],
                 ],
             ],
-        ] : [];
+        ];
 
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
 

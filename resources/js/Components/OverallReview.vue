@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, ref, reactive } from "vue"
+import { inject, ref, reactive, watch } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { faStar as falStar } from "@fal"
@@ -39,6 +39,10 @@ const props = defineProps<{
 const loadingSave = ref(false)
 
 const reviewData = ref<any>({ ...props.data })
+
+watch(() => props.data, (newData) => {
+    reviewData.value = { ...newData }
+})
 
 const saveReview = async () => {
     const review = reviewData.value

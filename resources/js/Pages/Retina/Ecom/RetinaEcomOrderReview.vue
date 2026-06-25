@@ -73,7 +73,7 @@ const props = defineProps<{
     attachments?: {}
 }>()
 
-console.log('sdsdsd',props.review_settings)
+
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
