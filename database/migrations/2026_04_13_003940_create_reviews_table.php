@@ -43,7 +43,7 @@ return new class () extends Migration {
             $table->unsignedTinyInteger('rating_c')->index()->nullable();
             $table->unsignedTinyInteger('rating_d')->index()->nullable();
             $table->unsignedTinyInteger('rating_e')->index()->nullable();
-            $table->timestampTz('show_after')->nullable()->index();
+            $table->timestampTz('auto_approve_at')->nullable()->index();
 
 
             $table->boolean('is_public')->default(true)->index();

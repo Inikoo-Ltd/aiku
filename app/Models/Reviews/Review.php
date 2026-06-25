@@ -49,7 +49,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property int|null $rating_c
  * @property int|null $rating_d
  * @property int|null $rating_e
- * @property \Illuminate\Support\Carbon|null $show_after
+ * @property \Illuminate\Support\Carbon|null $auto_approve_at
  * @property ReviewStatusEnum $review_status
  * @property string|null $title
  * @property string|null $message
@@ -112,7 +112,7 @@ class Review extends Model implements Auditable, HasMedia
         'replay_likes'  => 'integer',
         'replay_dislikes' => 'integer',
         'meta'          => 'array',
-        'show_after'    => 'datetime',
+        'auto_approve_at'    => 'datetime',
         'published_at'  => 'datetime',
         'removed_at'    => 'datetime',
         'reply_at'      => 'datetime',

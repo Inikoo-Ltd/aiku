@@ -61,7 +61,7 @@ class UpdateReview extends OrgAction
                 'rating_e'      => data_get($modelData, 'rating_e', $review->rating_e),
                 'title'         => data_get($modelData, 'title', $review->title),
                 'message'       => data_get($modelData, 'message', $review->message),
-                'show_after'    => data_get($modelData, 'show_after', $review->show_after),
+                'auto_approve_at'    => data_get($modelData, 'auto_approve_at', $review->auto_approve_at),
                 'is_public'     => data_get($modelData, 'is_public', $review->is_public),
                 'order_id'      => data_get($modelData, 'order_id', $review->order_id),
                 'likes'         => data_get($modelData, 'likes', $review->likes),

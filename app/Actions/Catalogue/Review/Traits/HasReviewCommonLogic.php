@@ -41,9 +41,9 @@ trait HasReviewCommonLogic
         }
     }
 
-    protected function commonRules($strict = true): array
+    protected function commonRules(): array
     {
-        $rules = [
+        return [
             'customer_id'   => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
             'review_status' => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
             'state'         => ['sometimes', Rule::enum(ReviewStateEnum::class)],
@@ -55,7 +55,7 @@ trait HasReviewCommonLogic
             'rating_e'      => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'title'         => ['sometimes', 'nullable', 'string', 'max:255'],
             'message'       => ['sometimes', 'nullable', 'string', 'max:5000'],
-            'show_after'    => ['sometimes', 'nullable', 'date'],
+            'auto_approve_at'    => ['sometimes', 'nullable', 'date'],
             'is_public'     => ['sometimes', 'boolean'],
             'order_id'      => ['sometimes', 'nullable', 'integer', 'exists:orders,id'],
             'likes'         => ['sometimes', 'integer', 'min:0'],
@@ -64,20 +64,11 @@ trait HasReviewCommonLogic
             'images.*'      => ['sometimes', File::image()->max(50 * 1024)],
             'videos'        => ['sometimes', 'array'],
             'videos.*'      => ['sometimes', File::types(['mp4', 'webm'])->max(50 * 1024)],
+            'language_id'   => ['sometimes', 'nullable', 'exists:languages,id'],
+            'external_id'   => ['sometimes', 'string'],
         ];
 
-        if (!$strict) {
-            $rules = [
-                ...$rules,
-                'external_id'   => ['sometimes', 'string'],
-                'reply_message' => ['sometimes', 'string'],
-                'reply_at'      => ['sometimes', 'date'],
-                'reply_by'      => ['sometimes', 'exists:users,id'],
-                'language_id'   => ['sometimes', 'nullable', 'exists:languages,id'],
-            ];
-        }
 
-        return $rules;
     }
 
     protected function storeUploadedImages(Model $review, array $images): void
