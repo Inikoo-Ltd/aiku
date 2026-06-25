@@ -194,6 +194,54 @@ class GetShopNavigation
                     "name" => "grp.org.shops.show.reviews.dashboard",
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
+                "topMenu" => [
+                    "subSections" => [
+                        [
+                            "tooltip" => __("Dashboard"),
+                            "icon"    => ["fal", "fa-chart-network"],
+                            "root"    => "grp.org.shops.show.reviews.dashboard",
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.reviews.dashboard",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Backlog Review"),
+                            "tooltip" => __("Backlog Review"),
+                            "icon"    => ["fal", "fa-tasks-alt"],
+                        ],
+                        [
+                            "label"   => __("All Review"),
+                            "tooltip" => __("All Review"),
+                            "icon"    => ["fal", "fa-star"],
+                            "root"    => "grp.org.shops.show.reviews.all",
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.reviews.all",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Family Review"),
+                            "tooltip" => __("Family Review"),
+                            "icon"    => ["fal", "fa-folder"],
+                            "root"    => "grp.org.shops.show.reviews.families",
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.reviews.families",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Product Review"),
+                            "tooltip" => __("Product Review"),
+                            "icon"    => ["fal", "fa-cube"],
+                            "root"    => "grp.org.shops.show.reviews.products",
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.reviews.products",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                    ],
+                ],
             ];
         }
 

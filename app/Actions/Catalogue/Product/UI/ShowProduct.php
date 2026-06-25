@@ -490,12 +490,11 @@ class ShowProduct extends OrgAction
     private function getReviewsTabData(Product $product): array
     {
         return [
-            'data' => ReviewsResource::collectionWithTabMeta(
+            'data' => ReviewsResource::collection(
                 IndexReviews::make()->inProduct(
                     parent: $product,
                     prefix: ProductTabsEnum::REVIEWS->value
-                ),
-                $product
+                )
             ),
             'rating_labels' => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::PRODUCT),
             'reviewable_type' => 'product_reviews',

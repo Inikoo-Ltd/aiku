@@ -27,15 +27,18 @@ class StoreReviewReply
     public function rules(): array
     {
         return [
-            'message' => ['required', 'string', 'max:10000'],
+            'reviewable_id' => ['required', 'integer', 'exists:reviews,id'],
+            'body'          => ['required', 'string', 'max:10000'],
         ];
     }
 
-    public function asController(Review $review, ActionRequest $request): JsonResponse
+    public function asController(ActionRequest $request): JsonResponse
     {
         $validated = $request->validated();
 
-        $updatedReview = $this->handle($review, $validated['message'], $request->user());
+        $review = Review::findOrFail($validated['reviewable_id']);
+
+        $updatedReview = $this->handle($review, $validated['body'], $request->user());
 
         return response()->json([
             'status' => 'success',

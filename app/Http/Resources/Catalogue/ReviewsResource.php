@@ -9,21 +9,10 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Reviews\ReviewRatingLabel;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReviewsResource extends JsonResource
 {
-    public static function collectionWithTabMeta(LengthAwarePaginator $reviews, ProductCategory|Product|Shop $reviewable): AnonymousResourceCollection
-    {
-        $ratingLabels = self::getRatingLabels($reviewable);
-
-        return self::collection($reviews)->additional([
-            'stats'     => self::getStats($reviewable, $ratingLabels),
-        ]);
-    }
-
     public static function ratingLabelsFor(ProductCategory|Product|Shop $reviewable): array
     {
         return self::getRatingLabels($reviewable);
@@ -33,13 +22,7 @@ class ReviewsResource extends JsonResource
     {
         $contactName = $this->contact_name ?? $this->customer?->contact_name ?? $this->customer_name ?? $this->customer?->name;
         $canManage = $request->routeIs('grp.*');
-        $merchantReply = null;
-        if ($this->relationLoaded('replies')) {
-            $merchantReply = $this->replies->first(function ($reply) {
-                $replierType = $reply->replier_type?->value ?? $reply->replier_type;
-                return $replierType === 'merchant';
-            });
-        }
+        $hasReply = (bool) $this->replied;
         $imageThumbnails = $this->relationLoaded('media')
             ? $this->media
                 ->sortBy('order_column')
@@ -75,16 +58,13 @@ class ReviewsResource extends JsonResource
             'image_thumbnail'      => $imageThumbnails[0] ?? null,
             'image_thumbnails'     => $imageThumbnails,
             'image_gallery'        => $imageGallery,
-            'has_reply'            => (bool) $merchantReply,
-            'reply_status'         => $merchantReply ? 'Yes' : 'No',
-            'existing_reply'       => $merchantReply ? [
-                'id' => $merchantReply->id,
-                'body' => $merchantReply->body,
-                'is_public' => (bool) $merchantReply->is_public,
-                'status' => $merchantReply->status?->value ?? $merchantReply->status,
-                'replier_type' => $merchantReply->replier_type?->value ?? $merchantReply->replier_type,
-                'created_at' => $merchantReply->created_at,
-                'updated_at' => $merchantReply->updated_at,
+            'has_reply'            => $hasReply,
+            'reply_status'         => $hasReply ? 'Yes' : 'No',
+            'existing_reply'       => $hasReply ? [
+                'id'         => $this->id,
+                'body'       => $this->reply_message,
+                'created_at' => $this->reply_at,
+                'updated_at' => $this->reply_at,
             ] : null,
             'update_route'         => $canManage ? [
                 'name'       => 'grp.models.review.update',
@@ -103,47 +83,6 @@ class ReviewsResource extends JsonResource
                 'method'     => 'delete',
             ] : null,
             'created_at'           => $this->created_at,
-        ];
-    }
-
-    private static function getStats(ProductCategory|Product|Shop $reviewable, array $ratingLabels = []): array
-    {
-        $reviewStat = $reviewable->reviewStats()->first();
-
-        $averageByDimension = [
-            'a' => round((float) ($reviewStat?->average_rating_a ?? 0), 2),
-            'b' => round((float) ($reviewStat?->average_rating_b ?? 0), 2),
-            'c' => round((float) ($reviewStat?->average_rating_c ?? 0), 2),
-            'd' => round((float) ($reviewStat?->average_rating_d ?? 0), 2),
-            'e' => round((float) ($reviewStat?->average_rating_e ?? 0), 2),
-        ];
-
-        $categoryRatings = collect($ratingLabels)
-            ->map(function (array $label) use ($averageByDimension): array {
-                $dimension = strtolower((string) data_get($label, 'dimension'));
-
-                return [
-                    'dimension' => $dimension,
-                    'label' => (string) data_get($label, 'label', strtoupper($dimension)),
-                    'average' => (float) ($averageByDimension[$dimension] ?? 0),
-                ];
-            })
-            ->filter(fn (array $item): bool => in_array($item['dimension'], ['a', 'b', 'c', 'd', 'e'], true))
-            ->values()
-            ->all();
-
-        return [
-            'total'                   => (int) ($reviewStat?->number_reviews ?? 0),
-            'average_rating'          => (float) ($reviewStat?->average_rating_main ?? 0),
-            'status_approved'         => (int) ($reviewStat?->number_reviews_approved ?? 0),
-            'status_pending'          => (int) ($reviewStat?->number_reviews_pending ?? 0),
-            'status_rejected'         => (int) ($reviewStat?->number_reviews_rejected ?? 0),
-            'number_reviews_rating_1' => (int) ($reviewStat?->number_rating_1 ?? 0),
-            'number_reviews_rating_2' => (int) ($reviewStat?->number_rating_2 ?? 0),
-            'number_reviews_rating_3' => (int) ($reviewStat?->number_rating_3 ?? 0),
-            'number_reviews_rating_4' => (int) ($reviewStat?->number_rating_4 ?? 0),
-            'number_reviews_rating_5' => (int) ($reviewStat?->number_rating_5 ?? 0),
-            'category_ratings'        => $categoryRatings,
         ];
     }
 

@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * Author Louis Perez
+ * Created on 25-06-2026-14h-27m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
+
 namespace App\Actions\Reviews\Import;
 
 use App\Actions\Reviews\StoreReview;
@@ -9,6 +16,7 @@ use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Language;
+use App\Models\Ordering\Order;
 use App\Models\Reviews\Review;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
@@ -53,6 +61,7 @@ class TrustPilotImport implements ToCollection
             if (Review::where('external_id', $row[0])->first()) {
                 continue;
             }
+
             $replyData = [];
             $replay    = $row[10];
 
@@ -66,6 +75,17 @@ class TrustPilotImport implements ToCollection
                     'reply_by'      => $user?->id,
                 ];
             }
+
+            $scope = $this->shop;
+
+            $orderReference = $row[9];
+            if ($orderReference) {
+                $order = Order::where('reference', $orderReference)->first();
+                if ($order) {
+                    $scope = $order;
+                }
+            }
+
 
             $meta = [
                 'source'                  => 'trustpilot',
@@ -84,7 +104,7 @@ class TrustPilotImport implements ToCollection
                 'meta'        => $meta,
             ];
 
-            $review = StoreReview::make()->action($this->shop, $reviewData);
+            $review = StoreReview::make()->action($scope, $reviewData);
 
             $review->update(
                 [
