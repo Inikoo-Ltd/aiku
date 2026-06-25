@@ -41,8 +41,9 @@ class CallbackShopGoogleAds extends OrgAction
         ]);
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
+    public function asController(ActionRequest $request): RedirectResponse
     {
+        $shop = Shop::find($request->input('state'));
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, (string) $request->query('code'));
