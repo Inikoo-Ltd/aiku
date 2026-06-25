@@ -394,7 +394,7 @@ console.log(form, props)
 								</h2>
 
 								<p class="mt-0.5 text-sm text-gray-500">
-									{{ trans("Share your experience with this ") }} {{ props.modelValue?.reviewable_type  }}
+									{{ trans("Share your experience with this ") }} {{ props.modelValue?.scope}}
 								</p>
 							</div>
 
@@ -457,7 +457,7 @@ console.log(form, props)
 							</h2>
 
 							<p class="mt-0.5 text-sm text-gray-500">
-								{{ trans("Share your experience with this ") }} {{ props.modelValue?.reviewable_type  }}
+								{{ trans("Share your experience with this ") }} {{ props.modelValue?.scope}}
 							</p>
 						</div>
 
