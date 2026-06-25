@@ -15,7 +15,6 @@ class IndexOverallReviews extends OrgAction
 {
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
-
         $this->initialisationFromShop($shop, $request);
 
         return $shop;
@@ -24,13 +23,13 @@ class IndexOverallReviews extends OrgAction
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
         return Inertia::render('Org/Catalogue/ShopReviews', [
-            'title'       => __('All Reviews'),
+            'title'       => __('Overall Reviews'),
             'breadcrumbs' => $this->getBreadcrumbs(
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
             'pageHead' => [
-                'title' => __('All Reviews'),
+                'title' => __('Overall Reviews'),
                 'model' => __('Shop'),
                 'icon'  => [
                     'icon'  => ['fal', 'fa-star'],
@@ -38,9 +37,7 @@ class IndexOverallReviews extends OrgAction
                 ],
             ],
             'data' => [
-                'data'            => ReviewsResource::collection(
-                    IndexReviews::make()->handle(parent:$shop, scope: 'overall')
-                ),
+                'data'            => ReviewsResource::collection(IndexReviews::run(parent: $shop, scope: 'overall')),
                 'reviewable_type' => 'shop_reviews',
                 'replier_type'    => 'merchant',
                 'rating_labels'   => ReviewsResource::ratingLabelsFor($shop),
@@ -60,7 +57,7 @@ class IndexOverallReviews extends OrgAction
                             'name'       => $routeName,
                             'parameters' => $routeParameters,
                         ],
-                        'label' => __('All Reviews'),
+                        'label' => __('Overall Reviews'),
                         'icon'  => 'fal fa-star',
                     ],
                 ],
