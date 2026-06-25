@@ -23,12 +23,26 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreReview
 {
     use AsAction;
+    use WithAttributes;
     use HasReviewCommonLogic;
     use HasReviewHydrators;
+
+    private bool $strict = true;
+
+    public function action(Product|ProductCategory|Order|Shop $reviewable, array $modelData, $strict = true): Review
+    {
+        $this->strict = $strict;
+        $this->setRawAttributes($modelData);
+
+        return $this->handle($reviewable, $this->validateAttributes());
+    }
+
+    protected int $hydratorsDelay = 0;
 
     public function handle(Product|ProductCategory|Order|Shop $reviewable, array $modelData): Review
     {
@@ -54,6 +68,8 @@ class StoreReview
                 'message'         => data_get($modelData, 'message'),
                 'likes'           => data_get($modelData, 'likes', 0),
                 'meta'            => data_get($modelData, 'meta', []),
+                'language_id'     => data_get($modelData, 'language_id', $shop->language->id),
+                'external_id'     => data_get($modelData, 'external_id'),
                 ...$this->resolveScopeData($reviewable),
                 ...$this->resolvePublishingData($shop, $modelData),
             ];
@@ -179,8 +195,8 @@ class StoreReview
 
     public function rules(): array
     {
-        return array_merge($this->commonRules(), [
-            'reviewable_type' => ['required', Rule::in(['Order', 'Product', 'ProductCategory', 'Shop'])],
+        return array_merge($this->commonRules($this->strict), [
+            'reviewable_type' => ['required', Rule::in(['order', 'product', 'family', 'shop'])],
             'reviewable_id'   => ['required', 'integer', 'min:1'],
             'rating'          => ['required', 'numeric', 'min:1', 'max:5'],
             'order_id'        => ['nullable', 'integer', 'exists:orders,id'],

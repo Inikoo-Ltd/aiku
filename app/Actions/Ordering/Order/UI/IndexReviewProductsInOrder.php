@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -46,7 +47,7 @@ class IndexReviewProductsInOrder extends OrgAction
             ->defaultSort('products.code')
             ->select([
                 'products.id as reviewable_id',
-                DB::raw("'Product' as reviewable_type"),
+                DB::raw("'".ReviewScopeEnum::PRODUCT->value."' as reviewable_type"),
                 'products.slug as product_slug',
                 'products.code as asset_code',
                 'products.name as asset_name',
