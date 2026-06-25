@@ -30,7 +30,7 @@ class ReadReviewIOCSVReview
             new ReviewIOImport($shop),
             Storage::disk('local')->path($filename),
             null,
-            \Maatwebsite\Excel\Excel::XLSX
+            \Maatwebsite\Excel\Excel::CSV
         );
     }
 
