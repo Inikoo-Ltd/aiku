@@ -151,7 +151,7 @@ const saveReview = async () => {
         </template>
     </Table>
 
-    <Dialog v-model:visible="isOpenDialog" modal :header="trans('Review')" :style="{ width: '550px' }" :content-style="{ overflow: 'auto' }">
+    <Dialog v-model:visible="isOpenDialog" modal :header="trans('Review')"  :content-style="{ overflow: 'auto' }">
         <FormReview v-if="selectedItem" v-model="selectedItem.review" :type="data.context || ''" :schema="data.rating_labels" />
         <template #footer>
             <div class="flex justify-end gap-5">

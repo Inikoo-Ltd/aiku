@@ -66,7 +66,21 @@ class ShowRetinaEcomOrder extends RetinaAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $action = [];
+        $action = [
+              [
+                    'type'    => 'button',
+                    'style'   => '',
+                    'tooltip' => __('Reviews'),
+                    'label'   => __('Reviews'),
+                    'icon'    => 'far fa-star',
+                    'route'   => [
+                        'name'       => 'retina.ecom.orders.review',
+                        'parameters' => [
+                            'order'         => $order->slug
+                        ]
+                    ]
+                ],
+        ];
 
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
 
