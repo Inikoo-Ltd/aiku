@@ -32,8 +32,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
-use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Helpers\Media;
+use App\Http\Resources\Catalogue\ReviewMediaResource;
 use Illuminate\Support\Arr;
 
 class ShowRetinaEcomOrderReview extends RetinaAction
@@ -169,11 +168,8 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             ->where('scope', ReviewScopeEnum::ORDER->value)
             ->first();
 
-        $reviewMediaData = is_string($this->review_media_data)
-            ? json_decode($this->review_media_data, true)
-            : ($this->review_media_data ?? []);
-        $reviewImages = $reviewMediaData
-            ? Media::hydrate($reviewMediaData)->map(fn ($media) => ImageResource::make($media)->getArray())->values()->all()
+        $reviewImages = $existingReview
+            ? ReviewMediaResource::collection($existingReview->media)->toArray(request())
             : [];
 
         return [
