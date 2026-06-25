@@ -211,8 +211,8 @@ class GetShopNavigation
                             "icon"    => ["fal", "fa-tasks-alt"],
                         ],
                         [
-                            "label"   => __("All Review"),
-                            "tooltip" => __("All Review"),
+                            "label"   => __("Overall Review"),
+                            "tooltip" => __("Overall Review"),
                             "icon"    => ["fal", "fa-star"],
                             "root"    => "grp.org.shops.show.reviews.all",
                             "route"   => [

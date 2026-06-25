@@ -22,7 +22,7 @@ return new class () extends Migration {
             $table->unsignedInteger('customer_id')->nullable()->index();
             $table->foreign('customer_id')->references('id')->on('customers')->nullOnDelete();
 
-            $table->string('scope')->index(); // Scope of the review, e.g. 'product', 'family', 'overall'
+            $table->string('scope')->index(); // Scope of the review, e.g. 'product', 'family', 'order', 'shop'
 
             $table->unsignedInteger('order_id')->nullable()->index();
             $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
