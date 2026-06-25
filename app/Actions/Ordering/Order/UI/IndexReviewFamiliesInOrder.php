@@ -79,7 +79,7 @@ class IndexReviewFamiliesInOrder extends OrgAction
                 'reviews.message',
                 'reviews.is_public',
             ])
-            ->allowedSorts(['product_categories.code', 'review_rating'])
+            ->allowedSorts(['product_categories.code', 'family_name', 'review_rating'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
