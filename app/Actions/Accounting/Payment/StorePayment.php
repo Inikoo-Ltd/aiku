@@ -8,15 +8,11 @@
 
 namespace App\Actions\Accounting\Payment;
 
-use App\Actions\Accounting\OrgPaymentServiceProvider\Hydrators\OrgPaymentServiceProviderHydratePayments;
+use App\Actions\Accounting\Payment\Traits\HydratesPaymentSideEffects;
+use App\Actions\Accounting\Traits\AuthorizesAccountingEdit;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydrateCustomers;
-use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydratePayments;
-use App\Actions\Accounting\PaymentServiceProvider\Hydrators\PaymentServiceProviderHydratePayments;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePayments;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePayments;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePayments;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -31,6 +27,8 @@ use Lorisleiva\Actions\Concerns\AsCommand;
 class StorePayment extends OrgAction
 {
     use AsCommand;
+    use HydratesPaymentSideEffects;
+    use AuthorizesAccountingEdit;
 
     public string $commandSignature = 'payment:create {customer} {paymentAccount} {scope}';
 
@@ -57,30 +55,13 @@ class StorePayment extends OrgAction
         /** @var Payment $payment */
         $payment = $paymentAccount->payments()->create($modelData);
 
-
-        GroupHydratePayments::dispatch($payment->group)->delay($this->hydratorsDelay);
-        OrganisationHydratePayments::dispatch($paymentAccount->organisation)->delay($this->hydratorsDelay);
-        PaymentServiceProviderHydratePayments::dispatch($payment->paymentAccount->paymentServiceProvider)->delay($this->hydratorsDelay);
-        PaymentAccountHydratePayments::dispatch($payment->paymentAccount)->delay($this->hydratorsDelay);
-        PaymentAccountHydrateCustomers::dispatch($payment->paymentAccount)->delay($this->hydratorsDelay);
-        ShopHydratePayments::dispatch($payment->shop)->delay($this->hydratorsDelay);
-        OrgPaymentServiceProviderHydratePayments::dispatch($payment->orgPaymentServiceProvider)->delay($this->hydratorsDelay);
-
+        $this->hydratePaymentSideEffects($payment);
 
         if ($payment->status == PaymentStatusEnum::SUCCESS) {
-            PaymentAccountHydrateCustomers::dispatch($paymentAccount)->delay($this->hydratorsDelay);
+            PaymentAccountHydrateCustomers::dispatch($paymentAccount)->delay(2);
         }
 
         return $payment;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("accounting.{$this->organisation->id}.edit");
     }
 
     public function rules(): array
