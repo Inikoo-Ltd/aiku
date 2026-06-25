@@ -226,7 +226,6 @@ trait WithSendBulkEmails
             'prospect-phone' => Arr::get($additionalData, 'prospect_phone'),
             'prospect-company-name' => Arr::get($additionalData, 'prospect_company_name'),
 
-            'review-title' => Arr::get($additionalData, 'review_title'),
             'review-message' => Arr::get($additionalData, 'review_message'),
             'review-link' => Arr::get($additionalData, 'review_link'),
 

@@ -48,7 +48,6 @@ class SendNewReviewEmailToSubscribers extends OrgAction
                     $customer?->slug
                 ]) : '#',
                 'review_link'      =>  'https://app.aiku.test/org/sk',// update Later
-                'review_title'     => $review->title ?? '',
                 'review_message'   => $review->message ?? '',
             ]
         );
