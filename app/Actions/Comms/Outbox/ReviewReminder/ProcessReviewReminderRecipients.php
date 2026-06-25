@@ -96,7 +96,6 @@ class ProcessReviewReminderRecipients implements ShouldQueue
             return '';
         }
 
-
         $html = '<ul>';
         foreach ($orderIds as $orderId) {
             $order = Order::find($orderId);
@@ -104,13 +103,13 @@ class ProcessReviewReminderRecipients implements ShouldQueue
                 continue;
             }
 
-            $url = $order?->shop?->website?->getUrl() . '/review/' . $order->id ?? '#';
+            $url = $order?->shop?->website?->getUrl() .'/app/orders/'. $order->slug . '/review' ?? '#';
 
 
             $html .= sprintf(
                 '<li><a href="%s">%s</a></li>',
                 $url,
-                __('Review your order').' #' . $order->id
+                __('Review in your order').' #' . $order->slug
             );
         }
         $html .= '</ul>';
