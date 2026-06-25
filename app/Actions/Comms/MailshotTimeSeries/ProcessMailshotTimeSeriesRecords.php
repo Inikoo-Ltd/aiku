@@ -19,6 +19,22 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
+// TODO: Check with this raw query, it will be used to generate the time series records for a specific mailshot, and it will be grouped by the specified frequency (daily, weekly, monthly, quarterly, yearly). The query will count the total dispatched emails and sum the different states of email tracking events (error, rejected by provider, sent, delivered, hard bounce, soft bounce, opened, clicked, marked as spam, unsubscribed) for each period. The results will then be used to update or create records in the MailshotTimeSeries table.
+// select 
+//             COUNT(*) as total_dispatched,
+//             SUM(CASE WHEN email_tracking_events.type = 'error' THEN 1 ELSE 0 END) as state_error,
+//             SUM(CASE WHEN email_tracking_events.type = 'declined_by_provider' THEN 1 ELSE 0 END) as state_rejected_by_provider,
+//             SUM(CASE WHEN email_tracking_events.type = 'sent' THEN 1 ELSE 0 END) as state_sent,
+//             SUM(CASE WHEN email_tracking_events.type = 'delivered' THEN 1 ELSE 0 END) as state_delivered,
+//             SUM(CASE WHEN email_tracking_events.type = 'hard_bounce' THEN 1 ELSE 0 END) as state_hard_bounce,
+//             SUM(CASE WHEN email_tracking_events.type = 'soft_bounce' THEN 1 ELSE 0 END) as state_soft_bounce,
+//             SUM(CASE WHEN email_tracking_events.type = 'opened' THEN 1 ELSE 0 END) as state_opened,
+//             SUM(CASE WHEN email_tracking_events.type = 'clicked' THEN 1 ELSE 0 END) as state_clicked,
+//             SUM(CASE WHEN email_tracking_events.type = 'marked_as_spam' THEN 1 ELSE 0 END) as state_spam,
+//             SUM(CASE WHEN email_tracking_events.type = 'unsubscribed' THEN 1 ELSE 0 END) as state_unsubscribed,
+//             CAST(email_tracking_events.created_at AS DATE) as date
+//          from "email_tracking_events" inner join "dispatched_emails" on "email_tracking_events"."dispatched_email_id" = "dispatched_emails"."id" inner join "mailshot_has_dispatched_emails" on "dispatched_emails"."id" = "mailshot_has_dispatched_emails"."dispatched_email_id" where "mailshot_has_dispatched_emails"."mailshot_id" = 42407 and "email_tracking_events"."created_at" >= '2026-06-25 00:00:00' and "email_tracking_events"."created_at" <= '2026-06-26 23:59:59' group by CAST(email_tracking_events.created_at AS DATE)  
+
 class ProcessMailshotTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
@@ -66,7 +82,10 @@ class ProcessMailshotTimeSeriesRecords implements ShouldBeUnique
             ->where('email_tracking_events.created_at', '>=', $from)
             ->where('email_tracking_events.created_at', '<=', $to);
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $middle = $this->applyFrequencyGrouping($query, $timeSeries->frequency);
+        \Log::info($middle->toRawSql()); 
+
+        $results = $middle->get();
 
 
 
