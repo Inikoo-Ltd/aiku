@@ -11,10 +11,11 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowAllReviews extends OrgAction
+class IndexOverallReviews extends OrgAction
 {
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
+
         $this->initialisationFromShop($shop, $request);
 
         return $shop;
@@ -38,13 +39,13 @@ class ShowAllReviews extends OrgAction
             ],
             'data' => [
                 'data'            => ReviewsResource::collection(
-                    IndexReviews::make()->handle($shop, scope: 'overall')
+                    IndexReviews::make()->handle(parent:$shop, scope: 'overall')
                 ),
                 'reviewable_type' => 'shop_reviews',
                 'replier_type'    => 'merchant',
                 'rating_labels'   => ReviewsResource::ratingLabelsFor($shop),
             ],
-        ])->table(IndexReviews::make()->tableStructure(parent: $shop));
+        ])->table(IndexReviews::make()->tableStructure());
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

@@ -44,7 +44,7 @@ class ShowFamilyReviews extends OrgAction
                 'replier_type'    => 'merchant',
                 'rating_labels'   => ReviewsResource::ratingLabelsFor($shop),
             ],
-        ])->table(IndexReviews::make()->tableStructure(parent: $shop));
+        ])->table(IndexReviews::make()->tableStructure());
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
