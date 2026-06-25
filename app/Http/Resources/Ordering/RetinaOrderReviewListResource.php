@@ -36,6 +36,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $replied
  * @property mixed $reply_message
  * @property mixed $reply_at
+ * @property mixed $reply_by_name
  * @property mixed $likes
  * @property mixed $dislikes
  * @property mixed $replay_likes
@@ -80,9 +81,10 @@ class RetinaOrderReviewListResource extends JsonResource
                 'dislikes'        => (int) ($this->dislikes ?? 0),
                 'replay_likes'    => (int) ($this->replay_likes ?? 0),
                 'replay_dislikes' => (int) ($this->replay_dislikes ?? 0),
-                'reply'           => $this->replied ? [
-                    'message'         => $this->reply_message,
-                    'at'              => $this->reply_at,
+                'reply' => $this->replied ? [
+                    'message'      => $this->reply_message,
+                    'at'           => $this->reply_at,
+                    'contact_name' => $this->reply_by_name,
                 ] : null,
             ],
         ];

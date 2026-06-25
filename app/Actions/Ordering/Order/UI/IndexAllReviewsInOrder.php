@@ -38,6 +38,7 @@ class IndexAllReviewsInOrder extends OrgAction
             ->leftJoin('products', 'reviews.product_id', '=', 'products.id')
             ->leftJoin('product_categories', 'reviews.product_category_id', '=', 'product_categories.id')
             ->leftJoin('shops', 'reviews.shop_id', '=', 'shops.id')
+            ->leftJoin('users', 'reviews.reply_by', '=', 'users.id')
             ->select([
                 'reviews.id as review_id',
                 'reviews.scope',
@@ -63,6 +64,7 @@ class IndexAllReviewsInOrder extends OrgAction
                 'product_categories.code as family_code',
                 'product_categories.name as family_name',
                 'shops.name as shop_name',
+                'users.contact_name as reply_by_name',
             ])
             ->defaultSort('-reviews.created_at')
             ->allowedSorts(['review_rating', 'reviews.created_at'])
