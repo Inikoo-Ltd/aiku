@@ -18,7 +18,6 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Web\Website\UpdateWebsite;
-use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -305,8 +304,8 @@ class UpdateShop extends OrgAction
             $reviewPublishing = Arr::pull($modelData, 'review_publishing');
             data_set($modelData, 'settings.reviews.visibility.private', (bool) Arr::get($reviewPublishing, 'visibility.private', false));
             data_set($modelData, 'settings.reviews.visibility.public', (bool) Arr::get($reviewPublishing, 'visibility.public', false));
-            data_set($modelData, 'settings.reviews.auto_publishing.mode', Arr::get($reviewPublishing, 'auto_publishing.mode'));
-            data_set($modelData, 'settings.reviews.auto_publishing.delay_hours', Arr::get($reviewPublishing, 'auto_publishing.delay_hours'));
+            data_set($modelData, 'settings.reviews.auto_publishing.delay', (bool) Arr::get($reviewPublishing, 'auto_publishing.delay', true));
+            data_set($modelData, 'settings.reviews.auto_publishing.delay_hours', (int) Arr::get($reviewPublishing, 'auto_publishing.delay_hours', 24));
         }
 
         if (Arr::exists($modelData, 'review_allow_reactions')) {
@@ -543,15 +542,16 @@ class UpdateShop extends OrgAction
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
             'reviews'                                                 => ['sometimes', 'nullable', 'array'],
-            'reviews.data.approval_required'                          => ['sometimes', 'boolean'],
-            'reviews.data.hours_after_dispatched'                     => ['sometimes', 'integer', 'min:1'],
+            'reviews.provider'                                        => ['sometimes', 'nullable', 'string'],
+            'reviews.enabled'                                         => ['sometimes', 'boolean'],
+            'reviews.data'                                            => ['sometimes', 'nullable', 'array'],
             'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],
             'review_rating_labels.*'                                  => ['sometimes', 'array'],
             'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],
             'review_publishing'                                       => ['sometimes', 'nullable', 'array'],
             'review_publishing.visibility.private'                    => ['sometimes', 'boolean'],
             'review_publishing.visibility.public'                     => ['sometimes', 'boolean'],
-            'review_publishing.auto_publishing.mode'                  => ['sometimes', 'required', Rule::enum(ReviewAutoPublishingEnum::class)],
+            'review_publishing.auto_publishing.delay'                 => ['sometimes', 'boolean'],
             'review_publishing.auto_publishing.delay_hours'           => ['sometimes', 'nullable', 'integer', 'min:1'],
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],

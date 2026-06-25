@@ -3,7 +3,6 @@
 namespace App\Actions\Reviews\UI;
 
 use App\Actions\Catalogue\Review\UI\IndexReviews;
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Models\Catalogue\Shop;
@@ -12,7 +11,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowReview extends OrgAction
+class IndexProductReviews extends OrgAction
 {
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
@@ -23,29 +22,33 @@ class ShowReview extends OrgAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-        return Inertia::render('Org/Catalogue/ShopReviewsDashboard', [
-            'title'       => __('Reviews'),
+        return Inertia::render('Org/Catalogue/ShopReviews', [
+            'title'       => __('Product Reviews'),
             'breadcrumbs' => $this->getBreadcrumbs(
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
             'pageHead' => [
-                'title' => __('Reviews'),
+                'title' => __('Product Reviews'),
                 'model' => __('Shop'),
                 'icon'  => [
-                    'icon'  => ['fal', 'fa-star'],
-                    'title' => __('Reviews'),
+                    'icon'  => ['fal', 'fa-cube'],
+                    'title' => __('Product Reviews'),
                 ],
             ],
-            'stats'         => IndexReviews::make()->getStats($shop),
-            'rating_labels' => ReviewsResource::ratingLabelsFor($shop),
-        ]);
+            'data' => [
+                'data'            => ReviewsResource::collection(IndexReviews::run(parent: $shop, scope: 'product')),
+                'reviewable_type' => 'product_reviews',
+                'replier_type'    => 'merchant',
+                'rating_labels'   => ReviewsResource::ratingLabelsFor($shop),
+            ],
+        ])->table(IndexReviews::make()->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, mixed $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
-            ShowShop::make()->getBreadcrumbs($routeParameters),
+            ShowReview::make()->getBreadcrumbs('grp.org.shops.show.reviews.dashboard', $routeParameters),
             [
                 [
                     'type'   => 'simple',
@@ -54,10 +57,9 @@ class ShowReview extends OrgAction
                             'name'       => $routeName,
                             'parameters' => $routeParameters,
                         ],
-                        'label' => __('Reviews'),
-                        'icon'  => 'fal fa-star',
+                        'label' => __('Product Reviews'),
+                        'icon'  => 'fal fa-cube',
                     ],
-                    'suffix' => $suffix,
                 ],
             ],
         );

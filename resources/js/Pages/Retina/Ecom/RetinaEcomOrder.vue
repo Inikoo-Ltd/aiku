@@ -6,55 +6,56 @@
 -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, inject, ref } from 'vue'
-import type { Component } from 'vue'
+import { computed, inject, ref } from "vue"
+import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { trans } from "laravel-vue-i18n"
-import { routeType } from '@/types/route'
-import { PageHeadingTypes } from '@/types/PageHeading'
-import { Tabs as TSTabs } from '@/types/Tabs'
-import '@vuepic/vue-datepicker/dist/main.css'
-import '@/Composables/Icon/PalletDeliveryStateEnum'
+import { routeType } from "@/types/route"
+import { PageHeadingTypes } from "@/types/PageHeading"
+import { Tabs as TSTabs } from "@/types/Tabs"
+import "@vuepic/vue-datepicker/dist/main.css"
+import "@/Composables/Icon/PalletDeliveryStateEnum"
 import EcomTableOrderTransactions from "@/Components/Retina/Ecom/EcomTableOrderTransactions.vue"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt } from '@fas'
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
-import { Currency } from '@/types/LayoutRules'
-import { faSpinnerThird } from '@far'
-import Timeline from '@/Components/Utils/Timeline.vue'
-import { Message } from 'primevue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-import { debounce } from 'lodash-es'
-import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import EcomCheckoutSummary from '@/Components/Retina/Ecom/EcomCheckoutSummary.vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { notify } from '@kyvg/vue3-notification'
-import axios from 'axios'
+import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
+import { faExclamationTriangle, faExclamation, faBoxHeart, faShieldAlt } from "@fas"
+import { faDollarSign, faIdCardAlt, faShippingFast,   faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faStar, faStars } from "@fal"
+import { Currency } from "@/types/LayoutRules"
+import { faSpinnerThird } from "@far"
+import Timeline from "@/Components/Utils/Timeline.vue"
+import { Message } from "primevue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import { debounce } from "lodash-es"
+import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { notify } from "@kyvg/vue3-notification"
+import axios from "axios"
+import EcomListReviews from "@/Components/Retina/Ecom/EcomListReviews.vue"
 
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
+library.add(faStars, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
 const props = defineProps<{
     title: string
     tabs: TSTabs
     pageHead: PageHeadingTypes
+    reviews : any
     routes: {
         update_route: routeType
         submit_route: routeType
         route_to_pay_unpaid: routeType
         updateOrderRoute: routeType
     }
-    timelines: {
-    }
+    timelines: {}
     is_notes_editable: boolean
     summary: {
         order_summary: {
@@ -106,18 +107,18 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: EcomTableOrderTransactions,
+        reviews : EcomListReviews
     }
 
     return components[currentTab.value]
 })
 
-const locale = inject('locale', aikuLocaleStructure)
-console.log('DS Orders', props)
+const locale = inject("locale", aikuLocaleStructure)
+console.log("DS Orders", props)
 
 
-
-const noteToSubmit = ref(props?.data?.data?.customer_notes || '')
-const deliveryInstructions = ref(props?.data?.data?.shipping_notes || '')
+const noteToSubmit = ref(props?.data?.data?.customer_notes || "")
+const deliveryInstructions = ref(props?.data?.data?.shipping_notes || "")
 const recentlySuccessNote = ref<string[]>([])
 const recentlyErrorNote = ref(false)
 const isLoadingNote = ref<string[]>([])
@@ -125,7 +126,7 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
     try {
         isLoadingNote.value.push(key_in_db)
         await axios.patch(route(props.routes.update_route.name, props.routes.update_route.parameters), {
-            [key_in_db ?? 'customer_notes']: value
+            [key_in_db ?? "customer_notes"]: value
         })
 
 
@@ -134,7 +135,7 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
         setTimeout(() => {
             recentlySuccessNote.value = recentlySuccessNote.value.filter(item => item !== key_in_db)
         }, 3000)
-    } catch  {
+    } catch {
         recentlyErrorNote.value = true
         setTimeout(() => {
             recentlyErrorNote.value = false
@@ -143,12 +144,12 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
         notify({
             title: trans("Something went wrong"),
             text: trans("Failed to update the note, try again."),
-            type: "error",
+            type: "error"
         })
     }
 }
-const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
-const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
+const debounceSubmitNote = debounce(() => onSubmitNote("customer_notes", noteToSubmit.value), 800)
+const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes", deliveryInstructions.value), 800)
 
 </script>
 
@@ -158,15 +159,15 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
     <PageHeading :data="pageHead">
         <template #other>
             <a v-if="['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state || 'vcxzvcx')"
-                :href="route('retina.ecom.orders.proforma_invoice.download', {
+               :href="route('retina.ecom.orders.proforma_invoice.download', {
                     order: props.data?.data?.slug
                 })"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-block"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="inline-block"
             >
                 <Button
-                    
+
                     type="tertiary"
                     :label="trans('Proforma Invoice')"
                     icon="fal fa-file-pdf"
@@ -182,7 +183,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
     </div>
 
     <!-- Section: Timelines -->
-    <div v-if="timelines"  class="mt-4 py-3 sm:mt-0 border-b border-gray-200 w-full">
+    <div v-if="timelines" class="mt-4 py-3 sm:mt-0 border-b border-gray-200 w-full">
         <div class="max-w-5xl mx-auto">
             <Timeline :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
         </div>
@@ -215,13 +216,12 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
     />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
-        @update:tab="handleTabUpdate" />
+          @update:tab="handleTabUpdate" />
 
-    <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200 overflow-x-auto">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-            :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state" :modalOpen="isModalUploadOpen"
-            @update:tab="handleTabUpdate" />
-    </div>
+                   :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state" :modalOpen="isModalUploadOpen"
+                   @update:tab="handleTabUpdate" />
+
 
     <div class="flex justify-end px-6 gap-x-4">
         <div class="grid grid-cols-3 gap-x-4 w-full">
@@ -263,7 +263,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
                     :isError="recentlyErrorNote"
                 />
             </div>
-        
+
             <!-- Input text: Other instructions -->
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">

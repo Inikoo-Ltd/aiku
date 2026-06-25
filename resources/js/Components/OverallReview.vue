@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, ref } from "vue"
+import { inject, ref, reactive } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { faStar as falStar } from "@fal"
@@ -9,6 +9,7 @@ import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faStar, falStar)
 
@@ -16,28 +17,40 @@ const props = defineProps<{
     data: {
         rating_labels?: any
         context?: string
+        review_id?: number | null
+        order_id?: number
+        reviewable_id?: number
+        scope?: string
+        rating?: number | null
+        rating_a?: number | null
+        rating_b?: number | null
+        rating_c?: number | null
+        rating_d?: number | null
+        rating_e?: number | null
+        message?: string | null
+        is_public?: boolean | null
+        images?: File[] | null
     }
+    tab?: string
+    review_settings : any
 }>()
 
-const locale = inject("locale", retinaLayoutStructure)
-const selectedItem = ref<any>(null)
+
 const loadingSave = ref(false)
 
-
+const reviewData = ref<any>({ ...props.data })
 
 const saveReview = async () => {
-    const review = selectedItem.value?.review || {}
-    const isUpdate = !!review.review_id
-
+    const review = reviewData.value
+    const isUpdate = false
     const routeName = isUpdate
         ? "retina.models.review.update"
         : "retina.models.review.store"
-
-    const routeParams = isUpdate ? { review: review.review_id } : undefined
-
+    const routeParams: Record<string, any> = isUpdate
+        ? { review: review.review_id }
+        : { order: review.order_id }
     const payload: Record<string, any> = {
-        reviewable_type: review.reviewable_type,
-        reviewable_id: review.reviewable_id,
+        scope: review.scope,
         order_id: review.order_id,
         rating: review.rating,
         rating_a: review.rating_a,
@@ -75,8 +88,7 @@ const saveReview = async () => {
             headers: { "Content-Type": "multipart/form-data" },
         })
 
-        isOpenDialog.value = false
-        router.reload({ only: ["pageHead", props.tab as string] })
+        router.reload()
         notify({
             title: trans("Success"),
             text: trans("Review submitted successfully"),
@@ -94,14 +106,16 @@ const saveReview = async () => {
     }
 }
 
-console.log('data', props.data.rating_labels)
 </script>
 
 <template>
-    <div>
-        <FormReview v-model="props.data" :type="data.context || ''" :schema="data.rating_labels" />
+    <div class="border rounded-lg p-4 border-gray-20">
+        <div class="text-lg font-bold mb-4 ml-2 border-b pb-3 border-gray-200">{{trans('Overall review of your experience')}}</div>
+        <FormReview v-model="reviewData" :review_settings :type="data.context || ''" :schema="data.rating_labels"  :showAverageReview="false"  :disabled="reviewData?.review_id ? true : false"/>
+        <div  v-if="!reviewData?.review_id " class="border-t mt-3 pt-3 gap-4 border-gray-200 flex justify-end">
+            <Button type="save" @click="saveReview"></Button>
+        </div>
     </div>
-
 </template>
 
 <style scoped></style>

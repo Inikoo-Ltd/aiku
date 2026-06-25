@@ -22,7 +22,7 @@ return new class () extends Migration {
             $table->unsignedInteger('customer_id')->nullable()->index();
             $table->foreign('customer_id')->references('id')->on('customers')->nullOnDelete();
 
-            $table->string('scope')->index(); // Scope of the review, e.g. 'product', 'family', 'overall'
+            $table->string('scope')->index(); // Scope of the review, e.g. 'product', 'family', 'order', 'shop'
 
             $table->unsignedInteger('order_id')->nullable()->index();
             $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
@@ -43,14 +43,12 @@ return new class () extends Migration {
             $table->unsignedTinyInteger('rating_c')->index()->nullable();
             $table->unsignedTinyInteger('rating_d')->index()->nullable();
             $table->unsignedTinyInteger('rating_e')->index()->nullable();
-            $table->timestampTz('show_after')->nullable()->index();
+            $table->timestampTz('auto_approve_at')->nullable()->index();
 
 
             $table->boolean('is_public')->default(true)->index();
-
-            $table->string('title')->nullable()->index();
             $table->text('message')->nullable();
-            $table->json('web_images')->nullable();
+            $table->jsonb('web_images')->default('{}');
             $table->unsignedSmallInteger('language_id')->nullable()->index();
             $table->foreign('language_id')->references('id')->on('languages')->nullOnDelete();
 

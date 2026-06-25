@@ -31,10 +31,9 @@ class RetinaOrderReviewableResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $orderId        = (int)($this->order_id ?? 0);
-        $reviewableId   = (int)($this->reviewable_id ?? 0);
-        $reviewableType = (string)($this->reviewable_type ?? 'Product');
-
+        $orderId      = (int)($this->order_id ?? 0);
+        $reviewableId = $this->reviewable_id;
+        $scope        = (string)($this->reviewable_type ?? '');
 
         return [
             'id'               => $reviewableId,
@@ -45,19 +44,19 @@ class RetinaOrderReviewableResource extends JsonResource
             'quantity_ordered' => $this->quantity_ordered !== null ? (float)$this->quantity_ordered : null,
             'review_rating'    => $this->review_rating !== null ? (float)$this->review_rating : null,
             'review'           => [
-                'review_id'       => $this->review_id ? (int)$this->review_id : null,
-                'status'          => $this->review_status,
-                'rating'          => $this->review_rating !== null ? (float)$this->review_rating : null,
-                'rating_a'        => $this->review_rating_a !== null ? (int)$this->review_rating_a : null,
-                'rating_b'        => $this->review_rating_b !== null ? (int)$this->review_rating_b : null,
-                'rating_c'        => $this->review_rating_c !== null ? (int)$this->review_rating_c : null,
-                'rating_d'        => $this->review_rating_d !== null ? (int)$this->review_rating_d : null,
-                'rating_e'        => $this->review_rating_e !== null ? (int)$this->review_rating_e : null,
-                'message'         => $this->review_message,
-                'is_public'       => !($this->review_is_public !== null) || $this->review_is_public,
-                'reviewable_type' => $reviewableType,
-                'reviewable_id'   => $reviewableId,
-                'order_id'        => $orderId,
+                'review_id'    => $this->review_id ? (int)$this->review_id : null,
+                'status'       => $this->review_status,
+                'rating'       => $this->review_rating !== null ? (float)$this->review_rating : null,
+                'rating_a'     => $this->review_rating_a !== null ? (int)$this->review_rating_a : null,
+                'rating_b'     => $this->review_rating_b !== null ? (int)$this->review_rating_b : null,
+                'rating_c'     => $this->review_rating_c !== null ? (int)$this->review_rating_c : null,
+                'rating_d'     => $this->review_rating_d !== null ? (int)$this->review_rating_d : null,
+                'rating_e'     => $this->review_rating_e !== null ? (int)$this->review_rating_e : null,
+                'message'      => $this->review_message,
+                'is_public'    => !($this->review_is_public !== null) || $this->review_is_public,
+                'scope'        => $scope,
+                'reviewable_id' => $reviewableId,
+                'order_id'     => $orderId,
             ],
         ];
     }

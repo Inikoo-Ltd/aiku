@@ -230,7 +230,6 @@ const deleteReply = async () => {
         loadingDelete.value = false
     }
 }
-console.log(props.modelValue)
 </script>
 
 <template>

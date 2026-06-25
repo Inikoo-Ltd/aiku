@@ -32,9 +32,9 @@ trait BuildsReviewStats
     protected function buildReviewStats(EloquentBuilder|QueryBuilder $baseQuery): array
     {
         $statusCounts = (clone $baseQuery)
-            ->selectRaw('status, count(*) as aggregate')
-            ->groupBy('status')
-            ->pluck('aggregate', 'status');
+            ->selectRaw('review_status, count(*) as aggregate')
+            ->groupBy('review_status')
+            ->pluck('aggregate', 'review_status');
 
         $ratingBuckets = (clone $baseQuery)
             ->selectRaw('

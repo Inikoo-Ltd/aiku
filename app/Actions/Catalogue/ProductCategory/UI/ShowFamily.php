@@ -56,7 +56,6 @@ class ShowFamily extends OrgAction
         return $family;
     }
 
-
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): ProductCategory
     {
         $this->parent = $department;
@@ -66,7 +65,6 @@ class ShowFamily extends OrgAction
         return $this->handle($family);
     }
 
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): ProductCategory
     {
@@ -75,7 +73,6 @@ class ShowFamily extends OrgAction
 
         return $this->handle($family);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
@@ -125,7 +122,6 @@ class ShowFamily extends OrgAction
         ]);
     }
 
-
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
         $parentTag = [];
@@ -170,7 +166,6 @@ class ShowFamily extends OrgAction
                 ]
             ];
         }
-
 
         $iconLinks = [];
         if ($family->has_gr_vol_discount) {
@@ -229,9 +224,9 @@ class ShowFamily extends OrgAction
                 fn () => GetRelatedProducts::run($family)
                 : Inertia::lazy(fn () => GetRelatedProducts::run($family)),
 
-                FamilyTabsEnum::VARIANTS->value => $this->tab === FamilyTabsEnum::VARIANTS->value ?
-                    fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))
-                    : Inertia::lazy(fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))),
+            FamilyTabsEnum::VARIANTS->value => $this->tab === FamilyTabsEnum::VARIANTS->value ?
+                fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))
+                : Inertia::lazy(fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))),
         ];
 
         return Inertia::render(
@@ -320,9 +315,8 @@ class ShowFamily extends OrgAction
         ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
         ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
         ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
-            ->table(IndexReviews::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value));
+        ->table(IndexReviews::make()->tableStructure(prefix: FamilyTabsEnum::REVIEWS->value));
     }
-
 
     public function jsonResponse(ProductCategory $family): DepartmentsResource
     {
@@ -332,9 +326,8 @@ class ShowFamily extends OrgAction
     private function getReviewsTabData(ProductCategory $family): array
     {
         return [
-            'data' => ReviewsResource::collectionWithTabMeta(
-                IndexReviews::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value),
-                $family
+            'data' => ReviewsResource::collection(
+                IndexReviews::run(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value, scope: 'family')
             ),
             'rating_labels' => $this->ratingLabelsForShop($family->shop->id, ReviewContextEnum::FAMILY),
             'reviewable_type' => 'ProductCategory',
@@ -365,7 +358,6 @@ class ShowFamily extends OrgAction
     {
         $headCrumb = function (ProductCategory $family, array $routeParameters, $suffix) {
             return [
-
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
@@ -379,12 +371,9 @@ class ShowFamily extends OrgAction
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
-
             ];
         };
-
 
         return match ($routeName) {
             'grp.org.shops.show.catalogue.families.show' =>
@@ -418,8 +407,6 @@ class ShowFamily extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -442,8 +429,6 @@ class ShowFamily extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -467,8 +452,6 @@ class ShowFamily extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -477,5 +460,4 @@ class ShowFamily extends OrgAction
             default => []
         };
     }
-
 }

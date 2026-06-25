@@ -17,6 +17,7 @@ enum ReviewStatusEnum: string
     case PENDING = 'pending';
     case APPROVED = 'approved';
     case REJECTED = 'rejected';
+    case NA = 'na';
 
     public static function labels(): array
     {
@@ -24,6 +25,7 @@ enum ReviewStatusEnum: string
             self::PENDING->value  => __('Pending'),
             self::APPROVED->value => __('Approved'),
             self::REJECTED->value => __('Rejected'),
+            self::NA->value       => __('N/A'),
         ];
     }
 }

@@ -472,7 +472,7 @@ class ShowIrisWebpage
         $label = $webpage->breadcrumb_label;
 
         if (!$label) {
-            $label = $webpage->code;
+            $label = $webpage->title ?? $webpage->code;
         }
 
         return $label ?? '';

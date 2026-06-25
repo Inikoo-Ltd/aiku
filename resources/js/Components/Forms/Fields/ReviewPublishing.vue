@@ -11,19 +11,16 @@ const props = defineProps<{
     fieldData?: any
 }>()
 
-const autoPublishingOptions = computed<Array<{ value: string; label: string }>>(() =>
-    props.fieldData?.options ?? [
-        { value: 'immediately', label: trans('Immediately') },
-        { value: 'delay', label: trans('Delay') },
-        { value: 'never', label: trans('Never') },
-    ]
-)
+const autoPublishingOptions: Array<{ value: boolean; label: string }> = [
+    { value: false, label: trans('Immediately') },
+    { value: true, label: trans('Delay') },
+]
 
 const initialValue = props.form[props.fieldName] ?? {}
 
 const visibilityPrivate = ref<boolean>(initialValue?.visibility?.private ?? true)
 const visibilityPublic = ref<boolean>(initialValue?.visibility?.public ?? true)
-const autoPublishingMode = ref<string>(initialValue?.auto_publishing?.mode ?? 'immediately')
+const autoPublishingDelay = ref<boolean>(initialValue?.auto_publishing?.delay ?? true)
 const autoPublishingDelayHours = ref<number>(initialValue?.auto_publishing?.delay_hours ?? 24)
 
 const syncForm = () => {
@@ -33,14 +30,14 @@ const syncForm = () => {
             public: visibilityPublic.value,
         },
         auto_publishing: {
-            mode: autoPublishingMode.value,
+            delay: autoPublishingDelay.value,
             delay_hours: Number(autoPublishingDelayHours.value) || 1,
         },
     }
 }
 
 watch(
-    [visibilityPrivate, visibilityPublic, autoPublishingMode, autoPublishingDelayHours],
+    [visibilityPrivate, visibilityPublic, autoPublishingDelay, autoPublishingDelayHours],
     syncForm
 )
 
@@ -71,20 +68,20 @@ const fieldNameString = computed(() => props.fieldName)
             <div class="flex flex-col gap-2">
                 <div
                     v-for="option in autoPublishingOptions"
-                    :key="option.value"
+                    :key="String(option.value)"
                     class="flex items-center gap-2"
                 >
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input
                             type="radio"
                             :value="option.value"
-                            v-model="autoPublishingMode"
+                            v-model="autoPublishingDelay"
                             class="text-indigo-600 focus:ring-indigo-500"
                         />
                         <span class="text-sm">{{ option.label }}</span>
                     </label>
                     <span
-                        v-if="option.value === 'delay' && autoPublishingMode === 'delay'"
+                        v-if="option.value === true && autoPublishingDelay === true"
                         class="ml-2 flex items-center gap-2"
                     >
                         <PureInput
