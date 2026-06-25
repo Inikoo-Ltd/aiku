@@ -151,7 +151,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
 
     public function getOverallReview(): array
     {
-        $orderId        = (int) ($this->order_id ?? 0);
+        $orderId        = $this->order->id;
         $reviewableId   = (int) ($this->reviewable_id ?? 0);
         $reviewableType = (string) ($this->reviewable_type ?? 'Product');
         $reviewMediaData = is_string($this->review_media_data)

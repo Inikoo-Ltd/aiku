@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, ref } from "vue"
+import { inject, ref, reactive } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { faStar as falStar } from "@fal"
@@ -17,24 +17,37 @@ const props = defineProps<{
     data: {
         rating_labels?: any
         context?: string
+        review_id?: number | null
+        order_id?: number
+        reviewable_id?: number
+        reviewable_type?: string
+        rating?: number | null
+        rating_a?: number | null
+        rating_b?: number | null
+        rating_c?: number | null
+        rating_d?: number | null
+        rating_e?: number | null
+        message?: string | null
+        is_public?: boolean | null
+        images?: File[] | null
     }
+    tab?: string
 }>()
 
 const locale = inject("locale", retinaLayoutStructure)
 const loadingSave = ref(false)
 
-
+const reviewData = ref<any>({ ...props.data })
 
 const saveReview = async () => {
-    const review = props.data || {}
-    const isUpdate = !!review.review_id
-
+    const review = reviewData.value
+    const isUpdate = false
     const routeName = isUpdate
         ? "retina.models.review.update"
         : "retina.models.review.store"
-
-    const routeParams = isUpdate ? { review: review.review_id } : undefined
-
+    const routeParams: Record<string, any> = isUpdate
+        ? { review: review.review_id }
+        : { order: review.order_id }
     const payload: Record<string, any> = {
         reviewable_type: review.reviewable_type,
         reviewable_id: review.reviewable_id,
@@ -97,7 +110,7 @@ const saveReview = async () => {
 
 <template>
     <div>
-        <FormReview v-model="props.data" :type="data.context || ''" :schema="data.rating_labels" />
+        <FormReview v-model="reviewData" :type="data.context || ''" :schema="data.rating_labels" />
         <div class="border-t mt-3 py-3 gap-4 border-gray-200 flex justify-end">
             <Button type="save" @click="saveReview"></Button>
         </div>
