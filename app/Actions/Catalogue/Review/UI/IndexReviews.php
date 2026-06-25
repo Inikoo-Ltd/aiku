@@ -21,8 +21,7 @@ class IndexReviews extends OrgAction
     {
         $row = Review::query()
             ->where('shop_id', $shop->id)
-            ->selectRaw(
-                '
+            ->selectRaw('
                 COUNT(*) as total,
                 COALESCE(AVG(rating_main), 0) as average_rating,
                 COUNT(*) FILTER (WHERE review_status = ?) as status_approved,
@@ -81,7 +80,6 @@ class IndexReviews extends OrgAction
         $query = QueryBuilder::for(Review::class)
             ->leftJoin('customers', 'customers.id', '=', 'reviews.customer_id');
 
-
         if ($parent instanceof Shop) {
             $query->where('reviews.shop_id', $parent->id);
         } elseif ($parent instanceof ProductCategory) {
@@ -118,27 +116,11 @@ class IndexReviews extends OrgAction
                 'reviews.meta',
                 'reviews.created_at',
                 'customers.name as customer_name',
-                'customers.id as customer_id',
             ])
             ->allowedSorts(['id', 'created_at', 'rating', 'likes'])
             ->allowedFilters([$globalSearch, 'status', 'rating', 'customer_name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
-    }
-
-    public function inProductCategory(ProductCategory $parent, ?string $prefix = null): LengthAwarePaginator
-    {
-        return $this->handle($parent, $prefix);
-    }
-
-    public function inProduct(Product $parent, ?string $prefix = null): LengthAwarePaginator
-    {
-        return $this->handle($parent, $prefix);
-    }
-
-    public function inShop(Shop $parent, ?string $prefix = null): LengthAwarePaginator
-    {
-        return $this->handle($parent, $prefix);
     }
 
     public function tableStructure(?string $prefix = null): Closure
@@ -166,6 +148,4 @@ class IndexReviews extends OrgAction
             $table->column(key: 'action', label: __('Actions'), align: 'right');
         };
     }
-
-
 }

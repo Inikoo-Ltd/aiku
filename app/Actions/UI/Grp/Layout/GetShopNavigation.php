@@ -214,9 +214,9 @@ class GetShopNavigation
                             "label"   => __("Overall Review"),
                             "tooltip" => __("Overall Review"),
                             "icon"    => ["fal", "fa-star"],
-                            "root"    => "grp.org.shops.show.reviews.all",
+                            "root"    => "grp.org.shops.show.reviews.overall",
                             "route"   => [
-                                "name"       => "grp.org.shops.show.reviews.all",
+                                "name"       => "grp.org.shops.show.reviews.overall",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

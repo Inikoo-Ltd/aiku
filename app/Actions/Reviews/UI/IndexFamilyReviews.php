@@ -11,7 +11,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowProductReviews extends OrgAction
+class IndexFamilyReviews extends OrgAction
 {
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
@@ -23,24 +23,22 @@ class ShowProductReviews extends OrgAction
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
         return Inertia::render('Org/Catalogue/ShopReviews', [
-            'title'       => __('Product Reviews'),
+            'title'       => __('Family Reviews'),
             'breadcrumbs' => $this->getBreadcrumbs(
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
             'pageHead' => [
-                'title' => __('Product Reviews'),
+                'title' => __('Family Reviews'),
                 'model' => __('Shop'),
                 'icon'  => [
-                    'icon'  => ['fal', 'fa-cube'],
-                    'title' => __('Product Reviews'),
+                    'icon'  => ['fal', 'fa-folder'],
+                    'title' => __('Family Reviews'),
                 ],
             ],
             'data' => [
-                'data'            => ReviewsResource::collection(
-                    IndexReviews::make()->handle($shop, scope: 'product')
-                ),
-                'reviewable_type' => 'product_reviews',
+                'data'            => ReviewsResource::collection(IndexReviews::run(parent: $shop, scope: 'family')),
+                'reviewable_type' => 'product_category_reviews',
                 'replier_type'    => 'merchant',
                 'rating_labels'   => ReviewsResource::ratingLabelsFor($shop),
             ],
@@ -59,8 +57,8 @@ class ShowProductReviews extends OrgAction
                             'name'       => $routeName,
                             'parameters' => $routeParameters,
                         ],
-                        'label' => __('Product Reviews'),
-                        'icon'  => 'fal fa-cube',
+                        'label' => __('Family Reviews'),
+                        'icon'  => 'fal fa-folder',
                     ],
                 ],
             ],

@@ -1,12 +1,12 @@
 <?php
 
+use App\Actions\Reviews\UI\IndexFamilyReviews;
 use App\Actions\Reviews\UI\IndexOverallReviews;
-use App\Actions\Reviews\UI\ShowFamilyReviews;
-use App\Actions\Reviews\UI\ShowProductReviews;
+use App\Actions\Reviews\UI\IndexProductReviews;
 use App\Actions\Reviews\UI\ShowReview;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowReview::class)->name('dashboard');
-Route::get('all', IndexOverallReviews::class)->name('all');
-Route::get('families', ShowFamilyReviews::class)->name('families');
-Route::get('products', ShowProductReviews::class)->name('products');
+Route::get('overall', IndexOverallReviews::class)->name('overall');
+Route::get('families', IndexFamilyReviews::class)->name('families');
+Route::get('products', IndexProductReviews::class)->name('products');

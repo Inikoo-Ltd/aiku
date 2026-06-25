@@ -269,8 +269,6 @@ class ShowProduct extends OrgAction
             ]
         ];
 
-
-
         if ($product->webpage) {
             $actions = array_merge($actions, [
                 [
@@ -469,7 +467,7 @@ class ShowProduct extends OrgAction
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
             ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value))
-            ->table(IndexReviews::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::REVIEWS->value));
+            ->table(IndexReviews::make()->tableStructure(prefix: ProductTabsEnum::REVIEWS->value));
 
         if (!$isExternalShop) {
             $productPage = $productPage
@@ -486,15 +484,11 @@ class ShowProduct extends OrgAction
         return new ProductsResource($product);
     }
 
-
     private function getReviewsTabData(Product $product): array
     {
         return [
             'data' => ReviewsResource::collection(
-                IndexReviews::make()->inProduct(
-                    parent: $product,
-                    prefix: ProductTabsEnum::REVIEWS->value
-                )
+                IndexReviews::run(parent: $product, prefix: ProductTabsEnum::REVIEWS->value, scope: 'product')
             ),
             'rating_labels' => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::PRODUCT),
             'reviewable_type' => 'product_reviews',
@@ -526,7 +520,6 @@ class ShowProduct extends OrgAction
     {
         $headCrumb = function (Product $product, array $routeParameters, $suffix, $suffixIndex = '', $prefixIndex = '') {
             return [
-
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
@@ -540,9 +533,7 @@ class ShowProduct extends OrgAction
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
-
             ];
         };
 
@@ -917,8 +908,6 @@ class ShowProduct extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.products.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -927,5 +916,4 @@ class ShowProduct extends OrgAction
             default => []
         };
     }
-
 }
