@@ -104,6 +104,8 @@ class EditShop extends OrgAction
 
         $isExternal =  $shop->type === ShopTypeEnum::EXTERNAL;
 
+        $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
+
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
@@ -680,33 +682,25 @@ class EditShop extends OrgAction
                 [
                     'label'  => __('Google Ads'),
                     'icon'   => 'fa-brands fa-google',
-                    'information' => __('Customer Match credentials used to sync this shop customers to a Google Ads user list. Each shop uses its own credentials.'),
+                    'information' => $isGoogleAdsConnected
+                        ? __('This shop is connected to Google Ads. Set the Customer ID and User List ID below to sync customers to your Google Ads user list.')
+                        : __('Connect your Google account to authorize syncing customers, then set the Customer ID and User List ID below.'),
                     'fields' => [
-                        'google_ads_developer_token' => [
-                            'type'        => 'input',
-                            'label'       => __('Developer Token'),
-                            'value'       => Arr::get($shop->settings, 'google_ads.developer_token', ''),
-                        ],
-                        'google_ads_client_id' => [
-                            'type'        => 'input',
-                            'label'       => __('Client ID'),
-                            'value'       => Arr::get($shop->settings, 'google_ads.client_id', ''),
-                        ],
-                        'google_ads_client_secret' => [
-                            'type'        => 'input',
-                            'label'       => __('Client Secret'),
-                            'value'       => Arr::get($shop->settings, 'google_ads.client_secret', ''),
-                        ],
-                        'google_ads_refresh_token' => [
-                            'type'        => 'input',
-                            'label'       => __('Refresh Token'),
-                            'value'       => Arr::get($shop->settings, 'google_ads.refresh_token', ''),
-                        ],
-                        'google_ads_login_customer_id' => [
-                            'type'        => 'input',
-                            'label'       => __('Login Customer ID'),
-                            'placeholder' => '123-456-7890',
-                            'value'       => Arr::get($shop->settings, 'google_ads.login_customer_id', ''),
+                        'google_ads_connect' => [
+                            'type'   => 'action',
+                            'label'  => __('Google Account'),
+                            'information' => $isGoogleAdsConnected
+                                ? __('Connected.')
+                                : __('Not connected yet.'),
+                            'action' => [
+                                'type'  => 'button',
+                                'style' => $isGoogleAdsConnected ? 'tertiary' : 'save',
+                                'icon'  => ['fab', 'fa-google'],
+                                'label' => $isGoogleAdsConnected ? __('Reconnect Google account') : __('Connect Google account'),
+                                'route' => [
+                                    'url' => route('grp.org.shops.show.settings.google_ads.connect', [$shop->organisation, $shop]),
+                                ],
+                            ],
                         ],
                         'google_ads_customer_id' => [
                             'type'        => 'input',
@@ -718,12 +712,6 @@ class EditShop extends OrgAction
                             'type'        => 'input',
                             'label'       => __('User List ID'),
                             'value'       => Arr::get($shop->settings, 'google_ads.user_list_id', ''),
-                        ],
-                        'google_ads_api_version' => [
-                            'type'        => 'input',
-                            'label'       => __('API Version'),
-                            'placeholder' => 'v18',
-                            'value'       => Arr::get($shop->settings, 'google_ads.api_version', ''),
                         ],
                     ],
                 ],
