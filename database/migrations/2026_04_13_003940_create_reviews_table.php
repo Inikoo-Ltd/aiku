@@ -47,10 +47,8 @@ return new class () extends Migration {
 
 
             $table->boolean('is_public')->default(true)->index();
-
-            $table->string('title')->nullable()->index();
             $table->text('message')->nullable();
-            $table->json('web_images')->nullable();
+            $table->jsonb('web_images')->default('{}');
             $table->unsignedSmallInteger('language_id')->nullable()->index();
             $table->foreign('language_id')->references('id')->on('languages')->nullOnDelete();
 

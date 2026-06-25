@@ -68,7 +68,6 @@ class StoreReview extends OrgAction
                 'rating_d'        => data_get($modelData, 'rating_d'),
                 'rating_e'        => data_get($modelData, 'rating_e'),
                 'is_public'       => data_get($modelData, 'is_public', true),
-                'title'           => data_get($modelData, 'title'),
                 'message'         => data_get($modelData, 'message'),
                 'likes'           => data_get($modelData, 'likes', 0),
                 'meta'            => data_get($modelData, 'meta', []),
