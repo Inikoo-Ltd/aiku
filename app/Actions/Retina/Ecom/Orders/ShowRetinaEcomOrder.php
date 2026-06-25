@@ -68,21 +68,26 @@ class ShowRetinaEcomOrder extends RetinaAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $action = [
-              [
-                    'type'    => 'button',
-                    'style'   => '',
-                    'tooltip' => __('Review your order and let us know how we can improve our service'),
-                    'label'   => __('Review'),
-                    'icon'    => 'fal fa-stars',
-                    'route'   => [
-                        'name'       => 'retina.ecom.orders.review',
-                        'parameters' => [
-                            'order'         => $order->slug
-                        ]
-                    ]
+        $hoursAfterDispatched = (int) data_get($order->shop->settings, 'reviews.data.hours_after_dispatched', 24);
+        $reviewAvailable = $order->state === OrderStateEnum::DISPATCHED
+            && $order->dispatched_at !== null
+            && now()->diffInHours($order->dispatched_at, false) <= -$hoursAfterDispatched;
+
+        $action = $reviewAvailable ? [
+            [
+                'type'    => 'button',
+                'style'   => '',
+                'tooltip' => __('Review your order and let us know how we can improve our service'),
+                'label'   => __('Review'),
+                'icon'    => 'fal fa-stars',
+                'route'   => [
+                    'name'       => 'retina.ecom.orders.review',
+                    'parameters' => [
+                        'order' => $order->slug,
+                    ],
                 ],
-        ];
+            ],
+        ] : [];
 
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
 
@@ -145,15 +150,16 @@ class ShowRetinaEcomOrder extends RetinaAction
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
-                
+
                 // Need changes later :: To do for andi / raul
                 RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value ? RetinaOrderReviewableResource::collection(
-                        IndexReviewProductsInOrder::run(
-                            order: $order,
-                            prefix: RetinaOrderTabsEnum::REVIEWS->value
-                        )
+                    IndexReviewProductsInOrder::run(
+                        order: $order,
+                        prefix: RetinaOrderTabsEnum::REVIEWS->value
                     )
-                    : Inertia::lazy(fn() => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(
+                )
+                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection(
+                        IndexReviewProductsInOrder::run(
                             order: $order,
                             prefix: RetinaOrderTabsEnum::REVIEWS->value
                         )
@@ -168,10 +174,11 @@ class ShowRetinaEcomOrder extends RetinaAction
                     prefix: RetinaOrderTabsEnum::TRANSACTIONS->value
                 )
             )
-             ->table(IndexReviewProductsInOrder::make()->tableStructure( 
-                    prefix: RetinaOrderTabsEnum::REVIEWS->value
-            )
-        );
+             ->table(
+                 IndexReviewProductsInOrder::make()->tableStructure(
+                     prefix: RetinaOrderTabsEnum::REVIEWS->value
+                 )
+             );
     }
 
 
