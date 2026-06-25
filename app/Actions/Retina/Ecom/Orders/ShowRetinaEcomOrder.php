@@ -31,6 +31,8 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
+use App\Actions\Ordering\Order\UI\IndexReviewProductsInOrder;
+use App\Http\Resources\Ordering\RetinaOrderReviewableResource;
 
 class ShowRetinaEcomOrder extends RetinaAction
 {
@@ -143,7 +145,19 @@ class ShowRetinaEcomOrder extends RetinaAction
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
-
+                
+                // Need changes later :: To do for andi / raul
+                RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value ? RetinaOrderReviewableResource::collection(
+                        IndexReviewProductsInOrder::run(
+                            order: $order,
+                            prefix: RetinaOrderTabsEnum::REVIEWS->value
+                        )
+                    )
+                    : Inertia::lazy(fn() => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(
+                            order: $order,
+                            prefix: RetinaOrderTabsEnum::REVIEWS->value
+                        )
+                    )),
 
             ]
         )
@@ -153,7 +167,11 @@ class ShowRetinaEcomOrder extends RetinaAction
                     tableRows: $nonProductItems,
                     prefix: RetinaOrderTabsEnum::TRANSACTIONS->value
                 )
-            );
+            )
+             ->table(IndexReviewProductsInOrder::make()->tableStructure( 
+                    prefix: RetinaOrderTabsEnum::REVIEWS->value
+            )
+        );
     }
 
 

@@ -485,7 +485,7 @@ watch(queryBuilderData, async () => {
 
         <!-- Products Grid -->
         <TableWrapper :result="compResourceMeta?.total === 0" class="mt-2">
-            <div v-if="compResourceData.length > 0" class="auto-rows-fr gap-4 p-4" :class="gridClass">
+            <div v-if="compResourceData.length > 0" class="gap-4 p-4" :class="gridClass">
                 <!-- Product Cards -->
                 <div v-for="(item, index) in compResourceData" :key="`product-${index}`" class="h-full min-h-0">
                     <slot name="card" :item="item">

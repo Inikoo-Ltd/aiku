@@ -17,6 +17,7 @@ enum RetinaOrderTabsEnum: string
     use HasTabs;
 
     case TRANSACTIONS = 'transactions';
+    case REVIEWS = 'reviews';
 
     public function blueprint(): array
     {
@@ -24,6 +25,13 @@ enum RetinaOrderTabsEnum: string
             RetinaOrderTabsEnum::TRANSACTIONS => [
                 'title' => __('Transactions'),
                 'icon'  => 'fal fa-bars',
+            ],
+
+             RetinaOrderTabsEnum::REVIEWS => [
+                'title' => __('Reviews'),
+                'icon'  => 'fal fa-stars',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
         };
     }
