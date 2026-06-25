@@ -17,6 +17,8 @@ use App\Models\Discounts\Offer;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Reviews\ProductCategoryReviewStat;
+use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -253,6 +255,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->hasOne(ProductCategoryStats::class);
     }
 
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ProductCategoryReviewStat::class);
+    }
+
     public function timeSeries(): HasMany
     {
         return $this->hasMany(ProductCategoryTimeSeries::class);
@@ -358,6 +365,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
     public function webpages(): MorphMany
     {
         return $this->morphMany(Webpage::class, 'model');
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'product_category_id');
     }
 
     public function masterProductCategory(): BelongsTo

@@ -84,6 +84,8 @@ import EmergencyContact from '@/Components/Forms/Fields/EmergencyContact.vue'
 import WebsiteReview from '@/Components/Forms/Fields/WebsiteReview.vue'
 import InputTranslationWithOptionLanguages from '@/Components/Forms/Fields/InputTranslationWithOptionLanguages.vue'
 import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQrExpiry.vue'
+import ReviewRatingLabels from '@/Components/Forms/Fields/ReviewRatingLabels.vue'
+import ReviewPublishing from '@/Components/Forms/Fields/ReviewPublishing.vue'
 import InputFaqMaster from '@/Components/Forms/Fields/InputFaqMaster.vue'
 import InputFaqShop from '@/Components/Forms/Fields/InputFaqShop.vue'
 import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
@@ -169,6 +171,8 @@ export const componentsList: { [key: string]: Component } = {
     'free_gift': FreeGift,
     'emergency_contact' : EmergencyContact,
     'website_reviews' : WebsiteReview,
+    'review_rating_labels': ReviewRatingLabels,
+    'review_publishing': ReviewPublishing,
     'input_translation_use_option' : InputTranslationWithOptionLanguages,
     'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
     'select_create': SelectCreate,

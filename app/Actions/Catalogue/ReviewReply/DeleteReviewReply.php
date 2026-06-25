@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Actions\Catalogue\ReviewReply;
+
+use App\Models\Reviews\Review;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class DeleteReviewReply
+{
+    use AsAction;
+
+    public function handle(Review $review): Review
+    {
+        $review->update([
+            'replied'       => false,
+            'reply_message' => null,
+            'reply_at'      => null,
+            'reply_by'      => null,
+        ]);
+
+        return $review->refresh();
+    }
+
+    public function asController(Review $review, ActionRequest $request): JsonResponse|RedirectResponse
+    {
+        $this->handle($review);
+
+        if (!$request->expectsJson()) {
+            return redirect()->back();
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => __('Review reply deleted successfully.'),
+        ]);
+    }
+}

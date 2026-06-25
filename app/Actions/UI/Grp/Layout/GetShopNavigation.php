@@ -185,6 +185,18 @@ class GetShopNavigation
             }
         }
 
+        if (app()->isLocal()) {
+            $navigation["reviews"] = [
+                "root" => "grp.org.shops.show.reviews.",
+                "icon" => ["fal", "fa-star"],
+                "label" => __("Reviews"),
+                "route" => [
+                    "name" => "grp.org.shops.show.reviews.dashboard",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+            ];
+        }
+
         if ($user->hasPermissionTo("discounts.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL) {
             $navigation["discounts"] = [
                 "root"    => "grp.org.shops.show.discounts.",

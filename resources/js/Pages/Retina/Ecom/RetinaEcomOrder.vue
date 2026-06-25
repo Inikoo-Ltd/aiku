@@ -23,7 +23,7 @@ import EcomTableOrderTransactions from "@/Components/Retina/Ecom/EcomTableOrderT
 import { AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt, faEllipsisH } from '@fas'
+import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt } from '@fas'
 import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
 import { Currency } from '@/types/LayoutRules'
 import { faSpinnerThird } from '@far'
@@ -89,7 +89,6 @@ const props = defineProps<{
             shipping_notes?: string
         }
     }
-
     transactions: {} // TransactionsResource
     invoices?: {}
     delivery_notes: {
@@ -107,10 +106,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: EcomTableOrderTransactions,
-        // delivery_notes: TableDeliveryNotes,
-        // attachments: TableAttachments,
-        // invoices: TableInvoices,
-		// products: TableProductList
     }
 
     return components[currentTab.value]

@@ -14,6 +14,10 @@ use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
+use App\Models\Reviews\ReviewRatingLabel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -704,12 +708,45 @@ class EditShop extends OrgAction
                     'fields' => [
                         'reviews' => [
                             'type'  => 'website_reviews',
-                            'label' => __('review'),
+                            'label' => __('Review'),
                             'value' => [
                                 'provider' => $shop->settings['reviews']['provider'] ?? null,
                                 'data' =>  $shop->settings['reviews']['data'] ?? null,
                                 'enabled' => $shop->settings['reviews']['enabled'] ?? true,
                             ],
+                        ],
+                        'review_rating_labels' => [
+                            'type'  => 'review_rating_labels',
+                            'label' => __('Review rating labels'),
+                            'value' => $this->loadReviewRatingLabels($shop),
+                        ],
+                        'review_publishing' => [
+                            'type'        => 'review_publishing',
+                            'label'       => __('Visibility & publishing'),
+                            'information' => __('Choose which visibility modes are available and when public reviews are published.'),
+                            'options'     => ReviewAutoPublishingEnum::selectOptions(),
+                            'value'       => [
+                                'visibility' => [
+                                    'private' => Arr::get($shop->settings, 'reviews.visibility.private', true),
+                                    'public'  => Arr::get($shop->settings, 'reviews.visibility.public', true),
+                                ],
+                                'auto_publishing' => [
+                                    'mode'        => Arr::get($shop->settings, 'reviews.auto_publishing.mode', ReviewAutoPublishingEnum::IMMEDIATELY->value),
+                                    'delay_hours' => Arr::get($shop->settings, 'reviews.auto_publishing.delay_hours', 24),
+                                ],
+                            ],
+                        ],
+                        'review_allow_reactions' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Allow review reactions'),
+                            'information' => __('Allow customers to like or dislike reviews left by other customers.'),
+                            'value'       => Arr::get($shop->settings, 'reviews.allow_reactions', true),
+                        ],
+                        'review_allow_reply_reactions' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Allow reply reactions'),
+                            'information' => __('Allow customers to like or dislike replies to reviews.'),
+                            'value'       => Arr::get($shop->settings, 'reviews.allow_reply_reactions', true),
                         ],
                     ],
                 ]
@@ -774,6 +811,31 @@ class EditShop extends OrgAction
 
             ]
         );
+    }
+
+    private function loadReviewRatingLabels(Shop $shop): array
+    {
+        $stored = ReviewRatingLabel::query()
+            ->where('model_type', 'shop')
+            ->where('model_id', $shop->id)
+            ->get()
+            ->groupBy(fn ($item) => $item->review_context instanceof ReviewContextEnum
+                ? $item->review_context->value
+                : (string) $item->review_context)
+            ->map(fn ($items) => $items->mapWithKeys(fn ($item) => [
+                $item->dimension instanceof ReviewRatingDimensionEnum
+                    ? $item->dimension->value
+                    : (string) $item->dimension => $item->label,
+            ])->all())
+            ->all();
+
+        $emptyDimensions = array_fill_keys(ReviewRatingDimensionEnum::values(), '');
+
+        return collect(ReviewContextEnum::values())
+            ->mapWithKeys(fn (string $context) => [
+                $context => [...$emptyDimensions, ...($stored[$context] ?? [])],
+            ])
+            ->all();
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

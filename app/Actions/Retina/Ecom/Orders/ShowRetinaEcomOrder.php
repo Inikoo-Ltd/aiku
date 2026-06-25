@@ -72,6 +72,7 @@ class ShowRetinaEcomOrder extends RetinaAction
 
 
 
+
         return Inertia::render(
             'Ecom/RetinaEcomOrder',
             [
@@ -140,6 +141,7 @@ class ShowRetinaEcomOrder extends RetinaAction
                 )
             );
     }
+
 
     public function jsonResponse(Order $order): OrderResource
     {

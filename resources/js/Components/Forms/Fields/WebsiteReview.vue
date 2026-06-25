@@ -3,11 +3,13 @@ import { trans } from 'laravel-vue-i18n'
 import { ref, watch, computed } from 'vue'
 import { isNull, get } from 'lodash-es'
 import { faTimes, faCheck } from '@fas'
+import { faInfoCircle } from '@fal'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import InputSwitch from 'primevue/inputswitch'
 
-library.add(faTimes, faCheck)
+library.add(faTimes, faCheck, faInfoCircle)
 
 const props = defineProps<{
     form: any
@@ -28,6 +30,7 @@ const providerSchemas: Record<string, Array<{ key: string; label: string; type: 
         { key: "url", label: trans("Review URL"), type: "text" },
         { key: "email", label: trans("Email"), type: "text" },
     ],
+    "aiku": [],
 }
 
 const getNestedValue = (obj: any, keys: string[]) => {
@@ -85,19 +88,16 @@ watch(provider, (newProvider) => {
     updateFormValue(newValue)
 })
 
-
-watch(data, (newData) => {
-    updateFormValue({
-        provider: provider.value,
-        data: newData
-    })
-}, { deep: true })
-
 const updateDataField = (key: string, value: any) => {
     data.value = {
         ...data.value,
         [key]: value
     }
+
+    updateFormValue({
+        provider: provider.value,
+        data: data.value,
+    })
 }
 
 const enabled = ref(initialValue?.enabled ?? false)
@@ -110,9 +110,18 @@ watch(enabled, (val) => {
     })
 })
 
+const approvalRequired = computed({
+    get: () => data.value?.approval_required ?? false,
+    set: (val: boolean) => updateDataField('approval_required', val),
+})
+
 const currentSchema = computed(() => {
     return providerSchemas[provider.value] || []
 })
+
+const fieldNameString = computed(() =>
+    Array.isArray(props.fieldName) ? props.fieldName.join('.') : props.fieldName
+)
 </script>
 
 <template>
@@ -123,30 +132,29 @@ const currentSchema = computed(() => {
             <InputSwitch v-model="enabled" />
         </div>
 
-        <!-- PROVIDER SELECT -->
-        <div  class="flex flex-col gap-1" :class="{ 'opacity-50 pointer-events-none': !enabled }">
-            <label class="text-sm">{{ trans('Provider') }}</label>
-            <select v-model="provider" class="border rounded px-3 py-2">
-                <option disabled value="">{{ trans('Select Provider') }}</option>
-                <option value="reviews.io">reviews.io</option>
-                <option value="trust_pilot">trust_pilot</option>
-            </select>
-        </div>
 
-        <!-- DYNAMIC FIELDS -->
-        <div v-if="provider" class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
-            <div v-for="field in currentSchema" :key="field.key" class="flex flex-col gap-1">
-                <label class="text-xs">
-                    {{ field.label }}
+        <!-- AIKU INTERNAL PROVIDER SETTINGS -->
+        <div class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
+            <div class="flex flex-col gap-1">
+                <label class="flex items-center gap-1 text-sm">
+                    {{ trans('Require Approval Before Publishing') }}
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('When enabled, customer reviews must be approved by an admin before they are published.')" fixed-width aria-hidden="true" />
                 </label>
-
-                <PureInput :type="field.type" :modelValue="data[field.key] || ''"
-                    @update:modelValue="updateDataField(field.key, $event)" />
+                <InputSwitch v-model="approvalRequired" />
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="flex items-center gap-1 text-sm">
+                    {{ trans('Hours After Dispatch Before Review Is Available') }}
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('Number of hours after an order is dispatched before the review menu appears to the customer.')" fixed-width aria-hidden="true" />
+                </label>
+                <PureInput type="number" :modelValue="data['hours_after_dispatched'] ?? 24"
+                    @update:modelValue="updateDataField('hours_after_dispatched', Number($event))" />
             </div>
         </div>
 
+
     </div>
-    <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
-        {{ form.errors[fieldName] }}
+    <p v-if="get(form, ['errors', fieldNameString])" class="mt-2 text-sm text-red-600" :id="`${fieldNameString}-error`">
+        {{ form.errors[fieldNameString] }}
     </p>
 </template>

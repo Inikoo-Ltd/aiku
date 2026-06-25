@@ -16,21 +16,15 @@ enum RetinaOrderTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case TRANSACTIONS                       = 'transactions';
-
-
-
+    case TRANSACTIONS = 'transactions';
 
     public function blueprint(): array
     {
         return match ($this) {
-
             RetinaOrderTabsEnum::TRANSACTIONS => [
                 'title' => __('Transactions'),
                 'icon'  => 'fal fa-bars',
             ],
-
-
         };
     }
 }

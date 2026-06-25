@@ -58,7 +58,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowDeliveryNote extends OrgAction
 {
-    use AsAction;
     use WithInertia;
     use GetPlatformLogo;
 
