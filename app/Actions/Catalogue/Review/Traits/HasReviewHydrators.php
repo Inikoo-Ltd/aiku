@@ -23,16 +23,16 @@ trait HasReviewHydrators
     {
         GroupHydrateReviewStats::dispatch($review->group_id)->delay($this->hydratorsDelay);
 
-        if ($review->type == ReviewScopeEnum::SHOP) {
+        if ($review->scope == ReviewScopeEnum::SHOP) {
             ShopHydrateReviewStats::dispatch($review->shop_id)->delay($this->hydratorsDelay);
         }
 
-        if ($review->type == ReviewScopeEnum::FAMILY) {
+        if ($review->scope == ReviewScopeEnum::FAMILY) {
             ProductCategoryHydrateReviewStats::dispatch($review->product_category_id)->delay($this->hydratorsDelay);
             MasterProductCategoryHydrateReviewStats::dispatch($review->master_product_category_id)->delay($this->hydratorsDelay);
         }
 
-        if ($review->type == ReviewScopeEnum::PRODUCT) {
+        if ($review->scope == ReviewScopeEnum::PRODUCT) {
             ProductHydrateReviewStats::dispatch($review->product_id)->delay($this->hydratorsDelay);
             MasterAssetHydrateReviewStats::dispatch($review->master_product_id)->delay($this->hydratorsDelay);
         }

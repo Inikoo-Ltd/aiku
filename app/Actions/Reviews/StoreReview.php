@@ -30,6 +30,8 @@ class StoreReview
     use HasReviewCommonLogic;
     use HasReviewHydrators;
 
+    protected int $hydratorsDelay = 0;
+
     public function handle(Product|ProductCategory|Order|Shop $reviewable, array $modelData): Review
     {
         $review = DB::transaction(function () use ($reviewable, $modelData) {
@@ -180,7 +182,7 @@ class StoreReview
     public function rules(): array
     {
         return array_merge($this->commonRules(), [
-            'reviewable_type' => ['required', Rule::in(['Order', 'Product', 'ProductCategory', 'Shop'])],
+            'reviewable_type' => ['required', Rule::in(['order', 'product', 'family', 'shop'])],
             'reviewable_id'   => ['required', 'integer', 'min:1'],
             'rating'          => ['required', 'numeric', 'min:1', 'max:5'],
             'order_id'        => ['nullable', 'integer', 'exists:orders,id'],

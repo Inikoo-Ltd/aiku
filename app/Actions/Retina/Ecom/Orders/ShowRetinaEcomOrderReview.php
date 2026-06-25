@@ -26,6 +26,7 @@ use App\Http\Resources\Ordering\RetinaOrderReviewableResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use App\Models\Reviews\Review;
 use App\Models\Reviews\ReviewRatingLabel;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -109,8 +110,8 @@ class ShowRetinaEcomOrderReview extends RetinaAction
 
 
                 RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value => $this->tab == RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value ?
-                    fn () => $this->getOverallReview()
-                    : Inertia::lazy(fn () => $this->getOverallReview()),
+                    fn () => $this->getOverallReview($order)
+                    : Inertia::lazy(fn () => $this->getOverallReview($order)),
 
 
                 RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value
@@ -154,37 +155,36 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             ->table(IndexReviewProductsInOrder::make()->tableStructure(prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value));
     }
 
-    public function getOverallReview(): array
+    public function getOverallReview(Order $order): array
     {
-        $orderId        = $this->order->id;
-        $reviewableId   = (int) ($this->reviewable_id ?? 0);
-        $reviewableType = ReviewScopeEnum::SHOP->value;
+        $existingReview = Review::query()
+            ->where('order_id', $order->id)
+            ->where('scope', ReviewScopeEnum::SHOP->value)
+            ->first();
+
         $reviewMediaData = is_string($this->review_media_data)
             ? json_decode($this->review_media_data, true)
             : ($this->review_media_data ?? []);
         $reviewImages = $reviewMediaData
             ? Media::hydrate($reviewMediaData)->map(fn ($media) => ImageResource::make($media)->getArray())->values()->all()
             : [];
-        $ratingLabels = [
-            ReviewContextEnum::SHOP->value   => $this->ratingLabelsForShop($this->order->shop_id, ReviewContextEnum::SHOP),
-        ];
 
         return [
-                'review_id'       => $this->review_id ? (int) $this->review_id : null,
-                'status'          => $this->review_status,
-                'rating'          => $this->review_rating !== null ? (float) $this->review_rating : null,
-                'rating_a'        => $this->review_rating_a !== null ? (int) $this->review_rating_a : null,
-                'rating_b'        => $this->review_rating_b !== null ? (int) $this->review_rating_b : null,
-                'rating_c'        => $this->review_rating_c !== null ? (int) $this->review_rating_c : null,
-                'rating_d'        => $this->review_rating_d !== null ? (int) $this->review_rating_d : null,
-                'rating_e'        => $this->review_rating_e !== null ? (int) $this->review_rating_e : null,
-                'message'         => $this->review_message,
-                'is_public'       => $this->review_is_public !== null ? (bool) $this->review_is_public : true,
-                'review_images'   => $reviewImages,
-                'reviewable_type' => $reviewableType,
-                'reviewable_id'   => $reviewableId,
-                'order_id'        => $orderId,
-                'rating_labels'   => $ratingLabels[ReviewContextEnum::SHOP->value],
+            'review_id'       => $existingReview?->id,
+            'status'          => $existingReview?->review_status?->value,
+            'rating'          => $existingReview?->rating_main !== null ? (float) $existingReview->rating_main : null,
+            'rating_a'        => $existingReview?->rating_a !== null ? (int) $existingReview->rating_a : null,
+            'rating_b'        => $existingReview?->rating_b !== null ? (int) $existingReview->rating_b : null,
+            'rating_c'        => $existingReview?->rating_c !== null ? (int) $existingReview->rating_c : null,
+            'rating_d'        => $existingReview?->rating_d !== null ? (int) $existingReview->rating_d : null,
+            'rating_e'        => $existingReview?->rating_e !== null ? (int) $existingReview->rating_e : null,
+            'message'         => $existingReview?->message,
+            'is_public'       => $existingReview ? (bool) $existingReview->is_public : true,
+            'review_images'   => $reviewImages,
+            'reviewable_type' => ReviewScopeEnum::SHOP->value,
+            'reviewable_id'   => $order->shop_id,
+            'order_id'        => $order->id,
+            'rating_labels'   => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::SHOP),
         ];
     }
 
