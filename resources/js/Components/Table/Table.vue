@@ -179,7 +179,7 @@ const props = defineProps(
         },
         // Opt-in: skip re-rendering rows whose data is unchanged (via v-memo). Only safe when the
         // row's rendered state lives entirely in `item` (no external row state like checkbox selection).
-        memoizeRows : {
+        memoizeRows : {   // Good for big and frequent update the rows (example: Picking Session, Delivery Note picking)
             type: Boolean,
             default: false,
             required: false,
