@@ -296,19 +296,17 @@ watch(
 
 					<Textarea
 						v-model="form.message"
-						rows="4"
+						rows="6"
 						:autoResize="true"
 						:placeholder="trans('Tell people what you liked or disliked...')"
 						class="w-full rounded-xl" />
 				</div>
 
 				<div class="space-y-2 rounded-2xl border border-gray-200 bg-white p-4">
-					<label class="text-sm font-medium text-gray-800">
-						{{ trans("Your Image") }}
-					</label>
 
-					<p class="text-sm text-gray-500">
-						{{
+
+                    <p class="text-xs text-gray-500">
+                    {{
 							trans(
 								"Upload up to 3 images, total max 20 MB. Accepted formats: JPG, PNG, GIF."
 							)
