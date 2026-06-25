@@ -21,7 +21,7 @@ class StoreRetinaReview extends RetinaAction
             (int) $modelData['reviewable_id']
         ) ?? $order;
 
-        return StoreReview::run($reviewable, [
+        return StoreReview::make()->action($reviewable, [
             ...$modelData,
             'customer_id' => $this->customer?->id,
             'order_id'    => $order->id,

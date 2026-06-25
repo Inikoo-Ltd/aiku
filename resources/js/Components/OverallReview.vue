@@ -34,7 +34,7 @@ const props = defineProps<{
     tab?: string
 }>()
 
-const locale = inject("locale", retinaLayoutStructure)
+
 const loadingSave = ref(false)
 
 const reviewData = ref<any>({ ...props.data })
@@ -109,8 +109,9 @@ const saveReview = async () => {
 </script>
 
 <template>
-    <div>
-        <FormReview v-model="reviewData" :type="data.context || ''" :schema="data.rating_labels" />
+    <div class="border rounded-lg p-4">
+        <h2 class="text-lg font-bold mb-4 ml-2">{{trans('Overall review of your experience')}}</h2>
+        <FormReview v-model="reviewData" :type="data.context || ''" :schema="data.rating_labels"    />
         <div class="border-t mt-3 py-3 gap-4 border-gray-200 flex justify-end">
             <Button type="save" @click="saveReview"></Button>
         </div>

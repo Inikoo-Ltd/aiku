@@ -65,9 +65,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-        $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $action = [];
 
         $this->tab = $this->tab ?: RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value;
 
@@ -90,7 +88,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                         'icon'  => 'fal fa-star',
                         'title' => __('Review Order')
                     ],
-                    'actions' => $action,
+                    'actions' => [],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
