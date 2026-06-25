@@ -50,7 +50,7 @@ const saveReview = async () => {
     const routeParams = isUpdate ? { review: review.review_id } : { order: review.order_id }
 
     const payload: Record<string, any> = {
-        reviewable_type: review.reviewable_type,
+        scope: review.scope,
         reviewable_id: review.reviewable_id,
         order_id: review.order_id,
         rating: review.rating,

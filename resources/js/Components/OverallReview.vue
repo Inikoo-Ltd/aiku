@@ -20,7 +20,7 @@ const props = defineProps<{
         review_id?: number | null
         order_id?: number
         reviewable_id?: number
-        reviewable_type?: string
+        scope?: string
         rating?: number | null
         rating_a?: number | null
         rating_b?: number | null
@@ -50,8 +50,7 @@ const saveReview = async () => {
         ? { review: review.review_id }
         : { order: review.order_id }
     const payload: Record<string, any> = {
-        reviewable_type: review.reviewable_type,
-        reviewable_id: review.reviewable_id,
+        scope: review.scope,
         order_id: review.order_id,
         rating: review.rating,
         rating_a: review.rating_a,
