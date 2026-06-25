@@ -20,7 +20,8 @@ class ProcessReviewReminderPerOutbox
     public function handle(Outbox $outbox): void
     {
         $currentDateTime = Carbon::now()->utc();
-        $compareDate = $currentDateTime->copy()->subDays($outbox->days_after)->endOfDay();
+        $differenceInDays = $outbox->days_after ?? 10;// Default to 10 days if not set
+        $compareDate = $currentDateTime->copy()->subDays($differenceInDays)->endOfDay();
         $lastSentAt = $outbox->last_sent_at ?? null;
 
         $baseQuery = DB::table('customers');
