@@ -221,7 +221,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
     {
         $reviewStats = Review::query()
             ->where('order_id', $order->id)
-            ->selectRaw('scope, COUNT(*) as count, AVG(rating_main) as avg_rating')
+            ->selectRaw('scope, COUNT(*) as count, AVG(rating_main) as avg_rating, SUM(likes) as total_likes, SUM(dislikes) as total_dislikes')
             ->groupBy('scope')
             ->get()
             ->keyBy('scope');
@@ -250,6 +250,8 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             'family_review'        => (int) ($reviewStats->get(ReviewScopeEnum::FAMILY->value)?->count ?? 0),
             'total_family_review'  => $totalFamilies,
             'average_review'       => $overallAvg ? round((float) $overallAvg, 1) : 0.0,
+            'total_likes'          => (int) $reviewStats->sum('total_likes'),
+            'total_dislikes'       => (int) $reviewStats->sum('total_dislikes'),
         ];
     }
 

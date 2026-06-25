@@ -24,15 +24,18 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
+use App\Models\Reviews\Review;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
-use App\Actions\Ordering\Order\UI\IndexReviewProductsInOrder;
-use App\Http\Resources\Ordering\RetinaOrderReviewableResource;
+use App\Actions\Ordering\Order\UI\IndexAllReviewsInOrder;
+use App\Http\Resources\Ordering\RetinaOrderReviewListResource;
 
 class ShowRetinaEcomOrder extends RetinaAction
 {
@@ -151,19 +154,9 @@ class ShowRetinaEcomOrder extends RetinaAction
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
-                // Need changes later :: To do for andi / raul
-                RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value ? RetinaOrderReviewableResource::collection(
-                    IndexReviewProductsInOrder::run(
-                        order: $order,
-                        prefix: RetinaOrderTabsEnum::REVIEWS->value
-                    )
-                )
-                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection(
-                        IndexReviewProductsInOrder::run(
-                            order: $order,
-                            prefix: RetinaOrderTabsEnum::REVIEWS->value
-                        )
-                    )),
+                RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value
+                    ? fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order)])
+                    : Inertia::lazy(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order)])),
 
             ]
         )
@@ -174,17 +167,55 @@ class ShowRetinaEcomOrder extends RetinaAction
                     prefix: RetinaOrderTabsEnum::TRANSACTIONS->value
                 )
             )
-             ->table(
-                 IndexReviewProductsInOrder::make()->tableStructure(
-                     prefix: RetinaOrderTabsEnum::REVIEWS->value
-                 )
-             );
+            ->table(
+                IndexAllReviewsInOrder::make()->tableStructure(
+                    prefix: RetinaOrderTabsEnum::REVIEWS->value
+                )
+            );
     }
 
 
     public function jsonResponse(Order $order): OrderResource
     {
         return new OrderResource($order);
+    }
+
+    private function getReviewSummary(Order $order): array
+    {
+        $reviewStats = Review::query()
+            ->where('order_id', $order->id)
+            ->selectRaw('scope, COUNT(*) as count, AVG(rating_main) as avg_rating, SUM(likes) as total_likes, SUM(dislikes) as total_dislikes')
+            ->groupBy('scope')
+            ->get()
+            ->keyBy('scope');
+
+        $totalProducts = Transaction::query()
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->distinct('model_id')
+            ->count('model_id');
+
+        $totalFamilies = Transaction::query()
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->whereNotNull('family_id')
+            ->distinct('family_id')
+            ->count('family_id');
+
+        $overallAvg = Review::query()
+            ->where('order_id', $order->id)
+            ->avg('rating_main');
+
+        return [
+            'overall_review'       => (int) ($reviewStats->get(ReviewScopeEnum::ORDER->value)?->count ?? 0),
+            'product_review'       => (int) ($reviewStats->get(ReviewScopeEnum::PRODUCT->value)?->count ?? 0),
+            'total_product_review' => $totalProducts,
+            'family_review'        => (int) ($reviewStats->get(ReviewScopeEnum::FAMILY->value)?->count ?? 0),
+            'total_family_review'  => $totalFamilies,
+            'average_review'       => $overallAvg ? round((float) $overallAvg, 1) : 0.0,
+            'total_likes'          => (int) $reviewStats->sum('total_likes'),
+            'total_dislikes'       => (int) $reviewStats->sum('total_dislikes'),
+        ];
     }
 
     public function getBreadcrumbs(Order $order): array
