@@ -106,14 +106,16 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                     'current'    => $this->tab,
                     'navigation' => RetinaOrderReviewTabsEnum::navigation()
                 ],
-
-                'routes'  => [
-
-
-                ],
                 'summary' => $this->getOrderBoxStats($order),
-
-
+                'review_summary'  => [
+                    'family_review' => 3,
+                    'total_family_review' => 5,
+                    'total_product_review' => 4,
+                    'total_product_review' => 5,
+                    'product_review' => 1,
+                    'overall_review' => 1,
+                    'average_review' => 4
+                ],
                 'currency'          => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'              => OrderResource::make($order),
 

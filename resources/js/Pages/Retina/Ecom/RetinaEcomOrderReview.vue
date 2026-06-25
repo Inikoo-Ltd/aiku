@@ -53,18 +53,6 @@ const props = defineProps<{
     }
     address_management: AddressManagement
     currency: Currency
-    data?: {
-        data: {
-            slug: string
-            is_fully_paid: boolean
-            unpaid_amount: number
-            route_to_pay_unpaid?: routeType
-            state: string
-            state_label: string
-            state_icon: string
-
-        }
-    }
     overall_review: {}
     family_reviews?: {}
     product_reviews?: {}
@@ -72,6 +60,13 @@ const props = defineProps<{
     invoices?: {}
     delivery_notes: {
         data: Array<any>
+    }
+    review_summary?: {
+        family_review: number
+        total_family_review: number
+        total_product_review: number
+        overall_review: number
+        average_review: number
     }
     attachments?: {}
 }>()
@@ -101,10 +96,15 @@ const component = computed(() => {
     <EcomReviewSummary
         :summary
         :order="data?.data"
+        :review_summary
     />
 
-    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
-          @update:tab="handleTabUpdate" />
+    <Tabs 
+        v-if="currentTab != 'products'" 
+        :current="currentTab" 
+        :navigation="tabs?.navigation"
+        @update:tab="handleTabUpdate" 
+    />
 
     <div class="mb-12 mx-4 mt-4 overflow-x-auto">
         <component

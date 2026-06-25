@@ -88,7 +88,7 @@ const saveReview = async () => {
             headers: { "Content-Type": "multipart/form-data" },
         })
 
-        router.reload({ only: ["pageHead", props.tab as string] })
+        router.reload()
         notify({
             title: trans("Success"),
             text: trans("Review submitted successfully"),
@@ -111,8 +111,8 @@ const saveReview = async () => {
 <template>
     <div class="border rounded-lg p-4">
         <h2 class="text-lg font-bold mb-4 ml-2">{{trans('Overall review of your experience')}}</h2>
-        <FormReview v-model="reviewData" :type="data.context || ''" :schema="data.rating_labels"    />
-        <div class="border-t mt-3 py-3 gap-4 border-gray-200 flex justify-end">
+        <FormReview v-model="reviewData" :type="data.context || ''" :schema="data.rating_labels"  :showAverageReview="false"  :disabled="reviewData?.review_id ? true : false"/>
+        <div  v-if="!reviewData?.review_id " class="border-t mt-3 py-3 gap-4 border-gray-200 flex justify-end">
             <Button type="save" @click="saveReview"></Button>
         </div>
     </div>
