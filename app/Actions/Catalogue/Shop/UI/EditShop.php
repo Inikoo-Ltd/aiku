@@ -14,7 +14,6 @@ use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Models\Reviews\ReviewRatingLabel;
@@ -702,6 +701,7 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
+
                 [
                     'label'  => __('Reviews'),
                     'icon'   => 'fal fa-star',
@@ -724,14 +724,13 @@ class EditShop extends OrgAction
                             'type'        => 'review_publishing',
                             'label'       => __('Visibility & publishing'),
                             'information' => __('Choose which visibility modes are available and when public reviews are published.'),
-                            'options'     => ReviewAutoPublishingEnum::selectOptions(),
                             'value'       => [
                                 'visibility' => [
-                                    'private' => Arr::get($shop->settings, 'reviews.visibility.private', true),
+                                    'private' => Arr::get($shop->settings, 'reviews.visibility.private', false),
                                     'public'  => Arr::get($shop->settings, 'reviews.visibility.public', true),
                                 ],
                                 'auto_publishing' => [
-                                    'mode'        => Arr::get($shop->settings, 'reviews.auto_publishing.mode', ReviewAutoPublishingEnum::IMMEDIATELY->value),
+                                    'delay'       => Arr::get($shop->settings, 'reviews.auto_publishing.delay', true),
                                     'delay_hours' => Arr::get($shop->settings, 'reviews.auto_publishing.delay_hours', 24),
                                 ],
                             ],

@@ -349,7 +349,11 @@ const saveProductReview = async () => {
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
 
 
-     <Dialog v-model:visible="isOpenDialog" modal header="Product Review" :style="{ width: '550px' }" :content-style="{ overflow: 'auto' }">
+     <Dialog v-model:visible="isOpenDialog" modal header="Product Review" :style="{ width: '60rem' }" :breakpoints="{
+            '1200px': '70vw',
+            '992px': '85vw',
+            '576px': '95vw'
+        }" :content-style="{ overflow: 'auto' }">
         <FormReview v-model="reviewPayload" :schema="props.rating_labels" :use_customer="true"/>
         <template #footer>
             <div class="flex justify-end gap-5">
