@@ -40,13 +40,13 @@ const openDialog = (item: any) => {
 
 const saveReview = async () => {
     const review = selectedItem.value?.review || {}
-    const isUpdate = !!review.review_id
+    const isUpdate = false
 
     const routeName = isUpdate
         ? "retina.models.review.update"
         : "retina.models.review.store"
 
-    const routeParams = isUpdate ? { review: review.review_id } : undefined
+    const routeParams = isUpdate ? { review: review.review_id } : { order: review.order_id }
 
     const payload: Record<string, any> = {
         reviewable_type: review.reviewable_type,
