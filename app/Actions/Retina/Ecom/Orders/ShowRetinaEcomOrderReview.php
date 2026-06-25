@@ -222,7 +222,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             ->avg('rating_main');
 
         return [
-            'overall_review'       => (int) ($reviewStats->get(ReviewScopeEnum::SHOP->value)?->count ?? 0),
+            'overall_review'       => (int) ($reviewStats->get(ReviewScopeEnum::ORDER->value)?->count ?? 0),
             'product_review'       => (int) ($reviewStats->get(ReviewScopeEnum::PRODUCT->value)?->count ?? 0),
             'total_product_review' => $totalProducts,
             'family_review'        => (int) ($reviewStats->get(ReviewScopeEnum::FAMILY->value)?->count ?? 0),
