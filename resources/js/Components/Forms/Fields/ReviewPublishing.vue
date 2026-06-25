@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { get } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
+import ToggleSwitch from 'primevue/toggleswitch'
 import PureInput from '@/Components/Pure/PureInput.vue'
 
 const props = defineProps<{
@@ -18,39 +19,29 @@ const autoPublishingOptions = computed<Array<{ value: string; label: string }>>(
     ]
 )
 
-const visibilityOptions = computed<Array<{ value: string; label: string }>>(() => [
-    { value: 'private', label: trans('Private') },
-    { value: 'public', label: trans('Public') },
-])
-
 const initialValue = props.form[props.fieldName] ?? {}
 
-const visibilityMode = ref<string>(initialValue?.visibility?.public ? 'public' : 'private')
+const visibilityPrivate = ref<boolean>(initialValue?.visibility?.private ?? true)
+const visibilityPublic = ref<boolean>(initialValue?.visibility?.public ?? true)
 const autoPublishingMode = ref<string>(initialValue?.auto_publishing?.mode ?? 'immediately')
 const autoPublishingDelayHours = ref<number>(initialValue?.auto_publishing?.delay_hours ?? 24)
 
 const syncForm = () => {
-    const isPublic = visibilityMode.value === 'public'
-
     props.form[props.fieldName] = {
         visibility: {
-            private: visibilityMode.value === 'private',
-            public: isPublic,
+            private: visibilityPrivate.value,
+            public: visibilityPublic.value,
         },
         auto_publishing: {
-            mode: isPublic ? autoPublishingMode.value : 'immediately',
-            delay_hours:
-                isPublic && autoPublishingMode.value === 'delay'
-                    ? Number(autoPublishingDelayHours.value) || 1
-                    : null,
+            mode: autoPublishingMode.value,
+            delay_hours: Number(autoPublishingDelayHours.value) || 1,
         },
     }
 }
 
 watch(
-    [visibilityMode, autoPublishingMode, autoPublishingDelayHours],
-    syncForm,
-    { immediate: true }
+    [visibilityPrivate, visibilityPublic, autoPublishingMode, autoPublishingDelayHours],
+    syncForm
 )
 
 const fieldNameString = computed(() => props.fieldName)
@@ -61,26 +52,21 @@ const fieldNameString = computed(() => props.fieldName)
         <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">{{ trans('Visibility') }}</label>
             <div class="flex items-center gap-6">
-                <label
-                    v-for="option in visibilityOptions"
-                    :key="option.value"
-                    class="flex items-center gap-2 cursor-pointer"
-                >
-                    <input
-                        type="radio"
-                        :value="option.value"
-                        v-model="visibilityMode"
-                        class="text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span class="text-sm">{{ option.label }}</span>
-                </label>
+                <div class="flex items-center gap-2">
+                    <ToggleSwitch v-model="visibilityPrivate" />
+                    <span class="text-sm">{{ trans('Private') }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <ToggleSwitch v-model="visibilityPublic" />
+                    <span class="text-sm">{{ trans('Public') }}</span>
+                </div>
             </div>
             <p class="text-xs text-gray-500">
-                {{ trans('Reviews are either private or public by default, not both.') }}
+                {{ trans('You can enable one or both visibility modes for reviews.') }}
             </p>
         </div>
 
-        <div v-if="visibilityMode === 'public'" class="flex flex-col gap-2">
+        <div v-if="visibilityPublic" class="flex flex-col gap-2">
             <label class="text-sm font-medium">{{ trans('Auto publishing') }}</label>
             <div class="flex flex-col gap-2">
                 <div
