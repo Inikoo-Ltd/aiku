@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\Review\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
+use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -65,7 +66,7 @@ class IndexReviews extends OrgAction
         ];
     }
 
-    public function handle(ProductCategory|Product|Shop $parent, ?string $prefix = null, ?string $scope = null): LengthAwarePaginator
+    public function handle(ProductCategory|Product|Shop $parent, ?string $prefix = null, ?string $scope = null, ?string $bucket = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -95,6 +96,15 @@ class IndexReviews extends OrgAction
         } elseif ($scope === 'product') {
             $query->where('scope', ReviewScopeEnum::PRODUCT->value);
         }
+
+        match ($bucket) {
+            'waiting'            => $query->where('reviews.review_status', ReviewStatusEnum::PENDING->value),
+            'unanswered'         => $query->where('reviews.state', ReviewStateEnum::PUBLISHED->value)->where('reviews.replied', false),
+            'published'          => $query->where('reviews.state', ReviewStateEnum::PUBLISHED->value),
+            'published_last_24h' => $query->where('reviews.state', ReviewStateEnum::PUBLISHED->value)->where('reviews.published_at', '>=', now()->subDay()),
+            'rejected'           => $query->where('reviews.review_status', ReviewStatusEnum::REJECTED->value),
+            default              => null,
+        };
 
         return $query->defaultSort('-reviews.created_at')
             ->select([

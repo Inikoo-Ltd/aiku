@@ -638,4 +638,14 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(ReviewReaction::class);
     }
+
+    public function likeReactions(): HasMany
+    {
+        return $this->hasMany(ReviewReaction::class);
+    }
+
+    public function dislikeReactions(): HasMany
+    {
+        return $this->hasMany(ReviewReaction::class);
+    }
 }

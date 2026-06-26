@@ -62,6 +62,8 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryTranslations;
 use App\Actions\Catalogue\ProductCategory\UploadImagesToProductCategory;
+use App\Actions\Catalogue\Review\ApproveReview;
+use App\Actions\Catalogue\Review\RejectReview;
 use App\Actions\Catalogue\Review\GetReviewCustomers;
 use App\Actions\Catalogue\Review\UpdateReview;
 use App\Actions\Catalogue\ReviewReply\DeleteReviewReply;
@@ -597,6 +599,8 @@ Route::get('review/customers/{productCategory:id}', GetReviewCustomers::class)->
 Route::get('review/customers/product/{product:id}', [GetReviewCustomers::class, 'asControllerProduct'])->name('review.customers.product');
 Route::get('review/customers/shop/{shop:id}', [GetReviewCustomers::class, 'asControllerShop'])->name('review.customers.shop');
 Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
+Route::patch('review/{review:id}/approve', ApproveReview::class)->name('review.approve');
+Route::patch('review/{review:id}/reject', RejectReview::class)->name('review.reject');
 Route::delete('review/{review:id}/delete', DeleteReview::class)->name('review.delete');
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {

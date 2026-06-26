@@ -209,6 +209,11 @@ class GetShopNavigation
                             "label"   => __("Backlog Review"),
                             "tooltip" => __("Backlog Review"),
                             "icon"    => ["fal", "fa-tasks-alt"],
+                            "root"    => "grp.org.shops.show.reviews.backlog",
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.reviews.backlog",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
                         ],
                         [
                             "label"   => __("Overall Review"),

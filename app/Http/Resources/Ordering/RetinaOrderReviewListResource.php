@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Enums\Catalogue\Review\ReviewReactionTypeEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Http\Resources\Catalogue\ReviewMediaResource;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -50,6 +51,9 @@ class RetinaOrderReviewListResource extends JsonResource
             ? ReviewMediaResource::collection($this->review_images)->toArray(request())
             : [];
 
+        $reviewReaction = $this->review_reaction;
+        $replyReaction = $this->reply_reaction;
+
         $scope = $this->scope instanceof ReviewScopeEnum ? $this->scope->value : (string) $this->scope;
         $name  = match ($scope) {
             'product' => $this->asset_name,
@@ -87,6 +91,8 @@ class RetinaOrderReviewListResource extends JsonResource
                     'contact_name' => $this->reply_by_name,
                 ] : null,
             ],
+            'review_reaction'      => ReviewReactionTypeEnum::getValue($reviewReaction),
+            'reply_reaction'       => ReviewReactionTypeEnum::getValue($replyReaction),
         ];
     }
 }

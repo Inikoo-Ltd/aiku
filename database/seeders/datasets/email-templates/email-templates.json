@@ -211,6 +211,17 @@
   },
   {
     "outboxes": [
+      "new_review"
+    ],
+    "name": "New review",
+    "content": "new_review.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "review"
+    ]
+  },
+  {
+    "outboxes": [
       "delivery_note_dispatched"
     ],
     "name": "Delivery note dispatched",

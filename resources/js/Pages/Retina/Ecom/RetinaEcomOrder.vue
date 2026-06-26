@@ -38,7 +38,7 @@ import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vu
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
-import EcomListReviews from "@/Components/Retina/Ecom/EcomListReviews.vue"
+import ListReviews from "@/Components/ListReviews.vue"
 
 
 library.add(faStars, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
@@ -76,6 +76,7 @@ const props = defineProps<{
     balance: string
     address_management: AddressManagement
     currency: Currency
+    review_settings : any
     data?: {
         data: {
             slug: string
@@ -107,7 +108,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: EcomTableOrderTransactions,
-        reviews : EcomListReviews
+        reviews : ListReviews
     }
 
     return components[currentTab.value]
@@ -220,7 +221,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
 
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state" :modalOpen="isModalUploadOpen"
-                   @update:tab="handleTabUpdate" />
+                   @update:tab="handleTabUpdate" :review_settings />
 
 
     <div class="flex justify-end px-6 gap-x-4">
