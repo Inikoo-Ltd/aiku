@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 26 Jun 2026 11:54:10 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Fri, 26 Jun 2026 11:52:16 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -13,16 +13,16 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->boolean('is_pastpay')->default(false)->index();
+        Schema::table('payment_account_shop', function (Blueprint $table) {
+            $table->text('invoice_footer')->nullable();
         });
     }
 
 
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn('is_pastpay');
+        Schema::table('payment_account_shop', function (Blueprint $table) {
+            $table->dropColumn('invoice_footer');
         });
     }
 };
