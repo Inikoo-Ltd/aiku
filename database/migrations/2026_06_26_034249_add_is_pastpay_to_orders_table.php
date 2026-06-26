@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 22 Jun 2026 23:25:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Fri, 26 Jun 2026 11:54:10 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -14,16 +14,15 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->unsignedInteger('discounted_shipping_offer_id')->nullable()->index();
-            $table->foreign('discounted_shipping_offer_id')->references('id')->on('offers')->nullOnDelete();
+            $table->boolean('is_pastpay')->default(false)->index();
         });
     }
+
 
     public function down(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->dropForeign(['discounted_shipping_offer_id']);
-            $table->dropColumn('discounted_shipping_offer_id');
+            $table->dropColumn('is_pastpay');
         });
     }
 };

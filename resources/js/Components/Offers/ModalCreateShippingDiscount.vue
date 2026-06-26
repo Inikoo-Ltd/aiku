@@ -201,7 +201,9 @@ const isFormInvalid = computed(() => {
                         <label class="font-medium mb-2 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-bolt"
                                              class="text-xs text-amber-400 align-middle" />
-                            {{ trans("Quick apply") }}:
+                            {{ ctrans("Quick apply duration") }}
+                            <InformationIcon :information="ctrans('Select a preset to automatically set the offer duration (start-end)')" />
+                            :
                         </label>
                         <div class="pl-4 flex flex-wrap gap-2">
                             <button v-for="days in quickApplyPresets" :key="days" type="button"
@@ -210,7 +212,7 @@ const isFormInvalid = computed(() => {
                                     :class="quickApplyDays === days
                                         ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                         : 'border-gray-200 hover:border-gray-300'">
-                                {{ trans(':count day', { count: String(days) }) }}
+                                {{ ctrans(':count day', { count: String(days) }) }}
                             </button>
                         </div>
                     </div>
@@ -221,7 +223,7 @@ const isFormInvalid = computed(() => {
                             <label class="font-medium mb-2 flex items-center gap-x-1">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
                                                  class="font-light text-xs text-red-400 align-middle" />
-                                {{ trans("Start date") }}
+                                {{ ctrans("Start date") }}
                                 <InformationIcon
                                     :information="trans('If start date is empty, will start immediately')" />
                                 :

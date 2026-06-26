@@ -605,6 +605,7 @@ const onChangeInsurance = async (val: boolean) => {
         :isInBasket="true"
         :updateRoute="routes.update_route"
         :missed_offers
+        :isShowAllOffersMeter="true"
     />
     
     <template v-if="order">

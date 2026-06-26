@@ -56,8 +56,17 @@ class StoreProductToAllegro extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
-            $getRecommendedCategory = $allegroUser->getRecommendedCategory($product->family->name);
-            $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id', '12');
+            $productSearch = [];
+            if($product->barcode) {
+                $productSearch = $allegroUser->getProductByEan($product->barcode);
+            }
+
+            if (Arr::has($productSearch, 'products')) {
+                $categoryId = $productSearch['products'][0]['category']['id'];
+            } else {
+                $getRecommendedCategory = $allegroUser->getRecommendedCategory($product->family->name);
+                $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id', '12');
+            }
 
             $getParameters = $allegroUser->getCategoryParameters($categoryId);
 

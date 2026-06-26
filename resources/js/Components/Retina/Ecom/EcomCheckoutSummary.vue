@@ -1,6 +1,6 @@
 <script setup lang="ts">
     
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { faClipboard, faDollarSign, faSortNumericDown, faWeight, faMapPin } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
@@ -53,10 +53,11 @@ const props = defineProps<{
         is_collection: boolean
     }
     balance?: string
-    address_management: AddressManagement
+    address_management?: AddressManagement
     is_unable_dispatch?: boolean
     contact_address?: Address | null
     isInBasket?: boolean
+    isShowAllOffersMeter?: boolean  // Whether to show all offers meter or only the achieved offers
     updateRoute: routeType
     missed_offers: {}
 }>()
@@ -142,7 +143,7 @@ const updateCollection = (value: boolean) => {
                                 :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
                                 @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
                                 :loading="isLoadingCollection"
-                                :disabled="!props.isInBasket"
+                                :disabled="!props.isInBasket || !props.updateRoute?.name"
                             />
                             <span class="text-sm"
                                 :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
@@ -185,7 +186,7 @@ const updateCollection = (value: boolean) => {
             <!-- Section: Offer meters (free gift, etc)-->
             <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
                 <template v-for="(offer, offerIndex) in layout?.offer_meters" :key="offerIndex">
-                    <div v-if="isInBasket || isOfferFulfilled(offer)" class="grid grid-cols-2 mb-3 gap-x-4">
+                    <div v-if="isShowAllOffersMeter || isOfferFulfilled(offer)" class="grid grid-cols-2 mb-3 gap-x-4">
                         <!-- Title: is gift -->
                         <div v-if="offer.is_gift" :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                             class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
@@ -216,7 +217,7 @@ const updateCollection = (value: boolean) => {
                         </div>
                         
                         <!-- Section: meter -->
-                        <div v-if="isInBasket" v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
+                        <div v-if="isShowAllOffersMeter" v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
                             ? ctrans(`:xcurrentx / :xtargetx  (Spend at least :xtargetx to get the offer)`, { xcurrentx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtargetx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
                             : ctrans('Offer activated')" class="w-full flex items-center">
                             <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
@@ -320,7 +321,35 @@ const updateCollection = (value: boolean) => {
                 <OrderSummary
                     :order_summary="summary.order_summary"
                     :currency_code="layout?.iris?.currency?.code"
-                />
+                >
+                    <template #cell_shipping_1="{ fieldSummary }">
+                        <dt class="col-span-3 flex flex-col">
+                            <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                <span
+                                    :class="fieldSummary.data.discounted_shipping_offer_id ? 'text-green-500' : ''"
+                                >
+                                    {{ fieldSummary.label }}
+                                </span>
+
+                                <FontAwesomeLayers v-if="fieldSummary.data.discounted_shipping_offer_id" v-tooltip="ctrans('Shipping discount')" class="ml-1 me-2 text-green-500">
+                                    <FontAwesomeIcon fixed-width icon="fal fa-truck"/>
+                                    <FontAwesomeIcon fixed-width icon="fas fa-percent" style="left: unset; right: 6px; bottom: 2px; width: 30%;"/>
+                                </FontAwesomeLayers>
+
+                                <!-- qq{{ fieldSummary.data.discounted_shipping_offer_id }}ww -->
+                                <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle'
+                                    v-tooltip="fieldSummary.information_icon"
+                                    class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width
+                                    aria-hidden='true'
+                                />
+                                
+                            </div>
+                            <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">
+                                {{ fieldSummary.information }}
+                            </span>
+                        </dt>
+                    </template>
+                </OrderSummary>
             </div>
         </div>
 
