@@ -53,10 +53,11 @@ const props = defineProps<{
         is_collection: boolean
     }
     balance?: string
-    address_management: AddressManagement
+    address_management?: AddressManagement
     is_unable_dispatch?: boolean
     contact_address?: Address | null
     isInBasket?: boolean
+    isShowAllOffersMeter?: boolean  // Whether to show all offers meter or only the achieved offers
     updateRoute: routeType
     missed_offers: {}
 }>()
@@ -142,7 +143,7 @@ const updateCollection = (value: boolean) => {
                                 :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
                                 @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
                                 :loading="isLoadingCollection"
-                                :disabled="!props.isInBasket"
+                                :disabled="!props.isInBasket || !props.updateRoute?.name"
                             />
                             <span class="text-sm"
                                 :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
@@ -185,7 +186,7 @@ const updateCollection = (value: boolean) => {
             <!-- Section: Offer meters (free gift, etc)-->
             <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
                 <template v-for="(offer, offerIndex) in layout?.offer_meters" :key="offerIndex">
-                    <div v-if="isInBasket || isOfferFulfilled(offer)" class="grid grid-cols-2 mb-3 gap-x-4">
+                    <div v-if="isShowAllOffersMeter || isOfferFulfilled(offer)" class="grid grid-cols-2 mb-3 gap-x-4">
                         <!-- Title: is gift -->
                         <div v-if="offer.is_gift" :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                             class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
@@ -216,7 +217,7 @@ const updateCollection = (value: boolean) => {
                         </div>
                         
                         <!-- Section: meter -->
-                        <div v-if="isInBasket" v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
+                        <div v-if="isShowAllOffersMeter" v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
                             ? ctrans(`:xcurrentx / :xtargetx  (Spend at least :xtargetx to get the offer)`, { xcurrentx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtargetx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
                             : ctrans('Offer activated')" class="w-full flex items-center">
                             <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
