@@ -439,7 +439,9 @@ trait WithAllegroApiServices
 
     public function getProductByEan(string $ean): array
     {
-        return $this->makeApiRequest('GET', '/sale/categories', [], $params);
+        return $this->makeApiRequest('GET', '/sale/categories', [], [
+            'mode' => $ean
+        ]);
     }
 
     public function getCategories(array $params = []): array
