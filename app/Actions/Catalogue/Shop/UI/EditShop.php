@@ -107,8 +107,6 @@ class EditShop extends OrgAction
 
         $isExternal =  $shop->type === ShopTypeEnum::EXTERNAL;
 
-        $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
-
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
@@ -683,42 +681,6 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
-                    'label'  => __('Google Ads'),
-                    'icon'   => 'fa-brands fa-google',
-                    'information' => $isGoogleAdsConnected
-                        ? __('This shop is connected to Google Ads. Set the Customer ID and User List ID below to sync customers to your Google Ads user list.')
-                        : __('Connect your Google account to authorize syncing customers, then set the Customer ID and User List ID below.'),
-                    'fields' => [
-                        'gads__connect' => [
-                            'type'   => 'action',
-                            'label'  => __('Google Account'),
-                            'information' => $isGoogleAdsConnected
-                                ? __('Connected.')
-                                : __('Not connected yet.'),
-                            'action' => [
-                                'type'  => 'button',
-                                'style' => $isGoogleAdsConnected ? 'tertiary' : 'save',
-                                'icon'  => ['fab', 'fa-google'],
-                                'label' => $isGoogleAdsConnected ? __('Reconnect Google account') : __('Connect Google account'),
-                                'route' => [
-                                    'url' => route('grp.org.shops.show.settings.google_ads.connect', [$shop->organisation, $shop]),
-                                ],
-                            ],
-                        ],
-                        'gads_customer_id' => [
-                            'type'        => 'input',
-                            'label'       => __('Customer ID'),
-                            'placeholder' => '123-456-7890',
-                            'value'       => Arr::get($shop->settings, 'google_ads.customer_id', ''),
-                        ],
-                        'gads_user_list_id' => [
-                            'type'        => 'input',
-                            'label'       => __('User List ID'),
-                            'value'       => Arr::get($shop->settings, 'google_ads.user_list_id', ''),
-                        ],
-                    ],
-                ],
-                [
                     'label'  => __('HELP Portal'),
                     'icon'   => 'fal fa-life-ring',
                     'fields' => $helpPortalFields,
@@ -758,32 +720,58 @@ class EditShop extends OrgAction
                             'label' => __('Review rating labels'),
                             'value' => $this->loadReviewRatingLabels($shop),
                         ],
-                        'review_publishing' => [
-                            'type'        => 'review_publishing',
-                            'label'       => __('Visibility & publishing'),
-                            'information' => __('Choose which visibility modes are available and when public reviews are published.'),
+                        'review_visibility' => [
+                            'type'        => 'review_visibility',
+                            'label'       => __('Visibility'),
+                            'information' => __('Visibility modes available to customers (one or both).'),
                             'value'       => [
                                 'visibility' => [
                                     'private' => Arr::get($shop->settings, 'reviews.visibility.private', false),
                                     'public'  => Arr::get($shop->settings, 'reviews.visibility.public', true),
                                 ],
+                            ],
+                        ],
+                        'review_publishing' => [
+                            'type'        => 'review_publishing',
+                            'label'       => __('Publishing'),
+                            'information' => __('When public reviews are published after submission.'),
+                            'value'       => [
                                 'auto_publishing' => [
                                     'delay'       => Arr::get($shop->settings, 'reviews.auto_publishing.delay', true),
                                     'delay_hours' => Arr::get($shop->settings, 'reviews.auto_publishing.delay_hours', 24),
                                 ],
                             ],
                         ],
+                        'review_approval_required' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Require approval before publishing'),
+                            'information' => __('When enabled, customer reviews must be approved by an admin before they are published.'),
+                            'value'       => Arr::get($shop->settings, 'reviews.data.approval_required', false),
+                        ],
+                        'review_hours_after_dispatched' => [
+                            'type'        => 'input_number',
+                            'label'       => __('Hours after dispatch before review is available'),
+                            'information' => __('Number of hours after an order is dispatched before the review menu appears to the customer.'),
+                            'value'       => Arr::get($shop->settings, 'reviews.data.hours_after_dispatched', 24),
+                            'min'         => 1,
+                        ],
                         'review_allow_reactions' => [
                             'type'        => 'toggle',
-                            'label'       => __('Allow review reactions'),
+                            'label'       => __('Allow likes/dislikes'),
                             'information' => __('Allow customers to like or dislike reviews left by other customers.'),
                             'value'       => Arr::get($shop->settings, 'reviews.allow_reactions', true),
                         ],
                         'review_allow_reply_reactions' => [
                             'type'        => 'toggle',
-                            'label'       => __('Allow reply reactions'),
+                            'label'       => __('Allow likes/dislikes on replies'),
                             'information' => __('Allow customers to like or dislike replies to reviews.'),
                             'value'       => Arr::get($shop->settings, 'reviews.allow_reply_reactions', true),
+                        ],
+                        'review_show_staff_who_reply' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Show staff who reply'),
+                            'information' => __('Show the name of the staff member who replied to a review.'),
+                            'value'       => Arr::get($shop->settings, 'reviews.show_staff_who_reply', false),
                         ],
                     ],
                 ]

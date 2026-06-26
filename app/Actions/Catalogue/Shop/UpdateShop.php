@@ -306,10 +306,20 @@ class UpdateShop extends OrgAction
 
         if (Arr::exists($modelData, 'review_publishing')) {
             $reviewPublishing = Arr::pull($modelData, 'review_publishing');
-            data_set($modelData, 'settings.reviews.visibility.private', (bool) Arr::get($reviewPublishing, 'visibility.private', false));
-            data_set($modelData, 'settings.reviews.visibility.public', (bool) Arr::get($reviewPublishing, 'visibility.public', false));
             data_set($modelData, 'settings.reviews.auto_publishing.delay', (bool) Arr::get($reviewPublishing, 'auto_publishing.delay', true));
             data_set($modelData, 'settings.reviews.auto_publishing.delay_hours', (int) Arr::get($reviewPublishing, 'auto_publishing.delay_hours', 24));
+        }
+
+        if (Arr::exists($modelData, 'review_show_staff_who_reply')) {
+            data_set($modelData, 'settings.reviews.show_staff_who_reply', (bool) Arr::pull($modelData, 'review_show_staff_who_reply'));
+        }
+
+        if (Arr::exists($modelData, 'review_approval_required')) {
+            data_set($modelData, 'settings.reviews.data.approval_required', (bool) Arr::pull($modelData, 'review_approval_required'));
+        }
+
+        if (Arr::exists($modelData, 'review_hours_after_dispatched')) {
+            data_set($modelData, 'settings.reviews.data.hours_after_dispatched', (int) Arr::pull($modelData, 'review_hours_after_dispatched'));
         }
 
         if (Arr::exists($modelData, 'review_allow_reactions')) {
@@ -554,11 +564,15 @@ class UpdateShop extends OrgAction
             'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],
             'review_rating_labels.*'                                  => ['sometimes', 'array'],
             'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],
+            'review_visibility'                                       => ['sometimes', 'nullable', 'array'],
+            'review_visibility.visibility.private'                    => ['sometimes', 'boolean'],
+            'review_visibility.visibility.public'                     => ['sometimes', 'boolean'],
             'review_publishing'                                       => ['sometimes', 'nullable', 'array'],
-            'review_publishing.visibility.private'                    => ['sometimes', 'boolean'],
-            'review_publishing.visibility.public'                     => ['sometimes', 'boolean'],
             'review_publishing.auto_publishing.delay'                 => ['sometimes', 'boolean'],
             'review_publishing.auto_publishing.delay_hours'           => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'review_show_staff_who_reply'                             => ['sometimes', 'boolean'],
+            'review_approval_required'                                => ['sometimes', 'boolean'],
+            'review_hours_after_dispatched'                           => ['sometimes', 'nullable', 'integer', 'min:1'],
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],

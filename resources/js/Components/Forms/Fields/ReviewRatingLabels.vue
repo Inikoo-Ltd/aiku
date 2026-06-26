@@ -13,7 +13,7 @@ const contexts = [
     { key: 'product', label: 'Product Reviews' },
     { key: 'order', label: 'Order Reviews' },
     { key: 'family', label: 'Category Reviews' },
-    { key: 'shop', label: 'Shop Reviews' },
+    // { key: 'shop', label: 'Shop Reviews' },
 ]
 
 const dimensions = ['a', 'b', 'c', 'd', 'e']
