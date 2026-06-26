@@ -111,7 +111,7 @@
                                             valign="top">
                                             <strong>Customer:</strong> <a href="[Customer Link]" style="color: #3498DB; text-decoration: none;">[Customer Name]</a><br />
                                             <strong>Review Link:</strong> <a href="[Review Link]" style="color: #3498DB; text-decoration: none;">View Review</a><br />
-                                            <strong>Order:</strong> [Order Reference]<br />
+                                            <strong>Order:</strong> <a href="[Order Link]" style="color: #3498DB; text-decoration: none;">[Order Reference]</a><br />
                                             <strong>Rating:</strong> [Blade Rating Stars] ([Review Rating]/5)<br />
                                             <strong>Review Message:</strong> [Review Message]<br />
                                         </td>
