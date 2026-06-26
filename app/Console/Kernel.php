@@ -25,6 +25,7 @@ use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
+use App\Actions\Reviews\AutoPublishReviews;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
 use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
@@ -716,6 +717,16 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'LeaveGenerateBalances',
                 type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+
+            $this->logSchedule(
+                $schedule->job(AutoPublishReviews::makeJob())->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'AutoPublishReviews',
+                ),
+                name: 'AutoPublishReviews',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
         }

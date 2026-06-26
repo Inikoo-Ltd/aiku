@@ -194,8 +194,8 @@ class ShowRetinaEcomOrder extends RetinaAction
         $settings = $order->shop->settings;
 
         return [
-            'allow_reactions'       => (bool) data_get($settings, 'reviews.data.allow_reactions', true),
-            'allow_reply_reactions' => (bool) data_get($settings, 'reviews.data.allow_reply_reactions', true),
+            'allow_reactions'       => (bool) data_get($settings, 'reviews.allow_reactions', true),
+            'allow_reply_reactions' => (bool) data_get($settings, 'reviews.allow_reply_reactions', true),
         ];
     }
 
