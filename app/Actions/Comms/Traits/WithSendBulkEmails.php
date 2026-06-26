@@ -232,6 +232,8 @@ trait WithSendBulkEmails
             'blade-rating-stars' => Arr::get($additionalData, 'blade_rating_stars'),
             'blade-review-images' => Arr::get($additionalData, 'blade_review_images'),
 
+            'review-reminder-links' => Arr::get($additionalData, 'review_reminder_links'),
+
             default => $originalPlaceholder,
         };
     }

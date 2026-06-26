@@ -58,6 +58,7 @@ enum OutboxCodeEnum: string
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
     case WEB_USER_REGISTRATION = 'web_user_registration';
     case NEW_REVIEW = 'new_review';
+    case REVIEW_REMINDER = 'review_reminder';
 
 
     public function type(): OutboxTypeEnum
@@ -87,7 +88,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
-            OutboxCodeEnum::WEB_USER_REGISTRATION
+            OutboxCodeEnum::WEB_USER_REGISTRATION,
+            OutboxCodeEnum::REVIEW_REMINDER
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
@@ -165,6 +167,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
             OutboxCodeEnum::NEW_REVIEW => 'New review',
+            OutboxCodeEnum::REVIEW_REMINDER => 'Review reminder',
         };
     }
 
@@ -214,6 +217,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
             OutboxCodeEnum::NEW_REVIEW => 'New review',
+            OutboxCodeEnum::REVIEW_REMINDER => 'Review reminder',
         };
     }
 
@@ -288,7 +292,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION => ['b2b', 'b2c', 'dropshipping'],
-            OutboxCodeEnum::OOS_NOTIFICATION => ['b2b', 'dropshipping'],
+            OutboxCodeEnum::OOS_NOTIFICATION,
+            OutboxCodeEnum::REVIEW_REMINDER,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION, OutboxCodeEnum::NEW_REVIEW => ['b2b', 'dropshipping'],
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::ABANDONED_CART,
@@ -384,7 +389,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
-            OutboxCodeEnum::NEW_REVIEW
+            OutboxCodeEnum::NEW_REVIEW,
+            OutboxCodeEnum::REVIEW_REMINDER
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -435,6 +441,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
+            OutboxCodeEnum::REVIEW_REMINDER
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
@@ -454,6 +461,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_RETURN_DELETED,
             OutboxCodeEnum::PALLET_DELETED,
             OutboxCodeEnum::BASKET_LOW_STOCK,
+            OutboxCodeEnum::REVIEW_REMINDER,
 
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
