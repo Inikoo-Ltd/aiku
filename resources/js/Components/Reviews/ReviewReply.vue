@@ -230,7 +230,6 @@ const deleteReply = async () => {
         loadingDelete.value = false
     }
 }
-console.log(props.modelValue)
 </script>
 
 <template>
@@ -314,7 +313,7 @@ console.log(props.modelValue)
 
                         <div>
                             <div class="text-sm font-semibold text-gray-900">
-                                {{ modelValue.contact_name }}
+                                {{ modelValue.customer_name }}
                             </div>
                             <div class="text-xs text-gray-500">
                                 {{ useFormatTime(modelValue.created_at) }}

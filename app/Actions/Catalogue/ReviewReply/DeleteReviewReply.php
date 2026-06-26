@@ -24,9 +24,9 @@ class DeleteReviewReply
         return $review->refresh();
     }
 
-    public function asController(Review $review, ActionRequest $request): JsonResponse|RedirectResponse
+    public function asController(Review $reviewReply, ActionRequest $request): JsonResponse|RedirectResponse
     {
-        $this->handle($review);
+        $this->handle($reviewReply);
 
         if (!$request->expectsJson()) {
             return redirect()->back();

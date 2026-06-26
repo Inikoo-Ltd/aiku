@@ -141,6 +141,7 @@ const isOpenDialog = ref(false)
 const reviewPayload = ref(null)
 const openDialog = () => {
     isOpenDialog.value = true
+    reviewErrors.value = {}
 }
 
 const component = computed(() => {
@@ -193,6 +194,7 @@ const goToEdit = () => {
 }
 
 const loadingSave = ref(false)
+const reviewErrors = ref<Record<string, string[] | string>>({})
 
 const saveProductReview = async () => {
     const routeName = "grp.models.review.store"
@@ -216,6 +218,7 @@ const saveProductReview = async () => {
 
     try {
         loadingSave.value = true
+        reviewErrors.value = {}
 
         await axios({
             method: "post",
@@ -234,11 +237,12 @@ const saveProductReview = async () => {
             text: "Review submitted successfully",
             type: "success",
         })
-    } catch (errors) {
-        console.error(errors)
+    } catch (error: any) {
+        reviewErrors.value = error?.response?.data?.errors || {}
+
         notify({
             title: "Error",
-            text: "Failed to submit review",
+            text: error?.response?.data?.message || "Failed to submit review",
             type: "error",
         })
     } finally {
@@ -349,8 +353,12 @@ const saveProductReview = async () => {
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
 
 
-     <Dialog v-model:visible="isOpenDialog" modal header="Product Review" :style="{ width: '550px' }" :content-style="{ overflow: 'auto' }">
-        <FormReview v-model="reviewPayload" :schema="props.rating_labels" :use_customer="true"/>
+     <Dialog v-model:visible="isOpenDialog" modal header="Product Review" :style="{ width: '60rem' }" :breakpoints="{
+            '1200px': '70vw',
+            '992px': '85vw',
+            '576px': '95vw'
+        }" :content-style="{ overflow: 'auto' }">
+        <FormReview v-model="reviewPayload" :schema="props.rating_labels" :use_customer="true" :errors="reviewErrors"/>
         <template #footer>
             <div class="flex justify-end gap-5">
                 <Button label="Close" type="secondary" @click="isOpenDialog = false" />

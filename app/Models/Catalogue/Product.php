@@ -224,6 +224,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Organisation $organisation
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, Product> $productVariants
+ * @property-read ProductReviewStat|null $reviewStats
+ * @property-read LaravelCollection<int, Review> $reviews
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop

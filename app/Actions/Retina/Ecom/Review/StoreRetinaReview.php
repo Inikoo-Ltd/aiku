@@ -4,22 +4,27 @@ namespace App\Actions\Retina\Ecom\Review;
 
 use App\Actions\Reviews\StoreReview;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Review;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaReview extends RetinaAction
 {
     public function handle(Order $order, array $modelData): Review
     {
-        $reviewable = $this->resolveReviewable(
-            $modelData['reviewable_type'],
-            (int) $modelData['reviewable_id']
-        ) ?? $order;
+        $scope = ReviewScopeEnum::from($modelData['scope']);
+
+        $reviewable = match ($scope) {
+            ReviewScopeEnum::SHOP    => $order->shop,
+            ReviewScopeEnum::PRODUCT => Product::findOrFail((int) $modelData['reviewable_id']),
+            ReviewScopeEnum::FAMILY  => ProductCategory::findOrFail((int) $modelData['reviewable_id']),
+            default                  => $order,
+        };
 
         return StoreReview::make()->action($reviewable, [
             ...$modelData,
@@ -29,31 +34,21 @@ class StoreRetinaReview extends RetinaAction
         ]);
     }
 
-    private function resolveReviewable(string $type, int $id): Product|ProductCategory|Shop|Order|null
-    {
-        return match ($type) {
-            'product' => Product::find($id),
-            'family'  => ProductCategory::find($id),
-            'shop'    => Shop::find($id),
-            'order'   => Order::find($id),
-            default   => null,
-        };
-    }
-
     public function rules(): array
     {
         return [
-            'reviewable_type' => ['required', Rule::in(['order', 'product', 'family', 'shop'])],
-            'reviewable_id'   => ['required', 'integer', 'min:1'],
-            'rating'          => ['required', 'numeric', 'min:1', 'max:5'],
-            'rating_a'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_b'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_c'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_d'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_e'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'title'           => ['sometimes', 'nullable', 'string', 'max:255'],
-            'message'         => ['sometimes', 'nullable', 'string', 'max:5000'],
-            'is_public'       => ['sometimes', 'nullable'],
+            'scope'         => ['required', Rule::in(ReviewScopeEnum::values())],
+            'reviewable_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'rating'   => ['required', 'numeric', 'min:1', 'max:5'],
+            'rating_a' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_b' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_c' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_d' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_e' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'message'   => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'is_public' => ['sometimes', 'nullable'],
+            'images'          => ['sometimes', 'array'],
+            'images.*'        => ['sometimes', File::image()->max(50 * 1024)],
         ];
     }
 

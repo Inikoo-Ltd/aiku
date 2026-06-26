@@ -167,7 +167,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property string|null $contact_name
  * @property string|null $company_name
  * @property int|null $offer_voucher_id
- * @property int|null $discounted_offer_id
+ * @property int|null $discounted_shipping_offer_id
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -189,6 +189,8 @@ use App\Audits\Transformer\RelationTransformer;
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
  * @property-read Platform|null $platform
+ * @property-read Collection<int, ReturnDeliveryNote> $returnedDeliveryNote
+ * @property-read OrderReviewStat|null $reviewStats
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read ShippingZone|null $shippingZone
  * @property-read Shop|null $shop

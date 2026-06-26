@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, ref, reactive } from "vue"
+import { inject, ref, reactive, watch } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { faStar as falStar } from "@fal"
@@ -20,7 +20,7 @@ const props = defineProps<{
         review_id?: number | null
         order_id?: number
         reviewable_id?: number
-        reviewable_type?: string
+        scope?: string
         rating?: number | null
         rating_a?: number | null
         rating_b?: number | null
@@ -32,12 +32,18 @@ const props = defineProps<{
         images?: File[] | null
     }
     tab?: string
+    review_settings : any
 }>()
 
 
 const loadingSave = ref(false)
+const reviewErrors = ref<Record<string, string[] | string>>({})
 
 const reviewData = ref<any>({ ...props.data })
+
+watch(() => props.data, (newData) => {
+    reviewData.value = { ...newData }
+})
 
 const saveReview = async () => {
     const review = reviewData.value
@@ -49,8 +55,7 @@ const saveReview = async () => {
         ? { review: review.review_id }
         : { order: review.order_id }
     const payload: Record<string, any> = {
-        reviewable_type: review.reviewable_type,
-        reviewable_id: review.reviewable_id,
+        scope: review.scope,
         order_id: review.order_id,
         rating: review.rating,
         rating_a: review.rating_a,
@@ -80,6 +85,7 @@ const saveReview = async () => {
 
     try {
         loadingSave.value = true
+        reviewErrors.value = {}
 
         await axios({
             method: isUpdate ? "patch" : "post",
@@ -88,17 +94,18 @@ const saveReview = async () => {
             headers: { "Content-Type": "multipart/form-data" },
         })
 
-        router.reload({ only: ["pageHead", props.tab as string] })
+        router.reload()
         notify({
             title: trans("Success"),
             text: trans("Review submitted successfully"),
             type: "success",
         })
-    } catch (errors) {
-        console.error(errors)
+    } catch (error: any) {
+        reviewErrors.value = error?.response?.data?.errors || {}
+
         notify({
             title: trans("Error"),
-            text: trans("Failed to submit review"),
+            text: error?.response?.data?.message || trans("Failed to submit review"),
             type: "error",
         })
     } finally {
@@ -109,14 +116,13 @@ const saveReview = async () => {
 </script>
 
 <template>
-    <div class="border rounded-lg p-4">
-        <h2 class="text-lg font-bold mb-4 ml-2">{{trans('Overall review of your experience')}}</h2>
-        <FormReview v-model="reviewData" :type="data.context || ''" :schema="data.rating_labels"    />
-        <div class="border-t mt-3 py-3 gap-4 border-gray-200 flex justify-end">
+    <div class="border rounded-lg p-4 border-gray-20">
+        <div class="text-lg font-bold mb-4 ml-2 border-b pb-3 border-gray-200">{{trans('Overall review of your experience')}}</div>
+        <FormReview v-model="reviewData" :review_settings :type="data.context || ''" :schema="data.rating_labels"  :showAverageReview="false"  :disabled="reviewData?.review_id ? true : false" :errors="reviewErrors"/>
+        <div  v-if="!reviewData?.review_id " class="border-t mt-3 pt-3 gap-4 border-gray-200 flex justify-end">
             <Button type="save" @click="saveReview"></Button>
         </div>
     </div>
-
 </template>
 
 <style scoped></style>

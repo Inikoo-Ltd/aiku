@@ -26,16 +26,19 @@ const props = defineProps<{
         context?: string
     }
     tab?: string
+    review_settings : any
 }>()
 
 const locale = inject("locale", retinaLayoutStructure)
 const isOpenDialog = ref(false)
 const selectedItem = ref<any>(null)
 const loadingSave = ref(false)
+const reviewErrors = ref<Record<string, string[] | string>>({})
 
 const openDialog = (item: any) => {
     selectedItem.value = item
     isOpenDialog.value = true
+    reviewErrors.value = {}
 }
 
 const saveReview = async () => {
@@ -49,7 +52,7 @@ const saveReview = async () => {
     const routeParams = isUpdate ? { review: review.review_id } : { order: review.order_id }
 
     const payload: Record<string, any> = {
-        reviewable_type: review.reviewable_type,
+        scope: review.scope,
         reviewable_id: review.reviewable_id,
         order_id: review.order_id,
         rating: review.rating,
@@ -80,6 +83,7 @@ const saveReview = async () => {
 
     try {
         loadingSave.value = true
+        reviewErrors.value = {}
 
         await axios({
             method: isUpdate ? "patch" : "post",
@@ -89,17 +93,18 @@ const saveReview = async () => {
         })
 
         isOpenDialog.value = false
-        router.reload({ only: ["pageHead", props.tab as string] })
+        router.reload()
         notify({
             title: trans("Success"),
             text: trans("Review submitted successfully"),
             type: "success",
         })
-    } catch (errors) {
-        console.error(errors)
+    } catch (error: any) {
+        reviewErrors.value = error?.response?.data?.errors || {}
+
         notify({
             title: trans("Error"),
-            text: trans("Failed to submit review"),
+            text: error?.response?.data?.message || trans("Failed to submit review"),
             type: "error",
         })
     } finally {
@@ -140,20 +145,32 @@ const saveReview = async () => {
 
         <template #cell(price)="{ item }">
             <div class="text-right">
-                <span v-if="item.price !== null">{{ locale.currencyFormat(item.currency_code || '', item.price) }}</span>
+                <span v-if="item.price !== null">{{ locale.currencyFormat(item.currency_code || '', item.price)
+                    }}</span>
             </div>
         </template>
 
         <template #cell(review_rating)="{ item }">
             <div class="flex justify-end cursor-pointer rating" @click="openDialog(item)">
-                <Rating v-model="item.review_rating" :disabled="true" />
+                <Rating v-if="item.review.review_id" v-model="item.review_rating" :disabled="true" />
+                <Button v-else
+                    :label="ctrans('Rate this :type', { type: tab === 'product_reviews' ? 'product' : 'family' })" />
             </div>
         </template>
     </Table>
 
-    <Dialog v-model:visible="isOpenDialog" modal :header="trans('Review')"  :content-style="{ overflow: 'auto' }">
-        <FormReview v-if="selectedItem" v-model="selectedItem.review" :type="data.context || ''" :schema="data.rating_labels" />
-        <template #footer>
+    <Dialog v-model:visible="isOpenDialog" modal :header="`${ctrans('Rate this :type', {
+        type: tab === 'product_reviews' ? 'product' : 'family',
+    })} (${tab === 'product_reviews' ? selectedItem?.asset_code : selectedItem?.family_code})`"
+        :style="{ width: '60rem' }" :breakpoints="{
+            '1200px': '70vw',
+            '992px': '85vw',
+            '576px': '95vw'
+        }" :content-style="{ overflow: 'auto' }">
+        <FormReview v-if="selectedItem" v-model="selectedItem.review" :review_settings :type="data.context || ''"
+            :schema="data.rating_labels" :disabled="selectedItem?.review?.review_id ? true : false"
+            :errors="reviewErrors" />
+        <template #footer v-if="!selectedItem?.review?.review_id">
             <div class="flex justify-end gap-5">
                 <Button :label="trans('Close')" type="secondary" @click="isOpenDialog = false" />
                 <Button :label="trans('Save')" type="save" :loading="loadingSave" @click="saveReview" />

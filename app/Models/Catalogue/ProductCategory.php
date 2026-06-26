@@ -139,6 +139,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read ProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $relatedProductCategories
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Product> $relatedProducts
+ * @property-read ProductCategoryReviewStat|null $reviewStats
+ * @property-read LaravelCollection<int, Review> $reviews
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Media|null $showcaseImage

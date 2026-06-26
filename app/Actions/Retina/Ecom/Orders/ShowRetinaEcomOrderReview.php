@@ -23,7 +23,9 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\RetinaOrderReviewableResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Media;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use App\Models\Reviews\Review;
 use App\Models\Reviews\ReviewRatingLabel;
 use Inertia\Inertia;
@@ -31,8 +33,8 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
-use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Helpers\Media;
+use App\Http\Resources\Catalogue\ReviewMediaResource;
+use Illuminate\Support\Arr;
 
 class ShowRetinaEcomOrderReview extends RetinaAction
 {
@@ -89,7 +91,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                     'actions' => [
                     [
                         'type'    => 'button',
-                        'style'   => 'secondary',
+                        'style'   => 'exitEdit',
                         'tooltip' => __('Back to order'),
                         'label'   => __('Back to order'),
                         'icon'    => 'fal fa-arrow-left',
@@ -106,16 +108,11 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                     'current'    => $this->tab,
                     'navigation' => RetinaOrderReviewTabsEnum::navigation()
                 ],
-
-                'routes'  => [
-
-
-                ],
                 'summary' => $this->getOrderBoxStats($order),
-
-
+                'review_summary' => $this->getReviewSummary($order),
                 'currency'          => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'              => OrderResource::make($order),
+                'review_settings' =>  Arr::get($order->shop->settings, 'reviews'),
 
 
 
@@ -125,44 +122,69 @@ class ShowRetinaEcomOrderReview extends RetinaAction
 
 
                 RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value
-                    ? fn () => RetinaOrderReviewableResource::collection(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
+                    ? fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
                         ->additional([
-                            'order_id'        => $order->id,
-                            'shop_id'         => $order->shop_id,
-                            'context'         => ReviewContextEnum::FAMILY->value,
-                            'reviewable_type' => ReviewScopeEnum::FAMILY->value,
-                            'rating_labels'   => $ratingLabels[ReviewContextEnum::FAMILY->value],
+                            'order_id'      => $order->id,
+                            'shop_id'       => $order->shop_id,
+                            'context'       => ReviewContextEnum::FAMILY->value,
+                            'scope'         => ReviewScopeEnum::FAMILY->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::FAMILY->value],
                         ])
-                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
+                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
                         ->additional([
-                            'order_id'        => $order->id,
-                            'shop_id'         => $order->shop_id,
-                            'context'         => ReviewContextEnum::FAMILY->value,
-                            'reviewable_type' => ReviewScopeEnum::FAMILY->value,
-                            'rating_labels'   => $ratingLabels[ReviewContextEnum::FAMILY->value],
+                            'order_id'      => $order->id,
+                            'shop_id'       => $order->shop_id,
+                            'context'       => ReviewContextEnum::FAMILY->value,
+                            'scope'         => ReviewScopeEnum::FAMILY->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::FAMILY->value],
                         ])),
 
                 RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value
-                    ? fn () => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value))
+                    ? fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
                         ->additional([
-                            'order_id'        => $order->id,
-                            'shop_id'         => $order->shop_id,
-                            'context'         => ReviewContextEnum::PRODUCT->value,
-                            'reviewable_type' => ReviewScopeEnum::PRODUCT->value,
-                            'rating_labels'   => $ratingLabels[ReviewContextEnum::PRODUCT->value],
+                            'order_id'      => $order->id,
+                            'shop_id'       => $order->shop_id,
+                            'context'       => ReviewContextEnum::PRODUCT->value,
+                            'scope'         => ReviewScopeEnum::PRODUCT->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
                         ])
-                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value))
+                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
                         ->additional([
-                            'order_id'        => $order->id,
-                            'shop_id'         => $order->shop_id,
-                            'context'         => ReviewContextEnum::PRODUCT->value,
-                            'reviewable_type' => ReviewScopeEnum::PRODUCT->value,
-                            'rating_labels'   => $ratingLabels[ReviewContextEnum::PRODUCT->value],
+                            'order_id'      => $order->id,
+                            'shop_id'       => $order->shop_id,
+                            'context'       => ReviewContextEnum::PRODUCT->value,
+                            'scope'         => ReviewScopeEnum::PRODUCT->value,
+                            'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
                         ])),
             ]
         )
             ->table(IndexReviewFamiliesInOrder::make()->tableStructure(prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value))
             ->table(IndexReviewProductsInOrder::make()->tableStructure(prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value));
+    }
+
+    private function withReviewMedia(mixed $paginator): mixed
+    {
+        $reviewIds = collect($paginator->items())
+            ->pluck('review_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($reviewIds->isEmpty()) {
+            return $paginator;
+        }
+
+        $mediaByReviewId = Media::query()
+            ->where('model_type', (new Review())->getMorphClass())
+            ->whereIn('model_id', $reviewIds)
+            ->where('collection_name', 'review_images')
+            ->get()
+            ->groupBy('model_id');
+
+        return $paginator->through(function ($item) use ($mediaByReviewId) {
+            $item->review_images = $mediaByReviewId->get($item->review_id, collect());
+            return $item;
+        });
     }
 
     public function getOverallReview(Order $order): array
@@ -172,11 +194,8 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             ->where('scope', ReviewScopeEnum::ORDER->value)
             ->first();
 
-        $reviewMediaData = is_string($this->review_media_data)
-            ? json_decode($this->review_media_data, true)
-            : ($this->review_media_data ?? []);
-        $reviewImages = $reviewMediaData
-            ? Media::hydrate($reviewMediaData)->map(fn ($media) => ImageResource::make($media)->getArray())->values()->all()
+        $reviewImages = $existingReview
+            ? ReviewMediaResource::collection($existingReview->media)->toArray(request())
             : [];
 
         return [
@@ -191,10 +210,48 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             'message'         => $existingReview?->message,
             'is_public'       => $existingReview ? (bool) $existingReview->is_public : true,
             'review_images'   => $reviewImages,
-            'reviewable_type' => ReviewScopeEnum::ORDER->value,
-            'reviewable_id'   => $order->id,
+            'scope'         => ReviewScopeEnum::ORDER->value,
+            'reviewable_id' => $order->id,
             'order_id'        => $order->id,
             'rating_labels'   => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::ORDER),
+        ];
+    }
+
+    private function getReviewSummary(Order $order): array
+    {
+        $reviewStats = Review::query()
+            ->where('order_id', $order->id)
+            ->selectRaw('scope, COUNT(*) as count, AVG(rating_main) as avg_rating, SUM(likes) as total_likes, SUM(dislikes) as total_dislikes')
+            ->groupBy('scope')
+            ->get()
+            ->keyBy('scope');
+
+        $totalProducts = Transaction::query()
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->distinct('model_id')
+            ->count('model_id');
+
+        $totalFamilies = Transaction::query()
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->whereNotNull('family_id')
+            ->distinct('family_id')
+            ->count('family_id');
+
+        $overallAvg = Review::query()
+            ->where('order_id', $order->id)
+            ->avg('rating_main');
+
+        return [
+            'overall_review'       => (int) ($reviewStats->get(ReviewScopeEnum::ORDER->value)?->count ?? 0),
+            'product_review'       => (int) ($reviewStats->get(ReviewScopeEnum::PRODUCT->value)?->count ?? 0),
+            'total_product_review' => $totalProducts,
+            'family_review'        => (int) ($reviewStats->get(ReviewScopeEnum::FAMILY->value)?->count ?? 0),
+            'total_family_review'  => $totalFamilies,
+            'average_review'       => $overallAvg ? round((float) $overallAvg, 1) : 0.0,
+            'total_likes'          => (int) $reviewStats->sum('total_likes'),
+            'total_dislikes'       => (int) $reviewStats->sum('total_dislikes'),
         ];
     }
 

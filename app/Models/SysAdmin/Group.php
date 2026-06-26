@@ -239,6 +239,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
+ * @property-read GroupReviewStat|null $reviewStats
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\Helpers\Media|null $seoImage

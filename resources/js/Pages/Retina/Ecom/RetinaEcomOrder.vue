@@ -24,7 +24,7 @@ import { AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faExclamationTriangle, faExclamation, faBoxHeart, faShieldAlt } from "@fas"
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faStar, faStars } from "@fal"
+import { faDollarSign, faIdCardAlt, faShippingFast,   faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faStar, faStars } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import { faSpinnerThird } from "@far"
 import Timeline from "@/Components/Utils/Timeline.vue"
@@ -38,6 +38,7 @@ import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vu
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
+import ListReviews from "@/Components/ListReviews.vue"
 
 
 library.add(faStars, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
@@ -47,6 +48,7 @@ const props = defineProps<{
     title: string
     tabs: TSTabs
     pageHead: PageHeadingTypes
+    reviews : any
     routes: {
         update_route: routeType
         submit_route: routeType
@@ -74,6 +76,7 @@ const props = defineProps<{
     balance: string
     address_management: AddressManagement
     currency: Currency
+    review_settings : any
     data?: {
         data: {
             slug: string
@@ -104,7 +107,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Component = {
-        transactions: EcomTableOrderTransactions
+        transactions: EcomTableOrderTransactions,
+        reviews : ListReviews
     }
 
     return components[currentTab.value]
@@ -215,11 +219,10 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
           @update:tab="handleTabUpdate" />
 
-    <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200 overflow-x-auto">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state" :modalOpen="isModalUploadOpen"
-                   @update:tab="handleTabUpdate" />
-    </div>
+                   @update:tab="handleTabUpdate" :review_settings />
+
 
     <div class="flex justify-end px-6 gap-x-4">
         <div class="grid grid-cols-3 gap-x-4 w-full">

@@ -1,15 +1,19 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 25 Jun 2026 12:07:47 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Maintenance\Reviews;
+namespace App\Actions\Reviews\Import;
 
-use App\Actions\Reviews\Import\TrustpilotImport;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Maatwebsite\Excel\Facades\Excel;
 
-class ReadTrustpilotCSVReview
+class ReadTrustPilotCSVReview
 {
     use AsAction;
 
@@ -17,11 +21,11 @@ class ReadTrustpilotCSVReview
     {
         $filename = $command->argument('filename');
 
-        $command->info("Reading from Trustpilot CSV from '$filename'");
+        $command->info("Reading from Trust pilot CSV from '$filename'");
 
         Excel::import(
-            new TrustpilotImport($shop),
-            Storage::disk('local')->path($filename),
+            new TrustPilotImport($shop),
+            base_path($filename),
             null,
             \Maatwebsite\Excel\Excel::CSV
         );
@@ -29,14 +33,15 @@ class ReadTrustpilotCSVReview
 
     public string $commandSignature   = 'import:trustpilot_csv {filename} {shop}';
 
-    public function asCommand(Command $command)
+    public function asCommand(Command $command): int
     {
         if (!$command->argument(('shop'))) {
             $command->error('Please select a shop');
             return 1;
         }
 
-        if (!Storage::disk('local')->exists($command->argument('filename'))) {
+
+        if (!file_exists(base_path($command->argument('filename')))) {
             $command->error('File doesnt exists');
             return 1;
         }

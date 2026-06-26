@@ -24,24 +24,18 @@ enum RetinaOrderReviewTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
-
-
             RetinaOrderReviewTabsEnum::OVERALL_REVIEW => [
                 'title' => __('Overall review'),
                 'icon'  => 'fal fa-star',
             ],
-
             RetinaOrderReviewTabsEnum::FAMILY_REVIEWS => [
                 'title' => __('Families review'),
-                'icon'  => 'fal fa-galaxy',
+                'icon'  => 'fal fa-folder',
             ],
-
             RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS => [
                 'title' => __('Products review'),
-                'icon'  => 'fal fa-stars',
+                'icon'  => 'fal fa-cube',
             ],
-
-
         };
     }
 }
