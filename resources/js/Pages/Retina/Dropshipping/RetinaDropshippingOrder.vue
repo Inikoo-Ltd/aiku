@@ -207,7 +207,7 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
 }
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
-const hasModified = props.transactions.data.some(item => 
+const hasModified = props.transactions?.data.some(item => 
   item.quantity_ordered !== item.quantity_dispatched
 );
 

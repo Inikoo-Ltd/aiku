@@ -268,7 +268,7 @@ watch(
 	<div class="space-y-4">
 		<div class="grid gap-4 lg:grid-cols-2 lg:items-start">
 			<div class="flex flex-col gap-4">
-				<div v-if="review_settings?.visibility?.public"
+				<div v-if="review_settings?.visibility?.public !== false"
 					class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
 					<div>
 						<div class="text-sm font-medium text-gray-800">

@@ -21,6 +21,8 @@ class GetOutboxMergeTagByOutbox extends OrgAction
         switch ($outbox->code) {
             case OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION:
                 return OutboxMergeTagsEnum::filterTags([OutboxMergeTagsEnum::CUSTOMER_NAME, OutboxMergeTagsEnum::PRODUCTS]);
+            case OutboxCodeEnum::REVIEW_REMINDER:
+                return OutboxMergeTagsEnum::filterTags([OutboxMergeTagsEnum::CUSTOMER_NAME, OutboxMergeTagsEnum::REVIEW_REMINDER_LINKS]);
             default:
                 return GetMailshotMergeTags::run();
         }
