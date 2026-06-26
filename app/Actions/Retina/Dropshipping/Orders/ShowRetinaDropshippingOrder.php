@@ -77,7 +77,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $hoursAfterDispatched = (int) data_get($order->shop->settings, 'reviews.data.hours_after_dispatched', 24);
         $reviewAvailable      = true;
-        $hasPublishedReviews  = $reviewAvailable && Review::where('order_id', $order->id)->exists();
+        $hasReviews  = $reviewAvailable && Review::where('order_id', $order->id)->exists();
 
         $customerSalesChannel = $order->customerSalesChannel;
 
@@ -116,7 +116,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => $hasPublishedReviews
+                    'navigation' => $hasReviews
                         ? RetinaOrderTabsEnum::navigation()
                         : RetinaOrderTabsEnum::navigationExcept([RetinaOrderTabsEnum::REVIEWS]),
                 ],
