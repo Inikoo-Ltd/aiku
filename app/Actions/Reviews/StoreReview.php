@@ -10,6 +10,7 @@ namespace App\Actions\Reviews;
 
 use App\Actions\Catalogue\Review\Traits\HasReviewCommonLogic;
 use App\Actions\Catalogue\Review\Traits\HasReviewHydrators;
+use App\Actions\Comms\Email\SendNewReviewEmailToSubscribers;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
@@ -86,7 +87,7 @@ class StoreReview extends OrgAction
             if (!empty($videos)) {
                 $this->storeUploadedVideos($review, $videos);
             }
-
+            SendNewReviewEmailToSubscribers::dispatch($review->id);
             return $review->refresh();
         });
 
