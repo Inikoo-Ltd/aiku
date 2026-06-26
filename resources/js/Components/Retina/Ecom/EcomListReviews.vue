@@ -2,24 +2,28 @@
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
 import { GridProducts } from "@/Components/Product"
-import Card from "primevue/card"
 import Tag from "primevue/tag"
 import Rating from "primevue/rating"
-import Avatar from "primevue/avatar"
 import { useFormatTime } from "@/Composables/useFormatTime"
-
+import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCube, faStore, faLayerGroup, faThumbsUp, faThumbsDown } from "@fal"
-import { faBadgeCheck, faReply } from "@fas"
+import { faCube, faLayerGroup, faThumbsUp, faThumbsDown } from "@fal"
+import { faReply } from "@fas"
 import { faEye, faEyeSlash, faStar } from "@far"
+import { inject, ref } from "vue"
 
-defineProps<{
+
+const props = defineProps<{
 	data: any[] | TableTS
 	tab: string
 	updateRoute: routeType
 	state?: string
 	readonly?: boolean
 }>()
+
+const layout = inject("layout", {})
+
+console.log('d',layout.iris.shop.name,layout.iris.website.logo.avif)
 
 const scopeIcon = (scope: string) => {
 	switch (scope) {
@@ -43,42 +47,45 @@ const scopeLabel = (scope: string) => {
 	}
 }
 
-const toggleReaction = (item: any, type: "like" | "dislike") => {
-    /* const review = item.review
-    if (!review?.review_id || props.readonly) {
-        return
-    }
+const reactingKeys = ref<Record<string, boolean>>({})
 
-    const isLiked = review.is_liked
-    const isDisliked = review.is_disliked
+const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) => {
+	const review = item.review
+	if (!review?.review_id || props.readonly) {
+		return
+	}
 
-    if (type === "like") {
-        review.is_liked = !isLiked
-        review.is_disliked = false
-    } else {
-        review.is_disliked = !isDisliked
-        review.is_liked = false
-    }
+	const reactionKey = `${review.review_id}-${target}`
+	if (reactingKeys.value[reactionKey]) {
+		return
+	}
 
-    router.post(
-        route("retina.ecom.reviews.reaction", { review: review.review_id }),
-        { type, value: type === "like" ? review.is_liked : review.is_disliked },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                loadingReaction.value[review.review_id] = type
-            },
-            onError: () => {
-                review.is_liked = isLiked
-                review.is_disliked = isDisliked
-            },
-            onFinish: () => {
-                delete loadingReaction.value[review.review_id]
-            },
-        }
-    ) */
+	const likeField = target === "review" ? "likes" : "replay_likes"
+	const dislikeField = target === "review" ? "dislikes" : "replay_dislikes"
+
+	review[likeField] = (review[likeField] ?? 0) + (isLike ? 1 : 0)
+	review[dislikeField] = (review[dislikeField] ?? 0) + (isLike ? 0 : 1)
+
+	router.post(
+		route("retina.models.review.like", { review: review.review_id }),
+		{ target, is_like: isLike },
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => {
+				reactingKeys.value[reactionKey] = true
+			},
+			onError: () => {
+				review[likeField] -= isLike ? 1 : 0
+				review[dislikeField] -= isLike ? 0 : 1
+			},
+			onFinish: () => {
+				delete reactingKeys.value[reactionKey]
+			},
+		}
+	)
 }
+
 </script>
 
 <template>
@@ -87,6 +94,7 @@ const toggleReaction = (item: any, type: "like" | "dislike") => {
 			:resource="data"
 			:preserve-scroll="true"
 			:name="tab"
+			:label="'reviews'"
 			:gridClass="'lg:grid-cols-1 xl:grid-cols-1 grid grid-cols-1 gap-0 rating'">
 			<template #card="{ item }">
 				<article
@@ -96,6 +104,7 @@ const toggleReaction = (item: any, type: "like" | "dislike") => {
 						<div class="flex min-w-0 gap-3">
 							<!-- Scope -->
 							<div
+							    v-tooltip="`Review ${item.scope}`"
 								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100">
 								<FontAwesomeIcon
 									:icon="scopeIcon(item.scope)"
@@ -154,7 +163,9 @@ const toggleReaction = (item: any, type: "like" | "dislike") => {
 						class="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
 						<div class="flex items-center gap-1">
 							<button
-								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100">
+								:disabled="reactingKeys[`${item.review.review_id}-review`]"
+								@click="() => toggleReaction(item, 'review', true)"
+								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100 disabled:opacity-50">
 								<FontAwesomeIcon :icon="faThumbsUp" />
 
 								<span>
@@ -163,7 +174,9 @@ const toggleReaction = (item: any, type: "like" | "dislike") => {
 							</button>
 
 							<button
-								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100">
+								:disabled="reactingKeys[`${item.review.review_id}-review`]"
+								@click="() => toggleReaction(item, 'review', false)"
+								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100 disabled:opacity-50">
 								<FontAwesomeIcon :icon="faThumbsDown" />
 
 								<span>
@@ -178,17 +191,19 @@ const toggleReaction = (item: any, type: "like" | "dislike") => {
 						<div class="flex gap-3">
 							<div
 								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white">
-								<FontAwesomeIcon :icon="faReply" class="text-[10px]" />
+								<!-- <FontAwesomeIcon :icon="faReply" class="text-[10px]" /> -->
+								 <img :src="layout.iris.website.logo.avif" src="logo"/>
 							</div>
 
 							<div class="min-w-0 flex-1">
 								<!-- Reply Header -->
 								<div class="flex flex-wrap items-center gap-2">
 									<span class="text-sm font-semibold text-gray-900">
-										{{ item.review.reply.contact_name }}
+										<!-- {{ item.review.reply.contact_name }} -->
+										  {{ layout.iris.shop.name }}
 									</span>
 
-									<Tag severity="warn" rounded class="text-[9px]"> Official </Tag>
+									
 
 									<span class="ml-auto text-[11px] text-gray-400">
 										{{ useFormatTime(item.review.reply.at) }}
@@ -203,7 +218,9 @@ const toggleReaction = (item: any, type: "like" | "dislike") => {
 								<!-- Reply Actions -->
 								<div class="mt-2 flex items-center gap-1">
 									<button
-										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100">
+										:disabled="reactingKeys[`${item.review.review_id}-reply`]"
+										@click="() => toggleReaction(item, 'reply', true)"
+										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100 disabled:opacity-50">
 										<FontAwesomeIcon :icon="faThumbsUp" />
 
 										<span>
@@ -212,7 +229,9 @@ const toggleReaction = (item: any, type: "like" | "dislike") => {
 									</button>
 
 									<button
-										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100">
+										:disabled="reactingKeys[`${item.review.review_id}-reply`]"
+										@click="() => toggleReaction(item, 'reply', false)"
+										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100 disabled:opacity-50">
 										<FontAwesomeIcon :icon="faThumbsDown" />
 
 										<span>

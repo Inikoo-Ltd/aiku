@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Discounts\Offer\FinishOffer;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
+use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\ClearCacheByWildcard;
@@ -17,6 +18,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
@@ -326,6 +328,9 @@ class UpdateProductCategory extends OrgAction
         return $rules;
     }
 
+    /**
+     * @throws \Throwable
+     */
     private function updateFamilyGrOffer(ProductCategory $productCategory, ?array $volGrData): void
     {
         if (!$volGrData || empty($volGrData['item_quantity']) || empty($volGrData['percentage_off'])) {
@@ -344,7 +349,7 @@ class UpdateProductCategory extends OrgAction
             ->first();
 
         if (!$offer) {
-            StoreVolumeGRDiscount::make()->action($productCategory, [
+            $offer=StoreVolumeGRDiscount::make()->action($productCategory, [
                 'trigger_data_item_quantity' => $itemQuantity,
                 'percentage_off'             => $percentageOff / 100,
                 'interval'                   => 30,
@@ -375,6 +380,15 @@ class UpdateProductCategory extends OrgAction
         }
 
         $productCategory->updateQuietly(['has_gr_vol_discount' => true]);
+
+        if ($offer) {
+            $offer->refresh();
+            UpdateProductCategoryOffersData::run($offer);
+            if ($productCategory->webpage) {
+                BreakWebpageCache::dispatch($productCategory->webpage, true);
+            }
+        }
+
     }
 
     private function finishFamilyGrOffer(ProductCategory $productCategory): void
@@ -390,6 +404,9 @@ class UpdateProductCategory extends OrgAction
         }
 
         $productCategory->updateQuietly(['has_gr_vol_discount' => false]);
+
+
+
     }
 
     public function action(ProductCategory $productCategory, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): ProductCategory

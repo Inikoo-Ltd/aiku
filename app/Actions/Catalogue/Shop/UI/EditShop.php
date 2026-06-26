@@ -107,6 +107,8 @@ class EditShop extends OrgAction
 
         $isExternal =  $shop->type === ShopTypeEnum::EXTERNAL;
 
+        $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
+
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
@@ -677,6 +679,42 @@ class EditShop extends OrgAction
                             'placeholder' => '#general',
                             'information' => __('Slack channels where chat conversations will be shared. Press Enter to add each channel.'),
                             'value'       => Arr::get($shop->settings, 'chat.slack_channels') ?? [],
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Google Ads'),
+                    'icon'   => 'fa-brands fa-google',
+                    'information' => $isGoogleAdsConnected
+                        ? __('This shop is connected to Google Ads. Set the Customer ID and User List ID below to sync customers to your Google Ads user list.')
+                        : __('Connect your Google account to authorize syncing customers, then set the Customer ID and User List ID below.'),
+                    'fields' => [
+                        'gads__connect' => [
+                            'type'   => 'action',
+                            'label'  => __('Google Account'),
+                            'information' => $isGoogleAdsConnected
+                                ? __('Connected.')
+                                : __('Not connected yet.'),
+                            'action' => [
+                                'type'  => 'button',
+                                'style' => $isGoogleAdsConnected ? 'tertiary' : 'save',
+                                'icon'  => ['fab', 'fa-google'],
+                                'label' => $isGoogleAdsConnected ? __('Reconnect Google account') : __('Connect Google account'),
+                                'route' => [
+                                    'url' => route('grp.org.shops.show.settings.google_ads.connect', [$shop->organisation, $shop]),
+                                ],
+                            ],
+                        ],
+                        'gads_customer_id' => [
+                            'type'        => 'input',
+                            'label'       => __('Customer ID'),
+                            'placeholder' => '123-456-7890',
+                            'value'       => Arr::get($shop->settings, 'google_ads.customer_id', ''),
+                        ],
+                        'gads_user_list_id' => [
+                            'type'        => 'input',
+                            'label'       => __('User List ID'),
+                            'value'       => Arr::get($shop->settings, 'google_ads.user_list_id', ''),
                         ],
                     ],
                 ],

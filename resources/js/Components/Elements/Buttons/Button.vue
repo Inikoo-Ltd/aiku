@@ -164,6 +164,12 @@ const getActionIcon = (icon: any) => {
     }
 }
 
+// import { onRenderTriggered } from 'vue'
+
+// onRenderTriggered((event) => {
+//   console.log('Render triggered by:', event)
+// })
+
 </script>
 
 <template>
