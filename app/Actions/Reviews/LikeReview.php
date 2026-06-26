@@ -9,7 +9,6 @@
 namespace App\Actions\Reviews;
 
 use App\Models\Reviews\Review;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -17,19 +16,13 @@ class LikeReview
 {
     use AsObject;
 
-    public function action(Review $review, string $target, bool $isLike, int $customerId): Review
+    public function action(Review $review, string $target, bool $isLike): Review
     {
-        return $this->handle($review, $target, $isLike, $customerId);
+        return $this->handle($review, $target, $isLike);
     }
 
-    public function handle(Review $review, string $target, bool $isLike, int $customerId): Review
+    public function handle(Review $review, string $target, bool $isLike): Review
     {
-        $cacheKey = "review_reaction:{$review->id}:{$customerId}:{$target}";
-
-        if (Cache::has($cacheKey)) {
-            return $review;
-        }
-
         $column = match (true) {
             $target === 'review' && $isLike  => 'likes',
             $target === 'review' && !$isLike => 'dislikes',
@@ -38,7 +31,6 @@ class LikeReview
         };
 
         DB::table('reviews')->where('id', $review->id)->increment($column);
-        Cache::put($cacheKey, true, now()->addDays(30));
 
         return $review->refresh();
     }
