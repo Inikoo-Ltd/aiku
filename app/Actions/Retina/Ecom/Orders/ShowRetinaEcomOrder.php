@@ -155,14 +155,17 @@ class ShowRetinaEcomOrder extends RetinaAction
                 'data'               => OrderResource::make($order),
                 'review_settings'    => Arr::get($order->shop->settings, 'reviews'),
                 'is_notes_editable'  => false,  // TODO: make it dynamic, only disable on 'after' state
-
+                'review_reactions'   => [
+                    'likes'     => $this->customer->likeReactions,
+                    'dislikes'  => $this->customer->dislikeReactions,
+                ],
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
                 RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value
-                    ? fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])
-                    : Inertia::lazy(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])),
+                    ? fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])
+                    : Inertia::lazy(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])),
 
             ]
         )

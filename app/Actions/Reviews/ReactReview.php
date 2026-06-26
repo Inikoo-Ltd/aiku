@@ -8,11 +8,14 @@
 
 namespace App\Actions\Reviews;
 
+use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewReactionTargetEnum;
 use App\Models\Reviews\Review;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class LikeReview
+class ReactReview extends OrgAction
 {
     use AsObject;
 
@@ -33,5 +36,13 @@ class LikeReview
         DB::table('reviews')->where('id', $review->id)->increment($column);
 
         return $review->refresh();
+    }
+
+    public function rules(): array
+    {
+        return [
+            'target'  => ['required', new Enum(ReviewReactionTargetEnum::class)],
+            'is_like' => ['required', 'boolean'],
+        ];
     }
 }

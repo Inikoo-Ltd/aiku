@@ -9,19 +9,22 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewReactionTargetEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\CRM\Customer;
 use App\Models\Helpers\Media;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Review;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexAllReviewsInOrder extends OrgAction
 {
-    public function handle(Order $order, $prefix = null): LengthAwarePaginator
+    public function handle(Order $order, Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -41,6 +44,16 @@ class IndexAllReviewsInOrder extends OrgAction
             ->leftJoin('product_categories', 'reviews.product_category_id', '=', 'product_categories.id')
             ->leftJoin('shops', 'reviews.shop_id', '=', 'shops.id')
             ->leftJoin('users', 'reviews.reply_by', '=', 'users.id')
+            ->leftJoin('review_reactions', function ($join) use ($customer) {
+                $join->on('like_status.review_id', 'reviews.id')
+                    ->where('like_status.customer_id', $customer)
+                    ->where('like_status.type', ReviewReactionTargetEnum::REVIEW);
+            })
+            ->leftJoin('review_reactions as reply_reactions', function ($join) use ($customer) {
+                $join->on('reply_reactions.review_id', 'reviews.id')
+                    ->where('reply_reactions.customer_id', $customer)
+                    ->where('reply_reactions.type', ReviewReactionTargetEnum::REVIEW_REPLY);
+            })
             ->select([
                 'reviews.id as review_id',
                 'reviews.scope',
@@ -67,6 +80,8 @@ class IndexAllReviewsInOrder extends OrgAction
                 'product_categories.name as family_name',
                 'shops.name as shop_name',
                 'users.contact_name as reply_by_name',
+                'review_reactions.type as review_reaction',
+                'reply_reactions.type as reply_reaction',
             ])
             ->defaultSort('-reviews.created_at')
             ->allowedSorts(['review_rating', 'reviews.created_at'])

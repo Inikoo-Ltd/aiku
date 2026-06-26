@@ -178,7 +178,7 @@ use App\Actions\Retina\Woo\MatchRetinaBulkNewProductToCurrentWooCommerce;
 use App\Actions\Retina\Woo\MatchRetinaPortfolioToCurrentWooProduct;
 use App\Actions\Retina\Woo\StoreRetinaNewProductToCurrentWoo;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Retina\Ecom\Review\LikeRetinaReview;
+use App\Actions\Retina\Ecom\Review\ReactRetinaReview;
 use App\Actions\Retina\Ecom\Review\StoreRetinaReview;
 use App\Actions\Retina\Ecom\Review\UpdateRetinaReview;
 
@@ -205,7 +205,7 @@ Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('
 
 Route::post('review/{order:id}/store', StoreRetinaReview::class)->name('review.store');
 Route::patch('review/{review:id}/update', UpdateRetinaReview::class)->name('review.update');
-Route::post('review/{review:id}/like', LikeRetinaReview::class)->name('review.like');
+Route::post('review/{review:id}/react', ReactRetinaReview::class)->name('review.react');
 
 Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings()->whereNumber('product');
 Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings()->whereNumber('product');

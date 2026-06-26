@@ -77,7 +77,7 @@ const nextPreviewImage = () => {
 
 const reactingKeys = ref<Record<string, boolean>>({})
 
-const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) => {
+const toggleReaction = (item: any, target: "review" | "review_reply", isLike: boolean) => {
 	const review = item.review
 	if (!review?.review_id || props.readonly) {
 		return
@@ -95,8 +95,11 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 	review[dislikeField] = (review[dislikeField] ?? 0) + (isLike ? 0 : 1)
 
 	router.post(
-		route("retina.models.review.like", { review: review.review_id }),
-		{ target, is_like: isLike },
+		route("retina.models.review.react", { review: review.review_id }),
+		{ 
+			target: target, 
+			type: isLike ? 'like' : 'dislike'
+		},
 		{
 			preserveScroll: true,
 			preserveState: true,
@@ -264,7 +267,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 								<div class="mt-2 flex items-center gap-1">
 									<button
 										:disabled="reactingKeys[`${item.review.review_id}-reply`]"
-										@click="() => toggleReaction(item, 'reply', true)"
+										@click="() => toggleReaction(item, 'review_reply', true)"
 										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100 disabled:opacity-50">
 										<FontAwesomeIcon :icon="faThumbsUp" />
 
@@ -275,7 +278,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 
 									<button
 										:disabled="reactingKeys[`${item.review.review_id}-reply`]"
-										@click="() => toggleReaction(item, 'reply', false)"
+										@click="() => toggleReaction(item, 'review_reply', false)"
 										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100 disabled:opacity-50">
 										<FontAwesomeIcon :icon="faThumbsDown" />
 
