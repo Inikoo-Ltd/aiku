@@ -20,7 +20,7 @@ import '@/Composables/Icon/PalletDeliveryStateEnum'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation, faShieldAlt, faStar, faBoxHeart } from '@fas'
+import { faExclamationTriangle, faExclamation, faShieldAlt, faBoxHeart } from '@fas'
 import {
     faDollarSign,
     faIdCardAlt,
@@ -35,13 +35,14 @@ import {
     faPaperclip,
     faTimes,
     faInfoCircle,
+    faStar
 } from '@fal'
 import { Currency } from '@/types/LayoutRules'
 import { faSpinnerThird } from '@far'
 import DropshippingSummaryOrder from '@/Components/Retina/Dropshipping/DropshippingSummaryOrder.vue'
 import RetinaTableOrderReviewableReview from "../../../Components/Tables/Retina/RetinaTableOrderReviewableReview.vue"
 import OverallReview from "@/Components/OverallReview.vue"
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
+library.add(fadExclamationTriangle,faStar, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
 
 
 const props = defineProps<{
@@ -104,6 +105,9 @@ const props = defineProps<{
     attachments?: {}
     review_settings : object
     order:any
+    overall_review : any
+    family_reviews : any
+    product_reviews : any
 }>()
 
 const currentTab = ref(props.tabs?.current)
