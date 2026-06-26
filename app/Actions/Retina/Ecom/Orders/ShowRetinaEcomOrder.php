@@ -158,8 +158,8 @@ class ShowRetinaEcomOrder extends RetinaAction
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
                 RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value
-                    ? fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order)])
-                    : Inertia::lazy(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order)])),
+                    ? fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])
+                    : Inertia::lazy(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])),
 
             ]
         )
@@ -181,6 +181,16 @@ class ShowRetinaEcomOrder extends RetinaAction
     public function jsonResponse(Order $order): OrderResource
     {
         return new OrderResource($order);
+    }
+
+    private function getReviewSettings(Order $order): array
+    {
+        $settings = $order->shop->settings;
+
+        return [
+            'allow_reactions'       => (bool) data_get($settings, 'reviews.data.allow_reactions', true),
+            'allow_reply_reactions' => (bool) data_get($settings, 'reviews.data.allow_reply_reactions', true),
+        ];
     }
 
     private function getReviewSummary(Order $order): array
