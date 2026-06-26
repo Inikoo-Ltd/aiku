@@ -2,6 +2,7 @@
 
 namespace App\Actions\Accounting\PaymentGateway\Pastpay;
 
+use App\Models\Accounting\Invoice;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Client\PendingRequest;
@@ -108,17 +109,21 @@ trait WithPastpayConfiguration
         ], $extra);
     }
 
-    protected function pastpayBuildFinalizePayload(Order $order, array $extra = []): array
+    public function pastpayBuildFinalizePayload(Invoice $invoice, array $extra = []): array
     {
         return array_merge([
             'creditorTaxNumber' => $this->getShopId(),
-            'invoiceNo' => $order->invoices()->first()?->reference,
-            'invoicePdf' => $order->invoices()->first()?->pdf_url,
-            'issueDate'   => now()->toDateString(),
-            'dueDate' => now()->addDays(Arr::get($extra, 'termDays', 30))->toDateString(),
+            'invoiceNo' => $invoice->reference,
+            'invoicePdf' => route('retina.ecom.invoices.pdf', [
+                'invoice' => $invoice->slug
+            ]),
+            'issueDate'   => $invoice->date->toDateString(),
+            'dueDate' => $invoice->date
+                ->addDays(Arr::get($extra, 'termDays'))
+                ->toDateString(),
             'totalPrice'       => [
-                'amount' => (float) $order->net_amount,
-                'currency'        => $order->currency->code
+                'amount' => (float) $invoice->net_amount,
+                'currency' => $invoice->currency->code
             ],
         ], $extra);
     }
@@ -128,13 +133,13 @@ trait WithPastpayConfiguration
         return $this->pastpayPost('store/order', $this->pastpayBuildOrderPayload($order, $extra));
     }
 
-    protected function pastpayFinalizeOrder(Order $order, array $extra = []): array
+    protected function pastpayFinalizeOrder(Invoice $invoice, array $extra = []): array
     {
-        $pastpayOrderId = $this->pastpayResolveOrderId($order);
+        $pastpayOrderId = $this->pastpayResolveOrderId($invoice->order_id);
 
         return $this->pastpayPatch(
             "/order/{$pastpayOrderId}/finalize",
-            $this->pastpayBuildFinalizePayload($order, $extra)
+            $this->pastpayBuildFinalizePayload($invoice, $extra)
         );
     }
 
