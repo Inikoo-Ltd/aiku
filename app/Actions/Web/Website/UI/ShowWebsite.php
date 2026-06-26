@@ -238,6 +238,20 @@ class ShowWebsite extends OrgAction
                     'actions'   =>
 
                         array_merge(
+                            [
+                                [
+                                    'type'    => 'button',
+                                    'style'   => 'tertiary',
+                                    'label'   => __('Export'),
+                                    'tooltip' => __('Export all pages: Code, URL & meta'),
+                                    'icon'    => ['fal', 'fa-file-export'],
+                                    'target'  => '_self',
+                                    'route'   => [
+                                        'name'       => str_replace('websites.show', 'webpages.export', $request->route()->getName()),
+                                        'parameters' => array_merge($request->route()->originalParameters(), ['type' => 'xlsx']),
+                                    ],
+                                ],
+                            ],
                             $this->workshopActions($request),
                             [
                                 $this->isSupervisor && $website->state == WebsiteStateEnum::IN_PROCESS ? [
