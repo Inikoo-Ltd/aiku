@@ -17,14 +17,15 @@ use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\HumanResources\WorkSchedule;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Review;
+use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class StoreReview extends OrgAction
 {
-
     use HasReviewCommonLogic;
     use HasReviewHydrators;
 
@@ -128,8 +129,14 @@ class StoreReview extends OrgAction
     private function resolvePublishingData(?Shop $shop, array $modelData): array
     {
         $settings         = $shop?->settings ?? [];
-        $approvalRequired = (bool)Arr::get($settings, 'reviews.data.approval_required', false);
-        $isPublic         = (bool)data_get($modelData, 'is_public', true);
+        $approvalRequired = (bool) Arr::get($settings, 'reviews.data.approval_required', false);
+        $ratingThreshold  = (int) Arr::get($settings, 'reviews.public_rating_threshold', 0);
+        $rating           = (float) data_get($modelData, 'rating', 0);
+        $isPublic         = (bool) data_get($modelData, 'is_public', true);
+
+        if ($ratingThreshold > 0 && $rating <= $ratingThreshold) {
+            $isPublic = false;
+        }
 
         if (!$isPublic) {
             return [
@@ -147,25 +154,84 @@ class StoreReview extends OrgAction
             ];
         }
 
-        $isDelay    = Arr::get($settings, 'reviews.auto_publishing.delay', true);
-        $delayHours = (int)Arr::get($settings, 'reviews.auto_publishing.delay_hours', 24);
+        $mode       = Arr::get($settings, 'reviews.auto_publishing.mode', 'delay');
+        $delayHours = (int) Arr::get($settings, 'reviews.auto_publishing.delay_hours', 24);
 
-
-        if ($isDelay) {
-            return [
+        return match ($mode) {
+            'immediately' => $this->resolveImmediatelyPublished($shop),
+            'never'       => [
+                'state'         => ReviewStateEnum::REJECTED,
+                'review_status' => ReviewStatusEnum::REJECTED,
+            ],
+            default => [
                 'state'           => ReviewStateEnum::WAITING_APPROVAL,
                 'review_status'   => ReviewStatusEnum::PENDING,
                 'auto_approve_at' => now()->addHours($delayHours),
-            ];
-        } else {
-            return [
-                'state'         => ReviewStateEnum::PUBLISHED,
-                'review_status' => ReviewStatusEnum::APPROVED,
-                'approved'      => true,
-                'auto_approved' => true,
-                'published_at'  => now(),
-            ];
+            ],
+        };
+    }
+
+    private function resolveImmediatelyPublished(?Shop $shop): array
+    {
+        if (!$shop) {
+            return $this->publishedNow();
         }
+
+        $effective = $shop->getEffectiveWorkSchedule();
+        $schedule  = $effective['schedule'];
+        $timezone  = $effective['timezone'];
+
+        if ($schedule instanceof WorkSchedule) {
+            $schedule->load('days');
+
+            if (!$schedule->isOpenNow($timezone)) {
+                return [
+                    'state'           => ReviewStateEnum::WAITING_APPROVAL,
+                    'review_status'   => ReviewStatusEnum::PENDING,
+                    'auto_approve_at' => $this->resolveNextWorkingTime($schedule, $timezone),
+                ];
+            }
+        }
+
+        return $this->publishedNow();
+    }
+
+    private function publishedNow(): array
+    {
+        return [
+            'state'         => ReviewStateEnum::PUBLISHED,
+            'review_status' => ReviewStatusEnum::APPROVED,
+            'approved'      => true,
+            'auto_approved' => true,
+            'published_at'  => now(),
+        ];
+    }
+
+    private function resolveNextWorkingTime(WorkSchedule $schedule, string $timezone): Carbon
+    {
+        $now = Carbon::now($timezone);
+
+        for ($i = 0; $i <= 7; $i++) {
+            $date      = $now->copy()->addDays($i);
+            $dayOfWeek = $date->dayOfWeekIso;
+
+            $daySchedule = $schedule->days->firstWhere('day_of_week', $dayOfWeek);
+
+            if (!$daySchedule || !$daySchedule->is_working_day || !$daySchedule->start_time) {
+                continue;
+            }
+
+            $startTime = substr((string) $daySchedule->start_time, 0, 8);
+            $start     = Carbon::createFromFormat('H:i:s', $startTime, $timezone)->setDateFrom($date);
+
+            if ($i === 0 && $now->gte($start)) {
+                continue;
+            }
+
+            return $start;
+        }
+
+        return $now;
     }
 
     public function rules(): array
