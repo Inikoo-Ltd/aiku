@@ -111,7 +111,15 @@
                                             valign="top">
                                             <strong>Customer:</strong> <a href="[Customer Link]" style="color: #3498DB; text-decoration: none;">[Customer Name]</a><br />
                                             <strong>Review Link:</strong> <a href="[Review Link]" style="color: #3498DB; text-decoration: none;">View Review</a><br />
+                                            <strong>Order:</strong> [Order Reference]<br />
+                                            <strong>Rating:</strong> [Blade Rating Stars] ([Review Rating]/5)<br />
                                             <strong>Review Message:</strong> [Review Message]<br />
+                                        </td>
+                                    </tr>
+                                    <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
+                                        <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
+                                            valign="top">
+                                            [Blade Review Images]
                                         </td>
                                     </tr>
                                 </table>
