@@ -149,6 +149,7 @@ const props = defineProps<{
     }
     reviews : any
     attachments?: {}
+    review_settings : any
 
 }>()
 
@@ -327,7 +328,7 @@ const syncOrderCancellationShopify = async (order) => {
     <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200 overflow-x-auto">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="order?.data?.state" :modalOpen="isModalUploadOpen"
-                   @update:tab="handleTabUpdate"/>
+                   @update:tab="handleTabUpdate" :review_settings/>
     </div>
 
     <div class="flex justify-end px-6 gap-x-4">

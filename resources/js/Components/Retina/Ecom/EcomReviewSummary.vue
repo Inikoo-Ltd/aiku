@@ -125,7 +125,7 @@ const isModalShippingAddress = ref(false)
 			</div>
 
 			<!-- review summary -->
-			<div
+			<div v-if="review_summary"
 				class="col-span-2 relative overflow-hidden rounded-xl border border-amber-100 bg-gradient-to-r from-amber-50 via-white to-sky-50 p-3 shadow-sm">
 				<div
 					class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-200/20 blur-2xl"></div>

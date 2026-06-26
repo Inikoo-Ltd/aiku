@@ -108,6 +108,7 @@ const props = defineProps<{
     overall_review : any
     family_reviews : any
     product_reviews : any
+    review_summary:any
 }>()
 
 const currentTab = ref(props.tabs?.current)
@@ -127,7 +128,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <DropshippingSummaryOrder :address_management :summary="box_stats" :order />
+    <DropshippingSummaryOrder :address_management :summary="box_stats" :order  :review_summary/>
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="mb-12 mx-4 mt-4 overflow-x-auto">
       <component

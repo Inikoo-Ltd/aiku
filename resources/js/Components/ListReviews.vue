@@ -17,7 +17,7 @@ import {
 	faChevronCircleRight,
 } from "@fal"
 import { faCircle, faDotCircle, faReply } from "@fas"
-import { faEye, faEyeSlash, faFolder, faStar } from "@far"
+import { faEye, faEyeSlash, faFolder, faGameConsoleHandheld, faStar } from "@far"
 import { inject, ref } from "vue"
 import Image from "@/Common/Components/Image.vue"
 
@@ -116,6 +116,8 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 		}
 	)
 }
+
+console.log('sdfsdf',layout.iris)
 </script>
 
 <template>
@@ -229,8 +231,9 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 						<div class="flex gap-3">
 							<div
 								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white">
-								<!-- <FontAwesomeIcon :icon="faReply" class="text-[10px]" /> -->
-								<img :src="layout.iris.website.logo.avif" src="logo" />
+
+								<img v-if="layout?.iris?.website?.logo?.avif" :src="layout.iris.website.logo.avif" src="logo" />
+								<FontAwesomeIcon v-else :icon="faReply" class="text-[10px]" />
 							</div>
 
 							<div class="min-w-0 flex-1">
