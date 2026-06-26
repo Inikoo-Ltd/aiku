@@ -14,6 +14,7 @@ use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Models\Reviews\ReviewRatingLabel;
@@ -731,13 +732,15 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
+                        
                         'review_publishing' => [
                             'type'        => 'review_publishing',
                             'label'       => __('Publishing'),
                             'information' => __('When public reviews are published after submission.'),
+                            'options'     => ReviewAutoPublishingEnum::selectOptions(),
                             'value'       => [
                                 'auto_publishing' => [
-                                    'delay'       => Arr::get($shop->settings, 'reviews.auto_publishing.delay', true),
+                                    'mode'        => Arr::get($shop->settings, 'reviews.auto_publishing.mode', ReviewAutoPublishingEnum::IMMEDIATELY->value),
                                     'delay_hours' => Arr::get($shop->settings, 'reviews.auto_publishing.delay_hours', 24),
                                 ],
                             ],
@@ -754,6 +757,16 @@ class EditShop extends OrgAction
                             'information' => __('Number of hours after an order is dispatched before the review menu appears to the customer.'),
                             'value'       => Arr::get($shop->settings, 'reviews.data.hours_after_dispatched', 24),
                             'min'         => 1,
+                        ],
+                        'review_public_rating_threshold' => [
+                            'type'        => 'input_number',
+                            'label'       => __('Public rating threshold'),
+                            'information' => __('If a customer rates higher than this value, the review is automatically made public.'),
+                            'bind'        => [
+                                'min' => 1,
+                                'max' => 5,
+                            ],
+                            'value'       => Arr::get($shop->settings, 'reviews.public_rating_threshold', 3),
                         ],
                         'review_allow_reactions' => [
                             'type'        => 'toggle',

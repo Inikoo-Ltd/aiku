@@ -10,64 +10,63 @@ const props = defineProps<{
     fieldData?: any
 }>()
 
-const autoPublishingOptions: Array<{ value: boolean; label: string }> = [
-    { value: false, label: trans('Immediately') },
-    { value: true, label: trans('Delay') },
-]
+const autoPublishingOptions = computed<Array<{ value: string; label: string }>>(() =>
+    props.fieldData?.options ?? [
+        { value: 'immediately', label: trans('Immediately') },
+        { value: 'delay', label: trans('Delay') },
+        { value: 'never', label: trans('Never') },
+    ]
+)
 
 const initialValue = props.form[props.fieldName] ?? {}
 
-const autoPublishingDelay = ref<boolean>(initialValue?.auto_publishing?.delay ?? true)
+const autoPublishingMode = ref<string>(initialValue?.auto_publishing?.mode ?? 'immediately')
 const autoPublishingDelayHours = ref<number>(initialValue?.auto_publishing?.delay_hours ?? 24)
 
 const syncForm = () => {
     props.form[props.fieldName] = {
         auto_publishing: {
-            delay: autoPublishingDelay.value,
+            mode: autoPublishingMode.value,
             delay_hours: Number(autoPublishingDelayHours.value) || 1,
         },
     }
 }
 
-watch([autoPublishingDelay, autoPublishingDelayHours], syncForm)
+watch([autoPublishingMode, autoPublishingDelayHours], syncForm)
 
 const fieldNameString = computed(() => props.fieldName)
 </script>
 
 <template>
     <div class="flex flex-col gap-6">
-
         <div class="flex flex-col gap-2">
-            <!-- <span class="text-sm font-semibold text-gray-700">{{ trans('Auto publishing') }}</span> -->
-            <div class="flex flex-col gap-2">
-                <div
-                    v-for="option in autoPublishingOptions"
-                    :key="String(option.value)"
-                    class="flex items-center gap-2"
+            <div
+                v-for="option in autoPublishingOptions"
+                :key="option.value"
+                class="flex items-center gap-2"
+            >
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                        type="radio"
+                        :value="option.value"
+                        v-model="autoPublishingMode"
+                        class="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span class="text-sm">{{ option.label }}</span>
+                </label>
+                <span
+                    v-if="option.value === 'delay' && autoPublishingMode === 'delay'"
+                    class="ml-2 flex items-center gap-2"
                 >
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            :value="option.value"
-                            v-model="autoPublishingDelay"
-                            class="text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <span class="text-sm">{{ option.label }}</span>
-                    </label>
-                    <span
-                        v-if="option.value === true && autoPublishingDelay === true"
-                        class="ml-2 flex items-center gap-2"
-                    >
-                        <PureInput
-                            type="number"
-                            minValue="1"
-                            class="w-24"
-                            :modelValue="autoPublishingDelayHours"
-                            @update:modelValue="autoPublishingDelayHours = Number($event)"
-                        />
-                        <span class="text-sm text-gray-500">{{ trans('hours') }}</span>
-                    </span>
-                </div>
+                    <PureInput
+                        type="number"
+                        minValue="1"
+                        class="w-24"
+                        :modelValue="autoPublishingDelayHours"
+                        @update:modelValue="autoPublishingDelayHours = Number($event)"
+                    />
+                    <span class="text-sm text-gray-500">{{ trans('hours') }}</span>
+                </span>
             </div>
         </div>
 
