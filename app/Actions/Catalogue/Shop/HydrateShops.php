@@ -77,7 +77,7 @@ class HydrateShops
     public function handle(Shop $shop): void
     {
         ShopHydratePaymentAccounts::run($shop);
-        ShopHydratePayments::run($shop);
+        ShopHydratePayments::run($shop->id);
         ShopHydrateCustomers::run($shop);
         ShopHydrateCustomerInvoices::run($shop);
         ShopHydrateOrders::run($shop);

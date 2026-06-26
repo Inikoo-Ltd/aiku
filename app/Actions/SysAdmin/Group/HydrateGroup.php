@@ -138,7 +138,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateTradeUnits::run($group);
         GroupHydrateUsers::run($group);
         GroupHydrateInvoices::run($group);
-        GroupHydratePayments::run($group);
+        GroupHydratePayments::run($group->id);
         GroupHydratePaymentAccounts::run($group);
         GroupHydratePaymentServiceProviders::run($group);
         GroupHydrateCollections::run($group);
