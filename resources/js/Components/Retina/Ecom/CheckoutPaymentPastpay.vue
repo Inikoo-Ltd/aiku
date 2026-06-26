@@ -2,7 +2,7 @@
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
-import { inject, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { faArrowRight, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -12,6 +12,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Modal from "@/Components/Utils/Modal.vue"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { notify } from "@kyvg/vue3-notification"
+import axios from "axios"
 
 library.add(faArrowRight, faCheckCircle)
 
@@ -36,20 +37,16 @@ const layout = inject("layout", retinaLayoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
 const currencyCode = props.currency_code || layout.iris?.currency?.code
 
-const xxxx = {
-	credentials: {
-		api_key: "xxx",
-	},
-	charges: {
-		options: [
-			{ days: 30, charge: "2.20%" },
-			{ days: 60, charge: "4.25%" },
-		],
-	},
-}
-const totalCost = 160
 
 const selectedOption = ref<{ days: number; charge: string } | null>(null)
+
+const chargeRate = (charge: string) => parseFloat(charge) / 100
+const chargeAmountFor = (charge: string) => Number(props.needToPay) * chargeRate(charge)
+
+const feeAmount = computed(() =>
+	selectedOption.value ? chargeAmountFor(selectedOption.value.charge) : 0
+)
+const totalAmount = computed(() => Number(props.needToPay) + feeAmount.value)
 
 const isLoading = ref(false)
 const onSubmitPlaceOrder = async () => {
@@ -108,59 +105,75 @@ const isModalPastpayRedirected = ref(false)
 
 <template>
 	<div class="relative w-full max-w-xl mx-auto my-4 md:my-8 overflow-hidden">
-		<div class="mx-auto max-w-md">
+		<div class="mx-auto max-w-lg">
 			<img src="/storage/payment-providers/pastpay.png" alt="Pastpay" />
-			<div class="mt-5 pt-4 border-t border-dashed">
-				<div>
-					{{ ctrans("Need to pay") }}:
-					<span class="font-bold">{{
-						locale.currencyFormat(currencyCode, Number(props.needToPay).toFixed(2))
-					}}</span>
+			<div class="mt-5 pt-5 border-t border-dashed border-gray-300">
+				<div class="overflow-hidden rounded-xl ring-1 ring-gray-200 divide-y divide-gray-200">
+					<div class="flex items-center justify-between px-4 py-3">
+						<span class="text-sm text-gray-600">{{ ctrans("Need to pay") }}</span>
+						<span class="font-semibold text-gray-900 tabular-nums">
+							{{ locale.currencyFormat(currencyCode, Number(props.needToPay)) }}
+						</span>
+					</div>
+
+					<Transition name="slide-down">
+						<div v-if="selectedOption" class="flex items-center justify-between px-4 py-3">
+							<span class="text-sm text-gray-600">
+								{{ ctrans("Pastpay fee") }}
+								<span class="text-gray-400">({{ selectedOption.charge }}%)</span>
+							</span>
+							<span class="font-semibold text-blue-600 tabular-nums whitespace-nowrap">
+								+ {{ locale.currencyFormat(currencyCode, feeAmount) }}
+							</span>
+						</div>
+					</Transition>
+
+					<div class="flex items-center justify-between bg-gray-50 px-4 py-3">
+						<span class="font-medium text-gray-900">{{ ctrans("Total") }}</span>
+						<span class="text-lg font-bold text-gray-900 tabular-nums">
+							{{ locale.currencyFormat(currencyCode, totalAmount) }}
+						</span>
+					</div>
 				</div>
-				<div>{{ ctrans("Select your preferred method") }}:</div>
+
+				<div class="mt-5 text-sm font-medium text-gray-700">
+					{{ ctrans("Select your preferred method") }}
+				</div>
 			</div>
 
 			<!-- Section: method selector -->
-			<div class="flex flex-col gap-y-2 mt-3">
+			<div class="mt-3 flex flex-col gap-y-3">
 				<button
 					v-for="option in props.data.data.charges"
 					:key="option.days"
 					type="button"
 					@click="selectedOption = option"
 					:class="[
-						'flex flex-col gap-x-4 rounded-xl border p-6 ring-1 ring-inset text-left transition-colors',
+						'group flex w-full flex-col gap-y-2 rounded-xl border p-5 text-left ring-1 ring-inset transition-all',
 						selectedOption?.days === option.days
-							? 'border-blue-500 bg-blue-50 ring-blue-300'
-							: 'border-gray-300 bg-gray-100 ring-white/10 hover:border-gray-400',
+							? 'border-blue-500 bg-blue-50 ring-blue-200'
+							: 'border-gray-200 bg-white ring-transparent hover:border-gray-300 hover:bg-gray-50',
 					]">
-					<div class="flex flex-row items-center justify-between w-full">
-						<div class="flex flex-col md:flex-row md:items-center gap-2">
-							<h3 class="font-semibold">{{ option.days }} {{ ctrans("days") }}</h3>
-							<div class="font-normal xtext-gray-400 text-sm">
-								{{ option.charge }} {{ ctrans("charge") }}
-							</div>
+					<div class="flex w-full items-center justify-between gap-4">
+						<div class="flex flex-col gap-1 md:flex-row md:items-center md:gap-2">
+							<h3 class="font-semibold text-gray-900">{{ option.days }} {{ ctrans("days") }}</h3>
+							<span
+								class="inline-flex w-fit items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+								{{ option.charge }}% {{ ctrans("charge") }}
+							</span>
 						</div>
 						<FontAwesomeIcon
-							v-if="selectedOption?.days === option.days"
-							:icon="faCheckCircle"
-							class="text-blue-500 text-xl"
-							fixed-width
-							aria-hidden="true" />
-						<FontAwesomeIcon
-							v-else
-							icon="fal fa-circle"
+							:icon="selectedOption?.days === option.days ? faCheckCircle : 'fal fa-circle'"
+							:class="selectedOption?.days === option.days ? 'text-blue-500' : 'text-gray-300'"
 							class="text-xl"
 							fixed-width
 							aria-hidden="true" />
 					</div>
-					<p class="text-gray-400 italic text-sm mt-1">
+					<p class="text-sm text-gray-500">
 						{{ ctrans("Estimated cost") }} •
-						{{
-							locale.currencyFormat(
-								currencyCode,
-								(needToPay * (parseFloat(option.charge) / 100)).toFixed(2)
-							)
-						}}
+						<span class="font-medium tabular-nums text-gray-700">
+							{{ locale.currencyFormat(currencyCode, chargeAmountFor(option.charge)) }}
+						</span>
 					</p>
 				</button>
 			</div>
@@ -209,3 +222,16 @@ const isModalPastpayRedirected = ref(false)
 		</Modal>
 	</div>
 </template>
+
+<style scoped>
+.slide-down-enter-active,
+.slide-down-leave-active {
+	transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+	opacity: 0;
+	transform: translateY(-0.5rem);
+}
+</style>

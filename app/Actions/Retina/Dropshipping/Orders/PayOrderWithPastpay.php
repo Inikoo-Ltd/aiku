@@ -36,7 +36,7 @@ class PayOrderWithPastpay extends RetinaAction
         $customer = $order->customer;
 
         if(! $customer?->taxNumber) {
-            throw ValidationException::withMessages(['message' => __('You don\'t have tax number.')]);
+            throw ValidationException::withMessages(['message' => __('You don\'t have tax number. Please add your tax number in Account Settings.')]);
         }
 
         /** @var PaymentAccountShop $paymentAccountShop */
