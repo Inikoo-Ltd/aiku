@@ -3,6 +3,7 @@
 namespace App\Actions\Reviews\ReviewReaction;
 
 use App\Actions\OrgAction;
+use App\Actions\Reviews\Traits\WithHydrateReviewReactionStats;
 use App\Enums\Catalogue\Review\ReviewReactionTargetEnum;
 use App\Enums\Catalogue\Review\ReviewReactionTypeEnum;
 use App\Models\Reviews\Review;
@@ -11,6 +12,8 @@ use Illuminate\Validation\Rules\Enum;
 
 class StoreReviewReaction extends OrgAction
 {
+    use WithHydrateReviewReactionStats;
+
     public function action(Review $review, array $modelData): ReviewReaction
     {
         $this->initialisation($review->organisation, $modelData);
@@ -21,6 +24,8 @@ class StoreReviewReaction extends OrgAction
     public function handle(Review $review, array $modelData): ReviewReaction
     {
         $reviewReaction = $review->reactions()->create($modelData);
+        
+        $this->hydrateReactions($review);
 
         return $reviewReaction;
     }
