@@ -240,9 +240,11 @@ trait IsOrder
             [
                 'label'       => __('Shipping'),
                 'information' => '',
+                'price_total_old'   => null, // TODO: Raul put old shipping amount (amount before discount)
                 'price_total' => $order->shipping_amount,
                 'slot_name'   => 'shipping',
                 'data'        => [
+                    'discounted_shipping_offer_id'          => $order->discounted_shipping_offer_id,
                     'shipping_amount'     => $order->shipping_amount,
                     'new_shipping_amount' => $order->shipping_amount,  // FE Helper
                     'engine'              => $order->shipping_engine,

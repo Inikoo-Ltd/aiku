@@ -1,6 +1,6 @@
 <script setup lang="ts">
     
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { faClipboard, faDollarSign, faSortNumericDown, faWeight, faMapPin } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
@@ -321,7 +321,35 @@ const updateCollection = (value: boolean) => {
                 <OrderSummary
                     :order_summary="summary.order_summary"
                     :currency_code="layout?.iris?.currency?.code"
-                />
+                >
+                    <template #cell_shipping_1="{ fieldSummary }">
+                        <dt class="col-span-3 flex flex-col">
+                            <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                <span
+                                    :class="fieldSummary.data.discounted_shipping_offer_id ? 'text-green-500' : ''"
+                                >
+                                    {{ fieldSummary.label }}
+                                </span>
+
+                                <FontAwesomeLayers v-if="fieldSummary.data.discounted_shipping_offer_id" v-tooltip="ctrans('Shipping discount')" class="ml-1 me-2 text-green-500">
+                                    <FontAwesomeIcon fixed-width icon="fal fa-truck"/>
+                                    <FontAwesomeIcon fixed-width icon="fas fa-percent" style="left: unset; right: 6px; bottom: 2px; width: 30%;"/>
+                                </FontAwesomeLayers>
+
+                                <!-- qq{{ fieldSummary.data.discounted_shipping_offer_id }}ww -->
+                                <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle'
+                                    v-tooltip="fieldSummary.information_icon"
+                                    class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width
+                                    aria-hidden='true'
+                                />
+                                
+                            </div>
+                            <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">
+                                {{ fieldSummary.information }}
+                            </span>
+                        </dt>
+                    </template>
+                </OrderSummary>
             </div>
         </div>
 
