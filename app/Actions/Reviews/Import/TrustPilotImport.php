@@ -92,7 +92,7 @@ class TrustPilotImport implements ToCollection
 
 
             $meta = [
-                'source'                  => 'trustpilot',
+                'source'                  => 'TrustPilot',
                 'review_consumer_user_id' => $row[2],
                 'review_created'          => $row[1],
             ];

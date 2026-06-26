@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_payment_service_providers_type_cash_on_delivery
  * @property int $number_org_payment_service_providers_type_buy_now_pay_later
  * @property int $number_payment_accounts
+ * @property int $number_current_payment_accounts
  * @property int $number_payment_accounts_type_paypal
  * @property int $number_payment_accounts_type_world_pay
  * @property int $number_payment_accounts_type_bank

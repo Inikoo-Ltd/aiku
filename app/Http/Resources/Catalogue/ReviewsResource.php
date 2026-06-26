@@ -2,8 +2,8 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use App\Actions\Helpers\Images\GetPictureSources;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -26,13 +26,25 @@ class ReviewsResource extends JsonResource
         $canManage = $request->routeIs('grp.*');
         $hasReply  = (bool)$this->replied;
 
-
         return [
             'id'               => $this->id,
             'customer_id'      => $this->customer_id,
             'scope'            => $this->scope,
             'customer_name'    => $this->customer_name,
+            'customer_route'   => ($canManage && $this->customer_id && $this->customer_slug) ? [
+                'name'       => 'grp.org.shops.show.crm.customers.show',
+                'parameters' => [
+                    'organisation' => $request->route('organisation')->slug,
+                    'shop'         => $request->route('shop')->slug,
+                    'customer'     => $this->customer_slug,
+                ],
+            ] : null,
             'status'           => $this->status,
+            'state_icon'       => [
+                'icon'    => 'fal fa-broadcast-tower',
+                'tooltip' => $this->state === ReviewStateEnum::PUBLISHED ? __('Published') : __('Not published'),
+                'class'   => $this->state === ReviewStateEnum::PUBLISHED ? 'text-green-500' : 'text-gray-400',
+            ],
             'rating'           => (int)round((float)($this->rating_main ?? $this->rating ?? 0)),
             'rating_a'         => $this->rating_a !== null ? (int)$this->rating_a : null,
             'rating_b'         => $this->rating_b !== null ? (int)$this->rating_b : null,
@@ -41,6 +53,7 @@ class ReviewsResource extends JsonResource
             'rating_e'         => $this->rating_e !== null ? (int)$this->rating_e : null,
             'message'          => $this->message,
             'likes'            => (int)$this->likes,
+            'dislikes'         => (int)$this->dislikes,
             'has_reply'        => $hasReply,
             'reply_status'     => $hasReply ? 'Yes' : 'No',
             'existing_reply'   => $hasReply ? [
@@ -68,8 +81,6 @@ class ReviewsResource extends JsonResource
             'created_at'       => $this->created_at,
         ];
     }
-
-
 
     private static function getRatingLabels(ProductCategory|Product|Shop $reviewable): array
     {

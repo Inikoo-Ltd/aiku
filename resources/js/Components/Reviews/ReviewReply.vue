@@ -313,7 +313,7 @@ const deleteReply = async () => {
 
                         <div>
                             <div class="text-sm font-semibold text-gray-900">
-                                {{ modelValue.contact_name }}
+                                {{ modelValue.customer_name }}
                             </div>
                             <div class="text-xs text-gray-500">
                                 {{ useFormatTime(modelValue.created_at) }}

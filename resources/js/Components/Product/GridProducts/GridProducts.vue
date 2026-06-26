@@ -102,6 +102,11 @@ const props = defineProps({
         default: true,
         required: false,
     },
+    label :  {
+        type: String,
+        default: true,
+        required: false,
+    },
 })
 
 // console.log(props);
@@ -460,8 +465,8 @@ watch(queryBuilderData, async () => {
                 <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
                     <!-- Record Counter -->
                     <RecordCounter :total="compResourceMeta?.total || 0"
-                        :labelSingular="queryBuilderProps?.labelRecord?.[0] || trans('product')"
-                        :labelPlural="queryBuilderProps?.labelRecord?.[1] || queryBuilderProps?.labelRecord?.[0] || trans('products')" />
+                        :labelSingular="queryBuilderProps?.labelRecord?.[0] || props.label || trans('product')"
+                        :labelPlural="queryBuilderProps?.labelRecord?.[1] || queryBuilderProps?.labelRecord?.[0] || props.label || trans('products')" />
 
                     <!-- Search Input -->
                     <div class="flex flex-row"  v-if="queryBuilderProps.globalSearch">

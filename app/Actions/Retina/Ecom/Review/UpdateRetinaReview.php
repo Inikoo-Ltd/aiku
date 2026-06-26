@@ -5,6 +5,7 @@ namespace App\Actions\Retina\Ecom\Review;
 use App\Actions\Catalogue\Review\UpdateReview;
 use App\Actions\RetinaAction;
 use App\Models\Reviews\Review;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaReview extends RetinaAction
@@ -17,14 +18,17 @@ class UpdateRetinaReview extends RetinaAction
     public function rules(): array
     {
         return [
-            'rating'   => ['sometimes', 'numeric', 'min:1', 'max:5'],
-            'rating_a' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_b' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_c' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_d' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'rating_e' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
-            'title'    => ['sometimes', 'nullable', 'string', 'max:255'],
-            'message'  => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'rating'    => ['sometimes', 'numeric', 'min:1', 'max:5'],
+            'rating_a'  => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_b'  => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_c'  => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_d'  => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'rating_e'  => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'title'     => ['sometimes', 'nullable', 'string', 'max:255'],
+            'message'   => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'is_public' => ['sometimes', 'nullable'],
+            'images'    => ['sometimes', 'array'],
+            'images.*'  => ['sometimes', File::image()->max(50 * 1024)],
         ];
     }
 
