@@ -13,4 +13,3 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('', EditShop::class)->name('edit');
 Route::get('google-ads/connect', ConnectShopGoogleAds::class)->name('google_ads.connect');
-Route::get('google-ads/callback', CallbackShopGoogleAds::class)->name('google_ads.callback');

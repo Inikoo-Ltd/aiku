@@ -9,6 +9,8 @@
 namespace App\Actions\Discounts\Offer\VolGr;
 
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
+use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
@@ -29,12 +31,11 @@ class UpdateVolumeGrOfferFromMaster
     public function handle(MasterProductCategory $masterProductCategory): array
     {
         $masterProductCategory->refresh();
-        $this->updatedOffersCount = 0;
+        $this->updatedOffersCount     = 0;
         $this->updatedAllowancesCount = 0;
-        $masterShopEnableGR = $masterProductCategory->masterShop->gold_reward_eligible;
+        $masterShopEnableGR           = $masterProductCategory->masterShop->gold_reward_eligible;
 
         if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY || !$masterShopEnableGR) {
-
             return [
                 'success'            => false,
                 'updated_offers'     => $this->updatedOffersCount,
@@ -44,7 +45,7 @@ class UpdateVolumeGrOfferFromMaster
         }
 
         DB::transaction(function () use ($masterProductCategory) {
-            $percentageOff = (float) ($masterProductCategory->gr_vol_discount_percentage / 100);
+            $percentageOff = (float)($masterProductCategory->gr_vol_discount_percentage / 100);
 
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 if (!$productCategory->follow_master_gr) {
@@ -54,22 +55,22 @@ class UpdateVolumeGrOfferFromMaster
                 $offer = Offer::where('shop_id', $productCategory->shop_id)->where('type', 'Category Quantity Ordered Order Interval')->where('trigger_id', $productCategory->id)->first();
 
                 if (!$offer) {
-                    StoreVolumeGRDiscount::make()->action(
+                    $offer = StoreVolumeGRDiscount::make()->action(
                         $productCategory,
                         [
-                                'trigger_data_item_quantity' => $masterProductCategory->gr_vol_discount_quantity,
-                                'percentage_off'             => $percentageOff,
-                                'interval'                   => 30
-                            ]
+                            'trigger_data_item_quantity' => $masterProductCategory->gr_vol_discount_quantity,
+                            'percentage_off'             => $percentageOff,
+                            'interval'                   => 30
+                        ]
                     );
                 } else {
                     $triggerData = $offer->trigger_data;
                     data_set($triggerData, 'item_quantity', $masterProductCategory->gr_vol_discount_quantity);
 
                     $offer->update([
-                        'state'         => OfferStateEnum::ACTIVE,
-                        'status'        => true,
-                        'trigger_data'  => $triggerData,
+                        'state'        => OfferStateEnum::ACTIVE,
+                        'status'       => true,
+                        'trigger_data' => $triggerData,
                     ]);
 
                     foreach ($offer->offerAllowances as $offerAllowance) {
@@ -90,13 +91,22 @@ class UpdateVolumeGrOfferFromMaster
                 }
 
                 $productCategory->updateQuietly(['has_gr_vol_discount' => true]);
+
+                if ($offer) {
+                    $offer->refresh();
+                    UpdateProductCategoryOffersData::run($offer);
+                    if ($productCategory->webpage) {
+                        BreakWebpageCache::dispatch($productCategory->webpage, true);
+                    }
+                }
+
                 $this->updatedOffersCount++;
             }
         });
 
         return [
-            'success' => true,
-            'updated_offers' => $this->updatedOffersCount,
+            'success'            => true,
+            'updated_offers'     => $this->updatedOffersCount,
             'updated_allowances' => $this->updatedAllowancesCount,
         ];
     }

@@ -8,6 +8,8 @@
 
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Comms\Notifications\GetSnsNotification;
+use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
+use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
@@ -29,6 +31,7 @@ Route::name('webhooks.')->group(function () {
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
 });
 
+Route::get('google-ads/callback', CallbackShopGoogleAds::class)->name('google_ads.callback');
 
 Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::any('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');

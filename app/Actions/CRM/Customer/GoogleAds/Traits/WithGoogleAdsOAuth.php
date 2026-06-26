@@ -37,10 +37,11 @@ trait WithGoogleAdsOAuth
             'client_id'     => $clientId,
             'client_secret' => $clientSecret,
         ]);
-        $client->setRedirectUri(route('grp.org.shops.show.settings.google_ads.callback', [$shop->organisation, $shop]));
+        $client->setRedirectUri(route('google_ads.callback'));
         $client->setScopes([self::GOOGLE_ADS_SCOPE]);
+        $client->setState($shop->id);
         $client->setAccessType('offline');
-        $client->setPrompt('consent');
+        $client->setPrompt('select_account');
 
         return $client;
     }
