@@ -51,7 +51,10 @@ class SendNewReviewEmailToSubscribers extends OrgAction
                     $review->shop->slug,
                     $customer?->slug
                 ]) : '#',
-                'review_link'        => $order ? route('retina.ecom.orders.review', [$order->id]) : '#',
+                'review_link'        => $order ? route('grp.org.shops.show.reviews.backlog', [
+                    $review->organisation->slug,
+                    $review->shop->slug
+                ]) : '#',
                 'review_message'     => $review->message ?? '',
                 'order_reference'    => $order?->reference ?? '',
                 'order_link' => $order ? route('grp.org.shops.show.ordering.orders.show', [
