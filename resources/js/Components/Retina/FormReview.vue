@@ -365,9 +365,9 @@ console.log(form, props)
 					</div>
 
 					<div v-if="modelValue?.review_images?.length" class="grid gap-3 pt-2 sm:grid-cols-3">
-						<div v-for="(item, index) in modelValue?.review_images" :key="item.name + item.size"
+						<div v-for="(item, index) in modelValue?.review_images" :key="item.name"
 							class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
-							<Image :src="item.thumbnail" :alt="item.name" class="h-36 w-full object-cover" />
+							<Image :src="item.media_url" :alt="item.name" class="h-36 w-full object-cover" />
 
 							<div class="space-y-1 p-3">
 								<div class="truncate text-sm font-medium text-gray-800">
