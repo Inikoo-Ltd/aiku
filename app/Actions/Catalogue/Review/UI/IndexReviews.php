@@ -65,7 +65,7 @@ class IndexReviews extends OrgAction
         ];
     }
 
-    public function handle(ProductCategory|Product|Shop $parent, ?string $prefix = null, ?string $scope = null): LengthAwarePaginator
+    public function handle(ProductCategory|Product|Shop $parent, ?string $prefix = null, ?string $scope = null, ?string $bucket = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -94,6 +94,10 @@ class IndexReviews extends OrgAction
             $query->where('scope', ReviewScopeEnum::FAMILY->value);
         } elseif ($scope === 'product') {
             $query->where('scope', ReviewScopeEnum::PRODUCT->value);
+        }
+
+        if ($bucket === 'waiting') {
+            $query->where('reviews.review_status', ReviewStatusEnum::PENDING->value);
         }
 
         return $query->defaultSort('-reviews.created_at')
