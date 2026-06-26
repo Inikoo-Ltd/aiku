@@ -79,23 +79,24 @@ const component = computed(() => TAB_COMPONENT_MAP[currentTab.value])
 provide('reload', () => router.reload())
 
 const setPayloadData = () => {
-    const data = props[currentTab.value]?.layout
+  const data = props[currentTab.value]?.layout
 
-    if (currentTab.value === "department_description") {
-        const payloadData: Record<string, any> = {}
+  if (currentTab.value === "department_description") {
+    const payloadData: Record<string, any> = {}
 
-        for (const key in data) {
-            const item = data[key]
+    for (const key in data) {
+      const item = data[key]
 
-            payloadData[item.code] = {
-                fieldValue: item.data
-            }
-        }
+      payloadData[item.code] = {
+        icon: item.data.icon,
+        fieldValue: item.data.fieldValue
+      }
 
-        return payloadData
+      return payloadData
     }
 
     return data
+  }
 }
 
 const onPublish = () => {

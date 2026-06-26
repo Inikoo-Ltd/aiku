@@ -45,7 +45,7 @@ class CalculateOrderShipping
                 $discount = true;
 
                 $offerId = Arr::get($shopOffersData, 'discounted_shipping.id');
-                if ($order->discounted_offer_id != $offerId) {
+                if ($order->discounted_shipping_offer_id != $offerId) {
                     $insertTransactionHasOfferAllowance = true;
                 }
             }
@@ -143,7 +143,7 @@ class CalculateOrderShipping
 
             if (!$this->toBeConfirmed && $discount) {
                 $order->update([
-                    'discounted_offer_id' => $offerId,
+                    'discounted_shipping_offer_id' => $offerId,
                 ]);
                 if ($insertTransactionHasOfferAllowance) {
                     $this->saveTransactionOfferAllowances($order, $shippingTransaction, $shopOffersData);
@@ -281,7 +281,7 @@ class CalculateOrderShipping
     public function removeOffer(Order $order): void
     {
         $order->update([
-            'discounted_offer_id' => null
+            'discounted_shipping_offer_id' => null
         ]);
         DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)
             ->where('model_type', 'ShippingZone')
