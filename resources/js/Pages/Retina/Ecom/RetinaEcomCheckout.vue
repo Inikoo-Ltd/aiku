@@ -19,6 +19,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue"
 import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaymentCashOnDelivery.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Select } from "primevue"
+import CheckoutPaymentPastpay from "@/Components/Retina/Ecom/CheckoutPaymentPastpay.vue"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
@@ -58,7 +59,8 @@ const component = computed(() => {
     const components: Component = {
         credit_card: CheckoutPaymentCard,
         bank_transfer: CheckoutPaymentBankTransfer,
-        cash_on_delivery: CheckoutPaymentCashOnDelivery
+        cash_on_delivery: CheckoutPaymentCashOnDelivery,
+        pastpay: CheckoutPaymentPastpay
 
     }
 

@@ -37,6 +37,7 @@ use App\Actions\Accounting\PaymentAccount\UI\EditPaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UI\IndexCustomersInPaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
+use App\Actions\Accounting\PaymentAccountShop\UI\EditPaymentAccountShop;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
 use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
@@ -79,6 +80,7 @@ Route::get('/accounts/{paymentAccount}', [ShowPaymentAccount::class, 'inOrganisa
 Route::get('/accounts/{paymentAccount}/customers', IndexCustomersInPaymentAccount::class)->name('payment-accounts.show.customers.index');
 Route::get('/accounts/{paymentAccount}/shops', IndexPaymentAccountShops::class)->name('payment-accounts.show.shops.index');
 Route::get('/accounts/{paymentAccount}/shops/{paymentAccountShop}', ShowPaymentAccountShop::class)->name('payment-accounts.show.shops.show');
+Route::get('/accounts/{paymentAccount}/shops/{paymentAccountShop}/edit', EditPaymentAccountShop::class)->name('payment-accounts.show.shops.edit');
 
 Route::get('/accounts/{paymentAccount}/payments', [IndexPayments::class, 'inPaymentAccount'])->name('payment-accounts.show.payments.index');
 Route::get('/accounts/{paymentAccount}/payments/{payment}', [ShowPayment::class, 'inPaymentAccount'])->name('payment-accounts.show.payments.show');

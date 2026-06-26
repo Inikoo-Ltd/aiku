@@ -14,6 +14,7 @@ use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
+use App\Actions\Retina\Dropshipping\Orders\FinalizeOrderWithPastpay;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
@@ -217,6 +218,9 @@ class StoreInvoice extends OrgAction
             MatchCustomerProspects::dispatch($invoice->customer);
         }
 
+        if ($invoice->is_pastpay) {
+            FinalizeOrderWithPastpay::run($invoice);
+        }
 
         return $invoice;
     }
