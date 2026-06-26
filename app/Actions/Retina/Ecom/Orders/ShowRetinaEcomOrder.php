@@ -71,12 +71,13 @@ class ShowRetinaEcomOrder extends RetinaAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $hoursAfterDispatched = (int) data_get($order->shop->settings, 'reviews.data.hours_after_dispatched', 24);
-        $reviewAvailable = $order->state === OrderStateEnum::DISPATCHED
+        $hoursAfterDispatched  = (int) data_get($order->shop->settings, 'reviews.data.hours_after_dispatched', 24);
+        $reviewAvailable       = $order->state === OrderStateEnum::DISPATCHED
             && $order->dispatched_at !== null
             && now()->diffInHours($order->dispatched_at, false) <= -$hoursAfterDispatched;
+        $hasPublishedReviews   = $reviewAvailable && Review::where('order_id', $order->id)->exists();
 
-        $action =  [
+        $action = $reviewAvailable ? [
             [
                 'type'    => 'button',
                 'style'   => '',
@@ -90,7 +91,7 @@ class ShowRetinaEcomOrder extends RetinaAction
                     ],
                 ],
             ],
-        ];
+        ] : [];
 
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
 
@@ -113,7 +114,9 @@ class ShowRetinaEcomOrder extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => RetinaOrderTabsEnum::navigation()
+                    'navigation' => $hasPublishedReviews
+                        ? RetinaOrderTabsEnum::navigation()
+                        : RetinaOrderTabsEnum::navigationExcept([RetinaOrderTabsEnum::REVIEWS]),
                 ],
 
                 'routes'        => [

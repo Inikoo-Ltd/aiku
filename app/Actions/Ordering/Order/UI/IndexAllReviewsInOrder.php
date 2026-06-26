@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\Media;
 use App\Models\Ordering\Order;
@@ -35,6 +36,7 @@ class IndexAllReviewsInOrder extends OrgAction
 
         $paginator = QueryBuilder::for(Review::class)
             ->where('reviews.order_id', $order->id)
+            ->where('reviews.state', ReviewStateEnum::PUBLISHED)
             ->leftJoin('products', 'reviews.product_id', '=', 'products.id')
             ->leftJoin('product_categories', 'reviews.product_category_id', '=', 'product_categories.id')
             ->leftJoin('shops', 'reviews.shop_id', '=', 'shops.id')
