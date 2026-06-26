@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property EmailTrackingEventTypeEnum $type
  * @property array<array-key, mixed> $data
  * @property string|null $created_at
+ * @property string|null $updated_at
  * @property string|null $source_id
  * @property string|null $ip
  * @property string|null $device

@@ -46,6 +46,8 @@ use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Models\Reviews\Review;
+use App\Models\Reviews\ReviewReaction;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
@@ -183,6 +185,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Asset> $products
  * @property-read Collection<int, \App\Models\CRM\Prospect> $prospects
  * @property-read Collection<int, ReturnDeliveryNote> $returnDeliveryNotes
+ * @property-read Collection<int, Review> $reviews
  * @property-read Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read ShopifyUser|null $shopifyUser
@@ -624,5 +627,15 @@ class Customer extends Model implements HasMedia, Auditable
     public function returnDeliveryNotes(): HasMany
     {
         return $this->hasMany(ReturnDeliveryNote::class, 'customer_id', 'id');
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function reviewReactions(): HasMany
+    {
+        return $this->hasMany(ReviewReaction::class);
     }
 }

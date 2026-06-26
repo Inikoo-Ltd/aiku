@@ -33,10 +33,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $group_id
  * @property string $slug
  * @property string $type
- * @property \App\Enums\Helpers\Barcode\BarcodeStatusEnum $status
+ * @property BarcodeStatusEnum $status
  * @property string $number
  * @property string|null $note
- * @property string|null $assigned_at
+ * @property \Illuminate\Support\Carbon|null $assigned_at
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -46,9 +46,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read Collection<int, ModelHasBarcode> $modelHasBarcodes
  * @property-read Collection<int, Asset> $product
  * @property-read Collection<int, Stock> $stock
  * @property-read Collection<int, TradeUnit> $tradeUnit
+ * @property-read Collection<int, TradeUnit> $tradeUnitActive
  * @method static Builder<static>|Barcode newModelQuery()
  * @method static Builder<static>|Barcode newQuery()
  * @method static Builder<static>|Barcode onlyTrashed()

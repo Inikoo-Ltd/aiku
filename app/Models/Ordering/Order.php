@@ -189,6 +189,8 @@ use App\Audits\Transformer\RelationTransformer;
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
  * @property-read Platform|null $platform
+ * @property-read Collection<int, ReturnDeliveryNote> $returnedDeliveryNote
+ * @property-read OrderReviewStat|null $reviewStats
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read ShippingZone|null $shippingZone
  * @property-read Shop|null $shop

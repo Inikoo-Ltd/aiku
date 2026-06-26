@@ -99,6 +99,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_oos_in_order_notification
  * @property int $number_outboxes_type_new_offer
  * @property int $number_outboxes_type_finish_offer
+ * @property int $number_outboxes_type_review_reminder
+ * @property int $number_outboxes_type_new_review
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static Builder<static>|ShopCommsStats newModelQuery()
  * @method static Builder<static>|ShopCommsStats newQuery()

@@ -10,6 +10,28 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property string $model_type
+ * @property int $model_id
+ * @property ReviewContextEnum $review_context
+ * @property ReviewRatingDimensionEnum $dimension
+ * @property string $label
+ * @property string|null $description
+ * @property int $sort_order
+ * @property bool $is_active
+ * @property bool $is_required
+ * @property numeric $weight
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Group|null $group
+ * @property-read Organisation|null $organisation
+ * @property-read Shop|null $shop
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReviewRatingLabel newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReviewRatingLabel newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReviewRatingLabel query()
+ * @mixin \Eloquent
+ */
 class ReviewRatingLabel extends Model
 {
     protected $guarded = [];
