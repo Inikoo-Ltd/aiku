@@ -173,7 +173,6 @@ class UpdateShop extends OrgAction
                     'gads_user_list_id' => 'settings.google_ads.user_list_id',
                     'enable_chat'          => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
-                    'reviews' => 'settings.reviews',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
                     'bank_transfer_instructions_for_email' => 'settings.bank_transfer_instructions_for_email',
                     default => $key
@@ -202,7 +201,6 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'gads_customer_id');
         data_forget($modelData, 'gads_user_list_id');
         data_forget($modelData, 'portal_link');
-        data_forget($modelData, 'reviews');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -305,10 +303,29 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
         }
 
+        if (Arr::exists($modelData, 'reviews')) {
+            data_set($modelData, 'settings.reviews.enabled', (bool) Arr::pull($modelData, 'reviews'));
+        }
+
         if (Arr::exists($modelData, 'review_publishing')) {
-            $reviewPublishing = Arr::pull($modelData, 'review_publishing');
-            data_set($modelData, 'settings.reviews.auto_publishing.mode', Arr::get($reviewPublishing, 'auto_publishing.mode'));
-            data_set($modelData, 'settings.reviews.auto_publishing.delay_hours', (int) Arr::get($reviewPublishing, 'auto_publishing.delay_hours', 24));
+            $reviewPublishing   = Arr::pull($modelData, 'review_publishing');
+            $autoPublishingMode = Arr::get($reviewPublishing, 'auto_publishing.mode');
+
+            data_set($modelData, 'settings.reviews.auto_publishing.mode', $autoPublishingMode);
+            data_set(
+                $modelData,
+                'settings.reviews.auto_publishing.delay_hours',
+                $autoPublishingMode === ReviewAutoPublishingEnum::DELAY->value
+                    ? (int) Arr::get($reviewPublishing, 'auto_publishing.delay_hours', 24)
+                    : null
+            );
+
+            if (Arr::has($shop->settings ?? [], 'reviews.auto_publishing.delay')) {
+                $settings = $shop->settings;
+                Arr::forget($settings, 'reviews.auto_publishing.delay');
+                $shop->updateQuietly(['settings' => $settings]);
+                $shop->refresh();
+            }
         }
 
         if (Arr::exists($modelData, 'review_public_rating_threshold')) {
@@ -562,10 +579,7 @@ class UpdateShop extends OrgAction
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
-            'reviews'                                                 => ['sometimes', 'nullable', 'array'],
-            'reviews.provider'                                        => ['sometimes', 'nullable', 'string'],
-            'reviews.enabled'                                         => ['sometimes', 'boolean'],
-            'reviews.data'                                            => ['sometimes', 'nullable', 'array'],
+            'reviews'                                                 => ['sometimes', 'boolean'],
             'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],
             'review_rating_labels.*'                                  => ['sometimes', 'array'],
             'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],

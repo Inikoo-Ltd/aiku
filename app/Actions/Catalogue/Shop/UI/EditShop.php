@@ -708,13 +708,10 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-star',
                     'fields' => [
                         'reviews' => [
-                            'type'  => 'website_reviews',
-                            'label' => __('Review'),
-                            'value' => [
-                                'provider' => $shop->settings['reviews']['provider'] ?? null,
-                                'data' =>  $shop->settings['reviews']['data'] ?? null,
-                                'enabled' => $shop->settings['reviews']['enabled'] ?? true,
-                            ],
+                            'type'        => 'toggle',
+                            'label'       => __('Enable reviews'),
+                            'information' => __('Enable the reviews feature for this shop.'),
+                            'value'       => $shop->settings['reviews']['enabled'] ?? true,
                         ],
                         'review_rating_labels' => [
                             'type'  => 'review_rating_labels',
@@ -732,7 +729,6 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
-                        
                         'review_publishing' => [
                             'type'        => 'review_publishing',
                             'label'       => __('Publishing'),
