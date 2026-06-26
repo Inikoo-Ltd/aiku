@@ -4,7 +4,6 @@ namespace App\Actions\Accounting\PaymentGateway\Pastpay;
 
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\PaymentAccount;
-use App\Models\Catalogue\Shop;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -45,6 +44,7 @@ trait WithPastpayConfiguration
 
     protected function pastpayPost(string $endpoint, array $payload): array
     {
+
         return $this->pastpayHandleResponse(
             $this->pastpayClient()->post($endpoint, $payload),
             $endpoint
@@ -135,10 +135,10 @@ trait WithPastpayConfiguration
 
     protected function pastpayFinalizeOrder(Invoice $invoice, array $extra = []): array
     {
-        $pastpayOrderId = $this->pastpayResolveOrderId($invoice->order_id);
+        $pastpayOrderId = $this->pastpayResolveOrderId($invoice->order);
 
         return $this->pastpayPatch(
-            "/order/{$pastpayOrderId}/finalize",
+            "/order/$pastpayOrderId/finalize",
             $this->pastpayBuildFinalizePayload($invoice, $extra)
         );
     }

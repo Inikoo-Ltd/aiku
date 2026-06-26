@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 02-07-2025-17h-39m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 26 Jun 2026 12:19:59 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
@@ -19,26 +18,15 @@ use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class PayOrderWithPastpay extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
     use CalculatesPaymentWithBalance;
     use WithPastpayConfiguration;
 
     public function handle(Order $order, array $modelData): array
     {
-        $customer = $order->customer;
-
-        if(! $customer?->taxNumber) {
-            throw ValidationException::withMessages(['message' => __('You don\'t have tax number. Please add your tax number in Account Settings.')]);
-        }
-
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $order->shop->paymentAccountShops()
             ->where('type', PaymentAccountTypeEnum::PASTPAY)
@@ -51,10 +39,12 @@ class PayOrderWithPastpay extends RetinaAction
             $order->customer->balance
         );
 
-        $charges = Arr::get($this->paymentAccount->data, 'charges.options', []);
-        $chargePercentage = collect($charges)->where('days', Arr::get($modelData, 'days', 30))->first();
-        $chargeAmount = $paymentAmounts['total'] * ($chargePercentage['charge'] / 100);
-        $toPay = $paymentAmounts['total'] + $chargeAmount;
+        $termDays = Arr::get($modelData, 'days');
+
+        $charges          = Arr::get($paymentAccountShop->data, 'charges.options', []);
+        $chargePercentage = collect($charges)->where('days', $termDays)->first();
+        $chargeAmount     = $paymentAmounts['total'] * ($chargePercentage['charge'] / 100);
+        $toPay            = $paymentAmounts['total'] + $chargeAmount;
 
         $toPay = (int)round((float)$toPay * 100);
 
@@ -63,30 +53,35 @@ class PayOrderWithPastpay extends RetinaAction
                 'status' => 'ok',
             ];
         }
+        $amount = $toPay / 100;
+
+
+
 
         try {
-            $amount = $toPay / 100;
 
             $response = $this->pastpayInitiateOrder($order, [
-                'totalPrice'       => [
-                    'amount' => (float) $amount,
+                'totalPrice' => [
+                    'amount'   => (float)$amount,
                     'currency' => $order->currency->code
                 ],
-                'termDays' => Arr::get($modelData, 'days', 30),
+                'termDays'   => $termDays,
             ]);
 
+
             UpdateOrder::run($order, [
-                'data' => [
+                'data'       => [
                     'pastpay' => [
-                        'charges' => $chargeAmount,
-                        'termDays' => Arr::get($modelData, 'days', 30),
+                        'payment_account_shop_id' => $paymentAccountShop->id,
+                        'charges'                 => $chargeAmount,
+                        'termDays'                => $termDays,
                     ]
                 ]
             ]);
 
             return [
                 'status' => 'ok',
-                'data' => Arr::get($response, 'data.redirectUrl')
+                'data'   => Arr::get($response, 'data.redirectUrl')
             ];
         } catch (\Exception $e) {
             // API error
@@ -105,10 +100,20 @@ class PayOrderWithPastpay extends RetinaAction
         return $result;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $order = $request->route('order');
+        if ($order->customer_id == $this->customer->id) {
+            return true;
+        }
+
+        return false;
+    }
+
     public function asController(Order $order, ActionRequest $request): array
     {
-        $this->initialisation($request);
 
+        $this->initialisation($request);
         return $this->handle($order, $this->validatedData);
     }
 

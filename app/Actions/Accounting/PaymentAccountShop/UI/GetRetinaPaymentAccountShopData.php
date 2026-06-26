@@ -56,19 +56,24 @@ class GetRetinaPaymentAccountShopData
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::PASTPAY) {
 
-            $options = Arr::get($paymentAccountShop->paymentAccount->data, 'charges.options');
+            $options = Arr::get($paymentAccountShop->data, 'charges.options', []);
+
             if (empty($options)) {
+                return [];
+            }
+
+            if (!$order->customer->taxNumber) {
                 return [];
             }
 
             return
                 [
-                    'label' => 'Pastpay',
+                    'label' => __('Buy now play later'),
                     'key'   => 'pastpay',
                     'icon'  => 'fal fa-hand-holding-usd',
                     'order_payment_api_point' => $orderPaymentApiPoint->ulid,
                     'data'  => [
-                        'charges'      => Arr::get($paymentAccountShop->paymentAccount->data, 'charges.options')
+                        'charges'      => $options
                     ]
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {

@@ -20,7 +20,7 @@ export interface PaymentAccountShop {
     number_payments: number
     amount_successfully_paid: number
     shop_currency_code: string
-    data: {
+    pastpay_credit_terms: {
         options: PaymentAccountShopChargeOption[]
     }
 }
