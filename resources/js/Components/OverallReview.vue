@@ -118,7 +118,7 @@ const saveReview = async () => {
 <template>
     <div class="border rounded-lg p-4 border-gray-20">
         <div class="text-lg font-bold mb-4 ml-2 border-b pb-3 border-gray-200">{{trans('Overall review of your experience')}}</div>
-        <FormReview v-model="reviewData" :review_settings :type="data.context || ''" :schema="data.rating_labels"  :showAverageReview="false"  :disabled="reviewData?.review_id ? true : false" :errors="reviewErrors"/>
+        <FormReview v-model="reviewData" :review_settings :type="data?.context || ''" :schema="data?.rating_labels"  :showAverageReview="false"  :disabled="reviewData?.review_id ? true : false" :errors="reviewErrors"/>
         <div  v-if="!reviewData?.review_id " class="border-t mt-3 pt-3 gap-4 border-gray-200 flex justify-end">
             <Button type="save" @click="saveReview"></Button>
         </div>

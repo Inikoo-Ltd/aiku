@@ -123,7 +123,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <DropshippingSummaryOrder :address_management :summary="box_stats" :order />
+    <!-- <DropshippingSummaryOrder :address_management :summary="box_stats" :order /> -->
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200 overflow-x-auto">
       <component

@@ -54,6 +54,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaRecentCus
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
+use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrderReview;
 use App\Actions\Retina\Dropshipping\Orders\UpdateCustomerOrderTaxCategory;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
@@ -148,6 +149,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     Route::prefix('orders')->as('orders.')->group(function () {
         Route::get('/', IndexRetinaDropshippingOrders::class)->name('index');
         Route::get('/{order}', ShowRetinaDropshippingOrder::class)->name('show');
+        Route::get('/{order}/review', ShowRetinaDropshippingOrderReview::class)->name('review');
     });
 
     Route::prefix('api')->as('api.')->group(function () {
