@@ -31,14 +31,11 @@ use App\Models\Ordering\Transaction;
 use App\Models\Reviews\Review;
 use App\Http\Resources\Catalogue\ReviewMediaResource;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Models\Accounting\Invoice;
-use App\Http\Resources\Dispatching\RetinaShipmentsResource;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 
@@ -116,6 +113,7 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                 'order'     => OrderResource::make($order),
                 'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
                 'review_settings'   => Arr::get($order->shop->settings, 'reviews'),
+                'review_summary'    => $this->getReviewSummary($order),
                 'review_reactions'  => [
                     'likes'    => $this->customer->likeReactions,
                     'dislikes' => $this->customer->dislikeReactions,
@@ -307,7 +305,7 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
             ]
         );
     }
- public function getOrderBoxStats(Order $order): array
+    public function getOrderBoxStats(Order $order): array
     {
         $totalToPay = $order->total_amount;
         /** @var Invoice $refund */
