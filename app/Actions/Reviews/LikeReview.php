@@ -17,6 +17,11 @@ class LikeReview
 {
     use AsObject;
 
+    public function action(Review $review, string $target, bool $isLike, int $customerId): Review
+    {
+        return $this->handle($review, $target, $isLike, $customerId);
+    }
+
     public function handle(Review $review, string $target, bool $isLike, int $customerId): Review
     {
         $cacheKey = "review_reaction:{$review->id}:{$customerId}:{$target}";

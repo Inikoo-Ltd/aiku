@@ -20,7 +20,7 @@ class LikeRetinaReview extends RetinaAction
 {
     public function handle(Review $review, array $modelData): Review
     {
-        return LikeReview::make()->handle($review, $modelData['target'], (bool) $modelData['is_like'], $this->customer->id);
+        return LikeReview::make()->action($review, $modelData['target'], (bool) $modelData['is_like'], $this->customer->id);
     }
 
     public function rules(): array
