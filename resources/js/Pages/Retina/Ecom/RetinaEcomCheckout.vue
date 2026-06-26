@@ -129,7 +129,7 @@ const locale = inject("locale", aikuLocaleStructure)
             </div>
 
             <div class="mt-5 sm:border border-gray-300">
-                <div v-if="props.paymentMethods?.length > 1" class="max-w-lg">
+                <div v-if="props.paymentMethods?.length > 1" class="xmax-w-lg w-fit">
                     <div class="grid grid-cols-1 sm:hidden">
                         <Select
                             v-model="currentTab.key"
@@ -148,13 +148,13 @@ const locale = inject("locale", aikuLocaleStructure)
                     </div>
 
                     <div class="hidden sm:block">
-                        <nav class="isolate flex divide-x divide-gray-200 rounded-lg shadow" aria-label="Tabs">
+                        <nav class="isolate flex divide-x divide-gray-200 rounded-b-lg shadow" aria-label="Tabs">
                             <div
                                 v-for="(tab, tabIdx) in props.paymentMethods"
                                 @click="currentTab.index = tabIdx, currentTab.key = tab.key"
                                 :key="tabIdx"
-                                :class="[currentTab.index === tabIdx ? '' : 'text-gray-500 hover:text-gray-700', tabIdx === 0 ? 'rounded-l-lg' : '', tabIdx === props.paymentMethods?.length - 1 ? 'rounded-r-lg' : '']"
-                                class="cursor-pointer group relative min-w-0 flex-1 overflow-hidden bg-white px-4 py-4 text-center text-sm font-medium hover:bg-gray-100 focus:z-10"
+                                :class="[currentTab.index === tabIdx ? '' : 'text-gray-500 hover:text-gray-700', tabIdx === 0 ? 'rounded-bl-lg' : '', tabIdx === props.paymentMethods?.length - 1 ? 'rounded-br-lg' : '']"
+                                class="whitespace-nowrap cursor-pointer group relative min-w-0 flex items-center overflow-hidden bg-white px-8 py-4 text-center text-sm font-medium hover:bg-gray-100 focus:z-10"
                             >
                                 <FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="mr-1" fixed-width aria-hidden="true" />
                                 <span>{{ tab.label }}</span>

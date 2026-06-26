@@ -94,6 +94,7 @@ trait WithAllegroApiServices
         }
 
         $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+        $content = str_replace(['<br>', '<br/>', '<br />'], ' ', $content);
         $description = str_replace('&acute;', '´', $content);
 
         $description = preg_replace_callback('/<b>(.*?)<\/b>/is', function ($matches) {
@@ -435,6 +436,13 @@ trait WithAllegroApiServices
     // -------------------------------------------------------------------------
     // Categories
     // -------------------------------------------------------------------------
+
+    public function getProductByEan(string $ean): array
+    {
+        return $this->makeApiRequest('GET', '/sale/categories', [], [
+            'mode' => $ean
+        ]);
+    }
 
     public function getCategories(array $params = []): array
     {
