@@ -4,14 +4,22 @@ import { Table as TableTS } from "@/types/Table"
 import { GridProducts } from "@/Components/Product"
 import Tag from "primevue/tag"
 import Rating from "primevue/rating"
+import Dialog from "primevue/dialog"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCube, faLayerGroup, faThumbsUp, faThumbsDown } from "@fal"
-import { faReply } from "@fas"
-import { faEye, faEyeSlash, faStar } from "@far"
+import {
+	faCube,
+	faLayerGroup,
+	faThumbsUp,
+	faThumbsDown,
+	faChevronCircleLeft,
+	faChevronCircleRight,
+} from "@fal"
+import { faCircle, faDotCircle, faReply } from "@fas"
+import { faEye, faEyeSlash, faFolder, faStar } from "@far"
 import { inject, ref } from "vue"
-
+import Image from "@/Common/Components/Image.vue"
 
 const props = defineProps<{
 	data: any[] | TableTS
@@ -19,16 +27,17 @@ const props = defineProps<{
 	updateRoute: routeType
 	state?: string
 	readonly?: boolean
+	review_settings? :any
 }>()
 
 const layout = inject("layout", {})
 
-console.log('d',layout.iris.shop.name,layout.iris.website.logo.avif)
+console.log("d", props)
 
 const scopeIcon = (scope: string) => {
 	switch (scope) {
 		case "family":
-			return faLayerGroup
+			return faFolder
 		case "order":
 			return faStar
 		default:
@@ -45,6 +54,25 @@ const scopeLabel = (scope: string) => {
 		default:
 			return "Product Review"
 	}
+}
+
+const previewImages = ref<any[]>([])
+const previewIndex = ref(0)
+const showImagePreview = ref(false)
+
+const openImagePreview = (images: any[], index: number | string) => {
+	previewImages.value = images
+	previewIndex.value = Number(index)
+	showImagePreview.value = true
+}
+
+const prevPreviewImage = () => {
+	previewIndex.value =
+		(previewIndex.value - 1 + previewImages.value.length) % previewImages.value.length
+}
+
+const nextPreviewImage = () => {
+	previewIndex.value = (previewIndex.value + 1) % previewImages.value.length
 }
 
 const reactingKeys = ref<Record<string, boolean>>({})
@@ -85,7 +113,6 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 		}
 	)
 }
-
 </script>
 
 <template>
@@ -104,7 +131,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 						<div class="flex min-w-0 gap-3">
 							<!-- Scope -->
 							<div
-							    v-tooltip="`Review ${item.scope}`"
+								v-tooltip="`Review ${item.scope}`"
 								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100">
 								<FontAwesomeIcon
 									:icon="scopeIcon(item.scope)"
@@ -135,7 +162,9 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 									class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
 									<span>{{ item.code }}</span>
 
-									<span>•</span>
+									<span class="flex items-center">
+										<FontAwesomeIcon :icon="faCircle" class="text-[5px]" />
+									</span>
 
 									<span>{{ useFormatTime(item.created_at) }}</span>
 								</div>
@@ -152,10 +181,29 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 					</div>
 
 					<!-- Review -->
-					<div class="mt-3">
+					<div class="mt-3 space-y-3">
+						<!-- Review -->
 						<p class="whitespace-pre-line text-sm leading-6 text-gray-700">
 							{{ item.review.message }}
 						</p>
+
+						<!-- Images -->
+						<div
+							v-if="item.review.review_images?.length"
+							class="flex gap-3">
+							<button
+								v-for="(image, index) in item.review.review_images"
+								:key="image.id ?? index"
+								type="button"
+								class="group relative aspect-square w-12 h-12 cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
+								@click="openImagePreview(item.review.review_images, index)">
+								<Image
+									:src="image.media_url"
+									:alt="image.name"
+									:imageCover="true"
+									class="h-full w-full flex items-center justify-center transition duration-300 group-hover:scale-105" />
+							</button>
+						</div>
 					</div>
 
 					<!-- Actions -->
@@ -192,7 +240,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 							<div
 								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white">
 								<!-- <FontAwesomeIcon :icon="faReply" class="text-[10px]" /> -->
-								 <img :src="layout.iris.website.logo.avif" src="logo"/>
+								<img :src="layout.iris.website.logo.avif" src="logo" />
 							</div>
 
 							<div class="min-w-0 flex-1">
@@ -200,10 +248,8 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 								<div class="flex flex-wrap items-center gap-2">
 									<span class="text-sm font-semibold text-gray-900">
 										<!-- {{ item.review.reply.contact_name }} -->
-										  {{ layout.iris.shop.name }}
+										{{ review_settings.show_staff_who_reply ?  item.review.reply.contact_name :  layout.iris.shop.name }}
 									</span>
-
-									
 
 									<span class="ml-auto text-[11px] text-gray-400">
 										{{ useFormatTime(item.review.reply.at) }}
@@ -245,10 +291,50 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 				</article>
 			</template>
 		</GridProducts>
+
+		<Dialog
+			v-model:visible="showImagePreview"
+			modal
+			dismissableMask
+			class="w-full max-w-3xl !border-0 !bg-transparent !shadow-none">
+			<div class="relative flex w-full flex-col items-center justify-center">
+				<div class="mb-1 block max-h-[80vh] min-h-[400px] w-full rounded">
+					<Image
+						:src="previewImages[previewIndex]?.media_url"
+						:alt="previewImages[previewIndex]?.name"
+						:imageCover="true"
+						:style="{ objectFit: 'contain' }" />
+				</div>
+
+				<template v-if="previewImages.length > 1">
+					<button
+						type="button"
+						class="absolute left-2 top-1/2 z-40 -translate-y-1/2 text-3xl text-white"
+						@click="prevPreviewImage">
+						<FontAwesomeIcon :icon="faChevronCircleLeft" />
+					</button>
+
+					<button
+						type="button"
+						class="absolute right-2 top-1/2 z-40 -translate-y-1/2 text-3xl text-white"
+						@click="nextPreviewImage">
+						<FontAwesomeIcon :icon="faChevronCircleRight" />
+					</button>
+
+					<div class="mt-2 text-xs text-white">
+						{{ previewIndex + 1 }} / {{ previewImages.length }}
+					</div>
+				</template>
+			</div>
+		</Dialog>
 	</div>
 </template>
 <style scoped>
 :deep(.rating .p-rating-option-active .p-rating-icon) {
 	color: #f59e0b !important;
+}
+
+:deep(.p-dialog-mask) {
+	background-color: rgba(0, 0, 0, 0.9) !important;
 }
 </style>

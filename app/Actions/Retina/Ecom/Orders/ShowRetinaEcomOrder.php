@@ -36,6 +36,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
 use App\Actions\Ordering\Order\UI\IndexAllReviewsInOrder;
 use App\Http\Resources\Ordering\RetinaOrderReviewListResource;
+use Illuminate\Support\Arr;
 
 class ShowRetinaEcomOrder extends RetinaAction
 {
@@ -72,9 +73,10 @@ class ShowRetinaEcomOrder extends RetinaAction
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
         $hoursAfterDispatched  = (int) data_get($order->shop->settings, 'reviews.data.hours_after_dispatched', 24);
-        $reviewAvailable       = $order->state === OrderStateEnum::DISPATCHED
+/*         $reviewAvailable       = $order->state === OrderStateEnum::DISPATCHED
             && $order->dispatched_at !== null
-            && now()->diffInHours($order->dispatched_at, false) <= -$hoursAfterDispatched;
+            && now()->diffInHours($order->dispatched_at, false) <= -$hoursAfterDispatched; */
+        $reviewAvailable = true;
         $hasPublishedReviews   = $reviewAvailable && Review::where('order_id', $order->id)->exists();
 
         $action = $reviewAvailable ? [
@@ -151,6 +153,7 @@ class ShowRetinaEcomOrder extends RetinaAction
                 'balance'            => $this->customer->balance,
                 'currency'           => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'               => OrderResource::make($order),
+                'review_settings'    => Arr::get($order->shop->settings, 'reviews'),
                 'is_notes_editable'  => false,  // TODO: make it dynamic, only disable on 'after' state
 
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
