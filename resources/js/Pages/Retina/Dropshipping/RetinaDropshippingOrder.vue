@@ -40,7 +40,8 @@ import {
     faPaperclip,
     faTimes,
     faInfoCircle,
-    faSync
+    faSync,
+    faStars
 } from '@fal'
 import {Currency} from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
@@ -55,8 +56,9 @@ import {debounce} from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import ListReviews from '@/Components/ListReviews.vue'
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
+library.add(fadExclamationTriangle,faStars, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
 
 
 const props = defineProps<{
@@ -145,6 +147,7 @@ const props = defineProps<{
     delivery_notes: {
         data: Array<any>
     }
+    reviews : any
     attachments?: {}
 
 }>()
@@ -161,7 +164,8 @@ const component = computed(() => {
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
         invoices: TableInvoices,
-        products: TableProductList
+        products: TableProductList,
+        reviews : ListReviews
     }
 
     return components[currentTab.value]

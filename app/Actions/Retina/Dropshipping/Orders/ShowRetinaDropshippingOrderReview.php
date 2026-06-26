@@ -36,6 +36,11 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
+use App\Models\Accounting\Invoice;
+use App\Http\Resources\Dispatching\RetinaShipmentsResource;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Http\Resources\CRM\CustomerClientResource;
 
 class ShowRetinaDropshippingOrderReview extends RetinaAction
 {
@@ -105,11 +110,17 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                     'current'    => $this->tab,
                     'navigation' => RetinaOrderReviewTabsEnum::navigation()
                 ],
-                'summary'        => $this->getOrderBoxStats($order),
-                'review_summary' => $this->getReviewSummary($order),
-                'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
-                'data'           => OrderResource::make($order),
-                'review_settings' => Arr::get($order->shop->settings, 'reviews'),
+                'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
+                'box_stats' => $this->getOrderBoxStats($order),
+                'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
+                'order'     => OrderResource::make($order),
+                'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
+                'review_settings'   => Arr::get($order->shop->settings, 'reviews'),
+                'review_reactions'  => [
+                    'likes'    => $this->customer->likeReactions,
+                    'dislikes' => $this->customer->dislikeReactions,
+                ],
+
 
                 RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value => $this->tab == RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value ?
                     fn () => $this->getOverallReview($order)
@@ -296,22 +307,72 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
             ]
         );
     }
-
-    public function getOrderBoxStats(Order $order): array
+ public function getOrderBoxStats(Order $order): array
     {
-        $payAmount   = $order->total_amount - $order->payment_amount;
+        $totalToPay = $order->total_amount;
+        /** @var Invoice $refund */
+        foreach (Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->get() as $refund) {
+            $totalToPay += $refund->total_amount;
+        };
+
+        $payAmount   = $totalToPay - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
 
         $estWeight = ($order->estimated_weight ?? 0) / 1000;
 
-        $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
-            ->whereNotIn('state', [
-                OrderStateEnum::CANCELLED->value,
-                OrderStateEnum::CREATING->value,
-            ])->count();
-        $numberOrders = $numberOrders + 1;
+        $customerChannel = null;
+        if ($order->customer_sales_channel_id) {
+            $customerChannel = [
+                'slug'     => $order->customerSalesChannel->slug,
+                'status'   => $order->customer_sales_channel_id,
+                'platform' => [
+                    'name'  => $order->platform?->name,
+                    'image' => $this->getPlatformLogo($order->customerSalesChannel->platform->code)
+                ]
+            ];
+        }
+
+
+
+
+
+        $customerClientData = null;
+
+        if ($order->customerClient) {
+            $customerClientData = array_merge(
+                CustomerClientResource::make($order->customerClient)->getArray(),
+                [
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
+                        'parameters' => [
+                            'organisation'         => $order->organisation->slug,
+                            'shop'                 => $order->shop->slug,
+                            'customer'             => $order->customer->slug,
+                            'customerSalesChannel' => $order->customerSalesChannel->slug,
+                            'customerClient'       => $order->customerClient->ulid
+                        ]
+                    ],
+                    'recipient_name' => Arr::get($order->data, 'woo_order.shipping.first_name') . ' ' . Arr::get($order->data, 'woo_order.shipping.last_name')
+                ]
+            );
+        }
+
+        $deliveryNotes     = $order->deliveryNotes;
+
+        if ($deliveryNotes) {
+            foreach ($deliveryNotes as $deliveryNote) {
+                $routeDownload = [
+                    'name'       => 'retina.dropshipping.packing_lists.pdf',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->slug,
+                    ],
+                ];
+            }
+        }
+
 
         return [
+            'customer_client'  => $customerClientData,
             'customer'         => array_merge(
                 CustomerResource::make($order->customer)->getArray(),
                 [
@@ -319,13 +380,19 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                         'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
                         'billing'  => AddressResource::make($order->billingAddress ?? new Address())
                     ],
+                    'route'     => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show',
+                        'parameters' => [
+                            'organisation' => $order->organisation->slug,
+                            'shop'         => $order->shop->slug,
+                            'customer'     => $order->customer->slug,
+                        ]
+                    ]
                 ]
             ),
+            'customer_channel' => $customerChannel,
             'order_properties' => [
-                'weight'                         => NaturalLanguage::make()->weight($order->estimated_weight),
-                'customer_order_number'          => $numberOrders,
-                'customer_order_ordinal'         => ordinal($numberOrders).' '.__('order'),
-                'customer_order_ordinal_tooltip' => __('This is the nth order this customer has placed with this shop.')
+                'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
             'products'         => [
                 'payment'          => [
@@ -342,16 +409,19 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                                 'order' => $order->id
                             ]
                         ]
+
                     ],
-                    'total_amount' => (float) $order->total_amount,
-                    'paid_amount'  => (float) $order->payment_amount,
+                    'total_amount' => (float)$order->total_amount,
+                    'paid_amount'  => (float)$order->payment_amount,
                     'pay_amount'   => $roundedDiff,
                     'pay_status'   => $order->pay_status,
                 ],
                 'estimated_weight' => $estWeight,
             ],
-            'payments'         => PaymentsResource::collection($order->payments)->toArray(request()),
-            'order_summary'    => [
+
+            'payments' => PaymentsResource::collection($order->payments)->toArray(request()),
+
+            'order_summary' => [
                 [
                     [
                         'label'       => __('Items'),
@@ -390,8 +460,10 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                         'price_total' => $order->total_amount
                     ],
                 ],
+
                 'currency' => CurrencyResource::make($order->currency),
             ],
         ];
     }
+
 }
