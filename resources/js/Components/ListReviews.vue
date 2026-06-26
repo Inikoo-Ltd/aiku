@@ -144,17 +144,16 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 									<h3 class="truncate text-sm font-semibold text-gray-900">
 										{{ item.name }}
 									</h3>
-
 									<Tag
 										rounded
-										:severity="item.is_public ? 'success' : 'secondary'"
+										:severity="item?.review?.is_public ? 'success' : 'secondary'"
 										class="text-[10px]">
 										<template #icon>
 											<FontAwesomeIcon
-												:icon="item.is_public ? faEye : faEyeSlash" />
+												:icon="item?.review?.is_public ? faEye : faEyeSlash" />
 										</template>
 
-										{{ item.is_public ? "Public" : "Private" }}
+										{{ item?.review?.is_public ? "Public" : "Private" }}
 									</Tag>
 								</div>
 

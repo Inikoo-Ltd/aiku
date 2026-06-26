@@ -38,7 +38,7 @@ import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vu
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
-import EcomListReviews from "@/Components/Retina/Ecom/EcomListReviews.vue"
+import ListReviews from "@/Components/ListReviews.vue"
 
 
 library.add(faStars, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
@@ -108,7 +108,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: EcomTableOrderTransactions,
-        reviews : EcomListReviews
+        reviews : ListReviews
     }
 
     return components[currentTab.value]

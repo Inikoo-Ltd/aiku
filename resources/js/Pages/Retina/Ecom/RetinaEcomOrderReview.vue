@@ -13,7 +13,6 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import { AddressManagement } from "@/types/PureComponent/Address"
@@ -24,12 +23,10 @@ import { faStars, faGalaxy, faStar, faDollarSign, faIdCardAlt, faShippingFast, f
 import { Currency } from "@/types/LayoutRules"
 import { faSpinnerThird } from "@far"
 import EcomReviewSummary from "@/Components/Retina/Ecom/EcomReviewSummary.vue"
-import RetinaTableOrderReviewableReview from "../../../Components/Tables/Retina/RetinaTableOrderReviewableReview.vue"
-import OverallReview from "../../../Components/OverallReview.vue"
-
+import RetinaTableOrderReviewableReview from "@/Components/Tables/Retina/RetinaTableOrderReviewableReview.vue"
+import OverallReview from "@/Components/OverallReview.vue"
 
 library.add(faStars, faGalaxy, faStar, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
-
 
 const props = defineProps<{
     title: string
@@ -72,7 +69,6 @@ const props = defineProps<{
   
     attachments?: {}
 }>()
-
 
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
