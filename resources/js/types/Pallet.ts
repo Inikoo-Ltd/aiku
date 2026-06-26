@@ -142,6 +142,7 @@ export interface FieldOrderSummary {
     price_total_class?: string
     information_icon?: string
     information?: string
+    slot_name?: string  // 'shipping'
     currency: {
         code: string
         symbol: string
