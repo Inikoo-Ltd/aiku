@@ -226,8 +226,6 @@ class ShowRetinaEcomOrder extends RetinaAction
             'family_review'        => (int) ($reviewStats->get(ReviewScopeEnum::FAMILY->value)?->count ?? 0),
             'total_family_review'  => $totalFamilies,
             'average_review'       => $overallAvg ? round((float) $overallAvg, 1) : 0.0,
-            'total_likes'          => (int) $reviewStats->sum('total_likes'),
-            'total_dislikes'       => (int) $reviewStats->sum('total_dislikes'),
         ];
     }
 
