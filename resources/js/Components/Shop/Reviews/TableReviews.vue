@@ -6,7 +6,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { router, Link } from "@inertiajs/vue3"
 import ReviewReply from "@/Components/Reviews/ReviewReply.vue"
 import { trans } from "laravel-vue-i18n"
-import { faPencil, faReply, faCheck, faReplyAll, faArrowUp, faArrowDown, faExclamationTriangle } from "@fal"
+import { faPencil, faReply, faCheck, faReplyAll, faArrowUp, faArrowDown, faExclamationTriangle, faBan } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Dialog from "primevue/dialog"
@@ -23,6 +23,7 @@ library.add(
     faArrowUp,
     faArrowDown,
     faExclamationTriangle,
+    faBan,
 )
 
 type RatingLabel = {
@@ -62,6 +63,7 @@ const aftreReply = () => {
 
 const confirm = useConfirm()
 const approvingId = ref<number | null>(null)
+const rejectingId = ref<number | null>(null)
 
 const approveReview = (event: MouseEvent, item: any) => {
     if (!item?.approve_route) {
@@ -71,6 +73,8 @@ const approveReview = (event: MouseEvent, item: any) => {
     confirm.require({
         target: event.currentTarget as HTMLElement,
         message: trans("Approve and publish this review?"),
+        acceptLabel: trans("Approve"),
+        acceptType: "positive",
         accept: () => {
             approvingId.value = item.id
 
@@ -81,6 +85,33 @@ const approveReview = (event: MouseEvent, item: any) => {
                     preserveScroll: true,
                     onFinish: () => {
                         approvingId.value = null
+                    },
+                }
+            )
+        },
+    })
+}
+
+const rejectReview = (event: MouseEvent, item: any) => {
+    if (!item?.reject_route) {
+        return
+    }
+
+    confirm.require({
+        target: event.currentTarget as HTMLElement,
+        message: trans("Reject this review?"),
+        acceptLabel: trans("Reject"),
+        acceptType: "negative",
+        accept: () => {
+            rejectingId.value = item.id
+
+            router.patch(
+                route(item.reject_route.name, item.reject_route.parameters),
+                {},
+                {
+                    preserveScroll: true,
+                    onFinish: () => {
+                        rejectingId.value = null
                     },
                 }
             )
@@ -159,6 +190,15 @@ const approveReview = (event: MouseEvent, item: any) => {
                     v-tooltip="trans('Approve')"
                     @click="(event) => approveReview(event, item)"
                 />
+                <Button
+                    v-if="item.reject_route"
+                    type="negative"
+                    :icon="faBan"
+                    size="xs"
+                    :loading="rejectingId === item.id"
+                    v-tooltip="trans('Reject')"
+                    @click="(event) => rejectReview(event, item)"
+                />
                 <Button type="tertiary" :icon="faReplyAll" size="xs" v-tooltip="trans('Reply')" @click="() => openModal(item)" />
             </div>
         </template>
@@ -173,7 +213,7 @@ const approveReview = (event: MouseEvent, item: any) => {
                 </div>
                 <div class="mt-3 flex justify-end gap-2">
                     <Button type="tertiary" size="xs" :label="trans('Cancel')" @click="rejectCallback" />
-                    <Button type="positive" size="xs" :label="trans('Approve')" @click="acceptCallback" />
+                    <Button :type="message.acceptType || 'positive'" size="xs" :label="message.acceptLabel || trans('Approve')" @click="acceptCallback" />
                 </div>
             </div>
         </template>

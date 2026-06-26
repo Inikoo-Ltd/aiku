@@ -78,6 +78,13 @@ class ReviewsResource extends JsonResource
                 ],
                 'method'     => 'patch',
             ] : null,
+            'reject_route'     => ($canManage && $this->status !== ReviewStatusEnum::REJECTED->value) ? [
+                'name'       => 'grp.models.review.reject',
+                'parameters' => [
+                    'review' => $this->id,
+                ],
+                'method'     => 'patch',
+            ] : null,
             'delete_route'     => $canManage ? [
                 'name'       => 'grp.models.review.delete',
                 'parameters' => [
