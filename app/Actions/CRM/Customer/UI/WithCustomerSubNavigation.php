@@ -20,7 +20,6 @@ trait WithCustomerSubNavigation
 {
     protected function getCustomerSubNavigation(Customer $customer, ActionRequest $request): array
     {
-
         $deliveryNotedLabel = __('Delivery notes');
         $webUsersLabel = __('Web users');
 
@@ -33,24 +32,21 @@ trait WithCustomerSubNavigation
                     'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-atom-alt'],
+                    'icon'    => ['fal', 'fa-stream'],
                     'tooltip' => __('Customer')
                 ]
             ],
-            ($customer->shop->type !== ShopTypeEnum::EXTERNAL
-                ? [
-                    'route' => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.web_users.index',
-                        'parameters' => $request->route()->originalParameters()
-                    ],
-                    'label'    => $webUsersLabel,
-                    'leftIcon' => [
-                        'icon'    => 'fal fa-user-circle',
-                        'tooltip' => $webUsersLabel,
-                    ],
-                    'number'   => $customer->stats->number_web_users
-                ]
-                : null),
+            $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
+                'route' => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.web_users.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'label'    => $webUsersLabel,
+                'leftIcon' => [
+                    'icon'    => 'fal fa-user-circle',
+                ],
+                'number'   => $customer->stats->number_web_users
+            ] : null,
             [
                 'label'    => __('Orders'),
                 'number'   => $customer->orders()->count(),
@@ -72,9 +68,31 @@ trait WithCustomerSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-truck'],
-                    'tooltip' => $deliveryNotedLabel
                 ]
             ],
+            $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
+                'route' => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.return_delivery_notes.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'label'    => __("Returns"),
+                'leftIcon' => [
+                    'icon'    => 'fal fa-exchange',
+                ],
+                'number'   => $customer->stats->number_return_delivery_notes,
+            ] : null,
+            $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
+                'route' => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.replacements.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'label'    => __("Replacements"),
+                'leftIcon' => [
+                    'icon'    => 'fal fa-truck-container',
+                    'class'   => 'text-red-500'
+                ],
+                'number'   => $customer->stats->number_delivery_notes_type_replacement
+            ] : null,
             [
                 'label'    => __('Invoices'),
                 'number'   => $customer->stats->number_invoices,
@@ -162,6 +180,29 @@ trait WithCustomerSubNavigation
                     'icon'    => ['fal', 'fa-truck'],
                     'tooltip' => $deliveryNotedLabel
                 ]
+            ],
+            [
+                'route' => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.return_delivery_notes.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'label'    => __("Returns"),
+                'leftIcon' => [
+                    'icon'    => 'fal fa-exchange',
+                ],
+                'number'   => $customer->stats->number_return_delivery_notes,
+            ],
+            [
+                'route' => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.replacements.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'label'    => __("Replacements"),
+                'leftIcon' => [
+                    'icon'    => 'fal fa-truck-container',
+                    'class'   => 'text-red-500'
+                ],
+                'number'   => $customer->stats->number_delivery_notes_type_replacement
             ],
             [
                 'label'    => __('Invoices'),

@@ -59,16 +59,16 @@ const onUpdateQuantity = async (newVal?: number) => {
             quantity_ordered: selectedQuantity,
             quantity_ordered_new: selectedQuantity,
             transactions_id: props.product.transaction_id,
+            department_id: response.data?.department_id ?? null,
+            sub_department_id: response.data?.sub_department_id ?? null,
+            family_id: response.data?.family_id ?? null,
         })
-
-
-        console.log('Response axios:', response.data)
 
         setStatus('success')
         layout.reload_handle()
         props.product.quantity_ordered = props.product.quantity_ordered_new
 
-        if (selectedQuantity < 1) {
+        if (selectedQuantity <= 0) {
             emits('productRemoved')
         }
         
@@ -134,14 +134,14 @@ const debUpdateQuantity = debounce((newVal?: number) => {
 
 <template>
     <div class="flex gap-x-0.5 items-center">
-        <div @click="() => product.quantity_ordered_new > 0 ? (product.quantity_ordered_new--, debUpdateQuantity()) : null"
+        <div @click="() => product.quantity_ordered_new > 0 ? (product.quantity_ordered_new >= 1 ? product.quantity_ordered_new-- : product.quantity_ordered_new = 0, debUpdateQuantity()) : null"
             class="cursor-pointer opacity-50 hover:opacity-100"
             :class="product.quantity_ordered_new < 1 ? 'opacity-20' : 'cursor-pointer opacity-50 hover:opacity-100'"
         >
             <FontAwesomeIcon icon="far fa-minus" class="" fixed-width aria-hidden="true" />
         </div>
 
-        <div class="max-w-full relative">
+        <div class="max-w-full relative ">
             <InputNumber
                 :modelValue="product.quantity_ordered_new"
                 @input="(e) => (
@@ -150,6 +150,8 @@ const debUpdateQuantity = debounce((newVal?: number) => {
                     : (set(product, 'quantity_ordered_new', e?.value), debUpdateQuantity())
                 )"
                 @update:modelValue="e => (e != product.quantity_ordered_new ? (set(product, 'quantity_ordered_new', e), debUpdateQuantity()) : false)"
+                :disabled="product.quantity_ordered_new % 1 !== 0"
+                v-tooltip="product.quantity_ordered_new % 1 !== 0 ? ctrans('Cannot edit: product is partially ordered. Use the minus/plus button to adjust quantity.') : null"
                 size="small"
                 inputId="minmax-buttons"
                 mode="decimal"
@@ -179,3 +181,6 @@ const debUpdateQuantity = debounce((newVal?: number) => {
         </div>
     </div>
 </template>
+
+<style scoped>
+</style>

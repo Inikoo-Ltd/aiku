@@ -134,12 +134,6 @@ class IndexTrafficSources extends OrgAction
                 'icon'  => ['fal', 'fa-route'],
                 'title' => __('Traffic source')
             ];
-            $iconRight  = [
-                'icon' => 'fal fa-route',
-            ];
-            $afterTitle = [
-                'label' => __('Traffic Sources')
-            ];
         }
 
         $action = [];

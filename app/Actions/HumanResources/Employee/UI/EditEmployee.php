@@ -61,6 +61,34 @@ class EditEmployee extends OrgAction
         $jobPositionsOrganisationData = GetEmployeeJobPositionsData::run($employee);
         $jobPositionsGroupData = GetUserGroupScopeJobPositionsData::run($user);
         $latestContract = $employee->getMedia('contracts')->sortByDesc('id')->first();
+        $jobTitleOptions = Employee::query()
+            ->whereNotNull('job_title')
+            ->where('job_title', '!=', '')
+            ->select('job_title')
+            ->distinct()
+            ->orderBy('job_title')
+            ->pluck('job_title')
+            ->map(fn (string $jobTitle): array => [
+                'label' => $jobTitle,
+                'value' => $jobTitle,
+            ])
+            ->values()
+            ->all();
+
+        $bankAccountNameOptions = Employee::query()
+            ->where('organisation_id', $employee->organisation_id)
+            ->whereNotNull('bank_account_name')
+            ->where('bank_account_name', '!=', '')
+            ->select('bank_account_name')
+            ->distinct()
+            ->orderBy('bank_account_name')
+            ->pluck('bank_account_name')
+            ->map(fn (string $name): array => [
+                'label' => $name,
+                'value' => $name,
+            ])
+            ->values()
+            ->all();
 
         $sections['properties'] = [
             'label' => __('Properties'),
@@ -119,21 +147,13 @@ class EditEmployee extends OrgAction
                 ],
 
                 'job_title' => [
-                    'type' => 'select',
+                    'type' => 'select_create',
                     'label' => __('Job Title'),
                     'placeholder' => __('Job Title'),
                     'searchable' => true,
-                    'options' => [
-                        ['label' => 'Developer - Front End', 'value' => 'developer-front-end'],
-                        ['label' => 'Developer - Back End', 'value' => 'developer-back-end'],
-                        ['label' => 'Developer - Full Stack', 'value' => 'developer-full-stack'],
-                        ['label' => 'Marketing - Social Media Specialist', 'value' => 'marketing-social-media-specialist'],
-                        ['label' => 'Marketing - PPC', 'value' => 'marketing-ppc'],
-                        ['label' => 'Marketing - SEO', 'value' => 'marketing-seo'],
-                        ['label' => 'Managerial - Manager Officer', 'value' => 'managerial-manager-officer'],
-                        ['label' => 'Managerial - Finance & Accounting', 'value' => 'managerial-finance-and-accounting'],
-                    ],
-                    'required' => true
+                    'options' => $jobTitleOptions,
+                    'required' => true,
+                    'value' => $employee->job_title ?? '',
                 ],
 
                 'type' => [
@@ -249,6 +269,15 @@ class EditEmployee extends OrgAction
                     'value' => $employee->contact_name,
                     'required' => true
                 ],
+                'phone' => [
+                    'type' => 'phone',
+                    'label' => __('Phone'),
+                    'placeholder' => __('Phone number'),
+                    'value' => $employee->phone,
+                    'options' => [
+                        'defaultCountry' => $this->organisation->country?->code ?? null,
+                    ],
+                ],
                 'date_of_birth' => [
                     'type' => 'date',
                     'label' => __('Date Of Birth'),
@@ -288,9 +317,12 @@ class EditEmployee extends OrgAction
                     'value' => $employee->insurance_number,
                 ],
                 'bank_account_name' => [
-                    'type' => 'input',
+                    'type' => 'select_create',
                     'label' => __('Bank Account Name'),
-                    'value' => $employee->bank_account_name,
+                    'placeholder' => __('Bank Account Name'),
+                    'searchable' => true,
+                    'options' => $bankAccountNameOptions,
+                    'value' => $employee->bank_account_name ?? '',
                 ],
                 'bank_account_number' => [
                     'type' => 'input',
@@ -360,6 +392,16 @@ class EditEmployee extends OrgAction
                     'label' => __('Identity Document Number'),
                     'value' => $employee->identity_document_number
                 ],
+                'identity_documents' => [
+                    'type'     => 'dynamic_list',
+                    'label'    => __('Other Identity Documents'),
+                    'value'    => $employee->data['identity_documents'] ?? [],
+                    'fields'   => [
+                        ['key' => 'type', 'placeholder' => __('Document type')],
+                        ['key' => 'number', 'placeholder' => __('Document number')],
+                    ],
+                    'addLabel' => __('Add document'),
+                ],
                 'notes' => [
                     'type' => 'textarea',
                     'label' => __('notes'),
@@ -384,38 +426,6 @@ class EditEmployee extends OrgAction
             ]
         ];
 
-        $sections['contract'] = [
-            'label' => __('Contract'),
-            'icon' => 'fal fa-file-invoice',
-            'fields' => [
-                'contract_start_date' => [
-                    'type' => 'date',
-                    'label' => __('Contract Start Date'),
-                    'value' => $employee->contract_start_date,
-                ],
-                'contract_end_date' => [
-                    'type' => 'date',
-                    'label' => __('Contract End Date'),
-                    'value' => $employee->contract_end_date,
-                ],
-                'contract_document' => [
-                    'type' => 'file_upload',
-                    'label' => __('Contract Document'),
-                    'accept' => 'application/pdf',
-                    'warning' => $latestContract ? __('Current file: :file', ['file' => $latestContract->file_name]) : null,
-                    'preview_url' => $latestContract ? route('grp.media.show', ['media' => $latestContract->ulid]) : null,
-                    'preview_label' => __('Preview current contract'),
-                    'value' => null,
-                    'updateRoute' => [
-                        'name' => 'grp.models.employee.contract.upload',
-                        'parameters' => [
-                            'employee' => $employee->id
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
         $sections['Leave Balance'] = [
             'label' => __('Leave Balance'),
             'icon' => 'fal fa-clock',
@@ -423,7 +433,8 @@ class EditEmployee extends OrgAction
                 'annual_days' => [
                     'type' => 'input',
                     'label' => __('Annual Leave Balance'),
-                    'value' => $employee->leaveBalance?->annual_days ?? $employee->organisation->getDefaultAnnualLeaveDays(),
+                    'value' => $employee->leaveBalance?->contract?->annual_leave_days ?? $employee->organisation->getDefaultAnnualLeaveDays(),
+                    'disabled' => true,
                 ],
                 'annual_used' => [
                     'type' => 'input',

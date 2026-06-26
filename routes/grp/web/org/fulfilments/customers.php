@@ -33,6 +33,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersPending
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersRejected;
 use App\Actions\Fulfilment\Pallet\DownloadPalletsTemplate;
 use App\Actions\Fulfilment\Pallet\DownloadPalletStoredItemTemplate;
+use App\Actions\Fulfilment\Pallet\ExportPalletsInCustomer;
 use App\Actions\Fulfilment\Pallet\PdfPallet;
 use App\Actions\Fulfilment\Pallet\UI\EditPallet;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInCustomer;
@@ -108,6 +109,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
 
     Route::prefix('pallets')->as('.pallets.')->group(function () {
         Route::get('', IndexPalletsInCustomer::class)->name('index');
+        Route::get('export', [ExportPalletsInCustomer::class, 'inFulfilmentCustomer'])->name('index.export');
         Route::get('stored-item/{storedItem}', IndexPalletsInStoredItem::class)->name('stored-item.index');
         Route::get('{pallet}', [ShowPallet::class, 'inFulfilmentCustomer'])->name('show');
         Route::get('{pallet}/edit', [EditPallet::class, 'inFulfilmentCustomer'])->name('edit');

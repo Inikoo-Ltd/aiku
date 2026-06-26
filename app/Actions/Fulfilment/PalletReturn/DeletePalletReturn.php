@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
@@ -41,7 +42,7 @@ class DeletePalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData = []): void
     {
-        if (in_array($palletReturn->state, [PalletReturnStateEnum::IN_PROCESS, PalletReturnStateEnum::SUBMITTED])) {
+        if (in_array($palletReturn->state, [PalletReturnStateEnum::IN_PROCESS, PalletReturnStateEnum::SUBMITTED, PalletReturnStateEnum::CONFIRMED, PalletReturnStateEnum::PICKING])) {
             if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
                 $palletIds = $palletReturn->pallets->pluck('id')->toArray();
                 foreach ($palletReturn->pallets as $pallet) {
@@ -83,6 +84,9 @@ class DeletePalletReturn extends OrgAction
             $fulfilmentCustomer->refresh();
             FulfilmentCustomerHydratePalletReturns::dispatch($fulfilmentCustomer);
             FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
+            if ($palletReturn->customerSalesChannel) {
+                CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+            }
         } else {
             abort(401);
         }

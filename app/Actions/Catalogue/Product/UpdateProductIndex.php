@@ -4,29 +4,29 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\BreakWebpageCache;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductIndex extends OrgAction
 {
-    public function handle(ProductCategory $productCategory, array $modelData): void
+    public function handle(ProductCategory|Collection $parent, array $modelData): void
     {
-        if ($productCategory->type !== ProductCategoryTypeEnum::FAMILY) {
-            abort(403, "Unable to modify this product index");
-        }
+        // if ($parent->type !== ProductCategoryTypeEnum::FAMILY) {
+        //     abort(403, "Unable to modify this product index");
+        // }
 
         $indexOrders = collect(data_get($modelData, 'products', []))->keyBy('code')->toArray();
         $products = Product::whereIn('code', array_keys($indexOrders))->where('shop_id', $this->shop->id)->get();
 
         foreach ($products as $product) {
             $product->updateQuietly([
-                "index_under_{$productCategory->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$productCategory->type->value}", null)
+                "index_under_{$parent->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$parent->type->value}", null)
             ]);
         }
 
-        BreakWebpageCache::run($productCategory->webpage);
+        BreakWebpageCache::run($parent->webpage);
     }
 
     public function rules(): array

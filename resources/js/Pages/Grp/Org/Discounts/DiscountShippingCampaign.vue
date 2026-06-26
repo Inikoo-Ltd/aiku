@@ -38,8 +38,15 @@ const props = defineProps<{
         stats: {}
     }
     shop_data: {
+        id: number
         slug: string
         currency_code: string
+        organisation?: string
+        offercampaign?: string
+        default_dates?: {
+            start: string
+            end: string         
+        }
     }
 }>()
 
@@ -54,13 +61,20 @@ const component = computed(() => {
 
     return components[currentTab.value]
 })
+
+const shopData = computed(() => {
+    return {
+        ...props.shop_data,
+        default_dates: props.shop_data.default_dates ?? { start: '', end: '' }
+    }
+})
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-category-create-discount>
-            <ModalCreateShippingDiscount :shop_data="props.shop_data" />
+        <template #other>
+            <ModalCreateShippingDiscount :shop_data="shopData" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />

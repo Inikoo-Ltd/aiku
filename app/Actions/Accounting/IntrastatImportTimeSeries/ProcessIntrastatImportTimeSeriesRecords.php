@@ -26,7 +26,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessIntrastatImportTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
     public function getJobUniqueId(int $organisationId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$organisationId:$frequency->value:$from:$to";
@@ -55,10 +55,10 @@ class ProcessIntrastatImportTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(Organisation $organisation, array $euCountryIds, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $supplierMetrics = DB::table('stock_delivery_items as sdi')
+        $supplierMetrics = DB::connection('aiku_no_sticky')->table('stock_delivery_items as sdi')
             ->join('stock_deliveries as sd', 'sd.id', '=', 'sdi.stock_delivery_id')
             ->joinSub(
-                DB::table('product_has_org_stocks as phos')
+                DB::connection('aiku_no_sticky')->table('product_has_org_stocks as phos')
                     ->join('products as p', 'p.id', '=', 'phos.product_id')
                     ->select(
                         'phos.org_stock_id',
@@ -95,10 +95,10 @@ class ProcessIntrastatImportTimeSeriesRecords implements ShouldBeUnique
                 'stock_products.product_weight'
             );
 
-        $partnerMetrics = DB::table('stock_delivery_items as sdi')
+        $partnerMetrics = DB::connection('aiku_no_sticky')->table('stock_delivery_items as sdi')
             ->join('stock_deliveries as sd', 'sd.id', '=', 'sdi.stock_delivery_id')
             ->joinSub(
-                DB::table('product_has_org_stocks as phos')
+                DB::connection('aiku_no_sticky')->table('product_has_org_stocks as phos')
                     ->join('products as p', 'p.id', '=', 'phos.product_id')
                     ->select(
                         'phos.org_stock_id',

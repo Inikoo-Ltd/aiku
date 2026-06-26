@@ -156,7 +156,7 @@ class GetPalletDeliveryActions
                 'type'    => 'button',
                 'style'   => 'save',
                 'tooltip' => __('Confirm'),
-                'label'   => __('confirm'),
+                'label'   => __('Confirm'),
                 'key'     => 'action',
                 'route'   => [
                     'method'     => 'post',
@@ -193,7 +193,7 @@ class GetPalletDeliveryActions
                 'style'   => 'primary',
                 'icon'    => 'fal fa-check',
                 'tooltip' => __('Mark as received'),
-                'label'   => __('receive'),
+                'label'   => __('Receive'),
                 'key'     => 'action',
                 'route'   => [
                     'method'     => 'post',
@@ -247,7 +247,7 @@ class GetPalletDeliveryActions
                 'style'   => 'primary',
                 'icon'    => 'fal fa-clipboard',
                 'tooltip' => __('Start booking'),
-                'label'   => __('start booking'),
+                'label'   => __('Start booking'),
                 'key'     => 'action',
                 'route'   => [
                     'method'     => 'post',

@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
+use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Order\UI\IndexOrders;
@@ -30,6 +31,7 @@ use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;
 use App\Http\Resources\CRM\CustomerFavouritesResource;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
@@ -182,50 +184,62 @@ class ShowCustomer extends OrgAction
                     'credit_transactions' => $customer->stats->number_credit_transactions
                 ],
                 'shop_data'        => [
-                    'id'   => $customer->shop->id,
-                    'name' => $customer->shop->name,
-                    'slug' => $customer->shop->slug,
-                    'type' => $customer->shop->type,
+                    'customer_id'   => $customer->id,
+                    'id'            => $customer->shop->id,
+                    'name'          => $customer->shop->name,
+                    'slug'          => $customer->shop->slug,
+                    'type'          => $customer->shop->type,
+                    'organisation'  => $customer->organisation->slug,
+                    'currency_code' => $customer->shop->currency->code,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                        'end'   => now()->addDays(7)->toDateString(),
+                    ],
                 ],
 
                 $tabs::SHOWCASE->value            => $this->tab == $tabs::SHOWCASE->value ?
                     fn () => GetCustomerShowcase::run($customer)
                     : Inertia::lazy(fn () => GetCustomerShowcase::run($customer)),
-                $tabs::CREDIT_TRANSACTIONS->value => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
-                    fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
-                    : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
+                $tabs::TIMELINE->value            => $this->tab == $tabs::TIMELINE->value || $this->tab == $tabs::SHOWCASE->value ?
+                    fn () => GetCustomerTimeline::run($customer)
+                    : Inertia::lazy(fn () => GetCustomerTimeline::run($customer)),
+
+                $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($customer))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($customer))),
+                $tabs::ATTACHMENTS->value         => $this->tab == $tabs::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($customer))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($customer))),
                 $tabs::PAYMENTS->value            => $this->tab == $tabs::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexPayments::run($customer, $tabs::PAYMENTS->value))
                     : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($customer))),
+                $tabs::CREDIT_TRANSACTIONS->value => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
+                    fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
+                    : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
                 $tabs::FAVOURITES->value          => $this->tab == $tabs::FAVOURITES->value ?
                     fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
                     : Inertia::lazy(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
                 $tabs::REMINDERS->value           => $this->tab == $tabs::REMINDERS->value ?
                     fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))
                     : Inertia::lazy(fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))),
-                $tabs::ATTACHMENTS->value         => $this->tab == $tabs::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($customer))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($customer))),
                 $tabs::DISPATCHED_EMAILS->value   => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
                     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
                     : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
-                $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($customer))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($customer))),
-                $tabs::TIMELINE->value            => $this->tab == $tabs::TIMELINE->value || $this->tab == $tabs::SHOWCASE->value ?
-                    fn () => GetCustomerTimeline::run($customer)
-                    : Inertia::lazy(fn () => GetCustomerTimeline::run($customer)),
 
-
+                $tabs::OFFERS->value   => $this->tab == $tabs::OFFERS->value ?
+                    fn () => OffersResource::collection(IndexOffers::run($customer, $tabs::OFFERS->value))
+                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($customer, $tabs::OFFERS->value))),
             ]
-        )->table(IndexOrders::make()->tableStructure($customer))
-            ->table(IndexCustomerFavourites::make()->tableStructure(parent: $customer, prefix: $tabs::FAVOURITES->value))
-            ->table(IndexCustomerBackInStockReminders::make()->tableStructure($customer, $tabs::REMINDERS->value))
-            ->table(IndexPayments::make()->tableStructure($customer, prefix: $tabs::PAYMENTS->value))
-            ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
-            ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
-            ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
-            ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value));
+        )
+        ->table(IndexOrders::make()->tableStructure($customer))
+        ->table(IndexCustomerFavourites::make()->tableStructure(parent: $customer, prefix: $tabs::FAVOURITES->value))
+        ->table(IndexCustomerBackInStockReminders::make()->tableStructure($customer, $tabs::REMINDERS->value))
+        ->table(IndexPayments::make()->tableStructure($customer, prefix: $tabs::PAYMENTS->value))
+        ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
+        ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
+        ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
+        ->table(IndexOffers::make()->tableStructure(parent: $customer, prefix: $tabs::OFFERS->value))
+        ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value));
     }
 
 

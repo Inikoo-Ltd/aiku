@@ -24,7 +24,9 @@ use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithMismatch;
 use App\Actions\Masters\MasterAsset\UI\UpdateMasterProductsBulkEdit;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterProductCategory\UI\ShowCreateMasterVariant;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithMissingChildDescription;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithNoFamily;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithNoPriceRRP;
 use App\Actions\Masters\MasterCollection\GetMasterCollectionsInMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\CreateMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
@@ -40,6 +42,7 @@ use App\Actions\Masters\MasterProductCategory\UI\EditMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesGR;
+use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesVolGrReward;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesInMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesWithMismatch;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
@@ -51,6 +54,7 @@ use App\Actions\Masters\MasterVariant\EditMasterVariant;
 use App\Actions\Masters\MasterShop\UI\EditMasterShop;
 use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
+use App\Actions\Masters\UI\GetMastersDashboardTabData;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +62,7 @@ require_once __DIR__ . '/common/trade_units.php';
 require_once __DIR__ . '/common/trade_unit_families.php';
 
 Route::get('/', ShowMastersDashboard::class)->name('dashboard');
+Route::get('/tab-data', GetMastersDashboardTabData::class)->name('dashboard.tab-data');
 
 
 
@@ -246,6 +251,10 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('', IndexMasterFamiliesGR::class)->name('index');
             });
 
+            Route::prefix('master-families-vol-gr-reward')->as('.master_families.vol_gr_reward.')->group(function () {
+                Route::get('', IndexMasterFamiliesVolGrReward::class)->name('index');
+            });
+
             Route::prefix('master-sub-departments')->as('.master_sub_departments.')->group(function () {
                 Route::get('', IndexMasterSubDepartments::class)->name('index');
                 Route::get('/master-sub-departments/create', CreateMasterSubDepartment::class)->name('create');
@@ -312,6 +321,8 @@ Route::name("master_shops")->prefix('master-shops')
             });
 
             Route::get('/master-products-orphan', [IndexMasterProductsWithNoFamily::class, 'inMasterShop'])->name('.master_products_orphan');
+            Route::get('/master-products-no-price-rrp', [IndexMasterProductsWithNoPriceRRP::class, 'inMasterShop'])->name('.master_products_no_price_rrp');
+            Route::get('/master-products-missing-child-description', [IndexMasterProductsWithMissingChildDescription::class, 'inMasterShop'])->name('.master_products_missing_child_description');
 
             Route::prefix('master-collections')->as('.master_collections.')->group(function () {
                 Route::get('', IndexMasterCollections::class)->name('index');

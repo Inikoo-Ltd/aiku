@@ -27,11 +27,13 @@ class StoreNotPickPicking extends OrgAction
     use WithActionUpdate;
 
     private DeliveryNoteItem $deliveryNoteItem;
-    protected User $user;
 
-    public function handle(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): ?Picking
+
+    public function handle(DeliveryNoteItem $deliveryNoteItem, ?User $user, array $modelData): ?Picking
     {
-        data_set($modelData, 'picker_user_id', $user->id);
+        if ($user) {
+            data_set($modelData, 'picker_user_id', $user->id);
+        }
 
         // If locked, will skip the process
         if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
@@ -87,10 +89,9 @@ class StoreNotPickPicking extends OrgAction
         return $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): ?Picking
+    public function action(DeliveryNoteItem $deliveryNoteItem, ?User $user, array $modelData): ?Picking
     {
         $this->asAction         = true;
-        $this->user             = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
 
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);

@@ -10,17 +10,23 @@ library.add(faInfoCircle)
 
 const props = defineProps<{
     offer: {}
+    offer_allowances?: {}
+    notFollowMaster?: boolean
 }>()
 
 const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
 </script>
 
 <template>
-<section class="volume-discount-label" aria-label="Volume Discount Offer Label">
+<section class="volume-discount-label" :class="notFollowMaster ? 'not-follow-master' : ''" aria-label="Volume Discount Offer Label">
 
     <div class="discount-percentage">
-        <span v-if="offer?.max_percentage_discount" class="percentage-text">
-            {{ Number(offer?.max_percentage_discount) * 100 }}% OFF
+        <span v-if="offer?.max_percentage_discount || offer_allowances?.[0]?.data?.percentage_off" class="percentage-text">
+            {{
+                Number(
+                    offer?.max_percentage_discount ?? offer_allowances?.[0]?.data?.percentage_off
+                ) * 100
+            }}% OFF
         </span>
 
         <span v-else>
@@ -31,7 +37,7 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
     <div class="discount-content">
         <div>
             <div class="discount-title">
-                {{ trans("Volume Discount") }}
+                {{ notFollowMaster ? trans("Custom GR Offer") : trans("Volume Discount") }}
             </div>
 
             <div class="discount-triggers">
@@ -116,6 +122,14 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
 
 .popover-paragraph {
     @apply mb-4 text-justify inline-block;
+}
+
+.not-follow-master {
+    background-color: #DC2626;
+}
+
+.not-follow-master .discount-content {
+    border-color: #DC2626;
 }
 
 </style>

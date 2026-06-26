@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, useForm } from "@inertiajs/vue3"
+import { Head, router, useForm, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -38,6 +38,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import { Table as TableTS } from "@/types/Table"
+import Message from "primevue/message"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
 	faBuilding,
@@ -54,8 +55,10 @@ import {
 	faArrowAltLeft,
     faTrashAlt,
 	faShippingFast,
-	faWeight, faPrint,
+	faWeight,
+	faPrint,
 	faAlignSlash,
+	faExclamationTriangle,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -84,9 +87,10 @@ library.add(
 	faArrowAltLeft,
     faTrashAlt,
 	faShippingFast,
-	faWeight, 
+	faWeight,
 	faPrint,
-	faAlignSlash
+	faAlignSlash,
+	faExclamationTriangle,
 )
 
 const props = defineProps<{
@@ -137,15 +141,30 @@ const props = defineProps<{
 	}[]
 	stored_items_count?: number
 	shipments: {
+		button_label?: string
 		fetch_route: routeType
 		submit_route: routeType
 		delete_route: routeType
 	}
+	picker_packer_routes?: {
+		pickers_list: routeType
+		packers_list: routeType
+		update: routeType
+	}
+	warning?: {
+		text: string
+		picking_sessions: {
+			reference: string
+			route: routeType
+		}[]
+	}
+	requireShipping?: boolean
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
 const layout = inject('layout', layoutStructure)
 const parsed_stored_items_count = ref(props.stored_items_count || 0)
+const showWarningMessage = ref(true)
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -159,7 +178,12 @@ const dataServiceList = ref([])
 
 const formAddService = useForm({ service_id: "", quantity: 1, historic_asset_id: null })
 const formAddPhysicalGood = useForm({ outer_id: "", quantity: 1, historic_asset_id: null })
-
+const isFulfilmentOperationsPalletReturnPage = computed(() => {
+    return route().current('grp.org.fulfilments.show.operations.pallet-returns.show')
+        || route().current('grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show')
+        || route().current('grp.org.fulfilments.show.crm.customers.show.pallet_returns.show')
+        || route().current('grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show')
+})
 const component = computed(() => {
 	const components: Component = {
 		pallets: TablePalletReturnPallets,
@@ -273,6 +297,49 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
 const isModalUploadFileOpen = ref(false)
 
 // Section: Shipment
+const isTiktokShipment = computed(() => {
+	return props.shipments?.submit_route?.name === "grp.models.pallet-return.shipment_from_tiktok.store"
+})
+const shipmentButtonLabel = computed(() => {
+	return props.shipments?.button_label ?? (isTiktokShipment.value ? trans("Get shipment from Tiktok") : trans("Shipment"))
+})
+const shipmentButtonTooltip = computed(() => {
+	return props.box_stats.parcels?.length ? "" : trans("Please add at least one parcel")
+})
+const onGetShipmentFromTiktok = () => {
+	isLoadingButton.value = "getShipmentFromTiktok"
+	router.post(
+		route(props.shipments.submit_route.name, props.shipments.submit_route.parameters),
+		{},
+		{
+			preserveScroll: true,
+			onError: () => {
+				notify({
+					title: trans("Something went wrong."),
+					text: trans("Failed to get Shipment from Tiktok. Please try again."),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingButton.value = false
+			},
+		}
+	)
+}
+const onClickShipmentButton = () => {
+	if (!props.box_stats.parcels?.length) {
+		set(listError.value, "box_stats_parcel", true)
+		return
+	}
+
+	if (isTiktokShipment.value) {
+		onGetShipmentFromTiktok()
+		return
+	}
+
+	isModalShipment.value = true
+	onOpenModalTrackingNumber()
+}
 const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
 const isModalShipment = ref(false)
 const optionShippingList = ref([])
@@ -340,11 +407,12 @@ provide("listError", listError.value)
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template v-if="timeline.state === 'picked' && (box_stats?.shipments?.length < 1)" #otherBefore>
-			<Button 
-				v-if="!data.data?.is_collection"
-				@click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
-				v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
-				:label="trans('Shipment')"
+			<Button
+				v-if="!data.data?.is_collection && !isFulfilmentOperationsPalletReturnPage"
+				@click="onClickShipmentButton"
+				v-tooltip="shipmentButtonTooltip"
+				:label="shipmentButtonLabel"
+				:loading="isLoadingButton == 'getShipmentFromTiktok'"
 				icon="fal fa-shipping-fast"
 				type="tertiary"
 			/>
@@ -647,6 +715,36 @@ provide("listError", listError.value)
 		</template>
 	</PageHeading>
 
+	<div v-if="warning && showWarningMessage" class="p-1">
+		<Message
+			severity="warn"
+			class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800"
+			:closable="true"
+			@close="showWarningMessage = false">
+			<div class="flex items-start gap-3">
+				<FontAwesomeIcon
+					:icon="faExclamationTriangle"
+					class="text-yellow-500 w-4 h-4 flex-shrink-0" />
+
+				<div class="flex gap-2 flex-wrap items-center">
+					<div class="text-sm font-medium">
+						{{ warning?.text }}
+					</div>
+
+					<div class="flex flex-wrap items-center gap-2 font-bold underline">
+						<template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
+							<Link
+								:href="route(item.route.name, item.route.parameters)"
+								class="text-sm hover:underline">
+								{{ item.reference }}
+							</Link>
+						</template>
+					</div>
+				</div>
+			</div>
+		</Message>
+	</div>
+
 	<!-- Section: Note -->
 	<div class="h-fit lg:max-h-64 w-full flex lg:justify-center border-b border-gray-300">
 		<BoxNote
@@ -665,7 +763,7 @@ provide("listError", listError.value)
 	</div>
 
 	<!-- Section: Box Stats -->
-	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management :shipments />
+	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management :shipments :picker_packer_routes="picker_packer_routes" />
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component

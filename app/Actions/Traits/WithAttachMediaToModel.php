@@ -8,7 +8,6 @@
 
 namespace App\Actions\Traits;
 
-use App\Models\Announcement;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -22,6 +21,7 @@ use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Web\Announcement;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Website;
 use stdClass;

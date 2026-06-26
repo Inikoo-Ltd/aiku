@@ -67,12 +67,8 @@ library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCar
 const props = defineProps<{
     title: string
     tabs: TSTabs
-
-    // products: TableTS
-
     data?: {
         data: {
-            
         }
     }
 
@@ -80,9 +76,6 @@ const props = defineProps<{
     timelines: {
         [key: string]: TSTimeline
     }
-
-    // upload_spreadsheet: UploadPallet
-
     box_stats: {
         customer: {
             reference: string
@@ -111,30 +104,17 @@ const props = defineProps<{
 
         }
     }
-    // pallet_limits?: {
-    //     status: string
-    //     message: string
-    // }
     routes?: {
         update_route: routeType
         submit_route: routeType
     }
-    // nonProductItems: {}
     transactions: {}
     currency: Currency
     delivery_notes: {
         data: Array<any>
     },
-    // delivery_note: {
-    //     reference: String
-    // }
     attachments?: {}
     invoices?: {}
-    // attachmentRoutes?: {}
-    // address_update_route?: routeType
-    // addresses: {
-
-    // }
     is_in_basket: boolean  // true if Order state is 'created'
     upload_spreadsheet: UploadPallet
 }>()
@@ -161,39 +141,7 @@ const component = computed(() => {
 
 
 const isLoadingButton = ref<string | boolean>(false)
-// const isLoadingData = ref<string | boolean>(false)
 const isModalAddress = ref<boolean>(false)
-
-// Tabs: Products
-// const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1, })
-// const onSubmitAddProducts = (data: Action, closedPopover: Function) => {
-//     isLoadingButton.value = 'addProducts'
-
-//     formProducts
-//         .transform((data) => ({
-//             quantity_ordered: data.quantity_ordered,
-//         }))
-//         .post(
-//             route(data.route?.name || '#', { ...data.route?.parameters, historicAsset: formProducts.historicAssetId }),
-//             {
-//                 preserveScroll: true,
-//                 onSuccess: () => {
-//                     closedPopover()
-//                     formProducts.reset()
-//                 },
-//                 onError: (errors) => {
-//                     notify({
-//                         title: trans('Something went wrong.'),
-//                         text: trans('Failed to add service, please try again.'),
-//                         type: 'error',
-//                     })
-//                 },
-//                 onFinish: () => {
-//                     isLoadingButton.value = false
-//                 }
-//             }
-//         )
-// }
 
 
 // Section: Payment invoice
@@ -276,18 +224,6 @@ const onSubmitNote = async () => {
             public_notes: noteToSubmit.value
         })
 
-        // {
-        //     headers: { "Content-Type": 'application/json' },
-        //     onStart: () => isLoadingButton.value = 'submitNote',
-        //     onError: (error) => errorNote.value = error,
-        //     onFinish: () => isLoadingButton.value = false,
-        //     onSuccess: () => {
-        //         recentlySuccessNote.value = true
-        //         setTimeout(() => {
-        //             recentlySuccessNote.value = false
-        //         }, 3000)
-        //     },
-        // })
         isLoadingNote.value = false
         recentlySuccessNote.value = true
         setTimeout(() => {
@@ -392,17 +328,6 @@ const isModalConfirmationOrder = ref(false)
         </template>
     </PageHeading>
 
-
-    <!-- Section: Box Note -->
-    <!-- <div class="relative">
-        <Transition name="headlessui">
-            <div v-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-                class="p-2 grid sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
-                <BoxNote v-for="(note, index) in notes.note_list" :key="index + note.label" :noteData="note"
-                    :updateRoute="routes.updateOrderRoute" />
-            </div>
-        </Transition>
-    </div> -->
 
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'" class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
@@ -552,10 +477,6 @@ const isModalConfirmationOrder = ref(false)
 
                 <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code"  />
 
-                <!-- <div class="mt-6">
-                    <button type="submit"
-                        class="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50">Checkout</button>
-                </div> -->
             </section>
         </BoxStatPallet>
     </div>
@@ -587,16 +508,7 @@ const isModalConfirmationOrder = ref(false)
                 :isError="recentlyErrorNote"
                 class="mb-2"
             />
-            
-            <!-- <ButtonWithLink
-                v-if="is_in_basket"
-                iconRight="fas fa-arrow-right"
-                :label="trans('Submit order')"
-                :routeTarget="routes?.submit_route"
-                disabled
-                class="w-full"
-                full
-            /> -->
+
 
             <Button
                 v-if="is_in_basket && 'products more than 0'"
@@ -683,16 +595,7 @@ const isModalConfirmationOrder = ref(false)
                     </div>
                 </div>
 
-                <!-- <div class="col-span-2">
-                    <label for="message" class="block text-sm font-medium leading-6">Note</label>
-                    <div class="mt-1">
-                        <PureTextarea
-                            v-model="paymentData.payment_reference"
-                            name="message"
-                            id="message" rows="4"
-                        />
-                    </div>
-                </div> -->
+
             </div>
 
             <div class="mt-6 mb-4 relative">
@@ -719,8 +622,5 @@ const isModalConfirmationOrder = ref(false)
         xxxadditionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
     />
 
-    <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
-        label: 'Upload your file',
-        information: 'The list of column file: customer_reference, notes, stored_items'
-    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" /> -->
+
 </template>

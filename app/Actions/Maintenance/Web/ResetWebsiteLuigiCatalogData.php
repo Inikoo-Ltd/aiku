@@ -29,6 +29,7 @@ class ResetWebsiteLuigiCatalogData
         $pageCount = 1;
         $command->info('// Processing page: ' . $pageCount);
         $contents = $this->getContentExport($website);
+        $remaining = data_get($contents, 'total', 0);
 
         while ($contents) {
             $nextPage = $this->getNextPagination(data_get($contents, 'links'));
@@ -36,8 +37,9 @@ class ResetWebsiteLuigiCatalogData
 
             $objects = data_get($contents, 'objects', []);
             if (count($objects) > 0) {
-                $command->info('Deleting ' . count($objects) . ' items from Luigi catalog (' . data_get($contents, 'total') . ' lefts)');
+                $command->info('Deleting ' . count($objects) . ' items from Luigi catalog (' . $remaining . ' lefts)');
                 $this->deleteItemBatch($website, $objects);
+                $remaining -= count($objects);
             }
 
             if (empty($query)) {

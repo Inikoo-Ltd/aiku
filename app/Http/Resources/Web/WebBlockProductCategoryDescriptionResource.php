@@ -32,6 +32,7 @@ class WebBlockProductCategoryDescriptionResource extends JsonResource
             'description'       => $this->description,
             'description_title' => $this->description_title,
             'description_extra' => $this->description_extra,
+            'offers_data'       => $this->offers_data,
         ];
     }
 }

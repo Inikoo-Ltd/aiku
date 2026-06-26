@@ -181,6 +181,9 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
                 transaction_id: response.data?.transaction_id,
                 quantity_ordered: response.data?.quantity_ordered,
                 quantity_ordered_new: response.data?.quantity_ordered,
+                department_id: response.data?.department_id,
+                sub_department_id: response.data?.sub_department_id,
+                family_id: response.data?.family_id,
             }
         }
 
@@ -275,12 +278,16 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
                 }
 
                 const currentList = layout.family_page?.productInBasket?.list || {}
+                const existingEntry = currentList[product.id] || {}
                 const updatedList = {
                     ...currentList,
                     [product.id]: {
                         transaction_id: product.transaction_id,
                         quantity_ordered: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
                         quantity_ordered_new: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
+                        department_id: existingEntry.department_id ?? null,
+                        sub_department_id: existingEntry.sub_department_id ?? null,
+                        family_id: existingEntry.family_id ?? null,
                     }
                 }
 

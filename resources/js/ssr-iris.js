@@ -3,7 +3,6 @@
  * Created: Tue, 12 Sep 2023 21:16:54 Malaysia Time, Sanur, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
-
 import { createSSRApp, h } from "vue"
 import { renderToString } from "@vue/server-renderer"
 import { createInertiaApp } from "@inertiajs/vue3"
@@ -17,10 +16,10 @@ import "floating-vue/dist/style.css"
 import PrimeVue from "primevue/config"
 import Aura from "@primevue/themes/aura"
 import { definePreset } from "@primevue/themes"
+import { ctrans } from "@/Composables/useTrans"
 
 const pinia = createPinia()
 
-const appName = "iris"
 
 const MyPreset = definePreset(Aura, {
 	semantic: {
@@ -47,19 +46,27 @@ createServer(
 			render: renderToString,
 			title: (title) => `${title}`,
 			resolve: (name) => {
-				const pages = import.meta.glob("./Pages/Iris/**/*.vue", { eager: true })
+				const pages = {
+					...import.meta.glob("./Pages/Iris/**/*.vue", { eager: true }),
+					...import.meta.glob("./Iris/Pages/**/*.vue", { eager: true }),
+				}
 
-				const path = `./Pages/Iris/${name}.vue`
-				const page = pages[path]
+				const page =
+					pages[`./Pages/Iris/${name}.vue`] ||
+					pages[`./Iris/Pages/${name}.vue`]
 
 				if (!page) {
-					throw new Error(`Page not found: ${name} (${path})`)
+					throw new Error(`Page not found: ${name}`)
 				}
 
 				return page.default ?? page
 			},
 			setup({ App, props, plugin }) {
-				return createSSRApp({ render: () => h(App, props) })
+				const app = createSSRApp({ render: () => h(App, props) })
+
+				app.config.globalProperties.ctrans = ctrans
+
+				return app
 					.use(Notifications)
 					.use(FloatingVue)
 					.use(PrimeVue, {

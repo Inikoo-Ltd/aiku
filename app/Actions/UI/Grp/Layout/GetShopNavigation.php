@@ -191,7 +191,7 @@ class GetShopNavigation
                 "icon"    => ["fal", "fa-badge-percent"],
                 "label"   => __("Offers"),
                 "route"   => [
-                    "name"       => 'grp.org.shops.show.discounts.dashboard',
+                    "name"       => 'grp.org.shops.show.discounts.insights',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "topMenu" => [
@@ -222,6 +222,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.discounts.offers.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.discounts.offers.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Insights"),
+                            "tooltip" => __("Insights"),
+                            "icon"    => ["fal", "fa-analytics"],
+                            'root'    => 'grp.org.shops.show.discounts.insights',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.discounts.insights",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
@@ -297,7 +307,8 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->authTo([
+        if ($user->hasAnyPermission([
+            "websites-view.{$shop->organisation_id}",
             "web.$shop->id.view",
             "group-webmaster.view"
         ])) {
@@ -437,6 +448,7 @@ class GetShopNavigation
                         [
                             "label"   => __("Dashboard"),
                             "icon"    => ["fal", "fa-tachometer-alt"],
+                            "root"    => "grp.org.shops.show.crm.dashboard",
                             "route"   => [
                                 "name"       => "grp.org.shops.show.crm.dashboard",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
@@ -445,6 +457,7 @@ class GetShopNavigation
                         [
                             "label"   => __("Customers"),
                             "icon"    => ["fal", "fa-user"],
+                            "root"    => "grp.org.shops.show.crm.customers.",
                             "route"   => [
                                 "name"       => "grp.org.shops.show.crm.customers.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
@@ -453,6 +466,7 @@ class GetShopNavigation
                         [
                             "label"   => __("Prospects"),
                             "icon"    => ["fal", "fa-user-plus"],
+                            "root"    => "grp.org.shops.show.crm.prospects.",
                             "route"   => [
                                 "name"       => "grp.org.shops.show.crm.prospects.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
@@ -522,6 +536,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.ordering.delivery-notes.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.ordering.delivery-notes.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Returns"),
+                            "tooltip" => __("Returns"),
+                            "icon"    => ["fal", "fa-exchange"],
+                            'root'    => 'grp.org.shops.show.ordering.return_delivery_notes.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.return_delivery_notes.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

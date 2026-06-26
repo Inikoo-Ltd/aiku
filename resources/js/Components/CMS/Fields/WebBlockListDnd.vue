@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import draggable from "vuedraggable"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"

@@ -14,6 +14,8 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -28,7 +30,21 @@ class SyncStoredItemPallet extends OrgAction
 
     public function handle(StoredItem $storedItem, array $modelData): void
     {
-        $storedItem->pallets()->sync(Arr::get($modelData, 'pallets', []));
+        $newPallets = Arr::get($modelData, 'pallets', []);
+
+        if (!$storedItem->state->canBeStored()) {
+            $currentQuantities = DB::table('pallet_stored_items')
+                ->where('stored_item_id', $storedItem->id)
+                ->pluck('quantity', 'pallet_id');
+
+            foreach ($newPallets as $palletId => $palletData) {
+                if ($palletData['quantity'] > ($currentQuantities[$palletId] ?? 0)) {
+                    throw ValidationException::withMessages(['pallets' => __('The SKU ":reference" is :state, its quantity cannot be increased.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
+                }
+            }
+        }
+
+        $storedItem->pallets()->sync($newPallets);
     }
 
     public function authorize(ActionRequest $request): bool

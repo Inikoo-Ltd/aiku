@@ -27,14 +27,14 @@ return new class () extends Migration {
             $table->float('percentage_value_dormant_stock_1y', 16)->default(0);
 
 
-            $table->unsignedSmallInteger('number_stocks')->default(0);
-            $table->unsignedSmallInteger('number_org_stocks_no_stock')->default(0);
-            $table->unsignedSmallInteger('number_stocks_org_stocks_no_stock')->default(0)->comment('Number of stocks plus org stocks with no stock relationship');
+            $table->unsignedInteger('number_stocks')->default(0);
+            $table->unsignedInteger('number_org_stocks_no_stock')->default(0);
+            $table->unsignedInteger('number_stocks_org_stocks_no_stock')->default(0)->comment('Number of stocks plus org stocks with no stock relationship');
 
-            $table->unsignedSmallInteger('number_org_stocks')->default(0);
-            $table->unsignedSmallInteger('number_out_of_stock_org_stocks')->default(0);
-            $table->unsignedSmallInteger('number_location_org_stocks')->default(0);
-            $table->unsignedSmallInteger('number_locations')->default(0);
+            $table->unsignedInteger('number_org_stocks')->default(0);
+            $table->unsignedInteger('number_out_of_stock_org_stocks')->default(0);
+            $table->unsignedInteger('number_location_org_stocks')->default(0);
+            $table->unsignedInteger('number_locations')->default(0);
 
 
             $table->boolean('is_week')->index()->default(false);

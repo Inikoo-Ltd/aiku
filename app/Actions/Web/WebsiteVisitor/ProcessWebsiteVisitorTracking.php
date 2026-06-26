@@ -8,16 +8,17 @@
 namespace App\Actions\Web\WebsiteVisitor;
 
 use App\Actions\CRM\Customer\SyncCustomerWebActivities;
+use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberHitsLast24Hours;
+use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberVisitorsLast24Hours;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Actions\Web\WebsitePageView\StoreWebsitePageView;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteVisitor;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessWebsiteVisitorTracking implements ShouldBeUnique
+class ProcessWebsiteVisitorTracking
 {
     use AsAction;
 
@@ -25,10 +26,6 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
     public int $jobTimeout = 120;
     public int $jobTries = 1;
 
-    public function getJobUniqueId(string $sessionId, Website $website): string
-    {
-        return "$sessionId:$website->id";
-    }
 
     public function handle(
         string $sessionId,
@@ -72,6 +69,10 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
         }
 
         StoreWebsitePageView::dispatch($visitor, $website, $currentUrl)->delay(5);
+
+        WebsiteHydrateNumberVisitorsLast24Hours::dispatch($website->id)->delay(900);
+
+        WebsiteHydrateNumberHitsLast24Hours::dispatch($website->id)->delay(900);
 
         if ($visitor->web_user_id) {
             $customer = $visitor->webUser?->customer;

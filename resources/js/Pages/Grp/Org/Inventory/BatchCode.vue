@@ -93,4 +93,5 @@ const component = computed(() => {
         :data="props[currentTab]"
         :tab="currentTab"
     />
+
 </template>

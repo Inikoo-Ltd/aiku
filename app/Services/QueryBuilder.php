@@ -15,18 +15,28 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @method self whereAnyWordStartWith(string $column, string|array $value)
+ * @method self whereStartWith(string $column, string|array $value)
+ * @method self whereEndWith(string $column, string|array $value)
+ * @method self whereWith(string $column, string|array $value)
+ * @method self orWhereAnyWordStartWith(string $column, string|array $value)
+ * @method self orWhereStartWith(string $column, string|array $value)
+ * @method self orWhereEndWith(string $column, string|array $value)
+ * @method self orWhereWith(string $column, string|array $value)
+ */
 class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 {
     public function whereElementGroup(
         string $key,
         array $allowedElements,
         callable $engine,
-        ?string $prefix = null
+        ?string $prefix = null,
+        ?string $default = null
     ): self {
         $elementsData = null;
 
         $argumentName = ($prefix ? $prefix . '_' : '') . 'elements';
-
 
         if (request()->has("$argumentName.$key")) {
             $elements               = explode(',', request()->input("$argumentName.$key"));
@@ -35,8 +45,14 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
                 $elementsData = $validatedElements;
             }
+        } elseif ($default !== null) {
+            $defaultElements        = explode(',', $default);
+            $validatedElements      = array_intersect($allowedElements, $defaultElements);
+            $countValidatedElements = count($validatedElements);
+            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
+                $elementsData = $validatedElements;
+            }
         }
-
 
         if ($elementsData) {
             $engine($this, $elementsData);

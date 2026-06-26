@@ -11,7 +11,7 @@ import { EditorContent } from '@tiptap/vue-3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faText } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'

@@ -244,6 +244,33 @@ class EditMasterProduct extends GrpAction
                 ]
             ],
             [
+                'label'  => __('Pricing'),
+                'icon'   => 'fa-light fa-money-bill',
+                'fields' => [
+                    'price'            => [
+                        'type'     => 'input_number',
+                        'label'    => __('Price').'/'.__('outer'),
+                        'required' => true,
+                        'bind'     => [
+                            'minFractionDigits' => 0,
+                            'maxFractionDigits' => 2,
+                        ],
+                        'value'    => $masterProduct->price,
+                    ],
+                    'rrp_per_unit'  => [
+                        'type'     => 'input_number',
+                        'label'    => __('RRP').'/'.__('unit'),
+                        'required' => true,
+                        'bind'     => [
+                            'minFractionDigits' => 0,
+                            'maxFractionDigits' => 2,
+                        ],
+                        'value'    => ($masterProduct->rrp / trimDecimalZeros($masterProduct->units)),
+                        'min'      => 0.01
+                    ],
+                ]
+            ],
+            [
                 'label'  => __('Properties'),
                 'title'  => __('id'),
                 'icon'   => 'fa-light fa-fingerprint',

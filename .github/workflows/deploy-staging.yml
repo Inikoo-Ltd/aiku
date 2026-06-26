@@ -17,6 +17,7 @@ jobs:
     environment: staging
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      SENTRY_LOG_LEVEL: debug
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -58,8 +59,8 @@ jobs:
 #        uses: getsentry/action-release@v3
 #        env:
 #          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-#          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-#          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
+#          SENTRY_ORG: 'inikoo-ltd'
 #        with:
 #          environment: staging
+#          projects: 'aiku'
 #          release: ${{ steps.date.outputs.date }}

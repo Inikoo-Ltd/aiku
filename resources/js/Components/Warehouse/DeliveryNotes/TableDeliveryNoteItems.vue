@@ -32,7 +32,7 @@ import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import axios from "axios";
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import LabelItemsWaitingForWarehouse from "./LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
 import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
@@ -409,24 +409,34 @@ const modalResource = computed(() => {
 
 
 const routeItemsWaitingWarehouse = (item) => {
-    if (!route().params.warehouse || !route().params.organisation) {
+    if (!route().params.warehouse || !route().params.organisation || !props.shop_type) {
         return '#'
     }
 
-    return route('grp.org.warehouses.show.dispatching.waiting_items', {
+    const routeName = props.state === 'handling'
+        ? 'grp.org.warehouses.show.dispatching.waiting_items_still_picking.shop'
+        : 'grp.org.warehouses.show.dispatching.waiting_items.shop'
+
+    return route(routeName, {
         organisation: route().params.organisation,
         warehouse: route().params.warehouse,
+        shopType: props.shop_type,
     })
 }
 
 const routeItemsWaitingCrm = (item) => {
-    if (!item.shop_slug || !route().params.organisation) {
+    if (!route().params.warehouse || !route().params.organisation || !props.shop_type) {
         return '#'
     }
 
-    return route('grp.org.shops.show.ordering.backlog.waiting_items', {
+    const routeName = props.state === 'handling'
+        ? 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking.shop'
+        : 'grp.org.warehouses.show.dispatching.waiting_crm_items.shop'
+
+    return route(routeName, {
         organisation: route().params.organisation,
-        shop: item.shop_slug
+        warehouse: route().params.warehouse,
+        shopType: props.shop_type,
     })
 }
 
@@ -483,6 +493,51 @@ const onSubmitPickingBatchCode = () => {
     )
 }
 
+const isModalSplitPicking = ref(false)
+const selectedPickingForSplit = ref(null)
+const splitQuantity = ref(1)
+const isLoadingSubmitSplitPicking = ref(false)
+
+const onCloseModalSplitPicking = () => {
+    isModalSplitPicking.value = false
+    setTimeout(() => {
+        selectedPickingForSplit.value = null
+        splitQuantity.value = 1
+    }, 300)
+}
+
+const onSubmitSplitPicking = () => {
+    if (!selectedPickingForSplit.value) {
+        return
+    }
+
+    const qty = Number(splitQuantity.value)
+    const maxQty = Number(selectedPickingForSplit.value.quantity_picked)
+    if (isNaN(qty) || qty <= 0 || qty >= maxQty) {
+        notify({ title: trans("Invalid quantity"), text: trans("Quantity to split must be greater than 0 and less than :max", { max: maxQty }), type: "error" })
+        return
+    }
+
+    router.post(
+        route(selectedPickingForSplit.value.split_route.name, selectedPickingForSplit.value.split_route.parameters),
+        { split_quantity: qty },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { isLoadingSubmitSplitPicking.value = true },
+            onSuccess: () => {
+                notify({ title: trans("Success"), text: trans("Successfully split picking"), type: "success" })
+                onCloseModalSplitPicking()
+            },
+            onError: (errors) => {
+                const errorMsg = get(errors, 'message') || trans("Failed to split picking. Try again")
+                notify({ title: trans("Something went wrong"), text: errorMsg, type: "error" })
+            },
+            onFinish: () => { isLoadingSubmitSplitPicking.value = false },
+        }
+    )
+}
+
 // Section: Undo Quantity Waiting Warehouse
 const isOpenModalUndoWaitingWarehouse = ref(false)
 const selectedItemToUndoWaitingWarehouse = ref(null)
@@ -511,13 +566,15 @@ const onSetItemToUndoWaitingWarehouse = () => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop memoizeRows="true">
+
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
             <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
             <span v-else>{{ item.quantity_packed }}</span>
             </span>
         </template>
+
         <template #cell(quantity_required_readonly)="{ item }">
             <span v-tooltip="item.quantity_required">
                 <FractionDisplay v-if="item.quantity_required_fractional"
@@ -525,10 +582,28 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 <span v-else>{{ item.quantity_required }}</span>
             </span>
         </template>
+
         <template #cell(quantity_picked_readonly)="{ item }">
-            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
-            <span v-else>{{ item.quantity_picked }}</span>
+            <FractionDisplay v-if="item.quantity_to_pick && item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+            <span v-else-if="Number(item.quantity_picked)">{{ locale.number(item.quantity_picked ?? 0) }}</span>
+            <span v-else class="opacity-60 italic text-sm">{{ ctrans("No item picked yet") }}</span>
+
+            <!-- Label: warehouse waiting -->
+            <div v-if="Number(item.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
+                <Link :href="routeItemsWaitingWarehouse(item)" class="hover:underline">
+                    <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)">
+                    </LabelItemsWaitingForWarehouse>
+                </Link>
+            </div>
+
+            <!-- Section: items are waiting for CRM -->
+            <div v-if="Number(item.quantity_waiting_crm) > 0" class="mx-auto w-fit">
+                <Link :href="routeItemsWaitingCrm(item)" class="hover:underline">
+                    <LabelItemsWaitingForCrm v-if="Number(item.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
+                </Link>
+            </div>
         </template>
+
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -537,8 +612,11 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Column: Reference -->
         <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
             <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
-            {{ deliveryNoteItem.org_stock_code }}
+                {{ deliveryNoteItem.org_stock_code }}
             </Link>
+            <span v-for="(un_number, packing_name) in deliveryNoteItem.un_numbers" v-tooltip="packing_name ? packing_name : ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="packing_name ? 'cursor-pointer' : ''">
+                {{ un_number }}
+            </span>
         </template>
 
         <!-- Column: Name -->
@@ -579,16 +657,39 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Section: Pickings -->
         <template #cell(picking_locations)="{ item }">
             <div v-if="item.picking_locations && item.picking_locations.length > 0" class="flex flex-col gap-1">
-                <div v-for="picking in item.picking_locations" :key="picking.id" class="text-sm flex items-center gap-2">
-                    <Link v-if="picking.location_code" 
+                <div v-for="picking in item.picking_locations" :key="picking.id" class="text-sm flex items-center gap-2 flex-wrap">
+                    <Link v-if="picking.location_code"
                           :href="route('grp.org.warehouses.show.infrastructure.locations.show', [route().params.organisation, picking.warehouse_slug, picking.location_slug])"
                           :class="['primaryLink font-medium', picking.location_code ? '' : 'text-gray-400 italic']">
                         {{ picking.location_code }}
                     </Link>
                     <span v-else class="text-gray-400 italic">No Location</span>
                     <div class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium">
-                        {{ picking.quantity }}
+                        {{ picking.quantity_picked }}
                     </div>
+
+                    <!-- Batch code display and edit -->
+                    <button
+                        v-if="picking.show_batch_code_ui"
+                        @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking)"
+                        v-tooltip="picking.batch_code ? ctrans('Change batch code: :code', { code: picking.batch_code }) : ctrans('Set batch code')"
+                        class="text-xs px-1.5 py-0.5 rounded border transition-colors"
+                        :class="picking.batch_code ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600'"
+                    >
+                        <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                        {{ picking.batch_code ?? ctrans('Batch code') }}
+                    </button>
+
+                    <!-- Split picking button -->
+                    <button
+                        v-if="picking.show_batch_code_ui && Number(picking.quantity_picked) > 1"
+                        @click="() => (isModalSplitPicking = true, selectedPickingForSplit = picking)"
+                        v-tooltip="ctrans('Split picking')"
+                        class="text-xs px-1.5 py-0.5 rounded border transition-colors border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 bg-white"
+                    >
+                        <FontAwesomeIcon icon="fal fa-scissors" class="mr-1" fixed-width aria-hidden="true" />
+                        {{ ctrans('Split') }}
+                    </button>
                 </div>
             </div>
             <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
@@ -637,6 +738,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 {{ Number(item.quantity_not_picked) }}
             </span>
 
+            <!-- Number: waiting warehouse -->
             <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="routeItemsWaitingWarehouse(item)" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_waiting_warehouse) }}
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
@@ -649,6 +751,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             </span>
 
 
+            <!-- Number: waiting CRM -->
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
                 :href="routeItemsWaitingCrm(item)"
@@ -707,6 +810,17 @@ const onSetItemToUndoWaitingWarehouse = () => {
                         >
                             <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
                             {{ picking.batch_code ?? ctrans('Batch code') }}
+                        </button>
+
+                        <!-- Split picking button -->
+                        <button
+                            v-if="picking.show_batch_code_ui && Number(picking.quantity_picked) > 1"
+                            @click="() => (isModalSplitPicking = true, selectedPickingForSplit = picking)"
+                            v-tooltip="ctrans('Split picking')"
+                            class="text-xs px-1.5 py-0.5 rounded border transition-colors border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 bg-white ml-2"
+                        >
+                            <FontAwesomeIcon icon="fal fa-scissors" class="mr-1" fixed-width aria-hidden="true" />
+                            {{ ctrans('Split') }}
                         </button>
 
                     </div>
@@ -1001,7 +1115,6 @@ const onSetItemToUndoWaitingWarehouse = () => {
             </div>
 
             <!-- Section: items are waiting for CRM -->
-            
             <div v-if="Number(itemValue.quantity_waiting_crm) > 0" class="mx-auto w-fit">
                 <Link :href="routeItemsWaitingCrm(itemValue)" class="hover:underline">
                     <LabelItemsWaitingForCrm v-if="Number(itemValue.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(itemValue.quantity_waiting_crm)" />
@@ -1377,7 +1490,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
         </div>
     </Modal>
 
-    <!-- Modal: Set batch code per picking -->
+    <!-- Modal: Set batch code per picking (2) -->
     <Modal :isOpen="isModalPickingBatchCode" @onClose="onCloseModalPickingBatchCode" width="w-full max-w-lg">
         <div class="text-center mb-4">
             <div class="font-semibold text-2xl">{{ trans('Batch Code') }}</div>
@@ -1408,7 +1521,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                             <Link
                                 :href="route('grp.org.warehouses.show.inventory.batch_codes.index', {
                                     organisation: route().params.organisation,
-                                    warehouse: route().params.warehouse,
+                                    warehouse: selectedPickingForBatchCode?.warehouse_slug ?? route().params.warehouse,
                                 })"
                                 class="underline hover:text-blue-700 cursor-pointer"
                             >
@@ -1436,6 +1549,54 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     @click="onSubmitPickingBatchCode"
                     full
                     :label="trans('Save')"
+                />
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalSplitPicking" @onClose="onCloseModalSplitPicking" width="w-full max-w-lg">
+        <div class="text-center mb-4">
+            <div class="font-semibold text-2xl">{{ trans('Split Picking') }}</div>
+            <div class="opacity-80 italic text-sm">
+                <span v-if="selectedPickingForSplit?.location_code">{{ ctrans('Location: :loc', { loc: selectedPickingForSplit.location_code }) }} || </span>
+                <span>{{ ctrans("Total Quantity") }}: {{ selectedPickingForSplit?.quantity_picked }}</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-4">
+            <div class="w-full">
+                <label class="block text-sm font-medium mb-2">{{ trans("Quantity to split off") }}:</label>
+                <PureInput
+                    type="number"
+                    v-model="splitQuantity"
+                    :min="0.001"
+                    :max="selectedPickingForSplit ? selectedPickingForSplit.quantity_picked - 0.001 : 1"
+                    step="0.001"
+                    :disabled="isLoadingSubmitSplitPicking"
+                    required
+                />
+                <span class="text-xs text-slate-400 mt-1 block">
+                    {{ ctrans("Enter a quantity greater than 0 and less than :max", { max: selectedPickingForSplit?.quantity_picked }) }}
+                </span>
+            </div>
+
+            <div class="w-full flex gap-4 mt-4">
+                <Button
+                    type="negative"
+                    size="md"
+                    :disabled="isLoadingSubmitSplitPicking"
+                    icon="far fa-arrow-left"
+                    @click="onCloseModalSplitPicking"
+                    :label="trans('Cancel')"
+                />
+                <Button
+                    type="primary"
+                    size="md"
+                    :loading="isLoadingSubmitSplitPicking"
+                    icon="fad fa-scissors"
+                    @click="onSubmitSplitPicking"
+                    full
+                    :label="trans('Split')"
                 />
             </div>
         </div>

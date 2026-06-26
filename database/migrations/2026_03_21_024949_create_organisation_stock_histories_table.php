@@ -24,9 +24,9 @@ return new class () extends Migration {
             $table->decimal('grp_stock_value', 16)->comment('FIFO method')->default(0);
             $table->decimal('org_stock_commercial_value', 16)->default(0);
             $table->decimal('grp_stock_commercial_value', 16)->default(0);
-            $table->unsignedSmallInteger('number_org_stocks')->default(0);
-            $table->unsignedSmallInteger('number_out_of_stock_org_stocks')->default(0);
-            $table->unsignedSmallInteger('number_location_org_stocks')->default(0);
+            $table->unsignedInteger('number_org_stocks')->default(0);
+            $table->unsignedInteger('number_out_of_stock_org_stocks')->default(0);
+            $table->unsignedInteger('number_location_org_stocks')->default(0);
             $table->timestampsTz();
             $table->unique(['organisation_id', 'date']);
         });

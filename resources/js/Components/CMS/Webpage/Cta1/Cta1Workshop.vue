@@ -7,7 +7,7 @@ import Blueprint from "@/Components/CMS/Webpage/Cta1/Blueprint"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { get, isPlainObject } from 'lodash-es'
 
 library.add(faCube, faLink, faImage)

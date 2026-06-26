@@ -17,6 +17,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\GoodsIn\Sowing;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
@@ -43,7 +44,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -154,6 +155,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $sort_picked_bays Used only for UI tables sorting
  * @property int $number_items_waiting_warehouse
  * @property int $number_items_waiting_crm
+ * @property bool $is_returned
+ * @property int $total_skos
+ * @property int $total_units
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -176,6 +180,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, PickingSession> $pickingSessions
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Platform|null $platform
+ * @property-read Collection<int, ReturnDeliveryNote> $returnedDeliveryNote
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop|null $shop
  * @property-read Collection<int, Sowing> $sowings
@@ -197,7 +202,7 @@ class DeliveryNote extends Model implements Auditable
     use InCustomer;
     use HasAddresses;
     use HasHistory;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                    => 'array',
@@ -217,7 +222,8 @@ class DeliveryNote extends Model implements Auditable
         'cancelled_at'            => 'datetime',
         'fetched_at'              => 'datetime',
         'last_fetched_at'         => 'datetime',
-        'is_shipping_by_external' => 'boolean'
+        'is_shipping_by_external' => 'boolean',
+        'is_returned'             => 'boolean'
     ];
 
     protected $attributes = [
@@ -416,7 +422,7 @@ class DeliveryNote extends Model implements Auditable
     {
         $weight     = 0;
         $hasParcels = false;
-        foreach ($this->parcels as $parcel) {
+        foreach ($this->parcels ?? [] as $parcel) {
             $weight     += $parcel['weight'] * 1000;
             $hasParcels = true;
         }
@@ -431,6 +437,11 @@ class DeliveryNote extends Model implements Auditable
     {
         // AIKU-13ZJ Fallback needed
         return count($this->parcels ?? []);
+    }
+
+    public function returnedDeliveryNote(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
     }
 
 }

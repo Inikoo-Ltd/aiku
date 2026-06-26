@@ -25,13 +25,11 @@ import { getComponent } from "@/Composables/getWorkshopComponents"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { setColorStyleRootByEl } from "@/Composables/useApp"
 import { trans } from "laravel-vue-i18n"
-
 import SideMenuFamilyDescriptionBlockWorkshop from "@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/SideMenuFamilyDescriptionBlockWorkshop.vue"
 import ScreenView from "@/Components/ScreenView.vue"
-import FamilyList from "@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/FamilyList.vue"
-
 import type { routeType } from "@/types/route"
 import { cloneDeep } from "lodash-es"
+import { faChevronCircleLeft, faChevronCircleRight, faCompressWide, faDotCircle, faExpand } from "@far"
 
 library.add(
   faCube,
@@ -64,7 +62,7 @@ const isLoadingSave = ref(false)
 const loadingTemplate = ref(false)
 const previewKey = ref<string | number>("")
 const currentView = ref<"desktop" | "tablet" | "mobile">("desktop")
-
+const themeColor4 = props.layout_theme?.color?.[4] || '#fcd34d'
 provide("visibleDrawer", visibleDrawer)
 provide("currentView", currentView)
 
@@ -105,6 +103,7 @@ const onPickTemplate = async (template: any) => {
 
     if (response.data) {
       layoutState.value = response.data
+      debouncedAutosave()
       emits("update:layout", response.data);
     }
   } catch (error) {
@@ -117,18 +116,13 @@ const onPickTemplate = async (template: any) => {
 // ✅ FIXED: do NOT replace object
 const onChangeFamily = (payload: any) => {
   dataPicked.value.family = payload
-
-  // 🔥 force re-render using family code (or id as fallback)
   previewKey.value = payload?.code || payload?.id || Date.now()
-
   visibleDrawer.value = false
 }
+
 // AUTOSAVE
 const autosave = () => {
   const payload = cloneDeep(layoutState.value)
-
-  console.log("SENT", payload)
-
   router.patch(
     route(
       props.data.autosaveRoute.name,
@@ -157,52 +151,74 @@ const debouncedAutosave = () => {
 }
 
 
-// MOUNT
+
 onMounted(() => {
   if (rootRef.value && props.layout_theme?.color) {
     setColorStyleRootByEl(rootRef.value, props.layout_theme.color)
   }
+  if (props?.data?.family?.data[0]) onChangeFamily(props.data.family.data[0])
 })
+
+const sidebarOpen = ref(true)
 </script>
 
 <template>
   <div class="pt-4">
-    <!-- INFO -->
-    <div class="mx-4 lg:mx-6 italic text-amber-700 bg-amber-200 py-1 px-2 border-l-4 border-amber-400 w-fit">
-      {{ trans("*This block usually showed in Family page") }}
-    </div>
 
     <!-- LAYOUT -->
-    <div class="h-[85vh] grid grid-cols-1 lg:grid-cols-12 gap-4 p-3">
+    <div class="h-[85vh] grid gap-4 p-3" :class="[
+      sidebarOpen
+        ? 'grid-cols-1 lg:grid-cols-12'
+        : 'grid-cols-1'
+    ]">
 
       <!-- LEFT MENU -->
-      <div
-        class="col-span-1 lg:col-span-3 bg-white rounded-xl shadow-md p-3 lg:p-4 overflow-y-auto border max-h-[40vh] lg:max-h-full">
-        <SideMenuFamilyDescriptionBlockWorkshop
-          :data="layoutState"
-          :webBlockTypes="props.data.web_block_types"
-          :selectedBlock="selectedBlock"
-          @update:data="layoutState = $event"
-          @update:selectedBlock="selectedBlock = $event"
-          @set-up-template="onPickTemplate"
-          @auto-save="debouncedAutosave"
-        />
-      </div>
+      <Transition enter-active-class="transition-all duration-300" leave-active-class="transition-all duration-300">
+        <div v-if="sidebarOpen" class="
+        col-span-1
+        lg:col-span-3
+        bg-[#F9FAFB]
+        rounded-xl
+        shadow-md
+        p-3
+        lg:p-4
+        overflow-y-auto
+        border
+        max-h-[40vh]
+        lg:max-h-full
+      ">
+          <SideMenuFamilyDescriptionBlockWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
+            :selectedBlock="selectedBlock" @update:data="layoutState = $event"
+            @update:selectedBlock="selectedBlock = $event" @set-up-template="onPickTemplate"
+            @auto-save="debouncedAutosave" />
+        </div>
+      </Transition>
 
       <!-- PREVIEW -->
-      <div
-        class="col-span-1 lg:col-span-9 bg-white rounded-xl shadow-md flex flex-col border overflow-hidden">
-
+      <div class="
+      bg-white
+      rounded-xl
+      shadow-md
+      flex
+      flex-col
+      border
+      overflow-hidden
+    " :class="sidebarOpen ? 'col-span-1 lg:col-span-9' : 'col-span-1'">
         <!-- HEADER -->
         <div class="flex justify-between items-center px-3 lg:px-4 py-2 bg-gray-100 border-b shrink-0">
-          <div class="py-1 px-2 hidden lg:block">
-            <ScreenView v-model="currentView" />
+
+          <div class="flex items-center gap-2">
+            <button type="button" class="w-8 h-8 rounded-lg hover:bg-gray-200 transition"
+              @click="sidebarOpen = !sidebarOpen">
+              <FontAwesomeIcon :icon="sidebarOpen ? faExpand : faCompressWide" />
+            </button>
+
+            <div class="py-1 px-2 hidden lg:block">
+              <ScreenView v-model="currentView" />
+            </div>
           </div>
 
-          <div
-            class="text-xs lg:text-sm text-gray-600 italic cursor-pointer truncate"
-            @click="visibleDrawer = true"
-          >
+          <div class="text-xs lg:text-sm text-gray-600 italic cursor-pointer truncate" @click="visibleDrawer = true">
             <span v-if="dataPicked.family?.name">
               Preview: <strong>{{ dataPicked.family.name }}</strong>
             </span>
@@ -211,42 +227,22 @@ onMounted(() => {
         </div>
 
         <!-- CONTENT -->
-        <div class="flex-1 min-h-0 p-2 lg:p-4">
-          <div
-            v-if="layoutState && dataPicked.family"
-            :key="previewKey"
-            ref="rootRef"
-            :class="[
-              'border-2 border-t-0 h-full overflow-auto',
-              iframeClass
-            ]"
-          >
-            <div
-              v-for="(block, key) in layoutState"
-              :key="key + '-' + previewKey"
-              class="my-2 lg:my-3 transition-all duration-200"
+
+        <div class="flex-1 min-h-0">
+          <div v-if="layoutState && dataPicked.family" :key="previewKey" ref="rootRef" :class="[
+            ' h-full overflow-auto',
+            iframeClass
+          ]">
+            <div v-for="(block, key) in layoutState" :key="key + '-' + previewKey" class="transition-all duration-200"
               :class="{
                 'border-2 block-active': key === selectedBlock?.code,
                 'border border-transparent': key !== selectedBlock?.code
-              }"
-            >
-              <component
-                :is="getComponent(key)"
-                :routeEditFamiliesOverview="props.data.update_family_route"
-                :screenType="currentView"
-                :modelValue="{
+              }">
+              <component :is="getComponent(key)" :routeEditFamiliesOverview="props.data.update_family_route"
+                :screenType="currentView" :modelValue="{
                   ...block?.fieldValue,
-                  ...dataPicked.family
-                }"
-              />
-
-              <!-- SPECIAL BLOCK -->
-              <div
-                v-if="key === 'family-2'"
-                class="mx-2 h-28 lg:h-32 my-3 flex items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 lg:px-4 py-2 text-[10px] lg:text-xs font-medium text-gray-600"
-              >
-                Products Block
-              </div>
+                  family: dataPicked.family
+                }" />
             </div>
           </div>
 
@@ -262,40 +258,72 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
   </div>
 
-  <!-- DRAWER -->
-  <Drawer
-    v-model:visible="visibleDrawer"
-    position="right"
-    :pt="{
-      root: { style: 'width: 100vw; max-width: 400px;' },
-      content: { class: 'flex flex-col h-full' }
-    }"
-  >
+  <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
     <template #header>
       <div>
-        <h2 class="text-base font-semibold">
-          {{ trans("Family") }}
-        </h2>
-        <p class="text-xs text-gray-500">
-          {{ trans("Choose a family to preview") }}
-        </p>
+        <h2 class="text-base font-semibold">{{ trans('Family') }}</h2>
+        <p class="text-xs text-gray-500">{{ trans('Choose a family to preview') }}</p>
       </div>
     </template>
 
-    <div class="flex-1 overflow-y-auto p-4">
-      <FamilyList
-        :dataList="props.data.family"
-        @ChangeFamily="onChangeFamily"
-        :active="dataPicked.family?.slug"
-      />
+    <div class="mx-auto">
+      <ul class="space-y-3">
+        <li v-for="(family, index) in props.data.family.data" :key="family.slug" @click="() => onChangeFamily(family)"
+          class="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow" :class="[
+            'rounded-lg shadow-sm transition-shadow',
+            family.slug == dataPicked.sub_department?.slug
+              ? 'border border-blue-500 ring-2 ring-blue-300 shadow-md'
+              : 'border border-gray-200 hover:shadow-md hover:border-gray-300'
+          ]">
+          <div class="flex items-center justify-between px-4 py-3 cursor-pointer group hover:bg-gray-50 rounded-t-lg">
+            <div class="flex items-center gap-3 text-gray-800 font-medium">
+              <FontAwesomeIcon :icon="faDotCircle" class="w-4 h-4" :class="family?.slug == dataPicked?.sub_department?.slug
+                ? 'text-blue-500'
+                : 'text-gray-400'
+                " />
+
+              <span class="group-hover:underline">
+                {{ family.name }}
+              </span>
+            </div>
+          </div>
+        </li>
+      </ul>
     </div>
   </Drawer>
+
 </template>
 
-<style scoped>
+<style>
 .block-active {
-  border: 2px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
+  border: 2px solid color-mix(in srgb, v-bind(themeColor4) 80%, black);
+}
+
+.background-primary {
+  background-color: v-bind(themeColor4);
+}
+
+.border-primary {
+  border-color: v-bind(themeColor4);
+}
+
+.text-primary {
+  color: v-bind(themeColor4) !important;
+}
+
+.primaryLink {
+  background: linear-gradient(to top,
+      v-bind(themeColor4),
+      v-bind(themeColor4));
+
+  @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5;
+
+  &:hover,
+  &:focus {
+    color: #374151;
+  }
 }
 </style>

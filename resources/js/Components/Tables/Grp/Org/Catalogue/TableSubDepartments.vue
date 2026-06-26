@@ -15,7 +15,7 @@ import { RouteParams } from "@/types/route-params"
 import { Family } from "@/types/family"
 import { faTimesCircle, faCheckCircle, faBroadcastTower, faSkull } from "@fal"
 import { faTriangle, faEquals, faMinus } from "@fas"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 

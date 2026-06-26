@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
+import axios from "axios"
 import { faChevronDown } from "@far"
 import { faChartLine, faPlay, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -67,11 +68,49 @@ ChartJS.register(ArcElement, Tooltip, Legend, Colors)
 
 const dashboardTabActive = ref('')
 provide("dashboardTabActive", dashboardTabActive)
+const isLoadingOnTable = ref(false)
+provide("isLoadingOnTable", isLoadingOnTable)
 
 const currentTab = ref(props.dashboard?.super_blocks?.[0]?.tabs_box?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isExpanded = ref(false)
+
+const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
+	const block = props.dashboard?.super_blocks?.[0]?.blocks?.[0]
+	const fetchRoute = block?.tab_fetch_route
+	if (!block?.tables || !fetchRoute?.name) {
+		return
+	}
+
+	if (block.tables[tabSlug]) {
+		return
+	}
+
+	isLoadingOnTable.value = true
+	try {
+		const { data } = await axios.get(route(fetchRoute.name), {
+			params: {
+				tab: tabSlug,
+			},
+		})
+
+		if (data?.tab && data?.table) {
+			set(props, `dashboard.super_blocks[0].blocks[0].tables.${data.tab}`, data.table)
+		}
+
+		if (data?.tab && data?.table_2) {
+			set(props, `dashboard.super_blocks[0].blocks_2[0].tables.${data.tab}`, data.table_2)
+		}
+	} finally {
+		isLoadingOnTable.value = false
+	}
+}
+
+const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
+	set(props, "dashboard.super_blocks[0].blocks[0].current_tab", tabSlug)
+	await fetchDashboardTabData(tabSlug)
+}
 </script>
 
 <template>
@@ -82,7 +121,7 @@ const isExpanded = ref(false)
 			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
 		</KeepAlive>
 
-		<div v-if="stockHistoryGroup" class="px-3 sm:px-6 mt-1">
+		<div v-if="stockHistoryGroup" class="px-3 sm:px-6 mt-1 mb-4">
 			<dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
 				<div class="px-5 py-4">
 					<dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
@@ -90,7 +129,7 @@ const isExpanded = ref(false)
 						{{ trans('Stock Value') }}
 					</dt>
 					<dd class="mt-1 text-xl sm:text-3xl font-semibold tabular-nums text-gray-800">
-						{{ locale.currencyFormat(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_stock_value)) }}
+						{{ locale.CurrencyShort(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_stock_value)) }}
 					</dd>
 				</div>
 				<div class="px-5 py-4">
@@ -99,7 +138,7 @@ const isExpanded = ref(false)
 						{{ trans('Stored SKUs') }}
 					</dt>
 					<dd class="mt-1 text-xl sm:text-2xl font-semibold tabular-nums text-gray-800">
-						{{ locale.number(stockHistoryGroup.number_org_stocks) }}
+						{{ locale.numberShort(stockHistoryGroup.number_org_stocks) }}
 					</dd>
 				</div>
 				<div class="px-5 py-4">
@@ -108,7 +147,7 @@ const isExpanded = ref(false)
 						{{ trans('Locations') }}
 					</dt>
 					<dd class="mt-1 text-xl sm:text-2xl font-semibold tabular-nums text-gray-800">
-						{{ locale.number(stockHistoryGroup.number_locations) }}
+						{{ locale.numberShort(stockHistoryGroup.number_locations) }}
 					</dd>
 				</div>
 				<div class="px-5 py-4">
@@ -118,7 +157,7 @@ const isExpanded = ref(false)
 					</dt>
 					<dd class="mt-1 flex items-baseline gap-x-2">
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
-							{{ locale.number(stockHistoryGroup.number_out_of_stock_org_stocks) }}
+							{{ locale.numberShort(stockHistoryGroup.number_out_of_stock_org_stocks) }}
 						</span>
 						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKUs')">
 							{{ stockHistoryGroup.percentage_out_of_stock }}%
@@ -132,7 +171,7 @@ const isExpanded = ref(false)
 					</dt>
 					<dd class="mt-1 flex items-baseline gap-x-2">
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
-							{{ locale.currencyFormat(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_value_dormant_stock_1y)) }}
+							{{ locale.CurrencyShort(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_value_dormant_stock_1y)) }}
 						</span>
 						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total stock value')">
 							{{ stockHistoryGroup.percentage_dormant_1y }}%
@@ -146,7 +185,7 @@ const isExpanded = ref(false)
 					</dt>
 					<dd class="mt-1 flex items-baseline gap-x-2">
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
-							{{ locale.number(stockHistoryGroup.number_org_stocks_not_sold_1y) }}
+							{{ locale.numberShort(stockHistoryGroup.number_org_stocks_not_sold_1y) }}
 						</span>
 						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKUs')">
 							{{ stockHistoryGroup.percentage_not_sold_1y }}%
@@ -193,41 +232,41 @@ const isExpanded = ref(false)
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
-									{{ locale.currencyFormat(org.currency_code, org.org_stock_value) }}
+									{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_value)) }}
 								</Link>
-								<span v-else class="text-gray-700">{{ locale.currencyFormat(org.currency_code, org.org_stock_value) }}</span>
+								<span v-else class="text-gray-700">{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_value)) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
-									{{ locale.number(org.number_org_stocks) }}
+									{{ locale.numberShort(org.number_org_stocks) }}
 								</Link>
-								<span v-else class="text-gray-700">{{ locale.number(org.number_org_stocks) }}</span>
+								<span v-else class="text-gray-700">{{ locale.numberShort(org.number_org_stocks) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.locations.name, org.routes.locations.parameters)" class="text-gray-700 hover:text-blue-600 hover:underline">
-									{{ locale.number(org.number_locations) }}
+									{{ locale.numberShort(org.number_locations) }}
 								</Link>
-								<span v-else class="text-gray-700">{{ locale.number(org.number_locations) }}</span>
+								<span v-else class="text-gray-700">{{ locale.numberShort(org.number_locations) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'out_of_stock' })" class="text-red-500 hover:text-red-700 hover:underline">
-									{{ locale.number(org.number_out_of_stock_org_stocks) }}
+									{{ locale.numberShort(org.number_out_of_stock_org_stocks) }}
 								</Link>
-								<span v-else class="text-red-500">{{ locale.number(org.number_out_of_stock_org_stocks) }}</span>
+								<span v-else class="text-red-500">{{ locale.numberShort(org.number_out_of_stock_org_stocks) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_out_of_stock }}%</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'dormant_stock_1y' })" class="text-red-500 hover:text-red-700 hover:underline">
-									{{ locale.currencyFormat(org.currency_code, org.value_dormant_stock_1y) }}
+									{{ locale.CurrencyShort(org.currency_code, Number(org.value_dormant_stock_1y)) }}
 								</Link>
-								<span v-else class="text-red-500">{{ locale.currencyFormat(org.currency_code, org.value_dormant_stock_1y) }}</span>
+								<span v-else class="text-red-500">{{ locale.CurrencyShort(org.currency_code, Number(org.value_dormant_stock_1y)) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_dormant_1y }}%</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'not_sold_1y' })" class="text-red-500 hover:text-red-700 hover:underline">
-									{{ locale.number(org.number_org_stocks_not_sold_1y) }}
+									{{ locale.numberShort(org.number_org_stocks_not_sold_1y) }}
 								</Link>
-								<span v-else class="text-red-500">{{ locale.number(org.number_org_stocks_not_sold_1y) }}</span>
+								<span v-else class="text-red-500">{{ locale.numberShort(org.number_org_stocks_not_sold_1y) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_not_sold_1y }}%</span>
 							</td>
 						</tr>
@@ -246,15 +285,13 @@ const isExpanded = ref(false)
 
 		<DashboardTable
 			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
-			class="border-t border-gray-200"
+			class="mx-4 !px-0 border-t border-gray-200 mt-4"
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
-			@onChangeTab="(val) => {
-				set(props, 'dashboard.super_blocks[0].blocks[0].current_tab', val)
-			}"
+			@onChangeTab="onChangeDashboardTab"
 		/>
 
 		<DashboardTable
@@ -269,13 +306,12 @@ const isExpanded = ref(false)
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			:showTabs="false"
-			@onChangeTab="(val) => {
-				set(props, 'dashboard.super_blocks[0].blocks[0].current_tab', val)
-			}"
+			@onChangeTab="onChangeDashboardTab"
 		/>
 
 		<DashboardWidget
 			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
+			class="mt-12"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>

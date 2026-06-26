@@ -35,6 +35,9 @@ import {
 	faShapes,
 	faLayerGroup,
 	faSortShapesUpAlt,
+	faLightbulb,
+	faRepeat,
+	faListUl
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -43,7 +46,10 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from "@headlessui/vue"
 import { trans } from 'laravel-vue-i18n'
 library.add(
+	faListUl,
 	faShapes,
+	faRepeat,
+	faLightbulb,
 	faInfoCircle,
 	faRoad,
 	faClock,

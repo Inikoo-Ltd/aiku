@@ -4,7 +4,7 @@ namespace App\Actions\Web\Announcement\UI;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Web\AnnouncementTemplatesResource;
-use App\Models\AnnouncementTemplate;
+use App\Models\Web\AnnouncementTemplate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;

@@ -68,6 +68,11 @@ class CreatePoll extends OrgAction
                                     'label'    => __('Name'),
                                     'required' => true
                                 ],
+                                'label'                    => [
+                                    'type'     => 'input',
+                                    'label'    => __('Label'),
+                                    'required' => true
+                                    ],
                                 'type'                     => [
                                     'type'     => 'poll_type_select',
                                     'label'    => __('Type'),
@@ -78,19 +83,14 @@ class CreatePoll extends OrgAction
                                         'poll_options' => [],
                                     ]
                                 ],
-                                'label'                    => [
-                                    'type'     => 'input',
-                                    'label'    => __('label'),
-                                    'required' => true
-                                ],
                                 'in_registration'          => [
                                     'type'  => 'toggle',
-                                    'label' => __('in registration'),
+                                    'label' => __('In Registration'),
                                     'value' => false
                                 ],
                                 'in_registration_required' => [
                                     'type'  => 'toggle',
-                                    'label' => __('registration required'),
+                                    'label' => __('Registration Required'),
                                     'value' => false
                                 ],
                             ],

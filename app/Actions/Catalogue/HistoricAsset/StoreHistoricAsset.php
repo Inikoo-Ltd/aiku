@@ -71,7 +71,7 @@ class StoreHistoricAsset
         $historicAsset->stats()->create();
 
 
-        AssetHydrateHistoricAssets::dispatch($assetModel->asset)->delay($hydratorsDelay);
+        AssetHydrateHistoricAssets::dispatch($assetModel->asset)->delay(5);
 
         return $historicAsset;
     }

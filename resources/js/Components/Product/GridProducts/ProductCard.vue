@@ -14,7 +14,7 @@ import {ref, inject, computed} from 'vue'
 import {trans} from 'laravel-vue-i18n'
 import {aikuLocaleStructure} from '@/Composables/useLocaleStructure'
 import type {Product} from './types'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import {retinaLayoutStructure} from '@/Composables/useRetinaLayoutStructure'
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faHeart, faShoppingCart} from "@fal"

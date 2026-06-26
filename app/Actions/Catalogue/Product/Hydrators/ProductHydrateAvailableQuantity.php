@@ -43,7 +43,13 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
         $numberOrgStocksChecked                 = 0;
         $numberOrgStocksHasNeverBeenInWarehouse = 0;
+
+        $isNotOnDemand = false;
         foreach ($product->orgStocks as $orgStock) {
+            if (!$orgStock->is_on_demand) {
+                $isNotOnDemand = true;
+            }
+
             if (!$orgStock->has_been_in_warehouse) {
                 $numberOrgStocksHasNeverBeenInWarehouse++;
             }
@@ -71,6 +77,11 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             $numberOrgStocksChecked++;
         }
 
+        $onDemand = false;
+        if ($numberOrgStocksChecked > 0 && !$isNotOnDemand) {
+            $onDemand = true;
+        }
+
         if ($availableQuantity < 0) {
             $availableQuantity = 0;
         }
@@ -78,6 +89,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
         $dataToUpdate = [
             'available_quantity' => $availableQuantity,
+            'is_on_demand'       => $onDemand
         ];
 
         if ($currentQuantity == 0 && $availableQuantity > 0) {
@@ -116,7 +128,6 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
     public function asCommand(Command $command): void
     {
         if ($command->argument('id')) {
-
             if (is_numeric($command->argument('id'))) {
                 $product = Product::findOrFail($command->argument('id'));
             } else {

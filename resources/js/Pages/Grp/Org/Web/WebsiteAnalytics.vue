@@ -26,6 +26,7 @@ import { computed } from "vue"
 import { capitalize } from "@/Composables/capitalize";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
+import { trans } from "laravel-vue-i18n"
 
 library.add(faArrowUp, faArrowDown, faHandSparkles, faEnvelope, faUser, faHdd, faCloudDownload, faMinus)
 
@@ -555,13 +556,13 @@ watch(value, handleSelectChange)
 				<!-- Visits Card -->
 
 				<OverviewCard
-					label="Visitors"
+					:label="trans('Visitors')"
 					:value="visitorsTotal"
 					:percentageChange="0"
 					:chartData="chartsData['Analytics Timeseries']" />
 
 				<OverviewCard
-					label="Page Views"
+					:label="trans('Page Views')"
 					:value="pageViewsTotal"
 					:percentageChange="0"
 					:chartData="pageViewsChartData" />
@@ -599,16 +600,16 @@ watch(value, handleSelectChange)
 				</div>
 
                 <div v-if="props.data.pageConversionAnalytics" class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Page Conversion Rate</h2>
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">{{ trans("Page Conversion Rate") }}</h2>
                     <DataTable :value="props.data.pageConversionAnalytics" paginator :rows="10" :rowsPerPageOptions="[10, 20, 50]" sortMode="multiple" tableStyle="min-width: 50rem">
-                        <Column field="page_url" header="Page URL" sortable style="width: 30%">
+                        <Column field="page_url" :header="trans('Page URL')" sortable style="width: 30%">
                             <template #body="{ data }">
                                 <a :href="data.page_url" target="_blank" class="text-blue-600 hover:underline truncate block max-w-xs" :title="data.page_url">{{ data.page_url }}</a>
                             </template>
                         </Column>
-                        <Column field="conversion_rate" header="Conversion Rate" sortable style="width: 20%">
+                        <Column field="conversion_rate" :header="trans('Conversion Rate')" sortable style="width: 20%">
                             <template #body="{ data }">
-                                <div class="flex items-center gap-2">
+                                <div class="flex ite	ms-center gap-2">
                                     <span class="font-bold">{{ data.conversion_rate }}%</span>
                                     <span v-if="data.trend.direction === 'up'" class="text-green-500" :title="`Up ${data.trend.value}% from ${data.trend.prev_rate}%`">
                                         <font-awesome-icon :icon="['fal', 'arrow-up']" />
@@ -622,9 +623,9 @@ watch(value, handleSelectChange)
                                 </div>
                             </template>
                         </Column>
-                        <Column field="total_conversions" header="Add to Basket" sortable style="width: 15%"></Column>
-                        <Column field="total_visits" header="Visits" sortable style="width: 15%"></Column>
-                        <Column field="avg_time_spent" header="Avg Time" sortable style="width: 20%">
+                        <Column field="total_conversions" :header="trans('Add to Basket')" sortable style="width: 15%"></Column>
+                        <Column field="total_visits" :header="trans('Visits')" sortable style="width: 15%"></Column>
+                        <Column field="avg_time_spent" :header="trans('Avg Time')" sortable style="width: 20%">
                             <template #body="{ data }">
                                 {{ data.avg_time_spent }}s
                             </template>

@@ -20,7 +20,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 
 import { Root, Daum } from "@/types/webBlockTypes"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 library.add(
 	faPresentation,

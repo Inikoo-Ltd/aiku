@@ -127,6 +127,20 @@ class UpdateProductCategoryOffersData
                 'category'   => $categoryLink,
                 'percentage' => $percentage
             ]);
+        } elseif ($offer->type == 'Department Ordered') {
+            $triggerLabels[] = __('Order any product in this department');
+
+            $productsTriggerLabel = __('Order any product from :category department to get :percentage off', [
+                'category'   => $categoryLink,
+                'percentage' => $percentage
+            ]);
+        } elseif ($offer->type == 'Subdepartment Ordered') {
+            $triggerLabels[] = __('Order any product in this sub-department');
+
+            $productsTriggerLabel = __('Order any product from :category sub-department to get :percentage off', [
+                'category'   => $categoryLink,
+                'percentage' => $percentage
+            ]);
         }
 
 

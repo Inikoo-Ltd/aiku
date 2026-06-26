@@ -24,7 +24,7 @@ import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
 import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
 import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack, faRunning} from "@fas"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
@@ -33,7 +33,6 @@ import axios from "axios"
 import { ulid } from "ulid"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { notify } from "@kyvg/vue3-notification"
-
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack)
@@ -138,11 +137,20 @@ function onCancel(item) {
 
 function productRoute(product: Product) {
     if (!product.slug) {
-        return ""
+        return "ss"
     }
 
     // console.log(route().current())
     switch (route().current()) {
+        case 'grp.org.shops.show.catalogue.products.not_online_products.index': 
+            return route(
+                'grp.org.shops.show.catalogue.products.not_online_products.show',
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]
+            )
         case 'grp.org.shops.show.catalogue.products.independent_products.current.index':
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.current.show",
@@ -206,6 +214,14 @@ function productRoute(product: Product) {
         case "grp.org.shops.show.catalogue.products.rrp_violation_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.rrp_violation_products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ])
+        case "grp.org.shops.show.catalogue.products.missing_description_products.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.missing_description_products.show",
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
@@ -575,7 +591,7 @@ const repairTradeUnitFromChildren = async (product) => {
 
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">
-                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="product['image_thumbnail']" imageCover class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
 
@@ -684,6 +700,10 @@ const repairTradeUnitFromChildren = async (product) => {
 
                 </template>
             </LabelSKU>
+        </template>
+
+        <template #cell(webpage_state)="{ item: product }">
+            <Icon :data="product.webpage_state" />
         </template>
 
         <template #cell(price)="{ item: product }">
@@ -877,7 +897,7 @@ const repairTradeUnitFromChildren = async (product) => {
                 <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
-                {{ product["code"] }}
+                    {{ product["code"] }}
                 </Link>
             </div>
         </template>

@@ -27,7 +27,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $organisationId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -57,10 +57,10 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(Organisation $organisation, array $euCountryIds, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $rawMetrics = DB::table('delivery_note_items as dni')
+        $rawMetrics = DB::connection('aiku_no_sticky')->table('delivery_note_items as dni')
             ->join('delivery_notes as dn', 'dn.id', '=', 'dni.delivery_note_id')
             ->joinSub(
-                DB::table('product_has_org_stocks as phos')
+                DB::connection('aiku_no_sticky')->table('product_has_org_stocks as phos')
                     ->join('products as p', 'p.id', '=', 'phos.product_id')
                     ->select(
                         'phos.org_stock_id',

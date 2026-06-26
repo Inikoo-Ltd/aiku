@@ -61,6 +61,7 @@ class NewsletterMailshotsResource extends JsonResource
         return [
             'id'                        => $this->id,
             'slug'                      => $this->slug,
+            'name'                      => $this->name,
             'date'                      => Carbon::parse($this->date)->format('d M Y, H:i'),
             'subject'                   => $this->subject,
             'state'                     => $this->state,

@@ -40,6 +40,15 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         };
 
         $shopColumns = [
+            'link' => [
+                'formatted_value'   => '',
+                'currency_type'     => 'always',
+                'data_display_type' => 'always',
+                'type'              => 'icon',
+                'align'             => 'left',
+                'frozen'            => true,
+                'alignFrozen'       => 'left',
+            ],
             'label' => [
                 'formatted_value'   => $labelValue,
                 'currency_type'     => 'always',

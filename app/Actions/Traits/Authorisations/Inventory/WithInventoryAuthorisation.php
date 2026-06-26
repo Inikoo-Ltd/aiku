@@ -33,6 +33,7 @@ trait WithInventoryAuthorisation
 
         $viewPermissions = [
             "inventory.{$this->organisation->id}.view",
+            "accounting.{$this->organisation->id}.view"
         ];
         foreach ($warehousesIDs as $warehouseId) {
             $viewPermissions[] = "supervisor-stocks.$warehouseId.view";

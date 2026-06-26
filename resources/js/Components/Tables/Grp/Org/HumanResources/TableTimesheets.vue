@@ -85,6 +85,12 @@ const timesheetRoute = (timesheet: Timesheet) => {
             </div>
         </template>
 
+        <template #cell(notes)="{ item: timesheet }">
+            <div class="max-w-xs truncate text-gray-600">
+                {{ timesheet.notes || "-" }}
+            </div>
+        </template>
+
         <!-- Column: Working duration -->
         <template #cell(working_duration)="{ item: user }">
             <div class="tabular-nums font-mono">

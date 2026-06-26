@@ -109,7 +109,7 @@ class CancelOrder extends OrgAction
         $deliveryNotes = $order->deliveryNotes;
         foreach ($deliveryNotes as $deliveryNote) {
             if ($deliveryNote->state != DeliveryNoteStateEnum::CANCELLED) {
-                CancelDeliveryNote::make()->action($deliveryNote, false);
+                CancelDeliveryNote::make()->action($deliveryNote, null, false);
             }
         }
 

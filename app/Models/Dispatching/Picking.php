@@ -40,7 +40,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property PickingTypeEnum|null $type
  * @property string|null $last_picked_at
  * @property int|null $batch_code_id
- * @property-read BatchCode|null $batchCode
+ * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
  * @property-read \App\Models\SysAdmin\Group|null $group

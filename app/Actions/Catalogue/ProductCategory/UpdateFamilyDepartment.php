@@ -56,13 +56,17 @@ class UpdateFamilyDepartment extends OrgAction
 
 
         if (Arr::has($changes, 'department_id')) {
-            DepartmentHydrateProducts::dispatch($family->department);
-            ProductCategoryHydrateFamilies::dispatch($family->department);
             if ($family->webpage) {
                 UpdateWebpageCanonicalUrl::dispatch($family->webpage)->delay(2);
             }
+
+            if ($family->department) {
+                DepartmentHydrateProducts::dispatch($family->department_id)->delay(2);
+                ProductCategoryHydrateFamilies::dispatch($family->department);
+            }
+
             if ($oldDepartment) {
-                DepartmentHydrateProducts::dispatch($oldDepartment);
+                DepartmentHydrateProducts::dispatch($oldDepartment->id)->delay(2);
                 ProductCategoryHydrateFamilies::dispatch($oldDepartment);
             } else {
                 ShopHydrateFamiliesWithNoDepartment::dispatch($family->shop);
@@ -74,7 +78,7 @@ class UpdateFamilyDepartment extends OrgAction
 
             if ($family->subDepartment) {
                 ProductCategoryHydrateFamilies::dispatch($family->subDepartment);
-                SubDepartmentHydrateProducts::dispatch($family->subDepartment);
+                SubDepartmentHydrateProducts::dispatch($family->sub_department_id)->delay(2);
             }
 
             if ($family->webpage) {
@@ -82,7 +86,7 @@ class UpdateFamilyDepartment extends OrgAction
             }
             if ($oldSubDepartment) {
                 ProductCategoryHydrateFamilies::dispatch($oldSubDepartment);
-                SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
+                SubDepartmentHydrateProducts::dispatch($oldSubDepartment->id)->delay(2);
             }
 
         }

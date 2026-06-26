@@ -11,7 +11,7 @@ import {
 } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import ComponentImage from '@/Components/Image.vue'
+import ComponentImage from '@common/Components/Image.vue'
 import { useCopyText } from '@/Composables/useCopyText'
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import { Agent } from '@/types/Grp/Agent'

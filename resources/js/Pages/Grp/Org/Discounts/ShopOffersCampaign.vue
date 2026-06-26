@@ -39,8 +39,11 @@ const props = defineProps<{
         stats: {}
     }
     shop_data: {
+        id: number
         slug: string
         currency_code: string
+        organisation?: string
+        offercampaign?: string
     }
 }>()
 
@@ -62,7 +65,7 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <!-- <ModalCreateStoreOffers  :shop_data="props.shop_data" /> -->
+            <ModalCreateStoreOffers  :shop_data="props.shop_data" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />

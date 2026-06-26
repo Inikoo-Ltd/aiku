@@ -38,13 +38,13 @@ class RepairMissingRedirect
             if (!$redirect) {
                 $command->info("Creating Redirect");
                 $redirect = StoreRedirect::make()->action($webpage, [
-                    'type'          => RedirectTypeEnum::TEMPORAL,
+                    'type'          => RedirectTypeEnum::PERMANENT,
                     'to_webpage_id' => $redirectedWebpageId
                 ]);
             } else {
                 $command->info("Updating Redirect");
                 $redirect = UpdateRedirect::make()->action($redirect, [
-                    'type'          => RedirectTypeEnum::TEMPORAL,
+                    'type'          => RedirectTypeEnum::PERMANENT,
                     'to_webpage_id' => $redirectedWebpageId
                 ]);
             }

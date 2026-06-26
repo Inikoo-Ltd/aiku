@@ -9,8 +9,11 @@
 
 namespace App\Actions\Catalogue\Variant;
 
+use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
+use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
+use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -46,7 +49,18 @@ class StoreVariantFromMaster extends OrgAction
                 $variant->timeSeries()->create(['frequency' => $frequency]);
             }
 
+            $website = $variant->shop->website;
             $leaderProduct = $variant->leaderProduct;
+
+
+            if (!$leaderProduct->webpage()->exists()) {
+                StoreProductWebpage::make()->action($leaderProduct);
+                $leaderProduct->refresh();
+            }
+
+            PublishWebpage::make()->action($leaderProduct->webpage, [
+                'comment'   => "Initial (Re)Publishing for Variant Creation: {$variant->slug}"
+            ]);
 
             foreach ($variant->fetchProductFromData() as $product) {
                 $isLeader = $leaderProduct->id == $product->id;
@@ -65,6 +79,11 @@ class StoreVariantFromMaster extends OrgAction
                              'redirect_webpage_id'   => $leaderProduct->webpage->id
                          ]
                      ]);
+                } else {
+                    StoreRedirectFromWebsite::make()->action($website, [
+                        'from_url'     => $product->slug,
+                        'to_url'       => $leaderProduct->webpage->id,
+                    ]);
                 }
             }
 

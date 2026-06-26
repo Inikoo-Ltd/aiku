@@ -90,6 +90,7 @@ const findTagById = (id: number | string) => {
                 :optionValue="fieldData?.valueProp || 'id'"
                 :placeholder="fieldData?.placeholder || trans('Select Tags')"
                 :maxSelectedLabels="3"
+                :selectedItemsLabel="trans('{0} items selected')"
                 filter
                 class="w-full md:w-80"
             >

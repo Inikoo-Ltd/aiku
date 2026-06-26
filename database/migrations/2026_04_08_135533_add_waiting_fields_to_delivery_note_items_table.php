@@ -15,8 +15,8 @@ return new class () extends Migration {
     {
         Schema::table('delivery_note_items', function (Blueprint $table) {
             $table->decimal('quantity_waiting_warehouse', 16, 6)->default(0);
-            $table->decimal('quantity_waiting_crm', 16, 6)->default(0);
             $table->boolean('has_waiting_warehouse')->default(false);
+            $table->decimal('quantity_waiting_crm', 16, 6)->default(0);
             $table->boolean('has_waiting_crm')->default(false);
         });
 

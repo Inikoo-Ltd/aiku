@@ -14,7 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { debounce, get, set } from "lodash-es"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import {
@@ -57,6 +57,7 @@ import { routeType } from "@/types/route"
 import { InputNumber, InputText, Message } from "primevue"
 import { EditorContent } from "@tiptap/vue-3"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import RetinaMatchStoredItemPicker from "@/Components/Tables/Retina/RetinaMatchStoredItemPicker.vue"
 
 library.add(
 	faHandshake,
@@ -107,8 +108,6 @@ const props = defineProps<{
 		products: number[]
 	}
 	routes: {
-		batch_upload: routeType
-		batch_match: routeType
 		fetch_products: routeType
 		single_create_new: routeType
 		single_match: routeType
@@ -139,8 +138,15 @@ function portfolioRoute(product: Product) {
 		return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
 	}
 
+	const customerSalesChannelId = route().params["customerSalesChannel"] || props.customerSalesChannel?.slug
+
+	if (!customerSalesChannelId) {
+		console.warn("customerSalesChannel ID is missing")
+		return "#"
+	}
+
 	return route("retina.dropshipping.customer_sales_channels.portfolios.show", [
-		route().params["customerSalesChannel"],
+		customerSalesChannelId,
 		product.id,
 	])
 }
@@ -726,7 +732,7 @@ const percentageIncrease = ref(0);
             </div>
 
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
-				<div v-if="customerSalesChannel.include_vat">
+				<div v-if="customerSalesChannel?.include_vat">
 					{{ trans("Price (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, calculateVat(product.price)) }}
 				</div>
@@ -734,7 +740,7 @@ const percentageIncrease = ref(0);
 					{{ trans("Price:") }}
 					{{ locale.currencyFormat(product.currency_code, product.price) }}
 				</div>
-				<div v-if="customerSalesChannel.include_vat">
+				<div v-if="customerSalesChannel?.include_vat">
 					{{ trans("RRP (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>
@@ -751,6 +757,7 @@ const percentageIncrease = ref(0);
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div> -->
 			</div>
+
 		</template>
 
 		<!-- Column: Status (repair) -->
@@ -1116,6 +1123,23 @@ const percentageIncrease = ref(0);
 					"
 					:disabled="disableButtons(item)" />
 			</div>
+		</template>
+
+		<!-- Column: Actions (fulfilment portfolios) -->
+		<template #cell(actions)="{ item }" v-if="!disabled">
+			<div class="mx-auto flex flex-wrap justify-center gap-2">
+				<RetinaMatchStoredItemPicker
+					v-if="(item as any).type === 'StoredItem'"
+					:portfolioId="item.id"
+					:currentItemId="(item as any).item_id"
+					:currentItemData="(item as any).item_id ? { id: (item as any).item_id, reference: item.code, name: item.name, total_quantity: item.quantity_left ?? 0 } : null" />
+			</div>
+		</template>
+
+		<!-- Column: Platform SKU (TikTok only) -->
+		<template #cell(platform_sku)="{ item }">
+			<span v-if="item.platform_sku" class="text-sm font-mono text-gray-700">{{ item.platform_sku }}</span>
+			<span v-else class="text-sm text-gray-400 italic">—</span>
 		</template>
 
 		<!-- Column: Actions 3 -->

@@ -41,6 +41,7 @@ function employeeRoute(employee: Employee) {
 				v-if="employee.is_on_probation"
 				label="Probation"
 				class="bg-yellow-100 text-yellow-800" />
+            <span v-else ></span>
 		</template>
 
 		<template #cell(length_of_service)="{ item: employee }">

@@ -8,14 +8,16 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\OrgAction;
+use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
+use App\Actions\Catalogue\ProductCategory\RelatedProducts\GetRelatedProducts;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Catalogue\Variant\IndexVariant;
+use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
@@ -165,6 +167,23 @@ class ShowFamily extends OrgAction
             ];
         }
 
+
+        $iconLinks = [];
+        if ($family->has_gr_vol_discount) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-medal',
+                'tooltip' => __('Gold Reward Volume Discount'),
+                'color'   => '#D97706',
+            ];
+            if (!$family->follow_master_gr) {
+                $iconLinks[] = [
+                    'icon'    => 'fal fa-starfighter',
+                    'tooltip' => __('Not following master GR'),
+                    'color'   => '#DC2626',
+                ];
+            }
+        }
+
         $tabs = [
             FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
                 fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))
@@ -193,24 +212,19 @@ class ShowFamily extends OrgAction
             FamilyTabsEnum::OFFERS->value => $this->tab == FamilyTabsEnum::OFFERS->value ?
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
-        ];
 
-        $tabs[FamilyTabsEnum::VARIANTS->value] =
-            $this->tab === FamilyTabsEnum::VARIANTS->value
-                ? fn () => VariantsResource::collection(
-                    IndexVariant::run(
-                        $family,
-                        FamilyTabsEnum::VARIANTS->value
-                    )
-                )
-                : Inertia::lazy(
-                    fn () => VariantsResource::collection(
-                        IndexVariant::run(
-                            $family,
-                            FamilyTabsEnum::VARIANTS->value
-                        )
-                    )
-                );
+            FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
+                    fn () => GetRelatedProductCategories::run($family)
+                    : Inertia::lazy(fn () => GetRelatedProductCategories::run($family)),
+
+            FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
+                fn () => GetRelatedProducts::run($family)
+                : Inertia::lazy(fn () => GetRelatedProducts::run($family)),
+
+                FamilyTabsEnum::VARIANTS->value => $this->tab === FamilyTabsEnum::VARIANTS->value ?
+                    fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))
+                    : Inertia::lazy(fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))),
+        ];
 
         return Inertia::render(
             'Org/Catalogue/Family',
@@ -264,21 +278,25 @@ class ShowFamily extends OrgAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('Department')
                     ],
-                    'iconRight' => $family->state->stateIcon()[$family->state->value],
-                    'actions'   => $this->getActions($family, $request),
-                    'parentTag' => $parentTag,
+                    'iconRight'  => $family->state->stateIcon()[$family->state->value],
+                    'iconLinks'  => $iconLinks,
+                    'actions'    => $this->getActions($family, $request),
+                    'parentTag'  => $parentTag,
 
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
                 ],
                 'url_master'       => $urlMaster,
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => FamilyTabsEnum::navigation()
+                    'navigation' => FamilyTabsEnum::navigation(),
                 ],
                 'shop_data' => [
                     'id'       => $family->shop->id,
                     'slug'          => $family->shop->slug,
                     'currency_code' => $family->shop->currency->code,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                    ],
                 ],
                 'product_category_id'   =>  $family->id,
                 'is_orphan'             => !$family->department_id,
@@ -288,12 +306,12 @@ class ShowFamily extends OrgAction
                 ...$tabs
             ]
         )
-            ->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-            ->table(IndexMailshots::make()->tableStructure(parent: $family))
-            ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
-            ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
-            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
-            ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value));
+        ->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+        ->table(IndexMailshots::make()->tableStructure(parent: $family))
+        ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
+        ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
+        ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
+        ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value));
     }
 
 

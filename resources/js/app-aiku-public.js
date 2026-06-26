@@ -3,7 +3,6 @@
  * Created: Sun, 04 Feb 2024 09:03:58 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
-
 import './bootstrap';
 import '../css/app.css';
 
@@ -39,7 +38,7 @@ createInertiaApp(
                         dsn                     : import.meta.env.VITE_SENTRY_DSN,
                         environment             : import.meta.env.VITE_APP_ENV,
                           release: import.meta.env.VITE_RELEASE,
-                        replaysSessionSampleRate: 0.1,
+                        replaysSessionSampleRate: 0.01,
                         replaysOnErrorSampleRate: 1.0,
                         integrations: [new Sentry.Replay()]
                       });

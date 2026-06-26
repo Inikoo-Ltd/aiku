@@ -6,7 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import LinkIris from '../LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { router } from '@inertiajs/vue3'
 import { ProductCategoryMenu, ProductCategoryMenuSub } from '@/Composables/Iris/useMenu'
 import { getStyles } from '@/Composables/styles'
@@ -14,7 +14,7 @@ import SidebarDesktopNavigation from './SidebarDesktopNavigation.vue'
 library.add(faChevronRight, faExternalLink)
 
 const props = defineProps<{
-    containerStyle: {
+    containerStyle?: {
         
     }
     productCategories: {}
@@ -39,9 +39,9 @@ const props = defineProps<{
     customTopSubDepartments: ProductCategoryMenuSub[]
     customMenusBottom: {}[]
     customSubDepartments: []
-    activeIndex: {}
-    activeCustomIndex: {}
-    activeCustomTopIndex: {}
+    activeIndex?: number | null
+    activeCustomIndex?: number | null
+    activeCustomTopIndex?: number | null
     getTarget: Function
     setActiveCategory: Function
     setActiveCustomCategory: Function
@@ -51,9 +51,9 @@ const props = defineProps<{
     customTopFamilies: {}[]
     sortedProductCategories: ProductCategoryMenu[]
     sortedSubDepartments: ProductCategoryMenuSub[]
-    activeSubIndex: number
-    activeCustomSubIndex: {}
-    activeCustomTopSubIndex: {}
+    activeSubIndex?: number
+    activeCustomSubIndex?: number | null
+    activeCustomTopSubIndex?: number | null
     changeActiveSubIndex: Function
     changeActiveCustomSubIndex: Function
     changeActiveCustomTopSubIndex: Function
@@ -144,14 +144,19 @@ const borderWidth = computed(() => {
 </script>
 
 <template>
-    <div class="grid h-full" :class="[
+    <div class="grid grid-rows-1 h-full overflow-hidden" :class="[
         (activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'grid-cols-2',
         (activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'grid-cols-3']"
     >
    
         <!-- Column 1: Categories + Custom Menus -->
-        <div class="flex flex-col justify-between gap-y-10" :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r']">
-            <div class="overflow-y-auto">
+        <div class="flex flex-col justify-between gap-y-10 min-h-0 overflow-hidden" :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r']">
+            <div class="flex-1 min-h-0 overflow-y-auto">
+                <!-- Skeleton: while sidebar fetch in-flight and no data yet -->
+                <div v-if="layout.iris.isSidebarLoading && !sortedProductCategories.length && !customMenusTop.length && !customMenusBottom.length" class="flex flex-col gap-y-3 p-2 px-4">
+                    <div v-for="i in 12" :key="`sk-cat-${i}`" class="w-full h-[1.9rem] skeleton" />
+                </div>
+
                 <!-- Sidebar: Top navigation -->
                 <div v-if="customMenusTop && customMenusTop.length > 0" class="borderBottomColorSameAsText">
                     <SidebarDesktopNavigation
@@ -207,9 +212,13 @@ const borderWidth = computed(() => {
                 </div>
             </div>
             
+            <!-- Section: List additional links -->
             <div class="mb-8 ">
-                <!-- Section: List additional links -->
-                <div v-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 pb-3 mb-3 xborder-b xborder-gray-300">
+                <div v-if="layout.iris.isSidebarLoading" class="flex flex-col gap-y-3 mb-3 pb-3">
+                    <div v-for="i in 2" class="w-full h-[1.9rem] skeleton" />
+                </div>
+
+                <div v-else-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 pb-3 mb-3">
                     <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
                         :href="item?.url?.href ?? ''"
                         class="flex gap-x-2 items-center py-1 hover:underline"
@@ -226,9 +235,10 @@ const borderWidth = computed(() => {
 
         <!-- Column 2: Subdepartments -->
         <div v-if="activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null"
+            class="min-h-0 overflow-hidden"
             :class="[(activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'border-r']">
 
-            <div class="overflow-y-auto">
+            <div class="h-full overflow-y-auto">
                 <!-- Section: Subdepartments (Top) -->
                 <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
                     <template v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex">
@@ -328,8 +338,8 @@ const borderWidth = computed(() => {
         </div>
 
         <!-- Column 3: Families -->
-        <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null">
-            <div class="overflow-y-auto">
+        <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null" class="min-h-0 overflow-hidden">
+            <div class="h-full overflow-y-auto">
                 <!-- Families: Top -->
                 <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
                     <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"

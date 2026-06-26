@@ -15,6 +15,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\TiktokUser;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -130,6 +131,31 @@ class AuthenticateTiktokAccount extends OrgAction
             'code' => ['required', 'string'],
             'state' => ['nullable', 'string']
         ];
+    }
+    public function getAccessTokenViaRefreshToken(TiktokUser $tiktokUser): void
+    {
+        $response = Http::get(config('services.tiktok.auth_url')."/api/v2/token/refresh", [
+            'app_key' => config('services.tiktok.client_id'),
+            'app_secret' => config('services.tiktok.client_secret'),
+            'refresh_token' => $tiktokUser->refresh_token,
+            'grant_type' => 'refresh_token'
+        ]);
+
+        UpdateTiktokUser::run($tiktokUser, [
+            'access_token' => Arr::get($response->json(), 'data.access_token'),
+            'access_token_expire_in' => Arr::get($response->json(), 'data.access_token_expire_in'),
+            'refresh_token' => Arr::get($response->json(), 'data.refresh_token'),
+            'refresh_token_expire_in' => Arr::get($response->json(), 'data.refresh_token_expire_in')
+        ]);
+    }
+
+    public string $commandSignature = 'getAccessTokenViaRefreshToken {tiktokUser}';
+
+    public function asCommand(Command $command)
+    {
+        $tiktokUser = TiktokUser::find($command->argument('tiktokUser'));
+
+        $this->getAccessTokenViaRefreshToken($tiktokUser);
     }
 
     public function asController(ActionRequest $request): TiktokUser|array|string|null

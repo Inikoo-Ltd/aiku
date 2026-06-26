@@ -9,24 +9,50 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsObject;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class BreakWebpageCache extends OrgAction
+class BreakWebpageCache extends OrgAction implements ShouldBeUnique
 {
-    use asObject;
+    use AsAction;
 
-    public function handle(Webpage $webpage): void
+    public string $jobQueue = 'urgent';
+
+    public function getJobUniqueId(?Webpage $webpage, bool $includeChildren = false): string
     {
+        $slug = 'empty';
+        if ($webpage) {
+            $slug = $webpage->slug;
+        }
+
+        return $slug.'-'.$includeChildren ?? 'i';
+    }
+
+    public function handle(?Webpage $webpage, bool $includeChildren = false): void
+    {
+        if (!$webpage) {
+            return;
+        }
+
         $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
         Cache::forget($key);
         $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
         Cache::forget($key);
 
-        BreakWebpageVarnishCache::run($webpage);
+        BanVarnishWebpage::run($webpage);
+        PurgeVarnishWebpageUrl::run($webpage);
 
+        if ($includeChildren && $webpage->model instanceof ProductCategory) {
+            /** @var ProductCategory $productCategory */
+            $productCategory = $webpage->model;
+            foreach ($productCategory->getProducts() as $product) {
+                BreakWebpageCache::dispatch($product->webpage, false);
+            }
+        }
     }
 
     public function asController(Webpage $webpage, ActionRequest $request): void

@@ -27,17 +27,12 @@ import ButtonPrimeVue from 'primevue/button';
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink, faLongArrowRight } from '@far'
-import { faPencil, faWallet } from '@fal'
+import { faWallet } from '@fal'
 import { faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard } from '@fal'
-// import Modal from '@/Components/Utils/Modal.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
-// import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
 import CountUp from 'vue-countup-v3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import CustomerDataForm from '@/Components/CustomerDataForm.vue'
-import { RuleType } from 'v-calendar/dist/types/src/utils/date/rules.js'
-import { faCheck, faTimes } from '@fas'
-import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import { faCheck } from '@fas'
 library.add(faWallet, faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard, faLongArrowRight, faCheck)
 
 const props = defineProps<{

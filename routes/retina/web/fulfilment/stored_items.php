@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Fulfilment\StoredItem\PdfStoredItems;
 use App\Actions\Retina\Fulfilment\StoredItem\UI\ShowRetinaStoredItem;
 use App\Actions\Retina\Fulfilment\StoredItems\ExportRetinaStoredItem;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
@@ -16,8 +17,10 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/app/fulfilment/itemised-storage/skus');
 
 Route::get('export-stored-items', ExportRetinaStoredItem::class)->name('stored_items.export');
+Route::get('{fulfilmentCustomer:id}/skus/export', [PdfStoredItems::class, 'inFulfilmentCustomer'])->name('stored-items.pdf.export');
 
-Route::get('skus', IndexRetinaStoredItems::class)->name('stored_items.index');
+Route::get('/skus', IndexRetinaStoredItems::class)->name('stored_items.index');
+
 Route::get('skus/{storedItem}', ShowRetinaStoredItem::class)->name('stored_items.show');
 Route::get('audits', IndexRetinaStoredItemsAudits::class)->name('stored_items_audits.index');
 Route::get('audits/{storedItemAudit}', ShowRetinaStoredItemAudit::class)->name('stored_items_audits.show');

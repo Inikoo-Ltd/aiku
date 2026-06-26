@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { Image as ImageTS } from '@/types/Image'
 import { faAndroid } from "@fortawesome/free-brands-svg-icons"

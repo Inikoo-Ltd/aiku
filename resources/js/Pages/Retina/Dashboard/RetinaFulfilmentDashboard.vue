@@ -172,7 +172,7 @@ const radioValue = ref<string[]>(
 	</div>
 	<!-- Section: Radiobox, Recurring bills balance, Rental agreement-->
 	<div
-		v-if="layout.user.fulfilment_active"
+		v-if="layout?.user?.fulfilment_active"
 		class="px-8 grid max-w-2xl grid-cols-1 gap-x-2 gap-y-8 lg:max-w-7xl lg:grid-cols-3 pt-4">
 		<div class="w-full max-w-lg space-y-4 justify-self-end">
 			<div

@@ -11,6 +11,7 @@ namespace App\Models\Dispatching;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\GoodsIn\Sowing;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Transaction;
@@ -88,13 +89,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $has_waiting_warehouse
  * @property bool $has_waiting_crm
  * @property int|null $batch_code_id
- * @property-read BatchCode|null $batchCode
+ * @property numeric $quantity_returned
+ * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Picking> $pickings
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ReturnDeliveryNoteItem> $returnDeliveryNoteItems
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Sowing> $sowings
  * @property-read Transaction|null $transaction
@@ -115,18 +118,18 @@ class DeliveryNoteItem extends Model
         'sales_type'   => DeliveryNoteItemSalesTypeEnum::class,
         'cancel_state' => DeliveryNoteItemCancelStateEnum::class,
 
-        'date'               => 'datetime',
-        'order_submitted_at' => 'datetime',
-        'assigned_at'        => 'datetime',
-        'picking_at'         => 'datetime',
-        'picked_at'          => 'datetime',
-        'packing_at'         => 'datetime',
-        'packed_at'          => 'datetime',
-        'dispatched_at'      => 'datetime',
-        'cancelled_at'       => 'datetime',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
-        'expiry_date'        => 'date',
+        'date'                       => 'datetime',
+        'order_submitted_at'         => 'datetime',
+        'assigned_at'                => 'datetime',
+        'picking_at'                 => 'datetime',
+        'picked_at'                  => 'datetime',
+        'packing_at'                 => 'datetime',
+        'packed_at'                  => 'datetime',
+        'dispatched_at'              => 'datetime',
+        'cancelled_at'               => 'datetime',
+        'fetched_at'                 => 'datetime',
+        'last_fetched_at'            => 'datetime',
+        'expiry_date'                => 'date',
         'is_handled'                 => 'boolean',
         'is_packed'                  => 'boolean',
         'is_done'                    => 'boolean',
@@ -176,5 +179,10 @@ class DeliveryNoteItem extends Model
     public function batchCode(): BelongsTo
     {
         return $this->belongsTo(BatchCode::class);
+    }
+
+    public function returnDeliveryNoteItems(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNoteItem::class, 'delivery_note_items_id');
     }
 }

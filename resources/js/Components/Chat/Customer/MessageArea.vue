@@ -497,7 +497,7 @@ defineExpose({
                     color: layout.app.theme[4],
                 }">
                 <FontAwesomeIcon :icon="faPlus" />
-                New Chat
+                {{ trans("New Chat") }}
             </button>
         </div>
 
@@ -558,7 +558,7 @@ defineExpose({
                     () => {
                         handleTyping()
                     }
-                " @keydown="handleKeyDown" placeholder="Type a message..."
+                " @keydown="handleKeyDown" :placeholder="trans('Type a message...')"
                     class="flex-1 resize-none px-3 py-2 rounded-lg text-sm outline-none border"
                     :style="{ borderColor: layout.app.theme[4] }" />
 

@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -81,7 +81,7 @@ class Guest extends Model implements HasMedia, Auditable
     use SoftDeletes;
     use HasFactory;
     use HasHistory;
-    use Searchable;
+    use HasSearch;
 
 
     protected $casts = [

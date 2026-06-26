@@ -133,7 +133,7 @@ const submitOrderPosition = async () => {
                     :key="`set-order-position-${item.id}${item.picking_position}`"
                     :type="item.picking_position ? 'tertiary' : 'secondary'"
                     :icon="item.picking_position ? 'fal fa-pencil' : ''"
-                    :label="item.picking_position ? `${item.picking_position}` : 'Set order position'"
+                    :label="item.picking_position ? `${item.picking_position}` : trans('Set order position')"
                 />
             </div>
         </template>

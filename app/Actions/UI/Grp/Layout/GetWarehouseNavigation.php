@@ -201,12 +201,22 @@ class GetWarehouseNavigation
                                 ],
                             ]
                         ] : null,
-
+                        $user->hasPermissionTo("incoming.$warehouse->id.view") ? [
+                            'label' => __('Returns'),
+                            'icon'  => ['fal', 'fa-exchange'],
+                            'root'  => 'grp.org.warehouses.show.incoming.return_delivery_notes.',
+                            'route' => [
+                                "name"       => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ] : null
                     ]
                 ],
             ];
         }
-
 
         if ($user->hasAnyPermission(["dispatching.$warehouse->id.view", "fulfilment.$warehouse->id.view"])) {
             $navigation["dispatching"] = [
@@ -235,7 +245,7 @@ class GetWarehouseNavigation
                         ],
                         $user->hasPermissionTo("dispatching.$warehouse->id.view") ?
                         [
-                            'label' => __('Delivery notes'),
+                            'label' => __('Delivery Notes'),
                             'icon'  => ['fal', 'fa-truck'],
                             'root'  => 'grp.org.warehouses.show.dispatching.delivery-notes',
                             'route' => [

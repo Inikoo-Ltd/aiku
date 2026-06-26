@@ -15,6 +15,7 @@ use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GroupHydratePayments implements ShouldBeUnique
@@ -23,20 +24,28 @@ class GroupHydratePayments implements ShouldBeUnique
     use WithEnumStats;
     use WithPaymentAggregators;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'hydrators-slave';
 
-    public function getJobUniqueId(Group $group): string
+    public function getJobUniqueId(?int $groupId): string
     {
-        return $group->id;
+        return $groupid ?? 'empty';
     }
 
 
-    public function handle(Group $group): void
+    public function handle(?int $groupId): void
     {
+        if (!$groupId) {
+            return;
+        }
+
+        $group = Group::on('aiku_no_sticky')->find($groupId);
+        if (!$group) {
+            return;
+        }
 
         $stats = array_merge(
             [
-                'number_payments' => $group->payments()->count()
+                'number_payments' => DB::connection('aiku_no_sticky')->table('payments')->whereNull('deleted_at')->where('group_id', $group->id)->count()
             ],
             $this->paidAmounts($group, 'grp_amount'),
         );
@@ -51,7 +60,8 @@ class GroupHydratePayments implements ShouldBeUnique
                 models: Payment::class,
                 where: function ($q) use ($group) {
                     $q->where('group_id', $group->id);
-                }
+                },
+                connection: 'aiku_no_sticky'
             )
         );
 
@@ -65,7 +75,8 @@ class GroupHydratePayments implements ShouldBeUnique
                 models: Payment::class,
                 where: function ($q) use ($group) {
                     $q->where('group_id', $group->id);
-                }
+                },
+                connection: 'aiku_no_sticky'
             )
         );
 
@@ -80,7 +91,8 @@ class GroupHydratePayments implements ShouldBeUnique
                     models: Payment::class,
                     where: function ($q) use ($group, $type) {
                         $q->where('group_id', $group->id)->where('type', $type->value);
-                    }
+                    },
+                    connection: 'aiku_no_sticky'
                 )
             );
         }

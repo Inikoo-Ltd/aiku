@@ -15,7 +15,7 @@ import { faBarcode, faStar } from "@fas"
 import { trans } from "laravel-vue-i18n"
 
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 
 library.add(faImage, faBarcode)
 

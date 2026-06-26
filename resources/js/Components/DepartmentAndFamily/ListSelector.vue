@@ -7,7 +7,7 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

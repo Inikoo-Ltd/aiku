@@ -16,18 +16,13 @@ import Modal from "@/Components/Utils/Modal.vue"
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue"
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue"
 import AddBundles from "@/Components/Dropshipping/AddBundles.vue"
-import { ColorPickerStyle, InputNumber, InputText, Message, Popover } from "primevue"
+import { Message, Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSyncAlt, faHandPointer, faBan } from "@fas"
-import { useFormatTime, useTimeCountdown } from "@/Composables/useFormatTime"
-import Icon from "@/Components/Icon.vue"
-import LoadingText from "@/Components/Utils/LoadingText.vue"
-import { differenceInHours, differenceInMinutes, differenceInSeconds, addDays } from "date-fns"
+import { faSyncAlt } from "@fas"
+import { useTimeCountdown } from "@/Composables/useFormatTime"
+import { addDays } from "date-fns"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-
 import {
-	faBracketsCurly,
-	faPawClaws,
 	faFileExcel,
 	faImage,
 	faArrowLeft,
@@ -55,9 +50,6 @@ import { useTabChange } from "@/Composables/tab-change"
 import TableRetinaPlatformPortfolioLogs from "@/Components/Tables/Retina/TableRetinaPlatformPortfolioLogs.vue"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
-import { set } from "lodash-es"
-import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import { EditorContent } from "@tiptap/vue-3"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { UploadPallet } from "@/types/Pallet"
 import RetinaTablePortfoliosBundles from "@/Components/Tables/Retina/RetinaTablePortfoliosBundles.vue"
@@ -78,10 +70,7 @@ interface UploadSection {
 library.add(
 	faFileExcel,
 	faCheck,
-	faBracketsCurly,
 	faSyncAlt,
-	faHandPointer,
-	faPawClaws,
 	faImage,
 	faSyncAlt,
 	faBox,
@@ -96,7 +85,6 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	tabs: TSTabs
 	download_route: any
-	grouped_portfolios: any
 	is_closed: boolean
 	content?: {
 		portfolio_empty?: {
@@ -112,12 +100,8 @@ const props = defineProps<{
 	bundles: TableTS
 	logs: {}
 	routes: {
-		batch_upload: routeType
 		batch_all: routeType
-		match_match: routeType
 		syncAllRoute: routeType
-		batch_sync: routeType
-		duplicate: routeType
 		addPortfolioRoute: routeType
 		bulk_upload: routeType
 		bulk_unlink: routeType
@@ -126,6 +110,9 @@ const props = defineProps<{
 		updatePortfolioRoute: routeType
 		batchDeletePortfolioRoute: routeType
 		clonePortfolioRoute: routeType
+		single_match: routeType
+		single_create_new: routeType
+		fetch_products: routeType
 	}
 	platform_user_id: number
 	step: {
@@ -148,7 +135,7 @@ const props = defineProps<{
 	last_created_at_download_portfolio_customer_sales_channel: string | null
 	ebay_warehouse_policy_msg: {
 		show_msg: boolean
-		cust_country: string
+		customer_country: string
 	}
 	bundle_routes: any
 	shop_data: {
@@ -536,7 +523,7 @@ const submitPortfolioAction = async (action: any) => {
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-const key = ulid()
+const key = ref(ulid())
 
 // ========= handle upload to R2 and get download link
 const codeString = ref<string | null>(null)
@@ -587,8 +574,8 @@ const initSocketListener = () => {
 }
 
 const initSocketFetchListener = () => {
-	fetchChannel = window.Echo.private(`shopify.${props.platform_user_id}.fetch-product`).listen(
-		".shopify-fetch-progress",
+	fetchChannel = window.Echo.private(`platform.${props.platform_user_id}.fetch-product`).listen(
+		".platform-fetch-progress",
 		(eventData: any) => {
 			cloneProgressData.value = {
 				data: eventData,
@@ -895,7 +882,7 @@ const onDownloadExtendedProperties = () => {
 	const url = downloadUrl("extended_properties", {
 		columns: selectedExtendedColumns.value,
 		product_states: selectedProductStates.value,
-		product_availibility: selectedProductAvailibility.value,
+		product_availability: selectedProductAvailibility.value,
 	})
 
 	if (!url) {
@@ -1277,7 +1264,7 @@ const layout = inject("layout", layoutStructure)
 					<p class="text-sm text-red-700">
 						<strong class="hidden sm:inline">{{ trans("Important Notice:") }}</strong>
 						{{ trans("We noticed your account is registered in") }}
-						<strong> {{ ebay_warehouse_policy_msg?.cust_country + "." }} </strong>
+						<strong> {{ ebay_warehouse_policy_msg?.customer_country + "." }} </strong>
 						{{
 							trans(
 								"In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas."
@@ -1400,32 +1387,6 @@ const layout = inject("layout", layoutStructure)
 			</div>
 
 			<div class="w-full sm:w-fit h-fit space-x-2 flex justify-end">
-				<ButtonWithLink
-					v-if="routes.duplicate?.name"
-					:routeTarget="routes.duplicate"
-					v-tooltip="
-						trans(
-							'This will only create new products to the :platform that not exist in :platform',
-							{ platform: props.platform_data.name }
-						)
-					"
-					aclick="() => onClickReconnect(customer_sales_channel)"
-					icon="far fa-plus"
-					:label="trans('Create new')"
-					type="tertiary" />
-
-				<ButtonWithLink
-					v-if="routes.batch_sync?.name"
-					:routeTarget="routes.batch_sync"
-					v-tooltip="
-						trans(
-							'This will only sync existing products to the :platform (will not create new)',
-							{ platform: props.platform_data.name }
-						)
-					"
-					icon="fas fa-sync-alt"
-					:label="trans('Use existing')"
-					type="tertiary" />
 
 				<div>
 					<ButtonWithLink
@@ -1455,7 +1416,6 @@ const layout = inject("layout", layoutStructure)
 			</div>
 		</div>
 	</Message>
-	<!-- retina.models.dropshipping.ebay.batch_upload -->
 	<div v-if="(is_platform_connected || isPlatformManual) && currentTab === 'products'">
 		<div
 			v-if="props.product_count < 1"

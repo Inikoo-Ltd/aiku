@@ -27,7 +27,30 @@ class MasterShopResource extends JsonResource
         /** @var MasterShop $masterShop */
         $masterShop = $this;
 
-        $additionalStats = [];
+        $additionalStats = [
+            [
+                'label' => __('Pending Master Families'),
+                'route' => [
+                    'name'       => 'grp.masters.master_shops.show.master_collections.index',
+                    'parameters' => [$masterShop->slug]
+                ],
+                'icon'  => 'fal fa-exclamation-triangle',
+                "color" => "#df1c1cff",
+                'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
+            ],
+            [
+                'label'           => __('Orphan Master Products'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_products_orphan',
+                    'parameters' => [$masterShop->slug]
+                ],
+                'icon'            => 'fal fa-cube',
+                'backgroundColor' => '#ff000011',
+                'color'           => '#df1c1cff',
+                'value'           => $masterShop->stats->number_master_products_no_master_family,
+            ],
+        ];
 
         if ($masterShop->stats->number_mismatched_master_families) {
             $additionalStats[] = [
@@ -69,11 +92,47 @@ class MasterShopResource extends JsonResource
             ];
         }
 
+        $additionalStats[] = [
+            'label'           => __('Master Products Missing Child Description'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.masters.master_shops.show.master_products_missing_child_description',
+                'parameters' => ['masterShop' => $masterShop->slug],
+            ],
+            'icon'            => 'fal fa-align-left',
+            'backgroundColor' => '#ff000011',
+            'color'           => '#df1c1cff',
+            'value'           => $masterShop->masterAssets()
+                ->where('has_missing_child_description', true)
+                ->where('type', \App\Enums\Masters\MasterAsset\MasterAssetTypeEnum::PRODUCT)
+                ->count(),
+        ];
+
+        if ($masterShop->stats->number_missing_price_master_asset || $masterShop->stats->number_missing_rrp_master_asset || true) {
+            $additionalStats[] = [
+                'label' => __('Master Products Missing Price/RRP'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_products_no_price_rrp',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug,
+                        '_query'     => [
+                            'index_elements[status]' => 'active'
+                        ]
+                    ]
+                ],
+                'icon'            => 'fal fa-cube',
+                'backgroundColor' => "#fa582761",
+                "color"           => "#df1c1cff",
+                'value'           => $masterShop->stats->number_current_master_assets_missing_price_or_rrp,
+            ];
+        }
+
         return [
             'slug'     => $this->slug,
             'code'     => $this->code,
             'name'     => $this->name,
-            'statsBox' => [
+            'statsBox' => array_filter([
                 [
                     'label' => __('Master Departments'),
                     'route' => [
@@ -108,6 +167,17 @@ class MasterShopResource extends JsonResource
                     'icon'  => 'fal fa-folder',
                     "color" => "#e879f9",
                     'value' => $masterShop->stats->number_current_master_product_categories_type_family,
+                    'metaRight' => $masterShop->gold_reward_eligible ? [
+                        'tooltip' => __('Master Families Has GR/VOL Reward'),
+                        'icon'  => ['icon' => 'fal fa-medal', 'class' => ''],
+                        'count' => (int) ($masterShop->stats->number_master_families_with_vol_gr_discount ?? 0),
+                        'route' => [
+                            'name'       => 'grp.masters.master_shops.show.master_gr.index',
+                            'parameters' => [
+                                'masterShop' => $masterShop->slug,
+                            ]
+                        ],
+                    ] : null,
                 ],
                 [
                     'label' => __('Master Products'),
@@ -134,30 +204,8 @@ class MasterShopResource extends JsonResource
                     "color" => "#4f46e5",
                     'value' => $masterShop->stats->number_current_master_collections,
                 ],
-                [
-                    'label' => __('Pending Master Families'),
-                    'route' => [
-                        'name'       => 'grp.masters.master_shops.show.master_collections.index',
-                        'parameters' => [$masterShop->slug]
-                    ],
-                    'icon'  => 'fal fa-exclamation-triangle',
-                    "color" => "#df1c1cff",
-                    'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
-                ],
-                [
-                    'label'           => __('Orphan Master Products'),
-                    'is_negative'     => true,
-                    'route'           => [
-                        'name'       => 'grp.masters.master_shops.show.master_products_orphan',
-                        'parameters' => [$masterShop->slug]
-                    ],
-                    'icon'            => 'fal fa-cube',
-                    'backgroundColor' => '#ff000011',
-                    'color'           => '#df1c1cff',
-                    'value'           => $masterShop->stats->number_master_products_no_master_family,
-                ],
-                ...$additionalStats
-            ]
+                'additionalStatBox'   => $additionalStats
+            ])
         ];
     }
 }

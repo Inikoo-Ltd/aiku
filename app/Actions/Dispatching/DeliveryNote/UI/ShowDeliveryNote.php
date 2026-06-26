@@ -37,13 +37,16 @@ use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Ordering\PickersResource;
+use App\Http\Resources\Procurement\ReturnDeliveryNoteResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
+use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
@@ -55,11 +58,13 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowDeliveryNote extends OrgAction
 {
-    use AsAction;
     use WithInertia;
     use GetPlatformLogo;
 
     private Order|Shop|Warehouse|Customer $parent;
+    private ReturnDeliveryNote|null $return = null;
+
+    private bool $allowAction = true;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
@@ -115,6 +120,15 @@ class ShowDeliveryNote extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function inCustomerReplacements(Organisation $organisation, Shop $shop, Customer $customer, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    {
+        $this->parent = $customer;
+        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
+
+        return $this->handle($deliveryNote);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
     public function inOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->parent = $customer;
@@ -156,7 +170,7 @@ class ShowDeliveryNote extends OrgAction
             ->exists();
 
         $actions = [];
-        if (!$hasUnHandledItems) {
+        if (!$hasUnHandledItems && $this->allowAction) {
             if ($deliveryNote->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 $actions[] = [
                     'type'    => 'button',
@@ -202,7 +216,10 @@ class ShowDeliveryNote extends OrgAction
         }
 
         if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
-            $showCancel = false;
+            // Disable Faire Cancel if Order. Allow if Replacement (INI:1503)
+            if ($deliveryNote->type === DeliveryNoteTypeEnum::ORDER) {
+                $showCancel = false;
+            }
         }
 
         $actions = [];
@@ -222,12 +239,48 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        if ($isEditable && in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
+        if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'save',
                 'icon'    => 'fal fa-tired',
-                'tooltip' => __('Unpack the parcels'),
+                'tooltip' => __('Go back to picked'),
+                'label'   => __('Undo packing'),
+                'key'     => 'unpacking',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.undo_packing',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
+        if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'negative',
+                'icon'    => 'fal fa-tired',
+                'tooltip' => __('Go back to picking'),
+                'label'   => __('Undo set as picked'),
+                'key'     => 'unpicked',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.undo_set_as_picked',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
+        if ($isEditable && in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'negative',
+                'icon'    => 'fal fa-tired',
+                'tooltip' => __('Unpack the parcels').'. '.__('This will set the state to Packing'),
                 'label'   => __('Unpack'),
                 'key'     => 'unpack',
                 'route'   => [
@@ -237,6 +290,31 @@ class ShowDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ],
+            ];
+        }
+
+        if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::HANDLING_BLOCKED) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'icon'    => 'fal fa-check-circle',
+                'tooltip' => __('Check if all items are picked and finish waiting'),
+                'label'   => __('Auto Finish Waiting'),
+                'key'     => 'auto-finish-waiting',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.auto_finish_waiting',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
+        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && $deliveryNote->shop?->type != ShopTypeEnum::EXTERNAL) {
+            $actions[] = [
+                'type' => 'button',
+                'key'  => 'return',
             ];
         }
 
@@ -307,7 +385,6 @@ class ShowDeliveryNote extends OrgAction
                     ],
 
                 ],
-
                 $deliveryNote->pickerUser->id == $request->user()->id
                     ? [
                     'type'    => 'button',
@@ -340,7 +417,7 @@ class ShowDeliveryNote extends OrgAction
                 ],
             ],
             DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
-            DeliveryNoteStateEnum::PACKING => [
+            DeliveryNoteStateEnum::PACKING => $this->allowAction ? [
                 [
                     'type'    => 'button',
                     'style'   => 'save',
@@ -355,7 +432,7 @@ class ShowDeliveryNote extends OrgAction
                         ]
                     ]
                 ]
-            ],
+            ] : [],
             DeliveryNoteStateEnum::PICKED => [
                 [
                     'type'  => 'button',
@@ -371,34 +448,7 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ]
             ],
-            DeliveryNoteStateEnum::PACKED => [
-                (count($deliveryNote->parcels ?? []) && !$deliveryNote->is_shipping_by_external) ? [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'tooltip' => __('Finalise'),
-                    'label'   => match (true) {
-                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Dispatch'),
-                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => __('set as collected'),
-                        $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Finalise and Dispatch'),
-                        (bool)$deliveryNote->collection_address_id => __('Finalise and set as Collected'),
-                        default => __('Finalise and Dispatch')
-                    },
-                    'key'     => match (true) {
-                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => 'action',
-                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => 'action',
-                        $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => 'finalise-and-dispatch',
-                        (bool)$deliveryNote->collection_address_id => 'action',
-                        default => 'finalise-and-dispatch'
-                    },
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.finalise_and_dispatch',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ]
-                ] : []
-            ],
+            DeliveryNoteStateEnum::PACKED => [$this->getPackedActions($deliveryNote)],
             DeliveryNoteStateEnum::FINALISED => [
                 [
                     'type'    => 'button',
@@ -449,7 +499,7 @@ class ShowDeliveryNote extends OrgAction
                 [
                     'type'    => 'button',
                     'style'   => 'cancel',
-                    'tooltip' => __('Undispatch'),
+                    'tooltip' => __('Set Delivery Note as undispatched (back to finalised)'),
                     'label'   => __('Undispatch'),
                     'key'     => 'undispatch',
                     'route'   => [
@@ -464,6 +514,59 @@ class ShowDeliveryNote extends OrgAction
             default => []
         };
     }
+
+    public function getPackedActions(DeliveryNote $deliveryNote): array
+    {
+        if ($deliveryNote->is_shipping_by_external) {
+            if ($deliveryNote->orders->first()->invoices->count() > 0) {
+                return [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Dispatch'),
+                    'label'   => __('Dispatch'),
+                    'key'     => 'action',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.dispatched',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ];
+            }
+        } elseif (count($deliveryNote->parcels ?? [])) {
+            return [
+                'type'    => 'button',
+                'style'   => 'save',
+                'tooltip' => __('Finalise'),
+                'label'   => match (true) {
+                    $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Dispatch'),
+                    $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => __('set as collected'),
+                    $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Finalise and Dispatch'),
+                    (bool)$deliveryNote->collection_address_id => __('Finalise and set as Collected'),
+                    default => __('Finalise and Dispatch')
+                },
+                'key'     => match (true) {
+                    $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => 'action',
+                    $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => 'action',
+                    $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => 'finalise-and-dispatch',
+                    (bool)$deliveryNote->collection_address_id => 'action',
+                    default => 'finalise-and-dispatch'
+                },
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.finalise_and_dispatch',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ]
+            ];
+        }
+
+
+        return [];
+    }
+
 
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
@@ -618,8 +721,8 @@ class ShowDeliveryNote extends OrgAction
                     'deliveryNote' => $deliveryNote->id,
                     'shipper_id'   => null
                 ]
-
             ],
+            'return_dn'                    => ReturnDeliveryNoteResource::collection($deliveryNote->returnedDeliveryNote)
         ];
     }
 
@@ -692,12 +795,28 @@ class ShowDeliveryNote extends OrgAction
             $isEditable = true;
         }
 
+        $handler = $deliveryNote->picker_user_id;
+
+        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
+            $handler = $deliveryNote->packer_user_id;
+        }
+
+        $allowAction = ($handler && $handler == request()->user()->id);
+
+        if (!$allowAction) {
+            $tempHandler = session('temp_handling_delivery_note') ?? [];
+            $allowAction = $deliveryNote->id == data_get($tempHandler, 'value') && now()->lt(data_get($tempHandler, 'expires_at'));
+        }
+
+        $this->allowAction = $allowAction;
+
         $actions = $this->getActions($deliveryNote, $request);
 
         $warning = null;
 
         if ($deliveryNote->pickingSessions && $deliveryNote->pickingSessions->isNotEmpty()) {
             $pickingSessions = $deliveryNote->pickingSessions->map(function ($pickingSession) {
+                /** @var PickingSession $pickingSession */
                 return [
                     'reference' => $pickingSession->reference,
                     'route'     => [
@@ -722,16 +841,14 @@ class ShowDeliveryNote extends OrgAction
             $model = __('Replacement Delivery Note');
         }
 
-        $allowAction = ($deliveryNote->packer_user_id && $deliveryNote->packer_user_id != request()->user()->id);
-
-        if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
-            $allowAction = $deliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
-        }
-
         $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
         // Disable waiting on DS no?
         $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false) && $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
+
+        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
+            $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
+        }
 
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
@@ -758,10 +875,10 @@ class ShowDeliveryNote extends OrgAction
                 'wrapped_actions' => $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
-            'is_editable'    => $isEditable,
+            'is_editable'   => $isEditable,
             'tabs'          => [
-                'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
-                'navigation' => $deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED
+                'current'    => $this->tab,
+                'navigation' => in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, $deliveryNote->state == DeliveryNoteStateEnum::PACKED])
                     ?
                     DeliveryNoteTabsEnum::navigation($deliveryNote)
                     :
@@ -851,6 +968,9 @@ class ShowDeliveryNote extends OrgAction
             ],
             'warehouse'           => [
                 'slug' => $deliveryNote->warehouse->slug,
+            ],
+            'organisation'        => [
+                'slug' => $deliveryNote->organisation->slug,
             ],
 
             'is_faire_order' => ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE),
@@ -955,14 +1075,6 @@ class ShowDeliveryNote extends OrgAction
                     "bgColor"     => "#FF7DBD",
                     "field"       => "customer_notes"
                 ],
-                // [
-                //     "label"       => __("Public"),
-                //     "note"        => $deliveryNote->public_notes ?? '',
-                //     "information" => __("This note will be visible to public, both staff and the customer can see."),
-                //     "editable"    => true,
-                //     "bgColor"     => "#94DB84",
-                //     "field"       => "public_notes"
-                // ],
                 [
                     "label"       => __("Order private note"),
                     "note"        => $deliveryNote->internal_notes ?? '',
@@ -977,7 +1089,7 @@ class ShowDeliveryNote extends OrgAction
 
     public function getBreadcrumbs(DeliveryNote $deliveryNote, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (DeliveryNote $deliveryNote, array $routeParameters, string $suffix) {
+        $headCrumb = function (DeliveryNote $deliveryNote, array $routeParameters, string $suffix, ?string $customRouteIndexLabel = null) {
             return [
                 [
 
@@ -985,7 +1097,7 @@ class ShowDeliveryNote extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Delivery Note')
+                            'label' => $customRouteIndexLabel ?? __('Delivery Note')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -1081,6 +1193,28 @@ class ShowDeliveryNote extends OrgAction
                     $suffix
                 ),
             ),
+            'grp.org.shops.show.crm.customers.show.replacements.show',
+            => array_merge(
+                ShowCustomer::make()->getBreadcrumbs(
+                    'grp.org.shops.show.crm.customers.show',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $deliveryNote,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.replacements.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.replacements.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'deliveryNote'])
+                        ]
+                    ],
+                    $suffix,
+                    __("Replacements")
+                ),
+            ),
             default => []
         };
     }
@@ -1111,7 +1245,10 @@ class ShowDeliveryNote extends OrgAction
         } elseif ($request->route()->getName() == 'grp.org.shops.show.ordering.orders.show.delivery-note') {
             $query->leftjoin('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id');
             $query->where('delivery_note_order.order_id', $this->parent->id);
-        } elseif ($request->route()->getName() == 'grp.org.shops.show.crm.customers.show.delivery_notes.show') {
+        } elseif (in_array($request->route()->getName(), [
+            'grp.org.shops.show.crm.customers.show.delivery_notes.show',
+            'grp.org.shops.show.crm.customers.show.replacements.show'
+        ])) {
             $query->where('delivery_notes.customer_id', $this->parent->id);
         }
 
@@ -1176,6 +1313,7 @@ class ShowDeliveryNote extends OrgAction
 
                 ]
             ],
+            'grp.org.shops.show.crm.customers.show.replacements.show',
             'grp.org.shops.show.crm.customers.show.delivery_notes.show' => [
                 'label' => $deliveryNote->reference,
                 'route' => [

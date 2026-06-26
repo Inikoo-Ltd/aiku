@@ -10,9 +10,11 @@ namespace App\Actions\SysAdmin\User;
 
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateEmployees;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\CleanUserCaches;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Http\Resources\SysAdmin\User\UserResource;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Group;
@@ -32,6 +34,7 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
 
     public function handle(User $user, array $modelData): User
     {
+        setPermissionsTeamId($user->group->id);
         $jobPositionsIds = $this->getJobPositionsFromCodes($this->group, Arr::get($modelData, 'job_position_codes', []));
 
         $currentJobPositions = $user->pseudoJobPositions()->where('scope', 'group')->pluck('job_positions.id')->all();
@@ -61,6 +64,14 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
             }
         }
 
+        CleanUserCaches::run(
+            $user,
+            [
+                'auth-user:'.$user->id.';*',
+                'grp-first-load-props:'.$user->id.':*'
+            ]
+        );
+        BreakUserUiProps::run($user);
         return $user;
     }
 

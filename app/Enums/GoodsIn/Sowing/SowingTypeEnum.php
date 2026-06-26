@@ -16,12 +16,14 @@ enum SowingTypeEnum: string
 
     case SOW = 'sow';
     case NOT_SOW = 'not-sow';
+    case DAMAGED = 'damaged';
 
     public static function labels(): array
     {
         return [
             'sow'     => __('Received/Returned'),
             'not-sow' => __('Not Received/Returned'),
+            'damaged' => __('Damaged'),
         ];
     }
 }

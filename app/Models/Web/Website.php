@@ -14,7 +14,6 @@ use App\Enums\Web\Website\WebsiteCloudflareStatusEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Analytics\WebUserRequest;
-use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Media;
@@ -114,14 +113,22 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_family_description_snapshot_id
  * @property int|null $live_family_description_snapshot_id
  * @property string|null $published_family_description_checksum
- * @property-read Collection<int, Announcement> $announcements
+ * @property int|null $landing_page_id
+ * @property \Illuminate\Support\Carbon|null $last_visited_at
+ * @property int|null $unpublished_department_description_snapshot_id
+ * @property int|null $live_department_description_snapshot_id
+ * @property string|null $published_department_description_checksum
+ * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Collection<int, \App\Models\Web\Crawl> $crawls
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Media|null $favicon
  * @property-read Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read \App\Models\Web\Webpage|null $landingPage
  * @property-read Snapshot|null $liveCollectionSnapshot
+ * @property-read Snapshot|null $liveDepartmentDescriptionSnapshot
  * @property-read Snapshot|null $liveDepartmentSnapshot
  * @property-read Snapshot|null $liveFamiliesOverviewSnapshot
  * @property-read Snapshot|null $liveFamilyDescriptionSnapshot
@@ -144,6 +151,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries
  * @property-read Snapshot|null $unpublishedCollectionSnapshot
+ * @property-read Snapshot|null $unpublishedDepartmentDescriptionSnapshot
  * @property-read Snapshot|null $unpublishedDepartmentSnapshot
  * @property-read Snapshot|null $unpublishedFamiliesOverviewSnapshot
  * @property-read Snapshot|null $unpublishedFamilyDescriptionSnapshot
@@ -192,6 +200,7 @@ class Website extends Model implements Auditable, HasMedia
         'closed_at'         => 'datetime',
         'fetched_at'        => 'datetime',
         'last_fetched_at'   => 'datetime',
+        'last_visited_at'   => 'datetime',
 
     ];
 
@@ -247,6 +256,11 @@ class Website extends Model implements Auditable, HasMedia
     public function storefront(): BelongsTo
     {
         return $this->belongsTo(Webpage::class, 'storefront_id');
+    }
+
+    public function landingPage(): HasOne
+    {
+        return $this->hasOne(Webpage::class, 'id', 'landing_page_id');
     }
 
     public function logo(): BelongsTo
@@ -407,6 +421,16 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Snapshot::class, 'live_family_description_snapshot_id');
     }
 
+    public function unpublishedDepartmentDescriptionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_department_description_snapshot_id');
+    }
+
+    public function liveDepartmentDescriptionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_department_description_snapshot_id');
+    }
+
     public function liveSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'live_snapshot_id');
@@ -482,6 +506,11 @@ class Website extends Model implements Auditable, HasMedia
     public function announcements(): HasMany
     {
         return $this->hasMany(Announcement::class);
+    }
+
+    public function crawls(): HasMany
+    {
+        return $this->hasMany(Crawl::class);
     }
 
     public function llmsTxt(): HasMany

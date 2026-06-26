@@ -30,11 +30,13 @@ class CloneMailshotForSecondWave extends OrgAction
             'shop_id' => $parentMailshot->shop_id,
             'type' => $parentMailshot->type,
             'subject' => $parentMailshot->subject . ' (2nd)',
+            'name' => $parentMailshot->name,
             'state' => $parentMailshot->state,
             'is_second_wave' => true,
             'ready_at' => $parentMailshot->ready_at,
             'outbox_id' => $parentMailshot->outbox_id,
             'recipients_recipe' => $parentMailshot->recipients_recipe,
+            'preview_text' => $parentMailshot->preview_text,
         ];
 
         $secondWaveMailshot = DB::transaction(function () use ($parentMailshot, $dataModel) {

@@ -19,7 +19,7 @@ class HydrateTradeUnitBrandTagsFromFamily
     public function handle(TradeUnitFamily $tradeUnitFamily): void
     {
         $tradeUnitFamily->refresh();
-        
+
         $newData = [
             'brands' => $tradeUnitFamily->brand()?->id,
             'tags'   => $tradeUnitFamily->tags?->pluck('id')?->toArray() ?? []

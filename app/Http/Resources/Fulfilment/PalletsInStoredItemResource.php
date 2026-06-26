@@ -36,7 +36,7 @@ class PalletsInStoredItemResource extends JsonResource
             'state_label'              => PalletStateEnum::labels()[$this->pallet_state],
             'state_icon'               => PalletStateEnum::stateIcon()[$this->pallet_state],
             'location_code'            => $this->location_code,
-            'stored_items_quantity'    => $this->pivot_quantity,
+            'stored_items_quantity'    => trimDecimalZeros($this->pivot_quantity),
         ];
     }
 }

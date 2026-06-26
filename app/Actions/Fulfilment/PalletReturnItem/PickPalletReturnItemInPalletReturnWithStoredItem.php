@@ -3,14 +3,16 @@
 /*
  * author Arya Permana - Kirin
  * created on 10-02-2025-13h-08m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
 namespace App\Actions\Fulfilment\PalletReturnItem;
 
-use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
+use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
+use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletStoredItem\SetPalletStoredItemStateToReturned;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovementFromPicking;
 use App\Actions\OrgAction;
@@ -22,6 +24,7 @@ use App\Models\Fulfilment\PalletReturnItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\SysAdmin\User;
 
 class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
 {
@@ -32,24 +35,44 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(PalletReturnItem $palletReturnItem, array $modelData): PalletReturnItem
+    public function handle(PalletReturnItem $palletReturnItem, array $modelData, ?User $user = null): PalletReturnItem
     {
-        return DB::transaction(function () use ($palletReturnItem, $modelData) {
-            $quantity = Arr::get($modelData, 'quantity_picked');
+        return DB::transaction(function () use ($palletReturnItem, $modelData, $user) {
+            $previousPickedQuantity = (float) ($palletReturnItem->quantity_picked ?? 0);
+            $quantity = (float) Arr::get($modelData, 'quantity_picked', 0);
             $palletStoredItemQuantity = $palletReturnItem->palletStoredItem->quantity;
+            $maxPickableQuantity = max(0, (float) $palletReturnItem->quantity_ordered - (float) ($palletReturnItem->quantity_not_picked ?? 0));
+            $quantity = min(max(0, $quantity), $maxPickableQuantity);
+            $movementQuantity = max(0, $quantity - $previousPickedQuantity);
+            data_set($modelData, 'quantity_picked', $quantity);
+
+            if ($user && !$palletReturnItem->palletReturn->packer_user_id) {
+                UpdatePalletReturn::run($palletReturnItem->palletReturn, [
+                    'packer_user_id' => $user->id
+                ]);
+            }
 
             $this->update($palletReturnItem, $modelData);
 
-            StoreStoredItemMovementFromPicking::run($palletReturnItem, [
-                'quantity' => $quantity
-            ]);
+            if ($movementQuantity > 0) {
+                StoreStoredItemMovementFromPicking::run($palletReturnItem, [
+                    'quantity' => $movementQuantity
+                ]);
+            }
 
             if ($quantity == $palletStoredItemQuantity) {
                 SetPalletStoredItemStateToReturned::run($palletReturnItem->palletStoredItem);
             }
 
             SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
-            AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturnItem->palletReturn);
+
+            if ($palletReturnItem->picking_session_id) {
+                $pickingSession = $palletReturnItem->pickingSession;
+                if ($pickingSession) {
+                    new CalculateFulfilmentPickingSessionPicks()->action($pickingSession);
+                    new AutoFinishPickingFulfilmentPickingSession()->action($pickingSession);
+                }
+            }
 
             return $palletReturnItem;
         });
@@ -69,9 +92,13 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
     {
         $this->initialisationFromFulfilment($palletReturnItem->palletReturn->fulfilment, $request);
 
-        return $this->handle($palletReturnItem, $this->validatedData);
+        $user = $request->user() instanceof User ? $request->user() : null;
+        return $this->handle($palletReturnItem, $this->validatedData, $user);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(PalletReturnItem $palletReturnItem, array $modelData): PalletReturnItem
     {
         $this->asAction = true;

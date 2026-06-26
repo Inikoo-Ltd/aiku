@@ -10,7 +10,9 @@
 namespace App\Actions\Web\Redirect\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Actions\Web\Website\UI\ShowWebsite;
+use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -19,6 +21,7 @@ use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Exception;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -33,6 +36,23 @@ class EditRedirect extends OrgAction
         $title = __('Edit Redirect');
 
         $webpage = Webpage::find($redirect->to_webpage_id);
+
+        $exitRedirect = [];
+        $routeGetName = $request->route()->getName();
+        if ($routeGetName == 'grp.org.shops.show.web.webpages.redirect.edit' || $routeGetName == 'grp.org.fulfilment.show.web.webpages.redirect.edit') {
+            $exitRedirect = [
+                'name'       => preg_replace('/redirect.edit$/', 'show', $request->route()->getName()),
+                'parameters' => [
+                    ...Arr::except($request->route()->originalParameters(), 'redirect'),
+                    'tab'   => WebpageTabsEnum::REDIRECTS->value
+                ]
+            ];
+        } else {
+            $exitRedirect = [
+                'name'       => preg_replace('/edit$/', 'index', $request->route()->getName()),
+                'parameters' => array_values($request->route()->originalParameters())
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
@@ -52,10 +72,7 @@ class EditRedirect extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'route' => [
-                                'name'       => preg_replace('/edit$/', 'index', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                            'route' => $exitRedirect
                         ]
                     ],
                 ],
@@ -177,6 +194,54 @@ class EditRedirect extends OrgAction
         };
 
         switch ($routeName) {
+            case 'grp.org.shops.show.web.webpages.redirect.edit':
+                $showPageRoute = preg_replace('/redirect.edit$/', 'show', request()->route()->getName());
+                return array_merge(
+                    ShowWebpage::make()->getBreadcrumbs(
+                        $showPageRoute,
+                        $routeParameters
+                    ),
+                    [
+                        $headCrumb(
+                            [
+                                'name'       => 'grp.org.shops.show.web.webpages.redirect.edit',
+                                'parameters' => $routeParameters
+                            ],
+                            [
+                                'name'       => $showPageRoute,
+                                'parameters' => [
+                                    ...Arr::except($routeParameters, 'redirect'),
+                                    'tab'   => WebpageTabsEnum::REDIRECTS->value
+                                ]
+                            ],
+                            $suffix
+                        )
+                    ]
+                );
+            case 'grp.org.fulfilment.show.web.webpages.redirect.edit':
+                $showPageRoute = preg_replace('/redirect.edit$/', 'show', request()->route()->getName());
+                return array_merge(
+                    ShowWebpage::make()->getBreadcrumbs(
+                        preg_replace('/redirect.edit$/', 'show', request()->route()->getName()),
+                        $routeParameters
+                    ),
+                    [
+                        $headCrumb(
+                            [
+                                'name'       => 'grp.org.fulfilment.show.web.webpages.redirect.edit',
+                                'parameters' => $routeParameters
+                            ],
+                            [
+                                'name'       => $showPageRoute,
+                                'parameters' => [
+                                    ...Arr::except($routeParameters, 'redirect'),
+                                    'tab'   => WebpageTabsEnum::REDIRECTS->value
+                                ]
+                            ],
+                            $suffix
+                        )
+                    ]
+                );
             case 'grp.org.fulfilments.show.web.redirect.edit':
                 /** @var Website $website */
                 $website = request()->route()->parameter('website');

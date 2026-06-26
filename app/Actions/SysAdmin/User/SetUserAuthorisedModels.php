@@ -47,6 +47,7 @@ class SetUserAuthorisedModels
 
 
         foreach ($user->getAllPermissions() as $permission) {
+
             if ($permission->scope_type === 'Organisation') {
                 $authorisedOrganisations[$permission->scope_id] = ['org_id' => $permission->scope_id];
             } elseif ($permission->scope_type === 'Shop') {
@@ -86,13 +87,11 @@ class SetUserAuthorisedModels
             }
         }
 
-
         $user->authorisedOrganisations()->sync($authorisedOrganisations);
         $user->authorisedShops()->sync($authorisedShops);
         $user->authorisedFulfilments()->sync($authorisedFulfilments);
         $user->authorisedWarehouses()->sync($authorisedWarehouses);
         $user->authorisedProductions()->sync($authorisedProductions);
-
 
         $stats = [
             'number_authorised_organisations' => count($authorisedOrganisations),

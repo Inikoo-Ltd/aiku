@@ -167,6 +167,28 @@
   },
   {
     "outboxes": [
+      "new_offer"
+    ],
+    "name": "New offer",
+    "content": "new_offer.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "offer"
+    ]
+  },
+  {
+    "outboxes": [
+      "finish_offer"
+    ],
+    "name": "Finish offer",
+    "content": "finish_offer.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "offer"
+    ]
+  },
+  {
+    "outboxes": [
       "invoice_deleted"
     ],
     "name": "Invoice deleted",
@@ -471,7 +493,8 @@
     "outboxes": [
       "chat_notification_to_customer",
       "price_change_notification",
-      "web_user_registration"
+      "web_user_registration",
+      "oos_in_order_notification"
     ],
     "name": "Beefree blank email template",
     "content": "beefree_blank_email_template.json",

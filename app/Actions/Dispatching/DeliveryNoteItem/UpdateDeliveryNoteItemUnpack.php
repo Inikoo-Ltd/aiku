@@ -12,6 +12,7 @@ namespace App\Actions\Dispatching\DeliveryNoteItem;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\Packing\DeletePacking;
+use App\Actions\Dispatching\PickingSession\UndoFinishPackingPickingSession;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -70,7 +71,11 @@ class UpdateDeliveryNoteItemUnpack extends OrgAction
             $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKING);
         }
 
-
+        if ($deliveryNote->pickingSessions) {
+            foreach ($deliveryNote->pickingSessions as $pickingSession) {
+                UndoFinishPackingPickingSession::run($pickingSession);
+            }
+        }
 
         return $deliveryNoteItem;
     }

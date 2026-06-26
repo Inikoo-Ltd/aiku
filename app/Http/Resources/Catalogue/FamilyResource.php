@@ -45,6 +45,8 @@ class FamilyResource extends JsonResource
                 'class' => $family->state->stateIcon()[$family->state->value]['class'] ?? null,
             ],
             'description'                   => $family->description,
+            'description_title'             => $family->description_title,
+            'description_extra'             => $family->description_extra,
             'image'                         => $family->imageSources(720, 480),
             'created_at'                    => $family->created_at,
             'updated_at'                    => $family->updated_at,

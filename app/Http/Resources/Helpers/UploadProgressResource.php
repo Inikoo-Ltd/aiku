@@ -51,10 +51,10 @@ class UploadProgressResource extends JsonResource
                 'filename'       => $upload->filename,
                 'number_success' => $upload->number_success,
                 'number_fails'   => $upload->number_fails,
-
             ],
-
-
+            'show_route'   => $this->user instanceof \App\Models\CRM\WebUser
+                ? ['name' => 'retina.helpers.uploads.records.show', 'parameters' => $upload->id]
+                : ['name' => 'grp.helpers.uploads.records.show', 'parameters' => $upload->id],
         ];
     }
 }

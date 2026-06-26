@@ -55,7 +55,8 @@ class UpdateMasterShop extends GrpAction
             'cost_price_ratio'   => ['sometimes', 'min:0'],
             'price_rrp_ratio'   => ['sometimes', 'min:0'],
             'price_rrp_warning_ratio'   => ['sometimes', 'min:0'],
-            'status' => ['sometimes', 'required', 'boolean']
+            'status' => ['sometimes', 'required', 'boolean'],
+            'gold_reward_eligible' => ['sometimes', 'required', 'boolean'],
         ];
     }
 

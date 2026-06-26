@@ -34,6 +34,8 @@ use Illuminate\Support\Arr;
  * @property mixed $effective_weight
  * @property mixed $picking_sessions_count
  * @property mixed $picking_session_ids
+ * @property mixed $waiting_warehouse_count
+ * @property mixed $waiting_crm_count
  * @property mixed $is_premium_dispatch
  * @property mixed $has_extra_packing
  * @property mixed $customer_notes
@@ -45,6 +47,11 @@ use Illuminate\Support\Arr;
  * @property mixed $data
  * @property mixed $country_name
  * @property mixed $country_code
+ * @property mixed $skus
+ * @property mixed $batch_code
+ * @property mixed $batch_code_sku
+ * @property mixed $org_stock_slug
+ * @property mixed $batch_code_expiry_date
  *
  */
 class DeliveryNotesResource extends JsonResource
@@ -73,10 +80,27 @@ class DeliveryNotesResource extends JsonResource
         } else {
             $weight = round($this->estimated_weight / 1000).' Kg';
         }
+
+        $totalParcels = is_array($this->parcels) ? count($this->parcels) : 0;
+        
         return [
             'id'                          => $this->id,
             'slug'                        => $this->slug,
             'reference'                   => $this->reference,
+            'batch_code'                  => $this->batch_code,
+            'batch_code_sku'              => $this->batch_code_sku,
+            'org_stock_slug'              => $this->org_stock_slug,
+            'org_stock_route'             => $this->org_stock_slug ? [
+                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
+                'parameters' => [
+                    $request->route('organisation')?->slug,
+                    $request->route('warehouse')?->slug,
+                    $this->org_stock_slug,
+                ],
+            ] : null,
+            'skus'                        => $this->skus,
+            'parcels'                     => $totalParcels,
+            'batch_code_expiry_date'      => $this->batch_code_expiry_date,
             'date'                        => $this->date,
             'state'                       => $this->state,
             'state_icon'                  => $this->state->stateIcon()[$this->state->value],
@@ -89,6 +113,7 @@ class DeliveryNotesResource extends JsonResource
             'shop_slug'                   => $this->shop_slug,
             'customer_slug'               => $this->customer_slug,
             'customer_name'               => $this->customer_name,
+            'customer_phone'              => $this->customer_phone,
             'number_items'                => $this->number_items,
             'organisation_name'           => $this->organisation_name,
             'organisation_slug'           => $this->organisation_slug,
@@ -97,12 +122,18 @@ class DeliveryNotesResource extends JsonResource
             'has_extra_packing'           => $this->has_extra_packing,
             'picking_sessions_count'      => $this->picking_sessions_count,
             'picking_session_ids'         => $this->picking_session_ids,
+            'waiting_warehouse_count'     => (int) $this->waiting_warehouse_count,
+            'waiting_crm_count'           => (int) $this->waiting_crm_count,
             'customer_notes'              => $this->customer_notes,
             'internal_notes'              => $this->internal_notes,
             'public_notes'                => $this->public_notes,
             'shipping_notes'              => $this->shipping_notes,
             'shipping_data'               => $this->shipping_data,
-            'trolleys'                    => Arr::get($this->data, 'trolleys'),
+            'trolleys'                    => $this->trolleys->map(fn ($trolley) => [
+                'id'   => $trolley->id,
+                'slug' => $trolley->slug,
+                'name' => $trolley->name,
+            ])->values()->toArray() ?: null,
             'picked_bays'                => Arr::get($this->data, 'picked_bays'),
             'picker'                      => Arr::get($this->data, 'picker'),
             'packer'                      => Arr::get($this->data, 'packer'),

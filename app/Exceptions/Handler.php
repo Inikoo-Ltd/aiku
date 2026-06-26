@@ -3,8 +3,8 @@
 namespace App\Exceptions;
 
 use App\Actions\Retina\UI\GetRetinaFirstLoadProps;
+use App\Actions\SysAdmin\User\UI\GetLoggedUser;
 use App\Actions\UI\Grp\GetFirstLoadProps;
-use App\Http\Resources\UI\LoggedUserResource;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Throwable;
-use Tighten\Ziggy\Ziggy;
 
 class Handler extends ExceptionHandler
 {
@@ -69,7 +68,7 @@ class Handler extends ExceptionHandler
     {
         $middleware = (\Route::getMiddlewareGroups()['web_errors']);
 
-        return (new Pipeline($this->container))
+        return new Pipeline($this->container)
             ->send($request)
             ->through($middleware)
             ->then($callback);
@@ -187,11 +186,7 @@ class Handler extends ExceptionHandler
                 default => [],
             };
 
-            $firstLoadOnlyProps['ziggy'] = function () use ($request) {
-                return array_merge((new Ziggy())->toArray(), [
-                    'location' => $request->url(),
-                ]);
-            };
+            data_set($firstLoadOnlyProps, 'ziggy.location', $request->url());
         }
 
         $routeName = '';
@@ -207,7 +202,7 @@ class Handler extends ExceptionHandler
                 'datetime'  => now()->tz('UTC')->toDateTimeString(),
                 'routeName' => $routeName,
                 'auth'      => [
-                    'user' => $request->user() ? LoggedUserResource::make($request->user())->getArray() : null,
+                    'user' => ($request->user() && $request->user() instanceof User) ? GetLoggedUser::run($request->user()) : null,
                 ],
                 'ziggy'     => [
                     'location' => $request->url(),

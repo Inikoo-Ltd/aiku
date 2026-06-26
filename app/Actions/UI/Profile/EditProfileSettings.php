@@ -10,8 +10,8 @@ namespace App\Actions\UI\Profile;
 
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\SysAdmin\User\UI\GetLoggedUser;
 use App\Actions\UI\WithInertia;
-use App\Http\Resources\UI\LoggedUserResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -130,7 +130,7 @@ class EditProfileSettings
                 ],
             ],
             'auth'          => [
-                'user' => LoggedUserResource::make($user)->getArray(),
+                'user' => GetLoggedUser::run($user),
             ],
         ];
     }

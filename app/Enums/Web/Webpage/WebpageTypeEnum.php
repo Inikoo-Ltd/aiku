@@ -17,6 +17,7 @@ enum WebpageTypeEnum: string
 
     case STOREFRONT = "storefront";
     case CATALOGUE = "catalogue";
+    case LANDING_PAGE = "landing_page";
     case CONTENT = "content";
     case BLOG = "blog";
 

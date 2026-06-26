@@ -1,0 +1,14 @@
+{
+	"slug": "sub-departments-3",
+	"code": "sub-departments-3",
+	"name": "Sub-Departments-3",
+	"scope": "webpage",
+	"category": "sub_department",
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"icon": ["fal", "building"],
+	"is_in_test" : false,
+	"fixed": true,
+	"data": {
+		"fieldValue": {}
+	}
+}

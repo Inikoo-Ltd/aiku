@@ -33,13 +33,13 @@ return [
     ],
 
     'tiktok'    => [
-        'url'           => env('TIKTOK_BUSINESS_URL'),
-        'base_url'      => env('TIKTOK_BASE_URL'),
-        'auth_url'      => env('TIKTOK_AUTH_URL'),
-        'redirect_uri'  => env('TIKTOK_REDIRECT_URI'),
+        'url'           => env('TIKTOK_BUSINESS_URL', 'https://business-api.tiktok.com'),
+        'base_url'      => env('TIKTOK_BASE_URL', 'https://open-api.tiktokglobalshop.com'),
+        'auth_url'      => env('TIKTOK_AUTH_URL', 'https://auth.tiktok-shops.com'),
+        'redirect_uri'  => env('TIKTOK_REDIRECT_URI', '/dropshipping/tiktok/callback'),
         'client_id'     => env('TIKTOK_CLIENT_ID'),
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),
-        'scopes'        => env('TIKTOK_SCOPES')
+        'scopes'        => env('TIKTOK_SCOPES', 'catalog:read,catalog:write,user.info.basic')
     ],
     'allegro'   => [
         'base_url'      => env('ALLEGRO_BASE_URL'),
@@ -68,6 +68,12 @@ return [
         'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     ],
+    'google_ads' => [
+        'developer_token' => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
+        'client_id'       => env('GOOGLE_CLIENT_ID'),
+        'client_secret'   => env('GOOGLE_CLIENT_SECRET'),
+        'api_version'     => env('GOOGLE_ADS_API_VERSION', 'v18'),
+    ],
     'slack'     => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
@@ -91,6 +97,7 @@ return [
     'google_maps' => [
         'api_key' => env('GOOGLE_MAPS_API_KEY'),
     ],
+
     'openai' => [
         'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY')
     ],

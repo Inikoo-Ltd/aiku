@@ -59,25 +59,25 @@ onMounted(() => {
  */
 const itemQuantity = computed({
   get() {
-    return props.form[props.fieldName].volume_discount?.item_quantity ?? null
+    return props.form[props.fieldName]?.item_quantity ?? null
   },
   set(val) {
-    if (!props.form[props.fieldName].volume_discount) {
-      props.form[props.fieldName].volume_discount = createVolumeDiscount()
+    if (!props.form[props.fieldName]) {
+      props.form[props.fieldName] = createVolumeDiscount()
     }
-    props.form[props.fieldName].volume_discount.item_quantity = val
+    props.form[props.fieldName].item_quantity = val
   },
 })
 
 const percentageOff = computed({
   get() {
-    return props.form[props.fieldName].volume_discount?.percentage_off ?? null
+    return props.form[props.fieldName]?.percentage_off ?? null
   },
   set(val) {
-    if (!props.form[props.fieldName].volume_discount) {
-      props.form[props.fieldName].volume_discount = createVolumeDiscount()
+    if (!props.form[props.fieldName]) {
+      props.form[props.fieldName] = createVolumeDiscount()
     }
-    props.form[props.fieldName].volume_discount.percentage_off = val
+    props.form[props.fieldName].percentage_off = val
   },
 })
 
@@ -85,7 +85,7 @@ const percentageOff = computed({
  * Delete → send volume_discount: null
  */
 const removeVolumeDiscount = () => {
-  props.form[props.fieldName].volume_discount = null
+  props.form[props.fieldName] = null
 }
 </script>
 
@@ -115,8 +115,9 @@ const removeVolumeDiscount = () => {
   </div>
 
   <!-- ERROR -->
-  <p v-if="get(form, ['errors', fieldName])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
-    {{ form.errors[fieldName] }}
+  <p v-if="get(form, ['errors'])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+    {{ form.errors[props.fieldName + ".item_quantity"] }}
+    {{ form.errors[props.fieldName + ".percentage_off"] }}
   </p>
 </template>
 

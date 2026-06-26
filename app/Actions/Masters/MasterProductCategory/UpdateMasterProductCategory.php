@@ -9,11 +9,14 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
-use App\Actions\Discounts\Offer\UpdateVolumeGrOfferFromMaster;
+use App\Actions\Discounts\Offer\VolGr\FinishVolumeGrOfferFromMaster;
+use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateTradeUnitFamilyToChildFamily;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithVolGrDiscount;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
@@ -23,6 +26,7 @@ use App\Models\Helpers\Language;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -32,9 +36,14 @@ class UpdateMasterProductCategory extends OrgAction
 {
     use WithImageCatalogue;
     use WithMasterProductCategoryAction;
+    use SanitizeInputs;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
+        if ($masterProductCategory->type !== MasterProductCategoryTypeEnum::FAMILY) {
+            Arr::pull($modelData, 'trade_unit_family_id'); // Safeguard so only family would have relationship with TradeUnitFamilyId
+        }
+
         $originalImageId = $masterProductCategory->image_id;
         if (Arr::has($modelData, 'master_department_id')) {
             $departmentId = Arr::pull($modelData, 'master_department_id');
@@ -99,13 +108,20 @@ class UpdateMasterProductCategory extends OrgAction
             ]);
         }
 
-        if (Arr::has($modelData, 'offers_data')) {
-            $offersData = $modelData['offers_data'];
-
-            if (isset($offersData['volume_discount'])) {
+        $grUpdating = false;
+        $grDeleting = false;
+        if (Arr::has($modelData, 'vol_gr_offer')) {
+            $volGR = Arr::pull($modelData, 'vol_gr_offer');
+            if ($volGR) {
                 data_set($modelData, 'has_gr_vol_discount', true);
+                data_set($modelData, 'gr_vol_discount_percentage', $volGR['percentage_off']);
+                data_set($modelData, 'gr_vol_discount_quantity', $volGR['item_quantity']);
+                $grUpdating = true;
             } else {
                 data_set($modelData, 'has_gr_vol_discount', false);
+                data_set($modelData, 'gr_vol_discount_percentage', 0);
+                data_set($modelData, 'gr_vol_discount_quantity', 0);
+                $grDeleting = true;
             }
         }
 
@@ -113,58 +129,34 @@ class UpdateMasterProductCategory extends OrgAction
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::has($changed, 'offers_data')) {
-            $offersData = $masterProductCategory->offers_data;
 
-            if (isset($offersData['volume_discount'])) {
-                $volumeDiscount = $offersData['volume_discount'];
+        if ($grDeleting) {
+            FinishVolumeGrOfferFromMaster::dispatch($masterProductCategory);
+        }
 
-                // Convert percentage_off from integer % to decimal (10 -> 0.1)
-                if (isset($volumeDiscount['percentage_off'])) {
-                    $volumeDiscount['percentage_off'] = ((float) $volumeDiscount['percentage_off']) / 100;
-                }
+        if ($grUpdating && Arr::hasAny($changed, ['gr_vol_discount_percentage', 'gr_vol_discount_quantity'])) {
+            $result = UpdateVolumeGrOfferFromMaster::run($masterProductCategory);
 
-                $result = UpdateVolumeGrOfferFromMaster::make()->action(
-                    $masterProductCategory,
-                    $volumeDiscount
-                );
+            if (data_get($result, 'updated_offers', 0) == 0) {
 
-                if ($result['updated_offers'] === 0) {
-                    session()->flash('notification', [
-                        'status'      => 'warning',
-                        'title'       => __('Warning'),
-                        'description' => __('No offers found to update for this master family.'),
-                    ]);
-                } else {
-                    session()->flash('notification', [
-                        'status'      => 'success',
-                        'title'       => __('Success'),
-                        'description' => __('Updated :offers offers and :allowances allowances.', [
-                            'offers' => $result['updated_offers'],
-                            'allowances' => $result['updated_allowances']
-                        ]),
-                    ]);
-                }
+                session()->flash('notification', [
+                    'status'      => 'warning',
+                    'title'       => __('Warning'),
+                    'description' => data_get($result, 'error_message', __('No offers found to update for this master family.')),
+                ]);
             } else {
-                $result = UpdateVolumeGrOfferFromMaster::make()->action(
-                    $masterProductCategory,
-                    null
-                );
-
-                if ($result['updated_offers'] > 0) {
-                    session()->flash('notification', [
-                        'status'      => 'success',
-                        'title'       => __('Success'),
-                        'description' => __('Volume discount removed from :offers offers and :allowances allowances.', [
-                            'offers' => $result['updated_offers'],
-                            'allowances' => $result['updated_allowances']
-                        ]),
-                    ]);
-                }
+                session()->flash('notification', [
+                    'status'      => 'success',
+                    'title'       => __('Success'),
+                    'description' => __('Updated :__offerCount offers and :__allowanceCount allowances.', [
+                        '__offerCount' => data_get($result, 'updated_offers', 0),
+                        '__allowanceCount' => data_get($result, 'updated_allowances', 0),
+                    ]),
+                ]);
             }
         }
 
-        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'faq'])) {
 
             $english      = Language::where('code', 'en')->first();
 
@@ -202,6 +194,14 @@ class UpdateMasterProductCategory extends OrgAction
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
                 }
 
+                // Temporary setup, auto translate FAQ
+                if (Arr::has($changed, 'faq') && $shop->language->code != 'en') {
+                    $translatedFaq = Translate::run(json_encode($masterProductCategory->faq), $english, $shopLanguage);
+                    if (is_string($translatedFaq)) {
+                        $dataToBeUpdated['faq'] = json_decode($translatedFaq, true);
+                    }
+                }
+
                 if ($dataToBeUpdated) {
                     UpdateProductCategory::make()->action($productCategory, $dataToBeUpdated);
                 }
@@ -213,6 +213,18 @@ class UpdateMasterProductCategory extends OrgAction
         if (!$masterProductCategory->image_id && $originalImageId) {
             $masterProductCategory->images()->detach($originalImageId);
         }
+
+        if ($masterProductCategory->wasChanged('trade_unit_family_id')) {
+            MasterFamilyHydrateTradeUnitFamilyToChildFamily::make()->action($masterProductCategory);
+        }
+
+        if ($masterProductCategory->wasChanged('has_gr_vol_discount')) {
+            MasterShopHydrateMasterFamiliesWithVolGrDiscount::dispatch($masterProductCategory->masterShop);
+        }
+
+        // if ($masterProductCategory->wasChanged('faq')) {
+        //     MasterProductCategoryHydrateFAQ::make()->action($masterProductCategory);
+        // }
 
         if ($masterProductCategory->wasChanged('status')) {
             if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
@@ -245,7 +257,7 @@ class UpdateMasterProductCategory extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'                     => [
+            'code'                          => [
                 'sometimes',
                 $this->strict ? 'max:32' : 'max:255',
                 new AlphaDashDot(),
@@ -260,47 +272,77 @@ class UpdateMasterProductCategory extends OrgAction
                     ]
                 ),
             ],
-            'name'                     => ['sometimes', 'max:250', 'string'],
-            'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'status'                   => ['sometimes', 'required', 'boolean'],
-            'description'              => ['sometimes', 'max:65500'],
-            'description_title'        => ['sometimes', 'nullable', 'max:255'],
-            'description_extra'        => ['sometimes', 'nullable', 'max:65500'],
-            'master_department_id'     => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
-            'master_sub_department_id' => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
-            'show_in_website'          => ['sometimes', 'boolean'],
-            'image'                    => [
+            'name'                          => ['sometimes', 'max:250', 'string'],
+            'image_id'                      => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
+            'status'                        => ['sometimes', 'required', 'boolean'],
+            'description'                   => ['sometimes', 'max:65500'],
+            'description_title'             => ['sometimes', 'nullable', 'max:255'],
+            'description_extra'             => ['sometimes', 'nullable', 'max:65500'],
+            'master_department_id'          => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
+            'master_sub_department_id'      => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
+            'show_in_website'               => ['sometimes', 'boolean'],
+            'image'                         => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024),
             ],
-            'name_i8n'                                   => ['sometimes', 'array'],
-            'description_title_i8n'                      => ['sometimes', 'array'],
-            'description_i8n'                            => ['sometimes', 'array'],
-            'description_extra_i8n'                      => ['sometimes', 'array'],
-            'offers_data'                                => ['sometimes', 'array'],
-            'offers_data.volume_discount'                => ['nullable', 'array'],
-            'offers_data.volume_discount.item_quantity'  => [
-                'required_with:offers_data.volume_discount.percentage_off',
+            'name_i8n'                      => ['sometimes', 'array'],
+            'description_title_i8n'         => ['sometimes', 'array'],
+            'description_i8n'               => ['sometimes', 'array'],
+            'description_extra_i8n'         => ['sometimes', 'array'],
+            'vol_gr_offer'                  => ['nullable', 'array'],
+            'vol_gr_offer.item_quantity'    => [
+                'required_with:vol_gr_offer.percentage_off',
                 'nullable',
                 'integer',
                 'min:1'
             ],
-            'offers_data.volume_discount.percentage_off' => [
-                'required_with:offers_data.volume_discount.item_quantity',
+            'vol_gr_offer.percentage_off'   => [
+                'required_with:vol_gr_offer.item_quantity',
                 'nullable',
                 'numeric',
                 'min:1',
                 'max:100'
             ],
-            'cost_price_ratio'                           => ['sometimes', 'numeric', 'min:0'],
+            'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
+            'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
+            'faq'                           => ['sometimes', 'array'],
+            'faq.*.question'                => ['sometimes', 'string'],
+            'faq.*.answer'                  => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
         }
 
+        if (!$this->asAction && $this->masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
+            // Hard limit for Master Family (To accommodate design) if it's via UI update
+            $rules['description']       = ['sometimes', 'nullable',  function ($value, $fail) {
+                $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
+                if ($count > 100) {
+                    $fail(__("The description must not exceed 100 words."));
+                }
+            }];
+
+            $rules['description_extra'] = ['sometimes', 'nullable', function ($value, $fail) {
+                $count = count(explode(' ', str_replace("&nbsp;", ' ', trim($this->sanitizeValue($value)))));
+                if ($count > 250) {
+                    $fail(__("The description extra must not exceed 250 words."));
+                }
+            }];
+        }
+
         return $rules;
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'vol_gr_offer.item_quantity.min'            => 'Item quantity must be bigger than 1',
+            'vol_gr_offer.item_quantity.required_with'  => 'Item quantity must be be bigger than 1',
+            'vol_gr_offer.percentage_off.min'           => 'Discount must be bigger than 1',
+            'vol_gr_offer.percentage_off.required_with' => 'Discount must be bigger than 1',
+        ];
     }
 }

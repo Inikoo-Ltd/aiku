@@ -11,6 +11,8 @@ namespace App\Actions\Dropshipping\Tiktok\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
@@ -40,9 +42,11 @@ class StoreTiktokOrder extends RetinaAction
         $customerClient = $this->digestTiktokCustomerClient($tiktokUser, $tiktokOrders);
         $orderedProducts = $this->digestTiktokProducts($tiktokUser, $tiktokOrders);
 
+        $shipByTiktok = Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK';
+
         $orderData = [
             'customer_client_id'        => $customerClient->id,
-            'is_shipping_by_external'   => true,
+            'is_shipping_by_external'   => $shipByTiktok,
             'platform_id'               => $tiktokUser->platform_id,
             'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
             'customer_reference'        => Arr::get($tiktokOrders, 'user_id'),
@@ -55,19 +59,34 @@ class StoreTiktokOrder extends RetinaAction
 
         foreach ($orderedProducts as $orderedProduct) {
 
-
             $transactionData = [
                 'quantity_ordered'        => $orderedProduct['quantity_ordered'],
                 'platform_transaction_id' => $orderedProduct['platform_transaction_id'],
 
             ];
 
-
             StoreTransaction::make()->action(
                 order: $order,
                 historicAsset: $orderedProduct['historicAsset'],
-                modelData: $transactionData
+                modelData: $transactionData,
+                strict: false,
+                forceHydrators: true,
             );
+        }
+
+        $handOverMethod = null;
+        $packageId = Arr::get($order, 'packages.0.id');
+        if ($packageId) {
+            $package = $tiktokUser->getPackageDetail($packageId);
+            $handOverMethod = Arr::get($package, 'data.handover_method');
+        }
+
+        if ($shipByTiktok) {
+            UpdateOrder::run($order, [
+                'shipping_notes' => __("We're unable to ship this order due to customer's default shipping template is not 'Shipped by Seller' and the default handover method is DROP_OFF. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
+            ]);
+
+            // CancelOrder::run($order);
         }
 
         try {
@@ -143,6 +162,16 @@ class StoreTiktokOrder extends RetinaAction
     public function digestTiktokProducts(TiktokUser $tiktokUser, array $tiktokOrderData): array
     {
         $orderedProducts = [];
+        /*$lineItems = collect(Arr::get($tiktokOrderData, 'line_items', []))
+            ->groupBy('product_id')
+            ->map(function ($items) {
+                return [
+                    'product_id' => $items->first()['product_id'],
+                    'quantity'   => count($items),
+                    'id' => $items->first()['id']
+                ];
+            })
+            ->values();*/
         foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
             $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)

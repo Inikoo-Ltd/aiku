@@ -5,6 +5,11 @@ namespace App\Actions\Web\Webpage\Iris;
 use App\Actions\Iris\Catalogue\IndexIrisCatalogue;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Catalogue\CollectionsResource;
+use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\FamiliesResource;
+use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use Illuminate\Validation\Rule;
@@ -24,22 +29,34 @@ class ShowIrisCatalogue extends IrisAction
 
     public function htmlResponse(LengthAwarePaginator $irisCatalogue, ActionRequest $request): Response
     {
-        $response = Inertia::render('Catalogue/CatalogueIris', [
+        $scope  = $this->validatedData['scope'];
+        $parent = data_get($this->validatedData, 'parent', null);
+
+        $data = match ($scope) {
+            'department'     => DepartmentsResource::collection($irisCatalogue),
+            'sub_department' => SubDepartmentsResource::collection($irisCatalogue),
+            'family'         => FamiliesResource::collection($irisCatalogue),
+            'product'        => ProductsResource::collection($irisCatalogue),
+            'collection'     => CollectionsResource::collection($irisCatalogue),
+            default          => $irisCatalogue,
+        };
+
+        $response = Inertia::render('Catalogue', [
+            'catalogue_scope' => $scope,
             'tabs' => [
-                'current' => $this->validatedData['scope'],
+                'current'    => $scope,
                 'navigation' => $this->getTabNavigation($request->query('parent', null)),
             ],
-            'data' => $irisCatalogue,
+            'data' => $data,
         ]);
 
-        return match ($this->validatedData['scope']) {
-            'department' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'department', parent: data_get($this->validatedData, 'parent', null), prefix: 'department')),
-            'sub_department' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'sub_department', parent: data_get($this->validatedData, 'parent', null), prefix: 'sub_department')),
-            'family' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'family', parent: data_get($this->validatedData, 'parent', null), prefix: 'family')),
-            'product' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'product', parent: data_get($this->validatedData, 'parent', null), prefix: 'product')),
-            'collection' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'collection', parent: data_get($this->validatedData, 'parent', null), prefix: 'collection')),
-            default => $response,
-        };
+        return $response->table(
+            IndexIrisCatalogue::make()->tableStructure(
+                scope: $scope,
+                parent: $parent,
+                prefix: $scope
+            )
+        );
     }
 
 
@@ -94,11 +111,11 @@ class ShowIrisCatalogue extends IrisAction
     public function getTabNavigation(?string $level): array
     {
         $tabs = [
-            ['key' => 'department', 'label' => 'Departments'],
-            ['key' => 'sub_department', 'label' => 'Sub Departments'],
-            ['key' => 'family', 'label' => 'Families'],
-            ['key' => 'product', 'label' => 'Products'],
-            ['key' => 'collection', 'label' => 'Collections'],
+            ['key' => 'department', 'label' => __('Departments')],
+            ['key' => 'sub_department', 'label' => __('Sub Departments')],
+            ['key' => 'family', 'label' => __('Families')],
+            ['key' => 'product', 'label' => __('Products')],
+            ['key' => 'collection', 'label' => __('Collections')],
         ];
 
         if (!$level) {

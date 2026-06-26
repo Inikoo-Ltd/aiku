@@ -12,6 +12,7 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
@@ -20,6 +21,7 @@ use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -80,6 +82,14 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $desc_art4
  * @property int|null $desc_art5
  * @property int|null $extra_desc_art1
+ * @property int|null $extra_desc_art2
+ * @property int|null $extra_desc_art3
+ * @property int|null $extra_desc_art4
+ * @property numeric|null $gr_vol_discount_percentage
+ * @property int|null $gr_vol_discount_quantity
+ * @property int|null $trade_unit_family_id
+ * @property array<array-key, mixed> $faq
+ * @property int|null $showcase_image_id
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Media|null $descArt1Image
@@ -88,6 +98,9 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $descArt4Image
  * @property-read Media|null $descArt5Image
  * @property-read Media|null $extraDescArt1Image
+ * @property-read Media|null $extraDescArt2Image
+ * @property-read Media|null $extraDescArt3Image
+ * @property-read Media|null $extraDescArt4Image
  * @property-read array $translatable_columns_from
  * @property-read Group|null $group
  * @property-read Media|null $image
@@ -101,9 +114,13 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read MasterProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $relatedMasterAssets
+ * @property-read LaravelCollection<int, MasterProductCategory> $relatedMasterProductCategories
  * @property-read Media|null $seoImage
+ * @property-read Media|null $showcaseImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
+ * @property-read TradeUnitFamily|null $tradeUnitFamily
  * @property-read mixed $translations
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()
@@ -132,6 +149,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'            => 'array',
+        'faq'             => 'array',
         'web_images'      => 'array',
         'type'            => MasterProductCategoryTypeEnum::class,
         'health_rank'     => HealthRankEnum::class,
@@ -144,6 +162,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     protected $attributes = [
         'data'        => '{}',
+        'faq'         => '{}',
         'offers_data' => '{}',
         'web_images'  => '{}',
     ];
@@ -249,6 +268,10 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
 
+    public function showcaseImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'showcase_image_id');
+    }
 
     public function descArt1Image(): HasOne
     {
@@ -278,6 +301,42 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function extraDescArt1Image(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
+    }
+
+    public function extraDescArt2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art2');
+    }
+
+    public function extraDescArt3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art3');
+    }
+
+    public function extraDescArt4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art4');
+    }
+
+    public function relatedMasterAssets(): BelongsToMany
+    {
+        return $this->belongsToMany(MasterAsset::class, 'master_product_category_has_related_assets')
+            ->orderByPivot('position')
+            ->withPivot('id', 'position')
+            ->withTimestamps();
+    }
+
+    public function relatedMasterProductCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(MasterProductCategory::class, 'master_product_category_has_related_product_categories', 'master_product_category_id', 'related_master_product_category_id')
+            ->orderByPivot('position')
+            ->withPivot('id', 'position')
+            ->withTimestamps();
+    }
+
+    public function tradeUnitFamily(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
     }
 
 }

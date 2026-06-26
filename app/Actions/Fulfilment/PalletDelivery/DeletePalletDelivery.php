@@ -85,7 +85,7 @@ class DeletePalletDelivery extends OrgAction
     public function rules(): array
     {
         return [
-            'deleted_note' => ['required', 'string', 'max:4000'],
+            'delete_comment' => ['required', 'string', 'max:4000'],
         ];
     }
 

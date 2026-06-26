@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { getComponent } from '@/Composables/getWorkshopComponents'
-import { getIrisComponent } from '@/Composables/getIrisComponents'
+import { getIrisComponent } from '@/Iris/Composables/getIrisComponents'
 import { sendMessageToParent } from '@/Composables/Workshop';
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";

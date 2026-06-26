@@ -22,6 +22,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 
 class EditWebpage extends OrgAction
@@ -114,6 +115,18 @@ class EditWebpage extends OrgAction
                 "maxLength"   => 150,
                 "counter"     => true,
             ],
+            'webpage_title_prefix'  => [
+                'type'          => 'input',
+                'information'   => __('Would add the set prefix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'label'         => __('Title Prefix'),
+                'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
+            ],
+            'webpage_title_suffix'  => [
+                'type'          => 'input',
+                'information'   => __('Would add the set suffix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'label'         => __('Title Suffix'),
+                'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
+            ],
             'index_page'      => [
                 'type'        => 'toggle',
                 'label'       => __('Index Page'),
@@ -164,15 +177,14 @@ class EditWebpage extends OrgAction
                 ],
             ];
 
-
             $fields = array_merge($fields, $productFields);
         }
 
-        $mainData = [
+        $mainData = $webpage->state !== WebpageStateEnum::CLOSED ? [
             'label'  => $isBlog ? __('Blog') : __('Webpage'),
             'icon'   => 'fal fa-browser',
             'fields' => $fields
-        ];
+        ] : null;
 
         $warning = [];
 
@@ -185,10 +197,26 @@ class EditWebpage extends OrgAction
             ];
         }
 
+
+        $informationWarning = [];
+        if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY) {
+            $informationWarning = [
+                [
+                    'description' => "Structure @type 'ProductGroup' or @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
+                ]
+            ];
+        } elseif ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
+            $informationWarning = [
+                [
+                    'description' => "Structure @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
+                ]
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
-                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage's settings"),
+                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage :webpageCode settings", ['webpageCode' => $webpage->code]),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'warning'     => $warning,
                 'pageHead'    => [
@@ -200,7 +228,7 @@ class EditWebpage extends OrgAction
                     'model'      => $isBlog ? __('Blog') : __('Webpage'),
                     'iconRight'  => WebpageStateEnum::stateIcon()[$webpage->state->value],
                     'afterTitle' => [
-                        'label' => $webpage->getUrl(),
+                        'label' => $webpage->getCanonicalUrl(),
                     ],
                     'actions' => [
                         [
@@ -215,9 +243,9 @@ class EditWebpage extends OrgAction
                     ],
                 ],
                 'formData' => [
-                    'blueprint' => [
+                    'blueprint' => array_values(array_filter([
                         $mainData,
-                        [
+                        $webpage->state !== WebpageStateEnum::CLOSED ? [
                             'label'  => __('Structured data'),
                             'icon'   => 'fal fa-brackets-curly',
                             'fields' => [
@@ -226,9 +254,10 @@ class EditWebpage extends OrgAction
                                     'type'     => 'structure_data_website',
                                     'value'    => Arr::get($webpage->seo_data, 'structured_data') ?? '',
                                     'required' => false,
+                                    'information_warning'   => $informationWarning,
                                 ],
                             ]
-                        ],
+                        ] : null,
                         $inVariant ? [] : [
                             'label'  => __('Set online/closed'),
                             'icon'   => 'fal fa-broadcast-tower',
@@ -277,7 +306,7 @@ class EditWebpage extends OrgAction
                                 ]
                             ]
                         ]
-                    ],
+                    ])),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.webpage.update',

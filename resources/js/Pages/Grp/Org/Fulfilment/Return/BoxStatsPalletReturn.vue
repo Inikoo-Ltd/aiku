@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import JsBarcode from "jsbarcode"
-import { computed, onMounted, ref, inject, toRaw } from "vue"
+import { computed, onMounted, onUnmounted, ref, inject, toRaw } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { PalletReturn, BoxStats } from "@/types/Pallet"
@@ -22,7 +22,7 @@ import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
 import Popover from '@/Components/Popover.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink } from "@fal"
+import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink, faExchange, faHashtag } from "@fal"
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
@@ -39,7 +39,8 @@ import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useForm
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { AddressManagement } from "@/types/PureComponent/Address";
 import { useTruncate } from "@/Composables/useTruncate"
-library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink, faCubes)
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink, faCubes, faExchange, faHashtag)
 
 const props = defineProps<{
 
@@ -53,9 +54,34 @@ const props = defineProps<{
 	},
 	shipments: {
 		delete_route: routeType
+	},
+	picker_packer_routes?: {
+		pickers_list: routeType
+		packers_list: routeType
+		update: routeType
 	}
 
 }>()
+
+// Section: Box Stats loading state
+const isBoxStatsLoading = ref(false)
+let removeStartListener: (() => void) | null = null
+let removeFinishListener: (() => void) | null = null
+onMounted(() => {
+	removeStartListener = router.on('start', (event) => {
+		if (event.detail.visit.only?.includes('box_stats')) {
+			isBoxStatsLoading.value = true
+		}
+	})
+	removeFinishListener = router.on('finish', () => {
+		isBoxStatsLoading.value = false
+	})
+})
+
+onUnmounted(() => {
+	removeStartListener?.()
+	removeFinishListener?.()
+})
 
 onMounted(() => {
 	JsBarcode("#palletReturnBarcode", route().routeParams.palletReturn, {
@@ -67,6 +93,90 @@ onMounted(() => {
 })
 
 const deliveryListError = inject('deliveryListError', [])
+const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? trans("Return Customer's SKUs") : trans('Return Whole pallets'))
+const hasPickingUsers = computed(() => Boolean(props.dataPalletReturn?.picker_user?.contact_name || props.dataPalletReturn?.packer_user?.contact_name))
+const canUpdatePickingUsers = computed(() => Boolean(props.picker_packer_routes?.update?.name))
+const isWarehouseDispatchingPalletReturnPage = computed(() =>
+	route().current('grp.org.warehouses.show.dispatching.pallet-returns.show')
+	|| route().current('grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show')
+)
+const isStoredItemReturn = computed(() => props.dataPalletReturn?.type === 'stored_item')
+const isPickingState = computed(() => props.dataPalletReturn?.state === 'picking')
+const isPickedState = computed(() => props.dataPalletReturn?.state === 'picked')
+const showPickerInfo = computed(() => ['picking', 'picked', 'dispatched', 'cancel'].includes(props.dataPalletReturn?.state || ''))
+const showPackerInfo = computed(() => isStoredItemReturn.value && ['picked', 'dispatched', 'cancel'].includes(props.dataPalletReturn?.state || ''))
+const canChangePicker = computed(() => canUpdatePickingUsers.value && isPickingState.value)
+const canChangePacker = computed(() => canUpdatePickingUsers.value && isPickedState.value && isStoredItemReturn.value)
+const changePickingUsersLabel = computed(() => {
+	if (canChangePicker.value) {
+		return trans('Change picker')
+	}
+	if (canChangePacker.value) {
+		return trans('Change packer')
+	}
+	return trans('Change picker / packer')
+})
+const pickersListRoute = computed(() => props.picker_packer_routes?.pickers_list)
+const packersListRoute = computed(() => props.picker_packer_routes?.packers_list)
+const isModalPickingUsers = ref(false)
+const isLoadingPickingUsers = ref(false)
+const selectedPicker = ref<{ id: number; contact_name?: string | null } | null>(props.dataPalletReturn?.picker_user ?? null)
+const selectedPacker = ref<{ id: number; contact_name?: string | null } | null>(props.dataPalletReturn?.packer_user ?? null)
+
+const onOpenModalPickingUsers = () => {
+	selectedPicker.value = props.dataPalletReturn?.picker_user ?? null
+	selectedPacker.value = props.dataPalletReturn?.packer_user ?? null
+	isModalPickingUsers.value = true
+}
+
+const onUpdatePickingUsers = () => {
+	if (!props.picker_packer_routes?.update?.name) {
+		return
+	}
+
+	const payload: Record<string, number | null> = {}
+
+	if (canChangePicker.value) {
+		payload.picker_user_id = selectedPicker.value?.id ?? null
+	}
+
+	if (canChangePacker.value) {
+		payload.packer_user_id = selectedPacker.value?.id ?? null
+	}
+
+	if (!Object.keys(payload).length) {
+		return
+	}
+
+	router.patch(
+		route(props.picker_packer_routes.update.name, props.picker_packer_routes.update.parameters),
+		payload,
+		{
+			preserveScroll: true,
+			onStart: () => {
+				isLoadingPickingUsers.value = true
+			},
+			onSuccess: () => {
+				isModalPickingUsers.value = false
+				notify({
+					title: trans("Success"),
+					text: canChangePicker.value ? trans("Picker updated successfully") : trans("Packer updated successfully"),
+					type: "success",
+				})
+			},
+			onError: () => {
+				notify({
+					title: trans("Something went wrong"),
+					text: trans("Failed to update picker and packer"),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingPickingUsers.value = false
+			},
+		}
+	)
+}
 
 // Method: Create new address
 const isModalAddress = ref(false)
@@ -299,7 +409,7 @@ const onSubmitParcels = () => {
 // Section: Shipment
 const isDeleteShipment = ref<number | null>(null)
 const onDeleteShipment = (idShipment: number) => {
-	router.delete(route(props.shipments.delete_route.name, { 
+	router.delete(route(props.shipments.delete_route.name, {
 		...props.shipments.delete_route.parameters,
 		shipment: idShipment,
 	}),
@@ -357,7 +467,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 	// Decode the Base64 HTML
 	const htmlContent = atob(base64);
-	
+
 	// console.log("HTML Content:", htmlContent);
 
 	// Create a hidden container to render the HTML
@@ -371,7 +481,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 	container.style.background = 'white';
 	container.style.padding = '0';
 	document.body.appendChild(container);
-	
+
 	await new Promise(resolve => setTimeout(resolve, 100)); // Wait for styles to render
 
 	// Render the HTML to canvas
@@ -399,10 +509,21 @@ const base64HtmlToPdf = async (base64: string, index) => {
 </script>
 
 <template>
+	<div class="relative">
+	<Transition name="fade">
+		<div v-if="isBoxStatsLoading" class="absolute inset-0 bg-white/60 dark:bg-gray-900/60 flex items-center justify-center z-10 pointer-events-none">
+			<FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-2xl text-gray-400" fixed-width aria-hidden="true" />
+		</div>
+	</Transition>
 	<div
-		class="h-min grid sm:grid-cols-2 lg:grid-cols-4 border-t border-b border-gray-200 divide-x divide-gray-300">
+		:class="[
+			'h-min grid sm:grid-cols-2 border-t border-b border-gray-200 divide-x divide-gray-300',
+			isWarehouseDispatchingPalletReturnPage ? 'lg:grid-cols-3' : 'lg:grid-cols-4',
+		]">
 		<!-- Box: Customer -->
-		<BoxStatPallet class="py-1 sm:py-2 px-3">
+		<BoxStatPallet :class="[
+			'py-1 sm:py-2 px-3',
+		]">
 			<!-- Field: Platform -->
 			<div v-if="boxStats?.platform" class="pl-0.5 flex items-center w-full flex-none gap-x-2">
 				<div v-tooltip="trans('Platform')" class="flex-none">
@@ -482,7 +603,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 			<!-- Field: Email -->
 			<div
-				v-if="boxStats.is_platform ? boxStats.platform_customer?.email : boxStats?.fulfilment_customer?.customer.email"
+				v-if="(boxStats.is_platform ? boxStats.platform_customer?.email : boxStats?.fulfilment_customer?.customer.email) && !isWarehouseDispatchingPalletReturnPage"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Email')" class="flex-none">
 					<span class="sr-only">Email</span>
@@ -509,7 +630,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 			<!-- Field: Phone -->
 			<div
-				v-if="boxStats?.is_platform ? boxStats?.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone"
+				v-if="(boxStats?.is_platform ? boxStats?.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone) && !isWarehouseDispatchingPalletReturnPage"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Phone')" class="flex-none">
 					<span class="sr-only">Phone</span>
@@ -523,7 +644,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				<a v-if="boxStats?.is_platform">{{ boxStats?.platform_customer?.phone }}</a>
 				<a v-else>{{ boxStats?.fulfilment_customer?.customer.phone }}</a>
 			</div>
-		
+
 			<!-- Field: Estimated delivery date -->
 			<div v-if="!boxStats?.is_platform" class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
 				<dt v-tooltip="trans('Estimated delivery date')" class="flex-none">
@@ -566,7 +687,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 						<span class="sr-only">Delivery address</span>
 						<FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
 					</dt>
-					<SwitchGroup as="div" class="flex items-center">
+					<SwitchGroup v-if="!isWarehouseDispatchingPalletReturnPage" as="div" class="flex items-center">
 						<Switch
 							v-model="computedEnabled"
 							:class="[computedEnabled ? 'bg-indigo-600' : 'bg-gray-200']"
@@ -576,38 +697,43 @@ const base64HtmlToPdf = async (base64: string, index) => {
 								:class="[computedEnabled ? 'translate-x-5' : 'translate-x-0']"
 								class="pointer-events-none inline-block h-5 w-5 transform bg-white rounded-full shadow transition duration-200 ease-in-out" />
 						</Switch>
-						<SwitchLabel as="span" class="ml-3 text-sm font-medium text-gray-900">
+						<SwitchLabel as="span" class="ml-3">
 							{{ trans("Collection") }}
 						</SwitchLabel>
 					</SwitchGroup>
+					<div v-else class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
+						{{ trans("For Collection") }}: {{ dataPalletReturn.is_collection ? trans("Yes") : trans("No") }}
+					</div>
 				</div>
 
 				<div v-if="dataPalletReturn.is_collection" class="w-full">
-					<span class="block mb-1">{{ trans("Collection by:") }}</span>
-					<div class="flex space-x-4">
-						<label class="inline-flex items-center">
-							<input
-								type="radio"
-								value="myself"
-								v-model="collectionBy"
-								@change="updateCollectionType"
-								class="form-radio"
-							/>
-							<span class="ml-2">{{ trans("My Self") }}</span>
-						</label>
-						<label class="inline-flex items-center">
-							<input
-								type="radio"
-								value="thirdParty"
-								v-model="collectionBy"
-								@change="updateCollectionType"
-								class="form-radio"
-							/>
-							<span class="ml-2">{{ trans("Third Party") }}</span>
-						</label>
+					<div v-if="!isWarehouseDispatchingPalletReturnPage" class="flex flex-col gap-y-2">
+						<span>{{ trans("Collection by:") }}</span>
+						<div class="flex gap-x-4">
+							<label class="inline-flex items-center">
+								<input
+									type="radio"
+									value="myself"
+									v-model="collectionBy"
+									@change="updateCollectionType"
+									class="form-radio"
+								/>
+								<span class="ml-2">{{ trans("My Self") }}</span>
+							</label>
+							<label class="inline-flex items-center">
+								<input
+									type="radio"
+									value="thirdParty"
+									v-model="collectionBy"
+									@change="updateCollectionType"
+									class="form-radio"
+								/>
+								<span class="ml-2">{{ trans("Third Party") }}</span>
+							</label>
+						</div>
 					</div>
 
-					<div v-if="collectionBy === 'thirdParty'" class="mt-3">
+					<div v-if="collectionBy === 'thirdParty' && !isWarehouseDispatchingPalletReturnPage" class="mt-3">
 						<Textarea
 							v-model="textValue"
 							@blur="updateCollectionNotes"
@@ -618,6 +744,11 @@ const base64HtmlToPdf = async (base64: string, index) => {
 							placeholder="Type additional notes..."
 						/>
 					</div>
+					<div v-else-if="collectionBy === 'thirdParty' && isWarehouseDispatchingPalletReturnPage" class="mt-3">
+						<div class="w-full rounded bg-gray-50 px-2.5 py-2 text-xs text-gray-600 ring-1 ring-gray-300">
+							{{ textValue || '-' }}
+						</div>
+					</div>
 				</div>
 
 				<div v-else class="w-full text-xs text-gray-500" :class="listError.box_stats_delivery_address ? 'errorShake' : ''">
@@ -625,6 +756,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
 						<span v-html="boxStats?.fulfilment_customer?.address?.value?.formatted_address" />
 						<div
+							v-if="!isWarehouseDispatchingPalletReturnPage"
 							@click="() => (isDeliveryAddressManagementModal = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
               <span>{{trans('Edit')}}</span>
@@ -636,7 +768,11 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 		<!-- Box Stats: 2 -->
 		<BoxStatPallet
-			class="py-1 sm:py-2 px-3"
+			:class="[
+				'py-1 sm:py-2 px-3 mr-3 z-10',
+                isWarehouseDispatchingPalletReturnPage ? 'border-gray-900' : '',
+			]"
+            :style="isWarehouseDispatchingPalletReturnPage ? 'border-right-width:1px !important' : ''"
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
 
@@ -659,7 +795,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 							</div>
 						</template>
 					</div>
-					
+
 					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4">
 						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx" class="text-sm tabular-nums">
 							<span class="truncate">
@@ -682,7 +818,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 						<div>{{ trans("Shipments") }} ({{ boxStats.shipments.length ?? 0 }})</div>
 
 					</div>
-					
+
 					<ul v-if="boxStats.shipments" class="list-disc pl-4">
 						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="hover:bg-gray-100 text-sm tabular-nums relative">
 							<div class="flex justify-between">
@@ -694,7 +830,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
 									</a>
 								</div>
-								
+
 								<!-- Type PDF -->
 								<div v-else-if="sments.label && sments.label_type === 'pdf'" class="group">
 									<span class="truncate">
@@ -709,7 +845,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
 									</div>
 								</div>
-								
+
 								<!-- Type HTML -->
 								<div v-else-if="sments.label && sments.label_type === 'html'" class="group">
 									<span class="truncate">
@@ -731,7 +867,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 										<LoadingIcon />
 									</div>
 								</div>
-								
+
 								<div v-else>
 									<span class="truncate">
 										{{ sments.name }}
@@ -756,9 +892,17 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			<!-- Customer reference -->
 			<div class="mb-1" v-if="address_management && !boxStats.is_platform">
 				<PalletEditCustomerReference
-          :dataPalletDelivery="dataPalletReturn"
-          :updateRoute="address_management.updateRoute"
-        />
+					v-if="!isWarehouseDispatchingPalletReturnPage"
+					:dataPalletDelivery="dataPalletReturn"
+					:updateRoute="address_management.updateRoute"
+				/>
+				<div v-else>
+                    <FontAwesomeIcon v-tooltip="trans('Customer Reference')" :icon="faHashtag" class='text-gray-400'
+                        fixed-width aria-hidden='true' />
+					<span :class="dataPalletReturn?.customer_reference ? '' : 'text-gray-400'">
+						{{ dataPalletReturn?.customer_reference || trans('No customer reference') }}
+					</span>
+				</div>
 			</div>
 
 			<!-- Barcode -->
@@ -767,6 +911,25 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				<svg id="palletReturnBarcode" class="w-full h-full"></svg>
 				<div class="text-xs text-gray-500">
 					{{ route().params.palletReturn }}
+				</div>
+			</div>
+
+            <div v-if="hasPickingUsers || canChangePicker || canChangePacker" class="mb-1 border-t border-gray-300 pt-1">
+				<div class="text-sm font-semibold text-gray-600">{{ pickingTitle }}</div>
+				<div class="flex flex-wrap gap-2 text-sm">
+					<div v-if="showPickerInfo" class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
+						<span class="font-semibold text-gray-700">{{ trans('Picker') }}:</span> {{ dataPalletReturn?.picker_user?.contact_name || '-' }}
+					</div>
+					<div v-if="showPackerInfo" class=" border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
+						<span class="font-semibold text-gray-700">{{ trans('Packer') }}:</span> {{ dataPalletReturn?.packer_user?.contact_name || '-' }}
+					</div>
+					<Button
+						v-if="(canChangePicker || canChangePacker) && isWarehouseDispatchingPalletReturnPage"
+						@click="onOpenModalPickingUsers"
+                        :icon="faExchange"
+						type="tertiary"
+						size="xs"
+						:label="changePickingUsersLabel" />
 				</div>
 			</div>
 
@@ -790,7 +953,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 		<!-- Box: Order summary -->
 		<BoxStatPallet
-			v-if="boxStats?.order_summary"
+			v-if="boxStats?.order_summary && !isWarehouseDispatchingPalletReturnPage"
 			class="sm:col-span-2 border-t sm:border-t-0 border-gray-300">
 			<section
 				aria-labelledby="summary-heading"
@@ -851,6 +1014,67 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			@onDone="() => (isDeliveryAddressManagementModal = false)"
 			@onHasChange="() => listError.box_stats_delivery_address = false"
 		/>
+	</Modal>
+	<Modal :isOpen="isModalPickingUsers" @onClose="() => (isModalPickingUsers = false)" width="w-full max-w-xl">
+		<div class="flex flex-col gap-4">
+			<div class="text-center text-lg font-semibold">{{ pickingTitle }}</div>
+			<div v-if="canChangePicker" class="flex flex-col gap-2">
+				<div class="text-sm font-medium">{{ trans('Picker') }}</div>
+				<PureMultiselectInfiniteScroll
+					v-if="pickersListRoute"
+					v-model="selectedPicker"
+					:fetchRoute="pickersListRoute"
+					placeholder="Select picker"
+					labelProp="contact_name"
+					valueProp="id"
+					object
+					clearOnBlur
+					:disabled="isLoadingPickingUsers">
+					<template #singlelabel="{ value }">
+						<div class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+							{{ value.contact_name }}
+						</div>
+					</template>
+					<template #option="{ option }">
+						<div class="w-full text-left text-sm whitespace-nowrap truncate">
+							{{ option.contact_name }}
+						</div>
+					</template>
+				</PureMultiselectInfiniteScroll>
+				<div v-else class="text-xs text-gray-500">{{ trans('Picker list route is not available') }}</div>
+			</div>
+			<div v-if="canChangePacker" class="flex flex-col gap-2">
+				<div class="text-sm font-medium">{{ trans('Packer') }}</div>
+				<PureMultiselectInfiniteScroll
+					v-if="packersListRoute"
+					v-model="selectedPacker"
+					:fetchRoute="packersListRoute"
+					placeholder="Select packer"
+					labelProp="contact_name"
+					valueProp="id"
+					object
+					clearOnBlur
+					:disabled="isLoadingPickingUsers">
+					<template #singlelabel="{ value }">
+						<div class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+							{{ value.contact_name }}
+						</div>
+					</template>
+					<template #option="{ option }">
+						<div class="w-full text-left text-sm whitespace-nowrap truncate">
+							{{ option.contact_name }}
+						</div>
+					</template>
+				</PureMultiselectInfiniteScroll>
+				<div v-else class="text-xs text-gray-500">{{ trans('Packer list route is not available') }}</div>
+			</div>
+			<Button
+				@click="onUpdatePickingUsers"
+				:label="trans('Save')"
+				type="save"
+				full
+				:loading="isLoadingPickingUsers" />
+		</div>
 	</Modal>
 
 	<!-- Modal: Shipment -->
@@ -914,7 +1138,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 									<template #content="{ close: closed }">
 										<div class="w-[350px]">
-											
+
 										</div>
 									</template>
 								</Popover> -->
@@ -949,6 +1173,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			</div>
 		</div>
 	</Modal>
+	</div>
 </template>
 
 <style scoped lang="scss">

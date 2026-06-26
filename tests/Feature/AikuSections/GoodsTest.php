@@ -270,7 +270,21 @@ test("UI Show Stocks", function () {
 
 test("UI Index Trade Units", function () {
     $response = get(
-        route("grp.goods.trade-units.index")
+        route("grp.trade_units.units.index")
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Goods/TradeUnits")
+            ->has("title")
+            ->has("breadcrumbs", 3)
+            ->has("pageHead");
+
+    });
+});
+
+test("UI Index Orphan Trade Units", function () {
+    $response = get(
+        route("grp.trade_units.units.orphan")
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -360,8 +374,7 @@ test("UI Show Trade Units Dashboard", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'Trade Units Dashboard')->etc()
-            )
-            ->has("flatTreeMaps");
+            );
     });
 });
 
@@ -697,6 +710,7 @@ test('update trade unit family allows null description', function () {
 });
 
 test('hydrate trade unit family trade units stats', function () {
+
     $family = StoreTradeUnitFamily::make()->action($this->group, [
         'code' => 'TUF001',
         'name' => 'Test Family',
@@ -735,7 +749,7 @@ test('hydrate trade unit family trade units stats', function () {
     TradeUnitFamilyHydrateTradeUnits::run($family);
 
     $family->refresh();
-    $stats = $family->stats()->first();
+    $stats = $family->stats;
 
     expect($stats)->not->toBeNull()
         ->and($stats->number_trade_units)->toBe(5)

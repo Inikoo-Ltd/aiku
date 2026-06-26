@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { inject, computed } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { trans } from "laravel-vue-i18n"
 
 interface IntervalDataItem {
     raw_value?: number | string
@@ -104,33 +105,33 @@ const getHistoricCLV = computed(() => {
         <!-- Expected Sales -->
         <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
             <div class="text-sm w-full">
-                <p class="text-lg font-bold mb-1">Expected Sales</p>
+                <p class="text-lg font-bold mb-1">{{ trans('Expected Sales') }}</p>
                 <span class="text-2xl font-bold">
                     {{ getExpectedSales }}
                 </span>
-                <p class="text-xs text-gray-500 mt-1">Projected this month</p>
+                <p class="text-xs text-gray-500 mt-1">{{trans('Projected this month')}}</p>
             </div>
         </div>
 
         <!-- Average CLV -->
         <div v-if="getAverageCLV !== null" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
             <div class="text-sm w-full">
-                <p class="text-lg font-bold mb-1">Average CLV</p>
+                <p class="text-lg font-bold mb-1">{{ trans('Average CLV') }}</p>
                 <span class="text-2xl font-bold">
                     {{ getAverageCLV }}
                 </span>
-                <p class="text-xs text-gray-500 mt-1">Customer Lifetime Value</p>
+                <p class="text-xs text-gray-500 mt-1">{{trans('Customer Lifetime Value')}}</p>
             </div>
         </div>
 
         <!-- Historic CLV -->
         <div v-if="getHistoricCLV !== null" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
             <div class="text-sm w-full">
-                <p class="text-lg font-bold mb-1">Historic CLV</p>
+                <p class="text-lg font-bold mb-1">{{ trans('Historic CLV')}}</p>
                 <span class="text-2xl font-bold">
                     {{ getHistoricCLV }}
                 </span>
-                <p class="text-xs text-gray-500 mt-1">Actual revenue per customer</p>
+                <p class="text-xs text-gray-500 mt-1">{{trans('Actual revenue per customer')}}</p>
             </div>
         </div>
     </div>

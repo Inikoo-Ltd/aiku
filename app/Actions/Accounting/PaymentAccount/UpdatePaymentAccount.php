@@ -47,6 +47,24 @@ class UpdatePaymentAccount extends OrgAction
             data_set($modelData, 'data', $paypalData);
         }
 
+        if ($paymentAccount->type == PaymentAccountTypeEnum::PASTPAY) {
+            $pastpayData = $paymentAccount->data ?? [];
+
+            if (Arr::exists($modelData, 'pastpay_apikey')) {
+                $pastpayData['credentials'] = [
+                    'apikey' => Arr::pull($modelData, 'pastpay_apikey')
+                ];
+            }
+
+            if (Arr::exists($modelData, 'pastpay_charges')) {
+                $pastpayData['charges'] = [
+                    'options' => Arr::pull($modelData, 'pastpay_charges')
+                ];
+            }
+
+            data_set($modelData, 'data', $pastpayData);
+        }
+
         if ($this->strict) {
             $paymentAccount = $this->paymentAccountUpdateActions($paymentAccount->paymentServiceProvider->code, $paymentAccount, $modelData);
             $paymentAccount = $this->update($paymentAccount, Arr::only($modelData, ['code', 'name', 'data']), ['data']);
@@ -101,6 +119,11 @@ class UpdatePaymentAccount extends OrgAction
         if ($this->paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
             $rules['paypal_client_id']        = ['sometimes'];
             $rules['paypal_client_secret']    = ['sometimes'];
+        }
+
+        if ($this->paymentAccount->type == PaymentAccountTypeEnum::PASTPAY) {
+            $rules['pastpay_apikey']     = ['sometimes'];
+            $rules['pastpay_charges']    = ['sometimes'];
         }
 
         if (!$this->strict) {

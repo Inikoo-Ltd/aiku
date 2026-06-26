@@ -22,7 +22,8 @@ import {
     faEnvelope,
     faBan,
     faUsers,
-    faSpinner
+    faSpinner,
+    faDownload
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { reactive, computed, watch, ref, onMounted, nextTick } from "vue";
@@ -35,8 +36,10 @@ import { Button as ButtonPrime, InputNumber, InputText, RadioButton } from 'prim
 import Menu from 'primevue/menu'
 import Badge from 'primevue/badge'
 import Dropdown from 'primevue/dropdown'
+import MultiSelect from 'primevue/multiselect'
 import Calendar from 'primevue/calendar'
 import Checkbox from 'primevue/checkbox'
+import Popover from 'primevue/popover'
 import ToggleButton from 'primevue/togglebutton'
 import { routeType } from '@/types/route'
 import axios from 'axios'
@@ -67,18 +70,30 @@ library.add(
     faFilter,
     faTimes,
     faPlus,
-    faSpinner
+    faSpinner,
+    faDownload
 );
 
-const props = defineProps<{
-    recipientFilterRoute: routeType
+const props = withDefaults(defineProps<{
+    recipientFilterRoute?: routeType
     filters: Record<string, any>,
     filtersStructure: Record<string, any>
     recipientsRecipe: any,
     shopId: number,
     estimatedRecipients: number,
     shopSlug: string
-}>();
+    showSave?: boolean
+    exportRoutes?: { xlsx: routeType, csv: routeType }
+    stateOptions?: { value: string, label: string, count: number }[]
+    stateFilter?: string[]
+    statusOptions?: { value: string, label: string, count: number }[]
+    statusFilter?: string[]
+    estimateLabel?: string
+    exportFields?: { key: string, label: string }[]
+}>(), {
+    showSave: true,
+    estimateLabel: 'Estimated Recipients',
+});
 
 const {
     isByOrderValueInvalid,
@@ -99,7 +114,75 @@ const {
     saveFilters,
     getPostalCodeModel,
     hydrateSavedFilters,
+    extraQuery,
 } = useFilterRecipients(props)
+
+const selectedStates = ref<string[]>(props.stateFilter ? [...props.stateFilter] : [])
+
+if (props.stateOptions?.length) {
+    extraQuery.state = [...selectedStates.value]
+}
+
+const onStateChange = () => {
+    extraQuery.state = [...selectedStates.value]
+    fetchCustomers()
+}
+
+const selectedStatuses = ref<string[]>(props.statusFilter ? [...props.statusFilter] : [])
+
+if (props.statusOptions?.length) {
+    extraQuery.status = [...selectedStatuses.value]
+}
+
+const onStatusChange = () => {
+    extraQuery.status = [...selectedStatuses.value]
+    fetchCustomers()
+}
+
+const exportPanel = ref()
+
+const selectedColumns = ref<string[]>(props.exportFields ? props.exportFields.map(f => f.key) : [])
+
+const allColumnsSelected = computed({
+    get: () => !!props.exportFields?.length && selectedColumns.value.length === props.exportFields.length,
+    set: (value: boolean) => {
+        selectedColumns.value = value ? (props.exportFields ?? []).map(f => f.key) : []
+    }
+})
+
+const exportUrl = (type: 'csv' | 'xlsx') => {
+    const r = props.exportRoutes?.[type]
+    if (!r?.name) return ''
+
+    const base = route(r.name, { ...r.parameters, type }) as unknown as string
+
+    const current = new URLSearchParams(window.location.search)
+    const filterQuery = new URLSearchParams()
+    current.forEach((value, key) => {
+        if (key === 'filters' || key.startsWith('filters[') || key === 'state' || key.startsWith('state[') || key === 'status' || key.startsWith('status[')) {
+            filterQuery.append(key, value)
+        }
+    })
+
+    if (props.exportFields?.length) {
+        selectedColumns.value.forEach(column => filterQuery.append('columns[]', column))
+    }
+
+    const query = filterQuery.toString()
+    if (!query) {
+        return base
+    }
+
+    return base + (base.includes('?') ? '&' : '?') + query
+}
+
+const exportColumns = (type: 'csv' | 'xlsx') => {
+    if (!selectedColumns.value.length) {
+        return
+    }
+
+    window.open(exportUrl(type), '_blank')
+}
 
 const filterMenu = ref()
 
@@ -308,9 +391,33 @@ watch(
                     <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
                 </Button>
 
-                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4" @click="fetchCustomers" />
+                <MultiSelect v-if="stateOptions?.length" v-model="selectedStates" :options="stateOptions"
+                    optionLabel="label" optionValue="value" :placeholder="trans('State')" :maxSelectedLabels="2"
+                    :showToggleAll="false" class="h-10 items-center w-max" appendTo="body" @change="onStateChange"
+                    :pt="{ label: { class: 'whitespace-nowrap' } }">
+                    <template #option="{ option }">
+                        <div class="flex justify-between items-center gap-4 w-full">
+                            <span>{{ option.label }}</span>
+                            <span class="text-xs text-gray-400">{{ option.count }}</span>
+                        </div>
+                    </template>
+                </MultiSelect>
 
-                <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4"
+                <MultiSelect v-if="statusOptions?.length" v-model="selectedStatuses" :options="statusOptions"
+                    optionLabel="label" optionValue="value" :placeholder="trans('Status')" :maxSelectedLabels="2"
+                    :showToggleAll="false" class="h-10 items-center w-max" appendTo="body" @change="onStatusChange"
+                    :pt="{ label: { class: 'whitespace-nowrap' } }">
+                    <template #option="{ option }">
+                        <div class="flex justify-between items-center gap-4 w-full">
+                            <span>{{ option.label }}</span>
+                            <span class="text-xs text-gray-400">{{ option.count }}</span>
+                        </div>
+                    </template>
+                </MultiSelect>
+
+                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4 shrink-0 whitespace-nowrap" @click="fetchCustomers" />
+
+                <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4 shrink-0 whitespace-nowrap"
                     @click="clearAllFilters" />
             </div>
             <!-- center side -->
@@ -322,8 +429,49 @@ watch(
             <!-- right side -->
             <div class="flex items-center gap-3">
 
-                <Button :label="trans('Save')" type="positive" icon="save" @click="saveFilters" class="h-10 px-4"
-                    :disabled="isByOrderValueInvalid" />
+                <template v-if="exportRoutes">
+                    <div v-if="exportFields?.length">
+                        <Button :icon="faDownload" :label="trans('Export')" type="tertiary"
+                            @click="exportPanel.toggle($event)" />
+
+                        <Popover ref="exportPanel">
+                            <div class="w-72">
+                                <div class="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
+                                    <Button :icon="faDownload" label="XLSX" type="tertiary"
+                                        :disabled="!selectedColumns.length" @click="exportColumns('xlsx')" />
+                                    <Button :icon="faDownload" label="CSV" type="tertiary"
+                                        :disabled="!selectedColumns.length" @click="exportColumns('csv')" />
+                                </div>
+
+                                <label
+                                    class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
+                                    <Checkbox v-model="allColumnsSelected" :binary="true" />
+                                    <span>{{ trans("Select all") }}</span>
+                                </label>
+
+                                <div class="max-h-72 overflow-y-auto">
+                                    <label v-for="field in exportFields" :key="field.key"
+                                        class="flex items-center gap-2 px-1 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded">
+                                        <Checkbox v-model="selectedColumns" :value="field.key" />
+                                        <span>{{ field.label }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </Popover>
+                    </div>
+
+                    <div v-else class="rounded-md">
+                        <a :href="exportUrl('csv')" target="_blank" rel="noopener">
+                            <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
+                        </a>
+                        <a :href="exportUrl('xlsx')" target="_blank" rel="noopener">
+                            <Button :icon="faDownload" label="XLSX" type="tertiary" class="border-l-0 rounded-l-none" />
+                        </a>
+                    </div>
+                </template>
+
+                <Button v-if="showSave" :label="trans('Save')" type="positive" icon="save" @click="saveFilters"
+                    class="h-10 px-4" :disabled="isByOrderValueInvalid" />
             </div>
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -542,7 +690,7 @@ watch(
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
 
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">{{ trans("Estimated Recipients") }}</p>
+                    <p class="text-sm text-gray-500 mb-1">{{ trans(estimateLabel) }}</p>
                     <h2 class="text-4xl font-semibold tracking-tight text-gray-900">
                         {{ trans(formatNumber(estimatedRecipients)) }}
                     </h2>

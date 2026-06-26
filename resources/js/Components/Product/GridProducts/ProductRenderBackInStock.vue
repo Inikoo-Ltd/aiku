@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
@@ -17,7 +17,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { routeType } from '@/types/route'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 library.add(faStarHalfAlt, faQuestionCircle)
 

@@ -4,7 +4,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { Component } from "vue";
 import EmailPreview from "@/Components/Showcases/Org/Mailshot/EmailPreview.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
@@ -24,8 +24,9 @@ import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
-import { useFormatTime } from "@/Composables/useFormatTime";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import { toZonedTime} from 'date-fns-tz';
+import { format } from 'date-fns'
 
 library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
 
@@ -56,6 +57,8 @@ const props = defineProps<{
     isHasParentMailshot: boolean
     numberSecondWaveRecipients?: number
     isSecondWave: boolean
+    mailshotId: number
+    groupId: number
     ownShopTemplates?: Array<{
         id: number,
         slug: string,
@@ -73,6 +76,8 @@ const props = defineProps<{
         shop_name: string
     }>
     workshopRoute?: routeType
+    timeZoneOptions?: any[]
+    defaultShopTimezone?: string
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -113,12 +118,14 @@ const shouldShowCancelScheduleButton = computed(() => {
 
 // Schedule datetime picker state
 const showSchedulePicker = ref(false);
-const scheduleDateTime = ref(new Date());
-const minDateTime = ref(new Date());
+const scheduleDateTime = ref<string>(new Date().toISOString());
+const minDateTime = ref<string>(new Date().toISOString());
 const schedulePicker = ref();
+const nowUtc = ref(new Date());
 
 const inProgress = ref(false);
 const scheduleInProgress = ref(false);
+const selectedTimezone = ref(props.defaultShopTimezone || 'UTC');
 
 const handleSendNow = async () => {
     // Prevent multiple simultaneous requests
@@ -180,6 +187,10 @@ const handleSchedule = async (event: Event) => {
         return;
     }
 
+    nowUtc.value = new Date();
+    minDateTime.value = toZonedTime(new Date(nowUtc.value), selectedTimezone.value).toISOString();
+
+
     // Show the datetime picker using the ref
     if (schedulePicker.value) {
         schedulePicker.value.show(event);
@@ -192,7 +203,10 @@ const confirmSchedule = async () => {
     if (!props.scheduleMailshotRoute) return;
 
     scheduleInProgress.value = true;
-    const formattedDateTime = useFormatTime(scheduleDateTime.value, { formatTime: 'yyyy-MM-dd HH:mm:ss' })
+
+     const formattedDateTime = scheduleDateTime.value
+     const convertToTimezone = toZonedTime(formattedDateTime, selectedTimezone.value)
+     const displayFormated = format(convertToTimezone, 'yyyy-MM-dd HH:mm:ss')
 
     showSchedulePicker.value = false;
     schedulePicker.value?.hide();
@@ -205,7 +219,7 @@ const confirmSchedule = async () => {
                 notify({
                     type: 'success',
                     title: 'Success',
-                    text: `Mailshot scheduled for ${scheduleDateTime.value.toLocaleString()}`,
+                    text: `Mailshot scheduled for ${displayFormated} ${selectedTimezone.value}`,
                 })
                 showSchedulePicker.value = false;
                 schedulePicker.value?.hide();
@@ -235,22 +249,28 @@ const confirmSchedule = async () => {
 };
 
 // Function to get dynamic min time based on selected date
-const getMinTime = () => {
-    const now = new Date();
-    const selectedDate = scheduleDateTime.value;
+const minTime = computed(() => {
+    const tz = selectedTimezone.value;
+    const selectedZoned = toZonedTime(new Date(scheduleDateTime.value), tz);
+    const nowZoned = toZonedTime(nowUtc.value, tz);
 
-    // If selected date is today, set min time to current time
-    if (selectedDate && selectedDate.toDateString() === now.toDateString()) {
+    const sameUTCDate =
+        selectedZoned.getUTCFullYear() === nowZoned.getUTCFullYear() &&
+        selectedZoned.getUTCMonth() === nowZoned.getUTCMonth() &&
+        selectedZoned.getUTCDate() === nowZoned.getUTCDate();
+
+    if (sameUTCDate) {
+        // Today (UTC) → block past minutes/seconds
         return {
-            hours: now.getHours(),
-            minutes: now.getMinutes(),
-            seconds: now.getSeconds()
+            hours: nowZoned.getHours(),
+            minutes: nowZoned.getMinutes(),
+            seconds: nowZoned.getSeconds(),
         };
     }
 
-    // Otherwise, allow any time from start of day
+    // Future date → no time restriction
     return { hours: 0, minutes: 0, seconds: 0 };
-};
+});
 
 // Function to cancel schedule
 const cancelSchedule = () => {
@@ -258,12 +278,48 @@ const cancelSchedule = () => {
         schedulePicker.value.hide();
     }
     showSchedulePicker.value = false;
-    scheduleDateTime.value = new Date();
+    scheduleDateTime.value = new Date().toISOString();
 };
 
 const formatNumber = (num: number | null | undefined) => {
     return new Intl.NumberFormat('en-GB').format(num ?? 0)
 }
+
+// Live stats for showcase (updated via broadcast)
+const liveStats = ref<any[]>(
+    (props.showcase as any)?.mailshot?.data?.stats ?? []
+)
+
+onMounted(() => {
+    if (!props.groupId || !props.mailshotId || !(window as any).Echo) {
+        return
+    }
+
+    ; (window as any).Echo
+        .private(`grp.${props.groupId}.mailshots.${props.mailshotId}`)
+        .listen(".mailshot.stats.updated", (e: any) => {
+            const mailshotId = e.mailshot_id ?? e.data?.mailshot_id
+            if (mailshotId && mailshotId !== props.mailshotId) {
+                return
+            }
+
+            const stats = e.stats ?? e.data?.stats
+            if (Array.isArray(stats)) {
+                liveStats.value = stats
+                router.reload()
+            }
+        })
+})
+
+onUnmounted(() => {
+    if (!props.groupId || !props.mailshotId || !(window as any).Echo) {
+        return
+    }
+
+    ; (window as any).Echo
+        .private(`grp.${props.groupId}.mailshots.${props.mailshotId}`)
+        .stopListening(".mailshot.stats.updated")
+})
 
 const component = computed(() => {
     const components: Component = {
@@ -568,6 +624,7 @@ watch(
 
     <PageHeading :data="pageHead">
         <template #afterTitle v-if="
+            props.mailshotType === 'marketing' &&
             ['in_process', 'ready', 'scheduled'].includes(props.status ?? '') && !props.isSecondWave
         ">
             <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>
@@ -578,15 +635,15 @@ watch(
                     :description="trans('Please make sure your data or design is correct. This action will send an email to all customers')"
                     isFullLoading>
                     <template #default="{ isOpenModal, changeModel }">
-                        <Button :label="trans('send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
+                        <Button :label="trans('Send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
                             icon="fal fa-paper-plane" type="secondary" @click="changeModel" />
                     </template>
                     <template #btn-yes>
-                        <Button :label="trans('send now')" :loading="inProgress" :disabled="inProgress"
+                        <Button :label="trans('Send now')" :loading="inProgress" :disabled="inProgress"
                             @click="handleSendNow" type="secondary" icon="fal fa-paper-plane" />
                     </template>
                 </ModalConfirmation>
-                <Button :label="trans('Scheduled')" class="!border-l-none !rounded-l-none" icon="fal fa-clock"
+                <Button :label="trans('Schedule')" class="!border-l-none !rounded-l-none" icon="fal fa-clock"
                     type="secondary" @click="handleSchedule($event)" :loading="scheduleInProgress" />
             </div>
         </template>
@@ -626,12 +683,23 @@ watch(
     <Popover ref="schedulePicker" :visible="showSchedulePicker" @hide="cancelSchedule" appendTo="body">
         <div class="p-2 min-w-80 bg-white flex flex-col items-center">
             <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
-                    class="text-red-600">(Europe/London)</span> </h3>
-            <div class="mb-4 flex justify-center">
-                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="getMinTime()"
+                    class="text-red-600">{{ selectedTimezone }}</span> </h3>
+
+            <div class="min-w-0 w-full mb-3">
+                <PureMultiselect
+                    v-model="selectedTimezone"
+                    :placeholder="trans('Select timezone...')"
+                    :options="props.timeZoneOptions || []"
+                    :searchable="true"
+                    :required="true"
+                    caret/>
+            </div>
+
+            <div class="mb-4 flex justify-center z-10">
+                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="minTime"
                     :text-input="true" :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
                     :seconds-increment="1" :auto-apply="true" :open-on-focus="true" :time-picker-inline="true"
-                    class="w-full" placeholder="" :teleport="true" />
+                    class="w-full" placeholder="" :teleport="true" model-type="iso" :timezone="selectedTimezone"  />
             </div>
             <div class="flex gap-2 justify-end w-full">
                 <Button :label="trans('Cancel')" @click="cancelSchedule"
@@ -681,8 +749,10 @@ watch(
         </div>
 
     </div>
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-        :own-shop-templates="currentTab === 'showcase' ? props.ownShopTemplates : undefined"
-        :other-shop-templates="currentTab === 'showcase' ? props.otherShopTemplates : undefined"
-        :workshop-route="currentTab === 'showcase' ? props.workshopRoute : undefined" />
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" v-bind="currentTab === 'showcase' ? {
+        liveStats,
+        ownShopTemplates: currentTab === 'showcase' ? props.ownShopTemplates : undefined,
+        otherShopTemplates: currentTab === 'showcase' ? props.otherShopTemplates : undefined,
+        workshopRoute: currentTab === 'showcase' ? props.workshopRoute : undefined
+    } : {}" />
 </template>

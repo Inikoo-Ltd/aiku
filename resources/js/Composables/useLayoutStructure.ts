@@ -69,4 +69,5 @@ export const layoutStructure = {
     // isShopPage: false as boolean,
     dispatching_waiting_count: 0 as number,
     crm_waiting_count: 0 as number,
+    crm_return_count: 0 as number,
 }

@@ -24,13 +24,13 @@ enum PalletReturnsTabsEnum: string
     {
         return match ($this) {
             PalletReturnsTabsEnum::UPLOADS => [
-                'title' => __('uploads'),
+                'title' => __('Uploads'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             PalletReturnsTabsEnum::RETURNS => [
-                'title'     => __("returns"),
+                'title'     => __("Returns"),
                 'icon'      => 'fal fa-sign-out-alt',
             ],
         };

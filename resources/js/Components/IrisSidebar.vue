@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Drawer from 'primevue/drawer';
-import { ref, inject, onMounted, onUnmounted, computed } from 'vue';
+import { ref, inject, onMounted, onUnmounted, computed, watch, type Ref } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faBars } from '@fal';
 import { getStyles } from '@/Composables/styles';
@@ -11,15 +11,15 @@ import { Image as ImageTS } from '@/types/Image';
 import { trans } from 'laravel-vue-i18n';
 import { faSearch, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import axios from 'axios'
 library.add(faSearch, faTimes)
 
 const props = defineProps<{
 	header: { logo?: { image: { source: string } } }
 	screenType: string
-	productCategories: Array<any>
+	productCategories?: Array<any>
 	menu?: { data: Array<any> }
-	customMenusBottom?: Array<any>
-	customMenusTop?: Array<any>
 	sidebarLogo: ImageTS
 	sidebar?: {
 		data: {
@@ -46,6 +46,7 @@ const props = defineProps<{
 
 
 const irisLayout = inject("layout", {})
+const sidebarMenu = inject<Ref<any> | null>('sidebarMenu', null)
 
 const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false))
 
@@ -59,31 +60,86 @@ const activeCustomTopSubIndex = ref<number | null>(null) // active custom menu t
 
 
 const sortedProductCategories = computed(() => {
-	if (!props.productCategories) return []
-	return [...props.productCategories].sort((a, b) =>
+	const fromFetch = (sidebarMenu?.value ?? (irisLayout as any).iris?.sidebar)?.product_categories
+	const source = Array.isArray(fromFetch) && fromFetch.length ? fromFetch : props.productCategories
+	if (!source) return []
+	return [...source].sort((a, b) =>
 		(a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
 	)
 })
 
 
 
-// Custom menus without sorting
-const customMenusBottom = computed(() => {
-	if (!props.customMenusBottom) return []
-	return props.customMenusBottom
-})
+const convertToDepartmentStructure = (menusData: any[]): any[] => {
+	const dataArray = Array.isArray(menusData) ? menusData : [menusData]
 
+	const removeProtocol = (url: string | null | undefined): string | null => {
+		if (!url || typeof url !== 'string') return null
+		return url.replace(/^https?:\/\//, '')
+	}
 
+	return dataArray.map(menu => {
+		const departmentStructure: any = {
+			url: removeProtocol(menu?.link?.href),
+			name: menu?.label || null,
+			type: menu?.link?.type || null,
+			sub_departments: [] as any[]
+		}
 
-const customMenusTop = computed(() => {
-	if (!props.customMenusTop) return []
-	return props.customMenusTop
-})
+		if (Array.isArray(menu?.subnavs)) {
+			menu.subnavs.forEach((subnav: any) => {
+				const subDepartment: any = {
+					url: removeProtocol(subnav?.link?.href),
+					name: subnav?.title || null,
+					type: subnav?.link?.type || null,
+					families: [] as any[]
+				}
 
+				if (Array.isArray(subnav?.links)) {
+					subnav.links.forEach((link: any) => {
+						subDepartment.families.push({
+							url: removeProtocol(link?.link?.href),
+							name: link?.label || null,
+							type: link?.link?.type || null
+						})
+					})
+				}
 
+				departmentStructure.sub_departments.push(subDepartment)
+			})
+		}
+
+		return departmentStructure
+	})
+}
+
+const internalCustomMenusBottom = ref<any[]>([])
+const internalCustomMenusTop = ref<any[]>([])
+
+const computedSidebarSource = computed(() => sidebarMenu?.value || irisLayout.iris?.sidebar)
+
+watch(
+	computedSidebarSource,
+	(newValue) => {
+		if (newValue) {
+			const navigationBottomData = newValue?.data?.fieldValue?.navigation_bottom?.filter((item: any) => !item.hidden) ?? []
+			const navigationData = newValue?.data?.fieldValue?.navigation?.filter((item: any) => !item.hidden) ?? []
+
+			internalCustomMenusBottom.value = navigationBottomData.length ? convertToDepartmentStructure(navigationBottomData) : []
+			internalCustomMenusTop.value = navigationData.length ? convertToDepartmentStructure(navigationData) : []
+		} else {
+			internalCustomMenusBottom.value = []
+			internalCustomMenusTop.value = []
+		}
+	},
+	{ immediate: true, deep: true }
+)
+
+const customMenusBottom = computed(() => internalCustomMenusBottom.value)
+const customMenusTop = computed(() => internalCustomMenusTop.value)
 
 const sidebarFieldValue = computed(() =>
-    irisLayout.iris.sidebar?.fieldValue ?? props.sidebar?.data?.fieldValue
+    irisLayout.iris.sidebar?.data?.fieldValue ?? props.sidebar?.data?.fieldValue
 )
 
 
@@ -192,6 +248,7 @@ const checkMobile = () => {
 };
 
 onMounted(() => {
+	fetchSidebarOnce()
     checkMobile()
     window.addEventListener("resize", checkMobile)
 })
@@ -236,10 +293,138 @@ const onClickLuigi = () => {
 	const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
 	if (input) input.focus();
 }
+
+
+// Section: Fetch Sidebar
+interface DataJsonSidebar {
+	sidebar: {
+		data: {
+			fieldValue: {
+				additional_items: {
+					items_list: {
+						icon: string[]
+						text: string
+						ulid: string
+						url: {
+							href: string
+							type: string
+							target: string
+						}
+					}[]
+				}
+				container: {}
+				sidebar_logo: ImageTS
+				logo_dimension: {
+					width: {
+						unit: string
+						value: number
+					}
+					height: {
+						unit: string
+						value: number
+					}
+				}
+				navigation: {
+					icon: string[]
+					id: string
+					label: string
+					link: {
+						href: string
+						type: string
+						target: string
+					}
+					type: string
+				}
+				navigation_bottom: {
+					id: string
+					label: string
+					link: {
+						href: string
+						type: string
+						target: string
+					}
+					type: string
+				}
+				product_categories: {
+					collections: {
+						id: string
+						name: string
+						url: string
+						families: {
+							id: string
+							name: string
+							url: string
+						}[]
+					}[]
+					name: string
+					sub_departments: {
+						name: string
+						url: string
+						collections: {}[]
+						families: {
+							name: string
+							url: string
+						}[]
+					}
+					url: string
+				}
+			}
+		}
+		product_categories: {
+			collections: {
+				id: string
+				name: string
+				url: string
+				families: {
+					id: string
+					name: string
+					url: string
+				}[]
+			}[]
+			sub_departments: {
+				name: string
+				url: string
+				collections: {}[]
+				families: {
+					name: string
+					url: string
+				}[]
+			}[]
+			name: string
+			url: string
+		}[]
+	}
+}
+const layout = inject('layout', retinaLayoutStructure)
+const isSidebarFetching = ref(false)
+const fetchSidebarOnce = async () => {
+	// To take custom bottom navigation
+    if (layout.iris.isSidebarLoaded || isSidebarFetching.value) return
+
+    isSidebarFetching.value = true
+
+    try {
+		layout.iris.isSidebarLoading = true
+		const baseUrl = window.location.origin
+        const { data } = await axios.get(`${baseUrl}/json/sidebar`) as { data: DataJsonSidebar }
+        // const { data } = await axios.get(route("iris.json.sidebar")) as { data: DataJsonSidebar }		
+        layout.iris.sidebar  = data.sidebar
+
+		layout.iris.isSidebarLoading = false
+        layout.iris.isSidebarLoaded = true
+    } catch (e) {
+        console.error("[IrisSidebar] fetch failed", e)
+    } finally {
+        isSidebarFetching.value = false
+    }
+}
+
 </script>
 
 <template>
 	<div class="mobile-menu editor-class">
+
+		<!-- Button: hamburger (showed on mobile) -->
 		<button @click="isOpenMenuMobile = true" class="">
 			<slot name="icon">
 				<FontAwesomeIcon
@@ -273,7 +458,9 @@ const onClickLuigi = () => {
 						: '545px'
 					: '290px',
 			}"
-			class="h-screen">
+			class="h-screen"
+			@show="() => fetchSidebarOnce()"
+		>
 			<template #header>
 				<div>
 					<div class="md:max-w-[270px] overflow-hidden">
@@ -309,14 +496,14 @@ const onClickLuigi = () => {
 							}}</span>
 						</div>
 					</div>
-					<FontAwesomeIcon
-						icon="fal fa-times"
-						class="absolute -right-12 top-12 opacityx-70 text-xl text-white pointer-events-none"
-						fixed-width
-						aria-hidden="true" />
+					<span class="cursor-pointer absolute -right-12 top-12 opacityx-70 text-xl text-white pointer-events-none">
+						<FontAwesomeIcon
+							icon="fal fa-times"
+							fixed-width
+							aria-hidden="true" />
+					</span>
 				</div>
 			</template>
-
 			<!-- Sidebar Menu: Mobile -->
 			<IrisSidebarMobile
 				v-if="isMobile"
@@ -324,7 +511,7 @@ const onClickLuigi = () => {
 					props.sidebar?.data?.fieldValue?.container?.properties ||
 					props.menu?.container?.properties
 				"
-				:productCategories
+				:productCategories="layout?.iris?.sidebar?.product_categories ||product_categories "
 				:customMenusTop
 				:customTopSubDepartments
 				:customMenusBottom
@@ -358,7 +545,7 @@ const onClickLuigi = () => {
 					props.sidebar?.data?.fieldValue?.container?.properties ||
 					props.menu?.container?.properties
 				"
-				:productCategories
+				:productCategories="layout?.iris?.sidebar?.product_categories ||product_categories "
 				:customMenusTop
 				:customTopSubDepartments
 				:customMenusBottom

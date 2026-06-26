@@ -198,7 +198,7 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 								</InputIcon>
 								<InputText
 									v-model="searchQuery"
-									placeholder="Search products"
+									:placeholder="trans('Search products')"
 									@input="onSearchQuery(searchQuery)"
 									class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
 							</IconField>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, inject } from 'vue'
+import { ref, computed, watch, inject, onMounted } from 'vue'
 import type { Component } from "vue";
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -17,7 +17,7 @@ import Multiselect from "@vueform/multiselect"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle } from '@fal'
 import { faUserCog } from '@fas'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import Modal from '@/Components/Utils/Modal.vue'
@@ -28,9 +28,10 @@ import { useTabChange } from "@/Composables/tab-change";
 import TableEmailTemplate from "@/Components/Tables/TableEmailTemplate.vue";
 import TablePreviousMailshots from "@/Components/Tables/TablePreviousMailshots.vue"
 import TableOtherStoreMailshots from "@/Components/Tables/TableOtherStoreMailshots.vue"
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { usePage } from "@inertiajs/vue3"
 
-library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
+library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
 
 const props = defineProps<{
     title: string,
@@ -46,16 +47,19 @@ const props = defineProps<{
     organisationSlug: string
     storeNewTemplateRoute: routeType
     unpublished_layout: any
+    compiledLayout: string | null
 }>()
 
 const comment = ref('')
 const isLoading = ref(false)
+const isLoadingTemplate = ref(false)
 const openTemplates = ref(false)
 const _beefree = ref()
 const _unlayer = ref()
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
-const email = ref([])
+const visibleUnsubscribeWarningModal = ref(false)
+const email = ref('')
 const templateName = ref('')
 const temporaryData = ref()
 const active = ref(props.status)
@@ -66,7 +70,18 @@ const options = ref([
     { name: 'Suspended', value: "suspended" },
 ]);
 
+const compiledLayout = ref(props.compiledLayout ?? '')
+const compiledLayoutSize = computed(() => {
+    return (new Blob([compiledLayout.value]).size / 1024).toFixed(2)
+})
+
+const emailSizeWarningTooltip = computed(() => {
+    return `Your email content is ${compiledLayoutSize.value} KB, which exceeds Gmail’s recommended 102 KB limit`
+})
+
 const onSendPublish = async (data) => {
+    compiledLayout.value = data?.htmlFile
+
     try {
         const response = await axios.post(route(props.publishRoute.name, props.publishRoute.parameters), {
             comment: comment.value,
@@ -75,11 +90,21 @@ const onSendPublish = async (data) => {
         });
 
         if (response && response.status === 200) {
+            // if (response.data.has_unsubscribelink === false) {
+            //     visibleUnsubscribeWarningModal.value = true
+
+            //     notify({
+            //         title: "Warning",
+            //         text: "Saved successfully, but no unsubscribe link was found.",
+            //         type: "warning",
+            //     });
+            // } else {
             notify({
                 title: "Success",
-                text: "Save and publish email successfully",
+                text: "Saved successfully",
                 type: "success",
             });
+            // }
         }
     } catch (error) {
         console.log(error)
@@ -110,13 +135,18 @@ const onSaveTemplate = (data: any) => {
     }
 }
 
-const sendTestToServer = async () => {
+const sendTestToServer = () => {
     isLoading.value = true;
-    try {
-        const response = await axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
-            { ...temporaryData.value, emails: email.value }
-        );
-    } catch (error) {
+    axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
+        { ...temporaryData.value, email: email.value }
+    ).then((response) => {
+        notify({
+            title: trans('Success!'),
+            text: trans('Test email sent successfully'),
+            type: 'success',
+        });
+        email.value = '';
+    }).catch((error) => {
         console.error("Error in sendTest:", error);
         visibleEmailTestModal.value = false
         temporaryData.value = null
@@ -126,14 +156,20 @@ const sendTestToServer = async () => {
             text: errorMessage,
             type: "error",
         });
-    } finally {
+    }).finally(() => {
         isLoading.value = false;
-    }
+        visibleEmailTestModal.value = false
+        temporaryData.value = null
+    });
 };
+
+const closeUnsubscribeWarningModal = () => {
+    visibleUnsubscribeWarningModal.value = false
+}
 
 
 const saveTemplate = async () => {
-    isLoading.value = true;
+    isLoadingTemplate.value = true;
 
     axios
         .post(
@@ -161,7 +197,7 @@ const saveTemplate = async () => {
             visibleSAveEmailTemplateModal.value = false;
             templateName.value = '';
             temporaryData.value = null;
-            isLoading.value = false;
+            isLoadingTemplate.value = false;
         });
 }
 
@@ -258,6 +294,7 @@ const handleTabUpdate = (tabSlug: string) =>
 const component = computed(() => {
     const components: Component = {
         templates: TableEmailTemplate,
+        other_store_templates: TableEmailTemplate,
         previous_mailshots: TablePreviousMailshots,
         other_store_mailshots: TableOtherStoreMailshots,
     };
@@ -275,6 +312,12 @@ watch(
         currentTab.value = val
     }
 )
+
+onMounted(() => {
+  window.addEventListener('popstate', () => {
+    router.reload()
+  });
+})
 </script>
 
 
@@ -283,6 +326,14 @@ watch(
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
+            <div>
+                <div class="text-sm text-gray-600 mr-2 flex items-center gap-2">
+                    Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
+                    <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
+                        class="text-yellow-500 text-lg" v-tooltip="emailSizeWarningTooltip" fixed-width />
+                </div>
+            </div>
+
             <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
                 :icon="faPlus" :disabled="!isBeefreeReady" />
@@ -320,20 +371,12 @@ watch(
         :style="{ width: '25rem' }">
         <div class="pt-4">
             <div class="font-semibold w-24 mb-3">Email</div>
-            <Multiselect v-model="email" mode="tags" :close-on-select="false" :searchable="true" :create-option="true"
-                :options="[]" :showOptions="false" :caret="false">
-                <template #tag="{ option, handleTagRemove, disabled }">
-                    <slot name="tag" :option="option" :handleTagRemove="handleTagRemove" :disabled="disabled">
-                        <div class="px-0.5 py-[3px]">
-                            <Tag :label="option.label" :closeButton="true" :stringToColor="true" size="sm"
-                                @onClose="(event) => handleTagRemove(option, event)" />
-                        </div>
-                    </slot>
-                </template>
-            </Multiselect>
+            <PureInput v-model="email" placeholder="Email" />
             <div class="flex justify-end mt-3 gap-3">
-                <Button :type="'tertiary'" label="Cancel" @click="visibleEmailTestModal = false"></Button>
-                <Button @click="sendTestToServer" :icon="faPaperPlane" label="Send"></Button>
+                <Button :type="'tertiary'" label="Cancel" @click="visibleEmailTestModal = false"
+                    :disabled="isLoading"></Button>
+                <Button @click="sendTestToServer" :icon="faPaperPlane" label="Send" :loading="isLoading"
+                    :disabled="!email"></Button>
             </div>
         </div>
     </Dialog>
@@ -342,13 +385,31 @@ watch(
         :style="{ width: '25rem' }">
         <div class="pt-4">
             <div class="font-semibold mb-3">Template Name</div>
-            <PureInput v-model="templateName" placeholder="Template Name" />
+            <PureInput v-model="templateName" placeholder="Template Name" :disabled="isLoadingTemplate" />
+            <div v-if="isLoadingTemplate" class="text-left text-gray-500 mt-3 text-sm">
+                Please wait a moment. This may take a few seconds while the content is being converted to HTML ...
+            </div>
             <div class="flex justify-end mt-3 gap-3">
-                <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false"></Button>
-                <Button type="save" @click="saveTemplate"></Button>
+                <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false" :disabled="isLoadingTemplate"></Button>
+                <Button type="save" @click="saveTemplate" :loading="isLoadingTemplate" :disabled="isLoadingTemplate"></Button>
             </div>
         </div>
     </Dialog>
 
+    <Dialog v-model:visible="visibleUnsubscribeWarningModal" modal :closable="false" :showHeader="false"
+        :style="{ width: '30rem' }">
+        <div class="pt-4">
+            <div class="text-center mb-4">
+                <div class="text-amber-500 text-4xl mb-3">⚠️</div>
+                <div class="font-semibold text-lg mb-2">Missing Unsubscribe Link</div>
+                <div class="text-gray-600">This mailshot/newsletter doesn't contain an unsubscribe link. Please consider
+                    adding one to ensure compliance with email regulations and provide recipients with a clear option to
+                    unsubscribe.</div>
+            </div>
+            <div class="flex justify-center mt-4">
+                <Button @click="closeUnsubscribeWarningModal" label="OK" type="primary"></Button>
+            </div>
+        </div>
+    </Dialog>
 
 </template>

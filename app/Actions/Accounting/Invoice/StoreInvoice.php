@@ -93,6 +93,7 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'phone', $customer->phone, false);
         data_set($modelData, 'identity_document_type', $customer->identity_document_type, false);
         data_set($modelData, 'identity_document_number', $customer->identity_document_number, false);
+        data_set($modelData, 'identity_document_number_alt', $customer->identity_document_number_alt, false);
 
 
         $taxNumber = $customer->taxNumber;

@@ -1737,8 +1737,8 @@ test('UI show pallet return (dispatched)', function (PalletReturn $palletReturn)
 
 
 test('UI show pallet return with stored items', function () {
-    // dd($this->customer->fulfilmentCustomer->pallets);
-    $response = get(route('grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show', [
+
+    $response = get(route('grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show', [
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->storedItemReturn->slug

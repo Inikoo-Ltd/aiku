@@ -15,6 +15,7 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\UI\Ordering\RetinaOrderTabsEnum;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -26,6 +27,7 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
+use App\Models\Accounting\Invoice;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -171,7 +173,13 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
     public function getOrderBoxStats(Order $order): array
     {
-        $payAmount   = $order->total_amount - $order->payment_amount;
+        $totalToPay = $order->total_amount;
+        /** @var Invoice $refund */
+        foreach (Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->get() as $refund) {
+            $totalToPay += $refund->total_amount;
+        };
+
+        $payAmount   = $totalToPay - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
 
         $estWeight = ($order->estimated_weight ?? 0) / 1000;

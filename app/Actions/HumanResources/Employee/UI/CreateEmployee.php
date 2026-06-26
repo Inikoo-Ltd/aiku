@@ -25,6 +25,7 @@ use Exception;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\HumanResources\Employee;
 
 class CreateEmployee extends OrgAction
 {
@@ -32,6 +33,20 @@ class CreateEmployee extends OrgAction
 
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
+        $jobTitleOptions = Employee::query()
+            ->whereNotNull('job_title')
+            ->where('job_title', '!=', '')
+            ->select('job_title')
+            ->distinct()
+            ->orderBy('job_title')
+            ->pluck('job_title')
+            ->map(fn (string $jobTitle): array => [
+                'label' => $jobTitle,
+                'value' => $jobTitle,
+            ])
+            ->values()
+            ->all();
+
         return Inertia::render(
             'CreateModel',
             [
@@ -70,10 +85,14 @@ class CreateEmployee extends OrgAction
                                     'label' => __('personal email'),
                                     'value' => ''
                                 ],
-                                'phone'         => [
-                                    'type'  => 'input',
-                                    'label' => __('Contact number'),
-                                    'value' => ''
+                                'phone' => [
+                                    'type' => 'phone',
+                                    'label' => __('Phone'),
+                                    'placeholder' => __('Phone number'),
+                                    'value' => '',
+                                    'options' => [
+                                        'defaultCountry' => $this->organisation->country?->code ?? null,
+                                    ],
                                 ],
                                 'contact_address'      => [
                                     'type'    => 'address',
@@ -214,11 +233,12 @@ class CreateEmployee extends OrgAction
                             'title'  => __('job'),
                             'fields' => [
                                 'job_title' => [
-                                    'type'        => 'input',
-                                    'label'       => __('Job title'),
-                                    'placeholder' => __('Job title'),
-                                    'searchable'  => true,
-                                    'value'       => ''
+                                    'type' => 'select_create',
+                                    'label' => __('Job Title'),
+                                    'placeholder' => __('Job Title'),
+                                    'searchable' => true,
+                                    'options' => $jobTitleOptions,
+                                    'value' => '',
                                 ],
                                 'positions' => [
                                     'type'     => 'employeePosition',
@@ -232,6 +252,27 @@ class CreateEmployee extends OrgAction
                                     ],
                                     'value'    => new \stdClass(),
                                     'full'     => true
+                                ],
+                            ]
+                        ],
+                        [
+                            'title'  => __('Contract'),
+                            'fields' => [
+                                'contract_start_date' => [
+                                    'type'  => 'date',
+                                    'label' => __('Contract start date'),
+                                    'value' => '',
+                                ],
+                                'contract_end_date'   => [
+                                    'type'  => 'date',
+                                    'label' => __('Contract end date'),
+                                    'value' => '',
+                                ],
+                                'annual_leave_days'   => [
+                                    'type'      => 'input',
+                                    'inputType' => 'number',
+                                    'label'     => __('Annual leave days'),
+                                    'value'     => '',
                                 ],
                             ]
                         ],

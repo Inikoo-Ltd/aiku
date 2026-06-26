@@ -74,6 +74,11 @@ const convertToFloat2 = (val: any) => {
     return parseFloat(num.toFixed(2))
 }
 
+// Method: is the offer target reached
+const isOfferFulfilled = (offer: any) => {
+    return convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target)
+}
+
 // Collection feature methods
 const isLoadingCollection = ref(false)
 const updateCollection = (value: boolean) => {
@@ -177,44 +182,69 @@ const updateCollection = (value: boolean) => {
                 </div>
             </div>
 
-            <!-- Section: Offer meters -->
+            <!-- Section: Offer meters (free gift, etc)-->
             <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
-                <div v-for="offer in layout?.offer_meters" class="grid grid-cols-2 mb-3 gap-x-4">
-                    <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
-                    >
-                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-base text-ellipsis truncate">
-                            {{ offer.label}}
-                        </div>
-                        <div v-else v-tooltip="offer.label_got ?? offer.label" class="text-base text-green-600 text-ellipsis truncate">
-                            {{ offer.label_got ?? offer.label}}
+                <template v-for="(offer, offerIndex) in layout?.offer_meters" :key="offerIndex">
+                    <div v-if="isInBasket || isOfferFulfilled(offer)" class="grid grid-cols-2 mb-3 gap-x-4">
+                        <!-- Title: is gift -->
+                        <div v-if="offer.is_gift" :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                            class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
+                        >
+                            <FontAwesomeIcon icon='fal fa-gift' class='opacity-60 mr-1' fixed-width aria-hidden='true' />
+                            <span class="font-bold">{{ ctrans('Gift') }}</span>:
+
+                            <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
+                            <!-- <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" /> -->
+
+                            <span class="ml-2 xopacity-70">
+                                {{ offer.label }}
+                            </span>
                         </div>
 
-                        <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
-                        <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" />
-                    </div>
-                    
-                    <!-- Section: meter -->
-                    <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
-                        ? trans(`:xcurrentx of :xtargetx products gross amount`, { xcurrentx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtargetx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
-                        : trans('Bonus secured')" class="w-full flex items-center">
-                        <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
-                            <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
-                                :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
-                                :style="{
-                                    width: convertToFloat2(offer.metadata?.target) ? convertToFloat2(offer.metadata?.current)/convertToFloat2(offer.metadata?.target) * 100 + '%' : '100%'
-                                }"
-                            />
+                        <div v-else :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                            class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
+                        >
+                            <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-base text-ellipsis truncate">
+                                {{ offer.label}}
+                            </div>
+                            <div v-else v-tooltip="offer.label_got ?? offer.label" class="text-base text-green-600 text-ellipsis truncate">
+                                {{ offer.label_got ?? offer.label}}
+                            </div>
+
+                            <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
+                            <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" />
+                        </div>
+                        
+                        <!-- Section: meter -->
+                        <div v-if="isInBasket" v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
+                            ? ctrans(`:xcurrentx / :xtargetx  (Spend at least :xtargetx to get the offer)`, { xcurrentx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtargetx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
+                            : ctrans('Offer activated')" class="w-full flex items-center">
+                            <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
+                                <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
+                                    :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
+                                    :style="{
+                                        width: convertToFloat2(offer.metadata?.target) ? convertToFloat2(offer.metadata?.current)/convertToFloat2(offer.metadata?.target) * 100 + '%' : '100%'
+                                    }"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Section: fulfilled check (when not in basket) -->
+                        <div v-else class="w-full flex items-center justify-end">
+                            <span v-tooltip="ctrans('Offer activated')">
+                                <FontAwesomeIcon icon="fas fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
+                            </span>
                         </div>
                     </div>
-                </div>
+                </template>
             </div>
 
             <!-- Section: Missed Offers -->
             <Transition v-if="layout.app.environment === 'local'" name="slide-to-right">
                 <div v-if="Object.values(missed_offers || {}).length" class="xborder border-red-200 xbg-red-50 rounded-md p-3">
                     <div class="text-xs text-red-500 font-bold mb-0">
-                        {{ trans('You missed ( :numberMissedOffer ) offers', { numberMissedOffer: Object.values(missed_offers || {}).length }) }}
+                        <!-- <span class="bg-red-500 text-white">(local only)</span> -->
+                        {{ ctrans('You missed ( :numberMissedOffer ) offers', { numberMissedOffer: Object.values(missed_offers || {}).length }) }}
                     </div>
                     <div class="flex flex-col gap-y-2">
                         <TransitionGroup name="list" tag="ul" class="!m-0">

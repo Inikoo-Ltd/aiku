@@ -21,7 +21,8 @@ class ProcessInvoiceCategoryTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
-    public string $jobQueue = 'sales';
+
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $invoiceCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -54,7 +55,7 @@ class ProcessInvoiceCategoryTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoices')
+        $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.invoice_category_id', $timeSeries->invoice_category_id)
             ->where('invoices.in_process', false)
             ->where('invoices.date', '>=', $from)

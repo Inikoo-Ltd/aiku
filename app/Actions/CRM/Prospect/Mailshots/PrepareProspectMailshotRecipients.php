@@ -11,11 +11,9 @@ namespace App\Actions\CRM\Prospect\Mailshots;
 use App\Actions\Comms\Mailshot\DeleteMailshotSecondWave;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientsStoredAt;
-use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Models\Comms\Mailshot;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PrepareProspectMailshotRecipients
@@ -40,22 +38,7 @@ class PrepareProspectMailshotRecipients
         }
 
         $queryBuilder = GetProspectMailshotRecipientsQueryBuilder::make()->handle($mailshot);
-        // if (!$queryBuilder) {
-        //     // Fallback to default behavior if no recipe exists
-        //     $queryBuilder = DB::table('prospects')
-        //         ->select('id', 'email')
-        //         ->where('shop_id', $mailshot->shop_id)
-        //         ->where('state', ProspectStateEnum::NO_CONTACTED->value)
-        //         ->whereNull('customer_id')
-        //         ->where('can_contact_by_email', true)
-        //         ->where('dont_contact_me', false)
-        //         ->where('is_valid_email', true)
-        //         ->whereNotNull('email')
-        //         ->whereNull('deleted_at')
-        //         ->orderBy('id', 'asc');
-        // } else {
-        //     $queryBuilder = $queryBuilder->select('id', 'email');
-        // }
+
         $queryBuilder = $queryBuilder->select('id', 'email');
         $queryBuilder->orderBy('prospects.id', 'asc');
 

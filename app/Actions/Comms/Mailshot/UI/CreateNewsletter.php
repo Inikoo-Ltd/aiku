@@ -31,11 +31,25 @@ class CreateNewsletter extends OrgAction
         $fields[] = [
             'title'  => '',
             'fields' => [
+                'name' => [
+                    'type'        => 'input',
+                    'label'       => __('Name'),
+                    'placeholder' => __('Mailshot name'),
+                    'required'    => false,
+                    'value'       => '',
+                ],
                 'subject' => [
                     'type'        => 'input',
                     'label'       => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required'    => true,
+                    'value'       => '',
+                ],
+                'preview_text' => [
+                    'type'        => 'input',
+                    'label'       => __('Preview text'),
+                    'placeholder' => __('Email preview text'),
+                    'required'    => false,
                     'value'       => '',
                 ],
             ]
@@ -58,6 +72,7 @@ class CreateNewsletter extends OrgAction
                 ],
                 'formData'    => [
                     'fullLayout' => true,
+                    'submitLabel' => __('Continue'),
                     'blueprint'  =>
                     [
                         [

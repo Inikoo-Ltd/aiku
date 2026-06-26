@@ -115,7 +115,8 @@ class ShowOrgStock extends OrgAction
 
             ]
         )
-            ->table(IndexTradeUnitsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::TRADE_UNITS->value));
+        ->table(IndexTradeUnitsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::TRADE_UNITS->value))
+        ->table(IndexHistory::make()->tableStructure(prefix: OrgStockTabsEnum::HISTORY->value));
     }
 
 

@@ -35,6 +35,9 @@ class GetIrisBasketTransactions extends IrisAction
             'products.id as product_id',
             'transactions.id as transaction_id',
             'transactions.quantity_ordered',
+            'products.department_id',
+            'products.sub_department_id',
+            'products.family_id',
         ]);
 
         return $query
@@ -45,6 +48,9 @@ class GetIrisBasketTransactions extends IrisAction
                     'transaction_id' => $data->transaction_id,
                     'quantity_ordered' => $data->quantity_ordered,
                     'quantity_ordered_new' => $data->quantity_ordered,
+                    'department_id'         => $data->department_id,
+                    'sub_department_id'     => $data->sub_department_id,
+                    'family_id'             => $data->family_id,
                 ];
             })->toArray();
     }

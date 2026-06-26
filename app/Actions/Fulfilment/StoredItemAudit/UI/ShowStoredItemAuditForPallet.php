@@ -265,7 +265,7 @@ class ShowStoredItemAuditForPallet extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('pallet skus audits')
+                            'label' => __('pallet SKUs audits')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

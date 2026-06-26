@@ -34,15 +34,15 @@ class DeleteProduct extends OrgAction
         $product->productVariants()->delete();
         $product = $this->update($product, $deletedData, ['data']);
         if (!$skipHydrate) {
-            ShopHydrateProducts::dispatch($product->shop);
+            ShopHydrateProducts::dispatch($product->shop)->delay(2);
         }
 
-        GroupHydrateProducts::dispatch($product->group);
-        GroupHydrateAssets::dispatch($product->group);
-        OrganisationHydrateProducts::dispatch($product->organisation);
-        OrganisationHydrateAssets::dispatch($product->organisation);
-        ShopHydrateProducts::dispatch($product->shop);
-        ShopHydrateAssets::dispatch($product->shop);
+        GroupHydrateProducts::dispatch($product->group)->delay(2);
+        GroupHydrateAssets::dispatch($product->group)->delay(2);
+        OrganisationHydrateProducts::dispatch($product->organisation)->delay(2);
+        OrganisationHydrateAssets::dispatch($product->organisation)->delay(2);
+        ShopHydrateProducts::dispatch($product->shop)->delay(2);
+        ShopHydrateAssets::dispatch($product->shop)->delay(2);
         return $product;
     }
 

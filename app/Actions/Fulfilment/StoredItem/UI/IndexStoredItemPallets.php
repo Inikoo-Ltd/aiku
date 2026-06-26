@@ -158,7 +158,7 @@ class IndexStoredItemPallets extends OrgAction
                 ->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+            $table->column(key: 'state_icon', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: false, searchable: true);
 
             //  if ($storedItem) {

@@ -13,9 +13,9 @@ use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Http\Resources\Web\AnnouncementsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Announcement;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
@@ -54,8 +54,8 @@ class IndexAnnouncements extends OrgAction
             'announcements.status',
             'announcements.name',
             'announcements.settings',
-            // 'announcements.image_id',
             'announcements.created_at',
+            'announcements.closed_at',
             'announcements.live_at',
             'websites.name as website_name',
             'websites.slug as website_slug',
@@ -66,7 +66,7 @@ class IndexAnnouncements extends OrgAction
 
         return $queryBuilder
             ->defaultSort('-created_at')
-            ->allowedSorts(['name', 'created_at', 'number_views', 'organisation_name'])
+            ->allowedSorts(['name', 'created_at', 'number_views', 'organisation_name','closed_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -106,10 +106,11 @@ class IndexAnnouncements extends OrgAction
                 ->withExportLinks($exportLinks)
                 ->column(key: 'status', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'name', label: __('Name'), sortable: true)
-                ->column(key: 'publisher_name', label: __('publisher name'), sortable: true)
-                ->column(key: 'live_at', label: __('last live at'), sortable: true, type: 'date_hm')
-                ->column(key: 'show_pages', label: __('show pages'), sortable: true)
-                ->column(key: 'hide_pages', label: __('hide pages'), sortable: true)
+                ->column(key: 'publisher_name', label: __('Publisher name'), sortable: true)
+                ->column(key: 'live_at', label: __('From'), sortable: true, type: 'date_hm')
+                ->column(key: 'closed_at', label: __('Until'), sortable: true, type: 'date_hm')
+                ->column(key: 'show_pages', label: __('Show pages'), sortable: true)
+                ->column(key: 'hide_pages', label: __('Hide pages'), sortable: true)
                 ->defaultSort('-id');
         };
     }
@@ -150,7 +151,7 @@ class IndexAnnouncements extends OrgAction
                 'pageHead'    => [
                     'title'     => __('Announcements'),
                     'container' => $container,
-                    'icon' => [
+                    'icon'      => [
                         'title' => __('Announcements'),
                         'icon'  => 'fal fa-megaphone'
                     ],

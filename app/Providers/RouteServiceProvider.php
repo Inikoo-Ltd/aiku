@@ -51,6 +51,12 @@ class RouteServiceProvider extends ServiceProvider
             ->prefix('webhooks')
             ->group(base_path('routes/grp/webhooks/webhooks.php'));
 
+        Route::middleware('devops')
+            ->domain(config('app.domain'))
+            ->domain($webHooksDomain)
+            ->prefix('devops')
+            ->group(base_path('routes/grp/devops.php'));
+
         Route::middleware('han')
             ->domain(config('app.domain'))
             ->prefix('han')
@@ -81,11 +87,14 @@ class RouteServiceProvider extends ServiceProvider
             ->name('retina.api.')
             ->group(base_path('routes/api/retina/retina_api.php'));
 
-
         Route::middleware('grp-api')
         ->prefix('app/api')
         ->name('grp.api.')
         ->group(base_path('routes/api/grp/grp_api.php'));
+
+        Route::middleware('analytics')
+            ->name('analytics.')
+            ->group(base_path('routes/analytics/analytics.php'));
 
         Route::middleware('iris')
             ->name('iris.')

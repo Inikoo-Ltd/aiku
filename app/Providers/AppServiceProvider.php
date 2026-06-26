@@ -9,15 +9,22 @@
 
 namespace App\Providers;
 
+use App\Services\GeocoderService;
+use App\Services\Translation;
 use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
 use Gnikyt\BasicShopifyAPI\Options;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Facades\Actions;
-use App\Services\GeocoderService;
+use Illuminate\Support\Facades\Event;
+use Laravel\Nightwatch\Records\QueuedJob;
+use Laravel\Nightwatch\Records\OutgoingRequest;
+use Vemcogroup\Translation\Translation as BaseTranslation;
 
 /**
  * @method forPage(mixed $page, mixed $perPage)
@@ -33,6 +40,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(GeocoderService::class, function ($app) {
             return new GeocoderService();
+        });
+
+        $this->app->singleton(BaseTranslation::class, function () {
+            return new Translation();
         });
 
         if ($this->app->environment('local')) {
@@ -62,6 +73,29 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Event::listen(function (CommandStarting $event) {
+            if (in_array($event->command, [
+                'fetch:orders',
+                'fetch:credits',
+                'fetch:stock_movements',
+                'fetch:dispatched_emails',
+                'fetch:stock_locations',
+                'fetch:email_tracking_events',
+                'clone:aurora_vol_gr_offers',
+                'inertia:start-ssr --runtime bun'
+            ])) {
+                Nightwatch::dontSample();
+            }
+        });
+
+        Nightwatch::rejectQueuedJobs(function (QueuedJob $job) {
+            return $job->queue == 'aurora';
+        });
+
+        Nightwatch::rejectOutgoingRequests(function (OutgoingRequest $request) {
+            return str_contains($request->url, '10.0.0.');
+        });
+
         ParallelTesting::setUpTestCase(function ($token, $testCase) {
             $databaseName = env('DB_DATABASE_TEST', 'aiku_test')."_".$token;
 
@@ -72,6 +106,10 @@ class AppServiceProvider extends ServiceProvider
                 DB::connection('aiku');
                 DB::purge('aiku');
                 DB::reconnect('aiku');
+                config(['database.connections.aiku_no_sticky.database' => $databaseName]);
+                DB::connection('aiku_no_sticky');
+                DB::purge('aiku_no_sticky');
+                DB::reconnect('aiku_no_sticky');
             }
         });
 
@@ -296,7 +334,7 @@ class AppServiceProvider extends ServiceProvider
                 'WebBlock'                         => 'App\Models\Web\WebBlock',
                 'WebBlockType'                     => 'App\Models\Web\WebBlockType',
                 'Banner'                           => 'App\Models\Web\Banner',
-                'Announcement'                     => 'App\Models\Announcement',
+                'Announcement'                     => 'App\Models\Web\Announcement',
 
                 //Production
                 'Production'                       => 'App\Models\Production\Production',

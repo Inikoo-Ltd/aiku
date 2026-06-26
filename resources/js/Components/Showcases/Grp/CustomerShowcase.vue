@@ -8,7 +8,7 @@
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faLink } from "@far"
+import { faIdCard as farIdCard, faLink } from "@far"
 import {
     faSync,
     faCalendarAlt,
@@ -32,17 +32,23 @@ import {
     faTrafficLight,
     faTruck,
     faGlobeEurope,
-    faIslandTropical
+    faIslandTropical,
+    faGift,
+    faBadgePercent,
+    faIdCard,
+    faHistory,
+    faPaperclip,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref, computed } from "vue"
+import axios from "axios"
 import Modal from "@/Components/Utils/Modal.vue"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import ButtonPrimeVue from "primevue/button"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import CountUp from "vue-countup-v3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -60,7 +66,7 @@ import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimelin
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { PDRNotes } from "@/types/Pallet"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent, faHistory, faPaperclip)
 
 interface Customer {
     slug: string
@@ -145,6 +151,7 @@ const props = defineProps<{
         tags_selected_id: number[]
         internal_note: PDRNotes
         update_route: routeType
+        store_note_route?: routeType
         orders_route: routeType | null
         last_order: {
             reference: string
@@ -152,11 +159,26 @@ const props = defineProps<{
             state: string
             submitted_at: string | null
         } | null
+        offers: Array<{
+            id: number
+            code: string
+            name: string | null
+            label: string
+            state_value: string
+            is_active: boolean
+            start_at: string | null
+            end_at: string | null
+            type: string
+            type_icon?: { icon: string, tooltip: string, class: string }
+        }>
     },
     gr_data: {
         gr_label: string
         meter: number[]
         customer_is_gr: boolean
+        shop_has_gr?: boolean
+        is_gift_opted_out?: boolean
+        route_gift_opt_out?: routeType
     }
     tab: string
     handleTabUpdate?: Function
@@ -296,6 +318,116 @@ function tagColorClass(scope?: string) {
             return "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
     }
 }
+
+function getAccentLabel(label: string): string {
+    if (!label) return ''
+    if (label.startsWith('[')) {
+        const match = label.match(/\[([^\]]+)\]/)
+        return match ? match[1] : label
+    }
+    return label.split(' ').slice(0, 2).join(' ')
+}
+
+const isLoadingGiftOptOut = ref(false)
+const localGiftOptedOut = ref(props.gr_data?.is_gift_opted_out ?? false)
+
+const onToggleGiftOptOut = async (optOut: boolean) => {
+    if (!props.gr_data?.route_gift_opt_out) return
+
+    try {
+        isLoadingGiftOptOut.value = true
+
+        await axios.patch(
+            route(props.gr_data.route_gift_opt_out.name, props.gr_data.route_gift_opt_out.parameters),
+            { is_gift_opted_out: optOut }
+        )
+
+        localGiftOptedOut.value = optOut
+
+        notify({
+            title: trans("Updated"),
+            text: optOut ? trans("Customer will not receive a free gift") : trans("Customer is now eligible for a free gift"),
+            type: 'success'
+        })
+
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        isLoadingGiftOptOut.value = false
+    }
+}
+
+// Section: Add History Note
+const isModalNote = ref(false)
+const noteText = ref("")
+const noteImages = ref<File[]>([])
+const noteImagePreviews = ref<string[]>([])
+const isSubmittingNote = ref(false)
+
+const onSelectNoteImages = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    if (!target.files) return
+
+    Array.from(target.files).forEach((file) => {
+        noteImages.value.push(file)
+        noteImagePreviews.value.push(URL.createObjectURL(file))
+    })
+
+    target.value = ""
+}
+
+const removeNoteImage = (index: number) => {
+    URL.revokeObjectURL(noteImagePreviews.value[index])
+    noteImages.value.splice(index, 1)
+    noteImagePreviews.value.splice(index, 1)
+}
+
+const resetNoteForm = () => {
+    noteImagePreviews.value.forEach((url) => URL.revokeObjectURL(url))
+    noteText.value = ""
+    noteImages.value = []
+    noteImagePreviews.value = []
+}
+
+const submitNote = async () => {
+    if (!props.data.store_note_route || !noteText.value.trim()) return
+
+    try {
+        isSubmittingNote.value = true
+
+        const formData = new FormData()
+        formData.append("note", noteText.value)
+        noteImages.value.forEach((file) => formData.append("images[]", file))
+
+        await axios.post(
+            route(props.data.store_note_route.name, props.data.store_note_route.parameters),
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } }
+        )
+
+        notify({
+            title: trans("Success"),
+            text: trans("Note added to the timeline"),
+            type: "success"
+        })
+
+        resetNoteForm()
+        isModalNote.value = false
+        router.reload({ only: ["timeline"] })
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error?.response?.data?.message || error.message || trans("Please try again or contact administrator"),
+            type: "error"
+        })
+    } finally {
+        isSubmittingNote.value = false
+    }
+}
 </script>
 
 <template>
@@ -360,6 +492,14 @@ function tagColorClass(scope?: string) {
             <FontAwesomeIcon icon="fal fa-envelope" class="text-blue-500 text-xs" />
             {{ trans("Send Email") }}
         </a>
+        <button
+            v-if="data.store_note_route"
+            @click="() => (isModalNote = true)"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+            <FontAwesomeIcon icon="fal fa-history" class="text-rose-500 text-xs" />
+            {{ trans("Add History Note") }}
+        </button>
     </div>
 
     <!-- 3-Column Hub Layout -->
@@ -476,7 +616,7 @@ function tagColorClass(scope?: string) {
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                             </button>
                         </div>
-                        
+
                         <!-- Field: Website -->
                         <div v-if="data?.customer?.contact_website" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Website')" class="flex-none">
@@ -499,7 +639,7 @@ function tagColorClass(scope?: string) {
                                 <FontAwesomeIcon icon="fal fa-globe-europe" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                {{ data?.customer?.eori }} 
+                                {{ data?.customer?.eori }}
                                 <span class="text-xs text-gray-400">EORI</span>
                             </dd>
                         </div>
@@ -510,7 +650,7 @@ function tagColorClass(scope?: string) {
                                 <FontAwesomeIcon icon="fal fa-island-tropical" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                {{ data?.customer?.ukims }} 
+                                {{ data?.customer?.ukims }}
                                 <span class="text-xs text-gray-400">UKIMS</span>
                             </dd>
                         </div>
@@ -564,6 +704,49 @@ function tagColorClass(scope?: string) {
                                 <span v-if="data.last_order.submitted_at" class="text-xs text-gray-400 truncate">
                                     {{ useFormatTime(data.last_order.submitted_at, { formatTime: "short-datetime" }) }}
                                 </span>
+                            </dd>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Field: Gift opt-out (shown when shop has GR gifts) -->
+                    <div class="w-full flex gap-y-2 py-2 border-t">
+                        <div v-if="gr_data.shop_has_gr && gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="localGiftOptedOut ? ctrans('Customer has opted out of eligible gifts and will not receive any') + '.' : ctrans('Customers will receive a gift if they are eligible and select the item. Customer can opted-out by themself in the basket page') + '.'" class="flex-none">
+                                <FontAwesomeIcon icon="fal fa-gift" :class="localGiftOptedOut ? 'text-gray-300' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-sm flex items-center gap-x-2">
+                                <span :class="localGiftOptedOut ? 'text-gray-400 line-through' : 'text-green-500'">
+                                    {{ trans("Free gift") }}
+                                    <!-- <FontAwesomeIcon icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" /> -->
+                                </span>
+                                <span v-if="localGiftOptedOut" class="text-xs text-red-500 font-medium">
+                                    {{ trans("Opted out") }}
+                                </span>
+                                <button
+                                    v-if="isLoadingGiftOptOut"
+                                    class="text-xs text-gray-400 cursor-not-allowed"
+                                    disabled
+                                >
+                                    <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+                                </button>
+                                <button
+                                    v-else-if="localGiftOptedOut"
+                                    @click="onToggleGiftOptOut(false)"
+                                    class="text-xs text-blue-500 underline hover:text-blue-700"
+                                    v-tooltip="trans('Allow customer to receive free gift')"
+                                >
+                                    {{ trans("Re-enable") }}
+                                </button>
+                                <button
+                                    v-else
+                                    @click="onToggleGiftOptOut(true)"
+                                    class="text-xs text-gray-400 underline hover:text-red-500"
+                                    v-tooltip="trans('Opt out customer from receiving free gift')"
+                                >
+                                    {{ trans("Opt out") }}
+                                </button>
                             </dd>
                         </div>
                     </div>
@@ -625,6 +808,119 @@ function tagColorClass(scope?: string) {
                         </div>
                     </div>
                 </dd>
+            </div>
+
+            <!-- Field: IDN (Identity Document Number) -->
+            <div v-if="data?.customer.identity_document_number"
+                 class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
+                <dt v-tooltip="data.customer.identity_document_number?.label" class="flex-none">
+                    <span class="sr-only">{{ data.customer.identity_document_number?.label }}</span>
+                    <FontAwesomeIcon :icon="farIdCard" class="text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
+                <dd class="w-full text-gray-500">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-x-2">
+                            <div class="text-gray-900 font-medium">{{ data.customer.identity_document_number?.number }}</div>
+                            <button @click="copyToClipboard(data.customer.identity_document_number?.number, data.customer.identity_document_number?.label)"
+                                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                                    v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
+                            <span class="text-xs text-gray-400 ml-1">{{ data.customer.identity_document_number?.label }}</span>
+                        </div>
+                    </div>
+                </dd>
+            </div>
+
+            <!-- Field: IDN (Identity Document Number Alt) -->
+            <div v-if="data?.customer.identity_document_number_alt"
+                 class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
+                <dt v-tooltip="data.customer.identity_document_number_alt?.label" class="flex-none">
+                    <span class="sr-only">{{ data.customer.identity_document_number_alt?.label }}</span>
+                    <FontAwesomeIcon :icon="faIdCard" class="text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
+                <dd class="w-full text-gray-500">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-x-2">
+                            <div class="text-gray-900 font-medium">{{ data.customer.identity_document_number_alt?.number }}</div>
+                            <button @click="copyToClipboard(data.customer.identity_document_number_alt?.number, data.customer.identity_document_number_alt?.label)"
+                                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                                    v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
+                            <span class="text-xs text-gray-400 ml-1">{{ data.customer.identity_document_number_alt?.label }}</span>
+                        </div>
+                    </div>
+                </dd>
+            </div>
+
+            <!-- Offers Section -->
+            <div v-if="data.offers?.length" class="mt-6">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                        <FontAwesomeIcon icon="fal fa-badge-percent" class="text-indigo-400" />
+                        {{ trans("Offers") }}
+                    </span>
+                    <button
+                        v-if="handleTabUpdate"
+                        @click="() => handleTabUpdate('offers')"
+                        class="text-xs text-indigo-500 hover:text-indigo-700 transition-colors"
+                    >
+                        {{ trans("View all") }} →
+                    </button>
+                </div>
+                <div class="space-y-2">
+                    <div
+                        v-for="offer in data.offers"
+                        :key="offer.id"
+                        class="flex items-stretch overflow-hidden rounded-lg border bg-white shadow-sm"
+                        :class="offer.is_active ? 'border-indigo-200' : 'border-gray-200 opacity-80'"
+                    >
+                        <!-- Left: colored accent band -->
+                        <div
+                            class="w-14 flex-shrink-0 flex flex-col items-center justify-center gap-1.5 py-3 px-1.5"
+                            :class="offer.is_active ? 'bg-gradient-to-b from-indigo-500 to-violet-600' : 'bg-gray-400'"
+                        >
+                            <FontAwesomeIcon
+                                :icon="offer.type_icon?.icon || 'fal fa-badge-percent'"
+                                class="text-white text-sm"
+                            />
+                            <span class="text-white font-bold text-center leading-tight" style="font-size: 9px;">
+                                {{ getAccentLabel(offer.label) }}
+                            </span>
+                        </div>
+                        <!-- Perforated divider -->
+                        <div class="relative flex-shrink-0 w-3.5">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-gray-100 border border-gray-200 z-10"></div>
+                            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3 h-3 rounded-full bg-gray-100 border border-gray-200 z-10"></div>
+                            <div class="absolute inset-y-3 left-1/2 border-l border-dashed border-gray-300"></div>
+                        </div>
+                        <!-- Right: offer details -->
+                        <div class="flex-1 px-2.5 py-2.5 min-w-0">
+                            <div class="flex items-start justify-between gap-1">
+                                <span class="text-xs font-semibold text-gray-800 leading-tight truncate">{{ offer.name || offer.code }}</span>
+                                <span
+                                    class="flex-shrink-0 px-1.5 py-0.5 rounded-full font-medium"
+                                    style="font-size: 10px;"
+                                    :class="offer.is_active ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'"
+                                >
+                                    {{ offer.is_active ? trans('Active') : offer.state_value }}
+                                </span>
+                            </div>
+                            <div class="text-xs text-indigo-500 font-medium mt-0.5 truncate">{{ offer.label }}</div>
+                            <div class="mt-1.5 flex items-center gap-1.5" style="font-size: 10px; color: #9ca3af;">
+                                <span class="font-mono">{{ offer.code }}</span>
+                                <template v-if="offer.start_at || offer.end_at">
+                                    <span>·</span>
+                                    <span>
+                                        {{ offer.start_at ? useFormatTime(offer.start_at, { formatTime: 'dd MMM yy' }) : '' }}
+                                        {{ offer.end_at ? ' → ' + useFormatTime(offer.end_at, { formatTime: 'dd MMM yy' }) : '' }}
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -815,6 +1111,54 @@ function tagColorClass(scope?: string) {
     </Modal>
 
     <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />
+
+    <!-- Modal: Add History Note -->
+    <Modal v-if="data.store_note_route" :isOpen="isModalNote" @onClose="() => (isModalNote = false)" width="max-w-lg w-full">
+        <div class="p-1">
+            <h3 class="text-base font-semibold text-gray-800 mb-1">{{ trans("Add History Note") }}</h3>
+            <p class="text-xs text-gray-500 mb-3">{{ trans("Record what happened when communicating with this customer. It will appear in the timeline.") }}</p>
+
+            <textarea
+                v-model="noteText"
+                rows="4"
+                :placeholder="trans('Write your note...')"
+                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+            />
+
+            <!-- Image picker -->
+            <div class="mt-3">
+                <label class="inline-flex items-center gap-2 cursor-pointer text-sm text-indigo-600 hover:text-indigo-700">
+                    <FontAwesomeIcon icon="fal fa-paperclip" />
+                    {{ trans("Attach images") }}
+                    <input type="file" accept="image/*" multiple class="hidden" @change="onSelectNoteImages" />
+                </label>
+
+                <div v-if="noteImagePreviews.length" class="mt-2 flex flex-wrap gap-2">
+                    <div v-for="(preview, index) in noteImagePreviews" :key="index" class="relative">
+                        <img :src="preview" class="h-16 w-16 rounded object-cover ring-1 ring-gray-200" />
+                        <button
+                            type="button"
+                            @click="() => removeNoteImage(index)"
+                            v-tooltip="trans('Remove')"
+                            class="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600"
+                        >
+                            <FontAwesomeIcon :icon="faTimes" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 flex justify-end gap-2">
+                <ButtonPrimeVue severity="secondary" size="small" variant="outlined" @click="() => (isModalNote = false)">
+                    {{ trans("Cancel") }}
+                </ButtonPrimeVue>
+                <ButtonPrimeVue severity="info" size="small" :disabled="isSubmittingNote || !noteText.trim()" @click="submitNote">
+                    <FontAwesomeIcon v-if="isSubmittingNote" icon="fad fa-spinner-third" class="animate-spin mr-1" />
+                    {{ trans("Save Note") }}
+                </ButtonPrimeVue>
+            </div>
+        </div>
+    </Modal>
 
 </template>
 

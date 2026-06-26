@@ -36,7 +36,8 @@ trait WithSendBulkEmails
         array $additionalData = [],
         ?string $senderName = null,
         bool $isTest = false,
-        bool $debug = false
+        bool $debug = false,
+        ?string $previewText = null
     ): DispatchedEmail {
         $html = $emailHtmlBody;
         $html = $this->processStyles($html);
@@ -63,7 +64,7 @@ trait WithSendBulkEmails
             return $mergeTagCache[$fullTag];
         };
 
-        // 'u' flag ensures multi-byte UTF-8 characters are not corrupted
+        // 'u' flag ensures multibyte UTF-8 characters are not corrupted
         $html = preg_replace_callback('/{{(.*?)}}/u', $callback, $html);
         $html = preg_replace_callback('/\[(.*?)]/u', $callback, $html);
 
@@ -72,8 +73,15 @@ trait WithSendBulkEmails
             $html = str_replace(array_keys($msoComments), array_values($msoComments), $html);
         }
 
-        // 'u' flag ensures multi-byte UTF-8 characters are not corrupted
+        // 'u' flag ensures multibyte UTF-8 characters are not corrupted
         $html = preg_replace('/\R+/u', '', $html);
+
+        if ($previewText) {
+            $html = $this->injectPreviewText($html, $previewText);
+        }
+
+        // Inject source parameter to links if encrypted_id exists
+        // $html = $this->injectSourceParameterLinks($html, $dispatchedEmail);
 
         return SendSesEmail::run(
             subject: $subject,
@@ -97,18 +105,19 @@ trait WithSendBulkEmails
                 return Arr::get($additionalData, 'customer_name');
             }
 
+            // TODO: Remove this logic to avoid sending email slow
             if ($webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id)) {
-                $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)?->customer?->name ?? '';
+                $customerName = WebUser::on('aiku_no_sticky')->find($webUserHasDispatchedEmail->web_user_id)?->customer?->name ?? '';
             } elseif ($userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id)) {
-                $customerName = Arr::get($additionalData, 'customer_name') ?? User::find($userHasDispatchedEmail->user_id)?->contact_name ?? '';
+                $customerName = Arr::get($additionalData, 'customer_name') ?? User::on('aiku_no_sticky')->find($userHasDispatchedEmail->user_id)?->contact_name ?? '';
             } elseif ($customerHasDispatchedEmail = $this->getCustomerDispatch($dispatchedEmail->id)) {
-                $customerName = Customer::find($customerHasDispatchedEmail->customer_id)?->name ?? '';
+                $customerName = Customer::on('aiku_no_sticky')->find($customerHasDispatchedEmail->customer_id)?->name ?? '';
             } elseif ($externalSubscriberHasDispatchedEmail = $this->getExternalSubscriberDispatch($dispatchedEmail->id)) {
-                $customerName = ExternalSubscriberEmailRecipient::find($externalSubscriberHasDispatchedEmail->external_subscriber_email_recipient_id)?->name ?? '';
+                $customerName = ExternalSubscriberEmailRecipient::on('aiku_no_sticky')->find($externalSubscriberHasDispatchedEmail->external_subscriber_email_recipient_id)?->name ?? '';
             } elseif ($testEmailRecipientHasDispatchedEmail = $this->getTestEmailRecipientDispatch($dispatchedEmail->id)) {
-                $customerName = TestEmailRecipient::find($testEmailRecipientHasDispatchedEmail->test_email_recipient_id)?->name ?? '';
+                $customerName = TestEmailRecipient::on('aiku_no_sticky')->find($testEmailRecipientHasDispatchedEmail->test_email_recipient_id)?->name ?? '';
             } elseif ($chatEmailRecipientHasDispatchedEmail = $this->getChatEmailRecipientDispatch($dispatchedEmail->id)) {
-                $customerName = ChatEmailRecipient::find($chatEmailRecipientHasDispatchedEmail->chat_email_recipient_id)?->name ?? '';
+                $customerName = ChatEmailRecipient::on('aiku_no_sticky')->find($chatEmailRecipientHasDispatchedEmail->chat_email_recipient_id)?->name ?? '';
             } else {
                 $customerName = Arr::get($additionalData, 'customer_name') ?? 'Customer name undefined';
             }
@@ -179,6 +188,25 @@ trait WithSendBulkEmails
             'platform' => Arr::get($additionalData, 'platform'),
             'balance' => Arr::get($additionalData, 'balance'),
             'products' => Arr::get($additionalData, 'products'),
+
+            'offer-code' => Arr::get($additionalData, 'offer_code'),
+            'offer-name' => Arr::get($additionalData, 'offer_name'),
+            'offer-link' => Arr::get($additionalData, 'offer_link'),
+            'campaign-link' => Arr::get($additionalData, 'campaign_link'),
+            'campaign-name' => Arr::get($additionalData, 'campaign_name'),
+            'created-date' => Arr::get($additionalData, 'created_date'),
+            'offer-state' => Arr::get($additionalData, 'offer_state'),
+            'offer-type' => Arr::get($additionalData, 'offer_type'),
+            'duration' => Arr::get($additionalData, 'duration'),
+            'start-date' => Arr::get($additionalData, 'start_date'),
+            'end-date' => Arr::get($additionalData, 'end_date'),
+            'discount-type' => Arr::get($additionalData, 'discount_type'),
+            'blade-discount-details' => Arr::get($additionalData, 'blade_discount_details'),
+            'trigger-type' => Arr::get($additionalData, 'trigger_type'),
+            'voucher' => Arr::get($additionalData, 'voucher'),
+            'customer-id' => Arr::get($additionalData, 'customer_id'),
+
+
             'low-stock-items-in-basket' => Arr::get($additionalData, 'low_stock_items_in_basket'),
             'payment-reason' => Arr::get($additionalData, 'payment_reason'),
             'payment-note' => Arr::get($additionalData, 'payment_note'),
@@ -193,6 +221,11 @@ trait WithSendBulkEmails
             'retina-login-link' => Arr::get($additionalData, 'retina_login_link'),
             'web-user-contact-name' => Arr::get($additionalData, 'web_user_contact_name'),
 
+            'prospect-name' => Arr::get($additionalData, 'prospect_name'),
+            'prospect-email' => Arr::get($additionalData, 'prospect_email'),
+            'prospect-phone' => Arr::get($additionalData, 'prospect_phone'),
+            'prospect-company-name' => Arr::get($additionalData, 'prospect_company_name'),
+
             default => $originalPlaceholder,
         };
     }
@@ -204,11 +237,11 @@ trait WithSendBulkEmails
         }
 
         if ($webUserDispatch = $this->getWebUserDispatch($dispatchedEmailId)) {
-            return WebUser::find($webUserDispatch->web_user_id)?->username ?? '';
+            return WebUser::on('aiku_no_sticky')->find($webUserDispatch->web_user_id)?->username ?? '';
         }
 
         if ($userDispatch = $this->getUserDispatch($dispatchedEmailId)) {
-            return User::find($userDispatch->user_id)?->username ?? '';
+            return User::on('aiku_no_sticky')->find($userDispatch->user_id)?->username ?? '';
         }
 
         return '';
@@ -227,43 +260,122 @@ trait WithSendBulkEmails
 
     private function getWebUserDispatch(int $dispatchedEmailId): ?object
     {
-        return DB::table('web_user_has_dispatched_emails')
+        return DB::connection('aiku_no_sticky')->table('web_user_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
     }
 
     private function getUserDispatch(int $dispatchedEmailId): ?object
     {
-        return DB::table('user_has_dispatched_emails')
+        return DB::connection('aiku_no_sticky')->table('user_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
     }
 
     private function getCustomerDispatch(int $dispatchedEmailId): ?object
     {
-        return DB::table('customer_has_dispatched_emails')
+        return DB::connection('aiku_no_sticky')->table('customer_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
     }
 
     private function getExternalSubscriberDispatch(int $dispatchedEmailId): ?object
     {
-        return DB::table('external_subscriber_email_recipient_has_dispatched_emails')
+        return DB::connection('aiku_no_sticky')->table('external_subscriber_email_recipient_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
     }
 
     private function getTestEmailRecipientDispatch(int $dispatchedEmailId): ?object
     {
-        return DB::table('test_email_recipient_has_dispatched_emails')
+        return DB::connection('aiku_no_sticky')->table('test_email_recipient_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
     }
 
     private function getChatEmailRecipientDispatch(int $dispatchedEmailId): ?object
     {
-        return DB::table('chat_email_recipient_has_dispatched_emails')
+        return DB::connection('aiku_no_sticky')->table('chat_email_recipient_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
+    }
+
+    // TODO: Re-enable this function when we need to inject source parameter to links
+    // Purpose: to track which email campaign a user clicked on
+    // Current issue: this function will be increase the email size significantly because we use encrypted_id in the link
+    // Solution: find a way to minimize the email size or use a different approach
+    private function injectSourceParameterLinks(string $html, DispatchedEmail $dispatchedEmail): string
+    {
+        // Check if encrypted_id exists in dispatchedEmail->data
+        if (!isset($dispatchedEmail->data['encrypted_id'])) {
+            return $html;
+        }
+
+        $encryptedId = $dispatchedEmail->data['encrypted_id'];
+
+        // Remove MSO conditional comments temporarily to avoid processing them
+        $msoComments = [];
+        $html = preg_replace_callback('/<!--\[if mso\]>.*?<!\[endif\]-->/su', function ($matches) use (&$msoComments) {
+            $placeholder = '___MSO_COMMENT_' . count($msoComments) . '___';
+            $msoComments[$placeholder] = $matches[0];
+            return $placeholder;
+        }, $html);
+
+        // Process all <a href="..."> tags
+        $html = preg_replace_callback('/<a\s+([^>]*?)href\s*=\s*["\']([^"\']+)["\']([^>]*?)>/i', function ($matches) use ($encryptedId) {
+            $beforeHref = $matches[1]; // attributes before href
+            $url = $matches[2];        // the URL
+            $afterHref = $matches[3];   // attributes after href
+
+            // Skip if URL is empty or just a hash
+            if (empty($url) || $url === '#') {
+                return $matches[0];
+            }
+
+            // Skip if URL already has source parameter
+            if (strpos($url, 'source=') !== false) {
+                return $matches[0];
+            }
+
+            // Skip URLs containing '/unsubscribe/'
+            if (strpos($url, '/unsubscribe/') !== false) {
+                return $matches[0];
+            }
+
+            // Skip mailto:, tel:, and other non-http protocols
+            if (preg_match('/^(mailto|tel|sms|ftp|javascript|data):/i', $url)) {
+                return $matches[0];
+            }
+
+            // Add source parameter
+            $separator = (strpos($url, '?') !== false) ? '&' : '?';
+            $newUrl = $url . $separator . 'source=' . urlencode($encryptedId);
+
+            return '<a ' . $beforeHref . 'href="' . $newUrl . '"' . $afterHref . '>';
+        }, $html);
+
+        // Restore MSO conditional comments
+        if ($msoComments) {
+            $html = str_replace(array_keys($msoComments), array_values($msoComments), $html);
+        }
+
+        return $html;
+    }
+
+    private function injectPreviewText(string $htmlBody, string $previewText): string
+    {
+        $padding = str_repeat('&zwnj;&nbsp;', 140);
+
+        $previewDiv = '<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">'
+            . htmlspecialchars($previewText, ENT_QUOTES, 'UTF-8')
+            . $padding
+            . '</div>';
+
+        // Inject right after <body> tag if present, otherwise prepend
+        if (stripos($htmlBody, '<body') !== false) {
+            return preg_replace('/(<body[^>]*>)/i', '$1' . $previewDiv, $htmlBody, 1);
+        }
+
+        return $previewDiv . $htmlBody;
     }
 }

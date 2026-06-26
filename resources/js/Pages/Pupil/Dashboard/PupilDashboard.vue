@@ -1,16 +1,8 @@
 <script setup lang='ts'>
 import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
-import InputIcon from 'primevue/inputicon'
-import InputText from 'primevue/inputtext'
 import SelectButton from 'primevue/selectbutton'
-import DataView from 'primevue/dataview'
-import IconField from 'primevue/iconfield'
-import Rating from 'primevue/rating'
 import { FilterMatchMode } from '@primevue/core/api'
 import { onMounted, ref } from 'vue'
-import { useLocaleStore } from '@/Stores/locale'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import axios from 'axios'
@@ -20,11 +12,10 @@ import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSearch, faThLarge, faListUl, faStar as falStar } from '@fal'
 import { faStar } from '@fas'
-import Select from 'primevue/select'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Image from '@/Components/Image.vue'
 import { notify } from '@kyvg/vue3-notification'
 import Modal from '@/Components/Utils/Modal.vue'
+import error from "@iris/Pages/Errors/Error.vue"
 library.add(faSearch, faThLarge, faListUl, faStar, falStar)
 
 declare global {
@@ -46,9 +37,6 @@ const props = defineProps<{
     // token_request: string
 }>()
 
-console.log('token', props)
-// const xxToken = Object.keys(props.token)[1].match(/login_pupil_([a-f0-9]+)/)?.[1]
-const locale = useLocaleStore()
 
 const isModalGetStarted = ref(props.showIntro)
 
@@ -56,21 +44,7 @@ const filters = ref({
     'global': {value: null, matchMode: FilterMatchMode.CONTAINS},
 })
 
-const getStatusLabel = (status: string) => {
-    switch (status) {
-        case 'INSTOCK':
-            return 'success';
 
-        case 'LOWSTOCK':
-            return 'warn';
-
-        case 'OUTOFSTOCK':
-            return 'danger';
-
-        default:
-            return null;
-    }
-}
 
 // Fetch: product
 const realProducts = ref([])
@@ -107,13 +81,10 @@ onMounted(async () => {
 
 })
 
-
 // Selected product
 const isLoadingSubmit = ref(false)
 const selectedProducts = ref([])
-const isSelected = (id: number) => {
-    return selectedProducts.value.some(item => item.id === id);
-}
+
 const onSubmitProduct = () => {
     router.post(
         route(props.routes.store_product.name, props.routes.store_product.parameters),
@@ -167,47 +138,9 @@ const optionsView = [
     }
 ]
 
-
-const toggleItem = (id) => {
-    const index = selectedProducts.value.findIndex(item => item.id === id);
-    if (index !== -1) {
-        // If item is found, remove it
-        selectedProducts.value.splice(index, 1)
-    } else {
-        // If item is not found, add it
-        selectedProducts.value.push({id: id})
-    }
-}
-
 const onChangeDisplay = (type: string) => {
     if (productView.value == type) return
     productView.value = type
-}
-
-// View: Grid
-const sortKey = ref()
-const sortOrder = ref()
-const sortField = ref()
-const gridSortOptions = ref([
-    {label: 'Price High to Low', value: '!price'},
-    {label: 'Price Low to High', value: 'price'},
-    {label: 'Alphabetically a-z', value: 'name'},
-    {label: 'Alphabetically z-a', value: '!name'},
-])
-const onSortChange = (event) => {
-    const value = event.value.value;
-    const sortValue = event.value;
-
-    if (value.indexOf('!') === 0) {
-        sortOrder.value = -1;
-        sortField.value = value.substring(1, value.length);
-        sortKey.value = sortValue;
-    }
-    else {
-        sortOrder.value = 1;
-        sortField.value = value;
-        sortKey.value = sortValue;
-    }
 }
 
 
@@ -232,7 +165,6 @@ const onClickGetStarted = () => {
 <template>
     <div class="p-8">
     <!-- <pre>{{ props }}</pre> -->
-        <!-- <h1>Hello from Vue Dashboard!</h1> -->
         <h4 class="font-bold text-2xl mb-3">Here you can add our Aw-Dropship products automatically to your shop 😲</h4>
 
         <!-- Select: Grid and List -->

@@ -39,7 +39,7 @@ class HydrateOrgStock
     {
         OrgStockHydrateCurrentBatchCodes::run($orgStock);
         OrgStockHydrateLocations::run($orgStock);
-        OrgStockHydrateQuantityInLocations::run($orgStock);
+        OrgStockHydrateQuantityInLocations::run($orgStock->id);
         OrgStockHydrateValueInLocations::run($orgStock);
         OrgStockHydrateMovements::run($orgStock);
         OrgStockHydrateProductsAvailableQuantity::run($orgStock);

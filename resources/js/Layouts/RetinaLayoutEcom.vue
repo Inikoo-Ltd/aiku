@@ -4,7 +4,6 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import { inject, onMounted, provide, ref } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { useColorTheme } from "@/Composables/useStockList"
-import { isArray } from 'lodash-es'
 import { generateNavigationName } from '@/Composables/useConvertString'
 
 import IrisHeader from "@/Layouts/Iris/Header.vue"
@@ -126,11 +125,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 			</main>
 		</div>
 
-		<IrisFooter
-			v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
-			:data="layout.iris.footer"
-			:colorThemed="irisTheme"
-		/>
+		<IrisFooter :colorThemed="irisTheme" />
 		
 		<!-- Section: bottom navigation -->
 		<div v-if="layout.user && screenType === 'mobile'" class="bg-[rgb(20,20,20)] text-white sticky bottom-0 w-full z-10">

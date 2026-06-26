@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * @property int $id
- * @property int $chat_session_id
+ * @property int|null $chat_session_id
  * @property ChatEventTypeEnum|null $event_type
  * @property ChatActorTypeEnum|null $actor_type
  * @property int|null $actor_id
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent $actor
- * @property-read \App\Models\CRM\Livechat\ChatSession $chatSession
+ * @property-read \App\Models\CRM\Livechat\ChatSession|null $chatSession
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent fromActor(\App\Enums\CRM\Livechat\ChatActorTypeEnum $actorType, ?int $actorId = null)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent newQuery()

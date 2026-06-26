@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
 use App\Actions\Fulfilment\WithDeliverableStoreProcessing;
@@ -106,6 +107,10 @@ class StorePalletReturn extends OrgAction
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
 
+        if ($palletReturn->customerSalesChannel) {
+            CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+        }
+
         SendPalletReturnNotification::run($palletReturn);
 
         return $palletReturn;
@@ -155,7 +160,8 @@ class StorePalletReturn extends OrgAction
             'data'                      => ['sometimes', 'array'],
             'is_collection'             => ['sometimes', 'boolean'],
             'platform_order_id'         => ['sometimes', 'string'],
-            'shopify_user_id'           => ['sometimes', 'integer']
+            'shopify_user_id'           => ['sometimes', 'integer'],
+            'is_shipping_by_external'   => ['sometimes', 'boolean']
         ];
     }
 

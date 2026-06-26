@@ -4,7 +4,7 @@ import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
-import { onMounted, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import Layout from '@/Layouts/GrpAuth.vue'
@@ -38,9 +38,15 @@ const submit = () => {
     })
 }
 
-const _inputUsername = ref(null)
+const _inputUsername = ref<HTMLInputElement | null>(null)
 
 const hasFocused = ref(false)
+
+const focusUsernameOnReturn = () => {
+    if (document.visibilityState === 'visible' && !hasFocused.value) {
+        _inputUsername.value?.focus()
+    }
+}
 
 onMounted(() => {
     if (!hasFocused.value && _inputUsername.value) {
@@ -48,11 +54,11 @@ onMounted(() => {
         hasFocused.value = true
     }
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            _inputUsername.value?.blur()
-        }
-    })
+    document.addEventListener('visibilitychange', focusUsernameOnReturn)
+})
+
+onBeforeUnmount(() => {
+    document.removeEventListener('visibilitychange', focusUsernameOnReturn)
 })
 
 
@@ -90,7 +96,7 @@ onMounted(() => {
         </div>
 
         <div class="space-y-2">
-            <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" type="indigo"/>
+            <Button full @click.prevent="submit" :loading="isLoading" :disabled="isLoading" label="Sign in" type="indigo"/>
         </div>
     </form>
 

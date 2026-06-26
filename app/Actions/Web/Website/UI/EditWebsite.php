@@ -118,6 +118,14 @@ class EditWebsite extends OrgAction
                     'placeholder' => 'GTM-ABC456GH',
                     'required'    => false,
                 ],
+               /*  'gsc_content' => [
+                    'type'        => 'input',
+                    'information' => __('Paste your Google Search Console verification code (meta tag content only, not the full tag).'),
+                    'label'       => __('GSC Content'),
+                    'value'       => Arr::get($website->settings, "gsc_content"),
+                    'placeholder' => 'ilqmL8SuzLUaiOmvUCGdfIsgSfsROt96bIdbgZVazFa',
+                    'required'    => false,
+                ], */
                 'luigisbox_tracker_id'  => [
                     'type'        => 'input',
                     'label'       => __('Luigi Search Tracker ID'),
@@ -168,7 +176,7 @@ class EditWebsite extends OrgAction
         if (in_array($website->type, [WebsiteTypeEnum::B2B, WebsiteTypeEnum::DROPSHIPPING])) {
             $blueprints[] = [
                 'label'  => __('Catalogue Pages'),
-                'icon'   => 'fa-light fa-browser',
+                'icon'   => 'fa-solid fa-browser',
                 'fields' => [
                     'description_has_overview'  => [
                         'type'          => 'toggle',
@@ -177,6 +185,74 @@ class EditWebsite extends OrgAction
                         'value'         => data_get($website->settings, 'catalogue_pages.description_has_overview', false),
                     ]
                 ]
+            ];
+            $blueprints[] = [
+                'label'  => __('Webpage'),
+                'icon'   => 'fa-light fa-browser',
+                'fields' => [
+                    'webpage_title_prefix'  => [
+                        'type'          => 'input',
+                        'information'   => __('Would add the set prefix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                        'label'         => __('Title Prefix'),
+                        'value'         => data_get($website->settings, 'webpage.title_prefix', null),
+                    ],
+                    'webpage_title_suffix'  => [
+                        'type'          => 'input',
+                        'information'   => __('Would add the set suffix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                        'label'         => __('Title Suffix'),
+                        'value'         => data_get($website->settings, 'webpage.title_prefix', null),
+                    ]
+                ]
+            ];
+            $blueprints[] = [
+                'label'  => __('Related Products Web Block'),
+                'icon'   => 'fad fa-th',
+                'fields' => [
+                    'title_recommender'  => [
+                        'type'          => 'textEditor',
+                        'label'         => __('Title'),
+                        'value'         => data_get($website->settings, 'recommender_web_block.title', null),
+                    ],
+                    'min_amt_shown_recommender'  => [
+                        'type'          => 'input_number',
+                        'label'         => __('Min Amount'),
+                        'min'           => 1,
+                        'information'   => __('If product count is less than min amount, then that web block will not be shown'),
+                        'value'         => data_get($website->settings, 'recommender_web_block.min_amt_shown', 5),
+                    ],
+                    'max_amt_shown_recommender'  => [
+                        'type'          => 'input_number',
+                        'label'         => __('Max Amount'),
+                        'min'           => 1,
+                        'information'   => __('If product count is more than max amount, then the exceeding products will not be shown'),
+                        'value'         => data_get($website->settings, 'recommender_web_block.description_has_overview', 100),
+                    ]
+                ]
+            ];
+            $blueprints[] = [
+               'label'  => __('Related Products Category Web Block'),
+               'icon'   => 'fad fa-folder-tree',
+               'fields' => [
+                   'title_product_category_recommender'  => [
+                       'type'          => 'textEditor',
+                       'label'         => __('Title'),
+                       'value'         => data_get($website->settings, 'recommender_product_category_web_block.title', null),
+                   ],
+                   'min_amt_shown_recommender_product_category'  => [
+                       'type'          => 'input_number',
+                       'label'         => __('Min Amount'),
+                       'min'           => 1,
+                       'information'   => __('If product count is less than min amount, then that web block will not be shown'),
+                       'value'         => data_get($website->settings, 'recommender_product_category_web_block.min_amt_shown', 5),
+                   ],
+                   'max_amt_shown_recommender_product_category'  => [
+                       'type'          => 'input_number',
+                       'label'         => __('Max Amount'),
+                       'min'           => 1,
+                       'information'   => __('If product count is more than max amount, then the exceeding products will not be shown'),
+                       'value'         => data_get($website->settings, 'recommender_product_category_web_block.description_has_overview', 100),
+                   ]
+               ]
             ];
             $blueprints[] = [
                 'label'  => __('Registration'),

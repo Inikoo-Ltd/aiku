@@ -13,7 +13,7 @@ use App\Models\SysAdmin\Organisation;
 
 enum OrganisationPermissionsEnum: string
 {
-    case ORG_ADMIN = 'org-admin'; //Can create and manage shops,warehouses,productions etc
+    case ORG_ADMIN = 'org-admin'; //Can create and manage shops, warehouses, productions, etc.
 
     case ORG_REPORTS = 'org-reports';
 

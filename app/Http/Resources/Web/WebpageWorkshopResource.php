@@ -30,7 +30,7 @@ class WebpageWorkshopResource extends JsonResource
 
         $webPageLayout               = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
         $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
-        $modelId = null;
+
         $productFamily = null;
         if ($webpage->model_type == 'Product') {
             $productFamily = [
@@ -38,7 +38,6 @@ class WebpageWorkshopResource extends JsonResource
                 'slug'  => $webpage->model?->family?->slug,
                 'code'  => $webpage->model?->family?->code,
                 'name'  => $webpage->model?->family?->name,
-                // 'title' => $webpage->model?->family?->title,
             ];
             $modelId = $webpage->model->family_id;
         } else {
@@ -48,6 +47,7 @@ class WebpageWorkshopResource extends JsonResource
             'id'                                     => $webpage->id,
             'slug'                                   => $webpage->slug,
             'level'                                  => $webpage->level,
+            'website_id'                             => $webpage->website_id,
             'website_layout'                         => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),
             'code'                                   => $webpage->code,
             'url'                                    => $webpage->url,

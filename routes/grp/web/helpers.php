@@ -7,10 +7,12 @@
  */
 
 use App\Actions\Helpers\Redirects\RedirectAssetLink;
+use App\Actions\Helpers\Redirects\RedirectCollectionLink;
 use App\Actions\Helpers\Redirects\RedirectCollectionsInProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectCustomersInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectDeletedInvoicesInShopLink;
 use App\Actions\Helpers\Redirects\RedirectDeliveryNotesLink;
+use App\Actions\Helpers\Redirects\RedirectInvoiceInAccounting;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopLink;
@@ -22,10 +24,15 @@ use App\Actions\Helpers\Redirects\RedirectOrder;
 use App\Actions\Helpers\Redirects\RedirectOrgStockLink;
 use App\Actions\Helpers\Redirects\RedirectOutboxLink;
 use App\Actions\Helpers\Redirects\RedirectOutboxWorkshopLink;
+use App\Actions\Helpers\Redirects\RedirectPalletDelivery;
+use App\Actions\Helpers\Redirects\RedirectPalletReturn;
 use App\Actions\Helpers\Redirects\RedirectPickingSessionLink;
 use App\Actions\Helpers\Redirects\RedirectPortfolioItemLink;
 use App\Actions\Helpers\Redirects\RedirectProductCategoryLink;
+use App\Actions\Helpers\Redirects\RedirectProductLink;
+use App\Actions\Helpers\Redirects\RedirectReturnDeliveryNotesLink;
 use App\Actions\Helpers\Redirects\RedirectShopInShopFromDashboard;
+use App\Actions\Helpers\Redirects\RedirectStoredItemAudit;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +43,11 @@ Route::get('redirect-refunds-in-shop/{invoice:id}', RedirectInvoicesInShopLink::
 Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustomerLink::class)->name('redirect_invoices_in_customer');
 
 Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
+Route::get('redirect-return-note/{returnDeliveryNote:id}', RedirectReturnDeliveryNotesLink::class)->name('redirect_return_notes');
+
+Route::get('redirect-invoice-in-accounting/{invoice:id}', RedirectInvoiceInAccounting::class)->name('redirect_invoice_in_accounting');
+
+
 Route::get('redirect-org-stock/{orgStock:id}', RedirectOrgStockLink::class)->name('redirect_org_stock');
 Route::get('redirect-org-stock/{orgStock:id}/to-products-index', [RedirectOrgStockLink::class, 'toProductsIndex'])->name('redirect_org_stock.to_products_index');
 
@@ -46,8 +58,12 @@ Route::get('redirect-shops-from-dashboard/{shop:id}', RedirectShopInShopFromDash
 
 Route::get('redirect-portfolio-item/{portfolio:id}', RedirectPortfolioItemLink::class)->name('redirect_portfolio_item');
 
-Route::get('redirect-product-category/{productCategory:slug}', RedirectProductCategoryLink::class)->name('redirect_product_category');
+Route::get('redirect-product-category/{productCategory:id}', RedirectProductCategoryLink::class)->name('redirect_product_category');
 Route::get('redirect-collections-in-product-category/{productCategory:slug}', RedirectCollectionsInProductCategoryLink::class)->name('redirect_collections_in_product_category');
+
+Route::get('redirect-collection/{collection:id}', RedirectCollectionLink::class)->name('redirect_collection');
+Route::get('redirect-product/{product:id}', RedirectProductLink::class)->name('redirect_product');
+
 
 Route::get('redirect-picking-session/{pickingSession:id}', RedirectPickingSessionLink::class)->name('redirect_picking_session');
 
@@ -68,3 +84,7 @@ Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {
 });
 
 Route::get('redirect-mailshot-workshop/{mailshot:id}', RedirectMailshotWorkshopLink::class)->name('redirect_mailshot_workshop');
+
+Route::get('redirect-pallet-delivery/{palletDelivery:id}', RedirectPalletDelivery::class)->name('redirect_pallet_delivery');
+Route::get('redirect-stored-item-audit/{storedItemAudit:id}', RedirectStoredItemAudit::class)->name('redirect_stored_item_audit');
+Route::get('redirect-pallet-return/{palletReturn:id}', RedirectPalletReturn::class)->name('redirect_pallet_return');

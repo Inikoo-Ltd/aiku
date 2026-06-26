@@ -191,8 +191,7 @@ library.add(
 						<dt class="text-gray-500">{{ trans("Picking") }}</dt>
 						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
 							<template v-if="data?.picking_factor?.length">
-								<div v-for="pick in data.picking_factor" :key="pick.org_stock_id"
-									class="grid grid-cols-4 gap-2 py-1 text-sm border-b border-dashed">
+								<div class="grid grid-cols-4 gap-2 py-1 text-sm border-b border-dashed">
 									<div class="col-span-3 fontsmei">
 										{{ ctrans("Reference") }}
 									</div>

@@ -12,7 +12,7 @@ import { watch, watchEffect } from "vue"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
 import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
 import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
-import { initialiseIrisVarnishCustomerData, initialiseLogUser } from '@/Composables/initialiseIrisVarnish'
+import { initialiseIrisVarnishCustomerData, recordWebsiteHit } from '@/Composables/initialiseIrisVarnish'
 
 
 export const initialiseRetinaApp = () => {
@@ -103,11 +103,6 @@ export const initialiseRetinaApp = () => {
         }
 
 
-        // Set data of Locale (Language)
-        // if (usePage().props.layout?.customer) {
-        //     layout.customer = usePage().props.layout.customer
-        // }
-
         if (usePage().props.app) {
             layout.app = usePage().props.app
         }
@@ -117,20 +112,6 @@ export const initialiseRetinaApp = () => {
         if (usePage().props?.environment) {
             layout.app.environment = usePage().props?.environment
         }
-
-
-
-        // if (usePage().props.auth?.user) {
-        //     layout.user = usePage().props.auth.user
-        //      if(usePage().props.auth?.customerSalesChannels) {
-        //         layout.user.customerSalesChannels = usePage().props.auth?.customerSalesChannels
-        //      }
-        // }
-
-        // Set User data
-        // if (usePage().props?.auth?.user) {
-        //     layout.user = usePage().props?.auth
-        // }
 
 
         if (usePage().props.retina) {
@@ -143,7 +124,7 @@ export const initialiseRetinaApp = () => {
         }
 
         layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
-        layout.log_user = () => initialiseLogUser(layout)
+        layout.recordWebsiteHit = () => recordWebsiteHit()
 
         layout.outboxes =  usePage().props.outboxes
 

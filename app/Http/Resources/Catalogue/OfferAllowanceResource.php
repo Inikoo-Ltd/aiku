@@ -30,6 +30,7 @@ class OfferAllowanceResource extends JsonResource
             'code'              => $this->code,
             'name'              => $this->name,
             'data'              => $this->data,
+            'state'             => $this->state,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
         ];

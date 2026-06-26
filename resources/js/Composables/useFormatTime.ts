@@ -1,10 +1,13 @@
 import { format, formatDuration, intervalToDuration, addSeconds,
     formatDistanceToNowStrict, startOfDay, isPast, parseISO, isAfter, differenceInDays  } from 'date-fns'
 import formatDistanceToNow from 'date-fns/formatDistanceToNow'
-import { zhCN, enUS, fr, de, id, ja, sk, es } from 'date-fns/locale'
-import { trans } from 'laravel-vue-i18n'
+import { zhCN, enUS, enGB, fr, de, id, ja, sk, es, bg, cs, hr, hu, it, nl, pl, pt, ro, sv, uk } from 'date-fns/locale'
+import { trans, getActiveLanguage } from 'laravel-vue-i18n'
 
-export const localesCode: any = { zhCN, enUS, fr, de, id, ja, sk, es }
+export const localesCode: any = {
+    zhCN, enUS, enGB, fr, de, id, ja, sk, es,
+    'zh-Hans': zhCN, en: enGB, bg, cs, hr, hu, it, nl, pl, pt, ro, sv, uk,
+}
 
 export interface OptionsTime {
     formatTime?: string
@@ -16,7 +19,11 @@ export interface OptionsTime {
 export const useFormatTime = (dateIso: string | Date | undefined, OptionsTime?: OptionsTime) => {
     if (!dateIso) return '-'  // If the provided data date is null
 
-    let tempLocaleCode = OptionsTime?.localeCode === 'zh-Hans' ? 'zhCN' : OptionsTime?.localeCode ?? 'enGB'
+    let tempLocaleCode = OptionsTime?.localeCode ?? getActiveLanguage()
+    tempLocaleCode = tempLocaleCode === 'zh-Hans' ? 'zhCN' : tempLocaleCode
+    if (!localesCode[tempLocaleCode]) {
+        tempLocaleCode = 'enGB'
+    }
 
     let tempDateIso = OptionsTime?.keepTimezone
         ? new Date((typeof dateIso === 'string' ? dateIso : dateIso.toISOString()).replace('Z', ''))
@@ -27,7 +34,6 @@ export const useFormatTime = (dateIso: string | Date | undefined, OptionsTime?: 
     if (OptionsTime?.formatTime === 'hms') return format(tempDateIso, 'PPpp', { locale: localesCode[tempLocaleCode] })  // Nov 2, 2023, 3:03:26 PM
     if (OptionsTime?.formatTime === 'hm') return format(tempDateIso, 'PPp', { locale: localesCode[tempLocaleCode] })  // Nov 2, 2023, 3:03 PM
     if (OptionsTime?.formatTime === 'mdy') return format(tempDateIso, 'PP', { locale: localesCode[tempLocaleCode] })  // Nov 2, 2023
-
     return format(tempDateIso, OptionsTime?.formatTime || 'PPP', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
 }
 
@@ -36,7 +42,11 @@ export const useFormatTime = (dateIso: string | Date | undefined, OptionsTime?: 
 export const useRangeFromNow = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
     if (!dateIso) return '-'  // If the provided data date is null
 
-    let tempLocaleCode = OptionsTime?.localeCode === 'zh-Hans' ? 'zhCN' : OptionsTime?.localeCode ?? 'enGB'
+    let tempLocaleCode = OptionsTime?.localeCode ?? getActiveLanguage()
+    tempLocaleCode = tempLocaleCode === 'zh-Hans' ? 'zhCN' : tempLocaleCode
+    if (!localesCode[tempLocaleCode]) {
+        tempLocaleCode = 'enGB'
+    }
     const date = new Date(dateIso)
 
     return formatDistanceToNow(date, { locale: localesCode[tempLocaleCode], includeSeconds: true })

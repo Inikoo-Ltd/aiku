@@ -8,7 +8,6 @@
 
 namespace App\Actions\Billables\UI;
 
-use App\Actions\Billables\UI\GetBillablesDashboard\GetBillablesDashboard;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -27,7 +26,7 @@ class ShowBillablesDashboard extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): ActionRequest
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(BillablesTabsEnum::values());
 
         return $request;
     }
@@ -57,8 +56,8 @@ class ShowBillablesDashboard extends OrgAction
                 ],
 
                 BillablesTabsEnum::DASHBOARD->value => $this->tab == BillablesTabsEnum::DASHBOARD->value ?
-                    fn () => GetBillablesDashboard::run()
-                    : Inertia::lazy(fn () => GetBillablesDashboard::run()),
+                    fn () => GetBillablesDashboard::run($this->shop)
+                    : Inertia::lazy(fn () => GetBillablesDashboard::run($this->shop)),
 
             ]
         );

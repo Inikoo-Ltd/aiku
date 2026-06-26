@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\Intrastat\ExportIntrastatExcel;
 use App\Actions\Accounting\Intrastat\ExportIntrastatImportExcel;
 use App\Actions\Accounting\Intrastat\ExportIntrastatXml;
@@ -23,6 +24,8 @@ use App\Actions\Inventory\Reports\UI\IndexPackagingReport;
 use App\Actions\Reports\ExportUkManufacturingSurvey;
 use App\Actions\Reports\PostRoomRoutes;
 use App\Actions\Reports\UI\IndexUkManufacturingSurveyReport;
+use App\Actions\Accounting\CreditTransaction\ExportCustomerCredit;
+use App\Actions\Accounting\CreditTransaction\UI\IndexCustomerCredit;
 use App\Actions\UI\Reports\IndexReports;
 use App\Stubs\UIDummies\IndexDummies;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +38,7 @@ Route::get('/packer-performance', IndexPackerPerformanceReport::class)->name('pa
 Route::get('/intrastat/exports', IndexIntrastatExportReport::class)->name('intrastat.exports');
 Route::get('/intrastat/exports/export-xml', ExportIntrastatXml::class)->name('intrastat.exports.export');
 Route::get('/intrastat/exports/export-slovakia', ExportIntrastatXmlSlovakia::class)->name('intrastat.exports.export-slovakia');
+Route::get('/intrastat/exports/export-aeat', ExportIntrastatAeat::class)->name('intrastat.exports.export-aeat');
 Route::get('/intrastat/exports/export-excel', ExportIntrastatExcel::class)->name('intrastat.exports.export-excel');
 
 Route::get('/intrastat/imports', IndexIntrastatImportReport::class)->name('intrastat.imports');
@@ -51,6 +55,9 @@ Route::get('/packaging/download', DownloadPackagingReport::class)->name('packagi
 
 Route::get('/uk-manufacturing-survey', IndexUkManufacturingSurveyReport::class)->name('uk-manufacturing-survey');
 Route::get('/uk-manufacturing-survey/export', ExportUkManufacturingSurvey::class)->name('uk-manufacturing-survey.export');
+
+Route::get('/customer-credit', IndexCustomerCredit::class)->name('customer-credit');
+Route::get('/customer-credit/export', ExportCustomerCredit::class)->name('customer-credit.export');
 
 Route::name("sent_emails.")->prefix('sent-emails')
     ->group(function () {

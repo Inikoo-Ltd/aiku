@@ -23,7 +23,7 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $collectionId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -32,7 +32,6 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $collectionId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-
         $from .= ' 00:00:00';
         $to   .= ' 23:59:59';
 
@@ -59,7 +58,7 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
 
         $assetsIDs = $timeSeries->collection->products->pluck('id')->unique()->toArray();
 
-        $query = DB::table('invoice_transactions')
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->whereIn('asset_id', $assetsIDs)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)

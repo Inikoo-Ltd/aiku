@@ -9,7 +9,7 @@ import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref } from "vue"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop";
 import Blueprint from "@/Components/CMS/Webpage/Overview2/Blueprint"

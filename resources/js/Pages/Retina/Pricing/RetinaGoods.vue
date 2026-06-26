@@ -9,15 +9,9 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TablePhysicalGoods from "@/Components/Tables/Grp/Org/Fulfilment/TablePhysicalGoods.vue";
 import { capitalize } from "@/Composables/capitalize"
-import { computed, ref } from "vue"
-import type { Component } from "vue"
-import { useTabChange } from "@/Composables/tab-change"
-import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import Tabs from "@/Components/Navigation/Tabs.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import type { Navigation } from "@/types/Tabs"
 
-const props = defineProps<{
+defineProps<{
     pageHead: PageHeadingTypes
     title: string,
     data: {}

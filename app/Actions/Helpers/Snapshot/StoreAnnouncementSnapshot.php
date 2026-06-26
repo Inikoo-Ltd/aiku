@@ -10,8 +10,8 @@ namespace App\Actions\Helpers\Snapshot;
 
 use App\Enums\Helpers\Snapshot\SnapshotBuilderEnum;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
-use App\Models\Announcement;
 use App\Models\Helpers\Snapshot;
+use App\Models\Web\Announcement;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 

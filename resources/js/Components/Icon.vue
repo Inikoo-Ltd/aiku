@@ -6,9 +6,13 @@
 
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCheck, faCheckCircle, faCheckDouble, faTimes, faTimesCircle } from "@fal"
 import { Icon as IconTS } from "@/types/Utils/Icon"
 import ZombieIcon from "@/Components/Icons/ZombieIcon.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
+
+library.add(faCheck, faCheckCircle, faCheckDouble, faTimes, faTimesCircle)
 
 const svgComponents: Record<string, unknown> = {
     zombie: ZombieIcon,

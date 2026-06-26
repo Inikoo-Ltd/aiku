@@ -183,22 +183,23 @@ class GetOrganisationNavigation
                 'parameters' => [$organisation->slug],
             ],
 
-            'topMenu' => []
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Top Customers'),
+                        'icon'    => ['fal', 'fa-trophy'],
+                        'root'    => 'grp.org.overview.customers.top_customers',
+                        'route'   => [
+                            'name'       => 'grp.org.overview.customers.top_customers',
+                            'parameters' => [$organisation->slug]
+                        ]
+                    ],
+                ]
+            ]
         ];
 
         $navigation = $this->getReportsNavs($user, $organisation, $navigation);
 
-        // $navigation['tags'] = [
-        //     'label'   => __('Tags'),
-        //     'tooltip' => __('Tags'),
-        //     'icon'    => ['fal', 'fa-tags'],
-        //     'root'    => 'grp.org.tags.',
-        //     'route'   => [
-        //         'name'       => 'grp.org.tags.show',
-        //         'parameters' => [$organisation->slug],
-        //     ],
-        //     'topMenu' => [],
-        // ];
 
         $navigation['chat'] = [
             'label'   => __('Chat'),
@@ -225,6 +226,15 @@ class GetOrganisationNavigation
                         'root'    => 'grp.org.chat.agents.show',
                         'route'   => [
                             'name'       => 'grp.org.chat.agents.show',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label'   => __('Conversations'),
+                        'icon'    => ['fal', 'fa-comments'],
+                        'root'    => 'grp.org.chat.conversations.show',
+                        'route'   => [
+                            'name'       => 'grp.org.chat.conversations.show',
                             'parameters' => [$organisation->slug],
                         ],
                     ],

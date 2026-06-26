@@ -39,6 +39,7 @@ const props = defineProps<{
 	annualRemainingAfterSubmission?: number | null
 	medicalRequestCount?: number | null
 	unpaidRequestCount?: number | null
+	holidays?: { date: string; label: string }[]
 	isRequestLeaveModalOpen: boolean
 }>()
 
@@ -190,10 +191,31 @@ const typeOptions = computed(() => {
 	}))
 })
 
-const disabledWeekends = (date: Date): boolean => {
+const holidayMap = computed<Record<string, string>>(() => {
+	const map: Record<string, string> = {}
+	for (const h of props.holidays ?? []) {
+		map[h.date] = h.label
+	}
+	return map
+})
+
+const isDisabledDate = (date: Date): boolean => {
 	const day = date.getDay()
-	return day === 0 || day === 6
+	if (day === 0 || day === 6) return true
+	const year = date.getFullYear()
+	const month = String(date.getMonth() + 1).padStart(2, "0")
+	const d = String(date.getDate()).padStart(2, "0")
+	return `${year}-${month}-${d}` in holidayMap.value
 }
+
+const holidayMarkers = computed(() =>
+	(props.holidays ?? []).map((h) => ({
+		date: new Date(h.date + "T00:00:00"),
+		type: "dot" as const,
+		tooltip: h.label ? [{ text: h.label, color: "#ef4444" }] : undefined,
+		color: "#ef4444",
+	}))
+)
 
 const leaveForm = useForm<{
 	type: string
@@ -339,6 +361,10 @@ const selectedBucketRemaining = computed(() => {
 
 const canSubmitLeave = computed(() => {
 	if (requestedLeaveDays.value <= 0) {
+		return true
+	}
+
+	if (selectedLeaveBucket.value === "unpaid" || selectedLeaveBucket.value === "medical") {
 		return true
 	}
 
@@ -535,8 +561,8 @@ const submitEdit = () => {
 						<p class="text-xs text-gray-400">
 							{{
 								trans(":submitted of :total days submitted", {
-									submitted: annualSubmitted,
-									total: balanceSummary.annual_days,
+									submitted: String(annualSubmitted),
+									total: String(balanceSummary.annual_days),
 								})
 							}}
 						</p>
@@ -555,7 +581,7 @@ const submitEdit = () => {
 							{{ displayedMedicalCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("Requests Submitted") }}
+							{{ trans("Days This Month") }}
 						</p>
 					</div>
 					<div class="text-3xl text-red-200">
@@ -572,7 +598,7 @@ const submitEdit = () => {
 							{{ displayedUnpaidCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("Request(s) Submitted") }}
+							{{ trans("Days This Month") }}
 						</p>
 					</div>
 					<div class="text-3xl text-gray-200">
@@ -736,7 +762,8 @@ const submitEdit = () => {
 										? date.toISOString().split('T')[0]
 										: '')
 							"
-							:disabledDates="disabledWeekends"
+							:disabledDates="isDisabledDate"
+							:markers="holidayMarkers"
 							:enableTimePicker="false"
 							:clearable="true"
 							:autoApply="true"
@@ -761,7 +788,8 @@ const submitEdit = () => {
 										: '')
 							"
 							:disabled="leaveForm.is_half_day"
-							:disabledDates="disabledWeekends"
+							:disabledDates="isDisabledDate"
+							:markers="holidayMarkers"
 							:enableTimePicker="false"
 							:clearable="true"
 							:autoApply="true"

@@ -51,7 +51,9 @@ class CustomerResource extends JsonResource
 
         ];
 
-        if ($customer->shop->type == ShopTypeEnum::B2B) {
+        $shop = $customer->shop;
+
+        if ($shop?->type == ShopTypeEnum::B2B) {
             $subscriptions['abandoned_cart'] = [
                 'label'           => __('Abandoned Cart'),
                 'field'           => 'is_subscribed_to_abandoned_cart',
@@ -82,7 +84,7 @@ class CustomerResource extends JsonResource
             ];
         }
 
-        if ($customer->shop->type == ShopTypeEnum::DROPSHIPPING) {
+        if ($shop?->type == ShopTypeEnum::DROPSHIPPING) {
             $subscriptions['price_change_notification'] = [
                 'label'           => __('Price Change Notification'),
                 'field'           => 'is_subscribed_to_price_change_notification',
@@ -93,31 +95,39 @@ class CustomerResource extends JsonResource
 
 
         return [
-            'id'                  => $customer->id,
-            'slug'                => $customer->slug,
-            'organisation_slug'   => $customer->organisation?->slug,
-            'shop_slug'           => $customer->shop?->slug,
-            'reference'           => $customer->reference,
-            'name'                => $customer->name,
-            'contact_name'        => $customer->contact_name,
-            'company_name'        => $customer->company_name,
-            'location'            => $customer->location,
-            'address'             => AddressResource::make($customer->address),
-            'delivery_address'    => AddressResource::make($customer->deliveryAddress),
-            'address_id'          => $customer->address_id,
-            'delivery_address_id' => $customer->delivery_address_id,
-            'email'               => $customer->email,
-            'phone'               => $customer->phone,
-            'contact_website'     => $customer->contact_website,
-            'created_at'          => $customer->created_at,
-            'balance'             => $customer->balance,
-            'tax_number'          => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [],
-            'state'               => $customer->state,
-            'status'              => $customer->status,
-            'currency_code'       => $customer->shop?->currency?->code,
-            'eori'                => $customer->eori,
-            'ukims'               => $customer->ukims,
-            'email_subscriptions' => [
+            'id'                            => $customer->id,
+            'slug'                          => $customer->slug,
+            'organisation_slug'             => $customer->organisation?->slug,
+            'shop_slug'                     => $shop?->slug,
+            'reference'                     => $customer->reference,
+            'name'                          => $customer->name,
+            'contact_name'                  => $customer->contact_name,
+            'company_name'                  => $customer->company_name,
+            'location'                      => $customer->location,
+            'address'                       => AddressResource::make($customer->address),
+            'delivery_address'              => AddressResource::make($customer->deliveryAddress),
+            'address_id'                    => $customer->address_id,
+            'delivery_address_id'           => $customer->delivery_address_id,
+            'email'                         => $customer->email,
+            'phone'                         => $customer->phone,
+            'contact_website'               => $customer->contact_website,
+            'created_at'                    => $customer->created_at,
+            'balance'                       => $customer->balance,
+            'tax_number'                    => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [],
+            'state'                         => $customer->state,
+            'status'                        => $customer->status,
+            'currency_code'                 => $shop?->currency?->code,
+            'eori'                          => $customer->eori,
+            'ukims'                         => $customer->ukims,
+            'identity_document_number'      => $customer->identity_document_number ? [
+                'label'     => data_get($shop?->settings, 'customer.identity_document_number') ?? __('Identity document number'),
+                'number'    => $customer->identity_document_number,
+            ] : null,
+            'identity_document_number_alt'  => $customer->identity_document_number_alt ? [
+                'label'     => data_get($shop?->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt'),
+                'number'    => $customer->identity_document_number_alt,
+            ] : null,
+            'email_subscriptions'           => [
                 'update_route'  => [
                     'method'     => 'patch',
                     'name'       => match (class_basename(request()->user())) {
@@ -137,7 +147,7 @@ class CustomerResource extends JsonResource
                 'subscriptions' => $subscriptions
 
             ],
-            'tags'                => TagsResource::collection($customer->tags)->toArray(request())
+            'tags'                          => TagsResource::collection($customer->tags)->toArray(request())
         ];
     }
 }

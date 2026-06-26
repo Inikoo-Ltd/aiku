@@ -71,11 +71,11 @@ const props = defineProps(
             required: false,
         },
 
-        inputDebounceMs: {
-            type: Number,
-            default: 350,
-            required: false,
-        },
+        // inputDebounceMs: {
+        //     type: Number,
+        //     default: 350,
+        //     required: false,
+        // },
 
         preserveScroll: {
             type: [Boolean, String],
@@ -177,6 +177,13 @@ const props = defineProps(
             default: false,
             required: false,
         },
+        // Opt-in: skip re-rendering rows whose data is unchanged (via v-memo). Only safe when the
+        // row's rendered state lives entirely in `item` (no external row state like checkbox selection).
+        memoizeRows : {   // Good for big and frequent update the rows (example: Picking Session, Delivery Note picking)
+            type: Boolean,
+            default: false,
+            required: false,
+        },
     });
 
 const emits = defineEmits<{
@@ -245,6 +252,12 @@ const compResourceData = computed(() => {
 
     return props.resource;
 })
+
+// watch(compResourceData, (val, newval) => {
+//     console.log('gfgfgf', val, newval)
+// }, {
+//     deep: true
+// })
 
 // Meta Page (Previous/next link, current page, data per page)
 const compResourceMeta = computed(() => {
@@ -320,6 +333,19 @@ function changeSearchInputValue(key, value) {
 const changeGlobalSearchValue = debounce((value?: string) => {
     changeSearchInputValue('global', value);
 }, 100)
+
+const immediateSearch = (value: string) => {
+    changeGlobalSearchValue.cancel()
+    changeSearchInputValue('global', value)
+    debouncedFilter.cancel()
+    visit(location.pathname + '?' + generateNewQueryString())
+}
+
+const cancelVisitIfInProgress = () => {
+    if (visitCancelToken.value && isVisiting.value) {
+        visitCancelToken.value.cancel()
+    }
+}
 
 function changeFilterValue(key: string, value: string | null) {
     const intKey = findDataKey('filters', key)
@@ -525,12 +551,15 @@ const debouncedFilter = debounce(() => {
     } catch {
         console.error("Can't visit expected path")
     }
-}, 750, {
+}, 600, {
     leading: false,
     trailing: true,
 });
 
+let isMounted = false;
+
 watch(queryBuilderData, async () => {
+        if (!isMounted) return;
         debouncedFilter();
     },
     {deep: true},
@@ -541,6 +570,7 @@ const inertiaListener = () => {
 };
 
 onMounted(() => {
+    isMounted = true;
     document.addEventListener('inertia:success', inertiaListener);
 });
 
@@ -744,7 +774,7 @@ const isLoading = ref<string | boolean>(false)
                                 <TableFilterSearch v-if="queryBuilderProps.globalSearch" class=""
                                     @resetSearch="() => resetQuery()" :label="queryBuilderProps.globalSearch.label"
                                     :value="queryBuilderProps.globalSearch.value" :on-change="changeGlobalSearchValue"
-                                    :isVisiting />
+                                    :on-enter="immediateSearch" :on-start-typing="cancelVisitIfInProgress" :isVisiting />
                             </slot>
                         </div>
                     </div>
@@ -849,9 +879,70 @@ const isLoading = ref<string | boolean>(false)
 
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <slot name="body" :show="show">
-                                    <template v-for="(item, key) in compResourceData"
+                                    <!-- Memoized path (opt-in via memoizeRows): v-memo must sit on the v-for
+                                         element so Vue can skip re-rendering rows whose data is unchanged. Uses the
+                                         same cell() slots as the default path. Only safe when all row state lives in
+                                         `item` (no checkbox/external row selection, no expand rows). -->
+                                    <template v-if="memoizeRows">
+                                        <tr v-for="(item, key) in compResourceData"
+                                            :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
+                                            v-memo="[JSON.stringify(item)]"
+                                            class=""
+                                            :class="[
+                                                { 'bg-gray-50': striped && key % 2 },
+                                                striped
+                                                    ? 'bg-gray-200 hover:bg-gray-300'
+                                                    : rowColorFunction(item)
+                                                        ? rowColorFunction(item)
+                                                        : 'hover:bg-gray-50'
+                                            ]">
+                                            <td v-for="(column, index) in queryBuilderProps.columns"
+                                                v-show="show(column.key)"
+                                                :key="`table-${name}-row-${key}-column-${column.key}`"
+                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full"
+                                                :class="[
+                                                    column.type === 'avatar' || column.type === 'icon'
+                                                        ? 'text-center min-w-fit px-3'
+                                                        : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
+                                                            ? 'text-right pl-3 pr-9 tabular-nums'
+                                                            : 'px-6',
+                                                    props.rowAlignTop ? 'align-top' : '',
+                                                    { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
+                                                    column.className
+                                                ]">
+                                                <slot :name="`cell(${column.key})`"
+                                                    :item="{ ...item, index: index, rowIndex : key, editingIndicator: { loading: false, isSucces: false, isFailed: false, editMode: false }, data : item }"
+                                                    :proxyItem="item" :tabName="name">
+                                                    <template v-if="typeof item[column.key] == 'number' || column.type === 'number'">
+                                                        {{ locale.number(item[column.key]) }}
+                                                    </template>
+                                                    <template v-else-if="column.type === 'currency'">
+                                                        {{ locale.currencyFormat(item.currency_code, item[column.key]) }}
+                                                    </template>
+                                                    <template v-else-if="column.type === 'date'">
+                                                        <span v-tooltip="useFormatTime(item[column.key], { formatTime: 'hms' })" class="whitespace-nowrap">{{ useFormatTime(item[column.key]) }}</span>
+                                                    </template>
+                                                    <template v-else-if="column.type === 'date_hm'">
+                                                        <span class="whitespace-nowrap">{{ useFormatTime(item[column.key], { formatTime: 'hm' }) }}</span>
+                                                    </template>
+                                                    <template v-else-if="column.type === 'date_hms'">
+                                                        <span class="whitespace-nowrap">{{ useFormatTime(item[column.key], { formatTime: 'hms' }) }}</span>
+                                                    </template>
+                                                    <template v-else-if="column.type === 'icon'">
+                                                        <Icon v-if="item[column.key]?.icon || item[column.key]?.text || item[column.key]?.svg" :data="item[column.key]" />
+                                                        <FontAwesomeIcon v-else :icon="item[column.key]" class="" fixed-width aria-hidden="true" />
+                                                    </template>
+                                                    <template v-else>
+                                                        {{ item[column.key] }}
+                                                    </template>
+                                                </slot>
+                                            </td>
+                                        </tr>
+                                    </template>
+
+                                    <template v-for="(item, key) in props.resource.data"
+                                        v-else
                                         :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
-                                        vxmemo="[JSON.stringify(item)]"
                                     >
                                         <tr class="" :class="[
                                                 {

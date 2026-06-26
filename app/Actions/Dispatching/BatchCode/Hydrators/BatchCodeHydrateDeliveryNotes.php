@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\BatchCode\Hydrators;
 
 use App\Models\Dispatching\BatchCode;
+use App\Models\Dispatching\Picking;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -23,9 +24,11 @@ class BatchCodeHydrateDeliveryNotes implements ShouldBeUnique
 
     public function handle(BatchCode $batchCode): void
     {
-        $count = $batchCode->deliveryNoteItems()
-            ->distinct('delivery_note_id')
-            ->count('delivery_note_id');
+        $count = Picking::query()
+            ->join('delivery_note_items', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+            ->where('pickings.batch_code_id', $batchCode->id)
+            ->distinct('delivery_note_items.delivery_note_id')
+            ->count('delivery_note_items.delivery_note_id');
 
         $batchCode->update(['number_delivery_notes' => $count]);
     }

@@ -255,7 +255,7 @@ watch(
                                     full
                                     :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)" >
                                     <template #icon>
-                                        <FontAwesomeIcon v-if="productHasPortfolioList.includes(Number(key))" :icon="faCheck"
+                                        <FontAwesomeIcon v-if="productHasPortfolioList?.includes(Number(key))" :icon="faCheck"
                                             class="text-green-500" fixed-width aria-hidden="true" />
                                     </template>
                                     <template #label>

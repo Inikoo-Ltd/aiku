@@ -5,6 +5,7 @@
   -->
 
 <script setup>
+import { trans } from 'laravel-vue-i18n'
 import { computed, ref } from 'vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { ExclamationTriangleIcon, FolderIcon, LifebuoyIcon } from '@heroicons/vue/24/outline'
@@ -71,7 +72,7 @@ function onSelect(item) {
                         <Combobox @update:modelValue="onSelect">
                             <div class="relative">
                                 <MagnifyingGlassIcon class="pointer-events-none absolute top-3.5 left-4 h-5 w-5 text-gray-400" aria-hidden="true" />
-                                <ComboboxInput class="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm" placeholder="Search..." @change="rawQuery = $event.target.value" />
+                                <ComboboxInput class="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm" :placeholder="trans('Search...')" @change="rawQuery = $event.target.value" />
                             </div>
 
                             <ComboboxOptions v-if="filteredProjects.length > 0 || filteredUsers.length > 0" static class="max-h-80 scroll-py-10 scroll-pb-2 space-y-4 overflow-y-auto p-4 pb-2">

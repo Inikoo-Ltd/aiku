@@ -40,16 +40,6 @@ trait OfferCampaignVoucherOffersTrait
                     'title'     => $offerCampaign->name,
                     'model'     => __('Offer Campaign'),
                     'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
-                    'actions' => app()->environment('local') ? [
-                        [
-                            'type'  => 'button',
-                            'key'   => 'voucher_create_discount',
-                            // 'route' => [
-                            //     'name'       => preg_replace('/show$/', 'create_family_offer', request()->route()->getName()),
-                            //     'parameters' => array_values(request()->route()->originalParameters())
-                            // ]
-                        ]
-                    ] : [],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -58,10 +48,11 @@ trait OfferCampaignVoucherOffersTrait
                     ])
                 ],
                 'shop_data' => [
+                    'id'            => $offerCampaign->shop_id,
                     'slug'          => $offerCampaign->shop->slug,
                     'currency_code' => $offerCampaign->shop->currency->code,
-
-
+                    'organisation'  => $offerCampaign->shop->organisation->slug,
+                    'offercampaign' => $offerCampaign->slug,
                     'default_dates' => [
                         'start' => now()->toDateString(),
                         'end'   => now()->addDays(7)->toDateString(),
@@ -77,7 +68,8 @@ trait OfferCampaignVoucherOffersTrait
                     fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
+        )
+        ->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value, showActions: $offerCampaign->shop->is_aiku))
+        ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
     }
 }

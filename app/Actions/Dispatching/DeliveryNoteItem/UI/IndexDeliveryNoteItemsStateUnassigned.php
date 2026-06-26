@@ -36,7 +36,8 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
 
         $query->where('delivery_note_items.delivery_note_id', $deliveryNote->id);
 
-        $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
+        $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
+            ->with('orgStock.tradeUnits');
 
         return $query->defaultSort('delivery_note_items.id')
             ->select([

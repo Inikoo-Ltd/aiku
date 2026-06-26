@@ -5,7 +5,7 @@ import { faCube, faLink } from "@fal"
 import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 
-import Family1Render from "./Families1Render.vue"
+import Family1Render from "@/Iris/Components/Families1Render.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 

@@ -16,32 +16,22 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreFavourite extends OrgAction
 {
     use WithActionUpdate;
 
+
     public function handle(Customer $customer, Product $product, array $modelData): Favourite
     {
         $favourite = $customer->favourites()->where('product_id', $product->id)->first();
         if ($favourite) {
-            if (!$favourite->unfavourited_at) {
-                throw ValidationException::withMessages(
-                    [
-                        'message' => [
-                            'favourite' => 'Product already favourited',
-                        ]
-                    ]
-                );
-            } else {
+            if ($favourite->unfavourited_at) {
                 $this->update($favourite, ['unfavourited_at' => null, 'current_favourite_id' => $favourite->id]);
-
-
             }
-
         } else {
+            /** @noinspection DuplicatedCode */
             data_set($modelData, 'group_id', $customer->group_id);
             data_set($modelData, 'organisation_id', $customer->organisation_id);
             data_set($modelData, 'shop_id', $customer->shop_id);
@@ -53,12 +43,12 @@ class StoreFavourite extends OrgAction
 
             /** @var Favourite $favourite */
             $favourite = $customer->favourites()->create($modelData);
-
         }
 
         CustomerHydrateFavourites::run($customer->id);
         ProductHydrateCustomersWhoFavourited::dispatch($product);
         ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product);
+
         return $favourite;
     }
 

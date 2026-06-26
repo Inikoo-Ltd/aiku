@@ -10,7 +10,9 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
 use App\Http\Resources\Masters\MasterSubDepartmentResource;
 use App\Models\Masters\MasterProductCategory;
@@ -31,6 +33,8 @@ class GetMasterProductCategoryShowcase
                     ]
                 ],
                 'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($productCategory->masterShop, 'shops')),
+                'tags' => $productCategory->tradeUnitFamily?->tags
             ],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
                 'storeFamilyRoute' => [
@@ -40,15 +44,18 @@ class GetMasterProductCategoryShowcase
                     ]
                 ],
                 'subDepartment' => MasterSubDepartmentResource::make($productCategory)->resolve(),
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($productCategory->masterShop, 'shops')),
+                'tags' => $productCategory->tradeUnitFamily?->tags
             ],
             default => [
                 'family' => MasterProductCategoryResource::make($productCategory),
+                'tags' => $productCategory->tradeUnitFamily?->tags,
                 'save_route' => [
                     'method' => 'patch',
                     'name'       => 'grp.models.master_product_categories.translations.update',
                     'parameters' => [
                         'masterProductCategory' => $productCategory->id
-                    ]
+                    ],
                 ],
             ],
         };

@@ -9,12 +9,11 @@ import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
-import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 import { trans } from "laravel-vue-i18n"
@@ -39,6 +38,7 @@ import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
 import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
+import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 
 
 
@@ -100,15 +100,14 @@ const props = withDefaults(
         blockData?: object
         screenType: "mobile" | "tablet" | "desktop"
         validImages: object
-        customerData: {  // \Json\GetIrisProductEcomOrdering  (no cache)
-
-        }
+        customerData: any
         product: ProductResource  // Catalogue\GetProductDetail (no cache)
         isLoadingRemindBackInStock: boolean
         isLoadingFavourite: boolean
         videoSetup: { url: string }
         listProducts: ProductResource[]
         indexBlock:number
+        theme?: string[]
     }>(),
     {}
 )
@@ -180,6 +179,11 @@ const showDiscount = computed(() => {
     )
 })
 
+const showIntervalOffer = computed(() => {
+    return getBestOfferfromComposable(props.product?.product_offers_data)?.type
+        === 'Category Quantity Ordered Order Interval'
+})
+
 
 
 
@@ -232,8 +236,7 @@ console.log(props)
 
             <!-- RIGHT: Product Info -->
             <div class="col-span-5 self-start">
-                
-                
+      
                 <div class="relative flex justify-between items-start mb-4 gap-x-3">
                     <div class="w-full">
                         <h1 class="text-3xl font-bold">
@@ -241,9 +244,20 @@ console.log(props)
                             {{ product.name }}
                         </h1>
 
-                        <div class="text-sm font-medium text-gray-600 mt-1 mb-1">
-                            {{ trans("Product code") }}: {{ product.code }}
+                        <div class="text-sm font-medium text-gray-600 mt-2 mb-1">
+                            <div class="flex items-center justify-between">
+
+                                <span>
+                                    {{ trans("Product code") }}: {{ product.code }}
+                                </span>
+
+                                <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
+                                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
+                                </span>
+
+                            </div>
                         </div>
+                        
 
                         <!-- STOCK SECTION -->
                         <div v-if="layout?.iris?.is_logged_in" class="flex justify-between items-center">
@@ -290,13 +304,6 @@ console.log(props)
                 </div>       
 
                 <!-- PRICE -->
-                <!-- <ProductPrices
-                    :field-value="fieldValue"
-                    :key="product.code"
-                    :offers_data="customerData?.offers_data"
-                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
-                    :offer_price_per_unit="customerData?.offer_price_per_unit"
-                /> -->
 
                 <ProductPrices2
                     v-if="layout?.iris?.is_logged_in"
@@ -316,6 +323,8 @@ console.log(props)
                                 <NonMemberPriceLabel v-else :product />
                             </template>
 
+
+                             <DiscountByType  v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type == 'Category Quantity Ordered Order Interval') && showDiscount" :offers_data="product?.offers_data" template="products_triggers_label" />
 
                             <DiscountByType
                                 v-if="showDiscount && bestOffer.type == 'Category Ordered'"
@@ -365,21 +374,19 @@ console.log(props)
                 
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
-
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="product.status !== 'coming-soon' && layout?.iris?.is_logged_in" class="w-full">
                         <EcomAddToBasketv2 v-if="product.stock" v-model:product="product" :customerData="customerData"
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
-                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled
-                                full />
+                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled full />
                         </div>
                     </div>
 
                     <!-- LOGIN BUTTON (only if not coming soon) -->
                     <LinkIris v-else-if="product.status !== 'coming-soon'" :href="urlLoginWithRedirect()"
-                        class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
+                        class="block w-full text-center border border-gray-400 bg-gray rounded px-3 py-2 text-sm text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
@@ -480,6 +487,7 @@ console.log(props)
 
         <!-- MEDIA -->
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
+        
 
         <!-- STOCK + FAVOURITE -->
         <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-4">
@@ -602,6 +610,21 @@ console.log(props)
             </div>
         </div>
 
+         <div class="text-sm font-medium text-gray-600 mt-4 mb-1 ">
+            <div class="flex items-center justify-between">
+
+                <span>
+                    {{ product.code }}
+                </span>
+
+                <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
+                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
+                    product.unit }}
+                </span>
+
+            </div>
+        </div>
+
         <!-- BACK IN STOCK -->
         <button
             v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
@@ -643,7 +666,7 @@ console.log(props)
             <LinkIris
                 v-else
                 :href="urlLoginWithRedirect()"
-                class="block w-full text-center border rounded px-3 py-2 text-sm text-gray-600"
+                class="block w-full text-center border border-gray-400 bg-gray rounded px-3 py-2 text-sm text-gray-600"
             >
                 {{ trans("Login or Register for Wholesale Prices") }}
             </LinkIris>

@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
@@ -31,44 +32,34 @@ class ShowOrganisationDashboard extends OrgAction
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
     use WithTabsBox;
+    use WithPerformanceDateResolution;
 
     public function authorize(ActionRequest $request): bool
     {
-        return in_array($this->organisation->id, $request->user()->authorisedOrganisations()->pluck('id')->toArray());
+        return $request->user()
+            ->authorisedOrganisations()
+            ->whereKey($this->organisation->id)
+            ->exists();
     }
 
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
 
-        $currentTab = Arr::get($userSettings, 'organisation_dashboard_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values()));
+        $tabValues = OrganisationDashboardSalesTableTabsEnum::values();
+        $currentTab = Arr::get($userSettings, 'organisation_dashboard_tab', Arr::first($tabValues));
 
-        if (!in_array($currentTab, OrganisationDashboardSalesTableTabsEnum::values())) {
-            $currentTab = Arr::first(OrganisationDashboardSalesTableTabsEnum::values());
+        if (! in_array($currentTab, $tabValues, true)) {
+            $currentTab = Arr::first($tabValues);
         }
 
-        $saved_interval  = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $performanceDates = [null, null];
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        } elseif ($saved_interval !== DateIntervalEnum::ALL) {
-            $intervalString = DashboardIntervalFilters::run($saved_interval);
-            if ($intervalString) {
-                $dates = explode('-', $intervalString);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        }
+        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $fromDate, $toDate);
 
-        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $performanceDates[0], $performanceDates[1]);
+        $currentTabEnum = OrganisationDashboardSalesTableTabsEnum::from($currentTab);
+        $primaryTables = OrganisationDashboardSalesTableTabsEnum::tablesForTabs($organisation, $timeSeriesData, [$currentTabEnum]);
 
         $tabsBox = $this->getTabsBox($organisation);
 
@@ -78,13 +69,13 @@ class ShowOrganisationDashboard extends OrgAction
                     'id'        => 'organisation_dashboard_tab',
                     'intervals' => [
                         'options'        => $this->dashboardIntervalOption(),
-                        'value'          => $saved_interval,
-                        'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
+                        'value'          => $savedInterval,
+                        'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings)
                     ],
                     'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
+                        'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'       => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
                     ],
                     'blocks'    => [
                         [
@@ -92,8 +83,12 @@ class ShowOrganisationDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation, $timeSeriesData),
+                            'tables'      => $primaryTables,
                             'charts'      => [],
+                            'tab_fetch_route' => [
+                                'name'       => 'grp.org.dashboard.tab-data',
+                                'parameters' => ['organisation' => $organisation->slug],
+                            ],
                         ],
                     ],
                     'tabs_box'  => [

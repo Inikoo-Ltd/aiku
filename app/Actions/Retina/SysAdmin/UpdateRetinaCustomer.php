@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 09-01-2025-16h-18m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -49,7 +49,7 @@ class UpdateRetinaCustomer extends RetinaAction
     }
 
 
-    public function prepareForValidation(ActionRequest $request)
+    public function prepareForValidation(ActionRequest $request): void
     {
         $this->setSanitizeFields([
             'contact_name',
@@ -74,9 +74,11 @@ class UpdateRetinaCustomer extends RetinaAction
             'delivery_address'              => ['sometimes', 'nullable', new ValidAddress()],
             'delivery_address_id'           => ['sometimes', 'integer'],
             'tags'                          => ['sometimes', 'array'],
-            'disable_order_auto_processing' => ['sometimes', 'boolean'],
             'eori'                          => ['sometimes', 'nullable', 'string', 'max:20'],
             'ukims'                         => ['sometimes', 'nullable', 'string', 'max:255'],
+            'is_gift_opted_out'             => ['sometimes', 'boolean'],
+            'identity_document_number'      => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt'  => ['sometimes', 'nullable', 'string'],
         ];
     }
 

@@ -11,7 +11,7 @@ import Table from '@/Components/Table/Table.vue'
 import { Banner } from "@/types/banner"
 import Icon from '@/Components/Icon.vue'
 import { faSeedling, faBroadcastTower, faImage, faSparkles, faRocket, faDoNotEnter } from '@fal'
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { useLocaleStore } from '@/Stores/locale'
 

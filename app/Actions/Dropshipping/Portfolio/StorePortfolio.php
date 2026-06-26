@@ -15,7 +15,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannel
 use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewPortfolios;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
-use App\Actions\Dropshipping\WooCommerce\Product\CheckWooPortfolio;
+use App\Actions\Dropshipping\Tiktok\Product\CheckTiktokPortfolio;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
@@ -47,7 +47,7 @@ class StorePortfolio extends OrgAction
     {
         $rrp = $item->rrp ?? 0;
 
-        $pricingType = Arr::get($customerSalesChannel->settings, 'pricing.type');
+        $pricingType  = Arr::get($customerSalesChannel->settings, 'pricing.type');
         $pricingValue = Arr::get($customerSalesChannel->settings, 'pricing.value');
 
         if ($pricingType && $pricingValue) {
@@ -107,15 +107,15 @@ class StorePortfolio extends OrgAction
 
         match ($customerSalesChannel->platform->type) {
             PlatformTypeEnum::SHOPIFY => $portfolio = CheckShopifyPortfolio::run($portfolio),
-            // PlatformTypeEnum::WOOCOMMERCE => $portfolio = CheckWooPortfolio::run($portfolio),
             PlatformTypeEnum::EBAY => $portfolio = CheckEbayPortfolio::run($portfolio),
+            PlatformTypeEnum::TIKTOK => $portfolio = CheckTiktokPortfolio::run($portfolio),
             default => null
         };
 
         GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
         OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);
         ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
-        CustomerHydratePortfolios::dispatch($customerSalesChannel->customer_id)->delay($this->hydratorsDelay);
+        CustomerHydratePortfolios::dispatch($customerSalesChannel->customer_id)->delay(5);
         CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
         ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
 
@@ -164,7 +164,7 @@ class StorePortfolio extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'       => [
+            'reference'                   => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -177,13 +177,13 @@ class StorePortfolio extends OrgAction
                     ]
                 ),
             ],
-            'status'          => 'sometimes|boolean',
-            'is_bundle'       => 'sometimes|boolean',
-            'bundle_id'       => 'sometimes|integer',
-            'platform_product_id'          => 'sometimes|string',
-            'platform_product_variant_id'          => 'sometimes|string',
-            'platform_handle' => 'sometimes|string',
-            'last_added_at'   => 'sometimes|date'
+            'status'                      => 'sometimes|boolean',
+            'is_bundle'                   => 'sometimes|boolean',
+            'bundle_id'                   => 'sometimes|integer',
+            'platform_product_id'         => 'sometimes|string',
+            'platform_product_variant_id' => 'sometimes|string',
+            'platform_handle'             => 'sometimes|string',
+            'last_added_at'               => 'sometimes|date'
         ];
 
         if (!$this->strict) {

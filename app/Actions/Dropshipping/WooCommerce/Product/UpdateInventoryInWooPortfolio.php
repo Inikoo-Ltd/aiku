@@ -54,7 +54,7 @@ class UpdateInventoryInWooPortfolio
                 continue;
             }
 
-            $wooCommerceUser->setTimeout(20);
+            $wooCommerceUser->setTimeout(30);
             $result = $wooCommerceUser->checkConnection();
             if ($result) {
                 $customerSalesChannel->update([

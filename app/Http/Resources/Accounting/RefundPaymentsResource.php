@@ -48,6 +48,7 @@ class RefundPaymentsResource extends JsonResource
 
         return array(
             'id'                   => $this->id,
+            'state'                => $this->state,
             'status'               => $this->status,
             'refunded'             => $this->refunded,
             'payment_account_code' => $this->payment_account_code,

@@ -26,6 +26,10 @@ class UpdateRetinaTransaction extends RetinaAction
 
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
+        $transaction->order->update([
+            'updated_by_customer_at' => now()
+        ]);
+
         if (Arr::get($modelData, 'quantity_ordered', 0) === 0) {
             $transaction->forceDelete();
 

@@ -3,17 +3,15 @@ import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from 'laravel-vue-i18n'
-
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject } from 'vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { routeType } from '@/types/route'
-import UnderConstruction from '@/Pages/Iris/Disclosure/UnderConstruction.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 
-const props = defineProps<{
+defineProps<{
     title: string
     pageHead: PageHeadingTypes
     url_master?: routeType
@@ -68,10 +66,6 @@ const routeProduct = (gift: { id: string }) => {
             </div>
         </template>
     </PageHeading>
-
-    <!-- <div v-if="layout.app.environment === 'production'">
-        <UnderConstruction />
-    </div> -->
 
     <div class="px-8 py-6">
         <div class="flex justify-between gap-8">

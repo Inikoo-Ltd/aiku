@@ -23,6 +23,12 @@ class UploadImagesToMasterProduct extends GrpAction
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
 
+        foreach ($medias as $media) {
+            $model->images()->updateExistingPivot($media->id, [
+                'caption' => $model->name,
+            ]);
+        }
+
         if ($updateDependants) {
 
             if (!$model->is_single_trade_unit || !$model->follow_trade_unit_media) {

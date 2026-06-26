@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
@@ -56,6 +57,12 @@ class IndexProductsInMasterProduct extends OrgAction
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', 'organisations.id');
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.master_product_id', $masterAsset->id);
+        $queryBuilder->where('products.is_for_sale', true);
+        $queryBuilder->whereIn('products.state', [
+            ProductStateEnum::IN_PROCESS,
+            ProductStateEnum::ACTIVE,
+            ProductStateEnum::DISCONTINUING,
+        ]);
         $queryBuilder->where('shops.state', '!=', ShopStateEnum::CLOSED->value);
 
         $queryBuilder

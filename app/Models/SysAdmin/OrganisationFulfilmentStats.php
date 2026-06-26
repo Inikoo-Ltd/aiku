@@ -121,6 +121,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_spaces_state_finished
  * @property int $number_customers_status_pending_approval
  * @property int $number_customers_status_pre_registration
+ * @property int $number_pallets_state_not_picked
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationFulfilmentStats newModelQuery()
  * @method static Builder<static>|OrganisationFulfilmentStats newQuery()

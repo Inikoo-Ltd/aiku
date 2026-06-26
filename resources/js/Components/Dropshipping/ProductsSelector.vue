@@ -9,7 +9,7 @@ import Tag from '@/Components/Tag.vue'
 import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import { routeType } from '@/types/route'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

@@ -90,6 +90,48 @@ class SaveShopDataAllegroChannel
                     data_set($data, 'return_id', Arr::get($return, 'id'));
                 }
 
+                if (Arr::get($data, 'responsible_producer_id') === null) {
+                    $responsibleProducer = $allegroUser->createResponsibleProducer([
+                        'name' => trim($shop->name . '-' . rand(1000, 9999)),
+                        'producerData' => [
+                            'tradeName' => $shop->name,
+                            'address' => [
+                                'street' => $shop->address->address_line_1,
+                                'city' => $shop->address->locality,
+                                'countryCode' => $shop->country->code,
+                                'postalCode' => $shop->address->postal_code,
+                            ],
+                            'contact' => [
+                                'email' => $shop->email,
+                                'phoneNumber' => '441142729165'
+                            ]
+                        ]
+                    ]);
+
+                    data_set($data, 'responsible_producer_id', Arr::get($responsibleProducer, 'id'));
+                }
+
+                if (Arr::get($data, 'responsible_person_id') === null) {
+                    $responsiblePerson = $allegroUser->createResponsiblePerson([
+                        'name' => trim($shop->name . '-' . rand(1000, 9999)),
+                        'personalData' => [
+                            'name' => $shop->name,
+                            'address' => [
+                                'street' => 'CTPark Trnava',
+                                'city' => 'Zavar',
+                                'countryCode' => 'SK',
+                                'postalCode' => '919 26',
+                            ],
+                            'contact' => [
+                                'email' => $shop->email,
+                                'phoneNumber' => '441142729165'
+                            ]
+                        ]
+                    ]);
+
+                    data_set($data, 'responsible_person_id', Arr::get($responsiblePerson, 'id'));
+                }
+
                 $allegroUser = $this->update($allegroUser, [
                     'allegro_id' => Arr::get($data, 'user_id'),
                     'marketplace_id' => Arr::get($data, 'marketplace_id'),
@@ -113,6 +155,7 @@ class SaveShopDataAllegroChannel
 
             return $allegroUser->refresh();
         } catch (\Exception $e) {
+            dd($e);
             Log::error('Failed to save Allegro shop data: ' . $e->getMessage());
             return $allegroUser;
         }

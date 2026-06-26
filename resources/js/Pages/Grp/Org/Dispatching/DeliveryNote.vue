@@ -25,6 +25,7 @@ import {
     faExclamationTriangle,
 	faClipboardCheck,
 	faClipboardListCheck,
+	faExchange,
 } from "@fal";
 import { faArrowRight, faCheck, faEye, faStar, faTimes } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -78,6 +79,10 @@ const props = defineProps<{
     warning?: {
         text: string
         picking_sessions: routeType
+    }
+	hasReturn?: {
+		reference: string
+        route: routeType
     }
     alert?: {
         status: string
@@ -166,7 +171,7 @@ const component = computed(() => {
 const isModalToQueue = ref(false);
 
 // Section: Picker
-const selectedPicker = ref(props.box_stats.picker);
+const selectedPicker = ref(props.picker);
 const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);
@@ -293,6 +298,48 @@ provide("listError", listError.value);
 const openModalAddShipment = ref(false);
 provide("openModalAddShipment", openModalAddShipment);
 
+// Method: display error depends on the response on button Finalise and Dispatch
+const handleFinaliseError = (e: unknown) => {
+    if (typeof e === 'string') {
+        notify({ title: trans('Something went wrong'), text: e, type: 'error' })
+        return
+    }
+
+    const errors = (e as Record<string, unknown>) || {}
+    const keys = Object.keys(errors)
+
+	if (keys.includes('shipment')) {
+		openModalAddShipment.value = true
+	}
+
+    if (keys.length === 0) {
+        notify({
+            title: trans('Something went wrong'),
+            text: (e as { message?: string })?.message || 'Please try again later or contact administrator.',
+            type: 'error',
+        })
+        return
+    }
+
+    if (keys.length === 1) {
+        const value = errors[keys[0]]
+        notify({
+            title: trans('Something went wrong'),
+            text: Array.isArray(value) ? (value as string[]).join(', ') : String(value),
+            type: 'error',
+        })
+        return
+    }
+
+    Object.entries(errors).forEach(([field, value]) => {
+        notify({
+            title: field,
+            text: Array.isArray(value) ? (value as string[]).join(', ') : String(value),
+            type: 'error',
+        })
+    })
+}
+
 // const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({...props.address.delivery})
 
@@ -341,12 +388,47 @@ onMounted(() => {
         })
     console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
+
+const processReturn = () => {
+	// router.patch(route('grp.models.delivery_note.return.process', {
+	// 	deliveryNote: props.delivery_note.id
+	// }), {}, {
+	// 	onSuccess: () => {
+    //         notify({ 
+	// 			title: 'Updated', 
+	// 			text: 'Successfully created return', 
+	// 			type: 'success' 
+	// 		})
+	// 	},
+	// 	onError: (err) => {
+	// 		console.error(err)
+    //         notify({ 
+	// 			title: 'Error', 
+	// 			text: 'Failed to create return.', 
+	// 			type: 'error' 
+	// 		})
+	// 	}
+	// })
+}
+
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" isButtonGroupWithBorder>
 		<template #afterTitle2>
+			<div v-if="hasReturn?.reference"
+				v-tooltip="trans('Go to Return')"
+				@click="() => {
+					router.visit(route(hasReturn.route.name, hasReturn.route.parameters))
+				}"
+				class="hover:underline cursor-pointer"
+			>
+				<FontAwesomeIcon :icon="faExchange" class="opacity-75" fixed-width />
+				<span class="ml-2 font-normal text-lg leading-none text-indigo-500">
+					{{ trans("Returned") }}
+				</span>
+			</div>
 			<FontAwesomeIcon
 				v-if="delivery_note.is_premium_dispatch"
 				v-tooltip="trans('Priority dispatch')"
@@ -369,15 +451,42 @@ onMounted(() => {
 				:style="action.style"
 				v-tooltip="action.tooltip"
 				:routeTarget="action.route"
-				@error="(e) => {
-					notify({
-						title: ctrans('Something went wrong'),
-						text: e.message || 'Please try again later or contact administrator.',
-						type: 'error',
-					}),
-					openModalAddShipment = true
-				}"
+				@error="handleFinaliseError"
 			/>
+		</template>
+
+		<template #wrapped-return="{ action }">
+			<ButtonWithLink
+				type="red"
+				v-tooltip="ctrans('Process the return if the product is sent back to the warehouse due to failed delivery or other reasons')"
+				icon="fal fa-exchange"
+				:routeTarget="{
+					name: 'grp.models.delivery_note.return.process',
+					parameters: {
+						deliveryNote: props.delivery_note.id
+					},
+					method: 'patch'
+				}"
+				@error="(e) => {
+					console.log('eeee', e)
+					notify({
+						title: ctrans('Failed to set return'),
+						text: e.message || ctrans('Please try again later or contact administrator'),
+						type: 'error',
+					})
+				}"
+				@success="() => {
+					notify({ 
+						title: ctrans('Updated'), 
+						text: ctrans('Successfully created return'), 
+						type: 'success' 
+					})
+				}"
+			>
+				<template #label>
+					<span class="whitespace-nowrap">{{ ctrans('Set return') }}</span>
+				</template>
+			</ButtonWithLink>
 		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">

@@ -141,7 +141,7 @@ defineExpose({
         <div class="w-full md:w-1/4">
             <PureInput
                 v-model="tableFilter.search"
-                placeholder="Search"
+                :placeholder="trans('Search')"
                 :loading="loading"
                 :copy-button="true"
                 @update:modelValue="() => getData()">

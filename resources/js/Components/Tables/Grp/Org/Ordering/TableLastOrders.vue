@@ -122,7 +122,12 @@ function customerRoute(order: Order) {
                         bodyClass="max-w-64 overflow-hidden text-ellipsis whitespace-nowrap"
                     >
                         <template #body="slotProps">
-                            {{ useFormatTime(slotProps.data[orderGroup.date_key]) }}
+                            <span v-if="orderGroup.date_key === 'date' && slotProps.data.platform_milestones?.placed_at">
+                                {{ useFormatTime(slotProps.data.platform_milestones.placed_at) }}
+                            </span>
+                            <span v-else>
+                                {{ useFormatTime(slotProps.data[orderGroup.date_key]) }}
+                            </span>
                         </template>
                     </Column>
                     <Column field="reference" header="Reference"

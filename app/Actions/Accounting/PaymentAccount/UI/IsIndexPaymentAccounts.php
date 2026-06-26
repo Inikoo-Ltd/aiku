@@ -70,6 +70,7 @@ trait IsIndexPaymentAccounts
                 'payment_service_providers.slug as payment_service_provider_slug',
                 'payment_service_providers.name as payment_service_provider_name',
                 'payment_service_providers.code as payment_service_provider_code',
+                'org_payment_service_providers.slug as org_payment_service_provider_slug',
                 'payment_account_stats.number_pas_state_active',
                 'org_amount_successfully_paid'
             ]);
@@ -79,6 +80,7 @@ trait IsIndexPaymentAccounts
 
         return $queryBuilder->leftJoin('payment_account_stats', 'payment_accounts.id', 'payment_account_stats.payment_account_id')
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
+            ->leftJoin('org_payment_service_providers', 'payment_accounts.org_payment_service_provider_id', 'org_payment_service_providers.id')
             ->allowedSorts([
                 'code',
                 'name',

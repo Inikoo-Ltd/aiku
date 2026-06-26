@@ -11,14 +11,19 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -31,7 +36,9 @@ class ShowShop extends OrgAction
     use WithDashboardCurrencyTypeSettings;
     use WithDashboardIntervalOption;
     use WithDashboardSettings;
+    use WithPerformanceDateResolution;
     use WithTabsBox;
+    use GetPlatformLogo;
 
     public function handle(Shop $shop): Shop
     {
@@ -42,28 +49,18 @@ class ShowShop extends OrgAction
     {
         $userSettings = $request->user()->settings;
 
-        $validTabs  = array_keys(ShopDashboardSalesTableTabsEnum::navigation($shop));
+        $tabsNavigation = ShopDashboardSalesTableTabsEnum::navigation($shop);
+        $validTabs  = array_keys($tabsNavigation);
         $currentTab = Arr::get($userSettings, 'shop_dashboard_tab', Arr::first($validTabs));
 
-        if (!in_array($currentTab, $validTabs)) {
+        if (! in_array($currentTab, $validTabs, true)) {
             $currentTab = Arr::first($validTabs);
         }
 
-        $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $performanceDates = [null, null];
-
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        }
-
-        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate);
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
         $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
@@ -75,13 +72,13 @@ class ShowShop extends OrgAction
                     'id'        => 'shop_dashboard_tab',
                     'intervals' => [
                         'options'        => $this->dashboardIntervalOption(),
-                        'value'          => $saved_interval,
-                        'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
+                        'value'          => $savedInterval,
+                        'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings)
                     ],
                     'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings)
+                        'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'       => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                     ],
                     'shop_blocks' => [
                         'interval_data'        => $shopTimeSeriesStats,
@@ -97,14 +94,25 @@ class ShowShop extends OrgAction
             ],
         ];
 
+        if ($shop->type->value === 'dropshipping') {
+            $dashboard['super_blocks'][0]['channel_health'] = $this->getChannelHealthStats($shop);
+        }
+
+        $currentTabEnum = ShopDashboardSalesTableTabsEnum::from($currentTab);
+        $primaryTables  = ShopDashboardSalesTableTabsEnum::tablesForTabs($shop, $timeSeriesData, [$currentTabEnum]);
+
         $dashboard['super_blocks'][0]['blocks'] = [
             [
-                'id'          => 'sales_table',
-                'type'        => 'table',
-                'current_tab' => $currentTab,
-                'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
-                'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $timeSeriesData),
-                'charts'      => [],
+                'id'              => 'sales_table',
+                'type'            => 'table',
+                'current_tab'     => $currentTab,
+                'tabs'            => $tabsNavigation,
+                'tables'          => $primaryTables,
+                'charts'          => [],
+                'tab_fetch_route' => [
+                    'name'       => 'grp.org.shops.show.dashboard.tab-data',
+                    'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $shop->slug],
+                ],
             ],
         ];
 
@@ -115,6 +123,61 @@ class ShowShop extends OrgAction
         ]);
     }
 
+    private function getChannelHealthStats(Shop $shop): array
+    {
+        $orgSlug  = $this->organisation->slug;
+        $shopSlug = $shop->slug;
+
+        return CustomerSalesChannel::query()
+            ->join('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
+            ->where('customer_sales_channels.shop_id', $shop->id)
+            ->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN)
+            ->whereNull('customer_sales_channels.deleted_at')
+            ->where('platforms.type', '!=', PlatformTypeEnum::MANUAL->value)
+            ->selectRaw("
+                platforms.id,
+                platforms.name,
+                platforms.slug,
+                platforms.type,
+                CAST(SUM(CASE WHEN customer_sales_channels.platform_status = true THEN 1 ELSE 0 END) AS INTEGER) as ok,
+                CAST(SUM(CASE WHEN customer_sales_channels.platform_status = false THEN 1 ELSE 0 END) AS INTEGER) as problem,
+                CAST(SUM(CASE WHEN customer_sales_channels.platform_status = true AND customer_sales_channels.number_orders > 0 THEN 1 ELSE 0 END) AS INTEGER) as ok_with_invoices,
+                CAST(SUM(CASE WHEN customer_sales_channels.platform_status = true AND customer_sales_channels.last_order_created_at >= NOW() - INTERVAL '30 days' THEN 1 ELSE 0 END) AS INTEGER) as ok_with_recent_invoices
+            ")
+            ->groupBy('platforms.id', 'platforms.name', 'platforms.slug', 'platforms.type')
+            ->orderBy('platforms.name')
+            ->get()
+            ->map(function ($row) use ($orgSlug, $shopSlug) {
+                $channelsRoute = [
+                    'name'       => 'grp.org.shops.show.crm.platforms.show',
+                    'parameters' => [
+                        'organisation' => $orgSlug,
+                        'shop'         => $shopSlug,
+                        'platform'     => $row->slug,
+                        'tab'          => 'channels',
+                    ],
+                ];
+
+                return [
+                    'name'                    => $row->name,
+                    'type'                    => $row->type,
+                    'logo'                    => $this->getPlatformLogo($row->type),
+                    'ok'                      => (int) $row->ok,
+                    'problem'                 => (int) $row->problem,
+                    'ok_with_invoices'        => (int) $row->ok_with_invoices,
+                    'ok_with_recent_invoices' => (int) $row->ok_with_recent_invoices,
+                    'routes'                  => [
+                        'problem'                 => array_merge($channelsRoute, ['parameters' => array_merge($channelsRoute['parameters'], ['bucket' => 'problem'])]),
+                        'ok'                      => array_merge($channelsRoute, ['parameters' => array_merge($channelsRoute['parameters'], ['bucket' => 'ok'])]),
+                        'ok_with_invoices'        => array_merge($channelsRoute, ['parameters' => array_merge($channelsRoute['parameters'], ['bucket' => 'ok_with_invoices'])]),
+                        'ok_with_recent_invoices' => array_merge($channelsRoute, ['parameters' => array_merge($channelsRoute['parameters'], ['bucket' => 'ok_with_recent_invoices'])]),
+                    ],
+                ];
+            })
+            ->values()
+            ->toArray();
+    }
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);
@@ -122,9 +185,9 @@ class ShowShop extends OrgAction
         return $this->handle($shop);
     }
 
-    public function getBreadcrumbs(array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(array $routeParameters, ?string $suffix = null): array
     {
-        $shop = Shop::where('slug', $routeParameters['shop'])->first();
+        $shop = Shop::query()->select('code')->where('slug', $routeParameters['shop'])->firstOrFail();
 
         return array_merge(
             ShowOrganisationDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),

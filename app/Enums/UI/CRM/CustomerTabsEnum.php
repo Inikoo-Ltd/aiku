@@ -17,25 +17,21 @@ enum CustomerTabsEnum: string
     use HasTabs;
 
     case SHOWCASE            = 'showcase';
-    case HISTORY             = 'history';
     case TIMELINE            = 'timeline';
+
+    case HISTORY             = 'history';
     case ATTACHMENTS         = 'attachments';
-    case CREDIT_TRANSACTIONS = 'credit_transactions';
     case PAYMENTS            = 'payments';
+    case CREDIT_TRANSACTIONS = 'credit_transactions';
     case FAVOURITES          = 'favourites';
     case REMINDERS           = 'reminders';
     case DISPATCHED_EMAILS   = 'dispatched_emails';
+    case OFFERS   = 'offers';
 
 
     public function blueprint(): array
     {
         return match ($this) {
-            CustomerTabsEnum::PAYMENTS => [
-                'align' => 'right',
-                'title' => __('Payments'),
-                'icon'  => 'fal fa-money-bill',
-                'type'  => 'icon',
-            ],
             CustomerTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
@@ -44,17 +40,18 @@ enum CustomerTabsEnum: string
                 'title' => __('Timeline'),
                 'icon'  => 'fal fa-code-branch',
             ],
+
+            CustomerTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
             CustomerTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
                 'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon'
-            ],
-            CustomerTabsEnum::DISPATCHED_EMAILS => [
-                'align' => 'right',
-                'title' => __('Dispatched emails'),
-                'icon'  => 'fal fa-paper-plane',
-                'type'  => 'icon',
             ],
             CustomerTabsEnum::CREDIT_TRANSACTIONS => [
                 'align' => 'right',
@@ -62,9 +59,15 @@ enum CustomerTabsEnum: string
                 'icon'  => 'fal fa-piggy-bank',
                 'type'  => 'icon',
             ],
-            CustomerTabsEnum::HISTORY => [
-                'title' => __('History'),
-                'icon'  => 'fal fa-clock',
+            CustomerTabsEnum::PAYMENTS => [
+                'align' => 'right',
+                'title' => __('Payments'),
+                'icon'  => 'fal fa-money-bill',
+                'type'  => 'icon',
+            ],
+            CustomerTabsEnum::FAVOURITES => [
+                'title' => __('Favourites'),
+                'icon'  => 'fal fa-heart',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
@@ -74,12 +77,19 @@ enum CustomerTabsEnum: string
                 'align' => 'right',
                 'type'  => 'icon',
             ],
-            CustomerTabsEnum::FAVOURITES => [
-                'title' => __('Favourites'),
-                'icon'  => 'fal fa-heart',
-                'type'  => 'icon',
+            CustomerTabsEnum::DISPATCHED_EMAILS => [
                 'align' => 'right',
+                'title' => __('Dispatched emails'),
+                'icon'  => 'fal fa-paper-plane',
+                'type'  => 'icon',
             ],
+            CustomerTabsEnum::OFFERS => [
+                'align' => 'right',
+                'title' => __('Offers'),
+                'icon'  => 'fal fa-badge-percent',
+                'type'  => 'icon',
+            ],
+
         };
     }
 }

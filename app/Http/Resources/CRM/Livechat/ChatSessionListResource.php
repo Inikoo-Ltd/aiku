@@ -31,9 +31,10 @@ class ChatSessionListResource extends JsonResource
 
         $activeAssignment = null;
         if ($this->relationLoaded('assignments')) {
-            $activeAssignment = $this->assignments
-                ->where('status', $assignmentStatus)
-                ->first();
+            $filtered = $this->assignments->where('status', $assignmentStatus);
+            $activeAssignment = $isClosed
+                ? $filtered->sortByDesc('updated_at')->first()
+                : $filtered->first();
         }
 
         $guestProfile = null;
@@ -125,8 +126,9 @@ class ChatSessionListResource extends JsonResource
             ] : null,
 
             'assigned_agent' => $activeAssignment ? [
-                'id' => $activeAssignment->chatAgent?->id,
-                'name' => $activeAssignment->chatAgent?->user?->contact_name,
+                'id'      => $activeAssignment->chatAgent?->id,
+                'user_id' => $activeAssignment->chatAgent?->user_id,
+                'name'    => $activeAssignment->chatAgent?->user?->contact_name,
             ] : null,
 
             'unread_count' => ChatMessage::where('chat_session_id', $this->id)

@@ -14,11 +14,11 @@ import { type Component, computed, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArrowAltFromLeft, faAlignJustify, faWarehouseAlt, faSeedling, faSadCry } from "@fal"
+import { faArrowAltFromLeft, faAlignJustify, faWarehouseAlt, faSeedling, faSadCry, faFileExcel } from "@fal"
 import { Table } from "@/types/Table"
 
 
-library.add(faArrowAltFromLeft, faAlignJustify, faWarehouseAlt, faSeedling, faSadCry)
+library.add(faArrowAltFromLeft, faAlignJustify, faWarehouseAlt, faSeedling, faSadCry, faFileExcel)
 
 
 const props = defineProps<{
@@ -28,7 +28,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    
+
     storing: Table
     incoming: Table
     returned: Table

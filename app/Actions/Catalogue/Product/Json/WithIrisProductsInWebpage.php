@@ -12,7 +12,9 @@ use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 trait WithIrisProductsInWebpage
@@ -52,7 +54,7 @@ trait WithIrisProductsInWebpage
     public function getNewArrivalsFilter(): AllowedFilter
     {
         return AllowedFilter::callback('new_arrivals', function ($query, $value) {
-            $days = is_numeric($value) ? (int) $value : 3;
+            $days = is_numeric($value) ? (int)$value : 3;
             $query->where('products.created_at', '>=', now()->subDays($days));
         });
     }
@@ -62,12 +64,12 @@ trait WithIrisProductsInWebpage
         return AllowedFilter::callback('brands', function ($query, $value) {
             $query->join('model_has_brands', function ($join) {
                 $join->on('products.id', '=', 'model_has_brands.model_id')
-                        ->where('model_has_brands.model_type', 'Product');
+                    ->where('model_has_brands.model_type', 'Product');
             });
 
             $query->join('brands', 'brands.id', 'model_has_brands.brand_id');
 
-            $query->whereIn('brands.id', (array) $value);
+            $query->whereIn('brands.id', (array)$value);
         });
     }
 
@@ -76,27 +78,28 @@ trait WithIrisProductsInWebpage
         return AllowedFilter::callback('tags', function ($query, $value) {
             $query->join('model_has_tags', function ($join) {
                 $join->on('products.id', '=', 'model_has_tags.model_id')
-                        ->where('model_has_tags.model_type', 'Product');
+                    ->where('model_has_tags.model_type', 'Product');
             });
 
             $query->join('tags', 'tags.id', 'model_has_tags.tag_id');
 
-            $query->whereIn('tags.id', (array) $value);
+            $query->whereIn('tags.id', (array)$value);
         });
     }
 
     public function getBaseQuery(string $stockMode, bool $topSeller = false): QueryBuilder
     {
-        $customer = request()->user()?->customer;
+        $customer     = request()->user()?->customer;
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
+        $queryBuilder->where('webpages.state', 'live');
 
         $queryBuilder
             ->where(function ($query) {
                 $query
                     ->where('products.is_minion_variant', false)
                     ->where('products.is_for_sale', true)
-                    ->orWhere('products.is_variant_leader', true); // If is_variant_leader is true, ignore is_for_sale. Otherwise can't display the item at all
+                    ->orWhere('products.is_variant_leader', true); // If is_variant_leader is true, ignore is_for_sale. Otherwise, can't display the item at all
             });
 
         if ($stockMode == 'in_stock') {
@@ -132,11 +135,11 @@ trait WithIrisProductsInWebpage
 
     public function getAllowedFilters(): array
     {
-        $globalSearch     = $this->getGlobalSearch();
-        $priceRangeFilter = $this->getPriceRangeFilter();
+        $globalSearch      = $this->getGlobalSearch();
+        $priceRangeFilter  = $this->getPriceRangeFilter();
         $newArrivalsFilter = $this->getNewArrivalsFilter();
-        $brandsFilter = $this->getBrandsFilter();
-        $tagsFilter = $this->getTagsFilter();
+        $brandsFilter      = $this->getBrandsFilter();
+        $tagsFilter        = $this->getTagsFilter();
 
         return [$globalSearch, $priceRangeFilter, $newArrivalsFilter, $brandsFilter, $tagsFilter];
     }
@@ -165,10 +168,12 @@ trait WithIrisProductsInWebpage
             'products.variant_id',
             'products.top_seller',
             'products.web_images',
+            'products.is_on_demand',
             'webpages.url',
             'webpages.canonical_url',
             'webpages.website_id',
             'webpages.id as webpage_id',
+            DB::raw("(SELECT brands.name FROM brands INNER JOIN model_has_brands ON brands.id = model_has_brands.brand_id WHERE model_has_brands.model_id = products.id AND model_has_brands.model_type = 'Product' LIMIT 1) as brand_name"),
             ...$additionalColumns
         ];
 
@@ -182,6 +187,7 @@ trait WithIrisProductsInWebpage
 
         return $select;
     }
+
     public function getAllowedSorts(): array
     {
         return [
@@ -204,6 +210,16 @@ trait WithIrisProductsInWebpage
             ->allowedFilters($this->getAllowedFilters())
             ->withIrisPaginator($numberOfRecords)
             ->withQueryString();
+    }
+
+    public function getDataHardLimit($queryBuilder, ?int $numberOfRecords = null): Collection
+    {
+        return $queryBuilder
+            ->defaultSort('name')
+            ->allowedSorts($this->getAllowedSorts())
+            ->allowedFilters($this->getAllowedFilters())
+            ->limit($numberOfRecords)
+            ->get();
     }
 
     public function getUnsortedData($queryBuilder, ?int $numberOfRecords = null): LengthAwarePaginator

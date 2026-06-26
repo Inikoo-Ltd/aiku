@@ -19,6 +19,9 @@ const props = defineProps<{
     }
 }>()
 
+const emits = defineEmits<{
+    (e: "select", value: any): void
+}>()
 
 let addressValues = props.form[props.fieldName]
 const countries = {};
@@ -35,6 +38,7 @@ const addressFields = (countryID: number) => {
     return props.options.countriesAddressData[countryID]['fields'];
 }
 const handleChange = (fieldAddress?: string) => {
+    emits('select', fieldAddress)
     if (fieldAddress) {
         props.form.clearErrors(fieldAddress)
     }
@@ -65,6 +69,7 @@ const handleChange = (fieldAddress?: string) => {
                     :canClear="false"
                     name="country_id"
                     id="country_id"
+                    @select="(e) => emits('select', options.countriesAddressData[e])"
                 />
                 
                 <div v-if="form.errors[fieldName] || form.recentlySuccessful"

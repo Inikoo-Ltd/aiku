@@ -5,7 +5,7 @@ import { Button as ButtonPrime, Column, DataTable, Dialog, FileUpload, FloatLabe
 import axios from 'axios'
 
 import PureCheckbox from '../Pure/PureCheckbox.vue'
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faColumns } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -268,7 +268,7 @@ const toggleDescription = (event) => {
                                 <InputIcon>
                                     <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
                                 </InputIcon>
-                                <InputText v-model="filters['global'].value" placeholder="Search..." />
+                                <InputText v-model="filters['global'].value" :placeholder="trans('Search...')" />
                             </IconField>
                         </div>
 

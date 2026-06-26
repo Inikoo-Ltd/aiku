@@ -13,7 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Web\Banner\BannerTabsEnum;
-use App\Http\Resources\Helpers\SnapshotResource;
+use App\Http\Resources\Helpers\BannerSnapshotResource;
 use App\Http\Resources\Web\BannerResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -109,13 +109,13 @@ class ShowBanner extends OrgAction
 
                 BannerTabsEnum::SNAPSHOTS->value => $this->tab == BannerTabsEnum::SNAPSHOTS->value
                     ?
-                    fn () => SnapshotResource::collection(
+                    fn () => BannerSnapshotResource::collection(
                         IndexSnapshots::run(
                             parent: $banner,
                             prefix: BannerTabsEnum::SNAPSHOTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => SnapshotResource::collection(
+                    : Inertia::lazy(fn () => BannerSnapshotResource::collection(
                         IndexSnapshots::run(
                             parent: $banner,
                             prefix: BannerTabsEnum::SNAPSHOTS->value

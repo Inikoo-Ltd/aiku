@@ -77,7 +77,7 @@ class GetSupplierSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'code,name.contact_name,email,phone,company_name,contact_website,identity_document_number'
+                'query_by' => 'code,name,contact_name,email,phone,company_name,contact_website,identity_document_number'
             ],
         ];
     }

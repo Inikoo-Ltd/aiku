@@ -12,6 +12,7 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
@@ -19,6 +20,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Web\CrawlsResource;
 use App\Http\Resources\Web\ExternalLinksResource;
 use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Catalogue\Shop;
@@ -161,28 +163,56 @@ class ShowWebsite extends OrgAction
                 'value' => $website->webStats->number_webpages_sub_type_blog,
             ],
         ];
+        $website_stats      = [
+            [
+                'label' => __('Visitors (24h)'),
+                'icon'  => 'fal fa-user',
+                "color" => "#0ea5e9",
+                'value' => $website->webStats->number_visitors_last_24_hours,
+            ],
+            [
+                'label' => __('Hits (24h)'),
+                'icon'  => 'fal fa-chart-line',
+                "color" => "#8b5cf6",
+                'value' => $website->webStats->number_hits_last_24_hours,
+            ],
+        ];
 
-        $route_storefront = [
-            'name'       => 'grp.org.shops.show.web.webpages.show',
-            'parameters' => [
-                'organisation' => $shop->organisation->slug,
-                'shop'         => $shop->slug,
-                'website'      => $website->slug,
-                'webpage'      => 'storefront-'.$shop->slug,
-            ]
+        $routeShowWebpage   = 'grp.org.shops.show.web.webpages.show';
+        $routeParam         = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+            'website'      => $website->slug,
+            'webpage'      => 'storefront-'.$shop->slug,
         ];
 
         if ($website->shop->type == ShopTypeEnum::FULFILMENT) {
-            $route_storefront = [
-                'name'       => 'grp.org.fulfilments.show.web.webpages.show',
-                'parameters' => [
-                    'organisation' => $shop->organisation->slug,
-                    'fulfilment'   => $shop->slug,
-                    'website'      => $website->slug,
-                    'webpage'      => 'storefront-'.$shop->slug,
-                ]
+            $routeShowWebpage   = 'grp.org.fulfilments.show.web.webpages.show';
+            data_set($routeParam, 'fulfilment', $shop->slug);
+            unset($routeParam['shop']);
+        }
+
+        $route_storefront = [
+            'name'       => $routeShowWebpage,
+            'parameters' => $routeParam,
+        ];
+
+        $route_landing_page = [];
+        if ($website->landingPage) {
+            data_set($routeParam, 'webpage', $website->landingPage->slug);
+            $route_landing_page = [
+                'name'       => $routeShowWebpage,
+                'parameters' => $routeParam,
             ];
         }
+
+        $routeParamWelcome         = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+            'website'      => $website->slug,
+            'webpage'      => 'welcome-'.$shop->slug,
+        ];
+
 
         return Inertia::render(
             'Org/Web/Website',
@@ -208,6 +238,20 @@ class ShowWebsite extends OrgAction
                     'actions'   =>
 
                         array_merge(
+                            [
+                                [
+                                    'type'    => 'button',
+                                    'style'   => 'tertiary',
+                                    'label'   => __('Export'),
+                                    'tooltip' => __('Export all pages: Code, URL & meta'),
+                                    'icon'    => ['fal', 'fa-file-export'],
+                                    'target'  => '_self',
+                                    'route'   => [
+                                        'name'       => str_replace('websites.show', 'webpages.export', $request->route()->getName()),
+                                        'parameters' => array_merge($request->route()->originalParameters(), ['type' => 'xlsx']),
+                                    ],
+                                ],
+                            ],
                             $this->workshopActions($request),
                             [
                                 $this->isSupervisor && $website->state == WebsiteStateEnum::IN_PROCESS ? [
@@ -231,7 +275,9 @@ class ShowWebsite extends OrgAction
                     'navigation' => WebsiteTabsEnum::navigation()
                 ],
 
-                'route_storefront' => $route_storefront,
+                'route_storefront'      => $route_storefront,
+                'route_landing_page'    => $route_landing_page,
+                'route_welcome'    => $route_landing_page,
                 'migrated'        => $website->migrated,
                 'luigi_data'      => [
                     'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
@@ -249,6 +295,7 @@ class ShowWebsite extends OrgAction
                     [
                         'stats'              => $stats,
                         'content_blog_stats' => $content_blog_stats,
+                        'website_stats'      => $website_stats,
                         'website_type'       => $website->shop->type
                     ],
                     [
@@ -257,6 +304,10 @@ class ShowWebsite extends OrgAction
                 )
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 
+
+                WebsiteTabsEnum::CRAWLS->value => $this->tab == WebsiteTabsEnum::CRAWLS->value ?
+                    fn () => CrawlsResource::collection(IndexCrawls::run($website))
+                    : Inertia::lazy(fn () => CrawlsResource::collection(IndexCrawls::run($website))),
 
                 WebsiteTabsEnum::CHANGELOG->value => $this->tab == WebsiteTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))
@@ -269,7 +320,8 @@ class ShowWebsite extends OrgAction
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))
-        ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value));
+        ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value))
+        ->table(IndexCrawls::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::CRAWLS->value));
     }
 
 

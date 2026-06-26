@@ -30,6 +30,7 @@ enum OutboxMergeTagsEnum: string
     case PAYMENT_NOTE = 'Payment Note';
     case PAYMENT_REASON = 'Payment Reason';
     case PAYMENT_TYPE = 'Payment Type';
+    case PAY_INFO = 'Pay Info';
     case CHAT_LINK = 'Chat Link';
     case CHAT_MESSAGE = 'Chat Message';
     case RETINA_LOGIN_LINK = 'Retina Login Link';
@@ -89,6 +90,10 @@ enum OutboxMergeTagsEnum: string
                 'value' => '[Low Stock Items in Basket]'
             ],
             [
+                'name'  => __('Pay Info'),
+                'value' => '[Pay Info]'
+            ],
+            [
                 'name'  => __('Preview Amount'),
                 'value' => '[Preview Amount]'
             ],
@@ -131,5 +136,20 @@ enum OutboxMergeTagsEnum: string
 
 
         ];
+    }
+
+    public static function filterTags(array $enumCases): array
+    {
+        // Get the enum values we're filtering by
+        $enumValues = array_map(fn ($case) => $case->value, $enumCases);
+
+        // Filter tags to only include those matching the provided enum cases
+        $filtered = array_filter(
+            self::tags(),
+            fn ($tag) => in_array(str_replace(['[', ']'], '', $tag['value']), $enumValues)
+        );
+
+        // Re-index array to remove gaps from filtering
+        return array_values($filtered);
     }
 }

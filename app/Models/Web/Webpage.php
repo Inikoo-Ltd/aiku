@@ -8,11 +8,14 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Analytics\WebUserRequest;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Deployment;
@@ -93,6 +96,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $layout_style
  * @property bool $index_page
  * @property bool $follow_link
+ * @property \Illuminate\Support\Carbon|null $last_published_at
+ * @property bool $is_different_when_logged_in
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
@@ -141,20 +146,22 @@ class Webpage extends Model implements Auditable, HasMedia
     use HasImage;
 
     protected $casts = [
-        'data'             => 'array',
-        'settings'         => 'array',
-        'published_layout' => 'array',
-        'migration_data'   => 'array',
-        'seo_data'         => 'array',
-        'structured_data'  => 'array',
-        'state'            => WebpageStateEnum::class,
-        'sub_type'         => WebpageSubTypeEnum::class,
-        'type'             => WebpageTypeEnum::class,
-        'ready_at'         => 'datetime',
-        'live_at'          => 'datetime',
-        'closed_at'        => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime'
+        'data'                        => 'array',
+        'settings'                    => 'array',
+        'published_layout'            => 'array',
+        'migration_data'              => 'array',
+        'seo_data'                    => 'array',
+        'structured_data'             => 'array',
+        'state'                       => WebpageStateEnum::class,
+        'sub_type'                    => WebpageSubTypeEnum::class,
+        'type'                        => WebpageTypeEnum::class,
+        'ready_at'                    => 'datetime',
+        'live_at'                     => 'datetime',
+        'closed_at'                   => 'datetime',
+        'fetched_at'                  => 'datetime',
+        'last_fetched_at'             => 'datetime',
+        'last_published_at'           => 'datetime',
+        'is_different_when_logged_in' => 'boolean',
     ];
 
     protected $attributes = [
@@ -285,8 +292,7 @@ class Webpage extends Model implements Auditable, HasMedia
 
     public function getCanonicalUrl(): ?string
     {
-
-        $url = $this->canonical_url;
+        $url         = $this->canonical_url;
         $environment = app()->environment();
 
 
@@ -362,6 +368,48 @@ class Webpage extends Model implements Auditable, HasMedia
     public function redirect(): BelongsTo
     {
         return $this->belongsTo(Redirect::class);
+    }
+
+    public function luigiIdentity(): string
+    {
+        //todo simplify to use this instead
+        //return 'webpage-' . $this->slug;
+
+        if ($this->model instanceof Product) {
+            return "$this->group_id:$this->organisation_id:$this->shop_id:{$this->website->id}:$this->id";
+        } else {
+
+            $model = $this->model;
+
+            // Start with just the current webpage's URL
+            $segments = [];
+
+            if ($model instanceof ProductCategory) {
+                if ($model->type === ProductCategoryTypeEnum::DEPARTMENT) {
+                    $segments = [
+                        optional($model->webpage ?? null)->url,
+                    ];
+                } elseif ($model->type === ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    $segments = collect([
+                        optional($model->department?->webpage ?? null)->url,
+                        $this->url,
+                    ])->filter()->all();
+                } elseif ($model->type === ProductCategoryTypeEnum::FAMILY) {
+                    $segments = collect([
+                        optional($model->department?->webpage ?? null)->url,
+                        optional($model->subDepartment?->webpage ?? null)->url,
+                        $this->url,
+                    ])->filter()->all();
+                }
+            } else {
+                $segments = [$this->url];
+            }
+
+            return '/'.collect($segments)->implode('/');
+
+        }
+
+
     }
 
 }

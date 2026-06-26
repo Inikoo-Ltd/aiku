@@ -5,7 +5,7 @@ import { onMounted, ref } from 'vue'
 import { router } from "@inertiajs/vue3"
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Image as ImageTS } from '@/types/Image'
 import { ctrans } from '@/Composables/useTrans'

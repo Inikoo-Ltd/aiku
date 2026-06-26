@@ -9,8 +9,12 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
+use App\Actions\Dropshipping\Tiktok\Order\FulfillOrderToTiktok;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
+use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\Pallet\ReturnPallet;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -21,6 +25,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletReturns;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -46,7 +51,9 @@ class DispatchPalletReturn extends OrgAction
 
         /** @var Pallet $pallet */
         $pallets = $palletReturn->pallets()
-            ->whereNot('status', PalletStatusEnum::INCIDENT->value)
+            ->where('pallets.pallet_return_id', $palletReturn->id)
+            ->whereNot('pallets.status', PalletStatusEnum::INCIDENT->value)
+            ->wherePivot('state', '!=', PalletReturnItemStateEnum::CANCEL->value)
             ->get();
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
@@ -68,6 +75,13 @@ class DispatchPalletReturn extends OrgAction
                 return $palletReturn;
             });
         }
+
+        $palletReturn->items()
+            ->where('state', '!=', PalletReturnItemStateEnum::CANCEL)
+            ->update([
+                'quantity_dispatched' => DB::raw('quantity_picked'),
+            ]);
+
         $this->update($palletReturn, $modelData);
 
         if ($recurringBill = $palletReturn->recurringBill) {
@@ -78,10 +92,10 @@ class DispatchPalletReturn extends OrgAction
         if ($palletReturn->customerSalesChannel) {
             match ($palletReturn->customerSalesChannel?->platform?->type) {
                 PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($palletReturn),
+                PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($palletReturn),
                 default => null,
             };
         }
-
 
         PalletReturnHydratePallets::dispatch($palletReturn);
         GroupHydratePalletReturns::dispatch($palletReturn->group);
@@ -89,7 +103,16 @@ class DispatchPalletReturn extends OrgAction
         WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+        if ($palletReturn->customerSalesChannel) {
+            CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+        }
         SendPalletReturnNotification::run($palletReturn);
+
+        $pickingSessions = $palletReturn->pickingSessions()->get();
+        foreach ($pickingSessions as $pickingSession) {
+            (new CalculateFulfilmentPickingSessionPicks())->action($pickingSession);
+            (new AutoFinishPackingFulfilmentPickingSession())->action($pickingSession);
+        }
 
         return $palletReturn;
     }

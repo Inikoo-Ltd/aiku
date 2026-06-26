@@ -24,7 +24,7 @@ import { RouteParams } from "@/types/route-params"
 import { Collection } from "@/types/collection"
 import { trans } from "laravel-vue-i18n"
 import SelectQuery from "@/Components/SelectQuery.vue"
-import Image from "@/Components/Image.vue"
+import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 

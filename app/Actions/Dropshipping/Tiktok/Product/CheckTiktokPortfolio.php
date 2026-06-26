@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Tiktok\Product;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -37,7 +38,7 @@ class CheckTiktokPortfolio
         if ($hasValidProductId) {
             $result = CheckIfProductExistInTiktok::run($tiktokUser, $portfolio);
             $productExistsInTiktok = ! blank(Arr::get($result, 'data'));
-            $hasVariantAtLocation   = Arr::get($result, 'data.status') === 'ACTIVATE';
+            $hasVariantAtLocation   = ! blank(Arr::get($result, 'data.id'));
         }
 
         $numberMatches = 0;
@@ -47,7 +48,7 @@ class CheckTiktokPortfolio
         if (!$hasValidProductId || !$productExistsInTiktok || !$hasVariantAtLocation) {
             $result = CheckIfProductExistInTiktok::run($tiktokUser, $portfolio);
 
-            $matches       = Arr::get($result, 'data');
+            $matches       = Arr::get($result, 'data.products', []);
             $numberMatches = count($matches);
             $matchesLabels = Arr::pluck($matches, 'title');
         }
@@ -78,5 +79,18 @@ class CheckTiktokPortfolio
         }
 
         return $portfolio;
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'tiktok:check_portfolio {portfolio_id}';
+
+    }
+
+    public function asCommand(Command $command)
+    {
+        $portfolio = Portfolio::find($command->argument('portfolio_id'));
+
+        $this->handle($portfolio);
     }
 }

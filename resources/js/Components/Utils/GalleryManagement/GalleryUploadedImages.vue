@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, onBeforeMount, onMounted, onUnmounted, toRaw } from "vue"
 import axios from 'axios'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { notify } from '@kyvg/vue3-notification'
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { routeType } from "@/types/route"
@@ -215,11 +215,11 @@ onUnmounted(() => {
                     <div class="flex flex-wrap justify-around gap-2">
                         <div
                             v-for="option in optionsList"
-                            class="relative min-h-10 h-20 max-h-24 min-w-20 w-auto border rounded cursor-pointer transition-all"
+                            class="relative h-20 w-20 overflow-hidden border rounded cursor-pointer transition-all"
                             @click="() => toggleImageSelection(option.id)"
                             :class="selectedIdImages.includes(option.id) ? 'border-blue-400 scale-[97%]' : 'border-gray-300'"
                         >
-                            <Image :src="option.thumbnail" />
+                            <Image :src="option.thumbnail" :alt="option.alt || option.slug" :imageCover="true" />
                             <div v-if="selectedIdImages.includes(option.id)" class="absolute inset-0 bg-blue-500/40"
                             />
                             <FontAwesomeIcon v-if="selectedIdImages.includes(option.id)" icon='fas fa-check-circle' class='absolute top-1 right-1 text-green-500' fixed-width aria-hidden='true' />

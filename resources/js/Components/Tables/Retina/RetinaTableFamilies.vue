@@ -11,7 +11,7 @@ import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link } from "@inertiajs/vue3";
 import { faYinYang, faDotCircle, faCheck,} from "@fal";
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 
 
 library.add(faCheck,faYinYang, faDotCircle)

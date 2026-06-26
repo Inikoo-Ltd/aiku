@@ -49,8 +49,6 @@ class GetGroupNavigation
                 ],
             ]
         ];
-        //        $groupNavigation['clocking-machines'] = $this->getClockingMachinesNavs(); //need permission for just employees can access
-
         if ($user->hasAnyPermission(['goods.view','masters.view'])) {
             $groupNavigation['trade-units'] = $this->getTradeUnitsNavs();
         }
@@ -71,47 +69,63 @@ class GetGroupNavigation
             $groupNavigation['organisations'] = $this->getOrganisationsNavs();
         }
 
-        if (app()->environment('local')) {
+        if (app()->isLocal()) {
             $groupNavigation['sales-channels'] = $this->getSalesChannelsNavs();
+            $groupNavigation['website'] = $this->getWebsiteNavs();
         }
 
         if ($user->hasPermissionTo('group-overview')) {
             $groupNavigation['overview'] = $this->getOverviewNavs();
         }
 
-        if (app()->environment('local')) {
-            $groupNavigation['chat'] = [
-                'label'   => __('Chat'),
-                'tooltip' => __('Chat'),
-                'icon'    => ['fal', 'fa-comment-alt'],
-                'root'    => 'grp.chat.',
-                'route'   => [
-                    'name' => 'grp.chat.dashboard',
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label'   => __('Dashboard'),
-                            'tooltip' => __('Dashboard'),
-                            'icon'    => ['fal', 'fa-comment-alt'],
-                            'root'    => 'grp.chat.dashboard',
-                            'route'   => [
-                                'name' => 'grp.chat.dashboard',
-                            ],
-                        ],
-                        [
-                            'label'   => __('Agents'),
-                            'tooltip' => __('Agents'),
-                            'icon'    => ['fal', 'fa-headset'],
-                            'root'    => 'grp.chat.agents.',
-                            'route'   => [
-                                'name' => 'grp.chat.agents.show',
-                            ],
+
+        $groupNavigation['chat'] = [
+            'label'   => __('Chat'),
+            'tooltip' => __('Chat'),
+            'icon'    => ['fal', 'fa-comment-alt'],
+            'root'    => 'grp.chat.',
+            'route'   => [
+                'name' => 'grp.chat.dashboard',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Dashboard'),
+                        'tooltip' => __('Dashboard'),
+                        'icon'    => ['fal', 'fa-comment-alt'],
+                        'root'    => 'grp.chat.dashboard',
+                        'route'   => [
+                            'name' => 'grp.chat.dashboard',
                         ],
                     ],
+                    // [
+                    //     'label'   => __('Agents'),
+                    //     'tooltip' => __('Agents'),
+                    //     'icon'    => ['fal', 'fa-headset'],
+                    //     'root'    => 'grp.chat.agents.',
+                    //     'route'   => [
+                    //         'name' => 'grp.chat.agents.show',
+                    //     ],
+                    // ],
                 ],
-            ];
-        }
+            ],
+        ];
+
+        $groupNavigation['devops'] = [
+            'label'   => __('Devops'),
+            'tooltip' => __('Application Performance Monitoring'),
+            'icon'    => ['fal', 'fa-server'],
+            'root'    => 'grp.devops.',
+            'route'   => [
+                'name' => 'grp.devops.dashboard',
+            ],
+            'topMenu' => [
+                'subSections' => [
+
+
+                ],
+            ],
+        ];
 
         if ($user->hasPermissionTo('sysadmin.view')) {
             $groupNavigation['sysadmin'] = $this->getSysAdminNavs();
@@ -132,7 +146,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => 'Trade Units',
+                        'label' => __('Trade Units'),
                         'icon'  => ['fal', 'fa-atom'],
                         'root'  => 'grp.trade_units.units.',
                         'route' => [
@@ -141,7 +155,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Trade Unit Families',
+                        'label' => __('Trade Unit Families'),
                         'icon'  => ['fal', 'fa-atom-alt'],
                         'root'  => 'grp.trade_units.families.',
                         'route' => [
@@ -150,7 +164,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Brands',
+                        'label' => __('Brands'),
                         'icon'  => ['fal', 'fa-copyright'],
                         'root'  => 'grp.trade_units.brands.',
                         'route' => [
@@ -159,11 +173,20 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Tags',
+                        'label' => __('Tags'),
                         'icon'  => ['fal', 'fa-tags'],
                         'root'  => 'grp.trade_units.tags.',
                         'route' => [
                             'name'       => 'grp.trade_units.tags.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    [
+                        'label' => __('Barcodes'),
+                        'icon'  => ['fal', 'fa-barcode'],
+                        'root'  => 'grp.trade_units.barcodes.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.barcodes.index',
                             'parameters' => []
                         ]
                     ],
@@ -238,7 +261,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Ingredients',
+                        'label' => __('Ingredients'),
                         'icon'  => ['fal', 'fa-apple-crate'],
                         'root'  => 'grp.goods.ingredients.',
                         'route' => [
@@ -326,20 +349,18 @@ class GetGroupNavigation
         ];
     }
 
-    //    private function getClockingMachinesNavs(): array
-    //    {
-    //        return [
-    //            'label'   => __('Clocking'),
-    //            'icon'    => ['fal', 'fa-clock'],
-    //            'root'    => 'grp.clocking_employees.',
-    //            'route'   => [
-    //                'name' => 'grp.clocking_employees.index'
-    //            ],
-    //            'topMenu' => []
-    //        ];
-    //    }
-
-
+    private function getWebsiteNavs(): array
+    {
+        return [
+            'label'   => __('Website'),
+            'icon'    => ['fal', 'fa-globe'],
+            'root'    => 'grp.websites.',
+            'route'   => [
+                'name' => 'grp.websites.index'
+            ],
+            'topMenu' => []
+        ];
+    }
 
     private function getOverviewNavs(): array
     {
@@ -350,7 +371,19 @@ class GetGroupNavigation
             'route'   => [
                 'name' => 'grp.overview.hub'
             ],
-            'topMenu' => []
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Top Customers'),
+                        'icon'    => ['fal', 'fa-trophy'],
+                        'root'    => 'grp.overview.crm.customers.top_customers',
+                        'route'   => [
+                            'name'       => 'grp.overview.crm.customers.top_customers',
+                            'parameters' => []
+                        ]
+                    ],
+                ]
+            ]
         ];
     }
 

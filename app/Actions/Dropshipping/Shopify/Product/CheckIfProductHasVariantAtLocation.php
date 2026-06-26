@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
@@ -34,7 +35,7 @@ class CheckIfProductHasVariantAtLocation
 
 
         if (!$shopifyUser->shopify_location_id) {
-            Sentry::captureMessage("No location ID found for Shopify user");
+            Log::error("No location ID found for Shopify user");
 
             return $result;
         }
@@ -42,7 +43,7 @@ class CheckIfProductHasVariantAtLocation
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            Log::error("Failed to initialize Shopify GraphQL client");
 
             data_set($result, 'error', true);
 

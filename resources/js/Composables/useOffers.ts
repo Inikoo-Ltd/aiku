@@ -22,5 +22,23 @@ export function getBestOffer(
     ? offers
     : Object.values(offers)
 
-  return list.find(offer => String(offer.id) === String(offerId)) ?? null
+  const offer = list.find(o => String(o.id) === String(offerId))
+  if (!offer) return null
+
+  const now = new Date()
+
+  const startAt = offer.start_at ? new Date(offer.start_at) : null
+  const endAt = offer.end_at ? new Date(offer.end_at) : null
+
+  if (startAt && now < startAt) return null
+
+  if (offer.duration !== 'permanent') {
+    if (!endAt || now > endAt) return null
+  }
+
+  if (offer.duration === 'permanent' && endAt && now > endAt) {
+    return null
+  }
+
+  return offer
 }

@@ -31,7 +31,7 @@ import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import { notify } from '@kyvg/vue3-notification'
 import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import Image from '@/Components/Image.vue'
+import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { routeType } from '@/types/route'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
@@ -42,6 +42,7 @@ import ProductCategoryTimeSeriesTable from '@/Components/Product/ProductCategory
 import Breadcrumb from 'primevue/breadcrumb'
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
+import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 
 library.add(
     faFolder,
@@ -89,8 +90,12 @@ const props = defineProps<{
         id:number
         slug: string
         currency_code: string
+        default_dates?: {
+            start: string            
+        }
     }
     offers?: {}
+    related_product_category: object,
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -106,7 +111,9 @@ const component: Component = computed(() => {
         history: TableHistories,
         images: ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
-        offers: TableOffers
+        offers: TableOffers,
+        related_product_category: RelatedProductCategory,
+
     }
     return components[currentTab.value]
 

@@ -8,6 +8,8 @@
 
 
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Actions\UI\Dashboards\GetGroupDashboardTabData;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowGroupDashboard::class)->name('show');
+Route::get('/tab-data', GetGroupDashboardTabData::class)->name('tab-data');

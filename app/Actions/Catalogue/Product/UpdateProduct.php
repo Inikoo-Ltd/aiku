@@ -15,8 +15,11 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
-use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
+use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
+use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
+use App\Models\Masters\MasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -66,7 +69,7 @@ class UpdateProduct extends OrgAction
 
         if (Arr::has($modelData, 'rrp_per_unit')) {
             $rrpPerUnit = Arr::pull($modelData, 'rrp_per_unit');
-            $rrp = $rrpPerUnit * trimDecimalZeros($product->units);
+            $rrp        = $rrpPerUnit * trimDecimalZeros($product->units);
             data_set($modelData, 'rrp', $rrp);
         }
 
@@ -80,7 +83,7 @@ class UpdateProduct extends OrgAction
             $webpageData['breadcrumb_label'] = Arr::pull($modelData, 'webpage_breadcrumb_label');
         }
 
-        $oldIsOutOfStock = $product->available_quantity > 0;
+        $oldIsInStock = $product->available_quantity > 0;
 
         $oldHistoricProduct = $product->current_historic_asset_id;
 
@@ -187,7 +190,8 @@ class UpdateProduct extends OrgAction
                 MasterAssetHydrateAssets::run($product->master_product_id);
             }
 
-            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
+            // Only reopen if it's also not in_process/discontinued
+            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED && !in_array($product->state, [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])) {
                 ReopenWebpage::run($product->webpage);
             }
 
@@ -195,7 +199,7 @@ class UpdateProduct extends OrgAction
                 CloseWebpage::make()->action(
                     $product->webpage,
                     [
-                        'redirect_type' => RedirectTypeEnum::TEMPORAL,
+                        'redirect_type' => RedirectTypeEnum::PERMANENT,
                         'to_webpage_id' => $product->webpage->website->storefront_id
                     ]
                 );
@@ -228,6 +232,12 @@ class UpdateProduct extends OrgAction
                     'description' => [$product->shop->language->code => Arr::pull($modelData, 'description')]
                 ]
             ]);
+
+            if ($product->master_product_id) {
+                MasterAssetHydrateMissingChildDescription::dispatch(
+                    MasterAsset::find($product->master_product_id)
+                )->delay($this->hydratorsDelay);
+            }
         }
 
         if (Arr::has($changed, 'description_extra')) {
@@ -263,7 +273,7 @@ class UpdateProduct extends OrgAction
             CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
         }
 
-        $isOutOfStock = $product->available_quantity > 0;
+        $isInStock = $product->available_quantity > 0;
 
 
         $fieldsUsedInLuigi = [
@@ -280,9 +290,9 @@ class UpdateProduct extends OrgAction
                 $changed,
                 $fieldsUsedInLuigi
             )
-                || $isOutOfStock != $oldIsOutOfStock)
+                || $isInStock != $oldIsInStock)
         ) {
-            ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60 * 15);
+            ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60);
         }
 
         $fieldsUsedInWebpages = array_merge(
@@ -296,7 +306,7 @@ class UpdateProduct extends OrgAction
                 $changed,
                 $fieldsUsedInWebpages
             )
-                || $isOutOfStock != $oldIsOutOfStock)
+                || $isInStock != $oldIsInStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
         }
@@ -305,11 +315,8 @@ class UpdateProduct extends OrgAction
             $product->updateQuietly([
                 'available_quantity_updated_at' => now()
             ]);
-            if ($product->shop->type == ShopTypeEnum::DROPSHIPPING) {
-                UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id)->delay(now()->addSeconds(180));
-            }
             if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE) {
-                UpdateFaireProductInventoryQuantity::dispatch($product);
+                UpdateFaireProductInventoryQuantity::dispatch($product)->delay(60);
             }
         }
 
@@ -336,6 +343,19 @@ class UpdateProduct extends OrgAction
 
         if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $oldState != $product->state) {
             $product = ProductHydrateAvailableQuantity::run($product);
+        }
+
+        if ($oldState != $product->state && $product->webpage) {
+
+            if ($product->state == ProductStateEnum::DISCONTINUED) {
+                CloseDiscontinuedWebpage::run($product->webpage);
+            }
+
+            if ($product->state == ProductStateEnum::ACTIVE && $oldState == ProductStateEnum::DISCONTINUED) {
+                ReopenDiscontinuedWebpage::run($product->webpage);
+            }
+
+
         }
 
         return $product;
@@ -441,17 +461,17 @@ class UpdateProduct extends OrgAction
             'pictogram_oxidising'          => ['sometimes', 'boolean'],
             'pictogram_danger'             => ['sometimes', 'boolean'],
 
-            'webpage_title'                => ['sometimes', 'string'],
-            'webpage_description'          => ['sometimes', 'string'],
-            'webpage_breadcrumb_label'     => ['sometimes', 'string', 'max:40'],
+            'webpage_title'                 => ['sometimes', 'string'],
+            'webpage_description'           => ['sometimes', 'string'],
+            'webpage_breadcrumb_label'      => ['sometimes', 'string', 'max:40'],
 
             // Sale Status & Webpage
-            'is_main'                      => ['sometimes', 'boolean'],
-            'is_for_sale'                  => ['sometimes', 'boolean'],
-            'not_for_sale_from_master'     => ['sometimes', 'boolean'],
-            'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
-            'has_live_webpage'             => ['sometimes', 'boolean'],
-            'marketplace_id'               => ['sometimes'],
+            'is_main'                       => ['sometimes', 'boolean'],
+            'is_for_sale'                   => ['sometimes', 'boolean'],
+            'not_for_sale_from_master'      => ['sometimes', 'boolean'],
+            'not_for_sale_from_trade_unit'  => ['sometimes', 'boolean'],
+            'has_live_webpage'              => ['sometimes', 'boolean'],
+            'marketplace_id'                => ['sometimes'],
             'not_follow_master_trade_units' => ['sometimes', 'boolean']
         ];
 

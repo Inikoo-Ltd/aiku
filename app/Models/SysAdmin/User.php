@@ -18,7 +18,7 @@ use App\Models\UserFailedLogIn;
 use App\Models\UserLogin;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
 use Illuminate\Support\Collection;
@@ -138,7 +138,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     use IsUserable;
     use HasImage;
     use HasApiTokens;
-    use Searchable;
+    use HasSearch;
 
     protected $guarded = [
     ];

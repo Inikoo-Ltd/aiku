@@ -142,7 +142,7 @@ class IndexBatchCodes extends OrgAction
                             'type'   => 'buttonGroup',
                             'key'    => 'upload-add',
                             'button' => [
-                                app()->isLocal() ? [
+                                [
                                     'type'  => 'button',
                                     'style' => 'primary',
                                     'icon'  => ['fal', 'fa-upload'],
@@ -151,7 +151,7 @@ class IndexBatchCodes extends OrgAction
                                         'name'       => 'grp.models.warehouse.batch_codes.upload',
                                         'parameters' => [$this->warehouse->id],
                                     ],
-                                ] : [],
+                                ],
                                 [
                                     'type'  => 'button',
                                     'style' => 'create',
@@ -168,7 +168,7 @@ class IndexBatchCodes extends OrgAction
                 'upload_batch_codes' => $orgStock ? null : [
                     'title' => [
                         'label'       => __('Upload Batch Codes'),
-                        'information' => __('The list of column file:'),
+                        'information' => __('The list of column file: code, expiry_date, sku'),
                     ],
                     'progressDescription' => __('Importing batch codes'),
                     'preview_template'    => [

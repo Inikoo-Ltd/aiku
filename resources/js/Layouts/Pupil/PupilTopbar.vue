@@ -7,7 +7,7 @@ import { faTerminal, faCog, faAbacus, faFolder, faFax,faUserCircle, faBarcode, f
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject } from "vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
-import Image from "@/Components/Image.vue";
+import Image from "@common/Components/Image.vue";
 
 library.add(faChevronDown, faDotCircle, faTerminal, faCog, faAbacus, faFolder, faFax,faUserCircle, faBarcode, faBallotCheck, faUsdCircle)
 

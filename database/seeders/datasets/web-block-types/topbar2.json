@@ -4,8 +4,8 @@
 	"code": "top-bar-2",
 	"name": "Topbar Fantastic",
 	"component": "topbar",
-	"fixed": true,
-	"website_type" : ["b2b","b2c","dropshipping"],
+	"fixed": false,
+	"website_type" : ["b2b","b2c"],
 	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
@@ -14,13 +14,13 @@
 				"properties": {
 					"background": {
 						"type": "color",
-						"color": "linear-gradient(90deg, rgba(221,245,254,1) 0%, rgba(252,247,255,1) 16%, rgba(255,252,246,1) 35%, rgba(248,240,255,1) 57%, rgba(255,250,246,1) 83%)",
+						"color": "rgba(10,10,10,1)",
 						"image": {
 							"original": null
 						}
 					},
 					"text": {
-						"color": "rgba(10,10,10,1)",
+						"color": "rgba(255,255,255,1)",
 						"fontFamily": "Inter, sans-serif"
 					}
 				}
@@ -29,283 +29,11 @@
 				"text": "<p>Celebrating your membership anniversary!</p>",
 				"visible": "all"
 			},
-			"greeting": {
-				"text": "<p>Welcome, <strong>{{ name }}</strong>!",
-				"visible": "login"
-			},
-			"login": {
-				"link": null,
-				"text": "Login",
-				"visible": "logout",
-				"container": {
-					"properties": {
-						"text": {
-							"color": "rgba(255, 255, 255, 1)",
-							"fontFamily": "Inter, sans-serif"
-						},
-						"border": {
-							"top": {
-								"value": 0
-							},
-							"left": {
-								"value": 0
-							},
-							"unit": "px",
-							"color": "rgba(231, 231, 231, 1)",
-							"right": {
-								"value": 0
-							},
-							"bottom": {
-								"value": 0
-							},
-							"rounded": {
-								"unit": "px",
-								"topleft": {
-									"value": 5
-								},
-								"topright": {
-									"value": 5
-								},
-								"bottomleft": {
-									"value": 5
-								},
-								"bottomright": {
-									"value": 5
-								}
-							}
-						},
-						"margin": {
-							"top": {
-								"value": 0
-							},
-							"left": {
-								"value": 0
-							},
-							"unit": "px",
-							"right": {
-								"value": 0
-							},
-							"bottom": {
-								"value": 0
-							}
-						},
-						"padding": {
-							"top": {
-								"value": 5
-							},
-							"left": {
-								"value": 20
-							},
-							"unit": "px",
-							"right": {
-								"value": 20
-							},
-							"bottom": {
-								"value": 5
-							}
-						},
-						"background": {
-							"type": "color",
-							"color": "rgba(10, 10, 10, 1)",
-							"image": {
-								"original": null
-							}
-						}
-					}
-				}
-			},
-			"register": {
-				"link": null,
-				"text": "Register",
-				"visible": "logout",
-				"container": {
-					"properties": {
-						"text": {
-							"color": "rgba(10, 10, 10, 1)",
-							"fontFamily": "Inter, sans-serif"
-						},
-						"border": {
-							"top": {
-								"value": 1
-							},
-							"left": {
-								"value": 1
-							},
-							"unit": "px",
-							"color": "rgba(10, 10, 10, 1)",
-							"right": {
-								"value": 1
-							},
-							"bottom": {
-								"value": 1
-							},
-							"rounded": {
-								"unit": "px",
-								"topleft": {
-									"value": 5
-								},
-								"topright": {
-									"value": 5
-								},
-								"bottomleft": {
-									"value": 5
-								},
-								"bottomright": {
-									"value": 5
-								}
-							}
-						},
-						"margin": {
-							"top": {
-								"value": 0
-							},
-							"left": {
-								"value": 0
-							},
-							"unit": "px",
-							"right": {
-								"value": 0
-							},
-							"bottom": {
-								"value": 0
-							}
-						},
-						"padding": {
-							"top": {
-								"value": 5
-							},
-							"left": {
-								"value": 20
-							},
-							"unit": "px",
-							"right": {
-								"value": 20
-							},
-							"bottom": {
-								"value": 5
-							}
-						},
-						"background": {
-							"type": "color",
-							"color": "rgba(10, 10, 10, 0)",
-							"image": {
-								"original": null
-							}
-						}
-					}
-				}
-			},
-			"cart": {
-				"link": null,
-				"text": "{{ cart_count }} items",
-				"visible": "login",
-				"container": {
-					"properties": {
-						"text": {
-							"color": "rgba(10, 10, 10, 1)",
-							"fontFamily": "Inter, sans-serif"
-						},
-						"padding": {
-							"top": {
-								"value": 5
-							},
-							"left": {
-								"value": 20
-							},
-							"unit": "px",
-							"right": {
-								"value": 20
-							},
-							"bottom": {
-								"value": 5
-							}
-						}
-					}
-				}
-			},
-			"favourite": {
-				"link": null,
-				"text": "{{ favourites_count }}",
-				"visible": "login",
-				"container": {
-					"properties": {
-						"text": {
-							"color": "rgba(10, 10, 10, 1)",
-							"fontFamily": "Inter, sans-serif"
-						},
-						"padding": {
-							"top": {
-								"value": 5
-							},
-							"left": {
-								"value": 20
-							},
-							"unit": "px",
-							"right": {
-								"value": 20
-							},
-							"bottom": {
-								"value": 5
-							}
-						}
-					}
-				}
-			},
-			"profile": {
-				"link": null,
-				"text": "Profile",
-				"visible": "login",
-				"container": {
-					"properties": {
-						"text": {
-							"color": "rgba(10, 10, 10, 1)",
-							"fontFamily": "Inter, sans-serif"
-						},
-						"padding": {
-							"top": {
-								"value": 5
-							},
-							"left": {
-								"value": 20
-							},
-							"unit": "px",
-							"right": {
-								"value": 20
-							},
-							"bottom": {
-								"value": 5
-							}
-						}
-					}
-				}
-			},
-			"logout": {
-				"link": null,
-				"text": "Log out",
-				"visible": "login",
-				"container": {
-					"properties": {
-						"text": {
-							"color": "rgba(10, 10, 10, 1)",
-							"fontFamily": "Inter, sans-serif"
-						},
-						"padding": {
-							"top": {
-								"value": 5
-							},
-							"left": {
-								"value": 20
-							},
-							"unit": "px",
-							"right": {
-								"value": 20
-							},
-							"bottom": {
-								"value": 5
-							}
-						}
-					}
-				}
+			"information": {
+				"text1": "Welcome",
+				"text2": "Have a great day!",
+				"text3": "Check out our latest deals!",
+				"text4": "Don't forget to save your cart!"
 			}
 		}
 	}

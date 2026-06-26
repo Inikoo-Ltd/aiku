@@ -118,3 +118,7 @@ laradumps.yaml
 /.ai/mcp/mcp.json
 /restart_varnish.sh
 /storage/aiku_media.tar
+/.junie/*
+/nightowl/*
+/local_storage/*
+/devops/haproxy/facebook-bots.lst

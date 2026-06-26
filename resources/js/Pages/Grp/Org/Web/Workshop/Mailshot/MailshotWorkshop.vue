@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, inject } from 'vue'
+import { ref, computed, watch, inject , onMounted} from 'vue'
 import type { Component } from "vue";
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -17,7 +17,7 @@ import Multiselect from "@vueform/multiselect"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle } from '@fal'
 import { faUserCog } from '@fas'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import Modal from '@/Components/Utils/Modal.vue'
@@ -28,9 +28,10 @@ import { useTabChange } from "@/Composables/tab-change";
 import TableEmailTemplate from "@/Components/Tables/TableEmailTemplate.vue";
 import TablePreviousMailshots from "@/Components/Tables/TablePreviousMailshots.vue"
 import TableOtherStoreMailshots from "@/Components/Tables/TableOtherStoreMailshots.vue"
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { usePage } from "@inertiajs/vue3"
 
-library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
+library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
 
 const props = defineProps<{
     title: string,
@@ -40,17 +41,21 @@ const props = defineProps<{
     updateRoute: routeType
     snapshot: routeType
     unpublished_layout: any
+    compiledLayout: string | null
     mergeTags: Array<any>
     mergeContents: Array<any> | null
     status: string
     publishRoute: routeType
     sendTestRoute: routeType
     organisationSlug: string
+    shopSlug: string
+    shopId: number
     storeNewTemplateRoute: routeType
 }>()
 
 const comment = ref('')
 const isLoading = ref(false)
+const isLoadingTemplate = ref(false)
 const openTemplates = ref(false)
 const _beefree = ref()
 const _unlayer = ref()
@@ -68,7 +73,19 @@ const options = ref([
     { name: 'Suspended', value: "suspended" },
 ]);
 
-const onSendPublish = async (data) => {
+const compiledLayout = ref(props.compiledLayout ?? '')
+const compiledLayoutSize = computed(() => {
+    return (new Blob([compiledLayout.value]).size / 1024).toFixed(2)
+})
+
+const emailSizeWarningTooltip = computed(() => {
+    return `Your email content is ${compiledLayoutSize.value} KB, which exceeds Gmail’s recommended 102 KB limit`
+})
+
+
+const onSendPublish = async (data: any) => {
+    compiledLayout.value = data?.htmlFile
+
     try {
         const response = await axios.post(route(props.publishRoute.name, props.publishRoute.parameters), {
             comment: comment.value,
@@ -155,7 +172,7 @@ const closeUnsubscribeWarningModal = () => {
 }
 
 const saveTemplate = async () => {
-    isLoading.value = true;
+    isLoadingTemplate.value = true;
 
     axios
         .post(
@@ -183,7 +200,7 @@ const saveTemplate = async () => {
             visibleSAveEmailTemplateModal.value = false;
             templateName.value = '';
             temporaryData.value = null;
-            isLoading.value = false;
+            isLoadingTemplate.value = false;
         });
 }
 
@@ -298,6 +315,12 @@ watch(
         currentTab.value = val
     }
 )
+
+onMounted(() => {
+  window.addEventListener('popstate', () => {
+    router.reload()
+  });
+})
 </script>
 
 
@@ -306,6 +329,14 @@ watch(
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
+            <div>
+                <div class="text-sm text-gray-600 mr-2 flex items-center gap-2">
+                    Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
+                    <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
+                        class="text-yellow-500 text-lg" v-tooltip="emailSizeWarningTooltip" fixed-width />
+                </div>
+            </div>
+
             <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
                 :icon="faPlus" :disabled="!isBeefreeReady" />
@@ -325,9 +356,9 @@ watch(
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
-        :mergeContents="mergeContents" :organisationSlug="organisationSlug" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
-        @ready="isBeefreeReady = $event" />
+        :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
+        @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate"
+        ref="_beefree" @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
@@ -357,11 +388,14 @@ watch(
     <Dialog v-model:visible="visibleSAveEmailTemplateModal" modal :closable="false" :showHeader="false"
         :style="{ width: '25rem' }">
         <div class="pt-4">
-            <div class="font-semibold mb-3">Template Name</div>
-            <PureInput v-model="templateName" placeholder="Template Name" />
+            <div class="font-semibold mb-3"> {{ ctrans('Template Name') }}</div>
+            <PureInput v-model="templateName" :placeholder="ctrans('Template Name')" :disabled="isLoadingTemplate" />
+            <div v-if="isLoadingTemplate" class="text-left text-black mt-3 text-sm w-full">
+                {{ ctrans('Please wait a moment. This may take a few seconds while the content is being converted to HTML ...')}}
+            </div>
             <div class="flex justify-end mt-3 gap-3">
-                <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false"></Button>
-                <Button type="save" @click="saveTemplate"></Button>
+                <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false" :disabled="isLoadingTemplate"></Button>
+                <Button type="save" @click="saveTemplate" :loading="isLoadingTemplate" :disabled="isLoadingTemplate"></Button>
             </div>
         </div>
     </Dialog>
@@ -371,10 +405,10 @@ watch(
         <div class="pt-4">
             <div class="text-center mb-4">
                 <div class="text-amber-500 text-4xl mb-3">⚠️</div>
-                <div class="font-semibold text-lg mb-2">Missing Unsubscribe Link</div>
-                <div class="text-gray-600">This mailshot/newsletter doesn't contain an unsubscribe link. Please consider
+                <div class="font-semibold text-lg mb-2"> {{ ctrans('Missing Unsubscribe Link') }}</div>
+                <div class="text-gray-600"> {{ ctrans(`This mailshot/newsletter doesn't contain an unsubscribe link. Please consider
                     adding one to ensure compliance with email regulations and provide recipients with a clear option to
-                    unsubscribe.</div>
+                    unsubscribe.`) }}</div>
             </div>
             <div class="flex justify-center mt-4">
                 <Button @click="closeUnsubscribeWarningModal" label="OK" type="primary"></Button>

@@ -14,8 +14,7 @@ import { faDiamond } from '@fas'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from 'laravel-vue-i18n'
-// import Button from "@/Components/Elements/Buttons/Button.vue";
-// import {ref} from "vue";
+
 
 library.add(faRobot, faDiamond)
 

@@ -17,6 +17,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Sentry;
 
 class StoreShopifyLocationToProductVariant extends RetinaAction
@@ -37,7 +38,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            Log::error("Failed to initialize Shopify GraphQL client");
 
             return [false, 'Failed to initialize Shopify GraphQL client'];
         }
@@ -50,7 +51,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
 
 
         if (!$productID) {
-            Sentry::captureMessage("No Shopify product ID found in portfolio");
+            Log::error("No Shopify product ID found in portfolio A");
 
             return [false, 'No Shopify product ID found in portfolio'];
         }
@@ -64,7 +65,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
             // Check if we have the variant ID
             if (!$portfolio->platform_product_variant_id) {
                 $errorMessage = 'No Shopify variant ID found in portfolio';
-                Sentry::captureMessage($errorMessage);
+                Log::error($errorMessage);
                 return [false, $errorMessage];
             }
 
@@ -96,7 +97,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
             $availableQuantity = $product->total_quantity;
 
             // Get inventory item ID from variant ID
-            // Variant ID format: gid://shopify/ProductVariant/123
+            //  format: gid://shopify/ProductVariant/123
             // Inventory Item ID format: gid://shopify/InventoryItem/123
             // We need to query for the inventory item ID first
             $variantQuery = <<<'QUERY'
@@ -113,7 +114,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
 
             if (!empty($variantResponse['errors']) || !isset($variantResponse['body'])) {
                 $errorMessage = 'Error getting inventory item ID: '.json_encode($variantResponse['errors'] ?? []);
-                Sentry::captureMessage($errorMessage);
+                Log::error($errorMessage);
                 return [false, $errorMessage];
             }
 
@@ -122,7 +123,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
 
             if (!$inventoryItemId) {
                 $errorMessage = 'Could not get inventory item ID from variant';
-                Sentry::captureMessage($errorMessage);
+                Log::error($errorMessage);
                 return [false, $errorMessage];
             }
 
@@ -141,7 +142,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Inventory activation failed A: ".$errorMessage);
+                Log::error("Inventory activation failed A: ".$errorMessage);
 
                 return [false, $errorMessage];
             }
@@ -155,7 +156,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Inventory activation failed B: ".$errorMessage);
+                Log::error("Inventory activation failed B: ".$errorMessage);
 
                 return [false, $errorMessage];
             }

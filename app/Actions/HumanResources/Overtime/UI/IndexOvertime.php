@@ -121,7 +121,13 @@ class IndexOvertime extends OrgAction
                 )
                 ->column(
                     key: 'requested_start_at',
-                    label: __('From'),
+                    label: __('Request From'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'requested_duration_minutes',
+                    label: __('Request duration'),
                     canBeHidden: true,
                     sortable: true
                 )
@@ -132,8 +138,8 @@ class IndexOvertime extends OrgAction
                     sortable: true
                 )
                 ->column(
-                    key: 'requested_duration_minutes',
-                    label: __('Duration'),
+                    key: 'recorded_end_at',
+                    label: __('Recorded to'),
                     canBeHidden: true,
                     sortable: true
                 )
@@ -143,19 +149,19 @@ class IndexOvertime extends OrgAction
                     canBeHidden: true,
                     sortable: true
                 )
-                ->column(
-                    key: 'recorder_name',
-                    label: __('Recorded by'),
-                    canBeHidden: true,
-                    sortable: true,
-                    searchable: true
-                )
-                ->column(
-                    key: 'lieu_requested_minutes',
-                    label: __('Lieu requested'),
-                    canBeHidden: true,
-                    sortable: true
-                )
+                // ->column(
+                //     key: 'recorder_name',
+                //     label: __('Recorded by'),
+                //     canBeHidden: true,
+                //     sortable: true,
+                //     searchable: true
+                // )
+                // ->column(
+                //     key: 'lieu_requested_minutes',
+                //     label: __('Lieu requested'),
+                //     canBeHidden: true,
+                //     sortable: true
+                // )
                 ->column(
                     key: 'overtime_type_name',
                     label: __('Overtime type'),

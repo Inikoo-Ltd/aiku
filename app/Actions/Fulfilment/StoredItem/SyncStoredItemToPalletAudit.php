@@ -17,9 +17,11 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
+use App\Models\Fulfilment\StoredItem;
 use App\Models\Fulfilment\StoredItemAudit;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -60,6 +62,13 @@ class SyncStoredItemToPalletAudit extends OrgAction
                 }
             } else {
                 $type = StoredItemAuditDeltaTypeEnum::SET_UP;
+            }
+
+            if (in_array($type, [StoredItemAuditDeltaTypeEnum::SET_UP, StoredItemAuditDeltaTypeEnum::ADDITION], true)) {
+                $storedItem = StoredItem::find($storedItemId);
+                if ($storedItem && !$storedItem->state->canBeStored()) {
+                    throw ValidationException::withMessages(['stored_item_ids' => __('The SKU ":reference" is :state and cannot be stored.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
+                }
             }
 
             $storedItemAuditDelta = $storedItemAudit->deltas()->where('pallet_id', $pallet->id)->where('stored_item_id', $storedItemId)->first();

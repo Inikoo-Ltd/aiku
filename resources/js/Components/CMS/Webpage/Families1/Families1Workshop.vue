@@ -5,11 +5,9 @@ import { faCube, faLink } from "@fal"
 import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 
-import Family1Render from './Families1Render.vue'
+import Family1Render from "@/Iris/Components/Families1Render.vue"
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import FormEditProductCategory from "@/Components/DepartmentAndFamily/FormEditProductCategory.vue"
-import Dialog from 'primevue/dialog'
 import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from './Blueprint'
@@ -88,27 +86,6 @@ function activateBlock() {
   sendMessageToParent('activeChildBlock', bKeys[0])
 }
 
-// Open modal for editing sub-department
-/* function openModal(subDept: any) {
-  if (props.routeEditfamily) {
-    selectedSubDepartment.value = { ...subDept }
-    showDialog.value = true
-  }
-} */
-
-// Handle saved changes from modal
-/* function handleSaved(updatedSubDept: any) {
-  const index = props.modelValue.families.findIndex(item => item.id === updatedSubDept.id)
-  if (index !== -1) {
-    props.modelValue.families[index] = { ...props.modelValue.families[index], ...updatedSubDept }
-  }
-  closeModal()
-} */
-
-/* function closeModal() {
-  showDialog.value = false
-  selectedSubDepartment.value = null
-} */
 </script>
 
 <template>
@@ -146,23 +123,5 @@ function activateBlock() {
         <Button label="Select sub-department to preview family list" type="secondary" />
       </template>
     </EmptyState>
-
-    <!-- Edit Modal -->
-    <!--  <Dialog
-      v-model:visible="showDialog"
-      :header="`Edit ${selectedSubDepartment?.name}`"
-      :style="{ width: '500px' }"
-      :closable="true"
-      @hide="closeModal"
-      :modal="true"
-    >
-      <FormEditProductCategory
-        v-if="selectedSubDepartment"
-        :key="selectedSubDepartment.id"
-        :data="selectedSubDepartment"
-        :saveRoute="props.routeEditfamily"
-        @saved="handleSaved"
-      />
-    </Dialog> -->
   </div>
 </template>

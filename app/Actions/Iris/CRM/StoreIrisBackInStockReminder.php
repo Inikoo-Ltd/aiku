@@ -31,12 +31,17 @@ class StoreIrisBackInStockReminder extends RetinaAction
         if ($product->shop_id !== $this->shop->id) {
             return false;
         }
+        if (!$this->customer) {
+            return false;
+        }
+
         return true;
     }
 
     public function asController(Product $product, ActionRequest $request): void
     {
         $this->initialisation($request);
+
 
         $this->handle($this->customer, $product, $this->validatedData);
     }

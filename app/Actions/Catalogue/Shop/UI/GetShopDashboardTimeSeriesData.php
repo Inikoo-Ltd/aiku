@@ -27,9 +27,10 @@ class GetShopDashboardTimeSeriesData
 
         $cacheKey = $this->getCacheKey($shop, $fromDate, $toDate);
 
-        return Cache::remember($cacheKey, now()->addSeconds(300), function () use ($shop, $fromDate, $toDate) {
-            return $this->fetchData($shop, $fromDate, $toDate);
-        });
+        return Cache::tags(["dashboard-shop-{$shop->id}"])
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($shop, $fromDate, $toDate) {
+                return $this->fetchData($shop, $fromDate, $toDate);
+            });
     }
 
     protected function getCacheKey(Shop $shop, $fromDate, $toDate): string
@@ -45,8 +46,8 @@ class GetShopDashboardTimeSeriesData
     protected function fetchData(Shop $shop, $fromDate, $toDate): array
     {
         $data = [
-            'shops'  => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate),
-            'brands' => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'shops'        => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'brands'       => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate),
         ];
 
         if ($shop->type->value === 'dropshipping') {
@@ -56,11 +57,8 @@ class GetShopDashboardTimeSeriesData
         return $data;
     }
 
-    public static function clearCache(Shop $shop, $fromDate = null, $toDate = null): void
+    public static function clearCache(Shop $shop): void
     {
-        $instance = new static();
-        $cacheKey = $instance->getCacheKey($shop, $fromDate, $toDate);
-
-        Cache::forget($cacheKey);
+        Cache::tags(["dashboard-shop-{$shop->id}"])->flush();
     }
 }

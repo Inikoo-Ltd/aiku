@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faTrash as falTrash,
@@ -35,6 +35,8 @@ import { provide } from "vue"
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
+import { faWarning } from "@fortawesome/free-solid-svg-icons"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 
 library.add(
@@ -145,6 +147,7 @@ const props = defineProps<{
 	const unique = new Map(tags.map(tag => [tag.id, tag]))
 	return [...unique.values()]
 }) */
+const locale = inject('locale', aikuLocaleStructure)
 
 const tradeUnitTags = computed(() => {
 	const list = props.data?.trade_units ?? []
@@ -208,7 +211,7 @@ const isModalProductForSale = ref(false)
 
 
 <template>
-	<div class="w-full  px-4 py-3 mb-3 shadow-sm grid grid-cols-2">
+	<div class="w-full pl-4 pr-3 py-3 mb-3 shadow-sm grid grid-cols-2">
 		<div class="text-xl font-semibold text-gray-800 whitespace-pre-wrap justify-self-start">
 			<ProductUnitLabel v-if="data.masterProduct?.units" :units="data.masterProduct?.units"
 				:unit="data.masterProduct?.unit" class="mr-2" />
@@ -226,7 +229,7 @@ const isModalProductForSale = ref(false)
 			<span v-if="data.availability_status"
 				v-on:click="isModalProductForSale = true"
 				v-tooltip="getTooltips()"
-				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer mx-2"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer "
 				:class="data.availability_status.status ? 'border-green-500' : 'border-red-500'"
 			>
 				{{ data.availability_status.status ? trans('For Sale') : trans('Not For Sale') }}
@@ -253,7 +256,7 @@ const isModalProductForSale = ref(false)
 				</span>
 			</dd>
 			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white   p-4 lg:p-5">
+			<div class="bg-white p-4 lg:p-5">
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
 					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
 					<!-- <div class="text-sm italic text-gray-500">
@@ -286,8 +289,41 @@ const isModalProductForSale = ref(false)
 		</div>
 
         <!-- Sales Analytics - right sidebar -->
-        <div v-if="salesData">
-            <SalesAnalyticsCompact :salesData="salesData" class="mr-2" />
+        <div>
+			<div class="grid justify-items-end pr-3 pb-2 gap-2">
+				<div 
+					class="border border-solid border-gray-400 py-1 px-3 rounded-md font-semibold w-full flex flex-cols cursor-pointer"
+					:class="data.masterProduct.price ? 'border-gray-400' : 'border-red-700 text-red-500 animate-pulse'"
+					v-tooltip="data.masterProduct.price ? '' : 'Price is not set up for this master product'"
+				>
+					<span class="w-32 block">
+						{{ trans('Master Price') }}:
+					</span>
+					<span>
+						{{ locale.currencyFormat(data.masterProduct.currency, data.masterProduct.price) }}
+					</span>
+					<FontAwesomeIcon v-if="!data.masterProduct.price" :icon="faWarning" class="my-auto ml-auto"/>
+				</div>
+				<div 
+					class="border border-solid py-1 px-3 rounded-md font-semibold w-full flex flex-cols cursor-pointer"
+					:class="data.masterProduct.rrp ? 'border-gray-400' : 'border-red-700 text-red-500 animate-pulse'"
+					v-tooltip="data.masterProduct.rrp ? '' : 'RRP is not set up for this master product'"
+				>
+					<span class="w-32 block">
+						{{ trans('Master RRP') }}: 
+					</span>
+					<span>
+						{{ locale.currencyFormat(data.masterProduct.currency, data.masterProduct.rrp) }}
+						<span v-if="data.masterProduct.rrp" class="text-xs">
+							({{ locale.currencyFormat(data.masterProduct.currency, data.masterProduct.rrp_per_unit) }}/{{ data.masterProduct.unit }})
+						</span>
+					</span>
+					<FontAwesomeIcon v-if="!data.masterProduct.rrp" :icon="faWarning" class="my-auto ml-auto"/>
+				</div>
+			</div>
+			<div class="mr-3">
+				<SalesAnalyticsCompact  v-if="salesData" :salesData="salesData" />
+			</div>
         </div>
 
 		<!-- <div>

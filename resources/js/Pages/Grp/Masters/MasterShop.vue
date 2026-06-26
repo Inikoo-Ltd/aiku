@@ -21,6 +21,7 @@ import {
   faExclamationTriangle,
   faFolderDownload,
   faStoreAlt,
+  faAlignLeft,
 } from "@fal";
 import { faCheckCircle, faPlusCircle } from "@fas";
 
@@ -43,7 +44,7 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
-  faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload
+  faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload, faAlignLeft
 );
 
 const props = defineProps<{

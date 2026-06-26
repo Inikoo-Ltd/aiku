@@ -13,14 +13,10 @@ import {
 } from '@fal';
 import { computed, defineAsyncComponent, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
-import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import StockShowcase from "@/Components/Showcases/Grp/StockShowcase.vue";
 import { capitalize } from "@/Composables/capitalize"
-import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue';
 library.add(
     faInventory,
@@ -37,7 +33,6 @@ library.add(
 
 );
 
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 const props = defineProps<{
     title: string,

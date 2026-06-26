@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Helpers\Dashboard\InvalidateDashboardCaches;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
@@ -16,6 +17,9 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
+use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\SalesChannel\RedoSalesChannelTimeSeries;
 use App\Actions\OrgAction;
@@ -29,6 +33,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -84,33 +89,76 @@ class UpdateInvoice extends OrgAction
 
         $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
 
+        $taxNumber = null;
+
+
+        $updateTaxCategory = (bool) $billingAddressData;
+
+        if (Arr::has($modelData, 'formatted_tax_number')) {
+            $formattedTaxNumber     = getUnformattedTaxNumber(Arr::pull($modelData, 'formatted_tax_number'));
+            $countryId              = null;
+
+
+            if ($formattedTaxNumber && Arr::has($formattedTaxNumber, 'country_code')) {
+                $countryId          = Country::where('code', Arr::pull($formattedTaxNumber, 'country_code'))->first()?->id;
+            }
+
+            if ($countryId) {
+                data_set($formattedTaxNumber, 'country_id', $countryId);
+
+                if ($invoice->taxNumber) {
+                    $taxNumber = UpdateTaxNumber::run($invoice->taxNumber, $formattedTaxNumber, $this->strict);
+                } else {
+                    $taxNumber = StoreTaxNumber::run(
+                        owner: $invoice,
+                        modelData: $formattedTaxNumber,
+                        strict: $this->strict
+                    );
+                }
+            } elseif ($invoice->taxNumber?->id) {
+                DeleteTaxNumber::run($invoice->taxNumber);
+            }
+
+            data_set($modelData, 'tax_number', $taxNumber?->getFormattedTaxNumber());
+            data_set($modelData, 'tax_number_status', $taxNumber?->status?->value, false);
+            data_set($modelData, 'tax_number_valid', $taxNumber?->valid, false);
+            $updateTaxCategory = true;
+        }
+
         $invoice = $this->update($invoice, $modelData, ['data']);
 
-        if ($billingAddressData) {
+        if ($updateTaxCategory) {
             $staleInvoice = clone $invoice;
 
-            $this->updateFixedAddress(
-                $invoice,
-                $invoice->billingAddress,
-                $billingAddressData,
-                'Ordering',
-                'billing',
-                'address_id'
-            );
-            $invoice->update([
-                'billing_country_id' => $invoice->billingAddress->country_id,
-            ]);
+            if ($billingAddressData) {
+                $this->updateFixedAddress(
+                    $invoice,
+                    $invoice->billingAddress,
+                    $billingAddressData,
+                    'Ordering',
+                    'billing',
+                    'address_id'
+                );
+
+                $invoice->update([
+                    'billing_country_id' => $invoice->billingAddress->country_id,
+                ]);
+            }
 
             $customer = $invoice->customer;
 
+            if (!$this->strict) {
+                $taxNumber = $customer->taxNumber;
+            }
 
             $taxCategoryInvoice = GetTaxCategory::run(
                 country: $invoice->organisation->country,
-                taxNumber: $customer->taxNumber,
+                taxNumber: $taxNumber,
                 billingAddress: $invoice->billingAddress,
                 deliveryAddress: $invoice->deliveryAddress,
                 isRe: $customer?->is_re,
             );
+
             $invoice->update([
                 'tax_category_id' => $taxCategoryInvoice->id,
             ]);
@@ -118,20 +166,24 @@ class UpdateInvoice extends OrgAction
             CalculateInvoiceTotals::run($invoice);
             RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
 
-            $this->auditBillingAddressUpdate($invoice, $oldBillAddressData, $billingAddressData, $staleInvoice);
-            $this->auditBillingAddressUpdate($customer, $oldBillAddressData, $billingAddressData);
+            if ($billingAddressData) {
+                $this->auditBillingAddressUpdate($invoice, $oldBillAddressData, $billingAddressData, $staleInvoice);
+                $this->auditBillingAddressUpdate($customer, $oldBillAddressData, $billingAddressData);
+            }
 
             if ($order = $invoice->order) {
                 $staleOrder = clone $order;
 
-                $this->updateFixedAddress(
-                    $order,
-                    $order->billingAddress,
-                    $billingAddressData,
-                    'Ordering',
-                    'billing',
-                    'billing_address_id'
-                );
+                if ($billingAddressData) {
+                    $this->updateFixedAddress(
+                        $order,
+                        $order->billingAddress,
+                        $billingAddressData,
+                        'Ordering',
+                        'billing',
+                        'billing_address_id'
+                    );
+                }
 
                 $order->update([
                     'tax_category_id' => $taxCategoryInvoice->id,
@@ -139,7 +191,9 @@ class UpdateInvoice extends OrgAction
                 $order->refresh();
                 CalculateOrderTotalAmounts::run($order, false, false);
 
-                $this->auditBillingAddressUpdate($order, $oldBillAddressData, $billingAddressData, $staleOrder);
+                if ($billingAddressData) {
+                    $this->auditBillingAddressUpdate($order, $oldBillAddressData, $billingAddressData, $staleOrder);
+                }
             }
         }
 
@@ -162,6 +216,8 @@ class UpdateInvoice extends OrgAction
         $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (count($changes) > 0) {
+            InvalidateDashboardCaches::run($invoice);
+
             $invoiceDate    = \Carbon\Carbon::parse($invoice->date);
             $newDateString  = $invoiceDate->toDateString();
             $dateHasChanged = Arr::has($changes, 'date');
@@ -173,16 +229,16 @@ class UpdateInvoice extends OrgAction
 
 
                 if ($dateHasChanged) {
-                    RedoInvoiceCategoryTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+                    RedoInvoiceCategoryTimeSeries::dispatch($invoice->invoice_category_id, $oldDateString, $oldDateString)->delay(2);
                 }
-                RedoInvoiceCategoryTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
+                RedoInvoiceCategoryTimeSeries::dispatch($invoice->invoice_category_id, $newDateString, $newDateString)->delay(2);
             }
 
             if ($invoice->sales_channel_id) {
                 if ($dateHasChanged) {
-                    RedoSalesChannelTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+                    RedoSalesChannelTimeSeries::dispatch($invoice->sales_channel_id, $oldDateString, $oldDateString)->delay(2);
                 }
-                RedoSalesChannelTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
+                RedoSalesChannelTimeSeries::dispatch($invoice->sales_channel_id, $newDateString, $newDateString)->delay(2);
             }
 
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
@@ -192,7 +248,7 @@ class UpdateInvoice extends OrgAction
 
 
         if (Arr::hasAny($changes, ['in_process', 'net_amount', 'org_net_amount', 'grp_net_amount'])) {
-            CustomerHydrateClv::dispatch($invoice->customer_id)->delay($this->hydratorsDelay);
+            CustomerHydrateClv::dispatch($invoice->customer_id)->delay(5);
         }
 
         if (Arr::hasAny($changes, ['billing_country_id', 'sales_channel_id', 'is_vip', 'external_invoicer_id'])) {
@@ -258,7 +314,7 @@ class UpdateInvoice extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'                => [
+            'reference'                     => [
                 'sometimes',
                 'string',
                 'max:64',
@@ -270,23 +326,25 @@ class UpdateInvoice extends OrgAction
                     ]
                 ),
             ],
-            'payment_amount'           => ['sometimes', 'numeric'],
-            'date'                     => ['sometimes', 'date'],
-            'tax_liability_at'         => ['sometimes', 'date'],
-            'footer'                   => ['sometimes', 'string'],
-            'billing_address'          => ['sometimes', 'required', new ValidAddress()],
-            'invoice_billing_address'  => ['sometimes', 'required', new ValidAddress()], // TODO: consolidate(rename) this fields names after aurora migration
-            'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
-            'sales_channel_id'         => [
+            'payment_amount'                => ['sometimes', 'numeric'],
+            'date'                          => ['sometimes', 'date'],
+            'tax_liability_at'              => ['sometimes', 'date'],
+            'footer'                        => ['sometimes', 'string'],
+            'billing_address'               => ['sometimes', 'required', new ValidAddress()],
+            'invoice_billing_address'       => ['sometimes', 'required', new ValidAddress()], // TODO: consolidate(rename) this fields names after aurora migration
+            'delivery_address'              => ['sometimes', 'required', new ValidAddress()],
+            'sales_channel_id'              => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
-            'shipping_zone_schema_id'  => ['sometimes', 'nullable'],
-            'shipping_zone_id'         => ['sometimes', 'nullable'],
-            'identity_document_number' => ['sometimes', 'nullable', 'string'],
+            'shipping_zone_schema_id'       => ['sometimes', 'nullable'],
+            'shipping_zone_id'              => ['sometimes', 'nullable'],
+            'formatted_tax_number'          => ['sometimes', 'nullable', 'string'],
+            'identity_document_number'      => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt'  => ['sometimes', 'nullable', 'string'],
 
         ];
 
@@ -314,11 +372,13 @@ class UpdateInvoice extends OrgAction
             $rules['deleted_by']                         = ['sometimes', 'nullable', 'integer'];
             $rules['customer_name']                      = ['sometimes', 'nullable', 'string'];
             $rules['customer_contact_name']              = ['sometimes', 'nullable', 'string'];
+            $rules['formatted_tax_number']               = ['sometimes', 'nullable', 'string'];
             $rules['tax_number']                         = ['sometimes', 'nullable', 'string'];
             $rules['tax_number_status']                  = ['sometimes', 'nullable', 'string'];
             $rules['tax_number_valid']                   = ['sometimes', 'nullable', 'boolean'];
             $rules['identity_document_type']             = ['sometimes', 'nullable', 'string'];
             $rules['identity_document_number']           = ['sometimes', 'nullable', 'string'];
+            $rules['identity_document_number_alt']       = ['sometimes', 'nullable', 'string'];
 
 
             $rules['reference'] = [

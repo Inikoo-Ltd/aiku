@@ -7,17 +7,42 @@
 
 namespace App\Actions\Traits;
 
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Throwable;
 
 trait WithTimeSeriesRedo
 {
+    protected function modifyQuery(Builder $query): Builder
+    {
+        return $query;
+    }
+
+    protected function beforeCommand(Command $command): void
+    {
+    }
+
+    protected function scopeOrganisation(Builder $query, Command $command): Builder
+    {
+        if ($command->hasOption('organisation') && $command->option('organisation')) {
+            $organisation = Organisation::where('slug', $command->option('organisation'))->first();
+
+            if ($organisation) {
+                $query->where('organisation_id', $organisation->id);
+            }
+        }
+
+        return $query;
+    }
+
     public function asCommand(Command $command): int
     {
+        $this->beforeCommand($command);
         $command->info($command->getName());
-        $tableName = new $this->model()->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
+        $tableName = (new $this->model())->getTable();
+        $query     = $this->modifyQuery($this->scopeOrganisation($this->prepareQuery($tableName, $command), $command));
         $count     = $query->count();
         $bar       = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');

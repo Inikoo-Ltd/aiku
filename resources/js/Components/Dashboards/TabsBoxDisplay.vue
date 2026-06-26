@@ -164,6 +164,9 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
 const boxTotal = (box: { tabs: { value?: string | number }[] }) =>
     box.tabs.reduce((sum, t) => sum + Number(t.value || 0), 0)
 
+const boxAmountTotal = (box: { tabs: { information?: { label?: string | number, type?: string } }[] }) =>
+    box.tabs.reduce((sum, t) => sum + (t.information?.type === 'currency' ? Number(t.information.label || 0) : 0), 0)
+
 const childrenLabel = computed(() => {
     if (layoutStore.currentRoute === 'grp.dashboard.show') return trans('Organisation')
     if (layoutStore.currentRoute === 'grp.org.dashboard.show') return trans('Shop')
@@ -210,11 +213,11 @@ const clickVisitRoute = (visitRoute: {
 <template>
     <div>
         <!-- TabsBoxDisplay Desktop -->
-        <div class="hidden px-6 md:flex flex-wrap xl:flex-nowrap gap-x-6 gap-y-4 mt-4 mb-1 items-stretch">
+        <div class="hidden px-6 md:flex md:flex-nowrap gap-x-6 mt-4 mb-1 items-stretch md:overflow-x-auto md:pb-1">
             <div
                 v-for="(box, idx) in tabs_box"
                 :key="box.label"
-                class="rounded-md px-3 relative border w-full flex flex-col py-2 select-none transition-all duration-200"
+                class="rounded-md px-3 relative border w-full md:w-auto md:min-w-[15rem] md:flex-none xl:flex-auto xl:basis-auto xl:min-w-fit flex flex-col py-2 select-none transition-all duration-200"
                 :style="{
                   backgroundColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '22' : 'transparent',
                   color: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit',
@@ -223,7 +226,7 @@ const clickVisitRoute = (visitRoute: {
             >
                 <div class="text-center mb-2 text-xs font-semibold">
                     <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="" fixed-width aria-hidden="true" />
-                    {{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }})</template>
+                    {{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }}<template v-if="boxAmountTotal(box) > 0"> - {{ renderLabelBasedOnType(boxAmountTotal(box), 'currency', { currency_code: box.currency_code }) }}</template>)</template>
                 </div>
 
                 <div class="flex gap-x-4 justify-center">
@@ -343,11 +346,11 @@ const clickVisitRoute = (visitRoute: {
         </div>
 
         <!-- Mobile -->
-        <div class="mt-2 px-3 md:hidden space-y-3">
+        <div class="mt-2 px-3 md:hidden flex gap-3 overflow-x-auto pb-1">
             <div
                 v-for="box in tabs_box"
                 :key="'mobile-' + box.label"
-                class="rounded-lg border shadow-sm overflow-hidden select-none"
+                class="rounded-lg border shadow-sm overflow-hidden select-none flex-none min-w-[16rem]"
                 :style="{
                   backgroundColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '11' : 'transparent',
                   borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '44' : 'inherit'
@@ -357,17 +360,17 @@ const clickVisitRoute = (visitRoute: {
                 <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center">
                     <div class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 flex-1">
                         <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="text-gray-500" fixed-width aria-hidden="true" />
-                        <span>{{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }})</template></span>
+                        <span>{{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }}<template v-if="boxAmountTotal(box) > 0"> - {{ renderLabelBasedOnType(boxAmountTotal(box), 'currency', { currency_code: box.currency_code }) }}</template>)</template></span>
                     </div>
                 </div>
 
-                <!-- Tabs Grid -->
+                <!-- Tabs -->
                 <div class="p-3">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="flex flex-nowrap gap-3 overflow-x-auto pb-1">
                         <div
                             v-for="tab in box.tabs"
                             :key="tab.tab_slug"
-                            class="rounded-md p-3 transition-all duration-200"
+                            class="rounded-md p-3 transition-all duration-200 flex-none min-w-[11rem]"
                             :class="[
                                 tab.tab_slug === props.current
                                     ? 'ring-2 shadow-sm'
@@ -400,7 +403,7 @@ const clickVisitRoute = (visitRoute: {
                             <div class="text-center relative">
                                 <div class="flex items-center justify-center gap-1">
                                     <div
-                                        class="text-xl font-semibold tabular-nums mb-1"
+                                        class="text-xl font-semibold tabular-nums mb-1 whitespace-nowrap"
                                         :style="tab.tab_slug === props.current ? { color: layoutStore.app.theme[4] } : {}"
                                     >
                                         {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
@@ -425,7 +428,7 @@ const clickVisitRoute = (visitRoute: {
                                 </template>
                             </div>
 
-                            <div class="text-center text-xs text-gray-500 leading-tight">
+                            <div class="text-center text-xs text-gray-500 leading-tight whitespace-nowrap">
                                 {{ renderLabelBasedOnType(tab.information?.label, tab.information?.type, { currency_code: box.currency_code }) }}
                             </div>
                         </div>

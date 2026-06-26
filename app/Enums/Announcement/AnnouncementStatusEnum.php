@@ -31,12 +31,12 @@ enum AnnouncementStatusEnum: string
             'inactive'    => [
                 'icon'    => 'fad fa-stop',
                 'class'   => 'text-red-500',
-                'tooltip' => __('Inactive (will not show on the website)')
+                'tooltip' => __('Inactive')
             ],
             'active'      => [
-                'icon'    => 'fal fa-seedling',
+                'icon'    => 'fal fa-broadcast-tower',
                 'class'   => 'text-green-500 animate-pulse',
-                'tooltip' => __('Active (will show if possible)')
+                'tooltip' => __('Active')
             ]
         ];
     }

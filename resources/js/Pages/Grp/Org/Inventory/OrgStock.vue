@@ -44,6 +44,7 @@ import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import { Message } from "primevue"
 import StockIssues from "@/Components/Warehouse/Inventory/StockIssues.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 
 library.add(
     faInventory,
@@ -79,6 +80,7 @@ const props = defineProps<{
     purchase_history?: {}
     master: {}
     masterRoute: routeType | null
+    history: {}
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -96,7 +98,7 @@ const component = computed(() => {
         stock_history: TableOrgStockMovements,
         purchase_history: TableOrgStockMovements,
         details: ModelDetails,
-        history: ModelChangelog,
+        history: TableHistories,
         purchase_orders: TablePurchaseOrders
     }
     return components[currentTab.value]

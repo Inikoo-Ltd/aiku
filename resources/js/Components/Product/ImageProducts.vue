@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -12,11 +12,11 @@ import {
 } from '@fal'
 import { faVideo } from '@fas'
 import { ulid } from 'ulid'
-import Image from '@/Components/Image.vue'
+import Image from '../../Common/Components/Image.vue'
 import Dialog from 'primevue/dialog'
 
 const props = defineProps<{
-  images: { source: string; thumbnail: string }[]
+  images: { source: string; thumbnail: string; alt: string }[]
   video?: string
   breakpoints?: {
     [key: number]: { slidesPerView: number }
@@ -74,12 +74,18 @@ onMounted(async () => {
     }
   })
 })
+
+const totalSlides = computed(() => {
+  return props.images.length + (props.video ? 1 : 0)
+})
+
+const enableLoop = computed(() => totalSlides.value > 1)
 </script>
 
 <template>
   <div class="w-full flex flex-col items-center relative isolate">
     <!-- Main Swiper -->
-    <Swiper :key="keySwiperMain" :slides-per-view="1" :loop="true" :autoplay="false" :navigation="navigation"
+    <Swiper :key="keySwiperMain" :slides-per-view="1"   :loop="enableLoop" :autoplay="false" :navigation="navigation"
       :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
       class="aspect-square w-full rounded-lg mb-4">
       <!-- Shared Navigation Buttons -->
@@ -100,7 +106,7 @@ onMounted(async () => {
         <div
           class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
           @click="openImageModal(index)">
-          <Image :src="image.source" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
+          <Image :src="image.source" :alt="image.alt" class="w-full h-full object-cover" />
         </div>
       </SwiperSlide>
 
@@ -123,7 +129,7 @@ onMounted(async () => {
       <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
         class="cursor-pointer rounded overflow-hidden border border-gray-300">
         <div class="aspect-square w-full">
-          <Image :src="image.source" :alt="`Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
+          <Image :src="image.source" :alt="image.alt || `Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
         </div>
       </SwiperSlide>
 
@@ -158,7 +164,8 @@ onMounted(async () => {
 
         <!-- Image Viewer -->
         <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded">
-          <Image :src="props.images[selectedIndex]?.source" :alt="`Image ${selectedIndex + 1}`"
+          <Image :src="props.images[selectedIndex]?.source"
+            :alt="props.images[selectedIndex]?.alt || `Image ${selectedIndex + 1}`"
             :style="{ objectFit: 'contain' }" :imageCover="true" />
         </div>
 
