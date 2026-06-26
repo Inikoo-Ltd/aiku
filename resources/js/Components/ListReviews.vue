@@ -212,6 +212,10 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 					<div
 						class="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
 						<div class="flex items-center gap-1">
+							<pre>
+								review: {{ item.review_reaction }}
+								reply: {{ item.reply_reaction }}
+							</pre>
 							<button
 								:disabled="reactingKeys[`${item.review.review_id}-review`]"
 								@click="() => toggleReaction(item, 'review', true)"

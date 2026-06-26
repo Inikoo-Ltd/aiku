@@ -45,14 +45,14 @@ class IndexAllReviewsInOrder extends OrgAction
             ->leftJoin('shops', 'reviews.shop_id', '=', 'shops.id')
             ->leftJoin('users', 'reviews.reply_by', '=', 'users.id')
             ->leftJoin('review_reactions', function ($join) use ($customer) {
-                $join->on('like_status.review_id', 'reviews.id')
-                    ->where('like_status.customer_id', $customer)
-                    ->where('like_status.type', ReviewReactionTargetEnum::REVIEW);
+                $join->on('review_reactions.review_id', 'reviews.id')
+                    ->where('review_reactions.customer_id', $customer->id)
+                    ->where('review_reactions.target', ReviewReactionTargetEnum::REVIEW);
             })
             ->leftJoin('review_reactions as reply_reactions', function ($join) use ($customer) {
                 $join->on('reply_reactions.review_id', 'reviews.id')
-                    ->where('reply_reactions.customer_id', $customer)
-                    ->where('reply_reactions.type', ReviewReactionTargetEnum::REVIEW_REPLY);
+                    ->where('reply_reactions.customer_id', $customer->id)
+                    ->where('reply_reactions.target', ReviewReactionTargetEnum::REVIEW_REPLY);
             })
             ->select([
                 'reviews.id as review_id',

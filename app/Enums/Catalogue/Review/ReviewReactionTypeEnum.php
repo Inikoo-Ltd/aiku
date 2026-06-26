@@ -18,12 +18,12 @@ enum ReviewReactionTypeEnum: string
     case LIKE = 'like';
     case DISLIKE = 'dislike';
 
-    public function getValue(): ?bool
+    public static function getValue(?string $value = ''): ?bool
     {
-        return match ($this) {
-            self::LIKE      => true,
-            self::DISLIKE   => false,
-            default         => null
+        return match ($value) {
+            self::LIKE->value       => true,
+            self::DISLIKE->value    => false,
+            default                 => null
         };
     }
 }

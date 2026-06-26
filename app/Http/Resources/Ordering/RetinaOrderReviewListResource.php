@@ -51,9 +51,7 @@ class RetinaOrderReviewListResource extends JsonResource
             ? ReviewMediaResource::collection($this->review_images)->toArray(request())
             : [];
 
-        /** @var ?ReviewReactionTypeEnum $reviewReaction  */
         $reviewReaction = $this->review_reaction;
-        /** @var ?ReviewReactionTypeEnum $replyReaction  */
         $replyReaction = $this->reply_reaction;
 
         $scope = $this->scope instanceof ReviewScopeEnum ? $this->scope->value : (string) $this->scope;
@@ -93,8 +91,8 @@ class RetinaOrderReviewListResource extends JsonResource
                     'contact_name' => $this->reply_by_name,
                 ] : null,
             ],
-            'review_reaction'      => $reviewReaction?->getValue(),
-            'reply_reaction'       => $replyReaction?->getValue(),
+            'review_reaction'      => ReviewReactionTypeEnum::getValue($reviewReaction),
+            'reply_reaction'       => ReviewReactionTypeEnum::getValue($replyReaction),
         ];
     }
 }

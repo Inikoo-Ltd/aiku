@@ -33,7 +33,7 @@ class ReactRetinaReview extends RetinaAction
             ->where('target', $modelData['target'])
             ->first();
 
-        $type = Arr::has($modelData, 'type');
+        $type = Arr::get($modelData, 'type');
 
         if ($reaction) {
             if ($reaction->type->value != $type) {
