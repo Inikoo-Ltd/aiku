@@ -1,29 +1,47 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { routeType } from '@/types/route'
-import { Table as TableTS } from '@/types/Table'
+import { routeType } from "@/types/route"
+import { Table as TableTS } from "@/types/Table"
 import { GridProducts } from "@/Components/Product"
 import Card from "primevue/card"
 import Tag from "primevue/tag"
 import Rating from "primevue/rating"
-import Button from "primevue/button"
-import Divider from "primevue/divider"
 import Avatar from "primevue/avatar"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCube, faThumbsUp, faThumbsDown } from "@fal"
-import { faBadgeCheck, faThumbsUp as fasThumbsUp, faThumbsDown as fasThumbsDown } from "@fas"
+import { faCube, faStore, faLayerGroup, faThumbsUp, faThumbsDown } from "@fal"
+import { faBadgeCheck, faReply } from "@fas"
+import { faEye, faEyeSlash, faStar } from "@far"
 
-const props = defineProps<{
-    data: any[] | TableTS
-    tab: string
-    updateRoute: routeType
-    state?: string
-    readonly?: boolean
+defineProps<{
+	data: any[] | TableTS
+	tab: string
+	updateRoute: routeType
+	state?: string
+	readonly?: boolean
 }>()
 
-const loadingReaction = ref<Record<number | string, "like" | "dislike">>({})
+const scopeIcon = (scope: string) => {
+	switch (scope) {
+		case "family":
+			return faLayerGroup
+		case "order":
+			return faStar
+		default:
+			return faCube
+	}
+}
+
+const scopeLabel = (scope: string) => {
+	switch (scope) {
+		case "family":
+			return "Family Review"
+		case "order":
+			return "Order Review"
+		default:
+			return "Product Review"
+	}
+}
 
 const toggleReaction = (item: any, type: "like" | "dislike") => {
     /* const review = item.review
@@ -64,85 +82,154 @@ const toggleReaction = (item: any, type: "like" | "dislike") => {
 </script>
 
 <template>
-    <div class="p-4">
-        <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 " :name="tab"
-            :gridClass="'lg:grid-cols-1 xl:grid-cols-1 grid grid-cols-1 gap-0 rating'">
-            <template #card="{ item }">
-                <Card class="border border-gray-200 shadow-none">
-                    <template #content>
-                        <div class="space-y-3">
-                            <!-- Product -->
-                            <div class="flex items-start gap-3">
-                                <Avatar shape="square" size="normal" class="h-10 w-10 bg-gray-100">
-                                    <FontAwesomeIcon :icon="faCube" class="text-sm text-gray-500" />
-                                </Avatar>
+	<div class="p-4">
+		<GridProducts
+			:resource="data"
+			:preserve-scroll="true"
+			:name="tab"
+			:gridClass="'lg:grid-cols-1 xl:grid-cols-1 grid grid-cols-1 gap-0 rating'">
+			<template #card="{ item }">
+				<article
+					class="rounded-xl border border-gray-200 bg-white p-4 transition-all duration-200 hover:border-gray-300 hover:shadow-md">
+					<!-- Header -->
+					<div class="flex items-start justify-between gap-3">
+						<div class="flex min-w-0 gap-3">
+							<!-- Scope -->
+							<div
+								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100">
+								<FontAwesomeIcon
+									:icon="scopeIcon(item.scope)"
+									class="text-sm text-gray-500" />
+							</div>
 
-                                <div class="min-w-0 flex-1">
-                                    <div class="truncate text-sm font-semibold text-gray-900">
-                                        {{ item.name }}
-                                    </div>
+							<!-- Title -->
+							<div class="min-w-0 flex-1">
+								<div class="flex flex-wrap items-center gap-2">
+									<h3 class="truncate text-sm font-semibold text-gray-900">
+										{{ item.name }}
+									</h3>
 
-                                    <div class="text-xs text-gray-500">
-                                        {{ item.code }}
-                                    </div>
-                                </div>
+									<Tag
+										rounded
+										:severity="item.is_public ? 'success' : 'secondary'"
+										class="text-[10px]">
+										<template #icon>
+											<FontAwesomeIcon
+												:icon="item.is_public ? faEye : faEyeSlash" />
+										</template>
 
-                                <div v-if="item.review?.review_id" class="flex items-center gap-1">
-                                    <button type="button" :disabled="!!loadingReaction[item.review.review_id]"
-                                        @click="toggleReaction(item, 'like')"
-                                        class="flex items-center justify-center h-7 w-7 rounded-full transition-colors hover:bg-gray-100 disabled:opacity-50">
-                                        <FontAwesomeIcon :icon="item.review.is_liked ? fasThumbsUp : faThumbsUp"
-                                            fixed-width class="text-sm"
-                                            :class="item.review.is_liked ? 'text-blue-600' : 'text-gray-400'" />
-                                    </button>
+										{{ item.is_public ? "Public" : "Private" }}
+									</Tag>
+								</div>
 
-                                    <button type="button" :disabled="!!loadingReaction[item.review.review_id]"
-                                        @click="toggleReaction(item, 'dislike')"
-                                        class="flex items-center justify-center h-7 w-7 rounded-full transition-colors hover:bg-gray-100 disabled:opacity-50">
-                                        <FontAwesomeIcon :icon="item.review.is_disliked ? fasThumbsDown : faThumbsDown"
-                                            fixed-width class="text-sm"
-                                            :class="item.review.is_disliked ? 'text-red-600' : 'text-gray-400'" />
-                                    </button>
-                                </div>
-                            </div>
+								<div
+									class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+									<span>{{ item.code }}</span>
 
-                            <template v-if="item.review?.review_id">
-                                <!-- Rating -->
-                                <div class="flex items-center justify-between">
-                                    <Rating :modelValue="item.review.rating" readonly :cancel="false" />
+									<span>•</span>
 
-                                    <Tag severity="success" rounded class="text-xs">
-                                        <template #icon>
-                                            <FontAwesomeIcon :icon="faBadgeCheck" class="mr-1 text-[10px]" />
-                                        </template>
+									<span>{{ useFormatTime(item.created_at) }}</span>
+								</div>
+							</div>
+						</div>
 
-                                        Verified
-                                    </Tag>
-                                </div>
+						<div class="flex gap-3 item-center">
+							<Rating :modelValue="item.review.rating" readonly :cancel="false" />
 
-                                <!-- Review -->
-                                <p class="line-clamp-3 border-l-2 border-green-500 pl-3 text-sm text-gray-600">
-                                    {{ item.review.message }}
-                                </p>
+							<div class="text-xs font-medium text-amber-600">
+								{{ item.review.rating }}/5
+							</div>
+						</div>
+					</div>
 
-                                <!-- Footer -->
-                                <div class="flex items-center justify-between border-t pt-2">
-                                    <small class="text-xs text-gray-400">
-                                        2 days ago
-                                    </small>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                </Card>
-            </template>
-        </GridProducts>
-    </div>
+					<!-- Review -->
+					<div class="mt-3">
+						<p class="whitespace-pre-line text-sm leading-6 text-gray-700">
+							{{ item.review.message }}
+						</p>
+					</div>
+
+					<!-- Actions -->
+					<div
+						class="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+						<div class="flex items-center gap-1">
+							<button
+								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100">
+								<FontAwesomeIcon :icon="faThumbsUp" />
+
+								<span>
+									{{ item.review.likes ?? 0 }}
+								</span>
+							</button>
+
+							<button
+								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100">
+								<FontAwesomeIcon :icon="faThumbsDown" />
+
+								<span>
+									{{ item.review.dislikes ?? 0 }}
+								</span>
+							</button>
+						</div>
+					</div>
+
+					<!-- Reply -->
+					<div v-if="item.review.reply" class="mt-4 border-l-2 border-orange-300 pl-4">
+						<div class="flex gap-3">
+							<div
+								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white">
+								<FontAwesomeIcon :icon="faReply" class="text-[10px]" />
+							</div>
+
+							<div class="min-w-0 flex-1">
+								<!-- Reply Header -->
+								<div class="flex flex-wrap items-center gap-2">
+									<span class="text-sm font-semibold text-gray-900">
+										{{ item.review.reply.contact_name }}
+									</span>
+
+									<Tag severity="warn" rounded class="text-[9px]"> Official </Tag>
+
+									<span class="ml-auto text-[11px] text-gray-400">
+										{{ useFormatTime(item.review.reply.at) }}
+									</span>
+								</div>
+
+								<!-- Reply Body -->
+								<p class="mt-2 whitespace-pre-line text-sm leading-6 text-gray-700">
+									{{ item.review.reply.message }}
+								</p>
+
+								<!-- Reply Actions -->
+								<div class="mt-2 flex items-center gap-1">
+									<button
+										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100">
+										<FontAwesomeIcon :icon="faThumbsUp" />
+
+										<span>
+											{{ item.review.reply.likes ?? 0 }}
+										</span>
+									</button>
+
+									<button
+										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100">
+										<FontAwesomeIcon :icon="faThumbsDown" />
+
+										<span>
+											{{ item.review.reply.dislikes ?? 0 }}
+										</span>
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</article>
+			</template>
+		</GridProducts>
+	</div>
 </template>
-
-
 <style scoped>
 :deep(.rating .p-rating-option-active .p-rating-icon) {
-    color: #f59e0b !important;
+	color: #f59e0b !important;
 }
 </style>
