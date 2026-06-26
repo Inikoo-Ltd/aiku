@@ -32,7 +32,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
 
 const isModalUploadOpen = ref(false)
-const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
+const TableHistories = defineAsyncComponent(() => import("@/Components/Tables/Grp/Helpers/TableHistories.vue"))
 
 const props = defineProps<{
     title: string,
@@ -51,6 +51,7 @@ const props = defineProps<{
         attach_tag: routeType
         detach_tag: routeType
     }
+    history?: {}
     products?: {}
     stocks?: {}
     org_stocks?: {}
@@ -76,7 +77,7 @@ const component = computed(() => {
 
     const components = {
         showcase: TradeUnitShowcase,
-        history: ModelChangelog,
+        history: TableHistories,
         attachments: AttachmentManagement,
         master_products: TableMasterProducts,
         products: TableProducts,

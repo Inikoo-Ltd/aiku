@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
 use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
 use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
@@ -22,6 +23,7 @@ use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -114,6 +116,10 @@ class ShowTradeUnit extends GrpAction
                     fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))
                     : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))),
 
+                TradeUnitTabsEnum::HISTORY->value => $this->tab == TradeUnitTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($tradeUnit))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($tradeUnit))),
+
             ]
         )
         ->table(IndexMasterProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::MASTER_PRODUCTS->value))
@@ -121,7 +127,8 @@ class ShowTradeUnit extends GrpAction
         ->table(IndexStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::STOCKS->value))
         ->table(IndexOrgStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::ORG_STOCKS->value))
         ->table(IndexAttachments::make()->tableStructure(TradeUnitTabsEnum::ATTACHMENTS->value))
-        ->table(IndexTradeUnitImages::make()->tableStructure($tradeUnit, TradeUnitTabsEnum::IMAGES->value));
+        ->table(IndexTradeUnitImages::make()->tableStructure($tradeUnit, TradeUnitTabsEnum::IMAGES->value))
+        ->table(IndexHistory::make()->tableStructure(prefix: TradeUnitTabsEnum::HISTORY->value));
     }
 
 

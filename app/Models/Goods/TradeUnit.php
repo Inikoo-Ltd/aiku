@@ -253,8 +253,29 @@ class TradeUnit extends Model implements HasMedia, Auditable
         'gross_weight',
         'net_weight',
         'marketing_dimensions',
+        'marketing_weight',
         'volume',
         'type',
+        'cpnp_number',
+        'ufi_number',
+        'scpn_number',
+        'is_for_sale',
+        'gpsr_manufacturer',
+        'gpsr_importer',
+        'gpsr_responsible_person',
+        'gpsr_warning',
+        'gpsr_manual',
+        'gpsr_class_category_danger',
+        'gpsr_class_languages',
+        'pictogram_toxic',
+        'pictogram_corrosive',
+        'pictogram_flammable',
+        'pictogram_explosive',
+        'pictogram_oxidising',
+        'pictogram_danger',
+        'pictogram_health',
+        'pictogram_environment',
+        'pictogram_gas'
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -427,5 +448,4 @@ class TradeUnit extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(TradeUnitTimeSeries::class);
     }
-
 }

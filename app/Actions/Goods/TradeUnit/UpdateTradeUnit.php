@@ -8,6 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
+use App\Actions\Audits\DispatchSimpleAudit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
@@ -54,6 +55,8 @@ class UpdateTradeUnit extends GrpAction
     public function handle(TradeUnit $tradeUnit, array $modelData): TradeUnit
     {
         if (Arr::has($modelData, 'origin_country_id')) {
+            $oldCountryOfOrigin = $tradeUnit->country_of_origin;
+
             if (Arr::get($modelData, 'origin_country_id') == null) {
                 data_set($modelData, 'country_of_origin', null);
             } else {
@@ -64,6 +67,13 @@ class UpdateTradeUnit extends GrpAction
                     data_set($modelData, 'country_of_origin', null, false);
                 }
             }
+
+            DispatchSimpleAudit::run(
+                auditableModel: $tradeUnit,
+                logKey: 'country_of_origin',
+                oldValue: $oldCountryOfOrigin,
+                newValue: Arr::get($modelData, 'country_of_origin')
+            );
         }
 
         if (Arr::has($modelData, 'name_i8n')) {
