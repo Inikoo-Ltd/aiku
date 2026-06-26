@@ -26,35 +26,36 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Traits\IsReviews;
 use App\Models\Traits\HasImage;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
- * @property int|null $shop_id
- * @property int|null $customer_id
- * @property int|null $order_id
- * @property ReviewScopeEnum $scope
  * @property ReviewStateEnum $state
  * @property bool $is_online
- * @property bool $is_public
+ * @property int|null $shop_id
+ * @property int|null $customer_id
+ * @property ReviewScopeEnum $scope
+ * @property int|null $order_id
  * @property int|null $master_product_category_id
  * @property int|null $product_category_id
  * @property int|null $master_product_id
  * @property int|null $product_id
- * @property float $rating_main
+ * @property numeric $rating_main
  * @property int|null $rating_a
  * @property int|null $rating_b
  * @property int|null $rating_c
  * @property int|null $rating_d
  * @property int|null $rating_e
  * @property \Illuminate\Support\Carbon|null $auto_approve_at
- * @property ReviewStatusEnum $review_status
- * @property string|null $title
+ * @property bool $is_public
  * @property string|null $message
- * @property array|null $web_images
+ * @property string $web_images
  * @property int|null $language_id
+ * @property ReviewStatusEnum $review_status
  * @property bool $approved
  * @property bool $auto_approved
  * @property int|null $approved_by
@@ -76,13 +77,19 @@ use Spatie\MediaLibrary\HasMedia;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer|null $customer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read MasterAsset|null $masterProduct
+ * @property-read MasterProductCategory|null $masterProductCategory
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read Product|null $product
+ * @property-read ProductCategory|null $productCategory
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Reviews\ReviewReaction> $reactions
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newModelQuery()
@@ -152,5 +159,15 @@ class Review extends Model implements Auditable, HasMedia
     public function productCategory(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'product_category_id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(ReviewReaction::class);
     }
 }

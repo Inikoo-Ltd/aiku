@@ -135,21 +135,21 @@ const fieldNameString = computed(() =>
 
         <!-- AIKU INTERNAL PROVIDER SETTINGS -->
         <div class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
-            <div class="flex flex-col gap-1">
+            <!-- <div class="flex flex-col gap-1">
                 <label class="flex items-center gap-1 text-sm">
                     {{ trans('Require Approval Before Publishing') }}
                     <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('When enabled, customer reviews must be approved by an admin before they are published.')" fixed-width aria-hidden="true" />
                 </label>
                 <InputSwitch v-model="approvalRequired" />
-            </div>
-            <div class="flex flex-col gap-1">
+            </div> -->
+            <!-- <div class="flex flex-col gap-1">
                 <label class="flex items-center gap-1 text-sm">
                     {{ trans('Hours After Dispatch Before Review Is Available') }}
                     <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('Number of hours after an order is dispatched before the review menu appears to the customer.')" fixed-width aria-hidden="true" />
                 </label>
                 <PureInput type="number" :modelValue="data['hours_after_dispatched'] ?? 24"
                     @update:modelValue="updateDataField('hours_after_dispatched', Number($event))" />
-            </div>
+            </div> -->
         </div>
 
 

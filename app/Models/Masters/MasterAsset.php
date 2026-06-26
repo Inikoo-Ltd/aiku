@@ -171,6 +171,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read LaravelCollection<int, Product> $products
+ * @property-read MasterAssetReviewStat|null $reviewStats
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
  * @property-read Media|null $sizeComparisonImage

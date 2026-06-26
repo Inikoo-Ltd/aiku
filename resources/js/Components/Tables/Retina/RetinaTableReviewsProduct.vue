@@ -57,10 +57,12 @@ const locale = inject("locale", retinaLayoutStructure)
 const isOpenDialog = ref(false)
 const selectedItem = ref<any>(null)
 const loadingSave = ref(false)
+const reviewErrors = ref<Record<string, string[] | string>>({})
 
 const openDialog = (item: any) => {
     selectedItem.value = item
     isOpenDialog.value = true
+    reviewErrors.value = {}
 }
 
 const saveProductReview = async () => {
@@ -96,6 +98,7 @@ const saveProductReview = async () => {
 
     try {
         loadingSave.value = true
+        reviewErrors.value = {}
 
         await axios({
             method: isUpdate ? "patch" : "post",
@@ -114,12 +117,12 @@ const saveProductReview = async () => {
             text: "Review submitted successfully",
             type: "success",
         })
-    } catch (errors) {
-        console.error(errors)
+    } catch (error: any) {
+        reviewErrors.value = error?.response?.data?.errors || {}
 
         notify({
             title: "Error",
-            text: "Failed to submit review",
+            text: error?.response?.data?.message || "Failed to submit review",
             type: "error",
         })
     } finally {
@@ -171,7 +174,7 @@ const saveProductReview = async () => {
             '992px': '85vw',
             '576px': '95vw'
         }" :content-style="{ overflow: 'auto' }">
-        <FormReview v-model="selectedItem.reviews.product" :schema="data.rating_labels.product_reviews" />
+        <FormReview v-model="selectedItem.reviews.product" :schema="data.rating_labels.product_reviews" :errors="reviewErrors" />
         <template #footer>
             <div class="flex justify-end gap-5">
                 <Button label="Close" type="secondary" @click="isOpenDialog = false" />

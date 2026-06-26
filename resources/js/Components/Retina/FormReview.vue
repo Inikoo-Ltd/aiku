@@ -33,6 +33,7 @@ const props = withDefaults(
 		disabled?: boolean
 		review_settings:object
 		showAverageReview?: boolean
+		errors?: Record<string, string[] | string> | null
 		modelValue: {
 			status?: "pending" | "approved" | "rejected" | null
 			rating?: number | null
@@ -200,6 +201,16 @@ const averageRating = computed(() => {
 	} else return form.rating
 })
 
+const fieldError = (field: string): string | null => {
+	const error = props.errors?.[field]
+
+	if (!error) {
+		return null
+	}
+
+	return Array.isArray(error) ? error[0] : error
+}
+
 const formatSize = (bytes: number) => {
 	const k = 1024
 	const dm = 2
@@ -251,7 +262,6 @@ watch(
 	}
 )
 
-console.log(form, props)
 </script>
 
 <template>
@@ -297,6 +307,10 @@ console.log(form, props)
 
 					<Textarea v-model="form.message" rows="6" :autoResize="true" :disabled="disabled"
 						:placeholder="trans('Tell people what you liked or disliked...')" class="w-full rounded-xl" />
+
+					<div v-if="fieldError('message')" class="text-xs text-red-500">
+						{{ fieldError("message") }}
+					</div>
 				</div>
 
 				<div class="space-y-2 rounded-2xl border border-gray-200 bg-white p-4">
@@ -341,6 +355,10 @@ console.log(form, props)
 
 					<div v-if="fileErrors" class="mt-3 text-sm text-red-500">
 						{{ fileErrors }}
+					</div>
+
+					<div v-if="fieldError('images') || fieldError('images.*')" class="mt-3 text-sm text-red-500">
+						{{ fieldError("images") || fieldError("images.*") }}
 					</div>
 
 					<div v-if="imagePreviews.length" class="grid gap-3 pt-2 sm:grid-cols-3">
@@ -422,6 +440,10 @@ console.log(form, props)
 							</div>
 						</div>
 
+						<div v-if="fieldError('rating')" class="text-xs text-red-500">
+							{{ fieldError("rating") }}
+						</div>
+
 						<div v-if="activeRatings.length" class="space-y-1 rounded-2xl bg-white">
 							<div v-for="item in activeRatings" :key="item.dimension"
 								class="rating flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 transition-all duration-200 hover:border-gray-200 hover:bg-white sm:flex-row sm:items-center sm:justify-between">
@@ -438,6 +460,10 @@ console.log(form, props)
 
 										<div v-if="item.required" class="mt-1 text-[11px] text-red-500">
 											{{ trans("Required") }}
+										</div>
+
+										<div v-if="fieldError(item.field)" class="mt-1 text-[11px] text-red-500">
+											{{ fieldError(item.field) }}
 										</div>
 									</div>
 								</div>
@@ -477,6 +503,10 @@ console.log(form, props)
 
 										<div v-if="item.required" class="mt-1 text-[11px] text-red-500">
 											{{ trans("Required") }}
+										</div>
+
+										<div v-if="fieldError(item.field)" class="mt-1 text-[11px] text-red-500">
+											{{ fieldError(item.field) }}
 										</div>
 									</div>
 								</div>

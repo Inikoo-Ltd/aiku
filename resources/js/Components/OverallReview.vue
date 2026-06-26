@@ -37,6 +37,7 @@ const props = defineProps<{
 
 
 const loadingSave = ref(false)
+const reviewErrors = ref<Record<string, string[] | string>>({})
 
 const reviewData = ref<any>({ ...props.data })
 
@@ -84,6 +85,7 @@ const saveReview = async () => {
 
     try {
         loadingSave.value = true
+        reviewErrors.value = {}
 
         await axios({
             method: isUpdate ? "patch" : "post",
@@ -98,11 +100,12 @@ const saveReview = async () => {
             text: trans("Review submitted successfully"),
             type: "success",
         })
-    } catch (errors) {
-        console.error(errors)
+    } catch (error: any) {
+        reviewErrors.value = error?.response?.data?.errors || {}
+
         notify({
             title: trans("Error"),
-            text: trans("Failed to submit review"),
+            text: error?.response?.data?.message || trans("Failed to submit review"),
             type: "error",
         })
     } finally {
@@ -115,7 +118,7 @@ const saveReview = async () => {
 <template>
     <div class="border rounded-lg p-4 border-gray-20">
         <div class="text-lg font-bold mb-4 ml-2 border-b pb-3 border-gray-200">{{trans('Overall review of your experience')}}</div>
-        <FormReview v-model="reviewData" :review_settings :type="data.context || ''" :schema="data.rating_labels"  :showAverageReview="false"  :disabled="reviewData?.review_id ? true : false"/>
+        <FormReview v-model="reviewData" :review_settings :type="data.context || ''" :schema="data.rating_labels"  :showAverageReview="false"  :disabled="reviewData?.review_id ? true : false" :errors="reviewErrors"/>
         <div  v-if="!reviewData?.review_id " class="border-t mt-3 pt-3 gap-4 border-gray-200 flex justify-end">
             <Button type="save" @click="saveReview"></Button>
         </div>

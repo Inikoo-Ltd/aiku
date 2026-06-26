@@ -76,6 +76,7 @@ const props = defineProps<{
     balance: string
     address_management: AddressManagement
     currency: Currency
+    review_settings : any
     data?: {
         data: {
             slug: string
@@ -220,7 +221,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
 
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state" :modalOpen="isModalUploadOpen"
-                   @update:tab="handleTabUpdate" />
+                   @update:tab="handleTabUpdate" :review_settings />
 
 
     <div class="flex justify-end px-6 gap-x-4">

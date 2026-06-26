@@ -4,6 +4,7 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
+use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -67,6 +68,13 @@ class ReviewsResource extends JsonResource
                 'parameters' => [
                     'review'          => $this->id,
                     'reviewable_type' => $this->getTable(),
+                ],
+                'method'     => 'patch',
+            ] : null,
+            'approve_route'    => ($canManage && $this->status !== ReviewStatusEnum::APPROVED->value) ? [
+                'name'       => 'grp.models.review.approve',
+                'parameters' => [
+                    'review' => $this->id,
                 ],
                 'method'     => 'patch',
             ] : null,

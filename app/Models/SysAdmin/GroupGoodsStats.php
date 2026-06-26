@@ -79,6 +79,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_trade_units_without_description
  * @property int $number_trade_units_without_brand
  * @property int $number_trade_units_without_barcode
+ * @property int $number_barcodes
+ * @property int $number_barcodes_status_available
+ * @property int $number_barcodes_status_used
+ * @property int $number_barcodes_status_reserved
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newQuery()
