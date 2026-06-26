@@ -54,10 +54,16 @@ class GetRetinaPaymentAccountShopData
                         'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
                     ]
                 ];
-        }  elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::PASTPAY) {
+        } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::PASTPAY) {
+
+            $options = Arr::get($paymentAccountShop->paymentAccount->data, 'charges.options');
+            if (empty($options)) {
+                return [];
+            }
+
             return
                 [
-                    'label' => __('Pastpay'),
+                    'label' => 'Pastpay',
                     'key'   => 'pastpay',
                     'icon'  => 'fal fa-hand-holding-usd',
                     'order_payment_api_point' => $orderPaymentApiPoint->ulid,
