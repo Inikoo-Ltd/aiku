@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\Review\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
+use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -96,9 +97,14 @@ class IndexReviews extends OrgAction
             $query->where('scope', ReviewScopeEnum::PRODUCT->value);
         }
 
-        if ($bucket === 'waiting') {
-            $query->where('reviews.review_status', ReviewStatusEnum::PENDING->value);
-        }
+        match ($bucket) {
+            'waiting'            => $query->where('reviews.review_status', ReviewStatusEnum::PENDING->value),
+            'unanswered'         => $query->where('reviews.state', ReviewStateEnum::PUBLISHED->value)->where('reviews.replied', false),
+            'published'          => $query->where('reviews.state', ReviewStateEnum::PUBLISHED->value),
+            'published_last_24h' => $query->where('reviews.state', ReviewStateEnum::PUBLISHED->value)->where('reviews.published_at', '>=', now()->subDay()),
+            'rejected'           => $query->where('reviews.review_status', ReviewStatusEnum::REJECTED->value),
+            default              => null,
+        };
 
         return $query->defaultSort('-reviews.created_at')
             ->select([

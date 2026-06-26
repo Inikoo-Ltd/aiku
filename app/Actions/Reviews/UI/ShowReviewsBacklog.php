@@ -26,9 +26,7 @@ class ShowReviewsBacklog extends OrgAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-        $waiting = ReviewsBacklogTabsEnum::WAITING->value;
-
-        return Inertia::render('Org/Catalogue/ShopReviewsBacklog', [
+        $props = [
             'title'       => __('Backlog Review'),
             'breadcrumbs' => $this->getBreadcrumbs(
                 $request->route()->getName(),
@@ -46,11 +44,21 @@ class ShowReviewsBacklog extends OrgAction
                 'current'    => $this->tab,
                 'navigation' => $this->getTabsBox($shop),
             ],
+        ];
 
-            $waiting => $this->tab == $waiting ?
-                fn () => $this->getReviewsData($shop, $waiting)
-                : Inertia::lazy(fn () => $this->getReviewsData($shop, $waiting)),
-        ])->table(IndexReviews::make()->tableStructure(prefix: $waiting));
+        foreach (ReviewsBacklogTabsEnum::values() as $bucket) {
+            $props[$bucket] = $this->tab == $bucket
+                ? fn () => $this->getReviewsData($shop, $bucket)
+                : Inertia::lazy(fn () => $this->getReviewsData($shop, $bucket));
+        }
+
+        $response = Inertia::render('Org/Catalogue/ShopReviewsBacklog', $props);
+
+        foreach (ReviewsBacklogTabsEnum::values() as $bucket) {
+            $response->table(IndexReviews::make()->tableStructure(prefix: $bucket));
+        }
+
+        return $response;
     }
 
     private function getReviewsData(Shop $shop, string $bucket): array

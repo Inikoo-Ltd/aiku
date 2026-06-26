@@ -19,6 +19,10 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     waiting?: Record<string, any>
+    unanswered?: Record<string, any>
+    published?: Record<string, any>
+    published_last_24h?: Record<string, any>
+    rejected?: Record<string, any>
 }>()
 
 const currentTab = ref(props.tabs.current)
