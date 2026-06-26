@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
     
     <!-- <pre>{{ blablabla }}</pre> -->
     <div class="bg-white">
-        <div class="mx-auto w-full max-w-screen-3xl">
+        <div class="mx-auto w-full">
             <div
                 v-for="(web_block_data, index) in props.web_blocks"
                 :key="'block-' + web_block_data.id"
