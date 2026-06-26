@@ -58,6 +58,11 @@ class GetRetinaPaymentAccountShopData
 
             $options = Arr::get($paymentAccountShop->data, 'charges.options', []);
 
+
+            if(app()->environment('production')){
+                return [];
+            }
+
             if (empty($options)) {
                 return [];
             }
