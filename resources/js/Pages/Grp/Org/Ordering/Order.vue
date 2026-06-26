@@ -2155,9 +2155,9 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         </template>
 
                         <template #cell_shipping_3="{ fieldSummary }">
-                            <div class="relative col-span-3 justify-self-end font-medium xoverflow-hidden">
+                            <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc" class="relative col-span-3 justify-self-end font-medium xoverflow-hidden">
                                 <Transition name="spin-to-right">
-                                    <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc"
+                                    <div
                                         class="-mr-2"
                                         :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? '' : ''">
                                         <span v-if="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null"
@@ -2173,11 +2173,6 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                             :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null
                                                 " :min="0" />
                                     </div>
-
-                                    <dd v-else :key="fieldSummary.price_total" class=""
-                                        :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
-                                        {{ locale.currencyFormat(currency.code, fieldSummary.price_total || 0) }}
-                                    </dd>
                                 </Transition>
                             </div>
                         </template>
