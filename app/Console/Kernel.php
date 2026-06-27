@@ -61,6 +61,16 @@ class Kernel extends ConsoleKernel
 
 
         if (config('app.master')) {
+
+            $this->logSchedule(
+                $schedule->job(ActivateScheduledOffers::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'ActivateScheduledOffers',
+                ),
+                name: 'ActivateScheduledOffers',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
             $this->logSchedule(
                 $schedule->job(RecordVarnishHitRatio::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'RecordVarnishHitRatio',
@@ -462,14 +472,7 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            $this->logSchedule(
-                $schedule->job(ActivateScheduledOffers::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
-                    monitorSlug: 'ActivateScheduledOffers',
-                ),
-                name: 'ActivateScheduledOffers',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
+
 
 
             $this->logSchedule(
@@ -610,7 +613,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('hydrate:customers-clv')->dailyAt('01:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->job('HydrateCustomersClv')->dailyAt('01:00')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'HydrateCustomersClv',
                 ),
                 name: 'HydrateCustomersClv',
