@@ -39,7 +39,7 @@ class SetCloudflareToken
 
     public function getCommandSignature(): string
     {
-        return 'cloudflare:set-token {website} {token}';
+        return 'cloudflare:set-token {token} {website}';
     }
 
     public function asCommand(Command $command): void
