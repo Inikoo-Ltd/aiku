@@ -128,6 +128,10 @@ class StoreInvoice extends OrgAction
             data_set($modelData, 'is_re', $parent->is_re);
         }
 
+        if ($parent instanceof Order) {
+            data_set($modelData, 'is_pastpay', $parent->is_pastpay);
+        }
+
 
         if (!Arr::exists($modelData, 'tax_category_id')) {
             $modelData = $this->processTaxCategory($modelData, $parent);

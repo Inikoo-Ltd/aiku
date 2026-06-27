@@ -55,22 +55,18 @@ class PayOrderWithPastpay extends RetinaAction
         }
         $amount = $toPay / 100;
 
-
-
-
         try {
-
             $response = $this->pastpayInitiateOrder($order, [
                 'totalPrice' => [
                     'amount'   => (float)$amount,
                     'currency' => $order->currency->code
                 ],
-                'termDays'   => $termDays,
+                'termDays'   => (int)$termDays,
             ]);
 
 
             UpdateOrder::run($order, [
-                'data'       => [
+                'data' => [
                     'pastpay' => [
                         'payment_account_shop_id' => $paymentAccountShop->id,
                         'charges'                 => $chargeAmount,
@@ -78,6 +74,7 @@ class PayOrderWithPastpay extends RetinaAction
                     ]
                 ]
             ]);
+
 
             return [
                 'status' => 'ok',
@@ -112,8 +109,8 @@ class PayOrderWithPastpay extends RetinaAction
 
     public function asController(Order $order, ActionRequest $request): array
     {
-
         $this->initialisation($request);
+
         return $this->handle($order, $this->validatedData);
     }
 
