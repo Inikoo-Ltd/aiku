@@ -180,7 +180,7 @@ const showReturnStoredItemsRoute = (item: any) => {
 </script>
 
 <template>
-    <Table :resource="data" class="mt-5" rowAlignTop :name="tab" :memoizeRows="true">
+    <Table :resource="data" class="mt-5" rowAlignTop :name="tab" xmemoizeRows="true">
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
