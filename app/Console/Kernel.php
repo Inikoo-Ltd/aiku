@@ -58,11 +58,8 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
-        $schedule->command('domain:check-cloudflare-status')->hourly()->onOneServer();
-
 
         if (config('app.master')) {
-
             $this->logSchedule(
                 $schedule->job(ActivateScheduledOffers::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'ActivateScheduledOffers',
@@ -290,10 +287,9 @@ class Kernel extends ConsoleKernel
             );
 
 
-
             $this->logSchedule(
                 $schedule->job(FetchEbayOrders::makeJob())->hourly()->between('6:00', '17:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
-                monitorSlug: 'FetchEbayOrders',
+                    monitorSlug: 'FetchEbayOrders',
                 ),
                 name: 'FetchEbayOrders',
                 type: 'command',
@@ -476,8 +472,6 @@ class Kernel extends ConsoleKernel
             );
 
 
-
-
             $this->logSchedule(
                 $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
@@ -494,8 +488,6 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
-
-
 
 
             $this->logSchedule(
@@ -515,8 +507,6 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
-
-
         }
 
         if (config('app.slave')) {
