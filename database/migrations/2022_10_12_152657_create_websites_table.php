@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     use HasGroupOrganisationRelationship;
     use HasSoftDeletes;
+
     public function up(): void
     {
         Schema::create('websites', function (Blueprint $table) {
@@ -65,7 +66,7 @@ return new class () extends Migration {
             $table->unsignedInteger('pricing_id')->index()->nullable();
 
 
-            $table->string('cloudflare_id')->index()->nullable();
+            $table->string('cloudflare_zone_id')->index()->nullable();
             $table->string('cloudflare_status')->nullable()->default(WebsiteCloudflareStatusEnum::NOT_SET->value);
 
             $table->timestampsTz();
@@ -73,14 +74,12 @@ return new class () extends Migration {
             $table->datetimeTz('last_fetched_at')->nullable();
             $table = $this->softDeletes($table);
             $table->string('source_id')->nullable()->unique();
-            $table->unique(['group_id','code']);
-            $table->unique(['organisation_id','name']);
-            $table->unique(['organisation_id','domain']);
+            $table->unique(['group_id', 'code']);
+            $table->unique(['organisation_id', 'name']);
+            $table->unique(['organisation_id', 'domain']);
         });
         DB::statement("CREATE INDEX ON websites (lower('code')) ");
         DB::statement("CREATE INDEX ON websites (lower('domain')) ");
-
-
     }
 
     public function down(): void

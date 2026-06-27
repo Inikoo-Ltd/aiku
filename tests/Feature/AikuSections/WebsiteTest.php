@@ -21,6 +21,7 @@ use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\StoreWebpage;
+use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -47,6 +48,8 @@ use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+
+use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\actingAs;
 
@@ -373,4 +376,103 @@ test('web sitemap creation', function () {
     SaveWebsitesSitemap::run();
     $this->artisan('sitemaps:create')->assertExitCode(0);
 
+});
+
+it('correctly picks zone kind ruleset when multiple exist', function () {
+
+    $website = Website::first();
+
+    $website->update([
+        'slug'               => 'ua',
+        'cloudflare_zone_id' => 'zone_123',
+        'cloudflare_token'   => encrypt('fake_token'),
+    ]);
+
+    // Mock Cloudflare API
+    Http::fake([
+        'https://api.cloudflare.com/client/v4/zones/zone_123/rulesets?phase=http_request_firewall_custom' => Http::response([
+            'result' => [
+                [
+                    'id'   => 'managed_ruleset_id',
+                    'kind' => 'managed',
+                ],
+                [
+                    'id'   => 'zone_ruleset_id',
+                    'kind' => 'zone',
+                ],
+            ],
+        ]),
+        'https://api.cloudflare.com/client/v4/zones/zone_123/rulesets/zone_ruleset_id' => Http::response([
+            'result' => [
+                'id'    => 'zone_ruleset_id',
+                'rules' => [],
+            ],
+        ]),
+        'https://api.cloudflare.com/client/v4/zones/zone_123/rulesets/zone_ruleset_id' => Http::response([
+            'result' => [
+                'id' => 'zone_ruleset_id',
+            ],
+        ]),
+    ]);
+
+    $result = BlockCountriesInCloudflare::run($website, ['UA', 'RU']);
+
+    expect($result['result']['id'])->toBe('zone_ruleset_id');
+
+    // Assert that the PUT request was made to the correct ruleset ID
+    Http::assertSent(function ($request) {
+        return $request->method() === 'PUT' &&
+            $request->url() === 'https://api.cloudflare.com/client/v4/zones/zone_123/rulesets/zone_ruleset_id' &&
+            count($request['rules']) === 1 &&
+            $request['rules'][0]['expression'] === '(ip.src.country in {"UA" "RU"})';
+    });
+});
+
+it('creates ruleset if none of zone kind exists', function () {
+
+    $website = Website::first();
+
+    $website->update([
+        'slug'               => 'ua-new',
+        'cloudflare_zone_id' => 'zone_456',
+        'cloudflare_token'   => encrypt('fake_token'),
+    ]);
+
+    // Mock Cloudflare API
+    Http::fake([
+        'https://api.cloudflare.com/client/v4/zones/zone_456/rulesets?phase=http_request_firewall_custom' => Http::response([
+            'result' => [
+                [
+                    'id'   => 'managed_ruleset_id',
+                    'kind' => 'managed',
+                ],
+            ],
+        ]),
+        'https://api.cloudflare.com/client/v4/zones/zone_456/rulesets' => function ($request) {
+            if ($request->method() === 'POST') {
+                return Http::response([
+                    'result' => [
+                        'id'   => 'new_zone_ruleset_id',
+                        'kind' => 'zone',
+                    ],
+                ]);
+            }
+            return Http::response([], 404);
+        },
+        'https://api.cloudflare.com/client/v4/zones/zone_456/rulesets/new_zone_ruleset_id' => Http::response([
+            'result' => [
+                'id'    => 'new_zone_ruleset_id',
+                'rules' => [],
+            ],
+        ]),
+        'https://api.cloudflare.com/client/v4/zones/zone_456/rulesets/new_zone_ruleset_id' => Http::response([
+            'result' => [
+                'id' => 'new_zone_ruleset_id',
+            ],
+        ]),
+    ]);
+
+    $result = BlockCountriesInCloudflare::run($website, ['UA']);
+
+    expect($result['result']['id'])->toBe('new_zone_ruleset_id');
 });

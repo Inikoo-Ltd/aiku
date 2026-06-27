@@ -26,9 +26,9 @@ class SetCloudflareToken
             $encryptedToken = encrypt($token);
             $website->update(
                 [
-                    'cloudflare_token'  => $encryptedToken,
-                    'cloudflare_id'     => $zoneId,
-                    'cloudflare_status' => WebsiteCloudflareStatusEnum::ACTIVE
+                    'cloudflare_token'   => $encryptedToken,
+                    'cloudflare_zone_id' => $zoneId,
+                    'cloudflare_status'  => WebsiteCloudflareStatusEnum::ACTIVE
                 ]
             );
             $command?->info('Cloudflare token set');
