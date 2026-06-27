@@ -72,6 +72,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command(' offer:update_status_from_dates')->hourly()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'OfferUpdateStatusFromDates',
+                ),
+                name: 'OfferUpdateStatusFromDates',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(RecordVarnishHitRatio::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'RecordVarnishHitRatio',
                 ),
@@ -279,23 +288,7 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            $this->logSchedule(
-                $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'FetchDispatchedEmails',
-                ),
-                name: 'FetchDispatchedEmails',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
 
-            $this->logSchedule(
-                $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(4, 17)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchEmailTrackingEvents',
-                ),
-                name: 'FetchEmailTrackingEvents',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
 
             $this->logSchedule(
                 $schedule->command('fetch:ebay-orders')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
@@ -493,14 +486,27 @@ class Kernel extends ConsoleKernel
             );
 
 
+
+
             $this->logSchedule(
-                $schedule->command(' offer:update_status_from_dates')->hourly()->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'OfferUpdateStatusFromDates',
+                $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchDispatchedEmails',
                 ),
-                name: 'OfferUpdateStatusFromDates',
+                name: 'FetchDispatchedEmails',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(4, 17)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'FetchEmailTrackingEvents',
+                ),
+                name: 'FetchEmailTrackingEvents',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+
         }
 
         if (config('app.slave')) {
