@@ -1,22 +1,22 @@
 <?php
-
 /*
- * author Arya Permana - Kirin
- * created on 16-05-2025-16h-10m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 27 Jun 2026 12:54:32 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dropshipping\Ebay\Orders;
 
-use App\Actions\RetinaAction;
-use App\Models\Dropshipping\EbayUser;
-use Lorisleiva\Actions\Concerns\AsCommand;
-use Sentry;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class FetchEbayOrders extends RetinaAction
+class FetchEbayOrders
 {
-    use AsCommand;
+
+    use AsAction;
 
     public string $commandSignature = 'fetch:ebay-orders';
 
@@ -27,12 +27,17 @@ class FetchEbayOrders extends RetinaAction
 
     public function handle(): void
     {
-        $ebayUsers = EbayUser::whereNotNull('customer_sales_channel_id')->get();
-        foreach ($ebayUsers as $ebayUser) {
-            try {
-                FetchEbayUserOrders::run($ebayUser);
-            } catch (\Exception $e) {
-                Sentry::captureException($e);
+        $platform = Platform::where('type', PlatformTypeEnum::EBAY)->first();
+
+        $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->get();
+
+        /** @var CustomerSalesChannel $customerSalesChannel */
+        foreach ($customerSalesChannels as $customerSalesChannel) {
+            if ($customerSalesChannel->user) {
+                $randomDelay = rand(1, 3600);
+                FetchEbayUserOrders::dispatch($customerSalesChannel->user)->delay(now()->addSeconds($randomDelay));
             }
         }
     }

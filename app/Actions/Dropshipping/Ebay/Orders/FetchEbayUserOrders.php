@@ -12,22 +12,29 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class FetchEbayUserOrders extends OrgAction
+class FetchEbayUserOrders extends OrgAction implements ShouldBeUnique
 {
-    use AsAction;
     use WithActionUpdate;
+
+    public string $jobQueue = 'ebay';
+
+    public function getJobUniqueId(EbayUser $ebayUser): int
+    {
+        return $ebayUser->id;
+    }
+
 
     /**
      * @throws \Throwable
      */
     public function handle(EbayUser $ebayUser): void
     {
-
+        /** @noinspection SpellCheckingInspection */
         $filter   = 'orderfulfillmentstatus:{NOT_STARTED|IN_PROGRESS}';
         $response = $ebayUser->getOrders(limit: 150, filter: $filter);
 
@@ -62,7 +69,10 @@ class FetchEbayUserOrders extends OrgAction
 
     public string $commandSignature = 'ebay-user-orders-fetch {ebayUserId}';
 
-    public function asCommand(Command $command)
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): void
     {
         $ebayUser = EbayUser::find($command->argument('ebayUserId'));
         $this->handle($ebayUser);

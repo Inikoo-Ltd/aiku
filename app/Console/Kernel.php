@@ -25,6 +25,7 @@ use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
+use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
 use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
@@ -291,11 +292,20 @@ class Kernel extends ConsoleKernel
 
 
             $this->logSchedule(
-                $schedule->command('fetch:ebay-orders')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
-                    monitorSlug: 'FetchEbayOrders',
+                $schedule->job(FetchEbayOrders::makeJob())->hourly()->between('6:00', '17:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                monitorSlug: 'FetchEbayOrders',
                 ),
                 name: 'FetchEbayOrders',
                 type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchEbayOrders::makeJob())->everyFourHours(30)->unlessBetween('6:00', '17:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchEbayOrdersAfterHours',
+                ),
+                name: 'FetchEbayOrdersAfterHours',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
 
