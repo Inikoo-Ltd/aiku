@@ -200,7 +200,6 @@ class Kernel extends HttpKernel
         'iris'        => [
             DetectIrisWebsite::class,
             CheckWebsiteState::class,
-            RestrictCountryRegions::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,

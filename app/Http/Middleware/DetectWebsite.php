@@ -22,10 +22,17 @@ class DetectWebsite
             abort(404, 'Not found');
         }
 
-        $request->merge([
+        $websiteData = [
             'domain'  => $website->domain,
             'website' => $website
-        ]);
+        ];
+        if (!empty($website->blocked_country_regions)) {
+            $websiteData['has_blocked_country_regions'] = true;
+            $websiteData['blocked_countries']           = array_keys($website->blocked_country_regions);
+            $websiteData['blocked_country_regions']     = $website->blocked_country_regions;
+        }
+
+        $request->merge($websiteData);
 
         return $next($request);
     }

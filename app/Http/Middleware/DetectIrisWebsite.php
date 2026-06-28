@@ -72,7 +72,7 @@ class DetectIrisWebsite
 
         if (!empty($website->blocked_country_regions)) {
             $websiteData['has_blocked_country_regions'] = true;
-            $websiteData['blocked_countries']                   = array_keys($website->blocked_country_regions);
+            $websiteData['blocked_countries']           = array_keys($website->blocked_country_regions);
             $websiteData['blocked_country_regions']     = $website->blocked_country_regions;
         }
 

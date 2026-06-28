@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 29 Jun 2026 00:34:10 Malaysia Time, Kuala Lumpur, Malaysia
@@ -33,11 +34,15 @@ class LogRestrictedCountryRegion
             [
                 'ip_geolocation_id' => $geoDataId,
                 'was_blocked'       => $isBlocked,
+                'last_request_at'   => $date,
+                'number_requests'   => 1,
                 'created_at'        => $date,
                 'updated_at'        => $date,
             ],
             ['ip_geolocation_id', 'was_blocked'],
             [
+                'last_request_at',
+                'number_requests' => DB::raw('restricted_country_region_logs.number_requests + 1'),
                 'updated_at',
             ]
         );
