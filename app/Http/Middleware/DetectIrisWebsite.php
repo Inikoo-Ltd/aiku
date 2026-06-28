@@ -37,7 +37,6 @@ class DetectIrisWebsite
                 }
             );
         }
-
         $request->merge($websiteData);
 
         return $next($request);
@@ -52,7 +51,7 @@ class DetectIrisWebsite
         }
         $shop = $website->shop;
 
-        return [
+        $websiteData = [
             'domain'        => $website->domain,
             'website'       => $website,
             'currency_data' => [
@@ -67,9 +66,17 @@ class DetectIrisWebsite
                 '32'  => $website->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png'),
                 '48'  => $website->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico'),
                 '180' => $website->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png')
-
             ]
         ];
+
+
+        if (!empty($website->blocked_country_regions)) {
+            $websiteData['has_blocked_country_regions'] = true;
+            $websiteData['countries']                   = array_keys($website->blocked_country_regions);
+            $websiteData['blocked_country_regions']     = $website->blocked_country_regions;
+        }
+
+        return $websiteData;
     }
 
 
