@@ -105,5 +105,10 @@ return [
         'demo_api_key' => env('PASTPAY_DEMO_API_KEY'),
         'base_url' => env('PASTPAY_BASE_URL'),
         'sandbox_url' => env('PASTPAY_SANDBOX_URL'),
+    ],
+    'max_mind' => [
+        'enabled' => env('MAXMIND_ENABLED', false),
+        'account_id' => env('MAXMIND_ACCOUNT_ID'),
+        'license_key' => env('MAXMIND_LICENSE_KEY'),
     ]
 ];

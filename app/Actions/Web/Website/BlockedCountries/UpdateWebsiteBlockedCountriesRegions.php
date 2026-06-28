@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website\BlockedCountries;
 
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
@@ -32,6 +33,8 @@ class UpdateWebsiteBlockedCountriesRegions extends OrgAction
         }
 
         $website->update(['blocked_country_regions' => $currentBlockedCountries]);
+
+        ClearCacheByWildcard::run("website-geo-blocked-ips:$website->id:$countryCode:*");
         $key = config('iris.cache.website.prefix').'_domain:'.$website->domain;
         Cache::forget($key);
 

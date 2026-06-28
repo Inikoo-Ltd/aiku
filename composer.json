@@ -37,6 +37,7 @@
     "deepseek-php/deepseek-php-client": "^2.0",
     "ezyang/htmlpurifier": "^4.19",
     "geocoder-php/nominatim-provider": "^5.8",
+    "geoip2/geoip2": "~3.0",
     "google/apiclient": "^2.15.0",
     "guzzlehttp/guzzle": "^7.2",
     "guzzlehttp/psr7": "^2.8",
