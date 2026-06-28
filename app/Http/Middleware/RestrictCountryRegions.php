@@ -21,6 +21,15 @@ class RestrictCountryRegions
 {
     public function handle(Request $request, Closure $next)
     {
+        if (!$request->isMethod('GET')) {
+            return $next($request);
+        }
+
+        if ($request->ajax()) {
+            return $next($request);
+        }
+
+
         if ($request->input('has_blocked_country_regions')) {
             $countryFromCloudFlare = $request->header('CF-IPCountry');
 
