@@ -79,6 +79,7 @@ const props = defineProps<{
 	dataToSubmit?: any
 	dataToSubmitIsDirty?: any
 	isButtonGroupWithBorder?: boolean
+	ignoreIsolate: boolean
 }>()
 
 const isButtonLoading = ref<boolean | string>(false)
@@ -109,7 +110,11 @@ const setError = (e) => {
 	<slot name="afterSubNav"></slot>
 
 	<div
-		class="relative isolate px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2">
+		class="relative  px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2"
+		:class="[
+			props.ignoreIsolate ? '' : 'isolate',
+		]"
+	>
 		<!-- Section: Left accent bar + fade decoration -->
 		<div
 			v-if="data.color || data.is_negative"
