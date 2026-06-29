@@ -27,10 +27,6 @@ trait WithGoogleAdsOAuth
         $clientId     = (string) config('services.google_ads.client_id');
         $clientSecret = (string) config('services.google_ads.client_secret');
 
-        if ($clientId === '' || $clientSecret === '') {
-            throw new Exception('Google Ads OAuth is not configured. Set GOOGLE_ADS_CLIENT_ID and GOOGLE_ADS_CLIENT_SECRET.');
-        }
-
         $client = new Google_Client();
         $client->setApplicationName('Aiku Google Ads');
         $client->setAuthConfig([

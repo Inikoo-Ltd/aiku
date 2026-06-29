@@ -25,6 +25,13 @@ class ConnectShopGoogleAds extends OrgAction
      */
     public function handle(Shop $shop): string
     {
+        $clientId     = (string) config('services.google_ads.client_id');
+        $clientSecret = (string) config('services.google_ads.client_secret');
+
+        if ($clientId === '' || $clientSecret === '') {
+            return '';
+        }
+
         return $this->googleAdsAuthUrl($shop);
     }
 
