@@ -70,7 +70,7 @@ class EditShop extends OrgAction
 
 
 
-        $mergedBannedCountryRegions=$shop->banned_country_regions;
+        $mergedBannedCountryRegions = $shop->banned_country_regions;
 
 
 

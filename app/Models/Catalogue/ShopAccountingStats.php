@@ -27,7 +27,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_payment_service_providers_type_cash_on_delivery
  * @property int $number_org_payment_service_providers_type_buy_now_pay_later
  * @property int $number_payment_accounts
- * @property int $number_current_payment_accounts
  * @property int $number_payment_accounts_type_paypal
  * @property int $number_payment_accounts_type_world_pay
  * @property int $number_payment_accounts_type_bank
@@ -80,6 +79,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_top_ups_status_fail
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_current_payment_accounts
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static Builder<static>|ShopAccountingStats newModelQuery()
  * @method static Builder<static>|ShopAccountingStats newQuery()

@@ -8,13 +8,9 @@
 
 namespace App\Actions\Dropshipping\Ebay;
 
-use App\Actions\Dropshipping\Portfolio\StorePortfolio;
-use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
-use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -34,12 +30,12 @@ class RepairEbayMismatchPortfolioData
     {
         /** @var EbayUser $ebayUser */
         $ebayUser = $customerSalesChannel->user;
-         $portfolios = $customerSalesChannel->portfolios;
+        $portfolios = $customerSalesChannel->portfolios;
 
         foreach ($portfolios as $portfolio) {
             $portfolioEbay = $ebayUser->getOffer($portfolio->platform_product_id);
 
-            if(Arr::get($portfolioEbay, 'availableQuantity') === 1){
+            if (Arr::get($portfolioEbay, 'availableQuantity') === 1) {
                 dd($portfolioEbay);
             }
         }

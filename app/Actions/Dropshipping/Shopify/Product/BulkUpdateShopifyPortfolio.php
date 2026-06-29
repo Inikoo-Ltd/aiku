@@ -94,7 +94,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         $portfoliosToUpdateData = [];
         $indexToPortfolioId     = [];
 
-        $shopifyIdsToFetch = $portfolios->map(fn($p) => $p->platform_product_variant_id ?: $p->platform_product_id)
+        $shopifyIdsToFetch = $portfolios->map(fn ($p) => $p->platform_product_variant_id ?: $p->platform_product_id)
             ->filter()
             ->unique()
             ->toArray();
