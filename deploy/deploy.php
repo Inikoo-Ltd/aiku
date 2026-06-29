@@ -103,7 +103,7 @@ desc('Refresh vue after deployment');
 task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
 
 desc('Log deployment');
-task('artisan:log-app-deployment', artisan('deploy:record-deployment --commit={{release_commit}}'))->select('env=prod');
+task('artisan:log-app-deployment', artisan('deploy:record-deployment --commit={{release_revision}}'))->select('env=prod');
 
 
 desc('Refresh vue after deployment');
@@ -300,6 +300,12 @@ task('deploy:view-cache', function () {
 
 desc('Log app deployment');
 task('deploy:log-app-deployment', function () {
+    if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+        writeln('Skipping log deployment on production host '.currentHost()->getAlias());
+
+        return;
+    }
+
     invoke('artisan:log-app-deployment');
 });
 
