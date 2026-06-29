@@ -20,6 +20,8 @@ use App\Actions\Masters\MasterCollection\HydrateMasterCollection as HydrateMaste
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollectionShowcase;
 use App\Actions\Masters\MasterCollection\UpdateMasterCollection;
+use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
@@ -670,6 +672,40 @@ test('store master family', function (MasterProductCategory $masterDepartment) {
         ->and($masterFamily->group_id)->toBe($this->group->id)
         ->and($masterFamily->type)->toBe(MasterProductCategoryTypeEnum::FAMILY)
         ->and($masterFamily->stats)->toBeInstanceOf(MasterProductCategoryStats::class);
+})->depends('store master department');
+
+test('detach family from master sub department', function (MasterProductCategory $masterDepartment) {
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'SMF_SUBDEPT1',
+            'name' => 'smf sub department 1',
+        ]
+    );
+
+    $masterFamily = StoreMasterFamily::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'SMF_FAM_DETACH',
+            'name' => 'smf family to detach',
+        ]
+    );
+
+    AttachMasterFamiliesToMasterSubDepartment::make()->action(
+        $masterSubDepartment,
+        ['master_families' => [$masterFamily->id]]
+    );
+
+    $masterFamily->refresh();
+    expect($masterFamily->master_sub_department_id)->toBe($masterSubDepartment->id);
+
+    DetachFamilyToMasterSubDepartment::make()->handle($masterFamily);
+
+    $masterFamily->refresh();
+
+    expect($masterFamily->master_sub_department_id)->toBeNull()
+        ->and($masterFamily->master_department_id)->toBe($masterDepartment->id)
+        ->and($masterFamily->master_parent_id)->toBe($masterDepartment->id);
 })->depends('store master department');
 
 

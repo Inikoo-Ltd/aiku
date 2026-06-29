@@ -21,13 +21,13 @@ class DetachFamilyToMasterSubDepartment extends GrpAction
 
     public function handle(MasterProductCategory $family): MasterProductCategory
     {
-        $currentSubDepartment = $family->subDepartment;
+        $currentSubDepartment = $family->masterSubDepartment;
 
         $family->update(
             [
-                'sub_department_id' => null,
-                'department_id'     => $currentSubDepartment->department_id,
-                'parent_id'         => $currentSubDepartment->department_id,
+                'master_sub_department_id' => null,
+                'master_department_id'     => $currentSubDepartment->master_department_id,
+                'master_parent_id'         => $currentSubDepartment->master_department_id,
             ]
         );
 
