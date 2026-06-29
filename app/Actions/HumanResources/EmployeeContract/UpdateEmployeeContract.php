@@ -62,6 +62,15 @@ class UpdateEmployeeContract extends OrgAction
         return $this->handle($contract, $this->validatedData);
     }
 
+    public function action(EmployeeContract $contract, array $data): EmployeeContract
+    {
+        $this->asAction = true;
+        $contract->load('employee.organisation.group');
+        $this->initialisation($contract->employee->organisation, $data);
+
+        return $this->handle($contract, $this->validatedData);
+    }
+
     public function htmlResponse(): RedirectResponse
     {
         request()->session()->flash('notification', [
