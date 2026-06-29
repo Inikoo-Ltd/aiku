@@ -72,8 +72,10 @@ class ShowRetinaEcomOrder extends RetinaAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
+        $reviewsEnabled       = (bool) data_get($order->shop->settings, 'reviews.enabled', false);
         $hoursAfterDispatched = (int) data_get($order->shop->settings, 'reviews.data.hours_after_dispatched', 24);
-        $reviewAvailable      = $order->state === OrderStateEnum::DISPATCHED
+        $reviewAvailable      = $reviewsEnabled
+            && $order->state === OrderStateEnum::DISPATCHED
             && $order->dispatched_at !== null
             && now()->diffInHours($order->dispatched_at, false) <= -$hoursAfterDispatched;
         $hasReviews           = $reviewAvailable && Review::where('order_id', $order->id)->exists();
