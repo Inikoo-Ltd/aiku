@@ -118,8 +118,7 @@ class PayOrderWithPastpay extends RetinaAction
         return [
             'days' => [
                 'required',
-                'integer',
-                Rule::in([30, 60]),
+                'integer'
             ],
         ];
     }
