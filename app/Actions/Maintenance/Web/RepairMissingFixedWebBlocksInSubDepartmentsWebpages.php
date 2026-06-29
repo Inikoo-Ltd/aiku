@@ -147,6 +147,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         $websiteId       = $command->option('website_id');
         $webpagesID = DB::table('webpages')
                         ->select('id')
+                        ->where('model_type', class_basename(ProductCategory::class))
                         ->where('sub_type', 'sub_department')
                         ->when(
                             !empty($websiteId),

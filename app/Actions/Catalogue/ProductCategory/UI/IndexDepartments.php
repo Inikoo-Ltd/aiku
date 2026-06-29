@@ -328,6 +328,7 @@ class IndexDepartments extends OrgAction
                 'title'                               => __('Departments'),
                 'pageHead'                            => [
                     'title'         => $title,
+                    'color'         => '#a3e635',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
