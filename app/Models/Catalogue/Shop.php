@@ -288,6 +288,7 @@ class Shop extends Model implements HasMedia, Auditable
         'location'                     => 'array',
         'extra_languages'              => 'array',
         'forbidden_dispatch_countries' => 'array',
+        'banned_country_regions'       => 'array',
         'type'                         => ShopTypeEnum::class,
         'state'                        => ShopStateEnum::class,
         'engine'                       => ShopEngineEnum::class,
@@ -304,6 +305,7 @@ class Shop extends Model implements HasMedia, Auditable
         'location'                     => '{}',
         'extra_languages'              => '{}',
         'forbidden_dispatch_countries' => '{}',
+        'banned_country_regions'       => '{}',
         'offers_data'                  => '{}',
         'opening_hours'                => '{}',
     ];
