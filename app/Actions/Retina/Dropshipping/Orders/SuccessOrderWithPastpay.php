@@ -14,7 +14,6 @@ use App\Actions\Accounting\PaymentGateway\Pastpay\WithPastpayConfiguration;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
-use App\Actions\Ordering\Order\CalculateOrderHangingCharges;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
 use App\Actions\RetinaAction;

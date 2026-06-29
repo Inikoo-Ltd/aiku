@@ -10,12 +10,10 @@
 namespace App\Actions\Catalogue\ProductCategory\Json;
 
 use App\Actions\IrisAction;
-use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockFamilyResourceForDepartmentWebpage;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -92,7 +90,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ->whereNotNull('webpages.id')
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at');
-        
+
         return $query
             ->defaultSort('-created_at')
             ->allowedSorts(['code', 'name', 'created_at'])
