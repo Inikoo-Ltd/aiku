@@ -12,22 +12,37 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\Masters\MasterAsset\DeleteMasterAsset;
+use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
+use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
+use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachModelToMasterCollection;
+use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
 use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
+use App\Actions\Masters\MasterCollection\DetachMasterCollectionFromModel;
+use App\Actions\Masters\MasterCollection\DetachMasterModelFromMasterCollection;
 use App\Actions\Masters\MasterCollection\HydrateMasterCollection as HydrateMasterCollectionAction;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollectionShowcase;
 use App\Actions\Masters\MasterCollection\UpdateMasterCollection;
+use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\UpdateMasterFamilyMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\UpdateMasterFamilyMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentsMasterDepartment;
+use App\Actions\Masters\MasterShop\GetMasterShopTimeSeriesStats;
 use App\Actions\Masters\MasterShop\HydrateMasterShop;
+use App\Actions\Masters\MasterShop\HydrateMasterShopSales;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
@@ -68,6 +83,15 @@ beforeEach(function () {
     Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
     actingAs($this->adminGuest->getUser());
 });
+
+function createFreshMasterShop(): MasterShop
+{
+    return StoreMasterShop::make()->action(group(), [
+        'type' => ShopTypeEnum::B2B,
+        'code' => 'MSH-'.uniqid(),
+        'name' => 'Test Master Shop',
+    ]);
+}
 
 function ensureMasterProductCategory(): \App\Models\Masters\MasterProductCategory
 {
@@ -1300,3 +1324,409 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
             );
     });
 })->depends('create master asset');
+
+
+// ADDITIONAL MASTER ASSET ACTIONS
+
+test('DeleteMasterAsset force deletes a master asset', function () {
+    $masterShop      = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'DMA-DEPT-'.uniqid(),
+        'name' => 'Delete Master Asset Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'DMA-FAM-'.uniqid(),
+        'name' => 'Delete Master Asset Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'DMA-AST-'.uniqid(),
+        'name'    => 'Delete Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $masterAssetId = $masterAsset->id;
+
+    DeleteMasterAsset::make()->handle($masterAsset);
+
+    expect(MasterAsset::find($masterAssetId))->toBeNull();
+});
+
+test('DeleteMasterAsset soft deletes when forceDelete is false', function () {
+    $masterShop      = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'DMAS-DEPT-'.uniqid(),
+        'name' => 'Soft Delete Master Asset Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'DMAS-FAM-'.uniqid(),
+        'name' => 'Soft Delete Master Asset Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'DMAS-AST-'.uniqid(),
+        'name'    => 'Soft Delete Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    DeleteMasterAsset::make()->handle($masterAsset, false);
+
+    $this->assertSoftDeleted('master_assets', ['id' => $masterAsset->id]);
+});
+
+test('CheckMasterAssetTradeUnitOrgStockExistence returns true when no trade units are checked', function () {
+    $masterShop      = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'CMA-DEPT-'.uniqid(),
+        'name' => 'Check Master Asset Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'CMA-FAM-'.uniqid(),
+        'name' => 'Check Master Asset Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'CMA-AST-'.uniqid(),
+        'name'    => 'Check Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $isValid = CheckMasterAssetTradeUnitOrgStockExistence::make()->handle($masterAsset, ['trade_units' => []]);
+
+    expect($isValid)->toBeTrue();
+});
+
+test('UpdateBulkMasterProduct updates rrp and price for multiple master products', function () {
+    $masterShop      = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'UBP-DEPT-'.uniqid(),
+        'name' => 'Update Bulk Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'UBP-FAM-'.uniqid(),
+        'name' => 'Update Bulk Family',
+    ]);
+    $masterAssetOne = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'UBP-AST1-'.uniqid(),
+        'name'    => 'Bulk Asset 1',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'unit'    => 'each',
+        'stocks'  => [],
+    ]);
+    $masterAssetTwo = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'UBP-AST2-'.uniqid(),
+        'name'    => 'Bulk Asset 2',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 20,
+        'unit'    => 'each',
+        'stocks'  => [],
+    ]);
+
+    UpdateBulkMasterProduct::make()->handle([
+        'products' => [
+            ['id' => $masterAssetOne->id, 'rrp' => 15, 'price' => 12],
+            ['id' => $masterAssetTwo->id, 'rrp' => 25, 'price' => 22],
+        ],
+    ]);
+
+    expect((int)$masterAssetOne->refresh()->price)->toBe(12)
+        ->and((int)$masterAssetOne->rrp)->toBe(15)
+        ->and((int)$masterAssetTwo->refresh()->price)->toBe(22)
+        ->and((int)$masterAssetTwo->rrp)->toBe(25);
+});
+
+test('UpdateMultipleMasterProductsFamily moves master assets to a new family', function () {
+    $masterShop      = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'UMF-DEPT-'.uniqid(),
+        'name' => 'Update Multiple Family Department',
+    ]);
+    $masterFamilyOld = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'UMF-FAM-OLD-'.uniqid(),
+        'name' => 'Old Family',
+    ]);
+    $masterFamilyNew = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'UMF-FAM-NEW-'.uniqid(),
+        'name' => 'New Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamilyOld, [
+        'code'    => 'UMF-AST-'.uniqid(),
+        'name'    => 'Asset To Move',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    UpdateMultipleMasterProductsFamily::make()->handle($masterFamilyNew, [
+        'master_assets' => [$masterAsset->id],
+    ]);
+
+    expect($masterAsset->refresh()->master_family_id)->toBe($masterFamilyNew->id);
+});
+
+
+// ADDITIONAL MASTER COLLECTION ACTIONS
+
+test('DetachMasterCollectionFromModel detaches a master collection from a department', function () {
+    $masterShop      = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'DMC-DEPT-'.uniqid(),
+        'name' => 'Detach Master Collection Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'DMC-FAM-'.uniqid(),
+        'name' => 'Detach Master Collection Family',
+    ]);
+    $masterCollection = StoreMasterCollection::make()->action($masterFamily, [
+        'code' => 'DMC-COL-'.uniqid(),
+        'name' => 'Detach Master Collection',
+    ]);
+
+    AttachMasterCollectionToModel::make()->action($masterDepartment, $masterCollection);
+
+    expect($masterDepartment->masterCollections()->where('master_collections.id', $masterCollection->id)->exists())->toBeTrue();
+
+    DetachMasterCollectionFromModel::make()->handle($masterDepartment, $masterCollection, false);
+
+    expect($masterDepartment->masterCollections()->where('master_collections.id', $masterCollection->id)->exists())->toBeFalse();
+});
+
+test('DetachMasterModelFromMasterCollection detaches a master family from a master collection', function () {
+    $masterShop      = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'DMM-DEPT-'.uniqid(),
+        'name' => 'Detach Model Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'DMM-FAM-'.uniqid(),
+        'name' => 'Detach Model Family',
+    ]);
+    $masterCollection = StoreMasterCollection::make()->action($masterFamily, [
+        'code' => 'DMM-COL-'.uniqid(),
+        'name' => 'Detach Model Collection',
+    ]);
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamily);
+
+    expect($masterCollection->masterFamilies()->where('master_product_categories.id', $masterFamily->id)->exists())->toBeTrue();
+
+    DetachMasterModelFromMasterCollection::make()->handle($masterCollection, $masterFamily, false);
+
+    expect($masterCollection->masterFamilies()->where('master_product_categories.id', $masterFamily->id)->exists())->toBeFalse();
+});
+
+test('AttachMultipleParentsToAMasterCollection attaches departments and shops', function () {
+    $masterShop      = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'AMP-DEPT-'.uniqid(),
+        'name' => 'Attach Multiple Parents Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'AMP-FAM-'.uniqid(),
+        'name' => 'Attach Multiple Parents Family',
+    ]);
+    $masterCollection = StoreMasterCollection::make()->action($masterFamily, [
+        'code' => 'AMP-COL-'.uniqid(),
+        'name' => 'Attach Multiple Parents Collection',
+    ]);
+
+    AttachMultipleParentsToAMasterCollection::make()->handle($masterCollection, [
+        'departments' => [$masterDepartment->id],
+    ]);
+
+    expect($masterDepartment->masterCollections()->where('master_collections.id', $masterCollection->id)->exists())->toBeTrue();
+});
+
+
+// ADDITIONAL MASTER PRODUCT CATEGORY ACTIONS
+
+test('DeleteMasterProductCategory force deletes a master sub department without children', function () {
+    $masterShop      = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'DPC-DEPT-'.uniqid(),
+        'name' => 'Delete Product Category Department',
+    ]);
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action($masterDepartment, [
+        'code' => 'DPC-SUB-'.uniqid(),
+        'name' => 'Delete Product Category SubDepartment',
+    ], false);
+
+    $masterSubDepartmentId = $masterSubDepartment->id;
+
+    DeleteMasterProductCategory::make()->handle($masterSubDepartment, true);
+
+    expect(MasterProductCategory::find($masterSubDepartmentId))->toBeNull();
+});
+
+test('AttachMasterFamiliesToMasterDepartment moves families under a department', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'AFD-DEPT-'.uniqid(),
+        'name' => 'Attach Families Department',
+    ]);
+    $otherDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'AFD-DEPT2-'.uniqid(),
+        'name' => 'Attach Families Other Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($otherDepartment, [
+        'code' => 'AFD-FAM-'.uniqid(),
+        'name' => 'Attach Families Family',
+    ]);
+
+    AttachMasterFamiliesToMasterDepartment::make()->handle($masterDepartment, [
+        'master_families' => [$masterFamily->id],
+    ]);
+
+    expect($masterFamily->refresh()->master_department_id)->toBe($masterDepartment->id);
+});
+
+test('AttachMasterFamiliesToMasterSubDepartment moves families under a sub department', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'AFS-DEPT-'.uniqid(),
+        'name' => 'Attach Families SubDepartment Department',
+    ]);
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action($masterDepartment, [
+        'code' => 'AFS-SUB-'.uniqid(),
+        'name' => 'Attach Families SubDepartment',
+    ], false);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'AFS-FAM-'.uniqid(),
+        'name' => 'Attach Families SubDepartment Family',
+    ]);
+
+    AttachMasterFamiliesToMasterSubDepartment::make()->handle($masterSubDepartment, [
+        'master_families' => [$masterFamily->id],
+    ]);
+
+    expect($masterFamily->refresh()->master_sub_department_id)->toBe($masterSubDepartment->id)
+        ->and($masterFamily->master_department_id)->toBe($masterDepartment->id);
+});
+
+test('UpdateMasterFamilyMasterDepartment reassigns a family to another department', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartmentOld = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'UFD-DEPT-OLD-'.uniqid(),
+        'name' => 'Update Family Department Old',
+    ]);
+    $masterDepartmentNew = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'UFD-DEPT-NEW-'.uniqid(),
+        'name' => 'Update Family Department New',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartmentOld, [
+        'code' => 'UFD-FAM-'.uniqid(),
+        'name' => 'Update Family Department Family',
+    ]);
+
+    $updatedFamily = UpdateMasterFamilyMasterDepartment::make()->handle($masterFamily, [
+        'master_department_id' => $masterDepartmentNew->id,
+    ]);
+
+    expect($updatedFamily->master_department_id)->toBe($masterDepartmentNew->id)
+        ->and($updatedFamily->master_sub_department_id)->toBeNull();
+});
+
+test('UpdateMasterFamilyMasterSubDepartment reassigns a family to a sub department', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'UFS-DEPT-'.uniqid(),
+        'name' => 'Update Family SubDepartment Department',
+    ]);
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action($masterDepartment, [
+        'code' => 'UFS-SUB-'.uniqid(),
+        'name' => 'Update Family SubDepartment',
+    ], false);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'UFS-FAM-'.uniqid(),
+        'name' => 'Update Family SubDepartment Family',
+    ]);
+
+    $updatedFamily = UpdateMasterFamilyMasterSubDepartment::make()->handle($masterFamily, [
+        'master_sub_department_id' => $masterSubDepartment->id,
+    ]);
+
+    expect($updatedFamily->master_sub_department_id)->toBe($masterSubDepartment->id)
+        ->and($updatedFamily->master_department_id)->toBe($masterDepartment->id);
+});
+
+test('UpdateMasterSubDepartmentMasterDepartment reassigns a sub department to another department', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartmentOld = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'USD-DEPT-OLD-'.uniqid(),
+        'name' => 'Update SubDepartment Department Old',
+    ]);
+    $masterDepartmentNew = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'USD-DEPT-NEW-'.uniqid(),
+        'name' => 'Update SubDepartment Department New',
+    ]);
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action($masterDepartmentOld, [
+        'code' => 'USD-SUB-'.uniqid(),
+        'name' => 'Update SubDepartment',
+    ], false);
+
+    $updatedSubDepartment = UpdateMasterSubDepartmentMasterDepartment::make()->handle($masterSubDepartment, [
+        'master_department_id' => $masterDepartmentNew->id,
+    ]);
+
+    expect($updatedSubDepartment->master_department_id)->toBe($masterDepartmentNew->id);
+});
+
+test('UpdateMasterSubDepartmentsMasterDepartment reassigns multiple sub departments', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartmentOld = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'USDS-DEPT-OLD-'.uniqid(),
+        'name' => 'Update SubDepartments Department Old',
+    ]);
+    $masterDepartmentNew = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'USDS-DEPT-NEW-'.uniqid(),
+        'name' => 'Update SubDepartments Department New',
+    ]);
+    $masterSubDepartmentOne = StoreMasterSubDepartment::make()->action($masterDepartmentOld, [
+        'code' => 'USDS-SUB1-'.uniqid(),
+        'name' => 'Update SubDepartments One',
+    ], false);
+    $masterSubDepartmentTwo = StoreMasterSubDepartment::make()->action($masterDepartmentOld, [
+        'code' => 'USDS-SUB2-'.uniqid(),
+        'name' => 'Update SubDepartments Two',
+    ], false);
+
+    $result = UpdateMasterSubDepartmentsMasterDepartment::make()->handle($masterDepartmentNew, [
+        'master_sub_department_ids' => [$masterSubDepartmentOne->id, $masterSubDepartmentTwo->id],
+    ]);
+
+    expect($result)->toBeTrue()
+        ->and($masterSubDepartmentOne->refresh()->master_department_id)->toBe($masterDepartmentNew->id)
+        ->and($masterSubDepartmentTwo->refresh()->master_department_id)->toBe($masterDepartmentNew->id);
+});
+
+
+// ADDITIONAL MASTER SHOP ACTIONS
+
+test('GetMasterShopTimeSeriesStats returns stats data for the group master shops', function () {
+    createFreshMasterShop();
+
+    $stats = GetMasterShopTimeSeriesStats::make()->handle($this->group);
+
+    expect($stats)->toBeArray()
+        ->and(count($stats))->toBeGreaterThanOrEqual(1)
+        ->and($stats[0])->toHaveKey('slug')
+        ->and($stats[0])->toHaveKey('group_slug');
+});
+
+test('HydrateMasterShopSales hydrates orders stats for a master shop', function () {
+    $masterShop = createFreshMasterShop();
+
+    HydrateMasterShopSales::make()->handle($masterShop);
+
+    expect($masterShop->refresh())->toBeInstanceOf(MasterShop::class);
+});
