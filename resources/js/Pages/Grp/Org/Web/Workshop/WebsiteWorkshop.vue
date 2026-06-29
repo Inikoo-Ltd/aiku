@@ -95,8 +95,9 @@ const setPayloadData = () => {
       return payloadData
     }
 
-    return data
   }
+  
+  return data
 }
 
 const onPublish = () => {
