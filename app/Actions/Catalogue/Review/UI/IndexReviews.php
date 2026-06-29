@@ -48,7 +48,49 @@ class IndexReviews extends OrgAction
             )
             ->first();
 
+        $scopeRows = Review::query()
+            ->where('shop_id', $shop->id)
+            ->selectRaw(
+                "
+                CASE
+                    WHEN scope IN (?, ?) THEN 'overall'
+                    WHEN scope = ? THEN 'family'
+                    WHEN scope = ? THEN 'product'
+                END as scope_bucket,
+                COUNT(*) as total,
+                COALESCE(AVG(rating_main), 0) as average_rating,
+                COUNT(*) FILTER (WHERE review_status = ?) as status_approved,
+                COUNT(*) FILTER (WHERE review_status = ?) as status_pending,
+                COUNT(*) FILTER (WHERE review_status = ?) as status_rejected
+            ",
+                [
+                    ReviewScopeEnum::SHOP->value,
+                    ReviewScopeEnum::ORDER->value,
+                    ReviewScopeEnum::FAMILY->value,
+                    ReviewScopeEnum::PRODUCT->value,
+                    ReviewStatusEnum::APPROVED->value,
+                    ReviewStatusEnum::PENDING->value,
+                    ReviewStatusEnum::REJECTED->value,
+                ]
+            )
+            ->groupByRaw('scope_bucket')
+            ->get()
+            ->keyBy('scope_bucket');
+
+        $byScope = collect(['overall', 'family', 'product'])
+            ->mapWithKeys(fn (string $bucket) => [
+                $bucket => [
+                    'total'           => (int)($scopeRows[$bucket]->total ?? 0),
+                    'average_rating'  => (float)($scopeRows[$bucket]->average_rating ?? 0),
+                    'status_approved' => (int)($scopeRows[$bucket]->status_approved ?? 0),
+                    'status_pending'  => (int)($scopeRows[$bucket]->status_pending ?? 0),
+                    'status_rejected' => (int)($scopeRows[$bucket]->status_rejected ?? 0),
+                ],
+            ])
+            ->all();
+
         return [
+            'by_scope'                => $byScope,
             'total'                   => (int)$row->total,
             'average_rating'          => (float)$row->average_rating,
             'status_approved'         => (int)$row->status_approved,

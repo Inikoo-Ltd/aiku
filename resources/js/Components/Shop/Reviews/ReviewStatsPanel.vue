@@ -18,6 +18,7 @@ type ReviewStats = {
     number_reviews_rating_3?: number
     number_reviews_rating_4?: number
     number_reviews_rating_5?: number
+    by_scope?: Record<string, Record<string, number>>
     category_ratings?: Array<{
         dimension: string
         label: string
@@ -49,6 +50,28 @@ const normalizedStats = computed(() => ({
     rating4: Number(props.stats?.number_reviews_rating_4 ?? 0),
     rating5: Number(props.stats?.number_reviews_rating_5 ?? 0),
 }))
+
+const scopes = [
+    { key: "overall", label: trans("Overall") },
+    { key: "family", label: trans("Family") },
+    { key: "product", label: trans("Product") },
+]
+
+const cards = computed(() => [
+    { label: trans("Total Reviews"), icon: "fal fa-clipboard-list", iconBg: "bg-indigo-50", iconColor: "text-indigo-500", value: normalizedStats.value.total, field: "total" },
+    { label: trans("Average Rating"), icon: "fal fa-star", iconBg: "bg-amber-50", iconColor: "text-amber-500", value: normalizedStats.value.averageRating, field: "average_rating", isRating: true },
+    { label: trans("Approved"), icon: "fal fa-badge-check", iconBg: "bg-emerald-50", iconColor: "text-emerald-500", value: normalizedStats.value.statusApproved, field: "status_approved" },
+    { label: trans("Pending"), icon: "fal fa-clock", iconBg: "bg-amber-50", iconColor: "text-amber-500", value: normalizedStats.value.statusPending, field: "status_pending" },
+    { label: trans("Rejected"), icon: "fal fa-times-circle", iconBg: "bg-rose-50", iconColor: "text-rose-500", value: normalizedStats.value.statusRejected, field: "status_rejected" },
+])
+
+const scopeMetas = (field: string, isRating = false) => {
+    const byScope = props.stats?.by_scope ?? {}
+    return scopes.map((scope) => {
+        const raw = Number(byScope[scope.key]?.[field] ?? 0)
+        return { label: scope.label, value: isRating ? raw.toFixed(1) : raw }
+    })
+}
 
 const ratingBreakdown = computed(() => [
     { stars: "★★★★★", value: normalizedStats.value.rating5 },
@@ -89,63 +112,24 @@ const categoryRatings = computed(() => {
     <div class="w-full">
         <div class="grid w-full grid-cols-5 gap-3">
 
-            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
-                    <FontAwesomeIcon icon="fal fa-clipboard-list" class="text-indigo-500" />
-                </div>
-                <div class="min-w-0">
-                    <div class="text-xs text-gray-500">{{ trans("Total Reviews") }}</div>
-                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
-                        {{ normalizedStats.total }}
+            <div v-for="card in cards" :key="card.field"
+                class="flex flex-col gap-2 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-lg" :class="card.iconBg">
+                        <FontAwesomeIcon :icon="card.icon" :class="card.iconColor" />
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-xs text-gray-500">{{ card.label }}</div>
+                        <div class="text-lg font-semibold text-gray-900 tabular-nums">
+                            {{ card.value }}
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
-                    <FontAwesomeIcon icon="fal fa-star" class="text-amber-500" />
-                </div>
-                <div class="min-w-0">
-                    <div class="text-xs text-gray-500">{{ trans("Average Rating") }}</div>
-                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
-                        {{ normalizedStats.averageRating }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
-                    <FontAwesomeIcon icon="fal fa-badge-check" class="text-emerald-500" />
-                </div>
-                <div class="min-w-0">
-                    <div class="text-xs text-gray-500">{{ trans("Approved") }}</div>
-                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
-                        {{ normalizedStats.statusApproved }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
-                    <FontAwesomeIcon icon="fal fa-clock" class="text-amber-500" />
-                </div>
-                <div class="min-w-0">
-                    <div class="text-xs text-gray-500">{{ trans("Pending") }}</div>
-                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
-                        {{ normalizedStats.statusPending }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50">
-                    <FontAwesomeIcon icon="fal fa-times-circle" class="text-rose-500" />
-                </div>
-                <div class="min-w-0">
-                    <div class="text-xs text-gray-500">{{ trans("Rejected") }}</div>
-                    <div class="text-lg font-semibold text-gray-900 tabular-nums">
-                        {{ normalizedStats.statusRejected }}
-                    </div>
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-gray-50 pt-1.5 text-[11px] text-gray-400">
+                    <span v-for="meta in scopeMetas(card.field, card.isRating)" :key="meta.label">
+                        {{ meta.label }}
+                        <span class="font-semibold text-gray-600 tabular-nums">{{ meta.value }}</span>
+                    </span>
                 </div>
             </div>
 
