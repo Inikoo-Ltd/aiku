@@ -80,7 +80,7 @@ const submitForm = async () => {
                 v-tooltip="trans('Requests a token from Woocommerce so we can sync without you entering your account details each time')"
                 icon="fal fa-info-circle" class="hidden md:block size-5 text-black"/>
         </div>
-        <p v-if="errors.url" class="text-sm text-red-600 mt-1">{{ errors.url?.[0] }}</p>
+        <p v-if="errors?.url" class="text-sm text-red-600 mt-1">{{ errors?.url?.[0] }}</p>
 
         <hr class="w-full border-t"/>
 

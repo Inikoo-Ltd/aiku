@@ -428,6 +428,7 @@ class IndexWebpages extends OrgAction
                 'pageHead'    => [
                     'model'         => strtoupper($this->parent->code) . ' ' . __('Webpages'),
                     'title'         => ucfirst($this->bucket),
+                    'color'         => $this->bucket === 'content' ? '#b45309' : null,
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')

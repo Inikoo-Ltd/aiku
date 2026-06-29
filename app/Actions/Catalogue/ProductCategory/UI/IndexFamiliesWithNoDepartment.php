@@ -161,7 +161,8 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                 ),
                 'title'       => $title,
                 'pageHead'    => [
-                    'title'     => $title,
+                    'title'       => $title,
+                    'is_negative' => true,
                     'icon'      => $icon,
                     'model'     => $model,
                     'iconRight' => $iconRight,

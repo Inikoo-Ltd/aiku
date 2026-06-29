@@ -289,6 +289,7 @@ class Organisation extends Model implements HasMedia, Auditable
         'source'                       => 'array',
         'location'                     => 'array',
         'forbidden_dispatch_countries' => 'array',
+        'banned_country_regions'       => 'array',
         'type'                         => OrganisationTypeEnum::class,
         'opening_hours'                => 'array'
     ];
@@ -299,6 +300,7 @@ class Organisation extends Model implements HasMedia, Auditable
         'source'                       => '{}',
         'location'                     => '{}',
         'forbidden_dispatch_countries' => '{}',
+        'banned_country_regions'       => '{}',
         'opening_hours'                => '{}'
     ];
 

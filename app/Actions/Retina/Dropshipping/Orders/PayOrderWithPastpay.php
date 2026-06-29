@@ -17,7 +17,6 @@ use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class PayOrderWithPastpay extends RetinaAction
@@ -118,8 +117,7 @@ class PayOrderWithPastpay extends RetinaAction
         return [
             'days' => [
                 'required',
-                'integer',
-                Rule::in([30, 60]),
+                'integer'
             ],
         ];
     }

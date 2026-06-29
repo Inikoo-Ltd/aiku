@@ -81,6 +81,10 @@ class UpdateShop extends OrgAction
             );
         }
 
+        if (Arr::has($modelData, 'banned_countries')) {
+            data_set($modelData, 'banned_country_regions', Arr::pull($modelData, 'banned_countries'));
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -470,6 +474,11 @@ class UpdateShop extends OrgAction
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
+            'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
+            'banned_countries.*'                                      => ['required', 'array'],
+            'banned_countries.*.postcode'                             => ['sometimes', 'string', 'nullable'],
+            'banned_countries.*.billing'                              => ['required', 'boolean',],
+            'banned_countries.*.delivery'                             => ['required', 'boolean',],
         ];
 
         $channelIds = SalesChannel::pluck('id');

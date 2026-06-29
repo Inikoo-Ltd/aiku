@@ -26,7 +26,10 @@ enum WebBlockTemplateEnum: string
     case FAMILY_DESCRIPTION = 'FamilyDescription';
     case FAMILY_OVERVIEW = 'FamiliesOverview';
 
-    // ONLY CHANGE ARRAY LIST UNDER TEMPLATE CODES PLEASE :)
+    // To handle RepairProhibitedWebBlocksInNonModelWebpage dynamically. Prevent non-catalogue webpage from having any of the webBlockType listed below
+    case CATALOGUE_EXCLUSIVES = 'CatalogueExclusives';
+
+    // ONLY MODIFY THE ARRAYS INSIDE templateCodes(). DO NOT CHANGE ENUM VALUES.
     public function templateCodes(): array
     {
         return match ($this) {
@@ -68,6 +71,28 @@ enum WebBlockTemplateEnum: string
             self::FAMILY_OVERVIEW => [
                 'families-1-overview',
             ],
+
+            // Web Block Codes that are exclusive to certain ModelType webpages (Family/Sub-Department/Department/Product/Collection webpages)
+            self::CATALOGUE_EXCLUSIVES => [
+                'relatedProductCategory',
+                'recommendation-product-category-from-master',
+                'recommendation-from-master',
+                'recommendation-customer-recently-bought-1',
+                'luigi-trends-1',
+                'luigi-last-seen-1',
+                'luigi-item-alternatives-1',
+                'see-also-1',
+                'top-families',
+                'faq-department',
+                'products',
+                'product',
+                'family',
+                'sub-department-1',
+                'departments',
+                'collections-1',
+                'collection-description-1',
+                'collection-1',
+            ],
         };
     }
 
@@ -75,6 +100,19 @@ enum WebBlockTemplateEnum: string
     {
         return array_merge(
             ...array_map(fn ($item) => $item->templateCodes(), self::cases())
+        );
+    }
+
+    public static function allTemplateCodesFiltered(): array
+    {
+        return array_merge(
+            ...array_map(
+                fn ($item) => $item->templateCodes(),
+                array_filter(
+                    self::cases(),
+                    fn (self $item) => $item !== self::CATALOGUE_EXCLUSIVES
+                )
+            )
         );
     }
 }

@@ -138,6 +138,7 @@ class IndexMissingBarcodeTradeUnits extends GrpAction
                 'title'       => __('Trade units without barcode'),
                 'pageHead'    => [
                     'title'         => __('Trade units without barcode'),
+                    'is_negative'   => true,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-barcode'],
                         'title' => __('Trade units without barcode'),

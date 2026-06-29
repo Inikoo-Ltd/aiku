@@ -99,6 +99,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
 
             $webpage->refresh();
             if ($webpage->sub_type === WebpageSubTypeEnum::FAMILY) {
+                $this->ensureFamilyPageHasRequiredBlocks($webpage);
                 $this->reorderFamilyPageBlocks($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
             }
 

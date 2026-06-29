@@ -520,6 +520,7 @@ class IndexMasterProducts extends GrpAction
                 ] : [],
                 'pageHead'                => [
                     'title'         => $title,
+                    'color'         => '#0284c7',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,

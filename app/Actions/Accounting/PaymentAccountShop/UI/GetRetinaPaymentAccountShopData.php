@@ -73,7 +73,7 @@ class GetRetinaPaymentAccountShopData
 
             return
                 [
-                    'label' => __('Buy now play later'),
+                    'label' => __('Buy now pay later'),
                     'key'   => 'pastpay',
                     'icon'  => 'fal fa-hand-holding-usd',
                     'order_payment_api_point' => $orderPaymentApiPoint->ulid,
