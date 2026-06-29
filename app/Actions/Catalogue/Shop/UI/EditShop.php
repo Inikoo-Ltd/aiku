@@ -71,20 +71,6 @@ class EditShop extends OrgAction
 
         $mergedBannedCountryRegions=$shop->banned_country_regions;
 
-        $mergedBannedCountryRegions=[
-            'MY'=>[
-                'postcode'=>null,
-                'billing'=>false,
-                'delivery'=>true,
-                'read_only'=>true
-            ],
-            'CA'=>[
-                'postcode'=>'/^2/',
-                'billing'=>true,
-                'delivery'=>true
-            ],
-
-        ];
 
 
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
@@ -588,18 +574,13 @@ class EditShop extends OrgAction
 
                     'fields' => [
                         'banned_countries' => [
-                            'hidden' => app()->environment('production'),
-                            'type'        => 'banned-countries',
-                            'placeholder' => __('Select countries'),
-                            'information' => __('Customer cannot submit order that delivered to these countries'),
-                            'label'       => __('Forbidden Countries'),
-                            'required'    => true,
-                            'value'       => $mergedBannedCountryRegions,
-                            'options'     => GetCountriesOptions::run(),
-                            'searchable'  => true,
-                            'mode'        => 'tags',
-                            'labelProp'   => 'label',
-                            'valueProp'   => 'id'
+                            'full'              => true,
+                            'hidden'            => app()->environment('production'),
+                            'type'              => 'banned-countries',
+                            'label'             => __('Banned Countries'),
+                            'required'          => true,
+                            'value'             => $mergedBannedCountryRegions,
+                            'options'           => GetCountriesOptions::run(),
                         ],
                     ],
                 ],

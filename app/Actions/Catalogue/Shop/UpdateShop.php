@@ -81,6 +81,10 @@ class UpdateShop extends OrgAction
             );
         }
 
+        if (Arr::has($modelData, 'banned_countries')) {
+            dd('xxxxxx', $modelData);  // TODO
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -470,6 +474,7 @@ class UpdateShop extends OrgAction
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
+            'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
         ];
 
         $channelIds = SalesChannel::pluck('id');
