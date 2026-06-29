@@ -20,8 +20,8 @@ class BarcodeResource extends JsonResource
         $barcode = $this->resource;
 
         $tradeUnit = null;
-        if ($barcode->relationLoaded('tradeUnitActive') && $barcode->tradeUnitActive->first()) {
-            $tradeUnit = TradeUnitResource::make($barcode->tradeUnitActive->first())->resolve();
+        if ($barcode->relationLoaded('tradeUnitsActive') && $barcode->tradeUnitsActive->first()) {
+            $tradeUnit = TradeUnitResource::make($barcode->tradeUnitsActive->first())->resolve();
         }
 
         return [

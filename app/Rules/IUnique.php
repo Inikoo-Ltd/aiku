@@ -20,9 +20,11 @@ class IUnique implements ValidationRule
 
     public array $extraConditions;
 
+    protected bool $caseSensitive;
+
     protected ?string $message = null;
 
-    public function __construct($table, $column = null, array $extraConditions = [], ?string $message = null)
+    public function __construct($table, $column = null, array $extraConditions = [], ?string $message = null, bool $caseSensitive = true)
     {
         $this->table = $table;
 
@@ -31,6 +33,8 @@ class IUnique implements ValidationRule
         $this->extraConditions = $extraConditions;
 
         $this->message = $message;
+
+        $this->caseSensitive = $caseSensitive;
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -39,8 +43,15 @@ class IUnique implements ValidationRule
             $this->column = $attribute;
         }
 
-        $count = DB::table($this->table)
-            ->whereRaw("lower($this->column) = lower(?)", [$value]);
+        $count = DB::table($this->table);
+
+        if ($this->caseSensitive) {
+            $count
+                ->whereRaw("lower($this->column) = lower(?)", [$value]);
+        } else {
+            $count
+                ->whereRaw("$this->column = (?)", [$value]);
+        }
 
 
         if (!blank($this->extraConditions)) {

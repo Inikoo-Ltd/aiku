@@ -23,15 +23,15 @@ class ConnectShopGoogleAds extends OrgAction
     /**
      * @throws Exception
      */
-    public function handle(Shop $shop): RedirectResponse
+    public function handle(Shop $shop): string
     {
-        return Redirect::away($this->googleAdsAuthUrl($shop));
+        return $this->googleAdsAuthUrl($shop);
     }
 
     /**
      * @throws Exception
      */
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): string
     {
         $this->initialisationFromShop($shop, $request);
 
