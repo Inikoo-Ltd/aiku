@@ -68,18 +68,23 @@ class EditShop extends OrgAction
         }, []);
 
 
-        $mergedBannedCountryRegions = array_merge(
-            $shop->organisation->banned_country_regions ?? [],
-            $shop->banned_country_regions ?? []
-        );
 
-        $mergedBannedCountryRegions = array_reduce($mergedBannedCountryRegions, function ($carry, $item) {
-            if (!in_array($item, $carry)) {
-                $carry[] = $item;
-            }
+        $mergedBannedCountryRegions=$shop->banned_country_regions;
 
-            return $carry;
-        }, []);
+        $mergedBannedCountryRegions=[
+            'MY'=>[
+                'postcode'=>null,
+                'billing'=>false,
+                'delivery'=>true,
+                'read_only'=>true
+            ],
+            'CA'=>[
+                'postcode'=>'/^2/',
+                'billing'=>true,
+                'delivery'=>true
+            ],
+
+        ];
 
 
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
