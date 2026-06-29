@@ -92,6 +92,7 @@ class EditOutboxInShop extends OrgAction
                 ]
             ];
         }if (in_array($outbox->code, [OutboxCodeEnum::REVIEW_REMINDER])) {
+            $fields[] = $subjectField;
             $fields[] = [
                 'title' => '',
                 'fields' => [
