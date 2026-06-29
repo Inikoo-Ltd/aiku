@@ -33,6 +33,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Barcode;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Stubs\Migrations\HasProductInformation;
@@ -72,6 +73,11 @@ class UpdateTradeUnit extends GrpAction
                     'name' => Arr::pull($modelData, 'name_i8n')
                 ]
             ]);
+        }
+
+        if (Arr::has($modelData, 'barcode_id')) {
+            $barcode = Barcode::find(data_get($modelData, 'barcode_id'));
+            data_set($modelData, 'barcode', $barcode?->number);
         }
 
         if (Arr::has($modelData, 'description_title_i8n')) {
@@ -257,7 +263,8 @@ class UpdateTradeUnit extends GrpAction
             ],
             'name'                         => ['sometimes', 'required', 'string', 'max:255'],
             'description'                  => ['sometimes', 'required', 'string', 'max:1024'],
-            'barcode'                      => ['sometimes', 'required'],
+            'barcode_id'                   => ['sometimes', 'nullable', 'exists:barcodes,id'],
+            'barcode'                      => ['sometimes', 'nullable'],
             'gross_weight'                 => ['sometimes', 'required', 'numeric'],
             'net_weight'                   => ['sometimes', 'required', 'numeric'],
             'marketing_weight'             => ['sometimes', 'required', 'numeric'],

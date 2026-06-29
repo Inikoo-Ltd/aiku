@@ -12,6 +12,7 @@ namespace App\Actions\Goods\Barcode\UI;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\Goods\BarcodeTabsEnum;
 use App\Http\Resources\Goods\BarcodeResource;
 use App\Http\Resources\History\HistoryResource;
@@ -23,6 +24,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowBarcode extends GrpAction
 {
+    use WithGoodsAuthorisation;
+
     public function asController(Barcode $barcode, ActionRequest $request): Barcode
     {
         $this->initialisation(group(), $request)->withTab(BarcodeTabsEnum::values());
@@ -37,13 +40,18 @@ class ShowBarcode extends GrpAction
 
     public function handle(Barcode $barcode): Barcode
     {
-        return $barcode->load('tradeUnitActive');
+        return $barcode->load('tradeUnitsActive');
     }
 
     public function htmlResponse(Barcode $barcode, ActionRequest $request): Response
     {
+        // Safe guard so won't run in production
+        if (app()->isProduction()) {
+            $this->canEdit = false;
+        }
+
         return Inertia::render('Goods/Barcode', [
-            'title'            => __('Barcode'),
+            'title'            => __('Barcode') . " {$barcode->number}",
             'breadcrumbs'      => $this->getBreadcrumbs(
                 $barcode,
                 $request->route()->getName(),
@@ -62,7 +70,14 @@ class ShowBarcode extends GrpAction
                 ],
                 'iconRight'  => $barcode->status->icon(),
                 'actions'    => [
-
+                    $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : false,
                 ],
             ],
             'tabs'             => [
