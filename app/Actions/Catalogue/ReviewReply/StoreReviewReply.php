@@ -2,23 +2,20 @@
 
 namespace App\Actions\Catalogue\ReviewReply;
 
+use App\Actions\OrgAction;
 use App\Models\Reviews\Review;
-use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class StoreReviewReply
+class StoreReviewReply extends OrgAction
 {
-    use AsAction;
-
-    public function handle(Review $review, string $message, ?User $user = null): Review
+    public function handle(Review $review, array $modelData): Review
     {
         $review->update([
             'replied'       => true,
-            'reply_message' => $message,
+            'reply_message' => $modelData['body'],
             'reply_at'      => now(),
-            'reply_by'      => $user?->id,
+            'reply_by'      => data_get($modelData, 'reply_by'),
         ]);
 
         return $review->refresh();
@@ -34,11 +31,13 @@ class StoreReviewReply
 
     public function asController(ActionRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $review = Review::findOrFail($request->integer('reviewable_id'));
 
-        $review = Review::findOrFail($validated['reviewable_id']);
+        $this->initialisationFromShop($review->shop, $request);
 
-        $updatedReview = $this->handle($review, $validated['body'], $request->user());
+        $updatedReview = $this->handle($review, array_merge($this->validatedData, [
+            'reply_by' => $request->user()?->id,
+        ]));
 
         return response()->json([
             'status' => 'success',

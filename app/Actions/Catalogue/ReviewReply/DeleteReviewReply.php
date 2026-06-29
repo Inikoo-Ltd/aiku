@@ -2,16 +2,14 @@
 
 namespace App\Actions\Catalogue\ReviewReply;
 
+use App\Actions\OrgAction;
 use App\Models\Reviews\Review;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class DeleteReviewReply
+class DeleteReviewReply extends OrgAction
 {
-    use AsAction;
-
     public function handle(Review $review): Review
     {
         $review->update([
@@ -26,6 +24,8 @@ class DeleteReviewReply
 
     public function asController(Review $reviewReply, ActionRequest $request): JsonResponse|RedirectResponse
     {
+        $this->initialisationFromShop($reviewReply->shop, $request);
+
         $this->handle($reviewReply);
 
         if (!$request->expectsJson()) {

@@ -2,19 +2,17 @@
 
 namespace App\Actions\Catalogue\ReviewReply;
 
+use App\Actions\OrgAction;
 use App\Models\Reviews\Review;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateReviewReply
+class UpdateReviewReply extends OrgAction
 {
-    use AsAction;
-
-    public function handle(Review $review, string $message): Review
+    public function handle(Review $review, array $modelData): Review
     {
         $review->update([
-            'reply_message' => $message,
+            'reply_message' => $modelData['body'],
             'reply_at'      => now(),
         ]);
 
@@ -30,9 +28,9 @@ class UpdateReviewReply
 
     public function asController(Review $reviewReply, ActionRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $this->initialisationFromShop($reviewReply->shop, $request);
 
-        $updatedReview = $this->handle($reviewReply, $validated['body']);
+        $updatedReview = $this->handle($reviewReply, $this->validatedData);
 
         return response()->json([
             'status' => 'success',
