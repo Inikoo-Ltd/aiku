@@ -274,7 +274,7 @@ class EditShop extends OrgAction
                             'description'   => [
                                 __('Related products are the products that are recommended to customers when they view a product category page.'),
                                 __('Enabling this would force all of this shop related products to follow master shop related products.'),
-                                $firstMasterFamily ? __('You can setup the products listed in @manage_related_products@ (Family: ') . $firstMasterFamily->code . __(')') : '',
+                                $firstMasterFamily ? __('You can setup the products listed in @manage_related_products@ (Family :familyCode)', ['familyCode' => $firstMasterFamily->code]) : '',
                             ],
                             'descriptionLinks' => [
                                 'manage_related_products' => [
