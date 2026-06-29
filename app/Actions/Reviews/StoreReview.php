@@ -155,7 +155,7 @@ class StoreReview extends OrgAction
             ];
         }
 
-        $mode       = Arr::get($settings, 'reviews.auto_publishing.mode', 'delay');
+        $mode       = Arr::get($settings, 'reviews.auto_publishing.mode', 'immediately');
         $delayHours = (int) Arr::get($settings, 'reviews.auto_publishing.delay_hours', 24);
 
         return match ($mode) {
