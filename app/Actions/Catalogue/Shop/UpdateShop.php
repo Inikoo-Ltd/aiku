@@ -307,6 +307,12 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.reviews.enabled', (bool) Arr::pull($modelData, 'reviews'));
         }
 
+        if (Arr::exists($modelData, 'review_visibility')) {
+            $visibility = Arr::pull($modelData, 'review_visibility');
+            data_set($modelData, 'settings.reviews.visibility.private', (bool) data_get($visibility, 'visibility.private', false));
+            data_set($modelData, 'settings.reviews.visibility.public',  (bool) data_get($visibility, 'visibility.public', true));
+        }
+
         if (Arr::exists($modelData, 'review_publishing')) {
             $reviewPublishing   = Arr::pull($modelData, 'review_publishing');
             $autoPublishingMode = Arr::get($reviewPublishing, 'auto_publishing.mode');
