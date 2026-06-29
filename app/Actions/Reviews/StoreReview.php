@@ -132,11 +132,11 @@ class StoreReview extends OrgAction
         $settings         = $shop?->settings ?? [];
         $approvalRequired = (bool) Arr::get($settings, 'reviews.data.approval_required', false);
         $ratingThreshold  = (int) Arr::get($settings, 'reviews.public_rating_threshold', 0);
-        $rating           = (float) data_get($modelData, 'rating', 0);
+        $rating           = $this->resolveRatingMain($modelData);
         $isPublic         = (bool) data_get($modelData, 'is_public', true);
 
-        if ($ratingThreshold > 0 && $rating <= $ratingThreshold) {
-            $isPublic = false;
+        if ($ratingThreshold > 0 && $rating > $ratingThreshold) {
+            $isPublic = true;
         }
 
         if (!$isPublic) {
@@ -151,6 +151,7 @@ class StoreReview extends OrgAction
 
         if ($approvalRequired) {
             return [
+                'is_public'     => $isPublic,
                 'state'         => ReviewStateEnum::WAITING_APPROVAL,
                 'review_status' => ReviewStatusEnum::PENDING,
             ];
@@ -159,11 +160,12 @@ class StoreReview extends OrgAction
         $mode       = Arr::get($settings, 'reviews.auto_publishing.mode', 'immediately');
         $delayHours = (int) Arr::get($settings, 'reviews.auto_publishing.delay_hours', 24);
 
-        return match ($mode) {
+        $publishingData = match ($mode) {
             'immediately' => $this->resolveImmediatelyPublished($shop),
             'never'       => [
                 'state'         => ReviewStateEnum::REJECTED,
                 'review_status' => ReviewStatusEnum::REJECTED,
+                'is_public'     => false,
             ],
             default => [
                 'state'           => ReviewStateEnum::WAITING_APPROVAL,
@@ -171,6 +173,8 @@ class StoreReview extends OrgAction
                 'auto_approve_at' => now()->addHours($delayHours),
             ],
         };
+
+        return ['is_public' => $isPublic, ...$publishingData];
     }
 
     private function resolveImmediatelyPublished(?Shop $shop): array
