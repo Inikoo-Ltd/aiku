@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
@@ -733,7 +734,7 @@ class EditShop extends OrgAction
                                 'icon'  => ['fab', 'fa-google'],
                                 'label' => $isGoogleAdsConnected ? __('Reconnect Google account') : __('Connect Google account'),
                                 'route' => [
-                                    'url' => route('grp.org.shops.show.settings.google_ads.connect', [$shop->organisation, $shop]),
+                                    'url' => ConnectShopGoogleAds::run($shop)
                                 ],
                             ],
                         ],
