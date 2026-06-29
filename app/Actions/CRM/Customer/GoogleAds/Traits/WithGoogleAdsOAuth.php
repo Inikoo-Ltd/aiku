@@ -36,7 +36,7 @@ trait WithGoogleAdsOAuth
         // 'https://aiku.io/webhooks/google-ads/callback'
 
         $redirectUri = 'https://89de-59-153-131-200.ngrok-free.app/webhooks/google-ads/callback';
-        if(app()->isProduction()) {
+        if (app()->isProduction()) {
             $redirectUri = route('google_ads.callback');
         }
 

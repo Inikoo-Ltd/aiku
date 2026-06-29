@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
-
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
