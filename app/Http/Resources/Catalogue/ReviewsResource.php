@@ -31,7 +31,7 @@ class ReviewsResource extends JsonResource
             'id'               => $this->id,
             'customer_id'      => $this->customer_id,
             'scope'            => $this->scope,
-            'customer_name'    => $this->customer_name,
+            'customer_name'    => $this->resolveCustomerName(),
             'customer_route'   => ($canManage && $this->customer_id && $this->customer_slug) ? [
                 'name'       => 'grp.org.shops.show.crm.customers.show',
                 'parameters' => [
@@ -95,6 +95,21 @@ class ReviewsResource extends JsonResource
             ] : null,
             'created_at'       => $this->created_at,
         ];
+    }
+
+    private function resolveCustomerName(): ?string
+    {
+        if (!empty($this->customer_name)) {
+            return $this->customer_name;
+        }
+
+        if ($this->relationLoaded('customer') && $this->customer) {
+            $contactName = trim((string)$this->customer->contact_name);
+
+            return $contactName !== '' ? $contactName : $this->customer->name;
+        }
+
+        return null;
     }
 
     private static function getRatingLabels(ProductCategory|Product|Shop $reviewable): array
