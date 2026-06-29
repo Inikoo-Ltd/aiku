@@ -37,6 +37,7 @@ trait WithGoogleAdsOAuth
             'client_id'     => $clientId,
             'client_secret' => $clientSecret,
         ]);
+        // 'https://aiku.io/webhooks/google-ads/callback'
         $client->setRedirectUri(route('google_ads.callback'));
         $client->setScopes([self::GOOGLE_ADS_SCOPE]);
         $client->setState($shop->id);
