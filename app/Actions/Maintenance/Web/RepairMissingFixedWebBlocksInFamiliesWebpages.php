@@ -207,6 +207,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $webpagesID = collect([(object)['id' => (int)$singleWebpageId]]);
         } else {
             $query = DB::table('webpages')->select('id')
+            ->where('model_type', class_basename(ProductCategory::class))
             ->where('sub_type', 'family');
             if ($command->argument('website')) {
                 $website   = Website::where('slug', $command->argument('website'))->first();
