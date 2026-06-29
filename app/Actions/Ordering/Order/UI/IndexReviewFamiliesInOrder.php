@@ -38,7 +38,9 @@ class IndexReviewFamiliesInOrder extends OrgAction
         return QueryBuilder::for(Transaction::class)
             ->where('transactions.order_id', $order->id)
             ->where('transactions.model_type', 'Product')
-            ->leftJoin('product_categories', 'transactions.family_id', '=', 'product_categories.id')
+            // ->leftJoin('product_categories', 'transactions.family_id', '=', 'product_categories.id') // Commented this out. Won't work Raul, since there's some transaction that doesn't have family_id
+            ->leftJoin('products', 'transactions.model_id', '=', 'products.id')
+            ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
             ->leftJoin('reviews', function ($join) use ($order) {
                 $join->on('reviews.product_category_id', '=', 'product_categories.id')
                     ->where('reviews.scope', ReviewScopeEnum::FAMILY->value)
