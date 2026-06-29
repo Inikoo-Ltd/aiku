@@ -9,11 +9,13 @@
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
+use App\Actions\Comms\Outbox\RedoOutboxTimeSeries;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
+use Illuminate\Support\Carbon;
 use Sentry;
 
 trait WithSendCustomerOutboxEmail
@@ -55,6 +57,8 @@ trait WithSendCustomerOutboxEmail
         ]);
         $dispatchedEmail->refresh();
 
+        $currentDate = Carbon::now()->utc()->format('Y-m-d');
+        RedoOutboxTimeSeries::dispatch($outbox->id, $currentDate, $currentDate, true);
 
         return $this->sendEmailWithMergeTags(
             $dispatchedEmail,
