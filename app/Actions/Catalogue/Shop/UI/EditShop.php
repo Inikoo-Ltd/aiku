@@ -69,10 +69,7 @@ class EditShop extends OrgAction
         }, []);
 
 
-
         $mergedBannedCountryRegions = $shop->banned_country_regions;
-
-
 
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
             ->where('container_type', 'Shop')
@@ -116,14 +113,13 @@ class EditShop extends OrgAction
             __('Shopify Keys'),
             __('Wix Keys'),
         ];
-        $salesChannels          = SalesChannel::orderBy('id', 'asc')->get();
+        $salesChannels          = SalesChannel::orderBy('id')->get();
         $salesChannelFields     = [];
+        /** @var SalesChannel $channel */
         foreach ($salesChannels as $channel) {
             if ($channel->type == SalesChannelTypeEnum::WEBSITE || $channel->type == SalesChannelTypeEnum::NA) {
                 continue;
             }
-
-            $typeLabel                                         = $channel->type->labels()[$channel->type->value] ?? $channel->type->value;
             $salesChannelFields['sales_channel_'.$channel->id] = [
                 'label'       => __($channel->name),
                 'type'        => 'toggle',
@@ -513,7 +509,7 @@ class EditShop extends OrgAction
                                     ['label' => __('Show Dispatch Totals (SKO & Units)'), 'key' => 'show_dispatch_totals'],
                                 ];
 
-                                return array_map(fn ($col) => [
+                                return array_map(fn($col) => [
                                     'label' => $col['label'],
                                     'key'   => $col['key'],
                                     'value' => (bool)Arr::get($savedColumns, $col['key'], false),
@@ -570,18 +566,18 @@ class EditShop extends OrgAction
                 ],
 
                 [
-                    'label'  => __('Banned Countries').' ('.__('territories').')',
-                    'icon'   => 'fa-light fa-ban',
+                    'label' => __('Banned Countries').' ('.__('territories').')',
+                    'icon'  => 'fa-light fa-ban',
 
                     'fields' => [
                         'banned_countries' => [
-                            'full'              => true,
-                            'hidden'            => app()->environment('production'),
-                            'type'              => 'banned-countries',
-                            'label'             => __('Banned Countries'),
-                            'required'          => true,
-                            'value'             => $mergedBannedCountryRegions,
-                            'options'           => GetCountriesOptions::run(),
+                            'full'     => true,
+                            'hidden'   => app()->environment('production'),
+                            'type'     => 'banned-countries',
+                            'label'    => __('Banned Countries'),
+                            'required' => true,
+                            'value'    => $mergedBannedCountryRegions,
+                            'options'  => GetCountriesOptions::run(),
                         ],
                     ],
                 ],
