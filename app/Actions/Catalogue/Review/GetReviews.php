@@ -43,7 +43,7 @@ class GetReviews
         }
 
         $status = data_get($filters, 'status');
-        $query->where('status', $status ?: ReviewStatusEnum::APPROVED->value);
+        $query->where('review_status', $status ?: ReviewStatusEnum::APPROVED->value);
 
         $this->stats        = $this->buildStats(clone $query, $filters);
         $this->ratingLabels = $this->buildRatingLabels($filters);
@@ -129,9 +129,9 @@ class GetReviews
         $total = (clone $query)->count();
 
         $statusCounts = (clone $query)
-            ->selectRaw('status, count(*) as aggregate')
-            ->groupBy('status')
-            ->pluck('aggregate', 'status');
+            ->selectRaw('review_status, count(*) as aggregate')
+            ->groupBy('review_status')
+            ->pluck('aggregate', 'review_status');
 
         return [
             'total'                   => $total,
