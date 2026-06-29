@@ -53,7 +53,8 @@ class SendNewReviewEmailToSubscribers extends OrgAction
                 ]) : '#',
                 'review_link'        => $order ? route('grp.org.shops.show.reviews.backlog', [
                     $review->organisation->slug,
-                    $review->shop->slug
+                    $review->shop->slug,
+                    'waiting_filter' => ['ID' => $review->id],
                 ]) : '#',
                 'review_message'     => $review->message ?? '',
                 'order_reference'    => $order?->reference ?? '',
