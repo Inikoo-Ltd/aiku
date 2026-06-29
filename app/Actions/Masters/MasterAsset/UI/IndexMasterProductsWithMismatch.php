@@ -373,6 +373,7 @@ class IndexMasterProductsWithMismatch extends GrpAction
                 ] : [],
                 'pageHead'                => [
                     'title'         => $title,
+                    'is_negative'   => true,
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,

@@ -109,7 +109,15 @@ const setError = (e) => {
 	<slot name="afterSubNav"></slot>
 
 	<div
-		class="relative px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2">
+		class="relative isolate px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2">
+		<!-- Section: Left accent bar + fade decoration -->
+		<div
+			v-if="data.color || data.is_negative"
+			class="pointer-events-none absolute inset-0 -z-10 border-l-4"
+			:style="{
+				borderColor: data.is_negative ? '#df1c1c' : data.color,
+				background: `linear-gradient(90deg, color-mix(in srgb, ${data.is_negative ? '#df1c1c' : data.color} 18%, transparent), transparent 35%)`,
+			}" />
 		<div class="flex items-end gap-x-3">
 			<!-- Section: Main Title -->
 			<div

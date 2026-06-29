@@ -140,7 +140,7 @@ class MasterShopResource extends JsonResource
                         'parameters' => [$masterShop->slug]
                     ],
                     'icon'  => 'fal fa-folder-tree',
-                    "color" => "#a3e635",
+                    "color" => "#65a30d",
                     'value' => $masterShop->stats->number_current_master_product_categories_type_department,
                 ],
                 [
@@ -150,7 +150,7 @@ class MasterShopResource extends JsonResource
                         'parameters' => [$masterShop->slug]
                     ],
                     'icon'  => 'fal fa-folder-download',
-                    "color" => "#f1db0eff",
+                    "color" => "#ca8a04",
                     'value' => $masterShop->stats->number_current_master_product_categories_type_sub_department,
                 ],
                 [
@@ -165,7 +165,7 @@ class MasterShopResource extends JsonResource
                         ]
                     ],
                     'icon'  => 'fal fa-folder',
-                    "color" => "#e879f9",
+                    "color" => "#c026d3",
                     'value' => $masterShop->stats->number_current_master_product_categories_type_family,
                     'metaRight' => $masterShop->gold_reward_eligible ? [
                         'tooltip' => __('Master Families Has GR/VOL Reward'),
@@ -191,7 +191,7 @@ class MasterShopResource extends JsonResource
                         ]
                     ],
                     'icon'  => 'fal fa-cube',
-                    "color" => "#38bdf8",
+                    "color" => "#0284c7",
                     'value' => $masterShop->stats->number_current_master_assets_type_product,
                 ],
                 [
@@ -201,7 +201,7 @@ class MasterShopResource extends JsonResource
                         'parameters' => [$masterShop->slug]
                     ],
                     'icon'  => 'fal fa-album-collection',
-                    "color" => "#4f46e5",
+                    "color" => "#3730a3",
                     'value' => $masterShop->stats->number_current_master_collections,
                 ],
                 'additionalStatBox'   => $additionalStats

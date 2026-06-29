@@ -200,6 +200,7 @@ class IndexProductsNotOnline extends OrgAction
                 'title'                        => $title,
                 'pageHead'                     => [
                     'title'      => $title,
+                    'is_negative' => true,
                     'model'      => null,
                     'icon'       => $icon,
                     'afterTitle' => null,

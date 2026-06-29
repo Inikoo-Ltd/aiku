@@ -239,6 +239,7 @@ class IndexMasterSubDepartments extends GrpAction
                 'title'       => __('Master Sub Departments'),
                 'pageHead'    => [
                     'title'         => $title,
+                    'color'         => '#ca8a04',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,

@@ -290,6 +290,7 @@ class IndexCollections extends OrgAction
                 'title'          => __('Collections'),
                 'pageHead'       => [
                     'title'         => $title,
+                    'color'         => '#4f46e5',
                     'icon'          => $icon,
                     'afterTitle'    => [
                         'label' => '@ '.__('Shop').' '.$this->shop->code,

@@ -293,6 +293,7 @@ class IndexSubDepartments extends OrgAction
                 'title'       => __('sub-departments'),
                 'pageHead'    => [
                     'title'         => $title,
+                    'color'         => '#facc15',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,

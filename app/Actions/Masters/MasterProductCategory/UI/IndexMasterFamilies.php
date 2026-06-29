@@ -436,6 +436,7 @@ class IndexMasterFamilies extends OrgAction
             'title'       => __('Master Families'),
             'pageHead'    => [
                 'title'         => $title,
+                'color'         => '#c026d3',
                 'icon'          => $icon,
                 'model'         => $model,
                 'afterTitle'    => $afterTitle,
