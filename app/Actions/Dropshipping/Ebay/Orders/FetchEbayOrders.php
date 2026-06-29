@@ -31,6 +31,7 @@ class FetchEbayOrders
 
         $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->where('platform_status', true)
             ->get();
 
         /** @var CustomerSalesChannel $customerSalesChannel */

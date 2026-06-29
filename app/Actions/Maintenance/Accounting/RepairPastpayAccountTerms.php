@@ -20,18 +20,26 @@ class RepairPastpayAccountTerms
 
     protected function handle(PaymentAccount $paymentAccount, Command $command): void
     {
-        UpdatePaymentAccount::run($paymentAccount, [
-            'data' => [
-                'charges' => [
-                    'options' => [
-                        ['days' => 30, 'charge' => '2.20'],
-                        ['days' => 60, 'charge' => '4.25'],
-                    ],
+        $data = [
+            'charges' => [
+                'options' => [
+                    ['days' => 30, 'charge' => '2.20'],
+                    ['days' => 60, 'charge' => '4.25'],
                 ],
             ],
+        ];
+
+        $paymentAccount = UpdatePaymentAccount::run($paymentAccount, [
+            'data' => $data,
         ]);
 
-        $command->info("Payment Account {$paymentAccount->slug} updated.");
+        foreach ($paymentAccount->paymentAccountShops as $paymentAccountShop) {
+            $this->update($paymentAccountShop, [
+                'data' => $data
+            ], ['data']);
+
+            $command->info("Payment Account Shop {$paymentAccountShop->id} updated.");
+        }
     }
 
     public string $commandSignature = 'repair:pastpay_account_terms';

@@ -40,7 +40,6 @@ class PayOrderWithPastpay extends RetinaAction
         );
 
         $termDays = Arr::get($modelData, 'days');
-
         $charges          = Arr::get($paymentAccountShop->data, 'charges.options', []);
         $chargePercentage = collect($charges)->where('days', $termDays)->first();
         $chargeAmount     = $paymentAmounts['total'] * ($chargePercentage['charge'] / 100);
@@ -119,8 +118,7 @@ class PayOrderWithPastpay extends RetinaAction
         return [
             'days' => [
                 'required',
-                'integer',
-                Rule::in([30, 60]),
+                'integer'
             ],
         ];
     }
@@ -132,10 +130,10 @@ class PayOrderWithPastpay extends RetinaAction
     {
         $order = Order::where('slug', 'awp31151')->first();
 
-        $this->handle($order, [
-            'charges' => 30
+        $result = $this->handle($order, [
+            'days' => 30
         ]);
-
+dd($result);
 
         return 1;
     }

@@ -88,7 +88,7 @@ const isModalPastpayRedirected = ref(false)
 <template>
 	<div class="relative w-full max-w-xl mx-auto my-4 md:my-8 overflow-hidden">
 		<div class="mx-auto max-w-lg">
-			<img src="/storage/payment-providers/pastpay.png" alt="Pastpay" />
+			<div class="w-6/12 mx-auto"><img src="/storage/payment-providers/pastpay.png" alt="Pastpay" /></div>
 			<div class="mt-5 pt-5 border-t border-dashed border-gray-300">
 				<div class="overflow-hidden rounded-xl ring-1 ring-gray-200 divide-y divide-gray-200">
 					<div class="flex items-center justify-between px-4 py-3">

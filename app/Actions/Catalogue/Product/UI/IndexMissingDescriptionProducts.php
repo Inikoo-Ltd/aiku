@@ -149,7 +149,8 @@ class IndexMissingDescriptionProducts extends OrgAction
                 ),
                 'title'       => $title,
                 'pageHead'    => [
-                    'title'    => $title,
+                    'title'       => $title,
+                    'is_negative' => true,
                     'model'    => '',
                     'icon'     => [
                         'icon'  => ['fal', 'fa-cube'],

@@ -186,6 +186,7 @@ class IndexTradeUnitFamilies extends GrpAction
                 'title'       => __('Trade Unit Families'),
                 'pageHead'    => [
                     'title'     => __('Trade Unit Families'),
+                    'color'     => '#7DA78C',
                     'actions'   => $actions,
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-atom-alt'],
