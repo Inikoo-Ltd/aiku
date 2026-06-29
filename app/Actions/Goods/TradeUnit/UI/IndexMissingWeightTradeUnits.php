@@ -147,6 +147,7 @@ class IndexMissingWeightTradeUnits extends GrpAction
                 'title'       => __('Trade units without marketing weight'),
                 'pageHead'    => [
                     'title'         => __('Trade units without weight'),
+                    'is_negative'   => true,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-weight'],
                         'title' => __('Trade units without marketing weight'),
