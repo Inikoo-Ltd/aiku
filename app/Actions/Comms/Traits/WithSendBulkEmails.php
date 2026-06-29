@@ -229,7 +229,6 @@ trait WithSendBulkEmails
             'review-message' => Arr::get($additionalData, 'review_message'),
             'review-link' => Arr::get($additionalData, 'review_link'),
             'review-rating' => Arr::get($additionalData, 'rating_main'),
-            'blade-rating-stars' => Arr::get($additionalData, 'blade_rating_stars'),
             'blade-review-images' => Arr::get($additionalData, 'blade_review_images'),
 
             'review-reminder-links' => Arr::get($additionalData, 'review_reminder_links'),

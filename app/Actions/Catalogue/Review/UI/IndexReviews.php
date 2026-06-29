@@ -22,7 +22,8 @@ class IndexReviews extends OrgAction
     {
         $row = Review::query()
             ->where('shop_id', $shop->id)
-            ->selectRaw('
+            ->selectRaw(
+                '
                 COUNT(*) as total,
                 COALESCE(AVG(rating_main), 0) as average_rating,
                 COUNT(*) FILTER (WHERE review_status = ?) as status_approved,
@@ -72,6 +73,10 @@ class IndexReviews extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('customers.contact_name', $value);
             });
+        });
+
+        $IDSearch = AllowedFilter::callback('ID', function ($query, $value) {
+            $query->where('reviews.id', $value);
         });
 
         if ($prefix) {
@@ -131,7 +136,7 @@ class IndexReviews extends OrgAction
                 'customers.slug as customer_slug',
             ])
             ->allowedSorts(['id', 'created_at', 'rating', 'likes'])
-            ->allowedFilters([$globalSearch, 'status', 'rating', 'customer_name'])
+            ->allowedFilters([$globalSearch, 'status', 'rating', 'customer_name', $IDSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
