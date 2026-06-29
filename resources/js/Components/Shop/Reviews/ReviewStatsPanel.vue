@@ -131,6 +131,18 @@ const categoryRatings = computed(() => {
                         <span class="font-semibold text-gray-600 tabular-nums">{{ meta.value }}</span>
                     </span>
                 </div>
+                <div v-if="card.field === 'average_rating' && categoryRatings.length"
+                    class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-50 pt-1.5">
+                    <div v-for="category in categoryRatings" :key="category.key"
+                        v-tooltip="category.label" class="flex items-center gap-1">
+                        <span class="relative inline-block text-sm leading-none">
+                            <span class="text-gray-200">★</span>
+                            <span class="absolute left-0 top-0 overflow-hidden text-amber-400"
+                                :style="{ width: (Number(category.average) / 5) * 100 + '%' }">★</span>
+                        </span>
+                        <span class="text-[11px] font-semibold text-gray-600 tabular-nums">{{ category.average }}</span>
+                    </div>
+                </div>
             </div>
 
         </div>
