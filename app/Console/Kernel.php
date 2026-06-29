@@ -482,15 +482,6 @@ class Kernel extends ConsoleKernel
             //     scheduledAt: now()->format('H:i')
             // );
 
-            // $this->logSchedule(
-            //     $schedule->job(RunReviewReminderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
-            //         monitorSlug: 'RunReviewReminderEmailBulkRuns',
-            //     ),
-            //     name: 'RunReviewReminderEmailBulkRuns',
-            //     type: 'job',
-            //     scheduledAt: now()->format('H:i')
-            // );
-
 
             $this->logSchedule(
                 $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
