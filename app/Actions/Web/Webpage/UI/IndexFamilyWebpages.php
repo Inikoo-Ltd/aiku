@@ -219,6 +219,7 @@ class IndexFamilyWebpages extends OrgAction
                 'pageHead'    => [
                     'model'         => __('Webpage'),
                     'title'         => __('Families'),
+                    'color'         => '#4338ca',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')
