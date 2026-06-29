@@ -38,7 +38,13 @@ trait WithGoogleAdsOAuth
             'client_secret' => $clientSecret,
         ]);
         // 'https://aiku.io/webhooks/google-ads/callback'
-        $client->setRedirectUri(route('google_ads.callback'));
+
+        $redirectUri = 'https://89de-59-153-131-200.ngrok-free.app/webhooks/google-ads/callback';
+        if(app()->isProduction()) {
+            $redirectUri = route('google_ads.callback');
+        }
+
+        $client->setRedirectUri($redirectUri);
         $client->setScopes([self::GOOGLE_ADS_SCOPE]);
         $client->setState($shop->id);
         $client->setAccessType('offline');
