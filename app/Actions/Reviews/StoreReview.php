@@ -145,6 +145,7 @@ class StoreReview extends OrgAction
                 'review_status' => ReviewStatusEnum::NA,
                 'approved'      => false,
                 'auto_approved' => false,
+                'is_public'     => false,
             ];
         }
 
