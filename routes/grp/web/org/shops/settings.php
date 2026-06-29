@@ -7,7 +7,6 @@
  */
 
 use App\Actions\Catalogue\Shop\UI\EditShop;
-use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use Illuminate\Support\Facades\Route;
 

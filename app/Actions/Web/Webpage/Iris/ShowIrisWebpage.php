@@ -59,11 +59,11 @@ class ShowIrisWebpage
 
         $title = $webpage->title;
         // Prioritize webpage prefix/suffix -> website prefix/suffix
-        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null)); 
+        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null));
         $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
 
         $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
-        
+
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,

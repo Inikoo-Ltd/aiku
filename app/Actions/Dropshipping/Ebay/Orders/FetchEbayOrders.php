@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 27 Jun 2026 12:54:32 Malaysia Time, Kuala Lumpur, Malaysia
@@ -15,7 +16,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class FetchEbayOrders
 {
-
     use AsAction;
 
     public string $commandSignature = 'fetch:ebay-orders';

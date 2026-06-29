@@ -134,7 +134,7 @@ class PayOrderWithPastpay extends RetinaAction
         $result = $this->handle($order, [
             'days' => 30
         ]);
-dd($result);
+        dd($result);
 
         return 1;
     }

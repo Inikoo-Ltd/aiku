@@ -131,6 +131,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $email
  * @property string|null $phone
  * @property string|null $identity_document_number_alt
+ * @property bool $is_pastpay
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress

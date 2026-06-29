@@ -22,7 +22,7 @@ class UpdateCustomerLastInvoicedDate
 {
     use AsAction;
 
-    public function handle(Customer $customer, ?Carbon $date = null, bool $cache=true , bool $modifyBasket=true): void
+    public function handle(Customer $customer, ?Carbon $date = null, bool $cache = true, bool $modifyBasket = true): void
     {
         if (!$date) {
             $date = $customer->invoices()
@@ -38,7 +38,7 @@ class UpdateCustomerLastInvoicedDate
         $customer->update(['last_invoiced_at' => $date]);
         $customer->stats()->update(['last_invoiced_at' => $date]);
 
-        if($customer->shop->is_aiku) {
+        if ($customer->shop->is_aiku) {
             if ($cache) {
                 Cache::put("customer_last_invoiced_at_$customer->id", $date, 7 * 24 * 60 * 60);
             } else {
