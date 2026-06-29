@@ -127,6 +127,7 @@ class IndexTradeUnits extends GrpAction
                 'pageHead'    => [
                     'subNavigation' => $this->getTradeUnitsSubNavigation(),
                     'title'         => $title,
+                    'color'         => '#35858E',
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-atom'],
                         'title' => $title,

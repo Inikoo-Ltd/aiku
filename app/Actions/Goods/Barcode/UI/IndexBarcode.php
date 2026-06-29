@@ -137,6 +137,7 @@ class IndexBarcode extends GrpAction
             'title'                        => $title,
             'pageHead'                     => [
                 'title'         => $title,
+                'color'         => '#075192',
                 'iconRight'     => [
                     'icon'  => ['fal', 'fa-barcode'],
                     'title' => $title,
