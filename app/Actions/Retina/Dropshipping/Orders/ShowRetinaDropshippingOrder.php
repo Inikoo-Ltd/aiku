@@ -40,6 +40,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\Ordering\Order\OrderStateEnum;
 
 class ShowRetinaDropshippingOrder extends RetinaAction
 {
@@ -75,9 +76,8 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $hoursAfterDispatched = (int) data_get($order->shop->settings, 'reviews.data.hours_after_dispatched', 24);
-        $reviewAvailable      = true;
-        $hasReviews  = $reviewAvailable && Review::where('order_id', $order->id)->exists();
+        $reviewAvailable      = $order->state === OrderStateEnum::DISPATCHED;
+        $hasReviews           = $reviewAvailable && Review::where('order_id', $order->id)->exists();
 
         $customerSalesChannel = $order->customerSalesChannel;
 
