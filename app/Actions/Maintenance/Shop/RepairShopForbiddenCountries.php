@@ -30,7 +30,10 @@ class RepairShopForbiddenCountries
             ])->toArray();
 
         UpdateShop::make()->action($shop, [
-            'banned_countries'  => $countryList
+            'banned_countries'  => [
+                'banned_list'                        => $countryList,
+                'is_follow_organisation_banned_list' => false,
+            ],
         ]);
 
         $command->info("Updated Shop [$shop->slug]");
@@ -41,9 +44,10 @@ class RepairShopForbiddenCountries
     public function asCommand(Command $command)
     {
         $shopId = $command->option('shop_id');
-        $shops  = Shop::when($shopId,
-                fn ($q) => $q->where('shop_id', $shopId)
-            )
+        $shops  = Shop::when(
+            $shopId,
+            fn ($q) => $q->where('shop_id', $shopId)
+        )
             ->get();
         
         foreach ($shops as $shop) {

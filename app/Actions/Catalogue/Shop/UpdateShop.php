@@ -82,7 +82,9 @@ class UpdateShop extends OrgAction
         }
 
         if (Arr::has($modelData, 'banned_countries')) {
-            data_set($modelData, 'banned_country_regions', Arr::pull($modelData, 'banned_countries'));
+            $bannedCountries = Arr::pull($modelData, 'banned_countries');
+            data_set($modelData, 'banned_country_regions', Arr::get($bannedCountries, 'banned_list', []));
+            data_set($modelData, 'settings.banned_countries.is_follow_organisation_banned_list', (bool)Arr::get($bannedCountries, 'is_follow_organisation_banned_list', false));
         }
 
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
@@ -475,10 +477,12 @@ class UpdateShop extends OrgAction
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
-            'banned_countries.*'                                      => ['required', 'array'],
-            'banned_countries.*.postcode'                             => ['sometimes', 'string', 'nullable'],
-            'banned_countries.*.billing'                              => ['required', 'boolean',],
-            'banned_countries.*.delivery'                             => ['required', 'boolean',],
+            'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],
+            'banned_countries.banned_list'                            => ['sometimes', 'nullable', 'array'],
+            'banned_countries.banned_list.*'                          => ['required', 'array'],
+            'banned_countries.banned_list.*.postcode'                 => ['sometimes', 'string', 'nullable'],
+            'banned_countries.banned_list.*.billing'                  => ['required', 'boolean'],
+            'banned_countries.banned_list.*.delivery'                 => ['required', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

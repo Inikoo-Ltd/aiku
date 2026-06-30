@@ -49,7 +49,7 @@ const getCountryOptions = (currentRow: BannedCountryRow) => {
 }
 
 const buildRows = (): BannedCountryRow[] => {
-    const stored = props.form[props.fieldName]
+    const stored = props.form[props.fieldName]?.banned_list
 
     if (!stored || Array.isArray(stored)) {
         return []
@@ -66,20 +66,21 @@ const buildRows = (): BannedCountryRow[] => {
 
 const rows = reactive<BannedCountryRow[]>(buildRows())
 
-// TODO: not yet persisted, the database location for this flag is undecided.
-const followOrganisation = ref(false)
+const isFollowOrganisationBannedList = ref(
+    !!props.form[props.fieldName]?.is_follow_organisation_banned_list
+)
 
-const isDisabled = computed(() => followOrganisation.value)
+const isDisabled = computed(() => isFollowOrganisationBannedList.value)
 
 const syncForm = () => {
-    const next: Record<string, any> = {}
+    const bannedList: Record<string, any> = {}
 
     rows.forEach((row) => {
         if (!row.country) {
             return
         }
 
-        next[row.country] = {
+        bannedList[row.country] = {
             postcode: row.postcode || null,
             billing: row.billing,
             delivery: row.delivery,
@@ -87,10 +88,14 @@ const syncForm = () => {
         }
     })
 
-    props.form[props.fieldName] = next
+    props.form[props.fieldName] = {
+        banned_list: bannedList,
+        is_follow_organisation_banned_list: isFollowOrganisationBannedList.value,
+    }
 }
 
 watch(rows, syncForm, { deep: true })
+watch(isFollowOrganisationBannedList, syncForm)
 
 const addRow = () => {
     rows.push({
@@ -122,7 +127,7 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
             :class="{ 'opacity-100': true }"
         >
             <input
-                v-model="followOrganisation"
+                v-model="isFollowOrganisationBannedList"
                 type="checkbox"
                 class="h-5 w-5 rounded cursor-pointer border-gray-300 hover:border-[--theme-color-0] text-[--theme-color-0] focus:ring-[--theme-color-0]"
             />
@@ -132,8 +137,8 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
         </label>
 
         <div :class="{ 'opacity-50 pointer-events-none': isDisabled }">
-            <DataTable :value="rows" dataKey="country" class="text-sm">
-                <Column :header="trans('Country')" style="min-width: 16rem">
+            <DataTable :value="rows" dataKey="country" class="text-sm" removableSort >
+                <Column field="country" :header="ctrans('Country')" style="min-width: 16rem" sortable>
                     <template #body="{ data }">
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon
@@ -166,7 +171,7 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
                     </template>
                 </Column>
 
-                <Column :header="trans('Postcode (regex)')" style="min-width: 12rem">
+                <Column :header="ctrans('Postcode (regex)')" style="min-width: 12rem">
                     <template #body="{ data }">
                         <InputText
                             v-model="data.postcode"
@@ -177,7 +182,7 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
                     </template>
                 </Column>
 
-                <Column :header="trans('Billing / Delivery')" style="min-width: 12rem">
+                <Column :header="ctrans('Billing / Delivery')" style="min-width: 12rem">
                     <template #body="{ data }">
                         <div class="flex items-center gap-6">
                             <label class="flex items-center gap-2 cursor-pointer">

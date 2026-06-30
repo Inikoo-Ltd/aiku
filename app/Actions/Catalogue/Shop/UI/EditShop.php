@@ -580,7 +580,10 @@ class EditShop extends OrgAction
                             'type'              => 'banned-countries',
                             'label'             => __('Banned Countries'),
                             'required'          => true,
-                            'value'             => $mergedBannedCountryRegions,
+                            'value'             => [
+                                'banned_list'                           => $mergedBannedCountryRegions,
+                                'is_follow_organisation_banned_list'    => Arr::get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false),
+                            ],
                             'options'           => GetCountriesOptions::run(true, true),
                         ],
                     ],
