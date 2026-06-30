@@ -1,16 +1,16 @@
 <?php
 
 
-use App\Actions\CRM\Agent\StoreAgent;
+use App\Actions\Chat\Agent\DeleteAgent;
+use App\Actions\Chat\Agent\StoreAgent;
+use App\Actions\Chat\Agent\UI\CreateAgent;
+use App\Actions\Chat\Agent\UI\EditAgent;
+use App\Actions\Chat\Agent\UI\ShowAgent;
+use App\Actions\Chat\Agent\UpdateAgent;
+use App\Actions\Chat\ChatSession\AssignChatToAgent;
+use App\Actions\Chat\ChatSession\CloseChatSession;
+use App\Actions\Chat\ChatSession\SendChatMessage;
 use Illuminate\Support\Facades\Route;
-use App\Actions\CRM\Agent\DeleteAgent;
-use App\Actions\CRM\Agent\UpdateAgent;
-use App\Actions\CRM\Agent\UI\EditAgent;
-use App\Actions\CRM\Agent\UI\ShowAgent;
-use App\Actions\CRM\Agent\UI\CreateAgent;
-use App\Actions\CRM\ChatSession\SendChatMessage;
-use App\Actions\CRM\ChatSession\CloseChatSession;
-use App\Actions\CRM\ChatSession\AssignChatToAgent;
 
 Route::name('agents.')->prefix('agents')->group(function () {
     Route::get('/', ShowAgent::class)->name('show');

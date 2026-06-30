@@ -1,0 +1,189 @@
+<?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 30 Jun 2026 21:08:17 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Chat\ChatSession;
+
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Http\Resources\CRM\Livechat\ChatSessionResource;
+use App\Models\Chat\ChatSession;
+use App\Models\CRM\WebUser;
+use App\Models\Web\WebsiteVisitor;
+use Exception;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class StoreChatSession
+{
+    use AsAction;
+
+    public function rules(): array
+    {
+        return [
+            'web_user_id'      => ['nullable', 'exists:web_users,id'],
+            'language_id'      => ['required', 'exists:languages,id'],
+            'guest_identifier' => ['nullable', 'string', 'max:255'],
+            'ai_model_version' => ['nullable', 'string', 'max:50'],
+            'shop_id'          => ['required', 'exists:shops,id'],
+            'priority'         => ['required', Rule::enum(ChatPriorityEnum::class)],
+            'ulid'             => ['sometimes', 'string', 'size:26', 'unique:chat_sessions,ulid'],
+        ];
+    }
+
+
+    /**
+     * @throws \Exception|\Throwable
+     */
+    public function asController(ActionRequest $request): ChatSession
+    {
+        $validated = $request->validated();
+
+        return $this->handle($validated);
+    }
+
+
+    /**
+     * @throws \Throwable
+     * @throws \Random\RandomException
+     */
+    public function handle(array $modelData): ChatSession
+    {
+        DB::beginTransaction();
+
+        try {
+            $isGuest = empty($modelData['web_user_id']);
+
+            $guestIdentifier = $isGuest
+                ? ($modelData['guest_identifier'] ?? 'guest_'.random_int(10000, 99999))
+                : null;
+
+            $chatSessionData = [
+                'ulid'             => $modelData['ulid'] ?? Str::ulid(),
+                'web_user_id'      => $modelData['web_user_id'] ?? null,
+                'status'           => ChatSessionStatusEnum::WAITING->value,
+                'guest_identifier' => $guestIdentifier,
+                'language_id'      => $modelData['language_id'],
+                'priority'         => $modelData['priority'],
+                'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
+                'shop_id'          => $modelData['shop_id'] ?? null,
+                'geo_country_code'      => $this->resolveCountryCode(request()->header('CF-IPCountry')),
+                'website_visitor_id'   => $this->resolveWebsiteVisitorId($modelData['shop_id'] ?? null),
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ];
+
+            $chatSession = ChatSession::create($chatSessionData);
+
+            if ($chatSession->web_user_id) {
+                $this->storeMetadata($chatSession, $chatSession->web_user_id);
+            }
+
+            $this->logSessionOpen($chatSession, $modelData, $isGuest, $guestIdentifier);
+
+            DB::commit();
+
+            return $chatSession;
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to create chat session', [
+                'error' => $e->getMessage(),
+                'data'  => $modelData
+            ]);
+
+            throw $e;
+        }
+    }
+
+    private function storeMetadata(ChatSession $chatSession, int $webUserId): void
+    {
+        $webUser = WebUser::find($webUserId);
+        $old = $chatSession->metadata ?? [];
+        $new = [
+            'name'  => $old['name']
+                ?? ($webUser?->customer->contact_name
+                    ?? $webUser?->customer->name
+                    ?? null),
+
+            'email' => $old['email']
+                ?? ($webUser?->customer->email
+                    ?? $webUser?->email
+                    ?? null),
+
+            'phone' => $old['phone']
+                ?? ($webUser?->customer->phone ?? null),
+        ];
+
+        $chatSession->update([
+            'metadata' => $new,
+        ]);
+    }
+
+
+
+    public function jsonResponse(ChatSession $chatSession): ChatSessionResource
+    {
+        return ChatSessionResource::make($chatSession)
+            ->additional([
+                'success' => true,
+                'message' => 'Chat session started successfully',
+            ]);
+    }
+
+
+    private function resolveWebsiteVisitorId(?int $shopId): ?int
+    {
+        if (!$shopId || !request()->hasSession()) {
+            return null;
+        }
+
+        $sessionId = request()->session()->getId();
+
+        return WebsiteVisitor::where('session_id', $sessionId)
+            ->where('shop_id', $shopId)
+            ->latest('id')
+            ->value('id');
+    }
+
+    private function resolveCountryCode(?string $cfCountry): ?string
+    {
+        if (blank($cfCountry) || $cfCountry === 'XX' || $cfCountry === 'T1') {
+            return null;
+        }
+
+        return strtoupper(substr($cfCountry, 0, 2));
+    }
+
+    protected function logSessionOpen(ChatSession $chatSession, array $data, bool $isGuest, ?string $guestIdentifier): void
+    {
+        try {
+            $actorType = $isGuest ? ChatActorTypeEnum::GUEST : ChatActorTypeEnum::USER;
+            $actorId   = $isGuest ? null : $data['web_user_id'];
+
+            $eventPayload = [
+                'ip_address'       => request()->ip(),
+                'user_agent'       => request()->userAgent(),
+                'guest_identifier' => $guestIdentifier,
+                'language_id'      => $data['language_id'],
+                'priority'         => $data['priority'],
+                'is_guest'         => $isGuest,
+            ];
+
+            StoreChatEvent::make()->openSession($chatSession, $actorType, $actorId, $eventPayload);
+        } catch (Exception $e) {
+            Log::warning('Failed to log chat session open event', [
+                'session_id' => $chatSession->id,
+                'error'      => $e->getMessage()
+            ]);
+        }
+    }
+}
