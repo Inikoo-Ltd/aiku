@@ -10,7 +10,7 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
-import { Navigation } from 'swiper/modules'
+import { Navigation, Pagination } from 'swiper/modules'
 import { get } from "lodash"
 
 // Font Awesome
@@ -111,14 +111,15 @@ const compSwiperOptions = computed(() => {
       </button>
 
       <!-- Swiper -->
-      <Swiper   
-        :modules="[Navigation]"
+      <Swiper
+        :modules="[Navigation, Pagination]"
         :slides-per-view="slidesPerView"
         :space-between="20"
         :navigation="{ prevEl, nextEl }"
         :autoHeight="false"
-        pagination
+        :pagination="{ clickable: true, dynamicBullets: true }"
         :loop="true"
+        class="has-pagination"
       >
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
@@ -144,5 +145,22 @@ const compSwiperOptions = computed(() => {
 
 .swiper-nav-button svg {
   @apply text-gray-700 w-4 h-4;
+}
+
+.has-pagination {
+  padding-bottom: 2rem;
+}
+
+:deep(.swiper-pagination) {
+  bottom: 0;
+}
+
+:deep(.swiper-pagination-bullet) {
+  background-color: #cbd5e1;
+  opacity: 1;
+}
+
+:deep(.swiper-pagination-bullet-active) {
+  background-color: #1d2d44;
 }
 </style>

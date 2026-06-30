@@ -1,51 +1,48 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 02 Jun 2024 10:16:01 Central European Summer Time, Mijas Costa, Spain
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Author: stewicca <wiccaalf@gmail.com>
+ * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Catalogue\Charge\ChargeStateEnum;
-use App\Models\Billables\Charge;
+use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateCharges implements ShouldBeUnique
+class ShopHydrateShippingZoneSchemas implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
     public function getJobUniqueId(Shop $shop): string
     {
-        return $shop->id;
+        return (string) $shop->id;
     }
 
     public function handle(Shop $shop): void
     {
-
         $stats = [
-            'number_charges'            => $shop->charges()->count(),
-            'number_assets_type_charge' => $shop->charges()->count(),
+            'number_shipping_zone_schemas' => $shop->shippingZoneSchemas()->count(),
         ];
 
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
-                model: 'charges',
+                model: 'shipping_zone_schemas',
                 field: 'state',
-                enum: ChargeStateEnum::class,
-                models: Charge::class,
+                enum: ShippingZoneSchemaStateEnum::class,
+                models: ShippingZoneSchema::class,
                 where: function ($q) use ($shop) {
                     $q->where('shop_id', $shop->id);
                 }
             )
         );
+
         $shop->stats()->update($stats);
     }
-
 }

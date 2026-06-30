@@ -336,7 +336,7 @@ defineExpose({
                 <div class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
                     <!-- RRP + UNIT  -->
                     <span class="truncate min-w-0 overflow-hidden text-primary">
-                     {{ trans('Recommended retail price')   }} : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
+                     {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
                     </span>
 
                 </div> 

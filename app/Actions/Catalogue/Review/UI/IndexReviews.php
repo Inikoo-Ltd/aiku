@@ -126,7 +126,8 @@ class IndexReviews extends OrgAction
         }
 
         $query = QueryBuilder::for(Review::class)
-            ->leftJoin('customers', 'customers.id', '=', 'reviews.customer_id');
+            ->leftJoin('customers', 'customers.id', '=', 'reviews.customer_id')
+            ->leftJoin('products', 'products.id', '=', 'reviews.product_id');
 
         if ($parent instanceof Shop) {
             $query->where('reviews.shop_id', $parent->id);
@@ -176,6 +177,8 @@ class IndexReviews extends OrgAction
                 'reviews.created_at',
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
+                'products.code as product_code',
+                'products.slug as product_slug',
             ])
             ->allowedSorts(['id', 'created_at', 'rating', 'likes'])
             ->allowedFilters([$globalSearch, 'status', 'rating', 'customer_name', $IDSearch])
@@ -183,9 +186,9 @@ class IndexReviews extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function tableStructure(?string $prefix = null, bool $withProduct = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $withProduct) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -203,6 +206,9 @@ class IndexReviews extends OrgAction
             $table->column(key: 'state_icon', label: '', type: 'icon');
             $table->column(key: 'created_at', label: __('Date'), sortable: true, type: 'date');
             $table->column(key: 'customer_name', label: __('Customer'), searchable: true);
+            if ($withProduct) {
+                $table->column(key: 'product_code', label: __('Product'), searchable: true);
+            }
             $table->column(key: 'rating', label: __('Rating'), sortable: true, align: 'right');
             $table->column(key: 'message', label: __('Message'), searchable: true);
             $table->column(key: 'likes', label: __('Likes / Dislikes'), sortable: true, align: 'right');

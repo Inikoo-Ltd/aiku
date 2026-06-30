@@ -33,6 +33,7 @@ use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
+use App\Actions\Retina\Ecom\Review\ReactRetinaReview;
 use App\Actions\Retina\UnsubscribeAurora;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +55,8 @@ Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::
 
 Route::post('remind-back-in-stock/{product:id}', StoreIrisBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings()->whereNumber('product');
 Route::delete('remind-back-in-stock/{product:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings()->whereNumber('product');
+
+Route::post('review/{review:id}/react', ReactRetinaReview::class)->name('review.react');
 
 Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(function () {
     Route::patch('update-gr-gift', UpdateRetinaOrderGrGift::class)->name('update_gr_gift');
