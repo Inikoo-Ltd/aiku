@@ -180,7 +180,7 @@ const totalReviews = computed(() => reviewsData.value.meta?.total ?? 0)
 </script>
 
 <template>
-    <div class="editor-class overflow-hidden" v-if="isInitialLoading || minimum_reviews_to_show <= totalReviews">
+    <div class="editor-class overflow-hidden" v-if="isInitialLoading || minimum_reviews_to_show <= totalReviews && minimum_reviews_to_show !=0">
         <div v-if="isInitialLoading" class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary skeleton -->
             <div class="flex min-h-[150px] flex-col items-center justify-center gap-3 px-6 py-6 text-center lg:col-span-1">
