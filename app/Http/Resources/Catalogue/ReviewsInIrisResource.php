@@ -14,14 +14,14 @@ class ReviewsInIrisResource extends JsonResource
 
         return [
             'id'                => $review->id,
-            'name'              => $review->contact_name,
+            'name'              => maskName($review->contact_name),
             'rating'            => $review->rating_main,
             'message'           => $review->message,
             'date'              => $review->published_at,
             'web_images'        => $review->web_images,
             'likes'             => $review->likes,
             'dislikes'          => $review->dislikes,
-            // 'review_reactions'  => $review->review_reaction, // Later
+            'review_reactions'  => $review->review_reaction, // Later
         ];
     }
 }

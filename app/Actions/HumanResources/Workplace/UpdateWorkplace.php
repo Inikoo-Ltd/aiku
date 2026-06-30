@@ -42,7 +42,9 @@ class UpdateWorkplace extends OrgAction
         if (Arr::hasAny($workplace->getChanges(), ['type'])) {
             OrganisationHydrateWorkplaces::run($workplace->organisation);
         }
-        $workplace = $this->updateModelAddress($workplace, $addressData);
+        if ($addressData) {
+            $workplace = $this->updateModelAddress($workplace, $addressData);
+        }
 
         return $workplace;
     }
@@ -81,6 +83,15 @@ class UpdateWorkplace extends OrgAction
     {
         $this->workplace = $workplace;
         $this->initialisation($workplace->organisation, $request);
+
+        return $this->handle(workplace: $workplace, modelData: $this->validatedData);
+    }
+
+    public function action(Workplace $workplace, array $modelData): Workplace
+    {
+        $this->asAction  = true;
+        $this->workplace = $workplace;
+        $this->initialisation($workplace->organisation, $modelData);
 
         return $this->handle(workplace: $workplace, modelData: $this->validatedData);
     }
