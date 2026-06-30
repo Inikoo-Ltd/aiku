@@ -11,7 +11,9 @@ namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
+use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageForWorkshopResource;
+use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -34,8 +36,20 @@ class GetWebBlockProducts
             $productsOutOfStock = IrisProductsInWebpageForWorkshopResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'out_of_stock'));
         }
 
+        $reviews = IndexReviewsInIris::run(parent: $webpage->model, prefix: $webpage->title);
+        $avgReview = IndexReviewsInIris::make()->avgReview($webpage->model);
+
+        $review = [
+            'reviews'                           => ReviewsInIrisResource::collection($reviews),
+            'review_summary'                    => $avgReview,
+            'allow_review_reaction'             => data_get($webpage->shop->settings, 'reviews.allow_reactions', true),
+            'allow_review_reply_reaction'       => data_get($webpage->shop->settings, 'reviews.allow_reactions', true),
+            'minimum_reviews_to_show'           => data_get($webpage->shop->settings, 'reviews.minimum_reviews_to_show', 0),    
+        ];
+
         $permissions = ['edit'];
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.reviews', $review);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_type', $webpage->sub_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);

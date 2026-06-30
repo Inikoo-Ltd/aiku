@@ -70,10 +70,10 @@ class ShowIrisWebpage
         $reviews = [];
         $avgReview = 0;
         
-        if ($webpage->model instanceof Product || ($webpage->model instanceof ProductCategory && $webpage->sub_type == ProductCategoryTypeEnum::FAMILY->value)) {
+        if ($webpage->model instanceof ProductCategory && $webpage->sub_type == ProductCategoryTypeEnum::FAMILY->value) {
             $reviews = IndexReviewsInIris::run(parent: $webpage->model, prefix: $webpage->title);
             $avgReview = IndexReviewsInIris::make()->avgReview($webpage->model);
-        } else {
+        } elseif (!($webpage->model instanceof Product)) {
             $reviews = IndexReviewsInIris::run(parent: $webpage->shop, prefix: $webpage->title);
             $avgReview = IndexReviewsInIris::make()->avgReview($webpage->shop);
         }
