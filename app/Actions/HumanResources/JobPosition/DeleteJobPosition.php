@@ -27,6 +27,13 @@ class DeleteJobPosition extends OrgAction
         return $jobPosition;
     }
 
+    public function action(JobPosition $jobPosition): JobPosition
+    {
+        $this->asAction = true;
+
+        return $this->handle($jobPosition);
+    }
+
     public function asController(Organisation $organisation, JobPosition $jobPosition, ActionRequest $request): JobPosition
     {
         $this->initialisation($organisation, $request);
