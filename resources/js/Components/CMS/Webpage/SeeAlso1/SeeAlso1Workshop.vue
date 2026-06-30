@@ -147,12 +147,14 @@ const compSwiperOptions = computed(() => {
   @apply text-gray-700 w-4 h-4;
 }
 
-.has-pagination {
-  padding-bottom: 2rem;
+:deep(.swiper-pagination) {
+  position: relative;
+  bottom: auto;
+  margin-top: 0.75rem;
 }
 
-:deep(.swiper-pagination) {
-  bottom: 0;
+:deep(.swiper-pagination.swiper-pagination-lock) {
+  display: none;
 }
 
 :deep(.swiper-pagination-bullet) {
