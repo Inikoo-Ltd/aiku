@@ -27,8 +27,9 @@ class IndexReviewsInIris extends OrgAction
             });
         });
 
-        $query = QueryBuilder::for(Review::class)
-            ->select([
+         $isLoggedIn = auth()->check();
+
+        $select = [
                 'reviews.id',
                 'reviews.rating_main',
                 'customers.contact_name',
@@ -37,16 +38,25 @@ class IndexReviewsInIris extends OrgAction
                 'reviews.likes',
                 'reviews.dislikes',
                 'reviews.web_images',
-                // 'review_reactions.type as review_reaction', // Like/Dislike
-            ])
-            ->leftJoin('customers', 'customers.id', 'reviews.customer_id');
-            // ->leftJoin('review_reactions', function ($join) use ($customer) {
-            //     $join->on('review_reactions.review_id', 'reviews.id')
-            //         ->where('review_reactions.customer_id', $customer->id)
-            //         ->where('review_reactions.target', ReviewReactionTargetEnum::REVIEW);
-            // });
+            ];
 
-        $query = $this->whereQuery($parent, $query);
+        $query = QueryBuilder::for(Review::class)
+            ->leftJoin('customers', 'customers.id', 'reviews.customer_id');
+
+        if ($isLoggedIn) {
+            $user = auth()->user();
+            array_push($select, 'review_reactions.type as review_reaction'); // Like/Dislike
+
+            $query
+                ->leftJoin('review_reactions', function ($join) use ($user) {
+                    $join->on('review_reactions.review_id', 'reviews.id')
+                        ->where('review_reactions.customer_id', $user->customer->id)
+                        ->where('review_reactions.target', ReviewReactionTargetEnum::REVIEW);
+                });
+        }
+
+        $query = $this->whereQuery($parent, $query)
+            ->select($select);
 
         return $query
             ->allowedSorts(['id', 'created_at', 'rating', 'likes'])
