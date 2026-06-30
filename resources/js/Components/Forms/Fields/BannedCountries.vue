@@ -175,7 +175,23 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
 
                 <Column xheader="ctrans('Postcode (regex)')" style="min-width: 12rem">
                     <template #header="{ column }">
-                        <div class="font-semibold">{{ctrans('Postcode (regex)')}} <InformationIcon :information="ctrans('Empty postcode means the entire country will be banned')" /></div>
+                        <div class="font-semibold">{{ctrans('Postcode (regex)')}} <VTooltip class="w-fit inline">
+                                <span class='opacity-50 hover:opacity-100'>
+                                    <FontAwesomeIcon icon='fal fa-info-circle' xsize="xs" fixed-width aria-hidden='true' />
+                                </span>
+                                <template #popper>
+                                    <div class="min-w-20 w-fit max-w-96 text-sm">
+                                        <ul class="list-disc list-outside pl-4">
+                                            <li>
+                                                {{ ctrans('You can use regex (regular expression) to match postcodes. For example, /^2/ will match any postcode starting with 2.') }}
+                                            </li>
+                                            <li>
+                                                {{ ctrans('If you want to match any postcode, leave this field empty.') }}
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </template>
+                            </VTooltip></div>
                     </template>
                     <template #body="{ data }">
                         <InputText
@@ -198,7 +214,7 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
                                     class="h-5 w-5 rounded cursor-pointer border-gray-300 hover:border-[--theme-color-0] text-[--theme-color-0] focus:ring-[--theme-color-0]"
                                     @change="onFlagChange(data, 'billing')"
                                 />
-                                <span class="whitespace-nowrap">{{ ctrans("Billing") }} <InformationIcon :information="ctrans('If checked, billing location that matched the postcode will be banned')" /></span>
+                                <span class="whitespace-nowrap">{{ ctrans("Billing") }} <InformationIcon :information="ctrans('If checked, billing address that matched the postcode will be banned')" /></span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input
@@ -208,7 +224,7 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
                                     class="h-5 w-5 rounded cursor-pointer border-gray-300 hover:border-[--theme-color-0] text-[--theme-color-0] focus:ring-[--theme-color-0]"
                                     @change="onFlagChange(data, 'delivery')"
                                 />
-                                <span class="whitespace-nowrap">{{ ctrans("Delivery") }} <InformationIcon :information="ctrans('If active, delivery location that matched the postcode will be banned')" /></span>
+                                <span class="whitespace-nowrap">{{ ctrans("Delivery") }} <InformationIcon :information="ctrans('If active, delivery address that matched the postcode will be banned')" /></span>
                             </label>
                         </div>
                     </template>
