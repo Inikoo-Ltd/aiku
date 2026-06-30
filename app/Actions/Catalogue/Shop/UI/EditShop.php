@@ -581,7 +581,7 @@ class EditShop extends OrgAction
                             'label'             => __('Banned Countries'),
                             'required'          => true,
                             'value'             => $mergedBannedCountryRegions,
-                            'options'           => GetCountriesOptions::run(),
+                            'options'           => GetCountriesOptions::run(true, true),
                         ],
                     ],
                 ],
