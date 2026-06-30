@@ -18,9 +18,9 @@ import "swiper/css"
 import { faImage } from "@far"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
-import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
 import { useBundle } from "@/Composables/useBundle"
 import Button from "@/Iris/Components/IrisButton.vue"
+import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
@@ -71,6 +71,7 @@ const emits = defineEmits<{
 const layout = inject("layout", {})
 const screenType = inject("screenType", ref('desktop'))
 const expanded = ref(false)
+const webpage_slug = inject("webpage_slug", {})
 
 const onSelectProduct = (p: ProductResource) => emits("selectProduct", p)
 const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
@@ -342,7 +343,7 @@ const openBundlePanel = (product:any) => {
         </div>
     </div>
 
-      <ReviewsProduct :product="product" class="mt-10" />
+  <ReviewsIris  :webpage_slug="webpage_slug"/>
 </template>
 
 
