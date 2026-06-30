@@ -36,7 +36,6 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
      */
     public function handle(int|null $webpageId): array
     {
-        return [];
         if ($webpageId == null) {
             return [
                 'status'  => 'error',
