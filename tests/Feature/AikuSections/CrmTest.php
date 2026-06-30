@@ -1231,15 +1231,20 @@ test('sync customers to google ads uploads hashed identifiers', function () {
         }
 
         $destination = $request['destinations'][0];
-        $identifiers = $request['audienceMembers'][0]['compositeData']['userData']['userIdentifiers'];
+
+        $matchedMember = collect($request['audienceMembers'])->first(function ($member) {
+            $identifiers = $member['compositeData']['userData']['userIdentifiers'];
+
+            return collect($identifiers)->contains('emailAddress', hash('sha256', 'match@example.com'))
+                && collect($identifiers)->contains('phoneNumber', hash('sha256', '+447911123456'));
+        });
 
         return $destination['operatingAccount']['accountType'] === 'GOOGLE_ADS'
             && $destination['operatingAccount']['accountId'] === '1234567890'
             && $destination['productDestinationId'] === '999'
             && $request['encoding'] === 'HEX'
             && $request['termsOfService']['customerMatchTermsOfServiceStatus'] === 'ACCEPTED'
-            && $identifiers[0]['emailAddress'] === hash('sha256', 'match@example.com')
-            && $identifiers[1]['phoneNumber'] === hash('sha256', '+447911123456');
+            && $matchedMember !== null;
     });
 });
 
