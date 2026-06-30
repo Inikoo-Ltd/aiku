@@ -530,7 +530,7 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
 
-        if (Arr::get($parentResource, 'cash_on_delivery')) {
+        if (Arr::get($parentResource, 'cash_on_delivery') && ($suffix === null || $suffix === 0)) {
             $amount               = Arr::get($parentResource, 'cash_on_delivery.amount');
             $amount               = str_replace('.', ',', (string)$amount);
             $shipmentData["reem"] = $amount;
