@@ -17,7 +17,8 @@ class HydrateModelTypeQueries
 
     public function handle(string $modelType): void
     {
-        QueryHydrateCount::make()->byModelType($modelType);
+        //todo this takes 7 seconds, need to know why
+        //QueryHydrateCount::make()->byModelType($modelType);
     }
 
 }
