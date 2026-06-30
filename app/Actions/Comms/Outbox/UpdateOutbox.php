@@ -10,11 +10,13 @@ namespace App\Actions\Comms\Outbox;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Http\Resources\Mail\OutboxesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOutbox extends OrgAction
@@ -54,6 +56,7 @@ class UpdateOutbox extends OrgAction
             'send_time'  => ['sometimes', 'required', 'date_format:H:i:s'],
             'threshold'  => ['sometimes', 'required', 'integer', 'gt:0'],
             'interval'   => ['sometimes', 'required', 'integer', 'gt:0'],
+            'state'      => ['sometimes', 'required', Rule::enum(OutboxStateEnum::class)],
             'is_applicable' => ['sometimes', 'required', 'boolean'],
         ];
     }
