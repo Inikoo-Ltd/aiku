@@ -55,7 +55,7 @@ class IndexReviewsInIris extends OrgAction
             ->withQueryString();
     }
 
-    private function whereQuery(Shop|ProductCategory|Product $parent, Builder $query): Builder
+    private function whereQuery(Shop|ProductCategory|Product $parent, Builder|QueryBuilder $query): Builder|QueryBuilder
     {
         $shop = $parent;
         if ($parent instanceof Product) {
