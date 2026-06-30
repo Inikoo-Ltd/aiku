@@ -136,6 +136,7 @@ class IndexMasterProductsWithMissingChildDescription extends GrpAction
                 'title'       => __('Master Products').' ('.__('Missing child description').')',
                 'pageHead'    => [
                     'title'         => $this->parent->name,
+                    'is_negative'   => true,
                     'icon'          => [
                         'icon'  => ['fal', 'fa-store-alt'],
                         'title' => __('Master shop'),

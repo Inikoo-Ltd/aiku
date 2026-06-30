@@ -20,17 +20,19 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PickingItemActionsPanel from "@/Components/Warehouse/DeliveryNotes/PickingItemActionsPanel.vue"
 import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForCrm.vue"
+import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 library.add(faHandHoldingBox, faDolly, faMapMarkerAlt, faHourglassStart, faSkull, faCircle)
 
 const locale = inject('locale', aikuLocaleStructure)
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     allowStockControllerSetNotPicked: boolean
     isStillPicking: boolean
     isReadOnly?: boolean
+    waitingType?: string
 }>()
 
 const routeToDeliveryNote = (slug: string) => {
@@ -78,6 +80,12 @@ const generateLocationRoute = (location: any) => {
                     internal: 'delivery_note_internal_notes',
                     public:   'delivery_note_public_notes',
                 }" />
+                <WaitingOppositeCountBadge
+                    v-if="props.waitingType && Number(item.opposite_waiting_count) > 0"
+                    :count="Number(item.opposite_waiting_count)"
+                    :type="props.waitingType === 'crm' ? 'warehouse' : 'crm'"
+                    :href="routeToDeliveryNote(item.delivery_note_slug)"
+                />
             </div>
             <div class="flex gap-x-2 mt-1 flex-wrap">
                 <span v-if="item.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 border rounded px-1.5 py-0.5">

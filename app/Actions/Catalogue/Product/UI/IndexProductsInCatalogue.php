@@ -377,6 +377,7 @@ class IndexProductsInCatalogue extends OrgAction
                 'title'                        => $title,
                 'pageHead'                     => [
                     'title'         => $title,
+                    'color'         => '#38bdf8',
                     'model'         => $model,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,

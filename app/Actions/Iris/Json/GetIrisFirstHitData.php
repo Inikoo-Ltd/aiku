@@ -11,6 +11,7 @@ namespace App\Actions\Iris\Json;
 use App\Actions\Iris\CaptureTrafficSource;
 use App\Actions\IrisAction;
 use App\Actions\Traits\HasIrisUserData;
+use App\Actions\Web\Website\BlockedCountries\CheckIfCountryRegionsIsBlocked;
 use App\Models\Catalogue\Collection;
 use Illuminate\Support\Facades\Cookie;
 use Lorisleiva\Actions\ActionRequest;
@@ -36,23 +37,24 @@ class GetIrisFirstHitData extends IrisAction
      */
     public function handle(): array
     {
-
         if (auth()->check()) {
-            $this->webUser = request()->user();
+            $this->webUser  = request()->user();
             $this->customer = $this->webUser?->customer;
-            $this->shop = $this->customer?->shop;
+            $this->shop     = $this->customer?->shop;
 
             Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
-            return $this->getIrisUserData();
+            $response = $this->getIrisUserData();
         } else {
             Cookie::queue(Cookie::forget('iris_vua'));
-            return [
-                'is_logged_in' => false,
+            $response = [
+                'is_logged_in'           => false,
                 'traffic_source_cookies' => CaptureTrafficSource::run(),
             ];
         }
 
+        $response['is_blocked'] = CheckIfCountryRegionsIsBlocked::run(request());
 
+        return $response;
     }
 
     /**

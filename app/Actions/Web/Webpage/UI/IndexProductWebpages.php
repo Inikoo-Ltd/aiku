@@ -223,6 +223,7 @@ class IndexProductWebpages extends OrgAction
                 'title'       => __('Webpages'),
                 'pageHead'    => [
                     'title'         => __('Product webpages'),
+                    'color'         => '#6366f1',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')

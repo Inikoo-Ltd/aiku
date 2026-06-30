@@ -499,7 +499,7 @@ class IndexCustomers extends OrgAction
         }
 
         $scope  = $this->parent;
-        $action = null;
+        $action = [];
 
         $filterProps = [];
 
@@ -519,20 +519,37 @@ class IndexCustomers extends OrgAction
         }
 
         if (!$scope instanceof Group && $this->canEdit && $this->parent->engine !== ShopEngineEnum::FAIRE) {
-            $action = [
-                [
-                    'type'    => 'button',
-                    'style'   => 'create',
-                    'tooltip' => __('New Customer'),
-                    'label'   => __('New Customer'),
-                    'route'   => [
-                        'name'       => 'grp.org.shops.show.crm.customers.create',
-                        'parameters' => [
-                            'organisation' => $scope->organisation->slug,
-                            'shop'         => $scope->slug
-                        ]
+            $action[] = [
+                'type'    => 'button',
+                'style'   => 'create',
+                'tooltip' => __('New Customer'),
+                'label'   => __('New Customer'),
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.crm.customers.create',
+                    'parameters' => [
+                        'organisation' => $scope->organisation->slug,
+                        'shop'         => $scope->slug
                     ]
-                ],
+                ]
+            ];
+        }
+
+        if ($this->parent instanceof Shop && $this->canEdit && filled(data_get($this->parent->settings, 'google_ads.refresh_token'))) {
+            $action[] = [
+                'type'        => 'button',
+                'style'       => 'tertiary',
+                'icon'        => ['fab', 'fa-google'],
+                'tooltip'     => __('Sync all customers to Google Ads'),
+                'label'       => __('Sync to Google Ads'),
+                'fullLoading' => true,
+                'route'       => [
+                    'method'     => 'post',
+                    'name'       => 'grp.org.shops.show.crm.customers.sync_to_google_ads',
+                    'parameters' => [
+                        'organisation' => $this->parent->organisation->slug,
+                        'shop'         => $this->parent->slug
+                    ]
+                ]
             ];
         }
 

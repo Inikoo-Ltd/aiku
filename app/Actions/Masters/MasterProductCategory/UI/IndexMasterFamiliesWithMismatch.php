@@ -333,6 +333,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
             'title'       => __('Master Families'),
             'pageHead'    => [
                 'title'         => $title,
+                'is_negative'   => true,
                 'icon'          => $icon,
                 'model'         => $model,
                 'afterTitle'    => $afterTitle,

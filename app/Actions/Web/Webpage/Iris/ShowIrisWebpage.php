@@ -8,9 +8,13 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -54,6 +58,23 @@ class ShowIrisWebpage
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
+
+        $website = $webpage->website;
+
+        $title = $webpage->title;
+        // Prioritize webpage prefix/suffix -> website prefix/suffix
+        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null));
+        $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
+
+        $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        $reviews = [];
+        
+        if ($webpage->type === WebpageTypeEnum::STOREFRONT) {
+            $reviews = IndexReviewsInIris::run(parent: $webpage->shop, prefix: $webpage->title);
+        } elseif ($webpage->model instanceof Product || ($webpage->model instanceof ProductCategory && $webpage->sub_type == ProductCategoryTypeEnum::FAMILY->value)) {
+            $reviews = IndexReviewsInIris::run(parent: $webpage->model, prefix: $webpage->title);
+        }
+
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -62,7 +83,7 @@ class ShowIrisWebpage
             'navigation'                  => $this->getIrisProductNavigation($webpage),
             'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
-                'title'         => $webpage->title,
+                'title'         => $title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
@@ -79,8 +100,8 @@ class ShowIrisWebpage
             'index_page'                  => $webpage->index_page,
             'follow_link'                 => $webpage->follow_link,
             'webpage_slug'                => $webpage->slug,
+            'reviews'                     => ReviewsInIrisResource::collection($reviews),
             'is_different_when_logged_in' => $webpage->is_different_when_logged_in,
-
         ];
 
         return array_merge($baseWebpageData, [
@@ -462,7 +483,7 @@ class ShowIrisWebpage
         $label = $webpage->breadcrumb_label;
 
         if (!$label) {
-            $label = $webpage->code;
+            $label = $webpage->title ?? $webpage->code;
         }
 
         return $label ?? '';

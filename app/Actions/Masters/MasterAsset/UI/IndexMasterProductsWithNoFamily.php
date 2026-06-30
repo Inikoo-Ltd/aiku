@@ -239,6 +239,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
                 'currency'           => $this->parent->group->currency->code,
                 'pageHead'           => [
                     'title'         => $title,
+                    'is_negative'   => true,
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,

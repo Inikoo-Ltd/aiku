@@ -62,6 +62,8 @@ export interface PageHeadingTypes {
     icon_rotation:  90 | 180 | 270 | '90' | '180' | '270'
     titleRight?: string
     title: string,
+    color?: string  // tint for the wavy background decoration (matches the linking stat box)
+    is_negative?: boolean  // faulty page → show fire decoration instead of waves
     subNavigation?: any
     subNavigation2?: any
     wrapped_actions: Action[]

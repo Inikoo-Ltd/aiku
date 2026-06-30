@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Payment;
 
+use App\Actions\Accounting\Traits\AuthorizesAccountingEdit;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -21,6 +22,7 @@ class UpdatePayment extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use AuthorizesAccountingEdit;
 
     public function handle(Payment $payment, array $modelData): Payment
     {
@@ -33,15 +35,6 @@ class UpdatePayment extends OrgAction
         }
 
         return $payment;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("accounting.{$this->organisation->id}.edit");
     }
 
     public function rules(): array

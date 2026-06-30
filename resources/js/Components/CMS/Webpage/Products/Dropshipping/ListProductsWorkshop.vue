@@ -119,7 +119,6 @@ watch(
         </div> -->
         <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="flex items-center w-full md:w-1/3 gap-2">
-
             <template v-if="!props.modelValue?.settings?.is_hide_filter">
               <Button v-if="isMobile" :icon="faFilter" class="!p-2 !w-auto" aria-label="Open Filters"
                 :injectStyle="getStyles(modelValue?.filter?.button?.properties, screenType)" />
@@ -142,7 +141,6 @@ watch(
                 </span>
                 {{ dummyProducts.length === 1 ? trans("product") : trans("products") }}
               </span>
-
             </div>
           </div>
 
@@ -162,9 +160,9 @@ watch(
           <div v-for="product in dummyProducts" :key="product.id"
             :style="getStyles(modelValue?.card_product?.properties, screenType)"
             class="border p-3 relative rounded  bg-white">
-            <component 
-              :is="getProductsRenderDropshippingComponent(code)" 
-              :product="product" 
+            <component
+              :is="getProductsRenderDropshippingComponent(code)"
+              :product="product"
               :bestSeller="modelValue.bestseller"
               :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"
               :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"

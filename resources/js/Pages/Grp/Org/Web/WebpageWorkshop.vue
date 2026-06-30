@@ -646,7 +646,7 @@ console.log('props_workshop',props)
 
 <template>
   <Head :title="capitalize(title)" />
-  <PageHeading :data="pageHead">
+  <PageHeading :data="pageHead" ignoreIsolate>
     <template #button-publish="{ action }">
       <Publish :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
         @onPublish="(popover) => beforePublish(action.route, popover)" />

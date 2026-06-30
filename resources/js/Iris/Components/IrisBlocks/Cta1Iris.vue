@@ -28,7 +28,7 @@ const props = defineProps<{
 	code?: string
 }>()
 
-const layout: any = inject("layout", {})
+const layout: any = inject("layout", {})    
 
 
 const valueForField = computed(() => {

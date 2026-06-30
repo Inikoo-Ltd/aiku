@@ -70,7 +70,7 @@ class SaveWebsiteSitemap implements ShouldBeUnique
 
         $count   = 0;
         $scheme  = app()->environment('production') ? 'https' : 'http';
-        $baseUrl = $scheme.'://'.$website->domain;
+        $baseUrl = $scheme.'://www.'.$website->domain;
 
 
         $map   = [

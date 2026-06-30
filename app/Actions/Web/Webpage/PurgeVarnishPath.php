@@ -20,6 +20,10 @@ class PurgeVarnishPath extends OrgAction
      */
     public function handle(Website $website, string $path): void
     {
+        if (!config('iris.cache.varnish')) {
+            return;
+        }
+
         $host = strtolower('www.'.$website->domain);
         $path = Str::start($path, '/');
 

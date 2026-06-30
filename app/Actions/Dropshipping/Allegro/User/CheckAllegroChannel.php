@@ -9,12 +9,13 @@
 namespace App\Actions\Dropshipping\Allegro\User;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class CheckAllegroChannel
 {
@@ -22,48 +23,55 @@ class CheckAllegroChannel
 
     public function handle(AllegroUser $allegroUser): void
     {
+        $platformStatus = $canConnectToPlatform = $existInPlatform = false;
+
+        $customerSalesChannel = $allegroUser->customerSalesChannel;
+
+        if (!$customerSalesChannel) {
+            return;
+        }
+
+        $isExpired = $allegroUser->access_token_expire_in && now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($allegroUser->access_token_expire_in));
+
+        if ($isExpired && $allegroUser->refresh_token) {
+            try {
+                $allegroUser->refreshAndPersistTokens();
+            } catch (\Exception $e) {
+                Sentry::captureException($e);
+            }
+        }
+
         try {
-            $platformStatus = $canConnectToPlatform = $existInPlatform = false;
-
-            $customerSalesChannel = $allegroUser->customerSalesChannel;
-
-            if (!$customerSalesChannel) {
-                return;
-            }
-
-            $isExpired = $allegroUser->access_token_expire_in && now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($allegroUser->access_token_expire_in));
-
-            if ($isExpired && $allegroUser->refresh_token) {
-                try {
-                    $allegroUser->refreshAndPersistTokens();
-                } catch (\Exception $e) {
-                    Log::error('Failed to refresh Allegro token: ' . $e->getMessage());
-                }
-            }
-
             $checkConnection = $allegroUser->getUserInfo();
 
             if ($checkConnection) {
                 $platformStatus = $canConnectToPlatform = $existInPlatform = true;
             }
-
-            $data = [
-                'platform_status'         => $platformStatus,
-                'can_connect_to_platform' => $canConnectToPlatform,
-                'exist_in_platform'       => $existInPlatform
-            ];
-
-            UpdateCustomerSalesChannel::run($customerSalesChannel, $data);
         } catch (\Exception $e) {
-            Log::error('Failed to check Allegro channel: ' . $e->getMessage());
+            Sentry::captureException($e);
         }
+
+        $data = [
+            'platform_status'         => $platformStatus,
+            'can_connect_to_platform' => $canConnectToPlatform,
+            'exist_in_platform'       => $existInPlatform
+        ];
+
+        if ($platformStatus) {
+            $data['state']                 = CustomerSalesChannelStateEnum::AUTHENTICATED;
+            $data['ban_stock_update_util'] = null;
+        } else {
+            $data['state'] = CustomerSalesChannelStateEnum::NOT_READY;
+        }
+
+        UpdateCustomerSalesChannel::run($customerSalesChannel, $data);
     }
 
     public string $commandSignature = 'allegro:check {customerSalesChannel}';
 
-    public function asCommand(Command $command)
+    public function asCommand(Command $command): void
     {
-        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
 
         $this->handle($customerSalesChannel->user);
     }

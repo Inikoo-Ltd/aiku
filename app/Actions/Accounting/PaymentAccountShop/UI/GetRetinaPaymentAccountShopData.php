@@ -54,6 +54,33 @@ class GetRetinaPaymentAccountShopData
                         'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
                     ]
                 ];
+        } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::PASTPAY) {
+
+            $options = Arr::get($paymentAccountShop->data, 'charges.options', []);
+
+
+            if (app()->environment('production')) {
+                return [];
+            }
+
+            if (empty($options)) {
+                return [];
+            }
+
+            if (!$order->customer->taxNumber) {
+                return [];
+            }
+
+            return
+                [
+                    'label' => __('Buy now pay later'),
+                    'key'   => 'pastpay',
+                    'icon'  => 'fal fa-hand-holding-usd',
+                    'order_payment_api_point' => $orderPaymentApiPoint->ulid,
+                    'data'  => [
+                        'charges'      => $options
+                    ]
+                ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
             if (!in_array($order->deliveryAddress->country_id, Arr::get($paymentAccountShop->paymentAccount->data, 'countries', []))) {
                 return null;

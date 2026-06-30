@@ -8,7 +8,9 @@
 
 namespace App\Models\Helpers;
 
+use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Models\Catalogue\Asset;
+use App\Models\Goods\ModelHasBarcode;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Traits\HasHistory;
@@ -17,6 +19,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -30,10 +33,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $group_id
  * @property string $slug
  * @property string $type
- * @property string $status
+ * @property BarcodeStatusEnum $status
  * @property string $number
  * @property string|null $note
- * @property string|null $assigned_at
+ * @property \Illuminate\Support\Carbon|null $assigned_at
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -43,9 +46,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read Collection<int, Asset> $product
- * @property-read Collection<int, Stock> $stock
- * @property-read Collection<int, TradeUnit> $tradeUnit
+ * @property-read Collection<int, ModelHasBarcode> $modelHasBarcodes
+ * @property-read Collection<int, Asset> $products
+ * @property-read Collection<int, Stock> $stocks
+ * @property-read Collection<int, TradeUnit> $tradeUnits
+ * @property-read Collection<int, TradeUnit> $tradeUnitsActive
  * @method static Builder<static>|Barcode newModelQuery()
  * @method static Builder<static>|Barcode newQuery()
  * @method static Builder<static>|Barcode onlyTrashed()
@@ -65,6 +70,9 @@ class Barcode extends Model implements Auditable
         'data'                        => 'array',
         'fetched_at'                  => 'datetime',
         'last_fetched_at'             => 'datetime',
+        'created_at'                  => 'datetime',
+        'assigned_at'                 => 'datetime',
+        'status'                      => BarcodeStatusEnum::class
     ];
 
     protected $attributes = [
@@ -99,18 +107,30 @@ class Barcode extends Model implements Auditable
         return 'slug';
     }
 
-    public function stock(): MorphToMany
+    // Uneeded, we didn't use it anyway.
+    public function stocks(): MorphToMany
     {
         return $this->morphedByMany(Stock::class, 'model', 'model_has_barcodes');
     }
 
-    public function tradeUnit(): MorphToMany
+    public function tradeUnits(): MorphToMany
     {
         return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_barcodes');
     }
 
-    public function product(): MorphToMany
+    // Uneeded, we didn't use it anyway.
+    public function products(): MorphToMany
     {
         return $this->morphedByMany(Asset::class, 'model', 'model_has_barcodes');
+    }
+
+    public function tradeUnitsActive(): MorphToMany
+    {
+        return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_barcodes')->where('model_has_barcodes.status', true);
+    }
+
+    public function modelHasBarcodes(): HasMany
+    {
+        return $this->hasMany(ModelHasBarcode::class, 'barcode_id', 'id');
     }
 }

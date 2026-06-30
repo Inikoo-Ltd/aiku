@@ -274,6 +274,7 @@ class IndexMasterCollections extends OrgAction
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
+                    'color'         => '#3730a3',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,

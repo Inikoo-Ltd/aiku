@@ -17,6 +17,7 @@ use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
+use App\Actions\Web\Webpage\ExportWebpages;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
@@ -77,6 +78,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/type/operations', [IndexWebpages::class, 'operationsInFulfilment'])->name('index.type.operations');
 
 
+    Route::get('export', [ExportWebpages::class, 'inFulfilment'])->name('export');
     Route::get('create', [CreateWebpage::class, 'inFulfilment'])->name('create');
 
     Route::prefix('{webpage}')

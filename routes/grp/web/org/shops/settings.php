@@ -7,6 +7,8 @@
  */
 
 use App\Actions\Catalogue\Shop\UI\EditShop;
+use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', EditShop::class)->name('edit');
+Route::get('google-ads/connect', ConnectShopGoogleAds::class)->name('google_ads.connect');

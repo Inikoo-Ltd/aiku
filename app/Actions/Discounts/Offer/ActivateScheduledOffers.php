@@ -31,7 +31,7 @@ class ActivateScheduledOffers
 
     public string $commandSignature = 'activate:scheduled_offers';
 
-    public function asCommand(Command $command)
+    public function asCommand(Command $command): void
     {
         $this->handle();
         $command->info('Ran!');

@@ -67,6 +67,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       offer_meters: varnish?.offer_meters ?? null
     }))
 
+    layout.is_blocked = varnish.is_blocked
+
     layout.user = varnish.auth?.user || null
     if (layout.user?.customerSalesChannels) {
       layout.user.customerSalesChannels = null
@@ -83,6 +85,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
     if (varnish?.variables) {
       layout.iris_variables = varnish.variables
     }
+
+    layout.is_blocked = varnish.is_blocked
 
     // Data: Gold Reward
     if (varnish?.offer_data) {

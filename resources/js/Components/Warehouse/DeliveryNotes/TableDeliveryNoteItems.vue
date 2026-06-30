@@ -566,7 +566,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xmemoizeRows="true">
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">

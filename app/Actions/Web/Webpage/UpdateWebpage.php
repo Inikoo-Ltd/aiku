@@ -120,8 +120,17 @@ class UpdateWebpage extends OrgAction
             if ($webpage->model instanceof Product) {
                 ProductHydrateHasLiveWebpage::run($webpage->model);
             }
+
             data_forget($modelData, 'state_data');
 
+        }
+
+        if (Arr::has($modelData, 'webpage_title_prefix')) {
+            data_set($modelData, 'settings.webpage.title_prefix', Arr::pull($modelData, 'webpage_title_prefix', null));
+        }
+
+        if (Arr::has($modelData, 'webpage_title_suffix')) {
+            data_set($modelData, 'settings.webpage.title_suffix', Arr::pull($modelData, 'webpage_title_suffix', null));
         }
 
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
@@ -194,7 +203,7 @@ class UpdateWebpage extends OrgAction
             'state_data'                     => ['sometimes', 'array'],
             'state_data.state'               => ['sometimes', Rule::enum(WebpageStateEnum::class)],
             'state_data.redirect_webpage_id' => ['required_if:state_data.state,'.WebpageStateEnum::CLOSED->value, 'exists:webpages,id'],
-            // 'state'                     => ['sometimes', Rule::enum(WebpageStateEnum::class)],
+            // 'state'                       => ['sometimes', Rule::enum(WebpageStateEnum::class)],
             'webpage_type'                   => ['sometimes', 'array'],
             'ready_at'                       => ['sometimes', 'date'],
             'live_at'                        => ['sometimes', 'date'],
@@ -202,13 +211,14 @@ class UpdateWebpage extends OrgAction
             'show_in_parent'                 => ['sometimes', 'nullable', 'boolean'],
             'allow_fetch'                    => ['sometimes', 'nullable', 'boolean'],
             'description'                    => ['sometimes', 'string'],
-
-            'product_name'              => ['sometimes', 'required', 'max:250', 'string'],
-            'product_description'       => ['sometimes', 'required', 'max:1500'],
-            'product_description_extra' => ['sometimes', 'nullable', 'max:65500'],
-            'breadcrumb_label'          => ['sometimes', 'string', 'max:40'],
-            'index_page' => ['sometimes', 'nullable', 'boolean'],
-            'follow_link' => ['sometimes', 'nullable', 'boolean'],
+            'product_name'                   => ['sometimes', 'required', 'max:250', 'string'],
+            'product_description'            => ['sometimes', 'required', 'max:1500'],
+            'product_description_extra'      => ['sometimes', 'nullable', 'max:65500'],
+            'breadcrumb_label'               => ['sometimes', 'string', 'max:40'],
+            'index_page'                     => ['sometimes', 'nullable', 'boolean'],
+            'follow_link'                    => ['sometimes', 'nullable', 'boolean'],
+            'webpage_title_prefix'           => ['sometimes', 'nullable', 'string'],
+            'webpage_title_suffix'           => ['sometimes', 'nullable', 'string'],
         ];
 
         if (!$this->strict) {

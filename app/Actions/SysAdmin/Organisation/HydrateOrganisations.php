@@ -102,7 +102,7 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateAudits::run($organisation);
         OrganisationHydrateEmployees::run($organisation);
         OrganisationHydrateShops::run($organisation);
-        OrganisationHydratePayments::run($organisation);
+        OrganisationHydratePayments::run($organisation->id);
         OrganisationHydratePaymentAccounts::run($organisation);
         OrganisationHydrateOrgPaymentServiceProviders::run($organisation);
         OrganisationHydrateCustomers::run($organisation);

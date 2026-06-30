@@ -6,6 +6,9 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Goods\Barcode\UI\EditBarcode;
+use App\Actions\Goods\Barcode\UI\IndexBarcode;
+use App\Actions\Goods\Barcode\UI\ShowBarcode;
 use App\Actions\Goods\TradeUnit\UI\EditTradeUnit;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingBarcodeTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingBrandTradeUnits;
@@ -74,5 +77,13 @@ Route::prefix('tags')->as('tags.')->group(function () {
     Route::patch('update/{tag:id}', [UpdateTag::class, 'inProductProperty'])->name('update')->withoutScopedBindings();
     Route::prefix('{tag:slug}')->group(function () {
         Route::get('edit', [EditTag::class, 'inProductProperty'])->name('edit');
+    });
+});
+
+Route::prefix('barcodes')->as('barcodes.')->group(function () {
+    Route::get('/', IndexBarcode::class)->name('index');
+    Route::prefix('/{barcode}')->group(function () {
+        Route::get('', ShowBarcode::class)->name('show');
+        Route::get('/edit', EditBarcode::class)->name('edit');
     });
 });

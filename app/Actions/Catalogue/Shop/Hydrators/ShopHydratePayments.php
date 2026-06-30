@@ -15,6 +15,7 @@ use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Catalogue\Shop;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShopHydratePayments implements ShouldBeUnique
@@ -23,16 +24,26 @@ class ShopHydratePayments implements ShouldBeUnique
     use WithEnumStats;
     use WithPaymentAggregators;
 
-    public function getJobUniqueId(Shop $shop): string
+    public string $jobQueue = 'hydrators-slave';
+
+    public function getJobUniqueId(?int $shopId): string
     {
-        return $shop->id;
+        return $shopId ?? 'empty';
     }
 
-    public function handle(Shop $shop): void
+    public function handle(?int $shopId): void
     {
+        if (!$shopId) {
+            return;
+        }
+        $shop = Shop::on('aiku_no_sticky')->find($shopId);
+        if (!$shop) {
+            return;
+        }
+
         $stats = array_merge(
             [
-                'number_payments' => $shop->payments()->count()
+                'number_payments' => DB::connection('aiku_no_sticky')->table('payments')->whereNull('deleted_at')->where('shop_id', $shop->id)->count()
             ],
             $this->paidAmounts($shop, 'amount'),
             $this->paidAmounts($shop, 'org_amount'),
@@ -49,7 +60,8 @@ class ShopHydratePayments implements ShouldBeUnique
                 models: Payment::class,
                 where: function ($q) use ($shop) {
                     $q->where('shop_id', $shop->id);
-                }
+                },
+                connection: 'aiku_no_sticky'
             )
         );
 
@@ -62,7 +74,8 @@ class ShopHydratePayments implements ShouldBeUnique
                 models: Payment::class,
                 where: function ($q) use ($shop) {
                     $q->where('shop_id', $shop->id);
-                }
+                },
+                connection: 'aiku_no_sticky'
             )
         );
 
@@ -76,7 +89,8 @@ class ShopHydratePayments implements ShouldBeUnique
                     models: Payment::class,
                     where: function ($q) use ($shop, $type) {
                         $q->where('shop_id', $shop->id)->where('type', $type->value);
-                    }
+                    },
+                    connection: 'aiku_no_sticky'
                 )
             );
         }

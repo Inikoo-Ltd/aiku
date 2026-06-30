@@ -145,6 +145,7 @@ class IndexMissingDimensionsTradeUnits extends GrpAction
                 'title'       => __('Without Marketing Dimensions'),
                 'pageHead'    => [
                     'title'         => __('Without Marketing Dimensions'),
+                    'is_negative'   => true,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-ruler-combined'],
                         'title' => __('Without Marketing Dimensions'),

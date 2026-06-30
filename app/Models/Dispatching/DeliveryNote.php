@@ -156,8 +156,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_items_waiting_warehouse
  * @property int $number_items_waiting_crm
  * @property bool $is_returned
+ * @property bool $is_bypass_platform_update
  * @property int $total_skos
  * @property int $total_units
+ * @property bool $is_bypass_platform_update
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

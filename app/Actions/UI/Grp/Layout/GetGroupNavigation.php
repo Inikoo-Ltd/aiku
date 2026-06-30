@@ -181,6 +181,15 @@ class GetGroupNavigation
                             'parameters' => []
                         ]
                     ],
+                    [
+                        'label' => __('Barcodes'),
+                        'icon'  => ['fal', 'fa-barcode'],
+                        'root'  => 'grp.trade_units.barcodes.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.barcodes.index',
+                            'parameters' => []
+                        ]
+                    ],
                 ]
             ]
         ];

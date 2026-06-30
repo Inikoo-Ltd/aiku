@@ -14,16 +14,16 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->unsignedInteger('discounted_offer_id')->nullable()->index();
-            $table->foreign('discounted_offer_id')->references('id')->on('offers')->nullOnDelete();
+            $table->unsignedInteger('discounted_shipping_offer_id')->nullable()->index();
+            $table->foreign('discounted_shipping_offer_id')->references('id')->on('offers')->nullOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->dropForeign(['discounted_offer_id']);
-            $table->dropColumn('discounted_offer_id');
+            $table->dropForeign(['discounted_shipping_offer_id']);
+            $table->dropColumn('discounted_shipping_offer_id');
         });
     }
 };

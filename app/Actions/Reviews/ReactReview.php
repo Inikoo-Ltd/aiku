@@ -1,0 +1,48 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 26 Jun 2026 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Reviews;
+
+use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewReactionTargetEnum;
+use App\Models\Reviews\Review;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rules\Enum;
+use Lorisleiva\Actions\Concerns\AsObject;
+
+class ReactReview extends OrgAction
+{
+    use AsObject;
+
+    public function action(Review $review, string $target, bool $isLike): Review
+    {
+        return $this->handle($review, $target, $isLike);
+    }
+
+    public function handle(Review $review, string $target, bool $isLike): Review
+    {
+        $column = match (true) {
+            $target === 'review' && $isLike  => 'likes',
+            $target === 'review' && !$isLike => 'dislikes',
+            $target === 'reply'  && $isLike  => 'replay_likes',
+            $target === 'reply'  && !$isLike => 'replay_dislikes',
+        };
+
+        DB::table('reviews')->where('id', $review->id)->increment($column);
+
+        return $review->refresh();
+    }
+
+    public function rules(): array
+    {
+        return [
+            'target'  => ['required', new Enum(ReviewReactionTargetEnum::class)],
+            'is_like' => ['required', 'boolean'],
+        ];
+    }
+}
