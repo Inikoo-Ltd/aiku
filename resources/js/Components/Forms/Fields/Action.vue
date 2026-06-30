@@ -43,7 +43,7 @@ const handleClick = (action: Action|any) => {
                 isLoading.value = true
             },
             onSuccess: () => {
-                null
+                isLoading.value = false
             },
             onFinish: () => {
                 if(action.fullLoading) return

@@ -296,12 +296,26 @@ trait WithAllegroOAuth
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function refreshAccessToken(string $refreshToken): array
+    public function refreshAccessToken(string $refreshToken): void
     {
-        return $this->postToTokenEndpoint([
+        $result = $this->postToTokenEndpoint([
             'grant_type'    => 'refresh_token',
             'refresh_token' => $refreshToken,
         ]);
+
+        $accessTokenExpiresAt = now()->addSeconds($result['expires_in'])->timestamp;
+        $refreshTokenExpiresAt = isset($tokenData['refresh_token'])
+            ? now()->addDays(90)->timestamp
+            : null;
+
+        $this->update($this, [
+            'access_token' => Arr::get($result, 'access_token'),
+            'refresh_token' => Arr::get($result, 'refresh_token'),
+            'access_token_expire_in' => $accessTokenExpiresAt,
+            'refresh_token_expire_in' => $refreshTokenExpiresAt
+        ]);
+
+        $this->refresh();
     }
 
     /**
