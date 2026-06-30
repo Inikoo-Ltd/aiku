@@ -48,6 +48,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 use App\Actions\Iris\Json\GetBanner;
+use App\Actions\Iris\Reviews\FetchIrisReviewsInWebpage;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('basket/transaction-data', GetIrisBasketTransactions::class)->name('basket.transaction_data');
@@ -76,7 +77,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('brands', GetIrisBrands::class)->name('brands.index');
 
     Route::get('/fetch-basket', FetchIrisEcomBasket::class)->name('fetch_basket');
-
 
     Route::get('shop-tags', GetIrisShopTags::class)->name('shops.tags.index');
     Route::get('shop-brands', GetIrisShopBrands::class)->name('shops.brands.index');
@@ -114,4 +114,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     // Families list under department page
     Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+
+    Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
 });

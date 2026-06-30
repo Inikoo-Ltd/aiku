@@ -428,9 +428,9 @@ const responsiveClasses = computed(() => ({
 
 						<!-- Content -->
 						<div class="px-6 py-8 text-center">
-							<h2 v-if="modelValue.department.name" class="text-2xl font-bold text-slate-900 mb-4">
+							<!-- <h2 v-if="modelValue.department.name" class="text-2xl font-bold text-slate-900 mb-4">
 								{{ modelValue.department.name }}
-							</h2>
+							</h2> -->
 
 							<div class="relative text-slate-700 text-sm leading-6">
 								<div ref="mobileDescriptionRef" class="overflow-hidden transition-all duration-300"

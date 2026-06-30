@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAdjustments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAverageClv;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBrands;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCharges;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotesState;
@@ -34,6 +35,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateServices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingCountries;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingZoneSchemas;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSubDepartments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCreditTransactions;
@@ -92,6 +94,7 @@ class HydrateShops
         ShopHydrateAssets::run($shop);
         ShopHydrateVariants::run($shop);
         ShopHydrateServices::run($shop);
+        ShopHydrateCharges::run($shop);
         ShopHydrateSubDepartments::run($shop);
         ShopHydrateOutboxes::run($shop);
         ShopHydrateTopUps::run($shop);
@@ -127,6 +130,7 @@ class HydrateShops
         ShopHydrateTags::run($shop);
         ShopHydrateBrands::run($shop);
         ShopHydrateShippingCountries::run($shop);
+        ShopHydrateShippingZoneSchemas::run($shop);
 
         ShopHydrateDispatchedEmails::run($shop->id);
 
