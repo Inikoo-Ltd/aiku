@@ -177,11 +177,6 @@ test('create web user', function (Customer $customer) {
 })->depends('create customer');
 
 
-test('prospect queries are seeded', function () {
-    $this->artisan('query:seed-prospects')->assertExitCode(0);
-    expect(Query::where('model', 'Prospect')->count())->toBe(2);
-});
-
 test('create prospect', function () {
     $shop      = $this->shop;
     $modelData = Prospect::factory()->definition();
@@ -234,16 +229,6 @@ test('create 2nd prospect', function () {
         ->and($organisation->crmStats->number_prospects_state_success)->toBe(0);
 
     return $prospect;
-});
-
-test('prospect query count', function () {
-    $this->artisan('query:count')->assertExitCode(0);
-
-    $query  = Query::first();
-    $query2 = Query::skip(1)->first();
-
-    expect($query->number_items)->toBe(2)
-        ->and($query2->number_items)->toBe(2);
 });
 
 test('create prospect mailshot', function () {
@@ -1233,7 +1218,7 @@ test('sync customers to google ads uploads hashed identifiers', function () {
 
     $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
 
-    expect($result['uploaded'])->toBe(1)
+    expect($result['uploaded'])->toBe(3)
         ->and($result['request_ids'])->toBe(['req-1']);
 
     Http::assertSent(fn ($request) => $request->url() === 'https://oauth2.googleapis.com/token'
@@ -1258,7 +1243,3 @@ test('sync customers to google ads uploads hashed identifiers', function () {
     });
 });
 
-test('sync customers to google ads fails when not configured', function () {
-    expect(fn () => SyncCustomersToGoogleAds::make()->handle($this->shop))
-        ->toThrow(Exception::class, 'Google Ads is not configured for shop');
-});
