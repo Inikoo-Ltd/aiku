@@ -443,8 +443,9 @@ trait WithAllegroApiServices
 
     public function getProductByEan(string $ean): array
     {
-        return $this->makeApiRequest('GET', '/sale/categories', [], [
-            'mode' => $ean
+        return $this->makeApiRequest('GET', '/sale/products', [], [
+            'mode' => "GTIN",
+            'phrase' => $ean
         ]);
     }
 
