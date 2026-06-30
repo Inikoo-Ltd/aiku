@@ -54,7 +54,7 @@ class CallApiGlsEsShipping extends OrgAction
         $totalWeight = $parent->effective_weight / 1000;
         $totalParcel = count($parent->parcels ?? []);
 
-        if ($totalWeight > $limit && ($countryCode !== 'ES' && $totalParcel > 1)) {
+        if ($totalWeight > $limit && ( !in_array($countryCode,['ES','PT'])  && $totalParcel > 1)) {
             return $this->splitByWeightLimit($parent, $shipper, $limit, $totalWeight);
         }
 
@@ -493,7 +493,7 @@ class CallApiGlsEsShipping extends OrgAction
         $weight = $splitWeight ?? ($parent->effective_weight / 1000);
 
         $countryCode = Arr::get($parentResource, 'to_address.country_code');
-        if ($countryCode == 'ES') {
+        if ($countryCode == 'ES' ) {
             $service = '1';
         } else {
             $service = '74';
