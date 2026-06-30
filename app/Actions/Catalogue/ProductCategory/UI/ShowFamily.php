@@ -15,20 +15,24 @@ use App\Actions\Catalogue\Variant\IndexVariant;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
+use App\Actions\Catalogue\Review\UI\IndexReviews;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
+use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Reviews\ReviewRatingLabel;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,7 +56,6 @@ class ShowFamily extends OrgAction
         return $family;
     }
 
-
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): ProductCategory
     {
         $this->parent = $department;
@@ -62,7 +65,6 @@ class ShowFamily extends OrgAction
         return $this->handle($family);
     }
 
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): ProductCategory
     {
@@ -71,7 +73,6 @@ class ShowFamily extends OrgAction
 
         return $this->handle($family);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
@@ -121,7 +122,6 @@ class ShowFamily extends OrgAction
         ]);
     }
 
-
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
         $parentTag = [];
@@ -166,7 +166,6 @@ class ShowFamily extends OrgAction
                 ]
             ];
         }
-
 
         $iconLinks = [];
         if ($family->has_gr_vol_discount) {
@@ -213,6 +212,10 @@ class ShowFamily extends OrgAction
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
 
+            FamilyTabsEnum::REVIEWS->value => $this->tab == FamilyTabsEnum::REVIEWS->value ?
+                fn () => $this->getReviewsTabData($family)
+                : Inertia::lazy(fn () => $this->getReviewsTabData($family)),
+
             FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
                     fn () => GetRelatedProductCategories::run($family)
                     : Inertia::lazy(fn () => GetRelatedProductCategories::run($family)),
@@ -221,9 +224,9 @@ class ShowFamily extends OrgAction
                 fn () => GetRelatedProducts::run($family)
                 : Inertia::lazy(fn () => GetRelatedProducts::run($family)),
 
-                FamilyTabsEnum::VARIANTS->value => $this->tab === FamilyTabsEnum::VARIANTS->value ?
-                    fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))
-                    : Inertia::lazy(fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))),
+            FamilyTabsEnum::VARIANTS->value => $this->tab === FamilyTabsEnum::VARIANTS->value ?
+                fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))
+                : Inertia::lazy(fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))),
         ];
 
         return Inertia::render(
@@ -311,20 +314,50 @@ class ShowFamily extends OrgAction
         ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
         ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
         ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
-        ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value));
+        ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
+        ->table(IndexReviews::make()->tableStructure(prefix: FamilyTabsEnum::REVIEWS->value));
     }
-
 
     public function jsonResponse(ProductCategory $family): DepartmentsResource
     {
         return new DepartmentsResource($family);
     }
 
+    private function getReviewsTabData(ProductCategory $family): array
+    {
+        return [
+            'data' => ReviewsResource::collection(
+                IndexReviews::run(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value, scope: 'family')
+            ),
+            'rating_labels' => $this->ratingLabelsForShop($family->shop->id, ReviewContextEnum::FAMILY),
+            'reviewable_type' => 'ProductCategory',
+        ];
+    }
+
+    private function ratingLabelsForShop(int $shopId, ReviewContextEnum $context): array
+    {
+        return ReviewRatingLabel::query()
+            ->whereRaw('LOWER(model_type) = ?', ['shop'])
+            ->where('model_id', $shopId)
+            ->whereRaw('LOWER(review_context) = ?', [$context->value])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('dimension')
+            ->get(['dimension', 'label', 'is_required', 'weight'])
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
+                'dimension' => $reviewRatingLabel->dimension?->value ?? (string) $reviewRatingLabel->dimension,
+                'label' => (string) $reviewRatingLabel->label,
+                'is_required' => (bool) $reviewRatingLabel->is_required,
+                'weight' => (float) $reviewRatingLabel->weight,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function getBreadcrumbs(ProductCategory $family, string $routeName, array $routeParameters, $suffix = null): array
     {
         $headCrumb = function (ProductCategory $family, array $routeParameters, $suffix) {
             return [
-
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
@@ -338,12 +371,9 @@ class ShowFamily extends OrgAction
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
-
             ];
         };
-
 
         return match ($routeName) {
             'grp.org.shops.show.catalogue.families.show' =>
@@ -377,8 +407,6 @@ class ShowFamily extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -401,8 +429,6 @@ class ShowFamily extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -426,8 +452,6 @@ class ShowFamily extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -436,5 +460,4 @@ class ShowFamily extends OrgAction
             default => []
         };
     }
-
 }

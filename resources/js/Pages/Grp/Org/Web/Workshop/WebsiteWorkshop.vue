@@ -155,7 +155,7 @@ onUnmounted(() => stopSocketListener())
 </script>
 
 <template>
-  <PageHeading :data="pageHead">
+  <PageHeading :data="pageHead" ignoreIsolate>
     <template #button-publish="{ action }">
       <Button v-if="currentTab !== 'history'" v-bind="action" @click="onPublish">
         <template #loading v-if="loadingPublish">

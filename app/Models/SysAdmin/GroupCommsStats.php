@@ -99,6 +99,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_oos_in_order_notification
  * @property int $number_outboxes_type_new_offer
  * @property int $number_outboxes_type_finish_offer
+ * @property int $number_outboxes_type_review_reminder
+ * @property int $number_outboxes_type_new_review
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCommsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCommsStats newQuery()

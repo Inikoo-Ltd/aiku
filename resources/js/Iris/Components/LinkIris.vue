@@ -48,7 +48,6 @@ defineSlots<{
 const computedHref = computed<string | null>(() => {
   let raw = props.canonical_url ?? props.href
 
-
   if (typeof raw !== "string") return null
 
   raw = raw

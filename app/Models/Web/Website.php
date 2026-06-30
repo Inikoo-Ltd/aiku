@@ -71,7 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $launched_at
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property int|null $storefront_id
- * @property string|null $cloudflare_id
+ * @property string|null $cloudflare_zone_id
  * @property WebsiteCloudflareStatusEnum|null $cloudflare_status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
