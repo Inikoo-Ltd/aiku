@@ -36,6 +36,7 @@ enum OutboxMergeTagsEnum: string
     case RETINA_LOGIN_LINK = 'Retina Login Link';
     case WEB_USER_PASSWORD = 'Web User Password';
     case WEB_USER_CONTACT_NAME = 'Web User Contact Name';
+    case REVIEW_REMINDER_LINKS = 'Review Reminder Links';
 
 
     public static function tags(): array
@@ -132,7 +133,11 @@ enum OutboxMergeTagsEnum: string
             [
                 'name' => __('Web User Contact Name'),
                 'value' => '[Web User Contact Name]'
-            ]
+            ],
+            [
+                'name' => __('Review Reminder Links'),
+                'value' => '[Review Reminder Links]'
+            ],
 
 
         ];

@@ -12,14 +12,12 @@ const props = withDefaults(defineProps<{
 		href: string | null,
 		target: string, // "_self"|"_blank",
 		id: string | number | null,
-
 	},
 	defaultValue?: {
 		type: string,  // external|internal
 		href: string | null,
 		target: string, // "_self"|"_blank",
 		id: string | number | null,
-
 	},
 	props_radio_type?: any,
 	props_radio_target?: any,

@@ -20,12 +20,14 @@ use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
+use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
 use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
+use App\Actions\Reviews\AutoPublishReviews;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
@@ -482,6 +484,15 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
+            // $this->logSchedule(
+            //     $schedule->job(RunReviewReminderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+            //         monitorSlug: 'RunReviewReminderEmailBulkRuns',
+            //     ),
+            //     name: 'RunReviewReminderEmailBulkRuns',
+            //     type: 'job',
+            //     scheduledAt: now()->format('H:i')
+            // );
+
 
             $this->logSchedule(
                 $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
@@ -727,6 +738,16 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'LeaveGenerateBalances',
                 type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+
+            $this->logSchedule(
+                $schedule->job(AutoPublishReviews::makeJob())->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'AutoPublishReviews',
+                ),
+                name: 'AutoPublishReviews',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
         }
