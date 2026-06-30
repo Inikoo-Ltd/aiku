@@ -12,7 +12,8 @@ import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
 import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
 import { useStructuredData } from "@/Iris/Composables/useStructuredData"
-import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
+/* import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue" */
+import ReviewsIris from "../Components/IrisBlocks/ReviewsIris.vue"
 library.add(faCheck, faPlus, faMinus)
 
 const props = defineProps<{
@@ -29,6 +30,11 @@ const props = defineProps<{
     webpage_img: any,
     index_page: boolean,
     follow_link: boolean
+    reviews : any
+    allow_review_reaction : boolean
+    allow_review_reply_reaction : boolean
+    minimum_reviews_to_show : number
+    webpage_slug : string
 }>()
 
 defineOptions({ layout: LayoutIris })
@@ -41,6 +47,9 @@ const structuredDataScript = ref<HTMLScriptElement | null>(null)
 const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
 
 provide('webpage_data', props.webpage_data)
+provide('webpage_slug', props.webpage_slug)
+provide('minimum_reviews_to_show', props.minimum_reviews_to_show)
+provide('allow_review_reaction', props.allow_review_reaction)
 
 const checkScreenType = () => {
     const width = window.innerWidth
@@ -80,8 +89,6 @@ onBeforeUnmount(() => {
     removeStructuredDataScript(structuredDataScript.value)
     window.removeEventListener("resize", checkScreenType)
 })
-
-
 </script>
 
 <template>
@@ -126,7 +133,8 @@ onBeforeUnmount(() => {
             <div 
                 v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)">
                 <div>
-                    <ReviewByStore :code="'review-by-store'" />
+                 <!--    <ReviewByStore :code="'review-by-store'" /> -->
+                     <ReviewsIris :webpage_slug />
                 </div>
             </div>
 

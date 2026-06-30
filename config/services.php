@@ -72,7 +72,6 @@ return [
         'developer_token' => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
         'client_id'       => env('GOOGLE_CLIENT_ID'),
         'client_secret'   => env('GOOGLE_CLIENT_SECRET'),
-        'api_version'     => env('GOOGLE_ADS_API_VERSION', 'v18'),
     ],
     'slack'     => [
         'notifications' => [
@@ -110,5 +109,8 @@ return [
         'enabled' => env('MAXMIND_ENABLED', false),
         'account_id' => env('MAXMIND_ACCOUNT_ID'),
         'license_key' => env('MAXMIND_LICENSE_KEY'),
-    ]
+    ],
+    'discord' => [
+        'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+    ],
 ];

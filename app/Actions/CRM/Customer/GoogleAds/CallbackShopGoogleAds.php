@@ -10,7 +10,6 @@ namespace App\Actions\CRM\Customer\GoogleAds;
 use App\Actions\CRM\Customer\GoogleAds\Traits\WithGoogleAdsOAuth;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;

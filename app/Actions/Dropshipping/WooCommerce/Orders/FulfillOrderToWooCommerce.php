@@ -25,6 +25,10 @@ class FulfillOrderToWooCommerce extends OrgAction
 
     public function handle(Order $order): void
     {
+        if ($order->is_bypass_platform_update) {
+            return;
+        }
+
         $fulfillOrderId = Arr::get($order->data, 'woo_order.id');
 
         if (!$fulfillOrderId) {

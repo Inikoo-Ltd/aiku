@@ -57,7 +57,7 @@ class StoreProductToAllegro extends RetinaAction
             $product = $portfolio->item;
 
             $productSearch = [];
-            if($product->barcode) {
+            if ($product->barcode) {
                 $productSearch = $allegroUser->getProductByEan($product->barcode);
             }
 

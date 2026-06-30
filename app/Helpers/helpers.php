@@ -24,6 +24,33 @@ if (!function_exists('escapeSQLSearch')) {
     }
 }
 
+if (!function_exists('maskName')) {
+    function maskName(?string $name): string
+    {
+        if (!$name) return '';
+        
+        $parts = preg_split('/\s+/', trim($name));
+
+        return collect($parts)
+            ->map(function ($part) {
+                $length = mb_strlen($part);
+
+                if ($length <= 1) {
+                    return $part;
+                }
+
+                if ($length === 2) {
+                    return mb_substr($part, 0, 1).'*';
+                }
+
+                return mb_substr($part, 0, 1)
+                    .str_repeat('*', $length - 2)
+                    .mb_substr($part, -1);
+            })
+            ->implode(' ');
+    }
+}
+
 if (!function_exists('getUnformattedTaxNumber')) {
     function getUnformattedTaxNumber(?string $formattedTaxNumber = null): array|null
     {

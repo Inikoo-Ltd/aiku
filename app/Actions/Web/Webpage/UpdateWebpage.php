@@ -124,7 +124,7 @@ class UpdateWebpage extends OrgAction
             data_forget($modelData, 'state_data');
 
         }
-        
+
         if (Arr::has($modelData, 'webpage_title_prefix')) {
             data_set($modelData, 'settings.webpage.title_prefix', Arr::pull($modelData, 'webpage_title_prefix', null));
         }

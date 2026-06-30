@@ -17,7 +17,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class CheckIfCountryRegionsIsBlocked
 {
-
     use AsAction;
 
     public function handle($request): bool
@@ -30,7 +29,7 @@ class CheckIfCountryRegionsIsBlocked
                 $ip  = $request->ip();
                 $key = "website-geo-blocked-ips:{$request->input('website')?->id}:$countryFromCloudFlare:$ip";
 
-                $blockedData = Cache::remember($key, 28800, fn() => $this->isBlocked(
+                $blockedData = Cache::remember($key, 28800, fn () => $this->isBlocked(
                     Arr::get($request->input('blocked_country_regions'), $countryFromCloudFlare),
                     $countryFromCloudFlare,
                     $ip

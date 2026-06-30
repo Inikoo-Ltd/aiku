@@ -247,7 +247,7 @@ watch(target, () => {
         <Modal :isOpen="isOpenModal" width="w-full max-w-3xl" @close="closeModal">
             <div class="p-1 space-y-6">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans("Create Discount Shipping") }}</h2>
-                
+
                 <!-- offer name -->
                 <div class="space-y-2">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
@@ -316,7 +316,7 @@ watch(target, () => {
 
                     <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
                                     :currency="props.shop_data.currency_code" locale="en-US"
-                                    :placeholder="trans('Enter minimum amount')" />                    
+                                    :placeholder="trans('Enter minimum amount')" />
                 </div>
 
                 <!-- Quick apply -->
@@ -351,7 +351,7 @@ watch(target, () => {
                                 :information="trans('If start date is empty, will start immediately')" />
                             :
                         </label>
-                        
+
                         <DatePicker v-model="startDate" showButtonBar showIcon />
                     </div>
 
@@ -364,9 +364,9 @@ watch(target, () => {
                                 :information="trans('If end date is empty, will treat as permanent')" />
                             :
                         </label>
-                        
+
                         <DatePicker v-model="endDate" showButtonBar showIcon :minDate="startDate ?? undefined"/>
-                        
+
                         <p v-if="startDate && endDate && endDate < startDate" class="text-red-500 text-sm">
                             End date must be after start date
                         </p>

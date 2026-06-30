@@ -18,10 +18,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * App\Models\Comms\EmailTrackingEvent
  *
  * @property int $id
+ * @property int $group_id
+ * @property int $organisation_id
  * @property int $dispatched_email_id
  * @property EmailTrackingEventTypeEnum $type
  * @property array<array-key, mixed> $data
  * @property string|null $created_at
+ * @property string|null $updated_at
+ * @property string|null $fetched_at
+ * @property string|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $ip
  * @property string|null $device

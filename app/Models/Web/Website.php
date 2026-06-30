@@ -58,7 +58,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $structure
  * @property array<array-key, mixed> $layout
  * @property array<array-key, mixed> $published_layout
- * @property array<array-key, mixed> $blocked_country_regions
  * @property int|null $unpublished_header_snapshot_id
  * @property int|null $live_header_snapshot_id
  * @property string|null $published_header_checksum
@@ -73,7 +72,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property int|null $storefront_id
  * @property string|null $cloudflare_zone_id
- * @property string|null $cloudflare_token
  * @property WebsiteCloudflareStatusEnum|null $cloudflare_status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -120,6 +118,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_department_description_snapshot_id
  * @property int|null $live_department_description_snapshot_id
  * @property string|null $published_department_description_checksum
+ * @property string|null $cloudflare_token
+ * @property array<array-key, mixed> $blocked_country_regions
  * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Web\Crawl> $crawls

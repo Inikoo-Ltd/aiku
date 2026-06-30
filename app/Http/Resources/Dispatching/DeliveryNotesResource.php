@@ -82,7 +82,7 @@ class DeliveryNotesResource extends JsonResource
         }
 
         $totalParcels = is_array($this->parcels) ? count($this->parcels) : 0;
-        
+
         return [
             'id'                          => $this->id,
             'slug'                        => $this->slug,
