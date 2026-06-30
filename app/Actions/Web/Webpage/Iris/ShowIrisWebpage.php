@@ -8,9 +8,13 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -63,6 +67,13 @@ class ShowIrisWebpage
         $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
 
         $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        $reviews = [];
+        
+        if ($webpage->type === WebpageTypeEnum::STOREFRONT) {
+            $reviews = IndexReviewsInIris::run(parent: $webpage->shop, prefix: $webpage->title);
+        } elseif ($webpage->model instanceof Product || ($webpage->model instanceof ProductCategory && $webpage->sub_type == ProductCategoryTypeEnum::FAMILY->value)) {
+            $reviews = IndexReviewsInIris::run(parent: $webpage->model, prefix: $webpage->title);
+        }
 
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
@@ -89,8 +100,8 @@ class ShowIrisWebpage
             'index_page'                  => $webpage->index_page,
             'follow_link'                 => $webpage->follow_link,
             'webpage_slug'                => $webpage->slug,
+            'reviews'                     => ReviewsInIrisResource::collection($reviews),
             'is_different_when_logged_in' => $webpage->is_different_when_logged_in,
-
         ];
 
         return array_merge($baseWebpageData, [
