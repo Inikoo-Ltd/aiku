@@ -35,6 +35,7 @@ const props = defineProps<{
     allow_review_reaction : boolean
     allow_review_reply_reaction : boolean
     minimum_reviews_to_show : number
+    webpage_slug : string
 }>()
 
 defineOptions({ layout: LayoutIris })
@@ -86,8 +87,6 @@ onBeforeUnmount(() => {
     removeStructuredDataScript(structuredDataScript.value)
     window.removeEventListener("resize", checkScreenType)
 })
-
-console.log('sdsdsds',props)
 </script>
 
 <template>
@@ -133,7 +132,7 @@ console.log('sdsdsds',props)
                 v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true) && minimum_reviews_to_show <= reviews.data.length">
                 <div>
                  <!--    <ReviewByStore :code="'review-by-store'" /> -->
-                     <ReviewsIris :reviews="reviews" :review_summary :allow_review_reaction/>
+                     <ReviewsIris :webpage_slug :review_summary :allow_review_reaction/>
                 </div>
             </div>
 
