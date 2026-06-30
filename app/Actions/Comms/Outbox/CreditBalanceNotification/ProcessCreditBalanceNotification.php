@@ -35,8 +35,8 @@ class ProcessCreditBalanceNotification extends OrgAction
             return;
         }
 
-        // Don't send if current credit balance is go down
-        if ($currentCreditBalance?->amount < 0) {
+        // Don't send if current credit balance is go down and not positive
+        if (!($currentCreditBalance?->amount > 0)) {
             return;
         }
 
@@ -53,6 +53,7 @@ class ProcessCreditBalanceNotification extends OrgAction
         // Determine styling based on amount
         $amountColor = $currentAmount < 0 ? '#E74C3C' : '#27AE60';
         $amountSign = $currentAmount < 0 ? '-' : '';
+        $previousAmountSign = $previousAmount < 0 ? '- ' : '';
         $changeSymbol = $currentAmount > 0 ? '+' : '-';
 
         // Format amounts
@@ -70,7 +71,7 @@ class ProcessCreditBalanceNotification extends OrgAction
             . '</span>';
 
         $paymentBalancePreview = '<span style="color: #333;">'
-            . $currencySymbol . $formattedPreviousAmount
+            . $previousAmountSign . $currencySymbol . $formattedPreviousAmount
             . '</span> '
             . $changeSymbol . ' '
             . $previewBalanceAmountHtml

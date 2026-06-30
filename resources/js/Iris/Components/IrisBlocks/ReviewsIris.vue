@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from "vue"
+import { computed, ref, onMounted, onBeforeUnmount, inject } from "vue"
 import axios from "axios"
 import Rating from "primevue/rating"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -13,13 +13,15 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { router } from "@inertiajs/vue3"
 
 const props = defineProps<{
-    review_summary : any
-    allow_review_reaction : boolean
     webpage_slug? : string
 }>()
 
 const reviewsData = ref({ data: [] as any[], meta: { current_page: 0, last_page: 1, total: 0 } })
+const reviewSummary = ref<any>(null)
 const isFetchingMoreReviews = ref(false)
+const minimum_reviews_to_show = inject<number>("minimum_reviews_to_show", 0)
+const allow_review_reaction = inject<number>("allow_review_reaction", 0)
+const layout = inject("layout", {})
 
 const fetchMoreReviews = async () => {
     const currentPage = reviewsData.value.meta?.current_page ?? 1
@@ -44,6 +46,8 @@ const fetchMoreReviews = async () => {
             ...data.reviews,
             data: [...reviewsData.value.data, ...fetchedReviews],
         }
+        reviewSummary.value = data?.review_summary ?? reviewSummary.value
+        console.log('sdsdsd',data)
     } catch (error) {
         console.error(error)
     } finally {
@@ -171,11 +175,13 @@ const isNextDisabled = computed(() => {
 
 const isInitialLoading = computed(() => isFetchingMoreReviews.value && reviewsData.value.data.length === 0)
 
+const totalReviews = computed(() => reviewsData.value.meta?.total ?? 0)
+
 
 </script>
 
 <template>
-    <div class="editor-class overflow-hidden">
+    <div class="editor-class overflow-hidden" v-if="isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length">
         <div v-if="isInitialLoading" class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary skeleton -->
             <div class="flex min-h-[150px] flex-col items-center justify-center gap-3 px-6 py-6 text-center lg:col-span-1">
@@ -209,7 +215,7 @@ const isInitialLoading = computed(() => isFetchingMoreReviews.value && reviewsDa
 
                 <div class="mt-3 flex items-end gap-1">
                     <span class="text-4xl font-bold leading-none">
-                         {{ parseInt(review_summary) }}
+                         {{ parseInt(reviewSummary) }}
                     </span>
 
                     <span class="pb-1 text-base text-gray-500">
@@ -217,7 +223,7 @@ const isInitialLoading = computed(() => isFetchingMoreReviews.value && reviewsDa
                     </span>
                 </div>
 
-                <Rating :modelValue="parseInt(review_summary)" readonly :cancel="false" class="review-rating mt-3" />
+                <Rating :modelValue="parseInt(reviewSummary)" readonly :cancel="false" class="review-rating mt-3" />
 
                 <div class="mt-3 text-xs text-gray-500">
                     {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
@@ -257,7 +263,7 @@ const isInitialLoading = computed(() => isFetchingMoreReviews.value && reviewsDa
                                 {{ useFormatTime(review.date) }}
                             </div>
 
-                            <div v-if="allow_review_reaction" class="flex items-center gap-2">
+                            <div v-if="allow_review_reaction && layout?.iris?.is_logged_in" class="flex items-center gap-2">
                                 <button @click="() => toggleReaction(review, 'review', true)"
                                     :disabled="reactingKeys[`${review.id}-review`] || reactions[review.id] === 'like'"
                                     class="flex h-7 items-center gap-1 rounded px-2 transition disabled:cursor-not-allowed" :class="reactions[review.id] === 'like'
