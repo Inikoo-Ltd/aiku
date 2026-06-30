@@ -27,6 +27,7 @@ const props = defineProps<{
         placeholder?: string
         information?: string
         required?: boolean
+        hideFollowOrganisation?: boolean
     }
 }>()
 
@@ -123,6 +124,7 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
 <template>
     <div>
         <label
+            v-if="!fieldData?.hideFollowOrganisation"
             class="flex items-center gap-2 mb-4 cursor-pointer select-none w-fit"
             :class="{ 'opacity-100': true }"
         >

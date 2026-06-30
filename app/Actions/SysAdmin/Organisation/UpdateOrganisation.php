@@ -110,6 +110,11 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.hr.probation_period_days", Arr::pull($modelData, 'hr_probation_period_days'));
         }
 
+        if (Arr::has($modelData, 'banned_countries')) {
+            $bannedCountries = Arr::pull($modelData, 'banned_countries');
+            data_set($modelData, 'banned_country_regions', Arr::get($bannedCountries, 'banned_list', []));
+        }
+
 
         $organisation = $this->update($organisation, $modelData, ['data', 'settings']);
 
@@ -165,8 +170,12 @@ class UpdateOrganisation extends OrgAction
             'allow_waiting'                         => ['sometimes', 'boolean'],
             'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
-
-
+            'banned_countries'                      => ['sometimes', 'nullable', 'array'],
+            'banned_countries.banned_list'          => ['sometimes', 'nullable', 'array'],
+            'banned_countries.banned_list.*'        => ['required', 'array'],
+            'banned_countries.banned_list.*.postcode' => ['sometimes', 'string', 'nullable'],
+            'banned_countries.banned_list.*.billing'  => ['required', 'boolean'],
+            'banned_countries.banned_list.*.delivery' => ['required', 'boolean'],
         ];
 
         if (!$this->strict) {

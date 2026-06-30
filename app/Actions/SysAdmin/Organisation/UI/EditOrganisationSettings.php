@@ -249,6 +249,24 @@ class EditOrganisationSettings extends OrgAction
                             ],
                         ],
                         [
+                            'label' => __('Banned Countries') . ' (' . __('territories') . ')',
+                            'icon' => 'fa-light fa-ban',
+                            'fields' => [
+                                'banned_countries' => [
+                                    'full' => true,
+                                    'hidden' => app()->environment('production'),
+                                    'type' => 'banned-countries',
+                                    'label' => __('Banned Countries'),
+                                    'required' => true,
+                                    'hideFollowOrganisation' => true,
+                                    'value' => [
+                                        'banned_list' => $organisation->banned_country_regions,
+                                    ],
+                                    'options' => GetCountriesOptions::run(true, true),
+                                ],
+                            ],
+                        ],
+                        [
                             'label' => __('Working Hours'),
                             'icon' => 'fa-light fa-clock',
                             'fields' => [
