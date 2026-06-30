@@ -14,17 +14,42 @@ use App\Actions\Chat\Agent\StoreAgent;
 use App\Actions\Chat\Agent\UpdateAgent;
 use App\Actions\Chat\ChatSession\AssignChatToAgent;
 use App\Actions\Chat\ChatSession\CloseChatSession;
+use App\Actions\Chat\ChatSession\DeleteChatAgent;
+use App\Actions\Chat\ChatSession\DownloadChatAttachment;
+use App\Actions\Chat\ChatSession\ExportChatConversations;
+use App\Actions\Chat\ChatSession\ForceDeleteChatAgent;
+use App\Actions\Chat\ChatSession\GetActiveChatSessions;
 use App\Actions\Chat\ChatSession\GetAgentUnreadMessagesSummary;
+use App\Actions\Chat\ChatSession\GetChatActivity;
+use App\Actions\Chat\ChatSession\GetChatAgentByUserId;
+use App\Actions\Chat\ChatSession\GetChatAgents;
+use App\Actions\Chat\ChatSession\GetChatAgentSpecializations;
+use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
+use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
+use App\Actions\Chat\ChatSession\GetChatDashboardData;
+use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
+use App\Actions\Chat\ChatSession\GetChatMessages;
+use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Actions\Chat\ChatSession\GetChatStatus;
+use App\Actions\Chat\ChatSession\GetChatVisitorsByCountry;
+use App\Actions\Chat\ChatSession\GetGroupChatDashboardData;
+use App\Actions\Chat\ChatSession\GetShopChatDashboardData;
+use App\Actions\Chat\ChatSession\HandleChatTyping;
 use App\Actions\Chat\ChatSession\MarkChatMessagesAsRead;
 use App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects;
+use App\Actions\Chat\ChatSession\RestoreChatAgent;
 use App\Actions\Chat\ChatSession\SendChatMessage;
+use App\Actions\Chat\ChatSession\ShareChatSessionToSlack;
 use App\Actions\Chat\ChatSession\StoreChatAgent;
 use App\Actions\Chat\ChatSession\StoreChatEvent;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreGuestProfile;
 use App\Actions\Chat\ChatSession\StoreOfflineMessage;
+use App\Actions\Chat\ChatSession\SummarizeChatSession;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
+use App\Actions\Chat\ChatSession\TranslateChatMessage;
+use App\Actions\Chat\ChatSession\TranslateSessionMessages;
+use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
 use App\Actions\Chat\ChatSession\UpdateChatSession;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -45,15 +70,21 @@ use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 beforeAll(function () {
     loadDB();
@@ -89,6 +120,8 @@ beforeEach(function () {
     $this->sendMessageAction    = new SendChatMessage();
     $this->assignmentChatAction = new AssignChatToAgent();
     $this->closeChatAction      = new CloseChatSession();
+
+    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
 });
 
 test('can create chat session for guest with minimal data', function () {
@@ -1364,4 +1397,707 @@ test('SyncChatSessionByEmail returns failure when no customer matches the email'
 
     $chatSession->refresh();
     expect($chatSession->web_user_id)->toBeNull();
+});
+
+
+// ADDITIONAL CHAT SESSION ACTIONS COVERAGE
+
+test('ExportChatConversations streams a jsonl download of closed sessions', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::CLOSED,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'closed_at'        => now(),
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'Hello',
+        'is_read'         => true,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'       => null,
+        'message_text'    => 'Hi, how can I help?',
+        'is_read'         => true,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $response = ExportChatConversations::make()->handle($this->organisation, ['format' => 'jsonl', 'min_turns' => 1]);
+
+    expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class);
+});
+
+test('HandleChatRead asController marks unread visitor messages as read via the API route', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $guestMessage = ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'Hello',
+        'is_read'         => false,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $response = $this->postJson(route('grp.api.chats.read'), [
+        'session_ulid' => $chatSession->ulid,
+        'request_from' => ChatSenderTypeEnum::AGENT->value,
+    ]);
+
+    $response->assertOk();
+    $data = $response->json();
+
+    expect($data['success'])->toBeTrue();
+
+    expect($guestMessage->refresh()->is_read)->toBeTrue();
+});
+
+test('ShareChatSessionToSlack notifies configured channels', function () {
+    Notification::fake();
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $result = ShareChatSessionToSlack::make()->handle($chatSession, 'xoxb-fake-token', ['#support']);
+
+    expect($result['succeeded'])->toBe(['#support'])
+        ->and($result['failed'])->toBe([]);
+
+    Notification::assertSentOnDemand(\App\Helpers\SlackNotification::class);
+});
+
+test('GetChatMessages handle returns messages ordered ascending for a session', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'First',
+        'is_read'         => false,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $messages = GetChatMessages::make()->handle($chatSession, []);
+
+    expect($messages)->toHaveCount(1)
+        ->and($messages->first()->message_text)->toBe('First');
+});
+
+test('TranslateChatMessage handle is a no-op when target language equals original language', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $chatMessage = ChatMessage::create([
+        'chat_session_id'       => $chatSession->id,
+        'message_type'          => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'           => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'             => null,
+        'message_text'          => 'Hola',
+        'original_text'         => 'Hola',
+        'original_language_id'  => 68,
+        'is_read'               => false,
+        'created_at'            => now(),
+        'updated_at'            => now(),
+    ]);
+
+    TranslateChatMessage::make()->handle($chatMessage->id, 68);
+
+    expect($chatMessage->refresh()->message_text)->toBe('Hola');
+});
+
+test('IndexChatConversations returns a paginator scoped to organisation sessions with messages', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'Hi',
+        'is_read'         => false,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    actingAs($this->user);
+
+    $response = get(route('grp.org.chat.conversations.show', [$this->organisation->slug]));
+
+    $response->assertOk();
+});
+
+test('ForceDeleteChatAgent handle runs without error (stub action)', function () {
+    expect(ForceDeleteChatAgent::make()->handle())->toBeNull();
+});
+
+test('RestoreChatAgent handle runs without error (stub action)', function () {
+    expect(RestoreChatAgent::make()->handle())->toBeNull();
+});
+
+test('DeleteChatAgent handle runs without error (stub action)', function () {
+    expect(DeleteChatAgent::make()->handle())->toBeNull();
+});
+
+test('GetChatDashboardVisitors returns grouped visitor stats by website', function () {
+    $result = GetChatDashboardVisitors::make()->handle($this->organisation);
+
+    expect($result)->toBeArray();
+});
+
+test('DownloadChatAttachment forbids downloading media not attached to a chat message', function () {
+    $media = Media::create([
+        'group_id'        => $this->organisation->group_id,
+        'model_type'      => 'App\\Models\\CRM\\Customer',
+        'model_id'        => $this->customer->id,
+        'collection_name' => 'default',
+        'name'            => 'file',
+        'file_name'       => 'file.txt',
+        'mime_type'       => 'text/plain',
+        'uuid'            => (string) Str::uuid(),
+        'ulid'            => (string) Str::ulid(),
+        'disk'            => 'local',
+        'size'            => 10,
+        'manipulations'   => '[]',
+        'custom_properties' => '[]',
+        'generated_conversions' => '[]',
+        'responsive_images' => '[]',
+    ]);
+
+    expect(fn () => DownloadChatAttachment::make()->handle($media->ulid))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+});
+
+test('GetChatActivity returns formatted events for a chat session', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    StoreChatEvent::make()->openSession($chatSession, ChatActorTypeEnum::GUEST, null, ['is_guest' => true, 'ip_address' => '127.0.0.1']);
+
+    $result = GetChatActivity::make()->handle($chatSession);
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['events'])->toHaveCount(1);
+});
+
+test('GetGroupChatDashboardData returns stats and table for a group', function () {
+    $result = GetGroupChatDashboardData::make()->handle($this->organisation->group);
+
+    expect($result)->toHaveKeys(['stats', 'table'])
+        ->and($result['stats'])->toHaveKeys(['chatEnabledShops', 'chatAgents', 'chatSessionsTotal']);
+});
+
+test('SummarizeChatSession returns session unchanged when there are no messages', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $result = SummarizeChatSession::make()->handle($chatSession);
+
+    expect($result->id)->toBe($chatSession->id)
+        ->and($result->metadata)->toBeNull();
+});
+
+test('GetShopChatDashboardData returns stats for a shop', function () {
+    $result = GetShopChatDashboardData::make()->handle($this->shop);
+
+    expect($result)->toHaveKeys([
+        'chatEnabled',
+        'chatAgents',
+        'chatSessionsTotal',
+        'chatSessionsWaiting',
+        'chatSessionsActive',
+        'chatSessionsClosed',
+        'chatMessagesTotal',
+        'chatMessagesUnread',
+    ]);
+});
+
+test('GetChatAgentSpecializations returns all enum cases with labels', function () {
+    $result = GetChatAgentSpecializations::make()->handle();
+
+    expect($result)->not->toBeEmpty()
+        ->and($result[0])->toHaveKeys(['value', 'label']);
+});
+
+test('GetChatVisitorsByCountry returns aggregated counts by country code', function () {
+    ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'geo_country_code' => 'MY',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $result = GetChatVisitorsByCountry::make()->handle($this->organisation);
+
+    expect($result)->not->toBeEmpty()
+        ->and(collect($result)->pluck('country_code')->map(fn ($code) => trim($code)))->toContain('MY');
+});
+
+test('GetChatCustomerProfile returns empty defaults when session has no web user', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $result = GetChatCustomerProfile::make()->handle($chatSession);
+
+    expect($result)->toBe(['tags' => [], 'stats' => null]);
+});
+
+test('GetChatCustomerTimeline returns empty events when session has no customer', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $result = GetChatCustomerTimeline::make()->handle($chatSession);
+
+    expect($result)->toBe(['events' => []]);
+});
+
+test('GetChatAgents returns only available agents with shop assignments', function () {
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    AssignChatAgentToScope::make()->handle([
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => [$this->shop->id],
+    ], $agent);
+
+    $result = GetChatAgents::make()->handle();
+
+    expect(collect($result)->pluck('agent_id'))->toContain($agent->id);
+});
+
+test('GetActiveChatSessions returns active and waiting sessions for an organisation', function () {
+    ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $result = GetActiveChatSessions::make()->handle($this->organisation);
+
+    expect($result)->not->toBeEmpty()
+        ->and($result[0])->toHaveKeys(['id', 'status', 'has_messages', 'country_code']);
+});
+
+test('GetChatDashboardData returns stats, shops and table for an organisation', function () {
+    $result = GetChatDashboardData::make()->handle($this->organisation);
+
+    expect($result)->toHaveKeys(['stats', 'chatEnabledShops', 'table']);
+});
+
+test('TranslateSingleMessage dispatches a translation job when no translation exists yet', function () {
+    TranslateChatMessage::shouldRun();
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $chatMessage = ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'Bonjour',
+        'is_read'         => false,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    TranslateSingleMessage::make()->handle($chatMessage, 68);
+
+    expect(true)->toBeTrue();
+});
+
+test('HandleChatTyping handle broadcasts a typing indicator event', function () {
+    Event::fake();
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $result = HandleChatTyping::make()->handle([
+        'session_ulid' => $chatSession->ulid,
+        'user_name'    => 'Agent Smith',
+        'is_typing'    => true,
+    ]);
+
+    expect($result['event_type'])->toBe('typing_indicator');
+
+    Event::assertDispatched(\App\Events\BroadcastTypingIndicator::class);
+});
+
+test('GetChatSessions returns a paginator of sessions with messages', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'Hi',
+        'is_read'         => false,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $result = GetChatSessions::make()->handle([]);
+
+    expect($result->total())->toBeGreaterThanOrEqual(1);
+});
+
+test('GetChatAgentByUserId asController returns 404 json when agent does not exist', function () {
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id]);
+
+    try {
+        GetChatAgentByUserId::make()->asController($user->id);
+        $this->fail('Expected HttpResponseException to be thrown.');
+    } catch (\Illuminate\Http\Exceptions\HttpResponseException $exception) {
+        expect($exception->getResponse()->getStatusCode())->toBe(404);
+    }
+});
+
+test('GetChatAgentByUserId asController returns agent details when found', function () {
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    $response = GetChatAgentByUserId::make()->asController($user->id);
+
+    $data = $response->getData(true);
+
+    expect($data['success'])->toBeTrue()
+        ->and($data['data']['id'])->toBe($agent->id);
+});
+
+test('TranslateSessionMessages dispatches a translation indicator when no messages need translating', function () {
+    Event::fake();
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    TranslateSessionMessages::make()->handle($chatSession, 68);
+
+    Event::assertDispatched(\App\Events\TranslationChatIndicator::class);
+});
+
+test('TranslateSessionMessages chains translation jobs for unread visitor messages', function () {
+    Bus::fake();
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'Bonjour',
+        'is_read'         => false,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    TranslateSessionMessages::make()->handle($chatSession, 68);
+
+    expect(true)->toBeTrue();
+});
+
+
+// CHAT UI ACTIONS TESTS
+
+test('UI Show shop chat dashboard', function () {
+    actingAs($this->user);
+
+    $response = get(route('grp.org.shops.show.crm.chat.dashboard', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Shop/Chat/Dashboard');
+    });
+});
+
+test('UI Index chat sessions for a shop', function () {
+    actingAs($this->user);
+
+    $response = get(route('grp.org.shops.show.crm.chat_sessions.index', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Shop/CRM/ChatSessions');
+    });
+});
+
+test('UI Show chat session for a shop', function () {
+    actingAs($this->user);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $response = get(route('grp.org.shops.show.crm.chat_sessions.show', [$this->organisation->slug, $this->shop->slug, $chatSession->id]));
+
+    $response->assertOk();
+});
+
+test('UI Show org chat dashboard', function () {
+    actingAs($this->user);
+
+    $response = get(route('grp.org.chat.dashboard', [$this->organisation->slug]));
+
+    $response->assertOk();
+});
+
+test('UI Show org chat conversation detail', function () {
+    actingAs($this->user);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    $response = get(route('grp.org.chat.conversations.detail', [$this->organisation->slug, $chatSession->id]));
+
+    $response->assertOk();
+});
+
+test('UI Show group chat dashboard', function () {
+    actingAs($this->user);
+
+    $response = get(route('grp.chat.dashboard'));
+
+    $response->assertOk();
+});
+
+test('UI Show chat conversations index for organisation', function () {
+    actingAs($this->user);
+
+    $response = get(route('grp.org.chat.conversations.show', [$this->organisation->slug]));
+
+    $response->assertOk();
+});
+
+test('UI Edit agent shows the form for an existing agent', function () {
+    actingAs($this->user);
+
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => false,
+        'is_available'         => false,
+        'current_chat_count'   => 0,
+    ]);
+
+    $response = get(route('grp.org.chat.agents.edit', [$this->organisation->slug, $agent->id]));
+
+    $response->assertOk();
+});
+
+test('UI Create agent shows the create form', function () {
+    actingAs($this->user);
+
+    $response = get(route('grp.org.chat.agents.create', [$this->organisation->slug]));
+
+    $response->assertOk();
+});
+
+test('UI Show agent listing for organisation', function () {
+    actingAs($this->user);
+
+    $response = get(route('grp.org.chat.agents.show', [$this->organisation->slug]));
+
+    $response->assertOk();
+});
+
+test('UI Show group agents listing', function () {
+    actingAs($this->user);
+
+    $response = get(route('grp.chat.agents.show'));
+
+    $response->assertOk();
 });

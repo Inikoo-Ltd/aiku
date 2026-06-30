@@ -19,8 +19,8 @@ class GetChatDashboardVisitors
 {
     use AsAction;
 
-    public const WINDOW_HOURS            = 24;
-    public const IDLE_THRESHOLD_MINUTES  = 10;
+    public const int WINDOW_HOURS            = 24;
+    public const int IDLE_THRESHOLD_MINUTES  = 10;
 
     public function handle(Organisation $organisation, ?string $date = null, array $shopIds = []): array
     {
