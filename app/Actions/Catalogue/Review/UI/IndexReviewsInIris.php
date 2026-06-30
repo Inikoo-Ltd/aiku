@@ -80,7 +80,7 @@ class IndexReviewsInIris extends OrgAction
             ->where('reviews.review_status', ReviewStatusEnum::APPROVED);
     }
 
-    public function avgReview(Shop|ProductCategory|Product $parent): String
+    public function avgReview(Shop|ProductCategory|Product $parent): String|null
     {
         $query = Review::query();
 

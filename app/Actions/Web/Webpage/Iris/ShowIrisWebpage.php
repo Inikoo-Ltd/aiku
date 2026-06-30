@@ -104,7 +104,7 @@ class ShowIrisWebpage
             'follow_link'                       => $webpage->follow_link,
             'webpage_slug'                      => $webpage->slug,
             'reviews'                           => ReviewsInIrisResource::collection($reviews),
-            'review_summary'                    => $avgReview,
+            'review_summary'                    => $avgReview ?? 0,
             'allow_review_reaction'             => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
             'allow_review_reply_reaction'       => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
             'minimum_reviews_to_show'           => Arr::get($webpage->shop->settings, 'reviews.minimum_reviews_to_show', 0),
