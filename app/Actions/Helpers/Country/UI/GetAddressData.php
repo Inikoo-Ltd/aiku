@@ -17,13 +17,22 @@ class GetAddressData
 {
     use AsObject;
 
-    public function handle(?Shop $shop = null): array
+    public function handle(?Shop $shop = null, bool $ignoreForbiddenDispatchCountries = false): array
     {
         $selectOptions = [];
+
         if ($shop) {
-            $countries = Country::where('status', true)->where('show_in_address', true)->whereNotIn('id', $shop->forbidden_dispatch_countries ?? [])->get();
+            $countries = Country::where('status', true)
+                ->where('show_in_address', true)
+                ->when(
+                    !$ignoreForbiddenDispatchCountries, 
+                    fn ($q) => $q->whereNotIn('id', $shop->forbidden_dispatch_countries ?? [])
+                )
+                ->get();
         } else {
-            $countries = Country::where('status', true)->where('show_in_address', true)->get();
+            $countries = Country::where('status', true)
+                ->where('show_in_address', true)
+                ->get();
         }
         /** @var Country $country */
         foreach ($countries as $country) {

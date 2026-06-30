@@ -28,13 +28,10 @@ class ShowStandAloneRegistration extends IrisAction
         $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->get();
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
-        $billingBannedCountryCodes = collect($shop->banned_country_regions ?? [])
-            ->filter(fn ($region) => Arr::get($region, 'billing') === true)
-            ->keys()
-            ->all();
+        $bannedCountries = array_keys(array_filter($shop->banned_country_regions, fn ($item) => $item['billing'] && empty($item['postcode'])));
+
         $countriesAddressData = array_filter(
-            GetAddressData::run($shop),
-            fn (array $country) => !in_array($country['code'], $billingBannedCountryCodes),
+            GetAddressData::run($shop, true), fn (array $country) => !in_array($country['code'], $bannedCountries),
         );
 
         $webUser = $request->user();

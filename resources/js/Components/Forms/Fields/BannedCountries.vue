@@ -199,7 +199,14 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
                             :disabled="data.read_only || isDisabled"
                             placeholder="/^2/"
                             class="w-full font-mono"
+                            :invalid="get(form, ['errors', `${fieldName}.banned_list.${data.country}.postcode`])"
                         />
+                        <span 
+                            v-if="get(form, ['errors', `${fieldName}.banned_list.${data.country}.postcode`])"
+                            class="text-xs text-red-500"
+                        >
+                            {{ get(form, ['errors', `${fieldName}.banned_list.${data.country}.postcode`]) }}
+                        </span>
                     </template>
                 </Column>
 

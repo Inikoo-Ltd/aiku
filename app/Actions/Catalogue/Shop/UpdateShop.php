@@ -37,6 +37,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Ordering\SalesChannel;
+use Closure;
 
 class UpdateShop extends OrgAction
 {
@@ -624,7 +625,21 @@ class UpdateShop extends OrgAction
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],
             'banned_countries.banned_list'                            => ['sometimes', 'nullable', 'array'],
             'banned_countries.banned_list.*'                          => ['required', 'array'],
-            'banned_countries.banned_list.*.postcode'                 => ['sometimes', 'string', 'nullable'],
+            'banned_countries.banned_list.*.postcode'                 => [
+                'sometimes', 
+                'string', 
+                'nullable',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+
+                    // Just to check whether valid regex or not. Would throw false if it's an invalid regex since preg_match would not compile
+                    if (@preg_match($value, '') === false) {
+                        $fail('Invalid Postcode regex');
+                    }
+                },
+            ],
             'banned_countries.banned_list.*.billing'                  => ['required', 'boolean'],
             'banned_countries.banned_list.*.delivery'                 => ['required', 'boolean'],
         ];
