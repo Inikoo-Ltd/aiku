@@ -177,7 +177,6 @@ class IndexReviews extends OrgAction
                 'reviews.created_at',
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
-                'products.name as product_name',
                 'products.code as product_code',
                 'products.slug as product_slug',
             ])
@@ -208,7 +207,7 @@ class IndexReviews extends OrgAction
             $table->column(key: 'created_at', label: __('Date'), sortable: true, type: 'date');
             $table->column(key: 'customer_name', label: __('Customer'), searchable: true);
             if ($withProduct) {
-                $table->column(key: 'product_name', label: __('Product'), searchable: true);
+                $table->column(key: 'product_code', label: __('Product'), searchable: true);
             }
             $table->column(key: 'rating', label: __('Rating'), sortable: true, align: 'right');
             $table->column(key: 'message', label: __('Message'), searchable: true);
