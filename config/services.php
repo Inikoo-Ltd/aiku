@@ -72,7 +72,7 @@ return [
         'developer_token' => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
         'client_id'       => env('GOOGLE_CLIENT_ID'),
         'client_secret'   => env('GOOGLE_CLIENT_SECRET'),
-        'api_version'     => env('GOOGLE_ADS_API_VERSION', 'v18'),
+        'api_version'     => env('GOOGLE_ADS_API_VERSION', 'v24'),
     ],
     'slack'     => [
         'notifications' => [

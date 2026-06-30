@@ -29,7 +29,7 @@ class SyncCustomersToGoogleAds
 
     private const string OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
-    private const string DEFAULT_API_VERSION = 'v18';
+    private const string DEFAULT_API_VERSION = 'v24';
 
     /**
      * Upload the shop's customers' hashed identifiers to a Google Ads Customer Match user list
