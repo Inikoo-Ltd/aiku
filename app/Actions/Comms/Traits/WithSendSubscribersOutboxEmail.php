@@ -19,8 +19,10 @@ use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
+use App\Actions\Comms\Outbox\RedoOutboxTimeSeries;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 
 trait WithSendSubscribersOutboxEmail
 {
@@ -98,5 +100,8 @@ trait WithSendSubscribersOutboxEmail
                 $outbox->emailOngoingRun->senderName(),
             );
         }
+
+        $currentDate = Carbon::now()->utc()->format('Y-m-d');
+        RedoOutboxTimeSeries::dispatch($outbox->id, $currentDate, $currentDate, true);
     }
 }

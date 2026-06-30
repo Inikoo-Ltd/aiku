@@ -15,6 +15,7 @@ use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunSentState;
 use App\Actions\Comms\Mailshot\GetHtmlLayout;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Mailshot\UpdateMailshotSentState;
+use App\Actions\Comms\Outbox\RedoOutboxTimeSeries;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\CRM\Prospect\Mailshots\ProspectHydrateDispatchedEmails;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
@@ -30,6 +31,7 @@ use App\Models\Comms\MailshotRecipient;
 use App\Models\CRM\Prospect;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -174,6 +176,12 @@ class SendEmailDeliveryChannel
             EmailBulkRunHydrateCumulativeDispatchedEmails::run($model, DispatchedEmailStateEnum::SENT);
             EmailBulkRunHydrateDispatchedEmails::dispatch($model->id)->delay(now()->addSeconds(5));
             UpdateEmailBulkRunSentState::run($model);
+        }
+
+
+        if ($model?->outbox_id) {
+            $currentDate = Carbon::now()->utc()->format('Y-m-d');
+            RedoOutboxTimeSeries::dispatch($model->outbox_id, $currentDate, $currentDate, true);
         }
     }
 
