@@ -7,6 +7,8 @@ use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatAutomationTriggerEnum;
 use App\Models\CRM\Livechat\ChatAutomation;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -50,12 +52,17 @@ class StoreChatAutomation extends OrgAction
         return $this->handle($this->validatedData);
     }
 
-    public function htmlResponse(): void
+    public function htmlResponse(ChatAutomation $chatAutomation): RedirectResponse
     {
         request()->session()->flash('notification', [
             'status'      => 'success',
             'title'       => __('Success!'),
             'description' => __('Automated message successfully created.'),
+        ]);
+
+        return Redirect::route('grp.org.chat.automations.edit', [
+            'organisation'   => $this->organisation->slug,
+            'chatAutomation' => $chatAutomation->id,
         ]);
     }
 }
