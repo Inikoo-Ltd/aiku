@@ -9,6 +9,7 @@ import {
     faThumbsDown,
 } from "@fortawesome/free-solid-svg-icons"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { router } from "@inertiajs/vue3"
 
 const props = defineProps<{
     reviews: any
@@ -16,7 +17,6 @@ const props = defineProps<{
     allow_review_reaction : boolean
 }>()
 
-console.log(props)
 const current = ref(0)
 const windowWidth = ref(window.innerWidth)
 
@@ -49,8 +49,48 @@ const visibleReviews = computed(() =>
 )
 
 const reactions = ref<Record<number, "like" | "dislike" | null>>({})
+const reactingKeys = ref<Record<string, boolean>>({})
 
-const toggleReaction = (review: (typeof props.reviews)[number], type: "like" | "dislike") => { }
+const toggleReaction = (item: any, target: "review" | "review_reply", isLike: boolean) => {
+	const review = item
+	if (!review?.id) {
+		return
+	}
+
+	const reactionKey = `${review.id}-${target}`
+	if (reactingKeys.value[reactionKey]) {
+		return
+	}
+
+	const likeField = target === "review" ? "likes" : "replay_likes"
+	const dislikeField = target === "review" ? "dislikes" : "replay_dislikes"
+
+	review[likeField] = (review[likeField] ?? 0) + (isLike ? 1 : 0)
+	review[dislikeField] = (review[dislikeField] ?? 0) + (isLike ? 0 : 1)
+
+	router.post(
+		route("iris.models.review.react", { review: review.id }),
+		{
+			target: target,
+			type: isLike ? "like" : "dislike",
+		},
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => {
+				reactingKeys.value[reactionKey] = true
+			},
+			onError: () => {
+				review[likeField] -= isLike ? 1 : 0
+				review[dislikeField] -= isLike ? 0 : 1
+			},
+			onFinish: () => {
+				delete reactingKeys.value[reactionKey]
+			},
+		}
+	)
+}
+
 
 const prev = () => {
     if (current.value > 0) {
@@ -125,9 +165,8 @@ const next = () => {
                                 {{ useFormatTime(review.date) }}
                             </div>
 
-                            <!-- <div class="flex items-center gap-2">
-            
-                                <button @click="toggleReaction(review, 'like')"
+                            <div v-if="allow_review_reaction" class="flex items-center gap-2">
+                                <button @click="() => toggleReaction(review, 'review', true)" :disabled="reactingKeys[`${review.id}-review`]"
                                     class="flex h-7 items-center gap-1 rounded px-2 transition" :class="reactions[review.id] === 'like'
                                             ? 'bg-green-50 text-green-600'
                                             : 'text-gray-500 hover:bg-gray-100'
@@ -138,15 +177,14 @@ const next = () => {
                                     </span>
                                 </button>
 
-                
-                                <button @click="toggleReaction(review, 'dislike')"
+                                <button @click="() => toggleReaction(review, 'review', false)" :disabled="reactingKeys[`${review.id}-review`]"
                                     class="flex h-7 w-7 items-center justify-center rounded transition" :class="reactions[review.id] === 'dislike'
                                             ? 'bg-red-50 text-red-600'
                                             : 'text-gray-500 hover:bg-gray-100'
                                         ">
                                     <FontAwesomeIcon :icon="faThumbsDown" class="text-[10px]" />
                                 </button>
-                            </div> -->
+                            </div>
                         </div>
                     </div>
                 </div>

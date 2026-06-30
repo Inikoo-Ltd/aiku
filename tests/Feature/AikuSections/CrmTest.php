@@ -1210,10 +1210,8 @@ test('Customer basket hydrator', function () {
 });
 
 test('sync customers to google ads uploads hashed identifiers', function () {
-    Config::set('services.google_ads.developer_token', 'DEV-TOKEN');
     Config::set('services.google_ads.client_id', 'client-id');
     Config::set('services.google_ads.client_secret', 'client-secret');
-    Config::set('services.google_ads.api_version', 'v18');
 
     $this->shop->update([
         'settings' => array_merge($this->shop->settings ?? [], [
@@ -1229,26 +1227,38 @@ test('sync customers to google ads uploads hashed identifiers', function () {
     $customer->update(['email' => 'match@example.com', 'phone' => '+447911123456']);
 
     Http::fake([
-        'oauth2.googleapis.com/*'                          => Http::response(['access_token' => 'fake-access-token']),
-        '*offlineUserDataJobs:create'                      => Http::response(['resourceName' => 'customers/1234567890/offlineUserDataJobs/1']),
-        'googleads.googleapis.com/*'                       => Http::response([]),
+        'oauth2.googleapis.com/*'             => Http::response(['access_token' => 'fake-access-token']),
+        'datamanager.googleapis.com/*'        => Http::response(['requestId' => 'req-1']),
     ]);
 
     $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
 
     expect($result['uploaded'])->toBe(1)
-        ->and($result['job'])->toBe('customers/1234567890/offlineUserDataJobs/1');
+        ->and($result['request_ids'])->toBe(['req-1']);
 
     Http::assertSent(fn ($request) => $request->url() === 'https://oauth2.googleapis.com/token'
         && $request['refresh_token'] === 'refresh-token'
         && $request['grant_type'] === 'refresh_token');
 
-    Http::assertSent(fn ($request) => str_contains($request->url(), ':run'));
-})->skip();
+    Http::assertSent(function ($request) {
+        if ($request->url() !== 'https://datamanager.googleapis.com/v1/audienceMembers:ingest') {
+            return false;
+        }
 
-test('sync customers to google ads fails without developer token', function () {
-    Config::set('services.google_ads.developer_token', null);
+        $destination = $request['destinations'][0];
+        $identifiers = $request['audienceMembers'][0]['compositeData']['userData']['userIdentifiers'];
 
+        return $destination['operatingAccount']['accountType'] === 'GOOGLE_ADS'
+            && $destination['operatingAccount']['accountId'] === '1234567890'
+            && $destination['productDestinationId'] === '999'
+            && $request['encoding'] === 'HEX'
+            && $request['termsOfService']['customerMatchTermsOfServiceStatus'] === 'ACCEPTED'
+            && $identifiers[0]['emailAddress'] === hash('sha256', 'match@example.com')
+            && $identifiers[1]['phoneNumber'] === hash('sha256', '+447911123456');
+    });
+});
+
+test('sync customers to google ads fails when not configured', function () {
     expect(fn () => SyncCustomersToGoogleAds::make()->handle($this->shop))
-        ->toThrow(Exception::class, 'Google Ads developer token is not configured.');
-})->skip();
+        ->toThrow(Exception::class, 'Google Ads is not configured for shop');
+});
