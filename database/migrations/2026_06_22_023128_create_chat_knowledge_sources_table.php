@@ -14,7 +14,7 @@ return new class () extends Migration {
 
             $table->unsignedSmallInteger('chat_automation_id');
             $table->foreign('chat_automation_id')->references('id')->on('chat_automations')->onUpdate('cascade')->onDelete('cascade');
-
+            $table->string('title')->nullable();
             $table->string('knowledge_node_id')->index();
             $table->string('source_id')->index();
             $table->string('type')->default(ChatKnowledgeSourceTypeEnum::TEXT->value);

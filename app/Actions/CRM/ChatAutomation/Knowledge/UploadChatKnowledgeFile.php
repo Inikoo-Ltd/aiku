@@ -24,6 +24,7 @@ class UploadChatKnowledgeFile extends OrgAction
 
         $isReadable = in_array($extension, self::READABLE_EXTENSIONS, true);
         $content    = $isReadable ? $this->extractText($file, $extension) : null;
+        $title      = trim((string) ($modelData['title'] ?? ''));
 
         $source = $chatAutomation->knowledgeSources()->updateOrCreate(
             ['source_id' => $modelData['source_id']],
@@ -31,6 +32,7 @@ class UploadChatKnowledgeFile extends OrgAction
                 'knowledge_node_id' => $modelData['knowledge_node_id'],
                 'type'              => ChatKnowledgeSourceTypeEnum::FILE,
                 'name'              => $file->getClientOriginalName(),
+                'title'             => $title !== '' ? $title : null,
                 'content'           => $content,
                 'content_hash'      => $content ? md5($content) : null,
                 'status'            => $isReadable
@@ -179,6 +181,7 @@ class UploadChatKnowledgeFile extends OrgAction
     {
         return [
             'file'              => ['required', 'file', 'max:10240'],
+            'title'             => ['sometimes', 'nullable', 'string', 'max:255'],
             'knowledge_node_id' => ['required', 'string'],
             'source_id'         => ['required', 'string'],
         ];

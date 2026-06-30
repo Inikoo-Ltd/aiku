@@ -19,6 +19,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string $source_id
  * @property ChatKnowledgeSourceTypeEnum $type
  * @property string|null $name
+ * @property string|null $title
  * @property string|null $content
  * @property ChatKnowledgeSourceStatusEnum $status
  * @property string|null $content_hash

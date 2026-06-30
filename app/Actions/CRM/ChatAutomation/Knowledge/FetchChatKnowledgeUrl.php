@@ -17,6 +17,7 @@ class FetchChatKnowledgeUrl extends OrgAction
         $url       = $modelData['url'];
         $crawl     = (bool) ($modelData['crawl'] ?? true);
         $maxPages  = (int) ($modelData['max_pages'] ?? 50);
+        $title     = trim((string) ($modelData['title'] ?? ''));
 
         $source = $chatAutomation->knowledgeSources()->updateOrCreate(
             ['source_id' => $modelData['source_id']],
@@ -24,6 +25,7 @@ class FetchChatKnowledgeUrl extends OrgAction
                 'knowledge_node_id' => $modelData['knowledge_node_id'],
                 'type'              => ChatKnowledgeSourceTypeEnum::URL,
                 'name'              => $url,
+                'title'             => $title !== '' ? $title : null,
                 'status'            => ChatKnowledgeSourceStatusEnum::PENDING,
             ]
         );
@@ -37,6 +39,7 @@ class FetchChatKnowledgeUrl extends OrgAction
     {
         return [
             'url'               => ['required', 'url', 'max:2048'],
+            'title'             => ['sometimes', 'nullable', 'string', 'max:255'],
             'knowledge_node_id' => ['required', 'string'],
             'source_id'         => ['required', 'string'],
             'crawl'             => ['sometimes', 'boolean'],

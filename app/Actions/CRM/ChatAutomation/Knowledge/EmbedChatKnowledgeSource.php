@@ -30,6 +30,7 @@ class EmbedChatKnowledgeSource
 
         try {
             $sections = $this->splitIntoChunks($content, (int) config('llmdriver.chunking.default_size', 600));
+            $metadata = $this->sourceMetadata($source);
 
             foreach ($sections as $sectionNumber => $sectionContent) {
                 $embedding = GenerateChatEmbedding::run($sectionContent);
@@ -41,7 +42,7 @@ class EmbedChatKnowledgeSource
                     'guid'                     => md5($sectionContent),
                     'section_number'           => $sectionNumber,
                     'content'                  => $sectionContent,
-                    'metadata'                 => ['source_name' => $source->name],
+                    'metadata'                 => $metadata,
                     $embedding['column']       => $embedding['vector'],
                 ]);
             }
@@ -58,6 +59,28 @@ class EmbedChatKnowledgeSource
 
             $source->update(['status' => ChatKnowledgeSourceStatusEnum::FAILED]);
         }
+    }
+
+    /**
+     * Build the chunk metadata. A crawled URL keeps its address in "source_url" so
+     * the assistant can still offer the clickable link, while "source_name" carries
+     * the human title the user gave (falling back to the URL) for topic labels.
+     *
+     * @return array<string, string>
+     */
+    private function sourceMetadata(ChatKnowledgeSource $source): array
+    {
+        $name = trim((string) $source->name);
+        $url  = (str_starts_with($name, 'http://') || str_starts_with($name, 'https://')) ? $name : '';
+        $title = trim((string) $source->title);
+
+        $metadata = ['source_name' => $title !== '' ? $title : $name];
+
+        if ($url !== '') {
+            $metadata['source_url'] = $url;
+        }
+
+        return $metadata;
     }
 
     /**

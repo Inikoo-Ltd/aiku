@@ -27,7 +27,7 @@ library.add(
 type BlockType = 'text' | 'button'
 type SourceType = 'file' | 'text' | 'url'
 interface Block { id: string; type: BlockType; text?: string; label?: string; url?: string }
-interface KnowledgeSource { id: string; type: SourceType; name: string; text?: string; url?: string; crawl?: boolean; maxPages?: number; uploading?: boolean; uploaded?: boolean; error?: string }
+interface KnowledgeSource { id: string; type: SourceType; name: string; title?: string; text?: string; url?: string; crawl?: boolean; maxPages?: number; uploading?: boolean; uploaded?: boolean; error?: string }
 interface FlowOption { id: string; label: string }
 interface VFNode { id: string; type: string; position: { x: number; y: number }; data: any }
 interface VFEdge { id: string; source: string; sourceHandle?: string; target: string; targetHandle?: string }
@@ -143,6 +143,8 @@ const sourceMeta: Record<SourceType, { label: string; icon: string }> = {
     url:  { label: trans('URL'),  icon: 'fa-link' },
 }
 
+const readableFileAccept = '.txt,.md,.markdown,.csv,.json,.jsonl,.html,.htm'
+
 function addSource(data: any, type: SourceType): void {
     if (type === 'file') {
         data.sources.push({ id: uid('src'), type, name: '' })
@@ -176,6 +178,7 @@ async function onSourceFile(nodeId: string, source: KnowledgeSource, event: Even
     payload.append('file', file)
     payload.append('knowledge_node_id', nodeId)
     payload.append('source_id', source.id)
+    payload.append('title', source.title ?? '')
 
     source.uploading = true
     try {
@@ -209,6 +212,7 @@ async function onFetchUrl(nodeId: string, source: KnowledgeSource): Promise<void
             knowledge_node_id: nodeId,
             source_id: source.id,
             url: source.url,
+            title: source.title ?? '',
             crawl: source.crawl ?? true,
             max_pages: source.maxPages ?? 50,
         })
@@ -312,6 +316,7 @@ function serialize(): FlowValue | null {
                 id: s.id,
                 type: s.type,
                 name: s.name,
+                title: s.title ?? '',
                 ...(s.type === 'text' ? { text: s.text ?? '' } : {}),
                 ...(s.type === 'url' ? { url: s.url ?? '', crawl: s.crawl ?? true, maxPages: s.maxPages ?? 50 } : {}),
             }))
@@ -512,14 +517,21 @@ defineExpose({
                                 </div>
 
                                 <template v-if="source.type === 'file'">
-                                    <input type="file" class="nodrag w-full text-[10px] text-gray-600 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-0.5 file:text-emerald-700"
+                                    <input v-model="source.title"
+                                        class="nodrag w-full text-[11px] border border-gray-200 rounded-md px-2 py-1 mb-1 focus:outline-none focus:border-emerald-400"
+                                        :placeholder="trans('Title, e.g. Pricing documentation')" />
+                                    <input type="file" :accept="readableFileAccept" class="nodrag w-full text-[10px] text-gray-600 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-0.5 file:text-emerald-700"
                                         @change="onSourceFile(id, source, $event)" />
+                                    <p class="text-[10px] text-gray-400">{{ trans('Supported: TXT, MD, CSV, JSON, JSONL, HTML. Max 10MB.') }}</p>
                                     <p v-if="source.name" class="text-[10px] text-gray-500 truncate">{{ source.name }}</p>
                                     <p v-if="source.uploading" class="text-[10px] text-indigo-500">{{ trans('Uploading…') }}</p>
                                     <p v-else-if="source.uploaded" class="text-[10px] text-emerald-600">{{ trans('Uploaded ✓') }}</p>
                                     <p v-if="source.error" class="text-[10px] text-red-500">{{ source.error }}</p>
                                 </template>
                                 <template v-else-if="source.type === 'url'">
+                                    <input v-model="source.title"
+                                        class="nodrag w-full text-[11px] border border-gray-200 rounded-md px-2 py-1 mb-1 focus:outline-none focus:border-emerald-400"
+                                        :placeholder="trans('Title, e.g. Pricing documentation')" />
                                     <input v-model="source.url"
                                         class="nodrag w-full text-[11px] border border-gray-200 rounded-md px-2 py-1 mb-1 focus:outline-none focus:border-emerald-400"
                                         :placeholder="trans('https://example.com/knowledge-base/')" />

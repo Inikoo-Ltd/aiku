@@ -94,9 +94,18 @@ class SyncChatKnowledgeFromFlow
             return;
         }
 
+        $title         = trim((string) ($source['title'] ?? ''));
+        $newTitle      = $title !== '' ? $title : null;
+        $titleChanged  = $existing->title !== $newTitle;
+
         $existing->update([
             'knowledge_node_id' => $nodeId,
             'name'              => $source['name'] ?? $existing->name,
+            'title'             => $newTitle,
         ]);
+
+        if ($titleChanged) {
+            $existing->chunks()->update(['metadata->source_name' => $newTitle ?? $existing->name]);
+        }
     }
 }

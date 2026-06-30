@@ -123,10 +123,15 @@ class AnswerChatWithRag
         return $chunks
             ->map(function (ChatKnowledgeChunk $chunk): string {
                 $content = trim((string) $chunk->content);
-                $source  = (string) ($chunk->metadata['source_name'] ?? '');
+                $name    = (string) ($chunk->metadata['source_name'] ?? '');
+                $url     = (string) ($chunk->metadata['source_url'] ?? '');
 
-                if (str_starts_with($source, 'http://') || str_starts_with($source, 'https://')) {
-                    return "SOURCE_URL: {$source}\n{$content}";
+                if ($url === '' && (str_starts_with($name, 'http://') || str_starts_with($name, 'https://'))) {
+                    $url = $name;
+                }
+
+                if ($url !== '') {
+                    return "SOURCE_URL: {$url}\n{$content}";
                 }
 
                 return $content;
