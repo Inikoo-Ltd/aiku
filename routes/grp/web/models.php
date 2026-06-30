@@ -63,6 +63,13 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryTranslations;
 use App\Actions\Catalogue\ProductCategory\UploadImagesToProductCategory;
+use App\Actions\Catalogue\Review\ApproveReview;
+use App\Actions\Catalogue\Review\RejectReview;
+use App\Actions\Catalogue\Review\GetReviewCustomers;
+use App\Actions\Catalogue\Review\UpdateReview;
+use App\Actions\Catalogue\ReviewReply\DeleteReviewReply;
+use App\Actions\Catalogue\ReviewReply\StoreReviewReply;
+use App\Actions\Catalogue\ReviewReply\UpdateReviewReply;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
@@ -278,15 +285,15 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockin
 use App\Actions\HumanResources\Employee\DeleteEmployee;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
+use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\LinkLeaveBalanceToContract;
 use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
-use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
-use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\JobPosition\DeleteJobPosition;
 use App\Actions\HumanResources\JobPosition\StoreJobPosition;
 use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
+use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
 use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
@@ -357,6 +364,7 @@ use App\Actions\Production\ManufactureTask\UpdateManufactureTask;
 use App\Actions\Production\RawMaterial\ImportRawMaterial;
 use App\Actions\Production\RawMaterial\StoreRawMaterial;
 use App\Actions\Production\RawMaterial\UpdateRawMaterial;
+use App\Actions\Reviews\DeleteReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
@@ -585,6 +593,17 @@ Route::prefix('/product_category/{productCategory:id}')->name('product_category.
     Route::patch('update-images', UpdateProductCategoryImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromProductCategory::class)->name('delete_images')->withoutScopedBindings();
 });
+
+Route::post('review/reply/store', StoreReviewReply::class)->name('review.reply.store');
+Route::patch('review/reply/{reviewReply:id}/update', UpdateReviewReply::class)->name('review.reply.update');
+Route::delete('review/reply/{reviewReply:id}/delete', DeleteReviewReply::class)->name('review.reply.delete');
+Route::get('review/customers/{productCategory:id}', GetReviewCustomers::class)->name('review.customers');
+Route::get('review/customers/product/{product:id}', [GetReviewCustomers::class, 'asControllerProduct'])->name('review.customers.product');
+Route::get('review/customers/shop/{shop:id}', [GetReviewCustomers::class, 'asControllerShop'])->name('review.customers.shop');
+Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
+Route::patch('review/{review:id}/approve', ApproveReview::class)->name('review.approve');
+Route::patch('review/{review:id}/reject', RejectReview::class)->name('review.reject');
+Route::delete('review/{review:id}/delete', DeleteReview::class)->name('review.delete');
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');

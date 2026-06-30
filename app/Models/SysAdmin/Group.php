@@ -90,6 +90,7 @@ use App\Models\Production\Artefact;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
+use App\Models\Reviews\GroupReviewStat;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
@@ -238,6 +239,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
+ * @property-read GroupReviewStat|null $reviewStats
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\Helpers\Media|null $seoImage
@@ -384,6 +386,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(GroupStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(GroupReviewStat::class);
     }
 
     public function humanResourcesStats(): HasOne

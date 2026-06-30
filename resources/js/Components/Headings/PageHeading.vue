@@ -79,6 +79,7 @@ const props = defineProps<{
 	dataToSubmit?: any
 	dataToSubmitIsDirty?: any
 	isButtonGroupWithBorder?: boolean
+	ignoreIsolate: boolean
 }>()
 
 const isButtonLoading = ref<boolean | string>(false)
@@ -109,7 +110,11 @@ const setError = (e) => {
 	<slot name="afterSubNav"></slot>
 
 	<div
-		class="relative isolate px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2">
+		class="relative  px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2"
+		:class="[
+			props.ignoreIsolate ? '' : 'isolate z-10',
+		]"
+	>
 		<!-- Section: Left accent bar + fade decoration -->
 		<div
 			v-if="data.color || data.is_negative"
@@ -436,7 +441,7 @@ const setError = (e) => {
 
 					<Transition name="headlessui">
 						<PopoverPanel
-							class="top-[120%] absolute z-10 right-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 min-w-32 w-fit max-w-96">
+							class="top-[120%] absolute z-50 right-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 min-w-32 w-fit max-w-96">
 							<div
 								class="flex flex-col items-end sm:flex-row flex-wrap justify-end sm:items-center gap-y-1 gap-x-2 rounded-md">
 								<template v-for="(action, wrappedIdx) in data.wrapped_actions">

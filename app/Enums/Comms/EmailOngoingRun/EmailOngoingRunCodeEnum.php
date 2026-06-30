@@ -41,6 +41,7 @@ enum EmailOngoingRunCodeEnum: string
     case REORDER_REMINDER_2ND = 'reorder_reminder_2nd';
     case REORDER_REMINDER_3RD = 'reorder_reminder_3rd';
     case OOS_NOTIFICATION = 'oos_notification';
+    case REVIEW_REMINDER = 'review_reminder';
 
     case OOS_IN_ORDER_NOTIFICATION = 'oos_in_order_notification';
 
@@ -61,4 +62,5 @@ enum EmailOngoingRunCodeEnum: string
 
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
     case WEB_USER_REGISTRATION = 'web_user_registration';
+    case NEW_REVIEW = 'new_review';
 }
