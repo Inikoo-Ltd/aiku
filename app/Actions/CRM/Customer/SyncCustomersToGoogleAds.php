@@ -15,6 +15,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncCustomersToGoogleAds
@@ -55,7 +56,6 @@ class SyncCustomersToGoogleAds
             ->where(function ($query) {
                 $query->whereNotNull('email')->orWhereNotNull('phone');
             })
-            ->limit(1)
             ->select(['id', 'email', 'phone'])
             ->chunkById($chunkSize, function ($customers) use ($client, $config, &$uploaded, &$requestIds) {
                 $audienceMembers = [];
