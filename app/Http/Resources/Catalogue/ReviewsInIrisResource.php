@@ -14,7 +14,7 @@ class ReviewsInIrisResource extends JsonResource
 
         return [
             'id'                => $review->id,
-            'name'              => $review->contact_name,
+            'name'              => maskName($review->contact_name),
             'rating'            => $review->rating_main,
             'message'           => $review->message,
             'date'              => $review->published_at,

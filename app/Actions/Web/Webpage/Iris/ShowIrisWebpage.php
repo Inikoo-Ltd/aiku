@@ -68,11 +68,14 @@ class ShowIrisWebpage
 
         $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
         $reviews = [];
+        $avgReview = 0;
         
         if ($webpage->type === WebpageTypeEnum::STOREFRONT) {
             $reviews = IndexReviewsInIris::run(parent: $webpage->shop, prefix: $webpage->title);
+            $avgReview = IndexReviewsInIris::avgReview($webpage->shop);
         } elseif ($webpage->model instanceof Product || ($webpage->model instanceof ProductCategory && $webpage->sub_type == ProductCategoryTypeEnum::FAMILY->value)) {
             $reviews = IndexReviewsInIris::run(parent: $webpage->model, prefix: $webpage->title);
+            $avgReview = IndexReviewsInIris::avgReview($webpage->model);
         }
 
         $baseWebpageData = [
@@ -96,12 +99,16 @@ class ShowIrisWebpage
                     ]]
                     : null,
             ],
-            'webpage_img'                 => $webpageImg,
-            'index_page'                  => $webpage->index_page,
-            'follow_link'                 => $webpage->follow_link,
-            'webpage_slug'                => $webpage->slug,
-            'reviews'                     => ReviewsInIrisResource::collection($reviews),
-            'is_different_when_logged_in' => $webpage->is_different_when_logged_in,
+            'webpage_img'                       => $webpageImg,
+            'index_page'                        => $webpage->index_page,
+            'follow_link'                       => $webpage->follow_link,
+            'webpage_slug'                      => $webpage->slug,
+            'reviews'                           => ReviewsInIrisResource::collection($reviews),
+            'review_summary'                    => $avgReview,
+            'allow_review_reaction'             => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
+            'allow_review_reply_reaction'       => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
+            'minimum_reviews_to_show'           => Arr::get($webpage->shop->settings, 'reviews.minimum_reviews_to_show', 0),
+            'is_different_when_logged_in'       => $webpage->is_different_when_logged_in,
         ];
 
         return array_merge($baseWebpageData, [
