@@ -29,32 +29,36 @@ class SyncCustomersToGoogleAds
 
     private const string OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
-    private const string DEFAULT_API_VERSION = 'v18';
+    private const string DATA_MANAGER_BASE_URL = 'https://datamanager.googleapis.com/v1';
+
+    private const int MAX_MEMBERS_PER_REQUEST = 10000;
 
     /**
      * Upload the shop's customers' hashed identifiers to a Google Ads Customer Match user list
-     * through an OfflineUserDataJob, using the credentials stored in the shop settings.
+     * through the Data Manager API, using the credentials stored in the shop settings.
      *
-     * @return array{uploaded: int, job: string|null}
+     * @return array{uploaded: int, request_ids: array<int, string>}
      * @throws Exception
      */
-    public function handle(Shop $shop, int $chunkSize = 10000): array
+    public function handle(Shop $shop, int $chunkSize = self::MAX_MEMBERS_PER_REQUEST): array
     {
         $config = $this->resolveConfig($shop);
 
         $client = $this->client($config);
 
-        $jobResourceName = $this->createOfflineUserDataJob($client, $config);
+        $chunkSize = min($chunkSize, self::MAX_MEMBERS_PER_REQUEST);
 
-        $uploaded = 0;
+        $uploaded    = 0;
+        $requestIds  = [];
 
         $shop->customers()
             ->where(function ($query) {
                 $query->whereNotNull('email')->orWhereNotNull('phone');
             })
+            ->limit(1)
             ->select(['id', 'email', 'phone'])
-            ->chunkById($chunkSize, function ($customers) use ($client, $jobResourceName, &$uploaded) {
-                $operations = [];
+            ->chunkById($chunkSize, function ($customers) use ($client, $config, &$uploaded, &$requestIds) {
+                $audienceMembers = [];
 
                 /** @var Customer $customer */
                 foreach ($customers as $customer) {
@@ -64,32 +68,32 @@ class SyncCustomersToGoogleAds
                         continue;
                     }
 
-                    $operations[] = [
-                        'create' => [
-                            'userIdentifiers' => $userIdentifiers,
+                    $audienceMembers[] = [
+                        'compositeData' => [
+                            'userData' => [
+                                'userIdentifiers' => $userIdentifiers,
+                            ],
                         ],
                     ];
                 }
 
-                if (empty($operations)) {
+                if (empty($audienceMembers)) {
                     return;
                 }
 
-                $this->addOperations($client, $jobResourceName, $operations);
+                $requestIds[] = $this->ingestAudienceMembers($client, $config, $audienceMembers);
 
-                $uploaded += count($operations);
+                $uploaded += count($audienceMembers);
             });
 
-        $this->runOfflineUserDataJob($client, $jobResourceName);
-
         return [
-            'uploaded' => $uploaded,
-            'job'      => $jobResourceName,
+            'uploaded'    => $uploaded,
+            'request_ids' => $requestIds,
         ];
     }
 
     /**
-     * @return array{customer_id: string, login_customer_id: string, developer_token: string, user_list: string, access_token: string, api_version: string}
+     * @return array{customer_id: string, login_customer_id: string, user_list_id: string, access_token: string}
      * @throws Exception
      */
     private function resolveConfig(Shop $shop): array
@@ -98,13 +102,7 @@ class SyncCustomersToGoogleAds
 
         $customerId      = $this->onlyDigits((string) Arr::get($settings, 'customer_id'));
         $loginCustomerId = $this->onlyDigits((string) Arr::get($settings, 'login_customer_id')) ?: $customerId;
-        $developerToken  = (string) config('services.google_ads.developer_token');
         $userListId      = $this->onlyDigits((string) Arr::get($settings, 'user_list_id'));
-        $apiVersion      = (string) config('services.google_ads.api_version') ?: self::DEFAULT_API_VERSION;
-
-        if ($developerToken === '') {
-            throw new Exception('Google Ads developer token is not configured. Set GOOGLE_ADS_DEVELOPER_TOKEN.');
-        }
 
         if ($customerId === '' || $userListId === '' || blank(Arr::get($settings, 'refresh_token'))) {
             throw new Exception("Google Ads is not configured for shop $shop->slug: connect the shop's Google account and set customer_id and user_list_id.");
@@ -113,10 +111,8 @@ class SyncCustomersToGoogleAds
         return [
             'customer_id'       => $customerId,
             'login_customer_id' => $loginCustomerId,
-            'developer_token'   => $developerToken,
-            'user_list'         => "customers/$customerId/userLists/$userListId",
+            'user_list_id'      => $userListId,
             'access_token'      => $this->fetchAccessToken((string) Arr::get($settings, 'refresh_token')),
-            'api_version'       => $apiVersion,
         ];
     }
 
@@ -142,64 +138,46 @@ class SyncCustomersToGoogleAds
 
     private function client(array $config): PendingRequest
     {
-        return Http::withHeaders([
-            'developer-token'   => $config['developer_token'],
-            'login-customer-id' => $config['login_customer_id'],
-        ])
-            ->withToken($config['access_token'])
-            ->baseUrl("https://googleads.googleapis.com/{$config['api_version']}");
+        return Http::withToken($config['access_token'])
+            ->baseUrl(self::DATA_MANAGER_BASE_URL);
     }
 
     /**
+     * @param array<int, array<string, mixed>> $audienceMembers
      * @throws ConnectionException
      * @throws Exception
      */
-    private function createOfflineUserDataJob(PendingRequest $client, array $config): string
+    private function ingestAudienceMembers(PendingRequest $client, array $config, array $audienceMembers): string
     {
-        $response = $client->post("customers/{$config['customer_id']}/offlineUserDataJobs:create", [
-            'job' => [
-                'type'                          => 'CUSTOMER_MATCH_USER_LIST',
-                'customerMatchUserListMetadata' => [
-                    'userList' => $config['user_list'],
-                ],
+        $destination = [
+            'operatingAccount' => [
+                'accountType' => 'GOOGLE_ADS',
+                'accountId'   => $config['customer_id'],
+            ],
+            'productDestinationId' => $config['user_list_id'],
+        ];
+
+        if ($config['login_customer_id'] !== '' && $config['login_customer_id'] !== $config['customer_id']) {
+            $destination['loginAccount'] = [
+                'accountType' => 'GOOGLE_ADS',
+                'accountId'   => $config['login_customer_id'],
+            ];
+        }
+
+        $response = $client->post('audienceMembers:ingest', [
+            'destinations'    => [$destination],
+            'audienceMembers' => $audienceMembers,
+            'encoding'        => 'HEX',
+            'termsOfService'  => [
+                'customerMatchTermsOfServiceStatus' => 'ACCEPTED',
             ],
         ]);
 
-        if ($response->failed() || !$response->json('resourceName')) {
-            throw new Exception('Failed to create Google Ads offline user data job: ' . $response->body());
-        }
-
-        return $response->json('resourceName');
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $operations
-     * @throws ConnectionException
-     * @throws Exception
-     */
-    private function addOperations(PendingRequest $client, string $jobResourceName, array $operations): void
-    {
-        $response = $client->post("$jobResourceName:addOperations", [
-            'operations'           => $operations,
-            'enablePartialFailure' => true,
-        ]);
-
         if ($response->failed()) {
-            throw new Exception('Failed to add operations to Google Ads job: ' . $response->body());
+            throw new Exception('Failed to ingest Google Ads audience members: ' . $response->body());
         }
-    }
 
-    /**
-     * @throws ConnectionException
-     * @throws Exception
-     */
-    private function runOfflineUserDataJob(PendingRequest $client, string $jobResourceName): void
-    {
-        $response = $client->post("$jobResourceName:run");
-
-        if ($response->failed()) {
-            throw new Exception('Failed to run Google Ads offline user data job: ' . $response->body());
-        }
+        return (string) $response->json('requestId', '');
     }
 
     /**
@@ -213,11 +191,11 @@ class SyncCustomersToGoogleAds
         $identifiers = [];
 
         if ($hashedEmail = $this->hashEmail($customer->email)) {
-            $identifiers[] = ['hashedEmail' => $hashedEmail];
+            $identifiers[] = ['emailAddress' => $hashedEmail];
         }
 
         if ($hashedPhone = $this->hashPhone($customer->phone)) {
-            $identifiers[] = ['hashedPhoneNumber' => $hashedPhone];
+            $identifiers[] = ['phoneNumber' => $hashedPhone];
         }
 
         return $identifiers;
@@ -264,7 +242,7 @@ class SyncCustomersToGoogleAds
 
         $result = $this->handle($shop, (int) $command->option('chunk'));
 
-        $command->info("Uploaded {$result['uploaded']} customers to Google Ads job {$result['job']}.");
+        $command->info("Uploaded {$result['uploaded']} customers to the Google Ads Customer Match list across " . count($result['request_ids']) . ' request(s).');
 
         return 0;
     }

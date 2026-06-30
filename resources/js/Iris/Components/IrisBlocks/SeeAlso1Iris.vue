@@ -102,18 +102,19 @@ console.log('see also', layout)
         <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg"/>
       </button>
       
-      <Swiper   
-        :modules="[Navigation]"
+      <Swiper
+        :modules="[Navigation, Pagination]"
         :slides-per-view="slidesPerView"
         :navigation="{ prevEl, nextEl }"
         :autoHeight="false"
-        pagination
+        :pagination="{ clickable: true, dynamicBullets: true }"
         :loop="true"
+        class="has-pagination"
       >
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle":product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle":product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" :screen-type="props.screenType"/>
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
           </div>
@@ -140,5 +141,22 @@ console.log('see also', layout)
 .swiper-slide {
   display: flex !important;
   flex-direction: column !important;
+}
+
+.has-pagination {
+  padding-bottom: 2rem;
+}
+
+:deep(.swiper-pagination) {
+  bottom: 0;
+}
+
+:deep(.swiper-pagination-bullet) {
+  background-color: #cbd5e1;
+  opacity: 1;
+}
+
+:deep(.swiper-pagination-bullet-active) {
+  background-color: #1d2d44;
 }
 </style>
