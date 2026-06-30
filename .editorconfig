@@ -26,3 +26,28 @@ insert_final_newline = true
 indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
+
+[*.js]
+# Use 4 spaces for indentation in JavaScript files
+indent_style = space
+indent_size = 4
+
+[*.json]
+# Use 4 spaces for indentation in JSON files
+indent_style = space
+indent_size = 4
+
+[*.css]
+# Use 4 spaces for indentation in CSS files
+indent_style = space
+indent_size = 4
+
+[*.scss]
+# Use 4 spaces for indentation in SCSS files
+indent_style = space
+indent_size = 4
+
+[*.html]
+# Use 4 spaces for indentation in HTML files
+indent_style = space
+indent_size = 4

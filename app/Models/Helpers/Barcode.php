@@ -47,10 +47,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Collection<int, ModelHasBarcode> $modelHasBarcodes
- * @property-read Collection<int, Asset> $product
- * @property-read Collection<int, Stock> $stock
- * @property-read Collection<int, TradeUnit> $tradeUnit
- * @property-read Collection<int, TradeUnit> $tradeUnitActive
+ * @property-read Collection<int, Asset> $products
+ * @property-read Collection<int, Stock> $stocks
+ * @property-read Collection<int, TradeUnit> $tradeUnits
+ * @property-read Collection<int, TradeUnit> $tradeUnitsActive
  * @method static Builder<static>|Barcode newModelQuery()
  * @method static Builder<static>|Barcode newQuery()
  * @method static Builder<static>|Barcode onlyTrashed()
@@ -107,22 +107,24 @@ class Barcode extends Model implements Auditable
         return 'slug';
     }
 
-    public function stock(): MorphToMany
+    // Uneeded, we didn't use it anyway.
+    public function stocks(): MorphToMany
     {
         return $this->morphedByMany(Stock::class, 'model', 'model_has_barcodes');
     }
 
-    public function tradeUnit(): MorphToMany
+    public function tradeUnits(): MorphToMany
     {
         return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_barcodes');
     }
 
-    public function product(): MorphToMany
+    // Uneeded, we didn't use it anyway.
+    public function products(): MorphToMany
     {
         return $this->morphedByMany(Asset::class, 'model', 'model_has_barcodes');
     }
 
-    public function tradeUnitActive(): MorphToMany
+    public function tradeUnitsActive(): MorphToMany
     {
         return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_barcodes')->where('model_has_barcodes.status', true);
     }

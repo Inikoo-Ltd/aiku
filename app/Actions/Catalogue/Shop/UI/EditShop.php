@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
@@ -38,7 +39,7 @@ class EditShop extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo(['org-admin.' . $this->organisation->id, 'shop-admin.' . $this->shop->id]);
+        return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
     }
 
     public function handle(Shop $shop): Shop
@@ -72,10 +73,11 @@ class EditShop extends OrgAction
         }, []);
 
 
+        $mergedBannedCountryRegions = $shop->banned_country_regions;
+
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
             ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
-
 
 
         $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
@@ -88,41 +90,41 @@ class EditShop extends OrgAction
             ->first();
 
         $helpPortalFields = [
-            'portal_link'  => [
-                'type'          => 'input',
-                'placeholder'   => 'https://example.com',
-                'label'         => __('Portal Link'),
-                'value'         => Arr::get($shop->settings, 'portal.link', ''),
+            'portal_link' => [
+                'type'        => 'input',
+                'placeholder' => 'https://example.com',
+                'label'       => __('Portal Link'),
+                'value'       => Arr::get($shop->settings, 'portal.link', ''),
             ]
         ];
 
         // Disable Widget_Key input if the shop doesn't have any related website
         if ($shop->website) {
             $helpPortalFields['widget_key'] = [
-                'type'          => 'input',
-                'placeholder'   => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
-                'label'         => __('Widget Key'),
-                'value'         => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
+                'type'        => 'input',
+                'placeholder' => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+                'label'       => __('Widget Key'),
+                'value'       => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
             ];
         }
 
-        $isExternal =  $shop->type === ShopTypeEnum::EXTERNAL;
+        $isExternal = $shop->type === ShopTypeEnum::EXTERNAL;
+
+        $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
             __('Wix Keys'),
         ];
-        $salesChannels = SalesChannel::orderBy('id', 'asc')->get();
-        $salesChannelFields = [];
+        $salesChannels          = SalesChannel::orderBy('id')->get();
+        $salesChannelFields     = [];
+        /** @var SalesChannel $channel */
         foreach ($salesChannels as $channel) {
-
             if ($channel->type == SalesChannelTypeEnum::WEBSITE || $channel->type == SalesChannelTypeEnum::NA) {
                 continue;
             }
-
-            $typeLabel = $channel->type->labels()[$channel->type->value] ?? $channel->type->value;
-            $salesChannelFields['sales_channel_' . $channel->id] = [
+            $salesChannelFields['sales_channel_'.$channel->id] = [
                 'label'       => __($channel->name),
                 'type'        => 'toggle',
                 'value'       => $shop->salesChannels->contains($channel->id),
@@ -225,55 +227,55 @@ class EditShop extends OrgAction
                     'label'  => __('Catalogue'),
                     'icon'   => 'fal fa-books',
                     'fields' => [
-                        'collection_follow_master' => [
-                            'label'         => __('Collection Content Follow Master'),
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.collection_follow_master', false),
-                            'information'   => __('This would force all Collections under this shop to follow any updates done on master'),
-                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        'collection_follow_master'                 => [
+                            'label'       => __('Collection Content Follow Master'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.collection_follow_master', false),
+                            'information' => __('This would force all Collections under this shop to follow any updates done on master'),
+                            'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
-                        'department_follow_master' => [
-                            'label'         => __('Department Content Follow Master'),
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.department_follow_master', false),
-                            'information'   => __('This would force all Departments under this shop to follow any updates done on master'),
-                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        'department_follow_master'                 => [
+                            'label'       => __('Department Content Follow Master'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.department_follow_master', false),
+                            'information' => __('This would force all Departments under this shop to follow any updates done on master'),
+                            'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
-                        'sub_department_follow_master' => [
-                            'label'         => __('Sub Department Content Follow Master'),
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.sub_department_follow_master', false),
-                            'information'   => __('This would force all Sub Departments under this shop to follow any updates done on master'),
-                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        'sub_department_follow_master'             => [
+                            'label'       => __('Sub Department Content Follow Master'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.sub_department_follow_master', false),
+                            'information' => __('This would force all Sub Departments under this shop to follow any updates done on master'),
+                            'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
-                        'family_follow_master' => [
-                            'label'         => __('Family Content Follow Master'),
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.family_follow_master', false),
-                            'information'   => __('This would force all Families under this shop to follow any updates done on master'),
-                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        'family_follow_master'                     => [
+                            'label'       => __('Family Content Follow Master'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.family_follow_master', false),
+                            'information' => __('This would force all Families under this shop to follow any updates done on master'),
+                            'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
-                        'product_follow_master' => [
-                            'label'         => __('Product Content Follow Master'),
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.product_follow_master', false),
-                            'information'   => __('This would force all Products under this shop to follow any updates done on master'),
-                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        'product_follow_master'                    => [
+                            'label'       => __('Product Content Follow Master'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.product_follow_master', false),
+                            'information' => __('This would force all Products under this shop to follow any updates done on master'),
+                            'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
-                        'family_indexing_follow_master' => [
-                            'label'         => __('Family Page Product Index Follow Master'),
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.family_indexing_follow_master', true),
-                            'information'   => __('This would force all Products under this shop to follow the family indexing updates done on master'),
-                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        'family_indexing_follow_master'            => [
+                            'label'       => __('Family Page Product Index Follow Master'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.family_indexing_follow_master', true),
+                            'information' => __('This would force all Products under this shop to follow the family indexing updates done on master'),
+                            'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
-                        'related_product_follow_master' => [
-                            'label'         => __('Related Product Follow Master'),
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.related_product_follow_master', false),
-                            'information'   => __('This would force related products under this shop to follow any updates done on master'),
-                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?'),
-                            'description'   => [
+                        'related_product_follow_master'            => [
+                            'label'            => __('Related Product Follow Master'),
+                            'type'             => 'toggle',
+                            'value'            => data_get($shop->settings, 'catalog.related_product_follow_master', false),
+                            'information'      => __('This would force related products under this shop to follow any updates done on master'),
+                            'warningText'      => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?'),
+                            'description'      => [
                                 __('Related products are the products that are recommended to customers when they view a product category page.'),
                                 __('Enabling this would force all of this shop related products to follow master shop related products.'),
                                 $firstMasterFamily ? __('You can setup the products listed in @manage_related_products@ (Family :familyCode)', ['familyCode' => $firstMasterFamily->code]) : '',
@@ -293,11 +295,11 @@ class EditShop extends OrgAction
                             ],
                         ],
                         'related_product_categories_follow_master' => [
-                            'label'         => __('Related Product Category Follow Master'),
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.related_product_categories_follow_master', true),
-                            'information'   => __('This would force related product categories under this shop to follow any updates done on master'),
-                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                            'label'       => __('Related Product Category Follow Master'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.related_product_categories_follow_master', true),
+                            'information' => __('This would force related product categories under this shop to follow any updates done on master'),
+                            'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                     ]
                 ] : [],
@@ -305,7 +307,7 @@ class EditShop extends OrgAction
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => [
-                        'cost_price_ratio' => [
+                        'cost_price_ratio'                => [
                             'type'        => 'input_number',
                             'bind'        => [
                                 'maxFractionDigits' => 3
@@ -316,7 +318,7 @@ class EditShop extends OrgAction
                             'value'       => $shop->cost_price_ratio,
                             'min'         => 0
                         ],
-                        'price_rrp_ratio'  => [
+                        'price_rrp_ratio'                 => [
                             'type'        => 'input_number',
                             'bind'        => [
                                 'maxFractionDigits' => 3
@@ -327,31 +329,31 @@ class EditShop extends OrgAction
                             'value'       => $shop->price_rrp_ratio,
                             'min'         => 0
                         ],
-                        'follow_master_pricing' => [
-                            'label'         => __('Follow Master Pricing'),
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'catalog.follow_master_pricing', false),
-                            'information'   => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio'),
-                            'warningText'   => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio') .
-                                '. ' . __(':__amountProducts Products would be updated', ['__amountProducts' => $shop->products()->count()]) . '. ' . __('Are you sure you want to do this?'),
+                        'follow_master_pricing'           => [
+                            'label'       => __('Follow Master Pricing'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.follow_master_pricing', false),
+                            'information' => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio'),
+                            'warningText' => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio').
+                                '. '.__(':__amountProducts Products would be updated', ['__amountProducts' => $shop->products()->count()]).'. '.__('Are you sure you want to do this?'),
                         ],
-                        'product_price_currency_exchange'  => [
-                            'type'        => 'input_number',
-                            'bind'        => [
+                        'product_price_currency_exchange' => [
+                            'type'             => 'input_number',
+                            'bind'             => [
                                 'step'              => '0.5',
                                 'maxFractionDigits' => 3,
                                 'min'               => 0
                             ],
-                            'saveConfirmation'  => [
-                                'title'     => __('Are you sure want to update currency exchange?'),
-                                'description'   => __("This will affect all products in the shop, including the product that in customer's basket. Products that already purchased in Order will not affected."),
-                                'yesLabel'  => __('Yes, update currency exchange')
+                            'saveConfirmation' => [
+                                'title'       => __('Are you sure want to update currency exchange?'),
+                                'description' => __("This will affect all products in the shop, including the product that in customer's basket. Products that already purchased in Order will not affected."),
+                                'yesLabel'    => __('Yes, update currency exchange')
                             ],
-                            'label'       => __('Product Currency Exchange'),
-                            'placeholder' => __('Product Currency Exchange'),
-                            'required'    => true,
-                            'hidden'      => app()->isProduction(),
-                            'value'       => $shop->product_price_currency_exchange
+                            'label'            => __('Product Currency Exchange'),
+                            'placeholder'      => __('Product Currency Exchange'),
+                            'required'         => true,
+                            'hidden'           => app()->isProduction(),
+                            'value'            => $shop->product_price_currency_exchange
                                 ?? GetCurrencyExchange::run($shop->currency, $shop->currency),
                         ]
                     ]
@@ -360,17 +362,17 @@ class EditShop extends OrgAction
                     'label'  => __('Customers'),
                     'icon'   => 'fal fa-user',
                     'fields' => [
-                        'identity_document_number_label' => [
-                            'type'          => 'input',
-                            'label'         => __('Identity Document Number Label'),
-                            'information'   => __('The label would replace all of the Identity Document Number text under this shop'),
-                            'value'         => data_get($shop->settings, 'customer.identity_document_number', ''),
+                        'identity_document_number_label'     => [
+                            'type'        => 'input',
+                            'label'       => __('Identity Document Number Label'),
+                            'information' => __('The label would replace all of the Identity Document Number text under this shop'),
+                            'value'       => data_get($shop->settings, 'customer.identity_document_number', ''),
                         ],
                         'identity_document_number_alt_label' => [
-                            'type'          => 'input',
-                            'label'         => __('Identity Document Number Alt. Label'),
-                            'information'   => __('The label would replace all of the Identity Document Number Alt. text under this shop'),
-                            'value'         => data_get($shop->settings, 'customer.identity_document_number_alt', ''),
+                            'type'        => 'input',
+                            'label'       => __('Identity Document Number Alt. Label'),
+                            'information' => __('The label would replace all of the Identity Document Number Alt. text under this shop'),
+                            'value'       => data_get($shop->settings, 'customer.identity_document_number_alt', ''),
                         ],
                     ],
                 ],
@@ -378,7 +380,7 @@ class EditShop extends OrgAction
                     'label'  => __('Registration'),
                     'icon'   => 'fal fa-transporter',
                     'fields' => [
-                        'required_approval' => [
+                        'required_approval'     => [
                             'type'  => 'toggle',
                             'label' => __('Require approval'),
                             'value' => Arr::get($shop->settings, 'registration.require_approval', false),
@@ -389,11 +391,11 @@ class EditShop extends OrgAction
                             'value' => Arr::get($shop->settings, 'registration.require_phone_number', false),
                         ],
 
-                        'marketing_opt_in_label' => [
-                            'type'  => 'input',
-                            'label' => __('Marketing opt-in label'),
-                            'placeholder'   => __('Opt in to our newsletter for updates and offers.'),
-                            'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_label', ''),
+                        'marketing_opt_in_label'   => [
+                            'type'        => 'input',
+                            'label'       => __('Marketing opt-in label'),
+                            'placeholder' => __('Opt in to our newsletter for updates and offers.'),
+                            'value'       => Arr::get($shop->settings, 'registration.marketing_opt_in_label', ''),
                         ],
                         'marketing_opt_in_default' => [
                             'type'  => 'toggle',
@@ -410,30 +412,30 @@ class EditShop extends OrgAction
                             'type'    => 'invoice_serial_references',
                             'options' => [
                                 [
-                                    'type' => [
-                                        'label' => __('Standalone invoice numbers'),
+                                    'type'     => [
+                                        'label'     => __('Standalone invoice numbers'),
                                         'key_value' => 'stand_alone_invoice_numbers'
                                     ],
-                                    'format' => [
-                                        'label' => __('Format'),
+                                    'format'   => [
+                                        'label'     => __('Format'),
                                         'key_value' => 'stand_alone_invoice_numbers_format'
                                     ],
                                     'sequence' => [
-                                        'label' => __('Last incremental number'),
+                                        'label'     => __('Last incremental number'),
                                         'key_value' => 'stand_alone_invoice_numbers_serial'
                                     ],
                                 ],
                                 [
-                                    'type' => [
-                                        'label' => __('Standalone refunds numbers'),
+                                    'type'     => [
+                                        'label'     => __('Standalone refunds numbers'),
                                         'key_value' => 'stand_alone_refund_numbers'
                                     ],
-                                    'format' => [
-                                        'label' => __('Format'),
+                                    'format'   => [
+                                        'label'     => __('Format'),
                                         'key_value' => 'stand_alone_refund_numbers_format'
                                     ],
                                     'sequence' => [
-                                        'label' => __('Last incremental number'),
+                                        'label'     => __('Last incremental number'),
                                         'key_value' => 'stand_alone_refund_numbers_serial'
                                     ],
                                 ],
@@ -475,10 +477,10 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
-                    'label'  => __('Bank Transfer Instructions for Email'),
-                    'icon'   => 'fa-light fa-envelope',
+                    'label'       => __('Bank Transfer Instructions for Email'),
+                    'icon'        => 'fa-light fa-envelope',
                     'information' => __('This information will be appended to the order confirmation email when the customer selects bank transfer as the payment method'),
-                    'fields' => [
+                    'fields'      => [
                         'bank_transfer_instructions_for_email' => [
                             'type'  => 'textEditor',
                             'label' => __('Bank Transfer Instructions for Email'),
@@ -511,10 +513,10 @@ class EditShop extends OrgAction
                                     ['label' => __('Show Dispatch Totals (SKO & Units)'), 'key' => 'show_dispatch_totals'],
                                 ];
 
-                                return array_map(fn ($col) => [
+                                return array_map(fn($col) => [
                                     'label' => $col['label'],
                                     'key'   => $col['key'],
-                                    'value' => (bool) Arr::get($savedColumns, $col['key'], false),
+                                    'value' => (bool)Arr::get($savedColumns, $col['key'], false),
                                 ], $columns);
                             })(),
                         ],
@@ -524,7 +526,7 @@ class EditShop extends OrgAction
                     'label'  => __('Languages'),
                     'icon'   => 'fa-light fa-language',
                     'fields' => [
-                        'language_id'     => [
+                        'language_id' => [
                             'type'        => 'select',
                             'label'       => __('Main language'),
                             'placeholder' => __('Select your language'),
@@ -533,18 +535,18 @@ class EditShop extends OrgAction
                             'options'     => GetLanguagesOptions::make()->all(),
                             'searchable'  => true
                         ],
-                      /*   'extra_languages' => [
-                            'type'        => 'select',
-                            'label'       => __('Extra language'),
-                            'placeholder' => __('Select your language'),
-                            'required'    => true,
-                            'value'       => $shop->extra_languages,
-                            'options'     => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
-                            'searchable'  => true,
-                            'mode'        => 'tags',
-                            'labelProp'   => 'name',
-                            'valueProp'   => 'id',
-                        ] */
+                        /*   'extra_languages' => [
+                              'type'        => 'select',
+                              'label'       => __('Extra language'),
+                              'placeholder' => __('Select your language'),
+                              'required'    => true,
+                              'value'       => $shop->extra_languages,
+                              'options'     => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
+                              'searchable'  => true,
+                              'mode'        => 'tags',
+                              'labelProp'   => 'name',
+                              'valueProp'   => 'id',
+                          ] */
                     ],
                 ],
                 [
@@ -566,72 +568,90 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
+
+                [
+                    'label' => __('Banned Countries').' ('.__('territories').')',
+                    'icon'  => 'fa-light fa-ban',
+
+                    'fields' => [
+                        'banned_countries' => [
+                            'full'     => true,
+                            'hidden'   => app()->environment('production'),
+                            'type'     => 'banned-countries',
+                            'label'    => __('Banned Countries'),
+                            'required' => true,
+                            'value'    => $mergedBannedCountryRegions,
+                            'options'  => GetCountriesOptions::run(),
+                        ],
+                    ],
+                ],
+
                 $shop->type === ShopTypeEnum::DROPSHIPPING ? [
                     'label'  => __('Ebay Redirect Key'),
                     'icon'   => 'fa-light fa-key',
                     'fields' => [
-                        'ebay_redirect_key' => [
+                        'ebay_redirect_key'      => [
                             'type'  => 'input',
                             'label' => __('Ebay Redirect Key'),
                             'value' => Arr::get($shop->settings, 'ebay.redirect_key', ''),
                         ],
-                        'ebay_marketplace_id' => [
+                        'ebay_marketplace_id'    => [
                             'type'  => 'input',
                             'label' => __('Ebay Marketplace Id'),
                             'value' => Arr::get($shop->settings, 'ebay.marketplace_id', ''),
                         ],
-                        'ebay_warehouse_city' => [
+                        'ebay_warehouse_city'    => [
                             'type'  => 'input',
                             'label' => __('Ebay Warehouse City'),
                             'value' => Arr::get($shop->settings, 'ebay.warehouse_city', ''),
                         ],
-                        'ebay_warehouse_state' => [
+                        'ebay_warehouse_state'   => [
                             'type'  => 'input',
                             'label' => __('Ebay Warehouse State'),
                             'value' => Arr::get($shop->settings, 'ebay.warehouse_state', ''),
                         ],
                         'ebay_warehouse_country' => [
-                            'type'  => 'select',
-                            'label' => __('Ebay Warehouse Country'),
-                            'value' => Arr::get($shop->settings, 'ebay.warehouse_country', ''),
-                            'options'     => GetCountriesOptions::run(),
-                            'mode'        => 'single'
+                            'type'    => 'select',
+                            'label'   => __('Ebay Warehouse Country'),
+                            'value'   => Arr::get($shop->settings, 'ebay.warehouse_country', ''),
+                            'options' => GetCountriesOptions::run(),
+                            'mode'    => 'single'
                         ],
                     ],
                 ] : [],
                 $shop->type === ShopTypeEnum::EXTERNAL ?
                     match ($shop->engine) {
                         ShopEngineEnum::FAIRE => [
-                            'label' => __('Faire Settings'),
+                            'label'  => __('Faire Settings'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
-                                'faire_access_token' => [
-                                    'type'  => 'input_with_warning',
-                                    'label' => __('Faire Access Token'),
-                                    'value' => Arr::get($shop->settings, 'faire.access_token', ''),
-                                    'showWarning'    => !is_null($shop->external_shop_connection_failed_at),
-                                    'warningTitle'   => __('We are having troubles connecting to the platform'),
-                                    'warningBody'    => __('Error Message') . ": " . $shop->external_shop_connection_error
+                                'faire_access_token'                                      => [
+                                    'type'         => 'input_with_warning',
+                                    'label'        => __('Faire Access Token'),
+                                    'value'        => Arr::get($shop->settings, 'faire.access_token', ''),
+                                    'showWarning'  => !is_null($shop->external_shop_connection_failed_at),
+                                    'warningTitle' => __('We are having troubles connecting to the platform'),
+                                    'warningBody'  => __('Error Message').": ".$shop->external_shop_connection_error
                                 ],
-                                'faire_order_from_days' => [
+                                'faire_order_from_days'                                   => [
                                     'type'  => 'input',
                                     'label' => __('Faire Order From Days'),
                                     'value' => Arr::get($shop->settings, 'faire.order_from_days', '6')
                                 ],
-                                'faire_is_shipping_by_external' => [
-                                    'type'          => 'toggle',
-                                    'label'         => __('Shipping by external service'),
+                                'faire_is_shipping_by_external'                           => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Shipping by external service'),
                                     'value' => Arr::get($shop->settings, 'faire.is_shipping_by_external', false)
                                 ],
                                 'faire_dont_send_first_orders_automatically_to_warehouse' => [
-                                    'type'          => 'toggle',
-                                    'label'         => __('Do not send first orders to warehouse'),
+                                    'type'  => 'toggle',
+                                    'label' => __('Do not send first orders to warehouse'),
                                     'value' => Arr::get($shop->settings, 'faire.dont_send_first_orders_automatically_to_warehouse', false)
                                 ]
                             ],
                         ],
                         ShopEngineEnum::WIX => [
-                            'label' => __('Wix Keys'),
+                            'label'  => __('Wix Keys'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
                                 'wix_access_token' => [
@@ -642,14 +662,14 @@ class EditShop extends OrgAction
                             ],
                         ],
                         ShopEngineEnum::SHOPIFY => [
-                            'label' => __('Shopify Keys'),
+                            'label'  => __('Shopify Keys'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
                                 'shop_url' => [
-                                    'type'  => 'input',
+                                    'type'     => 'input',
                                     'disabled' => true,
-                                    'label' => __('Shopify Shop Url'),
-                                    'value' => Arr::get($shop->settings, 'shopify.shop_url', ''),
+                                    'label'    => __('Shopify Shop Url'),
+                                    'value'    => Arr::get($shop->settings, 'shopify.shop_url', ''),
                                 ],
                             ],
                         ],
@@ -659,13 +679,13 @@ class EditShop extends OrgAction
                     'label'  => __('Chat'),
                     'icon'   => 'fal fa-comment-alt',
                     'fields' => [
-                        'enable_chat'  => [
-                            'type'          => 'toggle',
-                            'information'   => __('If active, will enable the Chat feature on this shop website'),
-                            'label'         => __('Enable Chat Feature'),
-                            'value'         => Arr::get($shop->settings, 'chat.enable_chat', false),
+                        'enable_chat'         => [
+                            'type'        => 'toggle',
+                            'information' => __('If active, will enable the Chat feature on this shop website'),
+                            'label'       => __('Enable Chat Feature'),
+                            'value'       => Arr::get($shop->settings, 'chat.enable_chat', false),
                         ],
-                        'chat_slack_token' => [
+                        'chat_slack_token'    => [
                             'type'        => 'input',
                             'label'       => __('Slack Bot Token'),
                             'placeholder' => 'xoxb-xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx',
@@ -678,6 +698,42 @@ class EditShop extends OrgAction
                             'placeholder' => '#general',
                             'information' => __('Slack channels where chat conversations will be shared. Press Enter to add each channel.'),
                             'value'       => Arr::get($shop->settings, 'chat.slack_channels') ?? [],
+                        ],
+                    ],
+                ],
+                [
+                    'label'       => __('Google Ads'),
+                    'icon'        => 'fa-brands fa-google',
+                    'information' => $isGoogleAdsConnected
+                        ? __('This shop is connected to Google Ads. Set the Customer ID and User List ID below to sync customers to your Google Ads user list.')
+                        : __('Connect your Google account to authorize syncing customers, then set the Customer ID and User List ID below.'),
+                    'fields'      => [
+                        'gads__connect'     => [
+                            'type'        => 'action',
+                            'label'       => __('Google Account'),
+                            'information' => $isGoogleAdsConnected
+                                ? __('Connected.')
+                                : __('Not connected yet.'),
+                            'action'      => [
+                                'type'  => 'button',
+                                'style' => $isGoogleAdsConnected ? 'tertiary' : 'save',
+                                'icon'  => ['fab', 'fa-google'],
+                                'label' => $isGoogleAdsConnected ? __('Reconnect Google account') : __('Connect Google account'),
+                                'route' => [
+                                    'url' => ConnectShopGoogleAds::run($shop)
+                                ],
+                            ],
+                        ],
+                        'gads_customer_id'  => [
+                            'type'        => 'input',
+                            'label'       => __('Customer ID'),
+                            'placeholder' => '123-456-7890',
+                            'value'       => Arr::get($shop->settings, 'google_ads.customer_id', ''),
+                        ],
+                        'gads_user_list_id' => [
+                            'type'  => 'input',
+                            'label' => __('User List ID'),
+                            'value' => Arr::get($shop->settings, 'google_ads.user_list_id', ''),
                         ],
                     ],
                 ],
@@ -785,7 +841,7 @@ class EditShop extends OrgAction
                     ],
                 ]
             ],
-            'args' => [
+            'args'      => [
                 'updateRoute' => [
                     'name'       => 'grp.models.org.shop.update',
                     'parameters' => [

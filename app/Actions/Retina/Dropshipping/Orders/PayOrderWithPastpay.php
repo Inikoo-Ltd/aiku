@@ -17,7 +17,6 @@ use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class PayOrderWithPastpay extends RetinaAction
@@ -133,7 +132,7 @@ class PayOrderWithPastpay extends RetinaAction
         $result = $this->handle($order, [
             'days' => 30
         ]);
-dd($result);
+        dd($result);
 
         return 1;
     }

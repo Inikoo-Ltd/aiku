@@ -227,6 +227,7 @@ const switchTab = (key: string) => {
             section: key
         },
         preserveState: true,
+        preserveScroll: true,
         replace: true,
         only: [] // Don't reload any data, just update URL
     })

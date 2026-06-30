@@ -107,7 +107,7 @@ enum WebBlockTemplateEnum: string
     {
         return array_merge(
             ...array_map(
-                fn ($item) => $item->templateCodes(), 
+                fn ($item) => $item->templateCodes(),
                 array_filter(
                     self::cases(),
                     fn (self $item) => $item !== self::CATALOGUE_EXCLUSIVES

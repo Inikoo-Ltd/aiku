@@ -25,16 +25,11 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
 use App\Actions\Reviews\AutoPublishReviews;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
-use App\Actions\Web\Crawl\PurgeStaleCrawls;
-use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
-use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
-use App\Actions\Web\Website\PruneWebsiteConversionEvents;
-use App\Actions\Web\Website\PruneWebsitePageViews;
-use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
@@ -47,6 +42,12 @@ use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
 use App\Actions\HydrateHealthRank;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
+use App\Actions\Web\Crawl\PurgeStaleCrawls;
+use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
+use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
+use App\Actions\Web\Website\PruneWebsiteConversionEvents;
+use App\Actions\Web\Website\PruneWebsitePageViews;
+use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
@@ -95,6 +96,15 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'RecordVarnishMemoryUsage',
                 type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorWebsitesUptime::makeJob())->everyFiveMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorWebsitesUptime',
+                ),
+                name: 'MonitorWebsitesUptime',
+                type: 'command',
                 scheduledAt: now()->format('H:i')
             );
 
@@ -397,6 +407,7 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
 
 
             $this->logSchedule(
@@ -717,15 +728,6 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'ChargeHydrateStats',
                 ),
                 name: 'ChargeHydrateStats',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('hydrate:outboxes')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'HydrateOutboxes',
-                ),
-                name: 'HydrateOutboxes',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

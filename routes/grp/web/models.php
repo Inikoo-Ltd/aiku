@@ -241,6 +241,7 @@ use App\Actions\Fulfilment\StoredItem\SyncStoredItemPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPalletAudit;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
+use App\Actions\Goods\Barcode\UpdateBarcode;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -1255,6 +1256,10 @@ Route::name('brand.')->prefix('brand')->group(function () {
     Route::patch('{brand:id}/update', UpdateBrand::class)->name('update')->withoutScopedBindings();
     Route::delete('{brand:id}/delete', DeleteBrand::class)->name('delete')->withoutScopedBindings();
     Route::patch('{brand:id}/attach-multiple', AttachBrandToMultipleModel::class)->name('brands.attach-multiple')->withoutScopedBindings();
+});
+
+Route::name('barcodes.')->prefix('barcode')->group(function () {
+    Route::patch('{barcode:id}/update', UpdateBarcode::class)->name('update')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {

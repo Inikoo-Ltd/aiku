@@ -140,6 +140,7 @@ class IndexMissingBrandTradeUnits extends GrpAction
                 'title'       => __('Trade units without brand'),
                 'pageHead'    => [
                     'title'         => __('Trade units without brand'),
+                    'is_negative'   => true,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-tag'],
                         'title' => __('Trade units without brand'),

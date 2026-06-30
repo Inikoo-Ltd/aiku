@@ -166,6 +166,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property int|null $seeder_shop_id
  * @property string|null $proforma_footer
  * @property \Illuminate\Support\Carbon|null $migrated_to_aiku_on
+ * @property string $banned_country_regions
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -292,6 +293,7 @@ class Shop extends Model implements HasMedia, Auditable
         'location'                     => 'array',
         'extra_languages'              => 'array',
         'forbidden_dispatch_countries' => 'array',
+        'banned_country_regions'       => 'array',
         'type'                         => ShopTypeEnum::class,
         'state'                        => ShopStateEnum::class,
         'engine'                       => ShopEngineEnum::class,
@@ -308,6 +310,7 @@ class Shop extends Model implements HasMedia, Auditable
         'location'                     => '{}',
         'extra_languages'              => '{}',
         'forbidden_dispatch_countries' => '{}',
+        'banned_country_regions'       => '{}',
         'offers_data'                  => '{}',
         'opening_hours'                => '{}',
     ];

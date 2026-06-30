@@ -21,7 +21,7 @@ class RepairProhibitedWebBlocksInNonModelWebpages
     public function handle(Webpage $webpage, Command $command)
     {
         $allTemplateCodes = WebBlockTemplateEnum::allTemplateCodes();
-        
+
         $delete = $command->option('apply-deletion');
         $hasDeletion = false;
 
@@ -66,16 +66,17 @@ class RepairProhibitedWebBlocksInNonModelWebpages
         } else {
             $query = DB::table('webpages')->select('id')
                 ->whereNull('model_type')
-                ->whereIn('sub_type', 
+                ->whereIn(
+                    'sub_type',
                     ProductCategoryTypeEnum::values()
                 );
 
-                if ($command->argument('website')) {
-                    $website   = Website::where('slug', $command->argument('website'))->first();
-                    $query->where('website_id', $website->id);
-                }
+            if ($command->argument('website')) {
+                $website   = Website::where('slug', $command->argument('website'))->first();
+                $query->where('website_id', $website->id);
+            }
 
-                $webpagesID = $query->get();
+            $webpagesID = $query->get();
         }
 
         $total   = count($webpagesID);

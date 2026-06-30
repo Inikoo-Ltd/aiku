@@ -110,5 +110,8 @@ return [
         'enabled' => env('MAXMIND_ENABLED', false),
         'account_id' => env('MAXMIND_ACCOUNT_ID'),
         'license_key' => env('MAXMIND_LICENSE_KEY'),
-    ]
+    ],
+    'discord' => [
+        'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+    ],
 ];

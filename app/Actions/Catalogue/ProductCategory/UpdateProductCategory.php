@@ -349,7 +349,7 @@ class UpdateProductCategory extends OrgAction
             ->first();
 
         if (!$offer) {
-            $offer=StoreVolumeGRDiscount::make()->action($productCategory, [
+            $offer = StoreVolumeGRDiscount::make()->action($productCategory, [
                 'trigger_data_item_quantity' => $itemQuantity,
                 'percentage_off'             => $percentageOff / 100,
                 'interval'                   => 30,
