@@ -17,7 +17,6 @@ use App\Actions\CRM\TrafficSource\SeedTrafficSources;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
 use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
-use App\Actions\Helpers\Query\Seeders\ProspectQuerySeeder;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
@@ -238,7 +237,6 @@ class StoreShop extends OrgAction
 
         GroupHydrateShops::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateShops::dispatch($organisation)->delay($this->hydratorsDelay);
-        ProspectQuerySeeder::dispatch($shop);
         SeedShopOutboxes::dispatch($shop);
         SetIconAsShopLogo::dispatch($shop)->delay($this->hydratorsDelay);
         SeedShopOfferCampaigns::dispatch($shop);
