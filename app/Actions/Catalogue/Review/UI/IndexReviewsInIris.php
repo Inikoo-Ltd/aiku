@@ -27,7 +27,7 @@ class IndexReviewsInIris extends OrgAction
             });
         });
 
-         $isLoggedIn = auth()->check();
+        $isLoggedIn = auth()->check();
 
         $select = [
                 'reviews.id',
