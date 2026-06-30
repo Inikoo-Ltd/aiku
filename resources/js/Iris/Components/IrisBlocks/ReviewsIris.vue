@@ -64,13 +64,6 @@ const next = () => {
     }
 }
 
-const maskName = (name: string) => {
-    if (name.length <= 2) {
-        return `${name}***`
-    }
-
-    return `${name.slice(0, 2)}***`
-}
 
 </script>
 
@@ -120,7 +113,7 @@ const maskName = (name: string) => {
                         <Rating :modelValue="review.rating" readonly :cancel="false" class="review-rating-small" />
 
                         <div class="mt-2 text-sm font-semibold text-gray-900">
-                            {{ maskName(review.name) }}
+                            {{ review.name }}
                         </div>
 
                         <p class="mt-2 h-20 overflow-hidden text-xs leading-5 text-gray-600 line-clamp-4">
@@ -132,8 +125,8 @@ const maskName = (name: string) => {
                                 {{ useFormatTime(review.date) }}
                             </div>
 
-                            <div class="flex items-center gap-2">
-                                <!-- Like -->
+                            <!-- <div class="flex items-center gap-2">
+            
                                 <button @click="toggleReaction(review, 'like')"
                                     class="flex h-7 items-center gap-1 rounded px-2 transition" :class="reactions[review.id] === 'like'
                                             ? 'bg-green-50 text-green-600'
@@ -145,7 +138,7 @@ const maskName = (name: string) => {
                                     </span>
                                 </button>
 
-                                <!-- Dislike -->
+                
                                 <button @click="toggleReaction(review, 'dislike')"
                                     class="flex h-7 w-7 items-center justify-center rounded transition" :class="reactions[review.id] === 'dislike'
                                             ? 'bg-red-50 text-red-600'
@@ -153,7 +146,7 @@ const maskName = (name: string) => {
                                         ">
                                     <FontAwesomeIcon :icon="faThumbsDown" class="text-[10px]" />
                                 </button>
-                            </div>
+                            </div> -->
                         </div>
                     </div>
                 </div>
@@ -161,6 +154,7 @@ const maskName = (name: string) => {
         </div>
     </div>
 </template>
+
 
 <style scoped>
 :deep(.review-rating .p-rating) {
