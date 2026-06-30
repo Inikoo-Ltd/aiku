@@ -28,12 +28,20 @@ class ShowStandAloneRegistration extends IrisAction
         $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->get();
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
+        $billingBannedCountryCodes = collect($shop->banned_country_regions ?? [])
+            ->filter(fn ($region) => Arr::get($region, 'billing') === true)
+            ->keys()
+            ->all();
+        $countriesAddressData = array_filter(
+            GetAddressData::run($shop),
+            fn (array $country) => !in_array($country['code'], $billingBannedCountryCodes),
+        );
 
         $webUser = $request->user();
         return Inertia::render(
             'Auth/StandAloneRegistration',
             [
-                'countriesAddressData' => GetAddressData::run(),
+                'countriesAddressData' => $countriesAddressData,
                 'requiresPhoneNumber' => Arr::get($this->shop->settings, 'registration.require_phone_number', false),
                 'polls' => $pollsResource,
                 'client' => $webUser,
