@@ -173,7 +173,10 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
                     </template>
                 </Column>
 
-                <Column :header="ctrans('Postcode (regex)')" style="min-width: 12rem">
+                <Column xheader="ctrans('Postcode (regex)')" style="min-width: 12rem">
+                    <template #header="{ column }">
+                        <div class="font-semibold">{{ctrans('Postcode (regex)')}} <InformationIcon :information="ctrans('Empty postcode means the entire country will be banned')" /></div>
+                    </template>
                     <template #body="{ data }">
                         <InputText
                             v-model="data.postcode"
@@ -195,7 +198,7 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
                                     class="h-5 w-5 rounded cursor-pointer border-gray-300 hover:border-[--theme-color-0] text-[--theme-color-0] focus:ring-[--theme-color-0]"
                                     @change="onFlagChange(data, 'billing')"
                                 />
-                                <span class="whitespace-nowrap">{{ ctrans("Billing") }} <InformationIcon :information="ctrans('If checked, billing location from the postcode will be excluded')" /></span>
+                                <span class="whitespace-nowrap">{{ ctrans("Billing") }} <InformationIcon :information="ctrans('If checked, billing location that matched the postcode will be banned')" /></span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input
@@ -205,7 +208,7 @@ const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
                                     class="h-5 w-5 rounded cursor-pointer border-gray-300 hover:border-[--theme-color-0] text-[--theme-color-0] focus:ring-[--theme-color-0]"
                                     @change="onFlagChange(data, 'delivery')"
                                 />
-                                <span class="whitespace-nowrap">{{ ctrans("Delivery") }} <InformationIcon :information="ctrans('If active, delivery location from the postcode will be excluded')" /></span>
+                                <span class="whitespace-nowrap">{{ ctrans("Delivery") }} <InformationIcon :information="ctrans('If active, delivery location that matched the postcode will be banned')" /></span>
                             </label>
                         </div>
                     </template>
