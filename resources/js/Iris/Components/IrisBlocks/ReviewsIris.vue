@@ -56,19 +56,25 @@ const fetchMoreReviews = async () => {
 }
 
 const current = ref(0)
-const windowWidth = ref(window.innerWidth)
+const windowWidth = ref(1024) // default width for SSR
 
 const updateWindowWidth = () => {
-    windowWidth.value = window.innerWidth
+    if (typeof window !== "undefined") {
+        windowWidth.value = window.innerWidth
+    }
 }
 
+
 onMounted(() => {
+    updateWindowWidth() // get actual width after hydration
     window.addEventListener("resize", updateWindowWidth)
     fetchMoreReviews()
 })
 
 onBeforeUnmount(() => {
-    window.removeEventListener("resize", updateWindowWidth)
+     if (typeof window !== "undefined") {
+        window.removeEventListener("resize", updateWindowWidth)
+    }
 })
 
 const perPage = computed(() => {
