@@ -71,6 +71,8 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Models\Reviews\Review;
+use App\Models\Reviews\ShopReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
@@ -236,6 +238,8 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
+ * @property-read ShopReviewStat|null $reviewStats
+ * @property-read LaravelCollection<int, Review> $reviews
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read Shop|null $seederShop
@@ -381,6 +385,16 @@ class Shop extends Model implements HasMedia, Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(ShopStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ShopReviewStat::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
     }
 
     public function accountingStats(): HasOne

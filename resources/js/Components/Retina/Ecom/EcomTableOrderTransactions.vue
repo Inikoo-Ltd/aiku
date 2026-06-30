@@ -8,7 +8,7 @@ import Tag from '@/Components/Tag.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { routeType } from '@/types/route'
-import { Table as TableTS} from '@/types/Table'
+import { Table as TableTS } from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
@@ -27,7 +27,7 @@ const props = defineProps<{
     state?: string
     readonly?: boolean
 }>()
-    
+
 
 const locale = inject('locale', retinaLayoutStructure)
 
@@ -75,79 +75,72 @@ const debounceUpdateQuantity = debounce(
 
 
 <template>
-    <Table :resource="data" :name="tab">
-        <!-- Column: Image -->
-        <template #cell(image)="{ item }">
-            <div class="flex relative w-8 aspect-square overflow-hidden">
-                <Image
-                    :src="item.image?.thumbnail"
-                    class="w-full h-full object-contain"
-                />
-            </div>
-        </template>
-
-        <!-- Column: Code -->
-        <template #cell(asset_code)="{ item }">
-            <LinkIris :href="productRoute(item)" class="primaryLink" target="_blank">
-                {{ item.asset_code }}
-            </LinkIris>
-        </template>
-
-        <!-- Column: Asset Name -->
-        <template #cell(asset_name)="{ item }">
-            <div>
-                <div>{{ item.asset_name }}</div>
-                <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
-                    <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+    <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200 overflow-x-auto">
+        <Table :resource="data" :name="tab">
+            <!-- Column: Image -->
+            <template #cell(image)="{ item }">
+                <div class="flex relative w-8 aspect-square overflow-hidden">
+                    <Image :src="item.image?.thumbnail" class="w-full h-full object-contain" />
                 </div>
-                <div v-else class="text-gray-500 italic text-xs">
-                    {{ trans('Stock :xquantityx available', { xquantityx: locale.number(item.available_quantity || 0) }) }}
-                </div>
-                
-                <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
-            </div>
-        </template>
+            </template>
 
-        <!-- Column: Quantity -->
-        <template #cell(quantity_ordered)="{ item }">
-            <div class="flex items-center justify-end">
-                <div v-if="item.is_gift" >
-                    {{ locale.number(item.quantity_bonus) }}
-                    <span v-tooltip="ctrans('Quantity of free gift')">
-                        <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
-                    </span>
-                </div>
-                <div v-else-if="state === 'creating' || state === 'xsubmitted'" class="w-fit">
-                    <NumberWithButtonSave
-                        :modelValue="item.quantity_ordered"
-                        :routeSubmit="item.updateRoute"
-                        :bindToTarget="{ min: 0 }"
-                        isWithRefreshModel
-                        keySubmit="quantity_ordered"
-                        :isLoading="isLoading === 'quantity' + item.id"
-                        :readonly="readonly"
-                        @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
-                        noUndoButton
-                        noSaveButton
-                    />
-                </div>
+            <!-- Column: Code -->
+            <template #cell(asset_code)="{ item }">
+                <LinkIris :href="productRoute(item)" class="primaryLink" target="_blank">
+                    {{ item.asset_code }}
+                </LinkIris>
+            </template>
 
-                <div v-else>
-                    <!-- {{
+            <!-- Column: Asset Name -->
+            <template #cell(asset_name)="{ item }">
+                <div>
+                    <div>{{ item.asset_name }}</div>
+                    <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
+                        <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+                    </div>
+                    <div v-else class="text-gray-500 italic text-xs">
+                        {{ trans('Stock :xquantityx available', {
+                            xquantityx: locale.number(item.available_quantity ||
+                        0) }) }}
+                    </div>
+
+                    <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
+                </div>
+            </template>
+
+            <!-- Column: Quantity -->
+            <template #cell(quantity_ordered)="{ item }">
+                <div class="flex items-center justify-end">
+                    <div v-if="item.is_gift">
+                        {{ locale.number(item.quantity_bonus) }}
+                        <span v-tooltip="ctrans('Quantity of free gift')">
+                            <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
+                        </span>
+                    </div>
+                    <div v-else-if="state === 'creating' || state === 'xsubmitted'" class="w-fit">
+                        <NumberWithButtonSave :modelValue="item.quantity_ordered" :routeSubmit="item.updateRoute"
+                            :bindToTarget="{ min: 0 }" isWithRefreshModel keySubmit="quantity_ordered"
+                            :isLoading="isLoading === 'quantity' + item.id" :readonly="readonly"
+                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+                            noUndoButton noSaveButton />
+                    </div>
+
+                    <div v-else>
+                        <!-- {{
                         Number.isInteger(Number(item.quantity_ordered)) && String(item.quantity_ordered).match(/^\d+(\.0+)?$/)
                             ? parseInt(item.quantity_ordered)
                             : parseFloat(item.quantity_ordered)
                     }} -->
-                    <FractionDisplay :fractionData="item.quantity_ordered_fractional" />
-                </div>
-                
-                <!-- <Transition name="spin-to-down">
+                        <FractionDisplay :fractionData="item.quantity_ordered_fractional" />
+                    </div>
+
+                    <!-- <Transition name="spin-to-down">
                     <span :key="item.quantity_ordered">
                         {{ item['quantity_ordered'] }}
                     </span>
                 </Transition> -->
 
-                <!-- <PureInput
+                    <!-- <PureInput
                     :modelValue="item.quantity_ordered"
                     @onEnter="(e: number) => onUpdateQuantity(item.updateRoute, item.id, e)"
                     @blur="(e: string) => e == item.quantity_ordered ? false : onUpdateQuantity(item.updateRoute, item.id, e)"
@@ -156,52 +149,52 @@ const debounceUpdateQuantity = debounce(
                     align="right"
                     :disabled="state === 'dispatched'"
                 /> -->
-            </div>
+                </div>
 
-            <!-- <div v-else>{{ item.quantity }}</div> -->
-        </template>
+                <!-- <div v-else>{{ item.quantity }}</div> -->
+            </template>
 
-        
-        <!-- Column: Price -->
-        <template #cell(price)="{ item }">
-            <div v-if="item.is_gift">
-                
-            </div>
-            <div v-else class="text-right">
-                {{ locale.currencyFormat(item.currency_code || '', item.price) }}
-            </div>
-        </template>
-        
-        <!-- Column: Net Amount -->
-        <template #cell(net_amount)="{ item }">
-            <div v-if="item.is_gift">
-                
-            </div>
-            <div v-else class="text-right">
-                <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
-                    <span v-if="item.gross_amount != item.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
-                    <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
-                </p>
-            </div>
-        </template>
 
-        <!-- Column: Action -->
-        <template #cell(actions)="{ item }">
-            <div class="flex gap-2">
-                <Link
-                    v-if="state === 'creating' || state === 'xsubmitted'"
-                    :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
-                    as="button"
-                    :method="item.deleteRoute.method"
-                    @start="() => isLoading = 'unselect' + item.id"
-                    @finish="() => isLoading = false"
-                    v-tooltip="trans('Unselect this product')"
-                    :preserveScroll="true"
-                >
-                    <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs" :loading="isLoading === 'unselect' + item.id" />
-                </Link>
-            </div>
-            <!-- {{ locale.currencyFormat(item.currency_code, item.net_amount) }} -->
-        </template>
-    </Table>
+            <!-- Column: Price -->
+            <template #cell(price)="{ item }">
+                <div v-if="item.is_gift">
+
+                </div>
+                <div v-else class="text-right">
+                    {{ locale.currencyFormat(item.currency_code || '', item.price) }}
+                </div>
+            </template>
+
+            <!-- Column: Net Amount -->
+            <template #cell(net_amount)="{ item }">
+                <div v-if="item.is_gift">
+
+                </div>
+                <div v-else class="text-right">
+                    <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
+                        <span v-if="item.gross_amount != item.net_amount"
+                            class="text-gray-500 line-through mr-1 opacity-70">{{
+                                locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
+                        <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
+                    </p>
+                </div>
+            </template>
+
+            <!-- Column: Action -->
+            <template #cell(actions)="{ item }">
+                <div class="flex gap-2">
+                    <Link v-if="state === 'creating' || state === 'xsubmitted'"
+                        :href="route(item.deleteRoute.name, item.deleteRoute.parameters)" as="button"
+                        :method="item.deleteRoute.method" @start="() => isLoading = 'unselect' + item.id"
+                        @finish="() => isLoading = false" v-tooltip="trans('Unselect this product')"
+                        :preserveScroll="true">
+                        <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
+                            :loading="isLoading === 'unselect' + item.id" />
+                    </Link>
+                </div>
+                <!-- {{ locale.currencyFormat(item.currency_code, item.net_amount) }} -->
+            </template>
+        </Table>
+    </div>
+
 </template>

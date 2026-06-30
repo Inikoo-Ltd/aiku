@@ -8,9 +8,13 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -63,6 +67,16 @@ class ShowIrisWebpage
         $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
 
         $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        $reviews = [];
+        $avgReview = 0;
+        
+        if ($webpage->type === WebpageTypeEnum::STOREFRONT) {
+            $reviews = IndexReviewsInIris::run(parent: $webpage->shop, prefix: $webpage->title);
+            $avgReview = IndexReviewsInIris::avgReview($webpage->shop);
+        } elseif ($webpage->model instanceof Product || ($webpage->model instanceof ProductCategory && $webpage->sub_type == ProductCategoryTypeEnum::FAMILY->value)) {
+            $reviews = IndexReviewsInIris::run(parent: $webpage->model, prefix: $webpage->title);
+            $avgReview = IndexReviewsInIris::avgReview($webpage->model);
+        }
 
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
@@ -85,12 +99,16 @@ class ShowIrisWebpage
                     ]]
                     : null,
             ],
-            'webpage_img'                 => $webpageImg,
-            'index_page'                  => $webpage->index_page,
-            'follow_link'                 => $webpage->follow_link,
-            'webpage_slug'                => $webpage->slug,
-            'is_different_when_logged_in' => $webpage->is_different_when_logged_in,
-
+            'webpage_img'                       => $webpageImg,
+            'index_page'                        => $webpage->index_page,
+            'follow_link'                       => $webpage->follow_link,
+            'webpage_slug'                      => $webpage->slug,
+            'reviews'                           => ReviewsInIrisResource::collection($reviews),
+            'review_summary'                    => $avgReview,
+            'allow_review_reaction'             => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
+            'allow_review_reply_reaction'       => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
+            'minimum_reviews_to_show'           => Arr::get($webpage->shop->settings, 'reviews.minimum_reviews_to_show', 0),
+            'is_different_when_logged_in'       => $webpage->is_different_when_logged_in,
         ];
 
         return array_merge($baseWebpageData, [
