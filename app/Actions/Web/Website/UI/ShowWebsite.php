@@ -239,6 +239,17 @@ class ShowWebsite extends OrgAction
 
                         array_merge(
                             [
+                                app()->isLocal() && !empty($website->blocked_country_regions) ? [
+                                    'type'    => 'button',
+                                    'style'   => 'tertiary',
+                                    'label'   => __('Restricted Countries'),
+                                    'tooltip' => __('Countries restricted from this website'),
+                                    'icon'    => ['fal', 'fa-ban'],
+                                    'route'   => [
+                                        'name'       => str_replace('websites.show', 'websites.restricted_country', $request->route()->getName()),
+                                        'parameters' => $request->route()->originalParameters(),
+                                    ],
+                                ] : [],
                                 [
                                     'type'    => 'button',
                                     'style'   => 'tertiary',
