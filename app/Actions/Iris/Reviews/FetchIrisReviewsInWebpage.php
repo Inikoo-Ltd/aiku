@@ -9,7 +9,6 @@ use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 
 class FetchIrisReviewsInWebpage extends IrisAction
@@ -27,12 +26,12 @@ class FetchIrisReviewsInWebpage extends IrisAction
             $avgReview = IndexReviewsInIris::make()->avgReview($webpage->shop);
         }
         return [
-            'reviews'                           => ReviewsInIrisResource::collection($reviews),
+            'reviews'                           => ReviewsInIrisResource::collection($reviews)->response()->getData(true),
             'review_summary'                    => $avgReview ?? 0,
         ];
     }
 
-    public function jsonResponse(array $data): AnonymousResourceCollection|array
+    public function jsonResponse(array $data): array
     {
         return $data;
     }
