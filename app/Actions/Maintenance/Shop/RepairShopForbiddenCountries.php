@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * Author Louis Perez
+ * Created on 30-06-2026-13h-39m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
+
 namespace App\Actions\Maintenance\Shop;
 
 use App\Actions\Catalogue\Shop\UpdateShop;
