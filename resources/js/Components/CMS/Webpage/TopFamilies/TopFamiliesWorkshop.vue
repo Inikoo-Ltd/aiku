@@ -12,10 +12,11 @@ import { faStar, faCircle } from "@fortawesome/free-regular-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 import { Swiper, SwiperSlide } from "swiper/vue"
-import { Navigation, Autoplay, Thumbs, FreeMode, Mousewheel } from "swiper/modules"
+import { Navigation, Autoplay, Thumbs, FreeMode, Mousewheel, Pagination } from "swiper/modules"
 import "swiper/css"
 import "swiper/css/navigation"
 import "swiper/css/free-mode"
+import "swiper/css/pagination"
 
 import Family3Render from "@/Iris/Components/Families3Render.vue"
 import { getStyles } from "@/Composables/styles"
@@ -222,7 +223,7 @@ watch(
 						@slideChange="updateEdges"
 						@reachBeginning="updateEdges"
 						@reachEnd="updateEdges"
-						:modules="[Autoplay, Thumbs, FreeMode, Navigation, Mousewheel]"
+						:modules="[Autoplay, Thumbs, FreeMode, Navigation, Mousewheel, Pagination]"
 						:loop="false"
 						:slides-per-view="perRow"
 						:space-between="spaceBetween"
@@ -230,7 +231,8 @@ watch(
 						:grabCursor="true"
 						:touchRatio="1.2"
 						navigation
-						class="w-full swiper-inner"
+						:pagination="{ clickable: true, dynamicBullets: true }"
+						class="w-full swiper-inner has-pagination"
 						:mousewheel="{
 							forceToAxis: true,
 							releaseOnEdges: true,
@@ -306,5 +308,22 @@ watch(
 :deep(.swiper-button-prev),
 :deep(.swiper-button-next) {
   display: none !important;
+}
+
+.swiper-inner.has-pagination {
+	padding-bottom: 2rem;
+}
+
+:deep(.swiper-pagination) {
+	bottom: 0;
+}
+
+:deep(.swiper-pagination-bullet) {
+	background-color: #cbd5e1;
+	opacity: 1;
+}
+
+:deep(.swiper-pagination-bullet-active) {
+	background-color: #1d2d44;
 }
 </style>

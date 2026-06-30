@@ -183,6 +183,15 @@ class StoreAttendanceAdjustment extends OrgAction
         return $this->handle($this->employee, $validated);
     }
 
+    public function action(Employee $employee, array $modelData): AttendanceAdjustment
+    {
+        $this->asAction = true;
+        $this->employee = $employee;
+        $this->initialisation($employee->organisation, $modelData);
+
+        return $this->handle($employee, $this->validatedData);
+    }
+
     public function htmlResponse(AttendanceAdjustment $adjustment, ActionRequest $request): RedirectResponse
     {
         return Redirect::route('grp.clocking_employees.index', ['tab' => 'adjustments'])

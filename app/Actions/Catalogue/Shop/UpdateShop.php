@@ -316,7 +316,7 @@ class UpdateShop extends OrgAction
         if (Arr::exists($modelData, 'review_visibility')) {
             $visibility = Arr::pull($modelData, 'review_visibility');
             data_set($modelData, 'settings.reviews.visibility.private', (bool) data_get($visibility, 'visibility.private', false));
-            data_set($modelData, 'settings.reviews.visibility.public',  (bool) data_get($visibility, 'visibility.public', true));
+            data_set($modelData, 'settings.reviews.visibility.public', (bool) data_get($visibility, 'visibility.public', true));
         }
 
         if (Arr::exists($modelData, 'review_publishing')) {
@@ -342,6 +342,14 @@ class UpdateShop extends OrgAction
 
         if (Arr::exists($modelData, 'review_public_rating_threshold')) {
             data_set($modelData, 'settings.reviews.public_rating_threshold', (int) Arr::pull($modelData, 'review_public_rating_threshold'));
+        }
+
+        if (Arr::exists($modelData, 'review_minimum_rating_to_show')) {
+            data_set($modelData, 'settings.reviews.minimum_rating_to_show', (int) Arr::pull($modelData, 'review_minimum_rating_to_show'));
+        }
+
+        if (Arr::exists($modelData, 'review_minimum_reviews_to_show')) {
+            data_set($modelData, 'settings.reviews.minimum_reviews_to_show', (int) Arr::pull($modelData, 'review_minimum_reviews_to_show'));
         }
 
         if (Arr::exists($modelData, 'review_show_staff_who_reply')) {
@@ -602,6 +610,8 @@ class UpdateShop extends OrgAction
             'review_publishing.auto_publishing.mode'                  => ['sometimes', 'required', Rule::enum(ReviewAutoPublishingEnum::class)],
             'review_publishing.auto_publishing.delay_hours'           => ['sometimes', 'nullable', 'integer', 'min:1', 'required_if:review_publishing.auto_publishing.mode,'.ReviewAutoPublishingEnum::DELAY->value],
             'review_public_rating_threshold'                          => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'review_minimum_rating_to_show'                           => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'review_minimum_reviews_to_show'                          => ['sometimes', 'nullable', 'integer', 'min:0'],
             'review_show_staff_who_reply'                             => ['sometimes', 'boolean'],
             'review_approval_required'                                => ['sometimes', 'boolean'],
             'review_hours_after_dispatched'                           => ['sometimes', 'nullable', 'integer', 'min:1'],

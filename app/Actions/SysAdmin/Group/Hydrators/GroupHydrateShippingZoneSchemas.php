@@ -1,21 +1,20 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 02 Jun 2024 10:19:11 Central European Summer Time, Mijas Costa, Spain
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Author: stewicca <wiccaalf@gmail.com>
+ * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Catalogue\Charge\ChargeStateEnum;
-use App\Models\Billables\Charge;
+use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateCharges implements ShouldBeUnique
+class GroupHydrateShippingZoneSchemas implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -24,23 +23,22 @@ class GroupHydrateCharges implements ShouldBeUnique
 
     public function getJobUniqueId(Group $group): string
     {
-        return $group->id;
+        return (string) $group->id;
     }
 
     public function handle(Group $group): void
     {
         $stats = [
-            'number_charges'            => $group->charges()->count(),
-            'number_assets_type_charge' => $group->charges()->count(),
+            'number_shipping_zone_schemas' => $group->shippingZoneSchemas()->count(),
         ];
 
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
-                model: 'charges',
+                model: 'shipping_zone_schemas',
                 field: 'state',
-                enum: ChargeStateEnum::class,
-                models: Charge::class,
+                enum: ShippingZoneSchemaStateEnum::class,
+                models: ShippingZoneSchema::class,
                 where: function ($q) use ($group) {
                     $q->where('group_id', $group->id);
                 }
@@ -49,5 +47,4 @@ class GroupHydrateCharges implements ShouldBeUnique
 
         $group->catalogueStats()->update($stats);
     }
-
 }

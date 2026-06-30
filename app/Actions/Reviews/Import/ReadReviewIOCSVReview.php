@@ -9,10 +9,8 @@
 
 namespace App\Actions\Reviews\Import;
 
-use App\Actions\Reviews\Import\ReviewIOImport;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -28,7 +26,7 @@ class ReadReviewIOCSVReview
 
         Excel::import(
             new ReviewIOImport($shop),
-            Storage::disk('local')->path($filename),
+            base_path($filename),
             null,
             \Maatwebsite\Excel\Excel::CSV
         );
@@ -43,7 +41,7 @@ class ReadReviewIOCSVReview
             return 1;
         }
 
-        if (!Storage::disk('local')->exists($command->argument('filename'))) {
+        if (!file_exists(base_path($command->argument('filename')))) {
             $command->error('File doesnt exists');
             return 1;
         }

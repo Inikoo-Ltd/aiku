@@ -19,6 +19,8 @@ trait WithGoogleAdsOAuth
 
     private const string GOOGLE_ADS_SCOPE = 'https://www.googleapis.com/auth/adwords';
 
+    private const string DATA_MANAGER_SCOPE = 'https://www.googleapis.com/auth/datamanager';
+
     /**
      * @throws Exception
      */
@@ -41,7 +43,7 @@ trait WithGoogleAdsOAuth
         }
 
         $client->setRedirectUri($redirectUri);
-        $client->setScopes([self::GOOGLE_ADS_SCOPE]);
+        $client->setScopes([self::GOOGLE_ADS_SCOPE, self::DATA_MANAGER_SCOPE]);
         $client->setState($shop->id);
         $client->setAccessType('offline');
         $client->setPrompt('select_account');

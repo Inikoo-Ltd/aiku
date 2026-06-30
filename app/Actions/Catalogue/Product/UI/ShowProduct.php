@@ -233,17 +233,6 @@ class ShowProduct extends OrgAction
 
             $actions[] = [
                 'type'  => 'button',
-                'style' => 'create',
-                'key'   => 'create-review',
-                'label' => __('Review'),
-                'route' => [
-                    'name'       => 'grp.models.review.store',
-                    'parameters' => []
-                ]
-            ];
-
-            $actions[] = [
-                'type'  => 'button',
                 'style' => 'edit',
                 'label' => __('Edit'),
                 'route' => [

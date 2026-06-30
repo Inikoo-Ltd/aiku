@@ -117,7 +117,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 	)
 }
 
-console.log('sdfsdf',layout.iris)
+
 </script>
 
 <template>
