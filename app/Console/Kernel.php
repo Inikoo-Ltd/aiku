@@ -420,7 +420,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('20:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'ConsolidateRecurringBills',
                 ),
                 name: 'ConsolidateRecurringBills',
