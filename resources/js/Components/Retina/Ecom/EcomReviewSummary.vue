@@ -46,7 +46,8 @@ const props = defineProps<{
 		overall_review: number
 		average_review: number
 	}
-	is_unable_dispatch?: boolean
+	is_forbidden_delivery?: boolean
+	is_forbidden_billing?: boolean
 	contact_address?: Address | null
 	isInBasket?: boolean
 	updateRoute: routeType
@@ -109,7 +110,7 @@ const isModalShippingAddress = ref(false)
 						{{ trans("No delivery address") }}
 					</div>
 
-					<div v-if="is_unable_dispatch" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
+					<div v-if="is_forbidden_delivery" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
 						<FontAwesomeIcon
 							icon="fas fa-exclamation-triangle"
 							class="mr-1"
