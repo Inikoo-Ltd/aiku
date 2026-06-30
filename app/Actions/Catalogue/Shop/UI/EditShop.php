@@ -513,7 +513,7 @@ class EditShop extends OrgAction
                                     ['label' => __('Show Dispatch Totals (SKO & Units)'), 'key' => 'show_dispatch_totals'],
                                 ];
 
-                                return array_map(fn($col) => [
+                                return array_map(fn ($col) => [
                                     'label' => $col['label'],
                                     'key'   => $col['key'],
                                     'value' => (bool)Arr::get($savedColumns, $col['key'], false),
@@ -819,6 +819,25 @@ class EditShop extends OrgAction
                                 'max' => 5,
                             ],
                             'value'       => Arr::get($shop->settings, 'reviews.public_rating_threshold', 3),
+                        ],
+                        'review_minimum_rating_to_show' => [
+                            'type'        => 'input_number',
+                            'label'       => __('Minimum rating to show on website'),
+                            'information' => __('Only reviews with a rating equal to or above this value are shown on the website.'),
+                            'bind'        => [
+                                'min' => 1,
+                                'max' => 5,
+                            ],
+                            'value'       => Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3),
+                        ],
+                        'review_minimum_reviews_to_show' => [
+                            'type'        => 'input_number',
+                            'label'       => __('Minimum number of reviews to show on website'),
+                            'information' => __('The reviews section is only shown on the website when there are at least this many reviews.'),
+                            'bind'        => [
+                                'min' => 0,
+                            ],
+                            'value'       => Arr::get($shop->settings, 'reviews.minimum_reviews_to_show', 0),
                         ],
                         'review_allow_reactions' => [
                             'type'        => 'toggle',
