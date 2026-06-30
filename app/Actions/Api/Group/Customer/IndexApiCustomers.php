@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 23-06-2025-11h-47m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -49,7 +49,7 @@ class IndexApiCustomers extends OrgAction
         }
 
         return $query->defaultSort('customers.id')
-        ->select([
+            ->select([
                 'customers.location',
                 'customers.reference',
                 'customers.id',
@@ -61,7 +61,7 @@ class IndexApiCustomers extends OrgAction
                 'customers.slug',
                 'customers.created_at',
                 'customers.updated_at',
-        ])
+            ])
             ->allowedSorts(['name', 'contact_name', 'reference', 'created_at'])
             ->withBetweenDates(['created_at'])
             ->withPaginator(null, queryName: 'per_page')
@@ -101,6 +101,7 @@ class IndexApiCustomers extends OrgAction
     public function asController(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($shop, $this->validatedData);
     }
 
@@ -113,13 +114,13 @@ class IndexApiCustomers extends OrgAction
     public function rules(): array
     {
         return [
-            'global' => ['nullable', 'string'],
-            'name' => ['nullable', 'string'],
-            'email' => ['nullable', 'string'],
+            'global'    => ['nullable', 'string'],
+            'name'      => ['nullable', 'string'],
+            'email'     => ['nullable', 'string'],
             'reference' => ['nullable', 'string'],
-            'page' => ['nullable', 'integer'],
-            'per_page' => ['nullable', 'integer'],
-            'sort' => ['nullable', 'string'],
+            'page'      => ['nullable', 'integer'],
+            'per_page'  => ['nullable', 'integer'],
+            'sort'      => ['nullable', 'string'],
         ];
     }
 
@@ -127,10 +128,10 @@ class IndexApiCustomers extends OrgAction
     {
         $request->merge(
             [
-                'global' => $request->query('global'),
-                'page' => $request->query('page', 1),
+                'global'   => $request->query('global'),
+                'page'     => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
-                'sort' => $request->query('sort', 'id'),
+                'sort'     => $request->query('sort', 'created_at'),
             ]
         );
     }

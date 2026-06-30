@@ -141,7 +141,7 @@ class GetDropshippingApiProducts extends RetinaApiAction
             'include'  => $request->query('include', ''),
             'page'     => $request->query('page', 1),
             'per_page' => $request->query('per_page', 50),
-            'sort'     => $request->query('sort', 'products.code'),
+            'sort'     => $request->query('sort', 'code'),
         ]);
     }
 
