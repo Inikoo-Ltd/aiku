@@ -47,6 +47,7 @@ const fetchMoreReviews = async () => {
             data: [...reviewsData.value.data, ...fetchedReviews],
         }
         reviewSummary.value = data?.review_summary ?? reviewSummary.value
+        console.log('sdsdsd',data)
     } catch (error) {
         console.error(error)
     } finally {

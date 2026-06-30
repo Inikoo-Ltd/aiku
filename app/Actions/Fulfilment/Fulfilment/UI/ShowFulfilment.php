@@ -112,7 +112,7 @@ class ShowFulfilment extends OrgAction
                                 ]
                             ],
                             visual: [
-                                'label' => __('Bills'),
+                                'label' => __('Recurring Bills'),
                                 'type'  => 'number_with_label',
                                 'value' => $fulfilment->stats->number_recurring_bills_status_current,
                                 'route' => [
