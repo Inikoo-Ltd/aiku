@@ -43,7 +43,7 @@ class ReadReviewIOCSVReview
             return 1;
         }
 
-        if (!Storage::disk('local')->exists($command->argument('filename'))) {
+        if (!file_exists(base_path($command->argument('filename')))) {
             $command->error('File doesnt exists');
             return 1;
         }
