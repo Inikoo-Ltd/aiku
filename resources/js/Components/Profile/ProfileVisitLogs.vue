@@ -1,8 +1,7 @@
 <script setup lang='ts'>
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Row from 'primevue/row'
-import ColumnGroup from 'primevue/columngroup'
+
 
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import UserAgent from "@/Components/Elements/Info/UserAgent.vue"

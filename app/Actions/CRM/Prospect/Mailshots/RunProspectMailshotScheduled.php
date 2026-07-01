@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
 class RunProspectMailshotScheduled
 {
     use AsAction;
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'long-send-emails';
     public string $commandSignature = 'run-prospect-mailshot-scheduled';
 
     public function handle(): void

@@ -24,6 +24,10 @@ trait WithAllegroApiServices
 
     public function restApi(string $method = 'GET', array $params = []): PendingRequest
     {
+        if($this->access_token_expire_in < now()->timestamp) {
+            $this->refreshAccessToken($this->refresh_token);
+        }
+
         $http = Http::withHeaders([
             'Authorization'  => 'Bearer ' . $this->access_token,
             'Accept'         => $this->allegroApiVersion,
@@ -94,6 +98,7 @@ trait WithAllegroApiServices
         }
 
         $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+        $content = str_replace(['<br>', '<br/>', '<br />'], ' ', $content);
         $description = str_replace('&acute;', '´', $content);
 
         $description = preg_replace_callback('/<b>(.*?)<\/b>/is', function ($matches) {
@@ -435,6 +440,14 @@ trait WithAllegroApiServices
     // -------------------------------------------------------------------------
     // Categories
     // -------------------------------------------------------------------------
+
+    public function getProductByEan(string $ean): array
+    {
+        return $this->makeApiRequest('GET', '/sale/products', [], [
+            'mode' => "GTIN",
+            'phrase' => $ean
+        ]);
+    }
 
     public function getCategories(array $params = []): array
     {

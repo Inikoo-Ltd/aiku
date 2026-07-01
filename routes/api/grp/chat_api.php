@@ -1,33 +1,33 @@
 <?php
 
 
-use Illuminate\Support\Facades\Route;
-use App\Actions\CRM\ChatSession\GetChatAgents;
-use App\Actions\CRM\ChatSession\HandleChatRead;
-use App\Actions\CRM\ChatSession\StoreChatAgent;
-use App\Actions\CRM\ChatSession\GetChatActivity;
-use App\Actions\CRM\ChatSession\GetChatMessages;
-use App\Actions\CRM\ChatSession\GetChatSessions;
-use App\Actions\CRM\ChatSession\SendChatMessage;
-use App\Actions\CRM\ChatSession\UpdateChatAgent;
-use App\Actions\CRM\ChatSession\HandleChatTyping;
-use App\Actions\CRM\ChatSession\StoreChatSession;
-use App\Actions\CRM\ChatSession\StoreGuestProfile;
-use App\Actions\CRM\ChatSession\UpdateChatSession;
-use App\Actions\CRM\ChatSession\GetChatAgentByUserId;
-use App\Actions\CRM\ChatSession\DownloadChatAttachment;
-use App\Actions\CRM\ChatSession\SyncChatSessionByEmail;
-use App\Actions\CRM\ChatSession\TranslateSingleMessage;
+use App\Actions\Chat\ChatSession\CloseChatSession;
+use App\Actions\Chat\ChatSession\DownloadChatAttachment;
+use App\Actions\Chat\ChatSession\GetAgentUnreadMessagesSummary;
+use App\Actions\Chat\ChatSession\GetChatActivity;
+use App\Actions\Chat\ChatSession\GetChatAgentByUserId;
+use App\Actions\Chat\ChatSession\GetChatAgents;
+use App\Actions\Chat\ChatSession\GetChatAgentSpecializations;
+use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
+use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
+use App\Actions\Chat\ChatSession\GetChatMessages;
+use App\Actions\Chat\ChatSession\GetChatSessions;
+use App\Actions\Chat\ChatSession\GetChatStatus;
+use App\Actions\Chat\ChatSession\HandleChatRead;
+use App\Actions\Chat\ChatSession\HandleChatTyping;
+use App\Actions\Chat\ChatSession\SendChatMessage;
+use App\Actions\Chat\ChatSession\ShareChatSessionToSlack;
+use App\Actions\Chat\ChatSession\StoreChatAgent;
+use App\Actions\Chat\ChatSession\StoreChatSession;
+use App\Actions\Chat\ChatSession\StoreGuestProfile;
+use App\Actions\Chat\ChatSession\StoreOfflineMessage;
+use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
+use App\Actions\Chat\ChatSession\TranslateSessionMessages;
+use App\Actions\Chat\ChatSession\TranslateSingleMessage;
+use App\Actions\Chat\ChatSession\UpdateChatAgent;
+use App\Actions\Chat\ChatSession\UpdateChatSession;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
-use App\Actions\CRM\ChatSession\TranslateSessionMessages;
-use App\Actions\CRM\ChatSession\GetChatAgentSpecializations;
-use App\Actions\CRM\ChatSession\GetChatStatus;
-use App\Actions\CRM\ChatSession\StoreOfflineMessage;
-use App\Actions\CRM\ChatSession\GetAgentUnreadMessagesSummary;
-use App\Actions\CRM\ChatSession\CloseChatSession;
-use App\Actions\CRM\ChatSession\GetChatCustomerProfile;
-use App\Actions\CRM\ChatSession\GetChatCustomerTimeline;
-use App\Actions\CRM\ChatSession\ShareChatSessionToSlack;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
     return 'pong';

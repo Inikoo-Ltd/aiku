@@ -2,12 +2,12 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
-use Illuminate\Support\Str;
-use App\Models\CRM\Livechat\ChatMessage;
-use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Models\Chat\ChatMessage;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 class ChatSessionListResource extends JsonResource
 {

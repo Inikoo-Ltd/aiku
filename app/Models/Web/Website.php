@@ -71,7 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $launched_at
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property int|null $storefront_id
- * @property string|null $cloudflare_id
+ * @property string|null $cloudflare_zone_id
  * @property WebsiteCloudflareStatusEnum|null $cloudflare_status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -118,6 +118,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_department_description_snapshot_id
  * @property int|null $live_department_description_snapshot_id
  * @property string|null $published_department_description_checksum
+ * @property string|null $cloudflare_token
+ * @property array<array-key, mixed> $blocked_country_regions
  * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Web\Crawl> $crawls
@@ -187,29 +189,31 @@ class Website extends Model implements Auditable, HasMedia
     use InteractsWithMedia;
 
     protected $casts = [
-        'type'              => WebsiteTypeEnum::class,
-        'data'              => 'array',
-        'settings'          => 'array',
-        'structure'         => 'array',
-        'layout'            => 'array',
-        'published_layout'  => 'array',
-        'state'             => WebsiteStateEnum::class,
-        'status'            => 'boolean',
-        'cloudflare_status' => WebsiteCloudflareStatusEnum::class,
-        'launched_at'       => 'datetime',
-        'closed_at'         => 'datetime',
-        'fetched_at'        => 'datetime',
-        'last_fetched_at'   => 'datetime',
-        'last_visited_at'   => 'datetime',
+        'type'                    => WebsiteTypeEnum::class,
+        'data'                    => 'array',
+        'settings'                => 'array',
+        'structure'               => 'array',
+        'layout'                  => 'array',
+        'published_layout'        => 'array',
+        'blocked_country_regions' => 'array',
+        'state'                   => WebsiteStateEnum::class,
+        'status'                  => 'boolean',
+        'cloudflare_status'       => WebsiteCloudflareStatusEnum::class,
+        'launched_at'             => 'datetime',
+        'closed_at'               => 'datetime',
+        'fetched_at'              => 'datetime',
+        'last_fetched_at'         => 'datetime',
+        'last_visited_at'         => 'datetime',
 
     ];
 
     protected $attributes = [
-        'data'             => '{}',
-        'settings'         => '{}',
-        'structure'        => '{}',
-        'layout'           => '{}',
-        'published_layout' => '{}',
+        'data'                    => '{}',
+        'settings'                => '{}',
+        'structure'               => '{}',
+        'layout'                  => '{}',
+        'published_layout'        => '{}',
+        'blocked_country_regions' => '{}',
     ];
 
     protected $guarded = [];
@@ -277,8 +281,10 @@ class Website extends Model implements Auditable, HasMedia
     {
         if ($this->logo) {
             $avatarThumbnail = $this->logo->getImage()->resize($width, $height);
+
             return GetPictureSources::run($avatarThumbnail);
         }
+
         return null;
     }
 
@@ -286,8 +292,10 @@ class Website extends Model implements Auditable, HasMedia
     {
         if ($this->favicon) {
             $avatarThumbnail = $this->favicon->getImage()->resize($width, $height);
+
             return GetPictureSources::run($avatarThumbnail);
         }
+
         return null;
     }
 
@@ -456,7 +464,7 @@ class Website extends Model implements Auditable, HasMedia
             }
         }
 
-        return $scheme . '://' . $this->domain;
+        return $scheme.'://'.$this->domain;
     }
 
     public function webBlocks(): MorphMany
@@ -472,8 +480,8 @@ class Website extends Model implements Auditable, HasMedia
     public function externalLinks()
     {
         return $this->belongsToMany(ExternalLink::class, 'web_block_has_external_link')
-                    ->withPivot('webpage_id', 'web_block_id', 'show')
-                    ->withTimestamps();
+            ->withPivot('webpage_id', 'web_block_id', 'show')
+            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany
@@ -484,8 +492,8 @@ class Website extends Model implements Auditable, HasMedia
     public function getFullUrl(): string
     {
         return match (app()->environment()) {
-            'production' => 'https://'.$this->domain . '/app',
-            'staging' => 'https://canary.'.$this->domain . '/app',
+            'production' => 'https://'.$this->domain.'/app',
+            'staging' => 'https://canary.'.$this->domain.'/app',
             default => match ($this->shop->type) {
                 ShopTypeEnum::DROPSHIPPING => 'https://ds.test/app',
                 default => 'https://fulfilment.test/app'

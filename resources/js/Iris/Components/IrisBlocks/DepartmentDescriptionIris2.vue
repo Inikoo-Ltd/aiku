@@ -430,11 +430,11 @@ watch(
 
 						<!-- Content -->
 						<div class="px-6 py-8 text-center">
-							<h2
+							<!-- <h2
 								v-if="fieldValue.department.name"
 								class="text-2xl font-bold text-slate-900 mb-4">
 								{{ fieldValue.department.name }}
-							</h2>
+							</h2> -->
 
 							<div class="relative text-slate-700 text-sm leading-6">
 								<div

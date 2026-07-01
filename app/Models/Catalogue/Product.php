@@ -24,6 +24,8 @@ use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
+use App\Models\Reviews\ProductReviewStat;
+use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
@@ -222,6 +224,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Organisation $organisation
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, Product> $productVariants
+ * @property-read ProductReviewStat|null $reviewStats
+ * @property-read LaravelCollection<int, Review> $reviews
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
@@ -386,6 +390,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->hasOne(ProductStats::class);
     }
 
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ProductReviewStat::class);
+    }
+
     public function contents(): MorphMany
     {
         return $this->morphMany(ModelHasContent::class, 'model');
@@ -472,6 +481,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->morphMany(Portfolio::class, 'item');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'product_id');
+    }
+
     public function favourites(): HasMany
     {
         return $this->hasMany(Favourite::class);
@@ -532,6 +546,7 @@ class Product extends Model implements Auditable, HasMedia
         if ($this->webpage) {
             return $this->webpage->luigiIdentity();
         }
+
         return 'unknown';
     }
 

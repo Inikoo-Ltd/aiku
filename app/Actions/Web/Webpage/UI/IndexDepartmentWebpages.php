@@ -214,6 +214,7 @@ class IndexDepartmentWebpages extends OrgAction
                 'title'       => __('Webpages'),
                 'pageHead'    => [
                     'title'         => $pageTitle,
+                    'color'         => '#b45309',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')

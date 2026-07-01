@@ -19,6 +19,8 @@ trait WithGoogleAdsOAuth
 
     private const string GOOGLE_ADS_SCOPE = 'https://www.googleapis.com/auth/adwords';
 
+    private const string DATA_MANAGER_SCOPE = 'https://www.googleapis.com/auth/datamanager';
+
     /**
      * @throws Exception
      */
@@ -27,18 +29,21 @@ trait WithGoogleAdsOAuth
         $clientId     = (string) config('services.google_ads.client_id');
         $clientSecret = (string) config('services.google_ads.client_secret');
 
-        if ($clientId === '' || $clientSecret === '') {
-            throw new Exception('Google Ads OAuth is not configured. Set GOOGLE_ADS_CLIENT_ID and GOOGLE_ADS_CLIENT_SECRET.');
-        }
-
         $client = new Google_Client();
         $client->setApplicationName('Aiku Google Ads');
         $client->setAuthConfig([
             'client_id'     => $clientId,
             'client_secret' => $clientSecret,
         ]);
-        $client->setRedirectUri(route('google_ads.callback'));
-        $client->setScopes([self::GOOGLE_ADS_SCOPE]);
+        // 'https://aiku.io/webhooks/google-ads/callback'
+
+        $redirectUri = 'https://89de-59-153-131-200.ngrok-free.app/webhooks/google-ads/callback';
+        if (app()->isProduction()) {
+            $redirectUri = route('google_ads.callback');
+        }
+
+        $client->setRedirectUri($redirectUri);
+        $client->setScopes([self::GOOGLE_ADS_SCOPE, self::DATA_MANAGER_SCOPE]);
         $client->setState($shop->id);
         $client->setAccessType('offline');
         $client->setPrompt('select_account');

@@ -16,6 +16,7 @@ use App\Actions\Accounting\Payment\CancelPayment;
 use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
+use App\Actions\Accounting\PaymentAccountShop\UpdatePaymentAccountShop;
 use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
@@ -62,13 +63,19 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryTranslations;
 use App\Actions\Catalogue\ProductCategory\UploadImagesToProductCategory;
+use App\Actions\Catalogue\Review\ApproveReview;
+use App\Actions\Catalogue\Review\RejectReview;
+use App\Actions\Catalogue\Review\GetReviewCustomers;
+use App\Actions\Catalogue\Review\UpdateReview;
+use App\Actions\Catalogue\ReviewReply\DeleteReviewReply;
+use App\Actions\Catalogue\ReviewReply\StoreReviewReply;
+use App\Actions\Catalogue\ReviewReply\UpdateReviewReply;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
-use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
@@ -233,6 +240,7 @@ use App\Actions\Fulfilment\StoredItem\SyncStoredItemPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPalletAudit;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
+use App\Actions\Goods\Barcode\UpdateBarcode;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -276,15 +284,15 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockin
 use App\Actions\HumanResources\Employee\DeleteEmployee;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
+use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\LinkLeaveBalanceToContract;
 use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
-use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
-use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\JobPosition\DeleteJobPosition;
 use App\Actions\HumanResources\JobPosition\StoreJobPosition;
 use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
+use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
 use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
@@ -355,6 +363,7 @@ use App\Actions\Production\ManufactureTask\UpdateManufactureTask;
 use App\Actions\Production\RawMaterial\ImportRawMaterial;
 use App\Actions\Production\RawMaterial\StoreRawMaterial;
 use App\Actions\Production\RawMaterial\UpdateRawMaterial;
+use App\Actions\Reviews\DeleteReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
@@ -583,6 +592,17 @@ Route::prefix('/product_category/{productCategory:id}')->name('product_category.
     Route::patch('update-images', UpdateProductCategoryImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromProductCategory::class)->name('delete_images')->withoutScopedBindings();
 });
+
+Route::post('review/reply/store', StoreReviewReply::class)->name('review.reply.store');
+Route::patch('review/reply/{reviewReply:id}/update', UpdateReviewReply::class)->name('review.reply.update');
+Route::delete('review/reply/{reviewReply:id}/delete', DeleteReviewReply::class)->name('review.reply.delete');
+Route::get('review/customers/{productCategory:id}', GetReviewCustomers::class)->name('review.customers');
+Route::get('review/customers/product/{product:id}', [GetReviewCustomers::class, 'asControllerProduct'])->name('review.customers.product');
+Route::get('review/customers/shop/{shop:id}', [GetReviewCustomers::class, 'asControllerShop'])->name('review.customers.shop');
+Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
+Route::patch('review/{review:id}/approve', ApproveReview::class)->name('review.approve');
+Route::patch('review/{review:id}/reject', RejectReview::class)->name('review.reject');
+Route::delete('review/{review:id}/delete', DeleteReview::class)->name('review.delete');
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
@@ -1092,7 +1112,6 @@ Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mails
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
     Route::post('{emailTemplate:id}/images', UploadImagesToEmailTemplate::class)->name('images.store');
-    Route::post('{emailTemplate:id}/publish', PublishEmail::class)->name('content.publish');
 });
 
 Route::patch('/guest/{guest:id}', UpdateGuest::class)->name('guest.update');
@@ -1237,6 +1256,10 @@ Route::name('brand.')->prefix('brand')->group(function () {
     Route::patch('{brand:id}/attach-multiple', AttachBrandToMultipleModel::class)->name('brands.attach-multiple')->withoutScopedBindings();
 });
 
+Route::name('barcodes.')->prefix('barcode')->group(function () {
+    Route::patch('{barcode:id}/update', UpdateBarcode::class)->name('update')->withoutScopedBindings();
+});
+
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
     Route::post('store', StoreTradeUnitFamily::class)->name('store')->withoutScopedBindings();
     Route::patch('{tradeUnitFamily:id}/update', UpdateTradeUnitFamily::class)->name('update')->withoutScopedBindings();
@@ -1279,6 +1302,7 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
 });
 Route::patch('time-tracker/{timeTracker:id}/clock-out', ClockOutTimeTracker::class)->name('time-tracker.clock-out');
 Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
+Route::patch('payment-account-shop/{paymentAccountShop:id}', UpdatePaymentAccountShop::class)->name('payment_account_shop.update');
 
 
 

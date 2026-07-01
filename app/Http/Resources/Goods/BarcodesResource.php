@@ -20,8 +20,8 @@ class BarcodesResource extends JsonResource
         $barcode = $this->resource;
 
         $tradeUnits = [];
-        if ($barcode->relationLoaded('tradeUnitActive')) {
-            $tradeUnits = $barcode->tradeUnitActive->select([
+        if ($barcode->relationLoaded('tradeUnitsActive')) {
+            $tradeUnits = $barcode->tradeUnitsActive->select([
                 'slug',
                 'code',
                 'name'

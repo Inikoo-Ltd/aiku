@@ -8,7 +8,10 @@
 
 namespace App\Actions\Billables\ShippingZoneSchema;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingZoneSchemas;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShippingZoneSchemas;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShippingZoneSchemas;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
 use App\Models\Billables\ShippingZoneSchema;
@@ -24,7 +27,16 @@ class UpdateShippingZoneSchema extends OrgAction
 
     public function handle(ShippingZoneSchema $shippingZoneSchema, array $modelData): ShippingZoneSchema
     {
-        return $this->update($shippingZoneSchema, $modelData);
+        $shippingZoneSchema = $this->update($shippingZoneSchema, $modelData);
+
+        if ($shippingZoneSchema->wasChanged('state')) {
+            $shop = $shippingZoneSchema->shop;
+            ShopHydrateShippingZoneSchemas::dispatch($shop)->delay($this->hydratorsDelay);
+            OrganisationHydrateShippingZoneSchemas::dispatch($shop->organisation)->delay($this->hydratorsDelay);
+            GroupHydrateShippingZoneSchemas::dispatch($shop->group)->delay($this->hydratorsDelay);
+        }
+
+        return $shippingZoneSchema;
     }
 
 

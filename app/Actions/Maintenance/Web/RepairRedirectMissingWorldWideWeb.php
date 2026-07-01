@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 namespace App\Actions\Maintenance\Web;
 
@@ -13,6 +13,9 @@ class RepairRedirectMissingWorldWideWeb
 {
     use AsAction;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(?Command $command = null, ?bool $isDryRun = false): void
     {
         // Filtering shops that use www. subdomain
@@ -28,10 +31,10 @@ class RepairRedirectMissingWorldWideWeb
 
         if ($isDryRun) {
             $command?->info("=== DRY RUN / PREVIEW MODE ===");
-            $command?->info("Found {$totalRecords} records that need to be standardized. Showing first 20 examples:\n");
+            $command?->info("Found $totalRecords records that need to be standardized. Showing first 20 examples:\n");
         } else {
             $command?->info("=== LIVE EXECUTION MODE ===");
-            $command?->info("Processing {$totalRecords} records...");
+            $command?->info("Processing $totalRecords records...");
             DB::beginTransaction();
         }
 
@@ -40,6 +43,7 @@ class RepairRedirectMissingWorldWideWeb
         try {
             $records = $isDryRun ? $query->limit(20)->get() : $query->get();
 
+            /** @var Redirect $redirect */
             foreach ($records as $redirect) {
                 $originalUrl = $redirect->from_url;
                 $newUrl = $originalUrl;
@@ -52,7 +56,7 @@ class RepairRedirectMissingWorldWideWeb
 
                 if ($newUrl !== $originalUrl) {
                     if ($isDryRun) {
-                        $command?->line("<comment>[ID: {$redirect->id}]</comment> <fg=red>{$originalUrl}</> <fg=gray>---></> <fg=green>{$newUrl}</>");
+                        $command?->line("<comment>[ID: $redirect->id]</comment> <fg=red>$originalUrl</> <fg=gray>---></> <fg=green>$newUrl</>");
                     } else {
                         $redirect->update(['from_url' => $newUrl]);
                     }
@@ -65,7 +69,7 @@ class RepairRedirectMissingWorldWideWeb
                 $command?->line("<comment>php artisan repair:redirect-www --force</comment>");
             } else {
                 DB::commit();
-                $command?->info("Success! Updated {$updatedCount} redirect URLs to use 'https://www.'.");
+                $command?->info("Success! Updated $updatedCount redirect URLs to use 'https://www.'.");
             }
         } catch (Exception $e) {
             if (!$isDryRun) {
@@ -78,6 +82,10 @@ class RepairRedirectMissingWorldWideWeb
 
     public string $commandSignature = 'repair:redirect-www {--apply : Execute the structural updates instead of just previewing}';
 
+    /**
+     * @throws \Exception
+     * @throws \Throwable
+     */
     public function asCommand(Command $command): void
     {
         $isDryRun = !$command->option('apply');

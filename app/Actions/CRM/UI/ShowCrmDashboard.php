@@ -9,18 +9,18 @@
 namespace App\Actions\CRM\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\CRM\ChatSession\UI\IndexChatSessions;
+use App\Actions\Chat\ChatSession\UI\IndexChatSessions;
+use App\Actions\CRM\Customer\GetTopCustomersStats;
 use App\Actions\CRM\Customer\UI\GetCustomersDashboard;
 use App\Actions\CRM\Customer\UI\IndexCustomerCountries;
 use App\Actions\CRM\Prospect\UI\GetProspectsDashboard;
+use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardTopCustomersLimitSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
-use App\Actions\CRM\Customer\GetTopCustomersStats;
 use App\Enums\DateIntervals\DateIntervalEnum;
-use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\UI\CRM\CrmDashboardTabsEnum;
 use App\Http\Resources\CRM\CustomerCountriesResource;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;

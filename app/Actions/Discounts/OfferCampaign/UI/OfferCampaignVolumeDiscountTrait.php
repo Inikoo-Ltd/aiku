@@ -38,7 +38,7 @@ trait OfferCampaignVolumeDiscountTrait
         $amnestyOfferId   = Arr::get($offerCampaign->data, 'gr_amnesty_offer_id');
         if ($amnestyOfferId) {
             $amnestyOffer = Offer::find($amnestyOfferId);
-            if ($amnestyOffer->state == OfferStateEnum::ACTIVE || $amnestyOffer->state == OfferStateEnum::IN_PROCESS) {
+            if ($amnestyOffer && ($amnestyOffer->state == OfferStateEnum::ACTIVE || $amnestyOffer->state == OfferStateEnum::IN_PROCESS)) {
                 $editAmnestyRoute = [
                     'name'       => 'grp.org.shops.show.discounts.campaigns.amnesty.edit',
                     'parameters' => [

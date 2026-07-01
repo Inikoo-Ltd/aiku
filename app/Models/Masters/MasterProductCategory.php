@@ -14,6 +14,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Media;
+use App\Models\Reviews\MasterProductCategoryReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -116,6 +117,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $relatedMasterAssets
  * @property-read LaravelCollection<int, MasterProductCategory> $relatedMasterProductCategories
+ * @property-read MasterProductCategoryReviewStat|null $reviewStats
  * @property-read Media|null $seoImage
  * @property-read Media|null $showcaseImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
@@ -201,6 +203,11 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(MasterProductCategoryStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(MasterProductCategoryReviewStat::class);
     }
 
     public function productCategories(): HasMany

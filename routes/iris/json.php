@@ -36,6 +36,8 @@ use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategor
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
+use App\Actions\Catalogue\Review\GetReviews;
+use App\Actions\Catalogue\Review\GetReviewableReviews;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Shop\Json\FetchProductReviewThirdParty;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
@@ -46,6 +48,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 use App\Actions\Iris\Json\GetBanner;
+use App\Actions\Iris\Reviews\FetchIrisReviewsInWebpage;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('basket/transaction-data', GetIrisBasketTransactions::class)->name('basket.transaction_data');
@@ -75,7 +78,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('/fetch-basket', FetchIrisEcomBasket::class)->name('fetch_basket');
 
-
     Route::get('shop-tags', GetIrisShopTags::class)->name('shops.tags.index');
     Route::get('shop-brands', GetIrisShopBrands::class)->name('shops.brands.index');
 
@@ -101,6 +103,10 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('banner/{banner:id}', GetBanner::class)->name('get_banner')->whereNumber('banner');
 
     // Reviews
+    Route::get('reviews', GetReviews::class)->name('reviews.index');
+    Route::get('shop/{shop:id}/reviews', [GetReviewableReviews::class, 'inShop'])->name('reviews.shop.show');
+    Route::get('product/{product:id}/reviews', [GetReviewableReviews::class, 'inProduct'])->name('reviews.product.show')->withoutScopedBindings();
+    Route::get('product-category/{productCategory:id}/reviews', [GetReviewableReviews::class, 'inProductCategory'])->name('reviews.product_category.show');
     Route::get('product/{product:id}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review')->whereNumber('product');
 
     // Families Custom Sort
@@ -108,4 +114,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     // Families list under department page
     Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+
+    Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
 });

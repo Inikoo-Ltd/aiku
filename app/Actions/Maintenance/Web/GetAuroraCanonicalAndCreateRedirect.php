@@ -95,7 +95,7 @@ class GetAuroraCanonicalAndCreateRedirect
             return 0;
         }
 
-        foreach (Website::where('state',WebsiteStateEnum::LIVE)->get() as $website) {
+        foreach (Website::where('state', WebsiteStateEnum::LIVE)->get() as $website) {
             $this->handle($website, $command);
         }
 

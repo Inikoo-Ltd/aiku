@@ -54,7 +54,6 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowDeliveryNote extends OrgAction
 {
@@ -661,6 +660,7 @@ class ShowDeliveryNote extends OrgAction
             'products'                     => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
+                'number_skos'      => $deliveryNote->total_skos,
             ],
             'order'                        => [
                 'reference' => $order->reference,

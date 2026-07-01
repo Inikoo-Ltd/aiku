@@ -141,7 +141,6 @@ watch(
                 </span>
                 {{ dummyProducts.length === 1 ? trans("product") : trans("products") }}
               </span>
-
             </div>
           </div>
 

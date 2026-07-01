@@ -134,6 +134,7 @@ class IndexMissingDescriptionTradeUnits extends GrpAction
                 'title'       => __('Trade units without description'),
                 'pageHead'    => [
                     'title'         => __('Trade units without description'),
+                    'is_negative'   => true,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-align-left'],
                         'title' => __('Trade units without description'),

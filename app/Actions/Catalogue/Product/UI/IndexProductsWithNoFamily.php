@@ -154,6 +154,7 @@ class IndexProductsWithNoFamily extends OrgAction
                 'title'                        => $title,
                 'pageHead'                     => [
                     'title'         => $title,
+                    'is_negative'   => true,
                     'model'         => $model,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,

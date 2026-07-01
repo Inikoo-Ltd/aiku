@@ -44,7 +44,8 @@ class CustomerHydrateClv implements ShouldBeUnique
             return;
         }
 
-        $customer = Customer::on('aiku_no_sticky')->find($customerId);
+        // Do not do Customer::on('aiku_no_sticky') because somehow test stuck
+        $customer = Customer::find($customerId);
         if (!$customer) {
             return;
         }

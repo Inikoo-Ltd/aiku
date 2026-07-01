@@ -35,6 +35,13 @@ class DeleteEmployeeContract extends OrgAction
         return $this->handle($contract);
     }
 
+    public function action(EmployeeContract $contract): EmployeeContract
+    {
+        $this->asAction = true;
+
+        return $this->handle($contract);
+    }
+
     public function htmlResponse(EmployeeContract $contract, ActionRequest $request): RedirectResponse
     {
         $employee = $contract->employee;

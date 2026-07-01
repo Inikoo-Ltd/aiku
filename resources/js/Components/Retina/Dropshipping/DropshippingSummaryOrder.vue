@@ -11,6 +11,8 @@ import Icon from "@/Components/Icon.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFilePdf, faIdCardAlt, faTruck, faWeight, faMapPin } from "@fal"
+import { faStar } from "@fas"
+import { faCube, faFolder } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -18,6 +20,7 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { get } from "lodash"
 import Toggle from "@/Components/Pure/Toggle.vue"
+import { Rating } from "primevue"
 
 library.add(faIdCardAlt, faWeight, faMapPin)
 
@@ -58,6 +61,14 @@ const props = defineProps<{
     }
     address_management: AddressManagement
     order: {}
+    review_summary?: {
+        family_review: number
+        total_family_review: number
+        product_review: number
+        total_product_review: number
+        overall_review: number
+        average_review: number
+    }
 }>()
 
 const locale = inject('locale', {})
@@ -99,7 +110,8 @@ const onPayWithBalance = () => {
 <template>
 
     <div class="py-4 grid grid-cols-2 md:grid-cols-7 px-4 gap-x-4 divide-y divide-gray-200 md:divide-y-0 md:divide-x">
-        <div class="col-span-2 mb-4 md:mb-0">
+        <div class="col-span-4 grid grid-cols-2 gap-y-4">
+            <div class="col-span-1 mb-4 md:mb-0 border-r pr-3">
             <!-- Field: Platform -->
             <div v-if="summary?.customer_channel?.status" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div v-tooltip="trans('Platform')" class="flex-none">
@@ -170,7 +182,7 @@ const onPayWithBalance = () => {
             </div>
         </div>
 
-        <div class="col-span-2 mb-2 md:mb-0 pl-1.5 md:pl-3">
+        <div class="col-span-1 mb-2 md:mb-0 pl-1.5 md:pl-3 ">
 
             <!-- Field: Weight -->
             <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
@@ -310,6 +322,70 @@ const onPayWithBalance = () => {
             </div>
         </div>
 
+        
+            <div  v-if="review_summary" class="col-span-2 relative overflow-hidden rounded-xl border border-amber-100 bg-gradient-to-r from-amber-50 via-white to-sky-50 p-3 shadow-sm">
+                <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-200/20 blur-2xl"></div>
+
+                <div class="relative flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-900">
+                            {{ trans("Review Summary") }}
+                        </h2>
+
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                            <div
+                                class="flex items-center gap-1 rounded-md border border-amber-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-amber-700"
+                                v-tooltip="trans('overall review')">
+                                <FontAwesomeIcon :icon="faStar" class="text-[10px]" />
+                                <span>{{ review_summary?.overall_review }}/1</span>
+                            </div>
+
+                            <div
+                                class="flex items-center gap-1 rounded-md border border-blue-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-blue-700"
+                                v-tooltip="trans('family review')">
+                                <FontAwesomeIcon :icon="faFolder" class="text-[10px]" />
+                                <span>
+                                    {{ review_summary?.family_review }}/{{
+                                        review_summary?.total_family_review
+                                    }}
+                                </span>
+                            </div>
+
+                            <div
+                                class="flex items-center gap-1 rounded-md border border-emerald-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-emerald-700"
+                                v-tooltip="trans('product review')">
+                                <FontAwesomeIcon :icon="faCube" class="text-[10px]" />
+                                <span>
+                                    {{ review_summary?.product_review }}/{{
+                                        review_summary?.total_product_review
+                                    }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 rounded-lg border border-white/60 bg-white/80 px-3 py-2 shadow-sm backdrop-blur">
+                        <div class="text-center">
+                            <div class="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-xl font-bold leading-none text-transparent">
+                                {{ review_summary?.average_review?.toFixed(1) ?? "0.0" }}
+                            </div>
+
+                            <div class="mt-0.5 text-[10px] text-gray-500">
+                                {{ ctrans("Avg Rating") }}
+                            </div>
+                        </div>
+
+                        <Rating
+                            :modelValue="review_summary?.average_review ?? 0"
+                            :readonly="true"
+                            :disabled="true"
+                            :cancel="false"
+                            class="scale-75 origin-right rating" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-span-2 md:col-span-3 pt-3 md:pt-0 md:pl-3">
             <div class="p-2 rounded">
                 <OrderSummary :order_summary="summary.order_summary"
@@ -327,3 +403,10 @@ const onPayWithBalance = () => {
         </Modal>
     </div>
 </template>
+
+
+<style scoped>
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+	color: #f59e0b !important;
+}
+</style>

@@ -195,10 +195,14 @@ class UpdateMasterProductCategory extends OrgAction
                 }
 
                 // Temporary setup, auto translate FAQ
-                if (Arr::has($changed, 'faq') && $shop->language->code != 'en') {
-                    $translatedFaq = Translate::run(json_encode($masterProductCategory->faq), $english, $shopLanguage);
-                    if (is_string($translatedFaq)) {
-                        $dataToBeUpdated['faq'] = json_decode($translatedFaq, true);
+                if (Arr::has($changed, 'faq')) {
+                    if ($shop->language->code != 'en') {
+                        $translatedFaq = Translate::run(json_encode($masterProductCategory->faq), $english, $shopLanguage);
+                        if (is_string($translatedFaq)) {
+                            $dataToBeUpdated['faq'] = json_decode($translatedFaq, true);
+                        }
+                    } else {
+                        $dataToBeUpdated['faq'] = $masterProductCategory->faq;
                     }
                 }
 

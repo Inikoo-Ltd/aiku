@@ -12,8 +12,6 @@ use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Exception;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class ConnectShopGoogleAds extends OrgAction
@@ -23,15 +21,22 @@ class ConnectShopGoogleAds extends OrgAction
     /**
      * @throws Exception
      */
-    public function handle(Shop $shop): RedirectResponse
+    public function handle(Shop $shop): string
     {
-        return Redirect::away($this->googleAdsAuthUrl($shop));
+        $clientId     = (string) config('services.google_ads.client_id');
+        $clientSecret = (string) config('services.google_ads.client_secret');
+
+        if ($clientId === '' || $clientSecret === '') {
+            return '';
+        }
+
+        return $this->googleAdsAuthUrl($shop);
     }
 
     /**
      * @throws Exception
      */
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): string
     {
         $this->initialisationFromShop($shop, $request);
 

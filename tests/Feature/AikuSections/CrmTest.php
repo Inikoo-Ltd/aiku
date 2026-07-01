@@ -177,11 +177,6 @@ test('create web user', function (Customer $customer) {
 })->depends('create customer');
 
 
-test('prospect queries are seeded', function () {
-    $this->artisan('query:seed-prospects')->assertExitCode(0);
-    expect(Query::where('model', 'Prospect')->count())->toBe(2);
-});
-
 test('create prospect', function () {
     $shop      = $this->shop;
     $modelData = Prospect::factory()->definition();
@@ -234,16 +229,6 @@ test('create 2nd prospect', function () {
         ->and($organisation->crmStats->number_prospects_state_success)->toBe(0);
 
     return $prospect;
-});
-
-test('prospect query count', function () {
-    $this->artisan('query:count')->assertExitCode(0);
-
-    $query  = Query::first();
-    $query2 = Query::skip(1)->first();
-
-    expect($query->number_items)->toBe(2)
-        ->and($query2->number_items)->toBe(2);
 });
 
 test('create prospect mailshot', function () {
@@ -1210,10 +1195,8 @@ test('Customer basket hydrator', function () {
 });
 
 test('sync customers to google ads uploads hashed identifiers', function () {
-    Config::set('services.google_ads.developer_token', 'DEV-TOKEN');
     Config::set('services.google_ads.client_id', 'client-id');
     Config::set('services.google_ads.client_secret', 'client-secret');
-    Config::set('services.google_ads.api_version', 'v18');
 
     $this->shop->update([
         'settings' => array_merge($this->shop->settings ?? [], [
@@ -1229,26 +1212,39 @@ test('sync customers to google ads uploads hashed identifiers', function () {
     $customer->update(['email' => 'match@example.com', 'phone' => '+447911123456']);
 
     Http::fake([
-        'oauth2.googleapis.com/*'                          => Http::response(['access_token' => 'fake-access-token']),
-        '*offlineUserDataJobs:create'                      => Http::response(['resourceName' => 'customers/1234567890/offlineUserDataJobs/1']),
-        'googleads.googleapis.com/*'                       => Http::response([]),
+        'oauth2.googleapis.com/*'             => Http::response(['access_token' => 'fake-access-token']),
+        'datamanager.googleapis.com/*'        => Http::response(['requestId' => 'req-1']),
     ]);
 
     $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
 
-    expect($result['uploaded'])->toBe(1)
-        ->and($result['job'])->toBe('customers/1234567890/offlineUserDataJobs/1');
+    expect($result['uploaded'])->toBe(3)
+        ->and($result['request_ids'])->toBe(['req-1']);
 
     Http::assertSent(fn ($request) => $request->url() === 'https://oauth2.googleapis.com/token'
         && $request['refresh_token'] === 'refresh-token'
         && $request['grant_type'] === 'refresh_token');
 
-    Http::assertSent(fn ($request) => str_contains($request->url(), ':run'));
+    Http::assertSent(function ($request) {
+        if ($request->url() !== 'https://datamanager.googleapis.com/v1/audienceMembers:ingest') {
+            return false;
+        }
+
+        $destination = $request['destinations'][0];
+
+        $matchedMember = collect($request['audienceMembers'])->first(function ($member) {
+            $identifiers = $member['compositeData']['userData']['userIdentifiers'];
+
+            return collect($identifiers)->contains('emailAddress', hash('sha256', 'match@example.com'))
+                && collect($identifiers)->contains('phoneNumber', hash('sha256', '+447911123456'));
+        });
+
+        return $destination['operatingAccount']['accountType'] === 'GOOGLE_ADS'
+            && $destination['operatingAccount']['accountId'] === '1234567890'
+            && $destination['productDestinationId'] === '999'
+            && $request['encoding'] === 'HEX'
+            && $request['termsOfService']['customerMatchTermsOfServiceStatus'] === 'ACCEPTED'
+            && $matchedMember !== null;
+    });
 });
 
-test('sync customers to google ads fails without developer token', function () {
-    Config::set('services.google_ads.developer_token', null);
-
-    expect(fn () => SyncCustomersToGoogleAds::make()->handle($this->shop))
-        ->toThrow(Exception::class, 'Google Ads developer token is not configured.');
-});

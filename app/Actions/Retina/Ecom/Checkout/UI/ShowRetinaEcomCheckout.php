@@ -44,7 +44,6 @@ class ShowRetinaEcomCheckout extends RetinaAction
             $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
         }
 
-
         return [
             'order'          => $order,
             'paymentMethods' => $paymentMethods,

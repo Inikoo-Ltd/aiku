@@ -250,10 +250,10 @@ test('create marketing outbox', function (Fulfilment $fulfilment) {
     $shop = $fulfilment->shop;
 
     $marketingOutbox = StoreOutbox::make()->action($orgPostRoom, $shop, [
-        'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-        'type' => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
+        'code'  => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+        'type'  => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
         'state' => OutboxStateEnum::ACTIVE,
-        'name' => 'invoice outbox'
+        'name'  => 'invoice outbox'
     ]);
 
     expect($marketingOutbox)->toBeInstanceOf(Outbox::class);
@@ -537,7 +537,6 @@ test('update rental', function (Rental $rental) {
 
 
 test('create second rental product to fulfilment shop', function (Fulfilment $fulfilment) {
-
     $rental = StoreRental::make()->action(
         $fulfilment->shop,
         [
@@ -620,7 +619,7 @@ test('create 4th fulfilment customer', function (Fulfilment $fulfilment) {
         [
             'state'           => CustomerStateEnum::ACTIVE,
             'status'          => CustomerStatusEnum::APPROVED,
-            'contact_name'    => 'jacqueline',
+            'contact_name'    => 'Jacqueline',
             'company_name'    => 'ghost.o',
             'interest'        => ['pallets_storage', 'items_storage', 'dropshipping'],
             'contact_address' => Address::factory()->definition(),
@@ -984,7 +983,6 @@ test('update pallet delivery notes', function (PalletDelivery $palletDelivery) {
 })->depends('create pallet delivery');
 
 test('add pallet and delete it', function (PalletDelivery $palletDelivery) {
-
     $palletDelivery->refresh();
     $pallet = StorePalletCreatedInPalletDelivery::make()->action(
         $palletDelivery,
@@ -1015,8 +1013,6 @@ test('add pallet and delete it', function (PalletDelivery $palletDelivery) {
 
     DeletePallet::make()->action($pallet, []);
     expect($palletDelivery->transactions()->count())->toBe(0);
-
-
 })->depends('create pallet delivery');
 
 test('add pallet to pallet delivery', function (PalletDelivery $palletDelivery) {
@@ -1080,9 +1076,6 @@ test('add pallet to second pallet delivery', function (PalletDelivery $palletDel
 
     return $palletDelivery;
 })->depends('create second pallet delivery');
-
-
-
 
 
 test('add multiple pallets to pallet delivery', function (PalletDelivery $palletDelivery) {
@@ -1678,9 +1671,9 @@ test('store pallet to return', function (PalletReturn $palletReturn) {
 test('Update pallet reference', function (PalletReturn $palletReturn) {
     /** @var Pallet $pallet */
     $pallet = $palletReturn->fulfilmentCustomer
-            ->pallets()
-            ->whereNotIn('pallets.id', $palletReturn->pallets()->pluck('pallets.id'))
-            ->first();
+        ->pallets()
+        ->whereNotIn('pallets.id', $palletReturn->pallets()->pluck('pallets.id'))
+        ->first();
 
     $newReference = 'GHO-p0006';
 
@@ -1975,7 +1968,6 @@ test('update pallet', function (Pallet $pallet) {
 })->depends('create pallet no delivery');
 
 test('can not delete delete pallet that is already received', function (Pallet $pallet) {
-
     $pallet->refresh();
     $palletDelivery = $pallet->palletDelivery;
     DeletePallet::make()->action(
@@ -1988,7 +1980,7 @@ test('can not delete delete pallet that is already received', function (Pallet $
     $palletDelivery->refresh();
 
     expect($palletDeleted)->toBeTrue()
-    ->and($palletDelivery->stats->number_services)->toBe(0);
+        ->and($palletDelivery->stats->number_services)->toBe(0);
 
     return 'OK';
 })->depends('add pallet to pallet delivery')->throws(Exception::class);
@@ -3044,10 +3036,10 @@ test('consolidate 3rd recurring bill', function ($fulfilmentCustomer) {
 })->depends('pay invoice (other half)');
 
 test('pay invoice (exceed)', function ($invoice) {
-    $customer           = $invoice->customer;
+    $customer = $invoice->customer;
     expect($invoice->total_amount)->toBe("140.00")
         ->and($invoice->payment_amount)->toBe("0.00")
-    ->and($customer->balance)->toBe("-542.00");
+        ->and($customer->balance)->toBe("-542.00");
 
 
     $paymentAccountShop = $invoice->shop->paymentAccountShops()->first();
@@ -3206,7 +3198,8 @@ test('create stored item audit delta', function (StoredItemAudit $storedItemAudi
     expect($storedItemAudit)->toBeInstanceOf(StoredItemAudit::class)
         ->and($storedItemAudit->number_audited_stored_items)->toBe(1)
         ->and($storedItemAuditDelta)->toBeInstanceOf(StoredItemAuditDelta::class)
-        ->and((int) $storedItemAuditDelta->audited_quantity)->toBe(15);
+        ->and((int)$storedItemAuditDelta->audited_quantity)->toBe(15);
+
     return $storedItemAuditDelta;
 })->depends('update stored item audit');
 
@@ -3251,7 +3244,7 @@ test('complete stored item audit', function (StoredItemAudit $storedItemAudit) {
         $fulfilmentCustomer,
         [
             'reference' => 'referenceA',
-            'name'      => 'jeff'
+            'name'      => 'Jeff'
         ]
     );
 
@@ -3280,7 +3273,9 @@ test('complete stored item audit', function (StoredItemAudit $storedItemAudit) {
 
     $storedItemAudit->refresh();
 
-    $delta  = $storedItemAudit->deltas()->first();
+    /** @var StoredItemAuditDelta $delta */
+    $delta = $storedItemAudit->deltas()->first();
+    /** @var StoredItemAuditDelta $delta2 */
     $delta2 = $storedItemAudit->deltas()->skip(1)->first();
 
     expect($storedItemAudit)->toBeInstanceOf(StoredItemAudit::class)
@@ -3367,9 +3362,8 @@ test('complete standalone invoice', function (Invoice $invoice) {
 
 // partial refund
 test('create partial refund', function () {
-
     $invoice = Invoice::where('pay_status', InvoicePayStatusEnum::PAID)->first();
-    $refund = StoreRefund::make()->action($invoice, []);
+    $refund  = StoreRefund::make()->action($invoice, []);
 
     expect($refund)->toBeInstanceOf(Invoice::class)
         ->and($refund->in_process)->toBeTrue()
@@ -3382,7 +3376,7 @@ test('create partial refund', function () {
 test('store partial refund transaction', function (array $data) {
     [$invoice, $refund] = $data;
     $invoiceTransaction = $invoice->invoiceTransactions()->first();
-    $refundTransaction = StoreRefundInvoiceTransaction::make()->action($refund, $invoiceTransaction, [
+    $refundTransaction  = StoreRefundInvoiceTransaction::make()->action($refund, $invoiceTransaction, [
         'net_amount' => $invoiceTransaction->net_amount / 2,
     ]);
 
@@ -3413,7 +3407,6 @@ test('finalise refund', function (array $data, InvoiceTransaction $refundTransac
         ->and($refundTransaction->in_process)->toBeFalse();
 
     return [$invoice, $refund];
-
 })->depends('create partial refund', 'store partial refund transaction');
 
 
@@ -3439,13 +3432,10 @@ test('refund to credit balance', function (array $data) {
         ->and($refundPayment->type)->toBe(PaymentTypeEnum::REFUND)
         ->and($refundPayment->status)->toBe(PaymentStatusEnum::SUCCESS)
         ->and($refundPayment->state)->toBe(PaymentStateEnum::COMPLETED);
-
 })->depends('finalise refund');
 
 
 test('store audit for pallet 6th customer', function () {
-
-
     $fulfilmentCustomer = FulfilmentCustomer::find(6);
     $pallet             = Pallet::where('state', PalletStateEnum::STORING)->where('fulfilment_customer_id', $fulfilmentCustomer->id)->first();
     $palletAudit        = StoreStoredItemAuditFromPallet::make()->action($pallet, []);
@@ -3492,6 +3482,5 @@ test('approve fulfilment customer', function (FulfilmentCustomer $fulfilmentCust
         ->and($customer->status)->toBe(CustomerStatusEnum::APPROVED)
         ->and($customer->is_fulfilment)->toBeTrue()
         ->and($customer->shop->crmStats->number_customers_status_approved)->toBe(4);
-
     //  $fulfilmentCustomer->forceDelete();
 })->depends('create fulfilment customer (pending approval)');

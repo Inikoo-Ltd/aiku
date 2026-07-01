@@ -13,7 +13,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use Sentry;
 
 class FetchAllegroOrders extends RetinaAction
 {

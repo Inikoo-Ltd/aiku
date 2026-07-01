@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 06-05-2025-17h-01m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -61,9 +61,9 @@ class ShowRetinaTopUpCheckout extends RetinaAction
             'environment'    => app()->environment()
         ];
 
-//        $paymentSessionRequest->disabled_payment_methods = [
-//            'bizum'
-//        ];
+        $paymentSessionRequest->disabled_payment_methods = [
+            'bizum'
+        ];
 
         $product                      = new Product();
         $product->name                = 'top up';

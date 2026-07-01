@@ -7,8 +7,9 @@ import { faPencil, faTrashAlt, faFileInvoice, faPlus, faEnvelope } from "@fal"
 import { ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 
-library.add( faPencil, faTrashAlt, faFileInvoice, faPlus, faEnvelope )
+library.add( faPencil, faTrashAlt, faFileInvoice, faPlus, faEnvelope, faGoogle )
 
 const props = defineProps<{
     action: Action
@@ -42,7 +43,7 @@ const handleClick = (action: Action|any) => {
                 isLoading.value = true
             },
             onSuccess: () => {
-                null
+                isLoading.value = false
             },
             onFinish: () => {
                 if(action.fullLoading) return

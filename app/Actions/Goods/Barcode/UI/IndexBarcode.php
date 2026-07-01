@@ -34,7 +34,7 @@ class IndexBarcode extends GrpAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('barcodes.number', $value)
-                    ->orWhereAnyWordStartsWith('barcodes.notes', $value);
+                    ->orWhereAnyWordStartWith('barcodes.note', $value);
             });
         });
 
@@ -54,7 +54,7 @@ class IndexBarcode extends GrpAction
             );
         }
 
-        $queryBuilder->with('tradeUnitActive');
+        $queryBuilder->with('tradeUnitsActive');
 
         return $queryBuilder
             ->select([
@@ -137,6 +137,7 @@ class IndexBarcode extends GrpAction
             'title'                        => $title,
             'pageHead'                     => [
                 'title'         => $title,
+                'color'         => '#075192',
                 'iconRight'     => [
                     'icon'  => ['fal', 'fa-barcode'],
                     'title' => $title,
