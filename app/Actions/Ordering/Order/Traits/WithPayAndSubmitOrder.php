@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * Author Louis Perez
+ * Created on 01-07-2026-11h-50m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
+
 namespace App\Actions\Ordering\Order\Traits;
 
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;

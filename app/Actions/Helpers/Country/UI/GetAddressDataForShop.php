@@ -18,7 +18,7 @@ class GetAddressDataForShop
 {
     use AsObject;
 
-    public function handle(?Shop $shop = null, bool $excludeForbiddenBilling = false, bool $excludeForbiddenDelivery = false): array
+    public function handle(?Shop $shop = null, bool $excludeForbiddenBilling = false, bool $excludeForbiddenDelivery = false, bool $excludeHasPostcodeRegex = true): array
     {
         $selectOptions = [];
 
@@ -39,6 +39,10 @@ class GetAddressDataForShop
 
         if ($excludeForbiddenDelivery) {
             $forbiddenCountries = array_merge($forbiddenCountries, $target->bannedDeliveryCountries());
+        }
+
+        if ($forbiddenCountries && $excludeHasPostcodeRegex) {
+            $forbiddenCountries = array_filter($forbiddenCountries, fn ($item) => empty($item['postcode']));
         }
 
         // Only ban empty/null postcode (Since it means ban whole country). Will still show the other, validation is on BE
