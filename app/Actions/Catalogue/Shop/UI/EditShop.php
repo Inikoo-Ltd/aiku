@@ -59,20 +59,6 @@ class EditShop extends OrgAction
      */
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-        $merged = array_merge(
-            $shop->organisation->forbidden_dispatch_countries ?? [],
-            $shop->forbidden_dispatch_countries ?? []
-        );
-
-        $result = array_reduce($merged, function ($carry, $item) {
-            if (!in_array($item, $carry)) {
-                $carry[] = $item;
-            }
-
-            return $carry;
-        }, []);
-
-
         $mergedBannedCountryRegions = $shop->banned_country_regions;
 
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
@@ -549,39 +535,28 @@ class EditShop extends OrgAction
                           ] */
                     ],
                 ],
-                [
-                    'label'  => __('Shipping'),
-                    'icon'   => 'fa-light fa-truck',
-                    'fields' => [
-                        'forbidden_dispatch_countries' => [
-                            'type'        => 'multiselect-tags',
-                            'placeholder' => __('Select countries'),
-                            'information' => __('Customer cannot submit order that delivered to these countries'),
-                            'label'       => __('Forbidden Countries'),
-                            'required'    => true,
-                            'value'       => $result,
-                            'options'     => GetCountriesOptions::run(),
-                            'searchable'  => true,
-                            'mode'        => 'tags',
-                            'labelProp'   => 'label',
-                            'valueProp'   => 'id'
-                        ],
-                    ],
-                ],
-
+                // [
+                //     'label'  => __('Shipping'),
+                //     'icon'   => 'fa-light fa-truck',
+                //     'fields' => [
+                //     ],
+                // ],
                 [
                     'label' => __('Banned Countries').' ('.__('territories').')',
                     'icon'  => 'fa-light fa-ban',
 
                     'fields' => [
                         'banned_countries' => [
-                            'full'     => true,
-                            'hidden'   => app()->environment('production'),
-                            'type'     => 'banned-countries',
-                            'label'    => __('Banned Countries'),
-                            'required' => true,
-                            'value'    => $mergedBannedCountryRegions,
-                            'options'  => GetCountriesOptions::run(),
+                            'full'              => true,
+                            'hidden'            => app()->environment('production'),
+                            'type'              => 'banned-countries',
+                            'label'             => __('Banned Countries'),
+                            'required'          => true,
+                            'value'             => [
+                                'banned_list'                           => $mergedBannedCountryRegions,
+                                'is_follow_organisation_banned_list'    => Arr::get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false),
+                            ],
+                            'options'           => GetCountriesOptions::run(true, true),
                         ],
                     ],
                 ],

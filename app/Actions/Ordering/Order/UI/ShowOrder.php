@@ -18,6 +18,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
@@ -63,6 +64,7 @@ class ShowOrder extends OrgAction
 {
     use IsOrder;
     use WithOrderingAuthorisation;
+    use WithOrderForbiddenCountryCheck;
 
     private Shop|Customer|CustomerClient|Purge|CustomerSalesChannel $parent;
     private CustomerSalesChannel $customerSalesChannel;
@@ -215,6 +217,8 @@ class ShowOrder extends OrgAction
         $finalTimeline   = $this->getOrderTimeline($order);
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
+
+        $orderBanStatus = $this->isForbiddenDetailed($order);
 
         $actions = $order->shop->type == ShopTypeEnum::DROPSHIPPING
             ?
@@ -395,6 +399,8 @@ class ShowOrder extends OrgAction
                 'data'                        => OrderResource::make($order),
                 'delivery_note'               => $deliveryNoteResource,
 
+                'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
+                'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
 
                 'payments_data'         => $paymentsData,
                 'payments_accounts'     => $paymentAccountData,

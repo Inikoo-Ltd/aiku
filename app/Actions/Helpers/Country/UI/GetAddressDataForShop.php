@@ -1,10 +1,11 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 01 Jun 2024 19:35:06 Central European Summer Time, Mijas Costa, Spain
- * Copyright (c) 2024, Raul A Perusquia Flores
- */
+ * Author Louis Perez
+ * Created on 01-07-2026-08h-43m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
 
 namespace App\Actions\Helpers\Country\UI;
 
@@ -13,33 +14,44 @@ use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetAddressData
+class GetAddressDataForShop
 {
     use AsObject;
 
-    public function handle(?Shop $shop = null, bool $ignoreForbiddenDispatchCountries = false): array
+    public function handle(?Shop $shop = null, bool $excludeForbiddenBilling = false, bool $excludeForbiddenDelivery = false, bool $excludeHasPostcodeRegex = true): array
     {
         $selectOptions = [];
 
-        if ($shop) {
-            $target = $shop;
-            // Handle if shop follow organisation banned countries
-            if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
-                $target = $shop->organisation;
-            };
-            
-            $countries = Country::where('status', true)
-                ->where('show_in_address', true)
-                ->when(
-                    !$ignoreForbiddenDispatchCountries, 
-                    fn ($q) => $q->whereNotIn('id', $target->bannedDeliveryCountries() ?? [])
-                )
-                ->get();
-        } else {
-            $countries = Country::where('status', true)
-                ->where('show_in_address', true)
-                ->get();
+        $countries = Country::where('status', true)
+            ->where('show_in_address', true);
+
+        $forbiddenCountries = [];
+
+        $target = $shop;
+        // Handle if shop follow organisation banned countries
+        if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
+            $target = $shop->organisation;
+        };
+
+        if ($excludeForbiddenBilling) {
+            $forbiddenCountries = array_merge($forbiddenCountries, $target->bannedBillingCountries());
         }
+
+        if ($excludeForbiddenDelivery) {
+            $forbiddenCountries = array_merge($forbiddenCountries, $target->bannedDeliveryCountries());
+        }
+
+        if ($forbiddenCountries && $excludeHasPostcodeRegex) {
+            $forbiddenCountries = array_filter($forbiddenCountries, fn ($item) => empty($item['postcode']));
+        }
+
+        // Only ban empty/null postcode (Since it means ban whole country). Will still show the other, validation is on BE
+        $forbiddenCountries = array_filter($forbiddenCountries, fn ($item) => empty($item['postcode']));
+
+        $countries->whereNotIn('code', array_keys($forbiddenCountries));
+
+        $countries = $countries->get();
+
         /** @var Country $country */
         foreach ($countries as $country) {
             $fields = Arr::get($country->data, 'fields', []);

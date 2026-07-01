@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website\Cloudflare;
 
+use App\Actions\Web\Website\BlockedCountries\UpdateWebsiteBlockedCountriesRegions;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -49,10 +50,9 @@ class BlockCountriesInCloudflare
         $otherRules = array_values(
             array_filter(
                 $currentRules,
-                fn ($rule) => ($rule['description'] ?? null) !== $this->countryBlockDescription
+                fn($rule) => ($rule['description'] ?? null) !== $this->countryBlockDescription
             )
         );
-
 
 
         if (empty($countryCodes)) {
@@ -62,7 +62,7 @@ class BlockCountriesInCloudflare
             $countryList = implode(
                 ' ',
                 array_map(
-                    fn ($c) => '"'.strtoupper($c).'"',
+                    fn($c) => '"'.strtoupper($c).'"',
                     $countryCodes
                 )
             );
@@ -84,6 +84,17 @@ class BlockCountriesInCloudflare
         ]);
 
         $update->throw();
+
+        foreach ($countryCodes as $countryCode) {
+            UpdateWebsiteBlockedCountriesRegions::run(
+                $website,
+                [
+                    'country' => $countryCode
+                ]
+                , true
+            );
+        }
+
 
         return $update->json();
     }
@@ -118,6 +129,7 @@ class BlockCountriesInCloudflare
         ]);
 
         $create->throw();
+
 
         return $create->json('result.id');
     }

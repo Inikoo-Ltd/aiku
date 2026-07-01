@@ -54,7 +54,8 @@ const props = defineProps<{
     }
     balance?: string
     address_management?: AddressManagement
-    is_unable_dispatch?: boolean
+    is_forbidden_delivery?: boolean
+    is_forbidden_billing?: boolean
     contact_address?: Address | null
     isInBasket?: boolean
     isShowAllOffersMeter?: boolean  // Whether to show all offers meter or only the achieved offers
@@ -129,6 +130,10 @@ const updateCollection = (value: boolean) => {
                 <div v-else class="text-gray-400 italic pl-6 pr-3">
                     {{ trans("No billing address") }}
                 </div>
+
+                <div v-if="is_forbidden_billing" class="text-red-500 mt-3 text-xs">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}
+                </div>
             </div>
             
             <div class="">
@@ -177,7 +182,7 @@ const updateCollection = (value: boolean) => {
                         <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
                     </div>
                 
-                    <div v-if="is_unable_dispatch" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
+                    <div v-if="is_forbidden_delivery" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
                     </div>
                 </div>
