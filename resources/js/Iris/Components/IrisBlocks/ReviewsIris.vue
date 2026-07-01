@@ -444,7 +444,7 @@ const openReview = (review: any) => {
             <p class="whitespace-pre-line text-sm leading-6 text-gray-700">
                 {{ selectedReview.reply }}
             </p>
-            <div class="flex items-center w-full justify-end gap-2">
+            <div class="flex items-center w-full justify-end gap-2" v-if="allow_review_reaction && layout?.iris?.is_logged_in">
                 <button
                     :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
                     @click="() => toggleReaction(selectedReview,'review_reply',true)"
