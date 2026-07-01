@@ -15,7 +15,6 @@ class RepairReviewProducts
 {
     use WithActionUpdate;
 
-
     protected function handle(Shop $shop): void
     {
         if ($shop->language->code === 'en') {

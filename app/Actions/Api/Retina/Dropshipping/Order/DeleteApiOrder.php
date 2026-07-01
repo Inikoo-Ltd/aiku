@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 25-06-2025-15h-20m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -47,7 +47,9 @@ class DeleteApiOrder extends RetinaApiAction
         $order->transactions()->delete();
         $order->delete();
 
-        MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay(30);
+        if ($order->master_shop_id) {
+            MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay(30);
+        }
         ShopHydrateOrders::dispatch($this->shop);
         OrganisationHydrateOrders::dispatch($this->organisation);
         GroupHydrateOrders::dispatch($this->group);
