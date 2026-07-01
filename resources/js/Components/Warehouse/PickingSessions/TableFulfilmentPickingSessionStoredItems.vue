@@ -598,6 +598,56 @@ const shippingAddressLines = computed(() => {
     ].filter((line) => Boolean(line))
 })
 
+const isTiktokShipment = computed(() => {
+    const routes = selectedDispatchableReturn.value?.shipmentsRoutes
+    return routes?.is_shipping_by_external
+        || routes?.submit_route?.name === "grp.models.pallet-return.shipment_from_tiktok.store"
+})
+
+const shipmentButtonLabel = computed(() => {
+    return selectedDispatchableReturn.value?.shipmentsRoutes?.button_label
+        ?? (isTiktokShipment.value ? trans("Get shipment from Tiktok") : trans("Shipment"))
+})
+
+const onGetShipmentFromTiktok = () => {
+    const submitRoute = selectedDispatchableReturn.value?.shipmentsRoutes?.submit_route
+    if (!submitRoute?.name) {
+        return
+    }
+
+    isLoadingButton.value = "getShipmentFromTiktok"
+    router.post(buildUrl(submitRoute.name, submitRoute.parameters), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            router.reload()
+        },
+        onError: () => {
+            notify({
+                title: trans("Something went wrong."),
+                text: trans("Failed to get Shipment from Tiktok. Please try again."),
+                type: "error",
+            })
+        },
+        onFinish: () => {
+            isLoadingButton.value = false
+        },
+    })
+}
+
+const onClickShipmentButton = () => {
+    if (!selectedDispatchableReturn.value?.parcels?.length) {
+        notify({ title: trans("Something went wrong"), text: trans("Please add at least one parcel"), type: "error" })
+        return
+    }
+
+    if (isTiktokShipment.value) {
+        onGetShipmentFromTiktok()
+        return
+    }
+
+    onOpenModalTrackingNumber()
+}
+
 const onOpenModalTrackingNumber = async () => {
     const fetchRoute = selectedDispatchableReturn.value?.shipmentsRoutes?.fetch_route
     if (!fetchRoute?.name) {
@@ -1391,18 +1441,20 @@ const onDispatchPalletReturn = async () => {
 
         <div v-if="!selectedDispatchableReturn?.isCollection && isPickedState" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="rounded-lg border border-gray-200 bg-white p-4">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
                     <div class="flex items-center gap-x-2">
                         <FontAwesomeIcon v-tooltip="trans('Shipments')" icon="fal fa-shipping-fast" class="text-gray-400" fixed-width aria-hidden="true" />
                         <div class="font-medium">{{ trans("Shipments") }} ({{ selectedDispatchableReturn?.shipments?.length ?? 0 }})</div>
                     </div>
                     <Button
                         v-if="(selectedDispatchableReturn?.shipments?.length ?? 0) < 1"
-                        @click="() => selectedDispatchableReturn?.parcels?.length ? onOpenModalTrackingNumber() : notify({ title: trans('Something went wrong'), text: trans('Please add at least one parcel'), type: 'error' })"
-                        :label="trans('Shipment')"
+                        @click="onClickShipmentButton"
+                        :label="shipmentButtonLabel"
+                        :loading="isLoadingButton === 'getShipmentFromTiktok'"
                         icon="fal fa-shipping-fast"
                         type="tertiary"
                         size="xs"
+                        class="whitespace-nowrap"
                     />
                 </div>
 

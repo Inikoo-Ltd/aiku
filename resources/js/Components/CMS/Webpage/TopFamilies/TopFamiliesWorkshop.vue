@@ -232,7 +232,7 @@ watch(
 						:touchRatio="1.2"
 						navigation
 						:pagination="{ clickable: true, dynamicBullets: true }"
-						class="w-full swiper-inner has-pagination"
+						class="w-full swiper-inner"
 						:mousewheel="{
 							forceToAxis: true,
 							releaseOnEdges: true,
@@ -313,7 +313,7 @@ watch(
 :deep(.swiper-pagination) {
 	position: relative;
 	bottom: auto;
-	margin-top: 0.75rem;
+	margin-top: 1.5rem;
 }
 
 :deep(.swiper-pagination.swiper-pagination-lock) {
