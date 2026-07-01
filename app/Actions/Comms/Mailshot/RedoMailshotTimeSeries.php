@@ -58,11 +58,10 @@ class RedoMailshotTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $dateRange = DB::table('email_tracking_events')
-                ->join('dispatched_emails', 'email_tracking_events.dispatched_email_id', '=', 'dispatched_emails.id')
-                ->join('mailshot_has_dispatched_emails', 'dispatched_emails.id', '=', 'mailshot_has_dispatched_emails.dispatched_email_id')
+            $dateRange = DB::table('dispatched_emails')
+                ->leftJoin('mailshot_has_dispatched_emails', 'dispatched_emails.id', '=', 'mailshot_has_dispatched_emails.dispatched_email_id')
                 ->where('mailshot_has_dispatched_emails.mailshot_id', $mailshot->id)
-                ->selectRaw('MIN(email_tracking_events.created_at) as first_date, MAX(email_tracking_events.created_at) as last_date')
+                ->selectRaw('MIN(dispatched_emails.created_at) as first_date, MAX(dispatched_emails.updated_at) as last_date')
                 ->first();
 
             if (!$dateRange?->first_date) {
