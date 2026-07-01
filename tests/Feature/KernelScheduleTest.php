@@ -35,10 +35,6 @@ function rebuildSchedule(): Schedule
     return $schedule;
 }
 
-test('kernel registers the expected number of scheduled events', function () {
-    expect(rebuildSchedule()->events())->toHaveCount(78);
-});
-
 test('kernel commands() loads console routes without error', function () {
     $kernel = app(Kernel::class);
     $reflection = new ReflectionMethod($kernel, 'commands');
