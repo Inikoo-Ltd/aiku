@@ -11,7 +11,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\UI\Web\WebsiteRestrictedCountryTabsEnum;
 use App\Http\Resources\Web\RestrictedCountryLogResource;
-use App\Http\Resources\Web\RestrictedCountryResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Catalogue\Shop;
@@ -65,17 +64,16 @@ class ShowRestrictedCountry extends OrgAction
                     'navigation' => WebsiteRestrictedCountryTabsEnum::navigation(),
                 ],
 
-                WebsiteRestrictedCountryTabsEnum::RESTRICTED_COUNTRIES->value => $this->tab == WebsiteRestrictedCountryTabsEnum::RESTRICTED_COUNTRIES->value ?
-                    fn () => RestrictedCountryResource::collection(IndexRestrictedCountries::run($website, WebsiteRestrictedCountryTabsEnum::RESTRICTED_COUNTRIES->value))
-                    : Inertia::lazy(fn () => RestrictedCountryResource::collection(IndexRestrictedCountries::run($website, WebsiteRestrictedCountryTabsEnum::RESTRICTED_COUNTRIES->value))),
+                WebsiteRestrictedCountryTabsEnum::OVERVIEW->value => $this->tab == WebsiteRestrictedCountryTabsEnum::OVERVIEW->value
+                    ? fn () => GetRestrictedCountryOverview::run($website)
+                    : Inertia::lazy(fn () => GetRestrictedCountryOverview::run($website)),
 
                 WebsiteRestrictedCountryTabsEnum::LOGS->value => $this->tab == WebsiteRestrictedCountryTabsEnum::LOGS->value ?
                     fn () => RestrictedCountryLogResource::collection(IndexRestrictedCountryLogs::run($website, WebsiteRestrictedCountryTabsEnum::LOGS->value))
                     : Inertia::lazy(fn () => RestrictedCountryLogResource::collection(IndexRestrictedCountryLogs::run($website, WebsiteRestrictedCountryTabsEnum::LOGS->value))),
             ]
         )
-        ->table(IndexRestrictedCountries::make()->tableStructure(prefix: WebsiteRestrictedCountryTabsEnum::RESTRICTED_COUNTRIES->value))
-        ->table(IndexRestrictedCountryLogs::make()->tableStructure(prefix: WebsiteRestrictedCountryTabsEnum::LOGS->value));
+        ->table(IndexRestrictedCountryLogs::make()->tableStructure(website: $website, prefix: WebsiteRestrictedCountryTabsEnum::LOGS->value));
     }
 
     public function getBreadcrumbs(Website $website, string $routeName, array $routeParameters): array
