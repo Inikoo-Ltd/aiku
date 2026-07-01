@@ -33,6 +33,13 @@ class AnswerChatWithRag
         $fallback         = trim((string) ($aiNodeData['fallbackMessage'] ?? ''))
             ?: __("Sorry, I don't have that info yet.");
 
+        if ($this->isConversational($question)) {
+            $answer = $this->composeConversationalAnswer($persona, $question, $history);
+            if ($answer !== null && trim($answer) !== '') {
+                return ['answered' => true, 'text' => $this->stripMarkdown($answer), 'chunk_ids' => []];
+            }
+        }
+
         $searchQuery = $this->buildSearchQuery($history, $question);
 
         $confident = SearchChatKnowledge::run($chatAutomation, $knowledgeNodeIds, $searchQuery, $maxChunks, $threshold);
@@ -206,6 +213,65 @@ class AnswerChatWithRag
                 return $speaker.': '.trim($entry['text']);
             })
             ->implode("\n");
+    }
+
+    private function isConversational(string $question): bool
+    {
+        $normalized = strtolower(trim((string) preg_replace('/[^a-z\s]/i', '', $question)));
+
+        $patterns = [
+            '/^(hi|hello|hey|hiya|howdy|greetings|good\s*(morning|afternoon|evening|day|night))\b/',
+            '/^(thanks|thank you|thx|ty|cheers|many thanks)\b/',
+            '/^(bye|goodbye|see you|cya|take care)\b/',
+            '/^(ok|okay|alright|sure|got it|great|nice|cool|awesome|perfect|sounds good)\b/',
+            '/^(yes|no|yep|nope|yeah|nah)\s*$/',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $normalized)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<int, array{role: string, text: string}>  $history
+     */
+    private function composeConversationalAnswer(string $persona, string $question, array $history): ?string
+    {
+        $system = implode(' ', array_filter([
+            'You are a friendly customer support assistant. Reply in the customer\'s language.',
+            'The customer has sent a short conversational message (like a greeting, thank-you, or farewell).',
+            'Respond naturally and warmly in one or two short sentences. Do NOT mention knowledge bases, information availability, or topics you cover.',
+            'Write in plain text only. No Markdown.',
+            $persona,
+        ]));
+
+        $conversation = $this->renderHistory($history);
+
+        $prompt = $system
+            .($conversation !== '' ? "\n\nCONVERSATION SO FAR:\n".$conversation : '')
+            ."\n\nCUSTOMER: ".$question;
+
+        try {
+            $answer = AskToAi::run($prompt);
+            if (is_string($answer) && trim($answer) !== '') {
+                return $answer;
+            }
+
+            $model = config('llmdriver.drivers.ollama.models.chat_output_model')
+                ?? config('ollama-laravel.model');
+
+            $response = Ollama::model($model)->prompt($prompt)->stream(false)->ask();
+
+            return $response['response'] ?? null;
+        } catch (\Throwable $e) {
+            Log::warning('Chat conversational answer failed', ['error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /**
