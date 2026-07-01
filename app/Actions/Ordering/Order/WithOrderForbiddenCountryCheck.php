@@ -14,41 +14,37 @@ use App\Models\Ordering\Order;
 
 trait WithOrderForbiddenCountryCheck
 {
-    public function isForbidden(Order $order)
+    public function isForbidden(Order $order): bool
     {
-        $billingAddress     = $order->billingAddress;
-        $deliveryAddress    = $order->deliveryAddress;
-        
-        $shop = $order->shop;
-        $target = $shop;
-        if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
-            $target = $shop->organisation;
-        };
+        $data = $this->getBannedCountriesData($order);
 
-        $bannedBillingCountries = $target->bannedBillingCountries();
-        $bannedDeliveryCountries = $target->bannedDeliveryCountries();
-
-        // If any of those is true, would be banned
-        return $this->isAddressForbidden($billingAddress, $bannedBillingCountries) || $this->isAddressForbidden($deliveryAddress, $bannedDeliveryCountries);
+        return $this->isAddressForbidden($data['billingAddress'], $data['bannedBillingCountries']) || $this->isAddressForbidden($data['deliveryAddress'], $data['bannedDeliveryCountries']);
     }
 
-    public function isForbiddenDetailed(Order $order)
+    public function isForbiddenDetailed(Order $order): array
     {
-        $billingAddress     = $order->billingAddress;
-        $deliveryAddress    = $order->deliveryAddress;
-
-        $shop = $order->shop;
-        $target = $shop;
-        if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
-            $target = $shop->organisation;
-        };
-
-        $bannedBillingCountries = $target->bannedBillingCountries();
-        $bannedDeliveryCountries = $target->bannedDeliveryCountries();
+        $data = $this->getBannedCountriesData($order);
 
         return [
-            'billing'   => $this->isAddressForbidden($billingAddress, $bannedBillingCountries),
-            'delivery'  => $this->isAddressForbidden($deliveryAddress, $bannedDeliveryCountries)
+            'billing'  => $this->isAddressForbidden($data['billingAddress'], $data['bannedBillingCountries']),
+            'delivery' => $this->isAddressForbidden($data['deliveryAddress'], $data['bannedDeliveryCountries']),
+        ];
+    }
+
+    protected function getBannedCountriesData(Order $order): array
+    {
+        $shop   = $order->shop;
+        $target = $shop;
+
+        if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
+            $target = $shop->organisation;
+        }
+
+        return [
+            'billingAddress'          => $order->billingAddress,
+            'deliveryAddress'         => $order->deliveryAddress,
+            'bannedBillingCountries'  => $target->bannedBillingCountries(),
+            'bannedDeliveryCountries' => $target->bannedDeliveryCountries(),
         ];
     }
 
@@ -68,17 +64,17 @@ trait WithOrderForbiddenCountryCheck
 
         $postcodeRegex = data_get($bannedCountry, 'postcode');
 
-        // Ban entire country if doesn't have postcode regex
+        // Ban entire country if it doesn't have postcode regex
         if (!$postcodeRegex) {
             return true;
         }
 
-        // Allow if country have postcodeRegex but address doesn't have postal code
+        // Allow if country has postcodeRegex but address doesn't have postal code
         if (!$address->postal_code) {
             return false;
         }
 
-        // 1 if regex match, 0 if regex don't match, false if it fails
+        // 1 if regex matches, 0 if regex doesn't match, false if it fails
         $result = @preg_match($postcodeRegex, $address->postal_code);
 
         // If Regex is invalid, allow order to be sent nonetheless
