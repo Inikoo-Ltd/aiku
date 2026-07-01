@@ -34,7 +34,7 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
 
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
-        $countriesAddressData = GetAddressDataForShop::run($shop, excludeForbiddenBilling: true, excludeForbiddenDelivery: true);
+        $countriesAddressData = GetAddressDataForShop::run($shop, excludeForbiddenBilling: true, excludeForbiddenDelivery: false);
 
         return Inertia::render(
             'Auth/RegistrationWithGoogle',

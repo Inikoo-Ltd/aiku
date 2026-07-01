@@ -29,7 +29,7 @@ class ShowStandAloneRegistration extends IrisAction
         $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->get();
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
-        $countriesAddressData = GetAddressDataForShop::run($shop, excludeForbiddenBilling: true, excludeForbiddenDelivery: true);
+        $countriesAddressData = GetAddressDataForShop::run($shop, excludeForbiddenBilling: true, excludeForbiddenDelivery: false);
 
         $webUser = $request->user();
         return Inertia::render(
