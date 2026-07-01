@@ -22,6 +22,7 @@ class ReviewsInIrisResource extends JsonResource
             'likes'             => $review->likes,
             'dislikes'          => $review->dislikes,
             'review_reactions'  => $review->review_reaction, // Later
+            'reply'             => $review->reply
         ];
     }
 }

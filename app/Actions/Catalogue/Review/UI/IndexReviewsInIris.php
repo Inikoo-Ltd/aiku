@@ -45,6 +45,7 @@ class IndexReviewsInIris extends OrgAction
                 'reviews.likes',
                 'reviews.dislikes',
                 'reviews.web_images',
+                'reviews.reply_message as reply'
             ];
 
         $query = QueryBuilder::for(Review::class)
@@ -52,10 +53,10 @@ class IndexReviewsInIris extends OrgAction
 
         if ($isLoggedIn) {
             $user = auth()->user();
-            
+
             if ($user->customer) {
                 array_push($select, 'review_reactions.type as review_reaction'); // Like/Dislike
-    
+
                 $query
                     ->leftJoin('review_reactions', function ($join) use ($user) {
                         $join->on('review_reactions.review_id', 'reviews.id')

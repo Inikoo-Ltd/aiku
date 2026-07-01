@@ -380,7 +380,7 @@ const onPayWithBalance = () => {
                             :readonly="true"
                             :disabled="true"
                             :cancel="false"
-                            class="scale-75 origin-right" />
+                            class="scale-75 origin-right rating" />
                     </div>
                 </div>
             </div>
@@ -403,3 +403,10 @@ const onPayWithBalance = () => {
         </Modal>
     </div>
 </template>
+
+
+<style scoped>
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+	color: #f59e0b !important;
+}
+</style>
