@@ -213,6 +213,10 @@ class ShowWebsite extends OrgAction
             'webpage'      => 'welcome-'.$shop->slug,
         ];
 
+        $route_restricted_country = [
+            'name'       => str_replace('websites.show', 'websites.restricted_country', $request->route()->getName()),
+            'parameters' => $request->route()->originalParameters(),
+        ];
 
         return Inertia::render(
             'Org/Web/Website',
@@ -239,17 +243,6 @@ class ShowWebsite extends OrgAction
 
                         array_merge(
                             [
-                                app()->isLocal() && !empty($website->blocked_country_regions) ? [
-                                    'type'    => 'button',
-                                    'style'   => 'tertiary',
-                                    'label'   => __('Restricted Countries'),
-                                    'tooltip' => __('Countries restricted from this website'),
-                                    'icon'    => ['fal', 'fa-ban'],
-                                    'route'   => [
-                                        'name'       => str_replace('websites.show', 'websites.restricted_country', $request->route()->getName()),
-                                        'parameters' => $request->route()->originalParameters(),
-                                    ],
-                                ] : [],
                                 [
                                     'type'    => 'button',
                                     'style'   => 'tertiary',
@@ -311,6 +304,9 @@ class ShowWebsite extends OrgAction
                     ],
                     [
                         'pic' => null,// todo this is wrong User::permission("web.{$website->shop_id}.edit")->get()
+                    ],
+                    [
+                        'route_restricted_country' => $route_restricted_country,
                     ],
                 )
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),

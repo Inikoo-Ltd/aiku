@@ -35,6 +35,7 @@ const props = defineProps<{
     allow_review_reply_reaction : boolean
     minimum_reviews_to_show : number
     webpage_slug : string
+    show_staff_who_reply : boolean
 }>()
 
 defineOptions({ layout: LayoutIris })
@@ -50,6 +51,8 @@ provide('webpage_data', props.webpage_data)
 provide('webpage_slug', props.webpage_slug)
 provide('minimum_reviews_to_show', props.minimum_reviews_to_show)
 provide('allow_review_reaction', props.allow_review_reaction)
+provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
+provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
 
 const checkScreenType = () => {
     const width = window.innerWidth

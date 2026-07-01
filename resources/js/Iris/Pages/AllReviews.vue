@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount, inject } from "vue"
+import { computed, ref, onMounted, onBeforeUnmount, inject, watch } from "vue"
 import axios from "axios"
 import Rating from "primevue/rating"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -28,12 +28,29 @@ const allow_review_reaction = inject<number>("allow_review_reaction", 0)
 const allow_review_reply_reaction = inject<number>("allow_review_reply_reaction", 0)
 const show_staff_who_reply = inject<boolean>("show_staff_who_reply", false)
 const layout = inject("layout", {})
+const searchQuery = ref("")
+const sortBy = ref("created_at")
+const sortDirection = ref<"asc" | "desc">("desc")
 
-const fetchMoreReviews = async () => {
-    const currentPage = reviewsData.value.meta?.current_page ?? 1
+const buildReviewParams = (page: number) => {
+    const params: Record<string, any> = { page }
+
+    if (searchQuery.value.trim()) {
+        params["filter[global]"] = searchQuery.value.trim()
+        params["filter[reply_by]"] = searchQuery.value.trim()
+    }
+
+    params.sort = `${sortDirection.value === "desc" ? "-" : ""}${sortBy.value}`
+
+    return params
+}
+
+const fetchMoreReviews = async (pageOverride?: number, append = true) => {
+    const currentPage = reviewsData.value.meta?.current_page ?? 0
     const lastPage = reviewsData.value.meta?.last_page ?? 1
+    const nextPage = pageOverride ?? currentPage + 1
 
-    if (isFetchingMoreReviews.value || currentPage >= lastPage) {
+    if (isFetchingMoreReviews.value || nextPage > lastPage) {
         return
     }
 
@@ -42,16 +59,22 @@ const fetchMoreReviews = async () => {
     try {
         const { data } = await axios.get(
             route("iris.json.fetch_reviews", { webpage: props.webpage_slug }),
-            { params: { page: currentPage + 1 } }
+            { params: buildReviewParams(nextPage) }
         )
 
         const fetchedReviews = data?.reviews?.data ?? []
         seedReactions(fetchedReviews)
 
-        reviewsData.value = {
-            ...data.reviews,
-            data: [...reviewsData.value.data, ...fetchedReviews],
-        }
+        reviewsData.value = append
+            ? {
+                ...data.reviews,
+                data: [...reviewsData.value.data, ...fetchedReviews],
+            }
+            : {
+                ...data.reviews,
+                data: fetchedReviews,
+            }
+
         reviewSummary.value = data?.review_summary ?? reviewSummary.value
     } catch (error) {
         console.error(error)
@@ -59,6 +82,25 @@ const fetchMoreReviews = async () => {
         isFetchingMoreReviews.value = false
     }
 }
+
+const resetAndFetchReviews = async () => {
+    current.value = 0
+    reviewsData.value = { data: [], meta: { current_page: 0, last_page: 1, total: 0 } }
+    await fetchMoreReviews(1, false)
+}
+
+const toggleSortDirection = async () => {
+    sortDirection.value = sortDirection.value === "desc" ? "asc" : "desc"
+    await resetAndFetchReviews()
+}
+
+const applyFiltersAndSort = async () => {
+    await resetAndFetchReviews()
+}
+
+watch([searchQuery, sortBy, sortDirection], async () => {
+    await applyFiltersAndSort()
+})
 
 const current = ref(0)
 const windowWidth = ref(1024) // default width for SSR
@@ -73,7 +115,7 @@ const updateWindowWidth = () => {
 onMounted(() => {
     updateWindowWidth() // get actual width after hydration
     window.addEventListener("resize", updateWindowWidth)
-    fetchMoreReviews()
+    void fetchMoreReviews(1, false)
 })
 
 onBeforeUnmount(() => {
@@ -231,6 +273,35 @@ const openReview = (review: any) => {
         </div>
 
         <div v-else class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
+            <div class="col-span-full flex flex-col gap-3 border-b border-gray-100 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <input
+                    v-model="searchQuery"
+                    type="search"
+                    :placeholder="ctrans('Search by customer or reply author')"
+                    class="w-full rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 outline-none ring-0 transition focus:border-orange-400 lg:max-w-sm"
+                />
+
+                <div class="flex items-center gap-2">
+                    <select
+                        v-model="sortBy"
+                        class="rounded-full border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none"
+                    >
+                        <option value="created_at">{{ ctrans("Date") }}</option>
+                        <option value="rating">{{ ctrans("Rating") }}</option>
+                        <option value="likes">{{ ctrans("Likes") }}</option>
+                        <option value="reply_by">{{ ctrans("Reply by") }}</option>
+                    </select>
+
+                    <button
+                        type="button"
+                        @click="toggleSortDirection"
+                        class="rounded-full border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
+                    >
+                        {{ sortDirection === "desc" ? "↓" : "↑" }}
+                    </button>
+                </div>
+            </div>
+
             <!-- Summary -->
             <div class="flex min-h-[150px] flex-col items-center justify-center px-6 py-6 text-center lg:col-span-1">
                 <div class="text-sm font-semibold uppercase tracking-wider text-gray-900">

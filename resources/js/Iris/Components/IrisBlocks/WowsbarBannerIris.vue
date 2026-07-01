@@ -63,8 +63,16 @@ const bannerType = computed(() => {
     ?? 'landscape'
 })
 
-// determine the banner box style
-const reservedBannerStyle = computed(() => {
+const workshopDimensionStyle = computed<{ width: string | null; height: string | null }>(() => {
+  const styles = getStyles(props.fieldValue?.banner_dimension?.properties, props.screenType, false) || {}
+    
+  return {
+    width: styles.width ?? null,
+    height: styles.height ?? null,
+  }
+})
+
+const defaultBannerStyle = computed<Record<string, string>>(() => {
   if (bannerType.value === 'square') {
     return props.screenType === 'mobile'
       ? { width: '100%', aspectRatio: '1 / 1' }
@@ -87,6 +95,22 @@ const reservedBannerStyle = computed(() => {
     width: '100%',
     aspectRatio: w > 0 && h > 0 ? `${w} / ${h}` : '4 / 1',
   }
+})
+
+const reservedBannerStyle = computed<Record<string, string>>(() => {
+  const style = { ...defaultBannerStyle.value }
+  const { width, height } = workshopDimensionStyle.value
+
+  if (width) {
+    style.width = width
+  }
+
+  if (height) {
+    style.height = height
+    delete style.aspectRatio
+  }
+
+  return style
 })
 
 const firstBannerImageSource = computed<string | null>(() => {

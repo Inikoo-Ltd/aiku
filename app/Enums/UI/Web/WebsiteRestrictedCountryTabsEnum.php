@@ -15,15 +15,15 @@ enum WebsiteRestrictedCountryTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case RESTRICTED_COUNTRIES = 'restricted_countries';
+    case OVERVIEW = 'overview';
     case LOGS = 'logs';
 
     public function blueprint(): array
     {
         return match ($this) {
-            WebsiteRestrictedCountryTabsEnum::RESTRICTED_COUNTRIES => [
-                'title' => __('Restricted Countries'),
-                'icon'  => 'fal fa-ban',
+            WebsiteRestrictedCountryTabsEnum::OVERVIEW => [
+                'title' => __('Overview'),
+                'icon'  => 'fal fa-globe',
             ],
             WebsiteRestrictedCountryTabsEnum::LOGS => [
                 'title' => __('Log'),

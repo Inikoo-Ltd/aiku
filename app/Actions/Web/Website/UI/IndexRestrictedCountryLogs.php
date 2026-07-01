@@ -45,6 +45,15 @@ class IndexRestrictedCountryLogs extends OrgAction
             $queryBuilder->whereIn('ip_geolocations.country', $blockedCountries);
         }
 
+        foreach ($this->getElementGroups($website) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
+        }
+
         return $queryBuilder
             ->defaultSort('-last_request_at')
             ->select([
@@ -63,13 +72,53 @@ class IndexRestrictedCountryLogs extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    protected function getElementGroups(Website $website): array
     {
-        return function (InertiaTable $table) use ($prefix) {
+        $blockedCountries = array_keys($website->blocked_country_regions);
+
+        $countsQuery = RestrictedCountryRegionLog::query()
+            ->join('ip_geolocations', 'ip_geolocations.id', '=', 'restricted_country_region_logs.ip_geolocation_id');
+
+        if (empty($blockedCountries)) {
+            $countsQuery->whereRaw('1 = 0');
+        } else {
+            $countsQuery->whereIn('ip_geolocations.country', $blockedCountries);
+        }
+
+        $counts = $countsQuery
+            ->selectRaw('CAST(restricted_country_region_logs.was_blocked AS int) as was_blocked, count(*) as total')
+            ->groupBy('restricted_country_region_logs.was_blocked')
+            ->pluck('total', 'was_blocked');
+
+        return [
+            'was_blocked' => [
+                'label'    => __('Status'),
+                'elements' => [
+                    '1' => [__('Blocked'), (int) $counts->get(1, 0)],
+                    '0' => [__('Allowed'), (int) $counts->get(0, 0)],
+                ],
+                'engine'    => function ($query, $elements) {
+                    $query->whereIn('restricted_country_region_logs.was_blocked', array_map(fn ($element) => (int) $element === 1, $elements));
+                },
+            ],
+        ];
+    }
+
+    public function tableStructure(Website $website, ?string $prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($website, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
+            }
+
+            foreach ($this->getElementGroups($website) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
             }
 
             $table
@@ -84,7 +133,7 @@ class IndexRestrictedCountryLogs extends OrgAction
                 ->column(key: 'postcode', label: __('Postcode'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'ip', label: __('IP'), canBeHidden: false, sortable: false, searchable: false)
                 ->column(key: 'number_requests', label: __('Requests'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'last_request_at', label: __('Last request'), canBeHidden: false, sortable: true, searchable: false, type: 'date')
+                ->column(key: 'last_request_at', label: __('Last Request'), canBeHidden: false, sortable: true, searchable: false, align: 'right')
                 ->defaultSort('-last_request_at');
         };
     }
