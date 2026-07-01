@@ -407,7 +407,7 @@ const openReview = (review: any) => {
                     :class="[
                         'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
                         reactions[selectedReview.id] === 'like'
-                            ? ' text-blue-600'
+                            ? ' text-green-600'
                             : 'text-gray-500 hover:bg-gray-100'
                     ]"
                 >
