@@ -15,6 +15,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Helpers\Country\UI\GetAddressDataForShop;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Google\Service\Oauth2;
@@ -33,11 +34,12 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
 
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
+        $countriesAddressData = GetAddressDataForShop::run($shop, excludeForbiddenBilling: true, excludeForbiddenDelivery: true);
 
         return Inertia::render(
             'Auth/RegistrationWithGoogle',
             [
-                'countriesAddressData' => GetAddressData::run(),
+                'countriesAddressData' => $countriesAddressData,
                 'requiresPhoneNumber' => Arr::get($this->shop->settings, 'registration.require_phone_number', false),
                 'polls'                => $pollsResource,
                 'registration_settings' => Arr::get($this->shop->settings, 'registration', []),
