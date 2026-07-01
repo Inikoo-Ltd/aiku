@@ -21,9 +21,20 @@ class SyncWebsiteBlockedCountries
 
 
         $currentCountryWithRegionsData = array_filter($currentBlockedCountryRegions, fn($item) => !empty($item['postcode']));
-        $newCountryWithRegionsData     = array_filter($bannedCountries, fn($item) => !empty($item['postcode']));
-        $newCountryWithCountryOnly     = array_filter($bannedCountries, fn($item) => empty($item['postcode']));
+        $currentCountryOnly            = array_filter($currentBlockedCountryRegions, fn($item) => empty($item['postcode']));
 
+        $newCountryWithRegionsData = array_filter($bannedCountries, fn($item) => !empty($item['postcode']));
+        $newCountryWithCountryOnly = array_filter($bannedCountries, fn($item) => empty($item['postcode']));
+
+
+        foreach (array_diff(array_keys($currentCountryOnly), array_keys($newCountryWithCountryOnly)) as $countryToRemove) {
+            UpdateWebsiteBlockedCountriesRegions::run(
+                $website,
+                [
+                    'country' => $countryToRemove
+                ]
+            );
+        }
 
         if (app()->isProduction()) {
             BlockCountriesInCloudflare::run($website, array_keys($newCountryWithCountryOnly));
@@ -44,6 +55,10 @@ class SyncWebsiteBlockedCountries
         $newCountryWithRegions     = array_keys($newCountryWithRegionsData);
 
         foreach (array_diff($currentCountryWithRegions, $newCountryWithRegions) as $countryToRemove) {
+            if (in_array($countryToRemove, array_keys($newCountryWithCountryOnly))) {
+                continue;
+            }
+
             UpdateWebsiteBlockedCountriesRegions::run($website, [
                 'country' => $countryToRemove,
             ]);
