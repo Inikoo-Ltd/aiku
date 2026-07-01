@@ -79,7 +79,7 @@ trait WithOrderForbiddenCountryCheck
         }
 
         // 1 if regex match, 0 if regex don't match, false if it fails
-        $result = preg_match($postcodeRegex, $address->postal_code);
+        $result = @preg_match($postcodeRegex, $address->postal_code);
 
         // If Regex is invalid, allow order to be sent nonetheless
         if ($result === false) {
