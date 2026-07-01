@@ -761,6 +761,17 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('mailshots:redo_time_series --async')
+                ->dailyAt('16:00')
+                ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'MailshotRedoTimeSeries',
+                ),
+                name: 'MailshotRedoTimeSeries',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 

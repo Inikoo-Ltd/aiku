@@ -69,6 +69,15 @@ class RedoMailshotTimeSeries implements ShouldBeUnique
                 return;
             }
 
+            if (!$to) {
+                $oldchecker = Carbon::now()->subDays(2)->startOfDay();
+                $lastDate   = Carbon::parse($dateRange->last_date)->startOfDay();
+
+                if ($lastDate->lt($oldchecker)) {
+                    return;
+                }
+            }
+
             $from = $from ?? Carbon::parse($dateRange->first_date)->toDateString();
             $to   = $to ?? Carbon::parse($dateRange->last_date ?? now())->toDateString();
         }
