@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Outbox\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\UI\Mail\OutboxTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
@@ -60,25 +61,26 @@ class EditOutboxInShop extends OrgAction
         $isApplicableField = [
             'title' => '',
             'fields' => [
-                'is_applicable' => [
+                'state' => [
                     'type' => 'select',
-                    'label' => __('Notification active'),
-                    'placeholder' => __('Notification active'),
-                    'options' => $outbox->is_applicable ? [
-                        ['label' => __('Yes'), 'value' => true],
-                        ['label' => __('No'), 'value' => false],
+                    'label' => __('Notification State'),
+                    'placeholder' => __('Notification State'),
+                    'options' => $outbox->state == OutboxStateEnum::ACTIVE ? [
+                        ['label' => __(OutboxStateEnum::ACTIVE->value), 'value' => OutboxStateEnum::ACTIVE->value ],
+                        ['label' => __(OutboxStateEnum::SUSPENDED->value), 'value' => OutboxStateEnum::SUSPENDED->value],
                     ] : [
-                        ['label' => __('No'), 'value' => false],
-                        ['label' => __('Yes'), 'value' => true],
+                        ['label' => __(OutboxStateEnum::SUSPENDED->value), 'value' => OutboxStateEnum::SUSPENDED->value],
+                        ['label' => __(OutboxStateEnum::ACTIVE->value), 'value' => OutboxStateEnum::ACTIVE->value ],
                     ],
                     'required' => true,
                     'mode' => 'single',
-                    'value' => $outbox->is_applicable,
+                    'value' => $outbox->state,
                 ],
             ]
         ];
 
         if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD])) {
+            $fields[] = $subjectField;
             $fields[] = [
                 'title' => '',
                 'fields' => [
@@ -91,6 +93,7 @@ class EditOutboxInShop extends OrgAction
                     ],
                 ]
             ];
+            $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
         }if (in_array($outbox->code, [OutboxCodeEnum::REVIEW_REMINDER])) {
             $fields[] = $subjectField;
             $fields[] = [
@@ -105,6 +108,7 @@ class EditOutboxInShop extends OrgAction
                     ],
                 ]
             ];
+            $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
         } elseif (in_array($outbox->code, [OutboxCodeEnum::BASKET_LOW_STOCK])) {
             $fields[] = $subjectField;
             $fields[] = [
@@ -120,13 +124,14 @@ class EditOutboxInShop extends OrgAction
                 ]
             ];
             $fields[] = $intervalField;
-            $fields[] = $isApplicableField;
+            $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
         } elseif (in_array($outbox->code, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION])) {
             $fields[] = $subjectField;
             $fields[] = $intervalField;
-            $fields[] = $isApplicableField;
+            $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
         } else {
             $fields[] = $subjectField;
+            $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
         }
 
 

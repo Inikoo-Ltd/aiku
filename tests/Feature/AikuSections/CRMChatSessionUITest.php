@@ -3,16 +3,18 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
-use App\Actions\CRM\ChatSession\StoreChatSession;
+use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
-use App\Models\CRM\Livechat\ChatSession;
+use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\Permission;
 use App\Models\Web\Website;
-use Illuminate\Support\Facades\Config; // @phpstan-ignore-line
+use Illuminate\Support\Facades\Config;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+
+// @phpstan-ignore-line
 
 uses()->group('ui');
 

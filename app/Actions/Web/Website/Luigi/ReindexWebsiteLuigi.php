@@ -22,7 +22,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
     use AsAction;
     use WithLuigis;
 
-    public string $jobQueue = 'default-long-slave';
+    public string $jobQueue = 'long-low-priority';
 
     public string $commandSignature = 'luigis:reindex_website {website?}';
     public int $jobTries = 1;

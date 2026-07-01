@@ -158,7 +158,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
             if ($amnestyOfferId) {
                 $amnestyOffer = Offer::find($amnestyOfferId);
 
-                if ($amnestyOffer->status) {
+                if ($amnestyOffer && $amnestyOffer->status) {
                     data_set($offersData, 'gr.amnesty', true);
                     data_set($offersData, 'gr.amnesty_offer_id', $amnestyOffer->id);
                     data_set($offersData, 'gr.amnesty_until', $amnestyOffer->end_at);
@@ -170,7 +170,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
                 $grGiftOffer = Offer::find($grGiftOfferId);
 
 
-                if ($grGiftOffer->status) {
+                if ($grGiftOffer && $grGiftOffer->status) {
                     /** @var OfferAllowance $giftAllowance */
                     $giftAllowance  = $grGiftOffer->offerAllowances()->first();
                     $productOptions = [];

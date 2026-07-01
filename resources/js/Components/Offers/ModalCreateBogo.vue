@@ -10,7 +10,6 @@ import { faGift } from '@fal'
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { router } from '@inertiajs/vue3'
-import PureInput from '../Pure/PureInput.vue'
 
 library.add(faGift)
 

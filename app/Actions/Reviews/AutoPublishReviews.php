@@ -21,7 +21,7 @@ class AutoPublishReviews
     use AsAction;
     use HasReviewHydrators;
 
-    public string $jobQueue        = 'default-long';
+    public string $jobQueue        = 'long-running';
     public string $commandSignature = 'reviews:auto-publish';
 
     public function handle(): void

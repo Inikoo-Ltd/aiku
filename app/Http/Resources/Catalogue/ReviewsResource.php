@@ -31,6 +31,7 @@ class ReviewsResource extends JsonResource
             'id'               => $this->id,
             'customer_id'      => $this->customer_id,
             'scope'            => $this->scope,
+            'product_code'     => $this->product_code ?? null,
             'customer_name'    => $this->resolveCustomerName(),
             'customer_route'   => ($canManage && $this->customer_id && $this->customer_slug) ? [
                 'name'       => 'grp.org.shops.show.crm.customers.show',

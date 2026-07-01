@@ -10,6 +10,7 @@ use App\Actions\Traits\WithUploadModelImages;
 use App\Events\GenerateGptImagesProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use OpenAI;
@@ -20,7 +21,7 @@ class GetGeneratedImages extends OrgAction
     use WithBase64FileConverter;
 
     public int $jobTries = 3;
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'long-high-priority';
 
     public function handle(Product $model, string $prompt, array $metadata = []): void
     {
@@ -28,11 +29,11 @@ class GetGeneratedImages extends OrgAction
             $apiKey = config('services.openai.api_key');
             $client = OpenAI::client($apiKey);
 
-            $n = $metadata['n'] ?? 1;
-            $size = $metadata['size'] ?? '1024x1024';
+            $n       = $metadata['n'] ?? 1;
+            $size    = $metadata['size'] ?? '1024x1024';
             $quality = $metadata['quality'] ?? 'standard';
-            $format = $metadata['format'] ?? 'url';
-            $images = $metadata['images'] ?? [];
+            $format  = $metadata['format'] ?? 'url';
+            $images  = $metadata['images'] ?? [];
 
             if (!empty($images)) {
                 $processedImages = [];
@@ -49,19 +50,19 @@ class GetGeneratedImages extends OrgAction
                     ->timeout(150)
                     ->withToken($apiKey)
                     ->post('images/edits', [
-                        'model' => 'gpt-image-1.5',
+                        'model'  => 'gpt-image-1.5',
                         'images' => $processedImages,
                         'prompt' => $prompt,
-                        'n' => $n,
-                        'size' => $size
+                        'n'      => $n,
+                        'size'   => $size
                     ])->json();
             } else {
                 $response = $client->images()->create([
-                    'model' => 'dall-e-3',
-                    'prompt' => $prompt,
-                    'n' => $n,
-                    'size' => $size,
-                    'quality' => $quality,
+                    'model'           => 'dall-e-3',
+                    'prompt'          => $prompt,
+                    'n'               => $n,
+                    'size'            => $size,
+                    'quality'         => $quality,
                     'response_format' => $format,
                 ]);
             }
@@ -75,14 +76,14 @@ class GetGeneratedImages extends OrgAction
             ]);
 
             GenerateGptImagesProgressEvent::dispatch($uploadedImages, $model->exclusive_for_customer_id);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             GenerateGptImagesProgressEvent::dispatch([], $model->exclusive_for_customer_id);
         }
     }
 
     private function prepareImage(string $imageId): string
     {
-        $media = Media::find($imageId);
+        $media    = Media::find($imageId);
         $imageUrl = GetImgProxyUrl::run($media->getImage());
 
         if (app()->isLocal()) {
@@ -96,15 +97,13 @@ class GetGeneratedImages extends OrgAction
 
     public function asCommand(Command $command): void
     {
-        $mediaId = $command->argument('media_id');
+        $mediaId   = $command->argument('media_id');
         $productId = $command->argument('product_id');
-        $model = Product::findOrFail($productId);
+        $model     = Product::findOrFail($productId);
 
-        $result = $this->handle($model, 'make this image better with stunning background', [
+        $this->handle($model, 'make this image better with stunning background', [
             'images' => [$mediaId]
         ]);
-
-        dd($result);
     }
 
     public function action(Product $model, string $prompt, array $metadata = []): void
