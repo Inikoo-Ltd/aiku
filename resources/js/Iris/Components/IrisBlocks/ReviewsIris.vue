@@ -25,6 +25,8 @@ const reviewSummary = ref<any>(null)
 const isFetchingMoreReviews = ref(false)
 const minimum_reviews_to_show = inject<number>("minimum_reviews_to_show", 0)
 const allow_review_reaction = inject<number>("allow_review_reaction", 0)
+const allow_review_reply_reaction = inject<number>("allow_review_reply_reaction", 0)
+const show_staff_who_reply = inject<boolean>("show_staff_who_reply", false)
 const layout = inject("layout", {})
 
 const fetchMoreReviews = async () => {
@@ -438,13 +440,17 @@ const openReview = (review: any) => {
             class="mt-4 border-l-2 border-orange-300 pl-3"
         >
             <div class="mb-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
-                 {{ layout.iris.shop.name }}
-            </div>
+                    {{
+                        show_staff_who_reply
+                            ? selectedReview.reply_by
+                            : layout.iris.shop.name
+                    }}
+                </div>
 
             <p class="whitespace-pre-line text-sm leading-6 text-gray-700">
                 {{ selectedReview.reply }}
             </p>
-            <div class="flex items-center w-full justify-end gap-2" v-if="allow_review_reaction && layout?.iris?.is_logged_in">
+            <div class="flex items-center w-full justify-end gap-2" v-if="allow_review_reply_reaction && layout?.iris?.is_logged_in">
                 <button
                     :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
                     @click="() => toggleReaction(selectedReview,'review_reply',true)"

@@ -47,12 +47,13 @@ class IndexReviewsInIris extends OrgAction
                 'reviews.replay_likes',
                 'reviews.replay_dislikes',
                 'reviews.web_images',
-                'reviews.reply_message as reply'
+                'reviews.reply_message as reply',
+                'reply_users.contact_name as reply_by',
             ];
 
         $query = QueryBuilder::for(Review::class)
-            ->leftJoin('customers', 'customers.id', 'reviews.customer_id');
-
+            ->leftJoin('customers', 'customers.id', 'reviews.customer_id')
+            ->leftJoin('users as reply_users', 'reviews.reply_by', '=', 'reply_users.id');
         if ($isLoggedIn) {
             $user = auth()->user();
 
