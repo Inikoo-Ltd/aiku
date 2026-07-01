@@ -1,5 +1,6 @@
 import { format, formatDuration, intervalToDuration, addSeconds,
     formatDistanceToNowStrict, startOfDay, isPast, parseISO, isAfter, differenceInDays  } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import formatDistanceToNow from 'date-fns/formatDistanceToNow'
 import { zhCN, enUS, enGB, fr, de, id, ja, sk, es, bg, cs, hr, hu, it, nl, pl, pt, ro, sv, uk } from 'date-fns/locale'
 import { trans, getActiveLanguage } from 'laravel-vue-i18n'
@@ -13,6 +14,7 @@ export interface OptionsTime {
     formatTime?: string
     localeCode?: string
     keepTimezone?: boolean
+    timeZone?: string
 }
 
 
@@ -34,6 +36,9 @@ export const useFormatTime = (dateIso: string | Date | undefined, OptionsTime?: 
     if (OptionsTime?.formatTime === 'hms') return format(tempDateIso, 'PPpp', { locale: localesCode[tempLocaleCode] })  // Nov 2, 2023, 3:03:26 PM
     if (OptionsTime?.formatTime === 'hm') return format(tempDateIso, 'PPp', { locale: localesCode[tempLocaleCode] })  // Nov 2, 2023, 3:03 PM
     if (OptionsTime?.formatTime === 'mdy') return format(tempDateIso, 'PP', { locale: localesCode[tempLocaleCode] })  // Nov 2, 2023
+    if (OptionsTime?.timeZone) {
+        return formatInTimeZone(dateIso, OptionsTime.timeZone, OptionsTime?.formatTime || 'PPP', { locale: localesCode[tempLocaleCode] })
+    }
     return format(tempDateIso, OptionsTime?.formatTime || 'PPP', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
 }
 

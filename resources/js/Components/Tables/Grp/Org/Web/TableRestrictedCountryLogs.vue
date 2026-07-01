@@ -6,6 +6,7 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
 import { trans } from "laravel-vue-i18n"
+import { useFormatTime } from "@/Composables/useFormatTime";
 
 const props = defineProps<{
     data: object
@@ -43,6 +44,9 @@ const flagUrl = (code: string) => `/flags/${code.toLowerCase()}.png`
                     :class="item.was_blocked ? 'bg-red-500' : 'bg-green-500'"
                 />
             </span>
+        </template>
+        <template  #cell(last_request_at)="{ item }">
+            <span class="whitespace-nowrap">{{ useFormatTime(item.last_request_at, { formatTime: 'PPPP HH:mm:ss OOOO', timeZone: 'UTC' }) }}</span>
         </template>
     </Table>
 </template>

@@ -133,7 +133,7 @@ class IndexRestrictedCountryLogs extends OrgAction
                 ->column(key: 'postcode', label: __('Postcode'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'ip', label: __('IP'), canBeHidden: false, sortable: false, searchable: false)
                 ->column(key: 'number_requests', label: __('Requests'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'last_request_at', label: __('Last request'), canBeHidden: false, sortable: true, searchable: false, type: 'date')
+                ->column(key: 'last_request_at', label: __('Last Request'), canBeHidden: false, sortable: true, searchable: false, align: 'right')
                 ->defaultSort('-last_request_at');
         };
     }
