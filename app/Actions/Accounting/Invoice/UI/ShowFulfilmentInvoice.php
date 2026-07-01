@@ -50,12 +50,11 @@ class ShowFulfilmentInvoice extends OrgAction
 
     protected function getParent(ActionRequest $request): Organisation|null
     {
-
         if (!$request->route()) {
             return null;
         }
 
-        $parent    = null;
+        $parent = null;
 
 
         $routeName = $request->route()->getName();
@@ -118,10 +117,14 @@ class ShowFulfilmentInvoice extends OrgAction
     }
 
 
-    public function htmlResponse(Invoice $invoice, ActionRequest $request, $tab = null): Response
+    public function htmlResponse(Invoice $invoice, ActionRequest $request, $tab = null, $parent = null): Response
     {
         if ($tab !== null) {
             $this->tab = $tab;
+        }
+
+        if ($parent !== null) {
+            $this->parent = $parent;
         }
 
         $subNavigation = [];
@@ -158,14 +161,14 @@ class ShowFulfilmentInvoice extends OrgAction
                     'next'     => $this->getNextModel($invoice, $request),
                 ],
                 'pageHead'    => [
-                    'subNavigation' => $subNavigation,
-                    'model'         => __('invoice'),
-                    'title'         => $invoice->reference,
-                    'icon'          => [
+                    'subNavigation'   => $subNavigation,
+                    'model'           => __('invoice'),
+                    'title'           => $invoice->reference,
+                    'icon'            => [
                         'icon'  => ['fal', 'fa-file-invoice-dollar'],
                         'title' => $invoice->reference
                     ],
-                    'wrapped_actions'       => $actions
+                    'wrapped_actions' => $actions
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -185,33 +188,33 @@ class ShowFulfilmentInvoice extends OrgAction
                 'download_pdf_column'  => ShowInvoice::make()->getDownloadPdfColumns($invoice),
 
                 FulfilmentInvoiceTabsEnum::REFUNDS->value => $this->tab == FulfilmentInvoiceTabsEnum::REFUNDS->value
-                    ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))),
+                    ? fn() => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn() => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))),
 
                 FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
-                    fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
+                    fn() => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
                 FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
-                    fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
+                    fn() => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
                 FulfilmentInvoiceTabsEnum::EMAIL->value => $this->tab == FulfilmentInvoiceTabsEnum::EMAIL->value ?
-                    fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))
-                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))),
+                    fn() => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))
+                    : Inertia::lazy(fn() => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))),
 
 
                 FulfilmentInvoiceTabsEnum::PAYMENTS->value => $this->tab == FulfilmentInvoiceTabsEnum::PAYMENTS->value ?
-                    fn () => PaymentsResource::collection(IndexPayments::run($invoice))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
+                    fn() => PaymentsResource::collection(IndexPayments::run($invoice))
+                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run($invoice))),
 
             ]
         )
-        ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: FulfilmentInvoiceTabsEnum::REFUNDS->value))
-        ->table(IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure(invoice: $invoice, prefix: FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-        ->table(IndexInvoiceTransactions::make()->tableStructure(prefix: FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-        ->table(IndexDispatchedEmails::make()->tableStructure(parent: $invoice->customer, prefix: FulfilmentInvoiceTabsEnum::EMAIL->value))
-        ->table(IndexPayments::make()->tableStructure(parent: $invoice, modelOperations: [], prefix: FulfilmentInvoiceTabsEnum::PAYMENTS->value));
+            ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: FulfilmentInvoiceTabsEnum::REFUNDS->value))
+            ->table(IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure(invoice: $invoice, prefix: FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+            ->table(IndexInvoiceTransactions::make()->tableStructure(prefix: FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+            ->table(IndexDispatchedEmails::make()->tableStructure(parent: $invoice->customer, prefix: FulfilmentInvoiceTabsEnum::EMAIL->value))
+            ->table(IndexPayments::make()->tableStructure(parent: $invoice, modelOperations: [], prefix: FulfilmentInvoiceTabsEnum::PAYMENTS->value));
     }
 
 
@@ -219,10 +222,6 @@ class ShowFulfilmentInvoice extends OrgAction
     {
         return new InvoiceResource($invoice);
     }
-
-
-
-
 
 
 }

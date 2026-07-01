@@ -124,15 +124,9 @@ class FetchAuroraOffer extends FetchAurora
                 }
                 break;
             case 'Customer List':
-                if ($this->auroraModelData->{'Deal Trigger Key'}) {
-                    $trigger = $this->parseQuery($this->organisation->id.':'.$this->auroraModelData->{'Deal Trigger Key'});
-                }
-                if (!$trigger) {
-                    $isLocked   = true;
-                    $sourceData = [
-                        'note' => 'Customer List not found',
-                    ];
-                }
+
+                return;
+
 
                 break;
             case 'Order':

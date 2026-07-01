@@ -13,6 +13,7 @@ namespace App\Actions\Retina\Ecom\Basket\UI;
 use App\Actions\Ordering\Order\GetVoucherData;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\InteractsWithOrderInBasket;
@@ -33,6 +34,7 @@ class ShowRetinaEcomBasket extends RetinaAction
     use IsOrder;
     use InteractsWithOrderInBasket;
     use HasBasketDetails;
+    use WithOrderForbiddenCountryCheck;
 
     public function handle(Customer $customer): Order|null
     {
@@ -87,6 +89,8 @@ class ShowRetinaEcomBasket extends RetinaAction
         }
 
         \Sentry\traceMetrics()->count('visit.basket.ecom', 1, ['shop' => $this->shop->slug]);
+
+        $orderBanStatus = $this->isForbiddenDetailed($order);
 
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
@@ -173,7 +177,8 @@ class ShowRetinaEcomBasket extends RetinaAction
                         ]
                     ],
 
-                'is_unable_dispatch' => $isUnableDispatch,
+                'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
+                'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
 
                 'charges' => [
                     'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,

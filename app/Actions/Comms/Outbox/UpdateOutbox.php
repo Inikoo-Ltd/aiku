@@ -8,13 +8,18 @@
 
 namespace App\Actions\Comms\Outbox;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOutboxes;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Http\Resources\Mail\OutboxesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOutbox extends OrgAction
@@ -42,7 +47,17 @@ class UpdateOutbox extends OrgAction
             $modelData['send_time'] = $sendTimeWithTimezone;
         }
 
-        return $this->update($outbox, $modelData, ['data']);
+        $outbox = $this->update($outbox, $modelData, ['data']);
+
+        if (array_key_exists('state', $modelData) || array_key_exists('type', $modelData)) {
+            GroupHydrateOutboxes::dispatch($outbox->group);
+            OrganisationHydrateOutboxes::dispatch($outbox->organisation);
+            if ($outbox->shop_id) {
+                ShopHydrateOutboxes::dispatch($outbox->shop);
+            }
+        }
+
+        return $outbox;
     }
 
     public function rules(): array
@@ -54,6 +69,7 @@ class UpdateOutbox extends OrgAction
             'send_time'  => ['sometimes', 'required', 'date_format:H:i:s'],
             'threshold'  => ['sometimes', 'required', 'integer', 'gt:0'],
             'interval'   => ['sometimes', 'required', 'integer', 'gt:0'],
+            'state'      => ['sometimes', 'required', Rule::enum(OutboxStateEnum::class)],
             'is_applicable' => ['sometimes', 'required', 'boolean'],
         ];
     }

@@ -54,6 +54,7 @@ use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
+use App\Actions\Web\Website\UI\ShowRestrictedCountry;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
@@ -67,6 +68,7 @@ Route::name('websites.')->group(function () {
     Route::prefix('{website}')
         ->group(function () {
             Route::get('', ShowWebsite::class)->name('show');
+            Route::get('restricted-country', ShowRestrictedCountry::class)->name('restricted_country');
             Route::get('edit', EditWebsite::class)->name('edit');
             Route::get('outboxes', [IndexOutboxes::class, 'inWebsite'])->name('outboxes');
             Route::get('outboxes/{outbox}', [ShowOutbox::class, 'inWebsite'])->name('outboxes.show');

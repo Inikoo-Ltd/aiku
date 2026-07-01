@@ -52,14 +52,17 @@ class IndexReviewsInIris extends OrgAction
 
         if ($isLoggedIn) {
             $user = auth()->user();
-            array_push($select, 'review_reactions.type as review_reaction'); // Like/Dislike
-
-            $query
-                ->leftJoin('review_reactions', function ($join) use ($user) {
-                    $join->on('review_reactions.review_id', 'reviews.id')
-                        ->where('review_reactions.customer_id', $user->customer->id)
-                        ->where('review_reactions.target', ReviewReactionTargetEnum::REVIEW);
-                });
+            
+            if ($user->customer) {
+                array_push($select, 'review_reactions.type as review_reaction'); // Like/Dislike
+    
+                $query
+                    ->leftJoin('review_reactions', function ($join) use ($user) {
+                        $join->on('review_reactions.review_id', 'reviews.id')
+                            ->where('review_reactions.customer_id', $user->customer?->id)
+                            ->where('review_reactions.target', ReviewReactionTargetEnum::REVIEW);
+                    });
+            }
         }
 
         $query = $this->whereQuery($parent, $query)

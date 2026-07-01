@@ -109,7 +109,6 @@ console.log('see also', layout)
         :autoHeight="false"
         :pagination="{ clickable: true, dynamicBullets: true }"
         :loop="true"
-        class="has-pagination"
       >
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
@@ -143,12 +142,14 @@ console.log('see also', layout)
   flex-direction: column !important;
 }
 
-.has-pagination {
-  padding-bottom: 2rem;
+:deep(.swiper-pagination) {
+  position: relative;
+  bottom: auto;
+  margin-top: 1.5rem;
 }
 
-:deep(.swiper-pagination) {
-  bottom: 0;
+:deep(.swiper-pagination.swiper-pagination-lock) {
+  display: none;
 }
 
 :deep(.swiper-pagination-bullet) {

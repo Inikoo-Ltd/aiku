@@ -37,10 +37,9 @@ import { Navigation, Thumbs } from 'swiper/modules'
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
-import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
-
-
+import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
+import { Rating } from "primevue"
 
 // Register icons
 library.add(faCube, faLink, faPlus, faMinus)
@@ -111,7 +110,7 @@ const props = withDefaults(
     }>(),
     {}
 )
-
+console.log(props.fieldValue.reviews)
 const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
@@ -124,6 +123,7 @@ const emits = defineEmits<{
 
 const product = ref(props.product)
 const layout = inject("layout", {})
+const webpage_slug = inject("webpage_slug", {})
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 
@@ -211,7 +211,7 @@ console.log(props)
 <template>
     <!-- DESKTOP -->
     <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'+indexBlock"  component="product-ecom-1"
-        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4" :style="{
+        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4 rating" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
             marginRight: 'auto'
@@ -247,13 +247,18 @@ console.log(props)
                         <div class="text-sm font-medium text-gray-600 mt-2 mb-1">
                             <div class="flex items-center justify-between">
 
-                                <span>
+                                <div>
                                     {{ trans("Product code") }}: {{ product.code }}
-                                </span>
+                                </div>
 
-                                <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
+                                <div class="relative rating" v-if="fieldValue?.reviews?.review_summary > 0">
+                                    <Rating :modelValue="parseInt(fieldValue?.reviews?.review_summary)" readonly :cancel="false"
+                                        class="review-rating-small absolute -right-9 top-0" />
+                                </div>
+
+                                <!-- <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
                                     RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
-                                </span>
+                                </span> -->
 
                             </div>
                         </div>
@@ -749,7 +754,7 @@ console.log(props)
 
     </div>
 
-    <ReviewsProduct :product="product" class="mt-10" />
+    <ReviewsIris  :webpage_slug="webpage_slug"/>
 
 
 </template>
@@ -777,4 +782,29 @@ console.log(props)
     @apply bg-gray-400 rounded px-2 py-0.5 text-xs md:text-sm text-white w-fit;
 }
 
+:deep(.review-rating .p-rating) {
+    gap: 2px;
+}
+
+:deep(.review-rating-small .p-rating) {
+    gap: 2px;
+}
+
+:deep(.review-rating .p-rating-item-icon) {
+    color: #f59e0b;
+    font-size: 1rem;
+}
+
+:deep(.review-rating-small .p-rating-item-icon) {
+    color: #f59e0b;
+    font-size: 0.8rem;
+}
+
+:deep(.p-rating-item) {
+    margin-right: 1px;
+}
+
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+    color: #f59e0b !important;
+}
 </style>

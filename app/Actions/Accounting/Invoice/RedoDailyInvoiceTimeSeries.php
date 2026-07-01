@@ -39,7 +39,7 @@ class RedoDailyInvoiceTimeSeries
 {
     use AsAction;
 
-    public string $jobQueue = 'default-long-slave';
+    public string $jobQueue = 'long-low-priority';
 
     protected const OUTBOX_REPROCESS_DAYS = 3;
 

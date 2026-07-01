@@ -733,6 +733,12 @@ class EditShop extends OrgAction
                             'placeholder' => '123-456-7890',
                             'value'       => Arr::get($shop->settings, 'google_ads.customer_id', ''),
                         ],
+                        'gads_login_customer_id' => [
+                            'type'        => 'input',
+                            'label'       => __('Manager (MCC) ID'),
+                            'placeholder' => __('Only if the account is accessed through a manager account'),
+                            'value'       => Arr::get($shop->settings, 'google_ads.login_customer_id', ''),
+                        ],
                         'gads_user_list_id' => [
                             'type'  => 'input',
                             'label' => __('User List ID'),

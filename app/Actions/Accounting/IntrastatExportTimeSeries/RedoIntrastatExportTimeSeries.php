@@ -25,7 +25,7 @@ class RedoIntrastatExportTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long-slave';
+    public string $jobQueue = 'long-low-priority';
     public string $commandSignature = 'intrastat-export:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()

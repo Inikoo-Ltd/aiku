@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Allegro\Traits;
 
+use App\Actions\Dropshipping\Allegro\User\UpdateAllegroUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -298,10 +299,26 @@ trait WithAllegroOAuth
      */
     public function refreshAccessToken(string $refreshToken): array
     {
-        return $this->postToTokenEndpoint([
+        $result = $this->postToTokenEndpoint([
             'grant_type'    => 'refresh_token',
             'refresh_token' => $refreshToken,
         ]);
+
+        $accessTokenExpiresAt = now()->addSeconds($result['expires_in'])->timestamp;
+        $refreshTokenExpiresAt = isset($tokenData['refresh_token'])
+            ? now()->addDays(90)->timestamp
+            : null;
+
+        UpdateAllegroUser::make()->handle($this, [
+            'access_token' => Arr::get($result, 'access_token'),
+            'refresh_token' => Arr::get($result, 'refresh_token'),
+            'access_token_expire_in' => $accessTokenExpiresAt,
+            'refresh_token_expire_in' => $refreshTokenExpiresAt
+        ], false);
+
+        $this->refresh();
+
+        return $result;
     }
 
     /**

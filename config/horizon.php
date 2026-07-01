@@ -392,7 +392,7 @@ return [
         ],
         'long-running'         => [
             'connection'          => 'redis-long-running',
-            'queue'               => ['default-long'],
+            'queue'               => ['long-running'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 3,
@@ -406,9 +406,25 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
-        'long-running-slave'   => [
+        'long-high-priority'   => [
             'connection'          => 'redis-long-running',
-            'queue'               => ['default-long-slave'],
+            'queue'               => ['long-high-priority','long-import','long-send-emails'],
+            'balance'             => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses'        => 3,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            'memory'              => 1280,
+            'tries'               => 3,
+            'timeout'             => 7200,
+            'retry_after'         => 600,
+            'nice'                => 0,
+            'balanceMaxShift'     => 1,
+            'balanceCooldown'     => 3,
+        ],
+        'long-low-priority'   => [
+            'connection'          => 'redis-long-running',
+            'queue'               => ['long-low-priority'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 3,
@@ -545,8 +561,11 @@ return [
             'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
             ],
-            'long-running-slave'   => [
-                'maxProcesses' => env('HORIZON_LONG_SLAVE_WORKERS', 1),
+            'long-high-priority'   => [
+                'maxProcesses' => env('HORIZON_LONG_HIGH_PRIORITY', 1),
+            ],
+            'long-low-priority'   => [
+                'maxProcesses' => env('HORIZON_LONG_LOW_PRIORITY', 1),
             ],
             'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
@@ -608,8 +627,11 @@ return [
             'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
             ],
-            'long-running-slave'   => [
-                'maxProcesses' => env('HORIZON_LONG_SLAVE_WORKERS', 2),
+            'long-high-priority'   => [
+                'maxProcesses' => env('HORIZON_LONG_HIGH_PRIORITY', 2),
+            ],
+            'long-low-priority'   => [
+                'maxProcesses' => env('HORIZON_LONG_LOW_PRIORITY', 2),
             ],
             'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
@@ -673,8 +695,11 @@ return [
             'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
             ],
-            'long-running-slave'   => [
-                'maxProcesses' => env('HORIZON_LONG_SLAVE_WORKERS', 1),
+            'long-high-priority'   => [
+                'maxProcesses' => env('HORIZON_LONG_HIGH_PRIORITY', 1),
+            ],
+            'long-low-priority'   => [
+                'maxProcesses' => env('HORIZON_LONG_LOW_PRIORITY', 1),
             ],
             'ses'                  => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
