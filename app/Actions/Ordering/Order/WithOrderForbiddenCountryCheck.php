@@ -68,11 +68,24 @@ trait WithOrderForbiddenCountryCheck
 
         $postcodeRegex = data_get($bannedCountry, 'postcode');
 
-        // Ban entire country if doesn't have postcode regex or if no postcode exists since we can't compare it anyway. Would need confirmation from Raul though
-        if (!$postcodeRegex || !$address->postal_code) {
+        // Ban entire country if doesn't have postcode regex
+        if (!$postcodeRegex) {
             return true;
         }
 
-        return preg_match($postcodeRegex, $address->postal_code) === 1;
+        // Allow if country have postcodeRegex but address doesn't have postal code
+        if (!$address->postal_code) {
+            return false;
+        }
+
+        // 1 if regex match, 0 if regex don't match, false if it fails
+        $result = preg_match($postcodeRegex, $address->postal_code);
+
+        // If Regex is invalid, allow order to be sent nonetheless
+        if ($result === false) {
+            return false;
+        }
+
+        return $result === 1;
     }
 }
