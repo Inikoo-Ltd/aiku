@@ -32,7 +32,8 @@ class RepairShopForbiddenCountries
                 $item['code'] => [
                     'postcode'  => null,
                     'billing'   => false,
-                    'delivery'  => true
+                    'delivery'  => true,
+                    'ip_block'  => false
                 ]
             ])->toArray();
 
