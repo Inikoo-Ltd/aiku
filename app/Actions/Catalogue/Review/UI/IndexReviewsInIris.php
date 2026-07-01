@@ -89,7 +89,7 @@ class IndexReviewsInIris extends OrgAction
             ->allowedFilters([
                 $globalSearch,
                 AllowedFilter::callback('rating', function ($query, $value) {
-                    $query->where('reviews.rating_main', '>=', (int) $value);
+                    $query->whereRaw('FLOOR(reviews.rating_main) = ?', [(int) $value]);
                 }),
                 AllowedFilter::callback('product', function ($query, $value) {
                     $query->where('reviews.product_id', (int) $value);
@@ -204,7 +204,7 @@ class IndexReviewsInIris extends OrgAction
             ->allowedFilters([
                 $globalSearch,
                 AllowedFilter::callback('rating', function ($query, $value) {
-                    $query->where('reviews.rating_main', '>=', (int) $value);
+                    $query->whereRaw('FLOOR(reviews.rating_main) = ?', [(int) $value]);
                 }),
                 AllowedFilter::callback('product', function ($query, $value) {
                     $query->where('reviews.product_id', (int) $value);
