@@ -49,6 +49,8 @@ return new class () extends Migration {
             'D' => 'daily',
             'W' => 'weekly',
             'M' => 'monthly',
+            'Q' => 'quarterly',
+            'Y' => 'yearly',
         ];
 
         foreach ($frequencies as $freqCode => $freqLabel) {
