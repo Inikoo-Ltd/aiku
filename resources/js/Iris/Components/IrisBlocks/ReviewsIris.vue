@@ -97,12 +97,14 @@ const visibleReviews = computed(() =>
 )
 
 const reactions = ref<Record<number, "like" | "dislike" | null>>({})
+const replyReactions = ref<Record<number, "like" | "dislike" | null>>({})
 const reactingKeys = ref<Record<string, boolean>>({})
 
 const seedReactions = (reviewsArr: any[]) => {
     reviewsArr.forEach((review) => {
         if (review?.id !== undefined && !(review.id in reactions.value)) {
             reactions.value[review.id] = review.review_reactions ?? null
+            replyReactions.value[review.id] = review.reply_reactions ?? null
         }
     })
 }
@@ -113,8 +115,9 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
         return
     }
 
+    const reactionsRef = target === "review" ? reactions : replyReactions
     const newReaction = isLike ? "like" : "dislike"
-    if (reactions.value[review.id] === newReaction) {
+    if (reactionsRef.value[review.id] === newReaction) {
         return
     }
 
@@ -123,13 +126,13 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
         return
     }
 
-    const likeField = target === "review" ? "likes" : "replay_likes"
-    const dislikeField = target === "review" ? "dislikes" : "replay_dislikes"
-    const previousReaction = reactions.value[review.id] ?? null
+    const likeField = target === "review" ? "likes" : "reply_likes"
+    const dislikeField = target === "review" ? "dislikes" : "reply_dislikes"
+    const previousReaction = reactionsRef.value[review.id] ?? null
 
     review[likeField] = (review[likeField] ?? 0) + (isLike ? 1 : 0) - (previousReaction === "like" ? 1 : 0)
     review[dislikeField] = (review[dislikeField] ?? 0) + (isLike ? 0 : 1) - (previousReaction === "dislike" ? 1 : 0)
-    reactions.value[review.id] = newReaction
+    reactionsRef.value[review.id] = newReaction
 
     router.post(
         route("iris.models.review.react", { review: review.id }),
@@ -146,7 +149,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
             onError: () => {
                 review[likeField] = (review[likeField] ?? 0) - (isLike ? 1 : 0) + (previousReaction === "like" ? 1 : 0)
                 review[dislikeField] = (review[dislikeField] ?? 0) - (isLike ? 0 : 1) + (previousReaction === "dislike" ? 1 : 0)
-                reactions.value[review.id] = previousReaction
+                reactionsRef.value[review.id] = previousReaction
             },
             onFinish: () => {
                 delete reactingKeys.value[reactionKey]
@@ -430,7 +433,6 @@ const openReview = (review: any) => {
 
             </div>
         </div>
-
         <div
             v-if="selectedReview.reply"
             class="mt-4 border-l-2 border-orange-300 pl-3"
@@ -442,6 +444,35 @@ const openReview = (review: any) => {
             <p class="whitespace-pre-line text-sm leading-6 text-gray-700">
                 {{ selectedReview.reply }}
             </p>
+            <div class="flex items-center w-full justify-end gap-2">
+                <button
+                    :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
+                    @click="() => toggleReaction(selectedReview,'review_reply',true)"
+                    :class="[
+                        'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
+                        replyReactions[selectedReview.id] === 'like'
+                            ? ' text-green-600'
+                            : 'text-gray-500 hover:bg-gray-100'
+                    ]"
+                >
+                    <FontAwesomeIcon :icon="faThumbsUp" />
+                    {{ selectedReview.reply_likes ?? 0 }}
+                </button>
+                <button
+                    :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
+                    @click="() => toggleReaction(selectedReview,'review_reply',false)"
+                    :class="[
+                        'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
+                        replyReactions[selectedReview.id] === 'dislike'
+                            ? ' text-red-600'
+                            : 'text-gray-500 hover:bg-gray-100'
+                    ]"
+                >
+                    <FontAwesomeIcon :icon="faThumbsDown" />
+                    {{ selectedReview.reply_dislikes ?? 0 }}
+                </button>
+
+            </div>
         </div>
 
     </div>

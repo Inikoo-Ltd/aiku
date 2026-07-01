@@ -44,6 +44,8 @@ class IndexReviewsInIris extends OrgAction
                 'reviews.published_at',
                 'reviews.likes',
                 'reviews.dislikes',
+                'reviews.replay_likes',
+                'reviews.replay_dislikes',
                 'reviews.web_images',
                 'reviews.reply_message as reply'
             ];
@@ -56,12 +58,18 @@ class IndexReviewsInIris extends OrgAction
 
             if ($user->customer) {
                 array_push($select, 'review_reactions.type as review_reaction'); // Like/Dislike
+                array_push($select, 'reply_reactions.type as reply_reaction'); // Like/Dislike Reply
 
                 $query
                     ->leftJoin('review_reactions', function ($join) use ($user) {
                         $join->on('review_reactions.review_id', 'reviews.id')
                             ->where('review_reactions.customer_id', $user->customer?->id)
                             ->where('review_reactions.target', ReviewReactionTargetEnum::REVIEW);
+                    })
+                    ->leftJoin('review_reactions as reply_reactions', function ($join) use ($user) {
+                        $join->on('reply_reactions.review_id', 'reviews.id')
+                            ->where('reply_reactions.customer_id', $user->customer?->id)
+                            ->where('reply_reactions.target', ReviewReactionTargetEnum::REVIEW_REPLY);
                     });
             }
         }
