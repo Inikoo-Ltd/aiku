@@ -42,7 +42,7 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
 
         StoreTemporaryWooUser::run($customer, $modelData);
 
-        return Arr::get($modelData, 'url').$endpoint.'?'.http_build_query($params);
+        return Arr::get($modelData, 'url') . $endpoint . '?' . http_build_query($params);
     }
 
     public function jsonResponse(string $url): string
@@ -70,7 +70,7 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
                 function ($attribute, $value, $fail) {
                     $testUrl = rtrim($value, '/') . '/wp-json/wc/v3';
                     try {
-                        $response = Http::get($testUrl);
+                        $response = Http::timeout(10)->head($testUrl);
                         if ($response->status() !== 200) {
                             $fail(__('Your WooCommerce API endpoint is not accessible.'));
                         }
