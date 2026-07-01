@@ -149,7 +149,7 @@ function addSource(data: any, type: SourceType): void {
     if (type === 'file') {
         data.sources.push({ id: uid('src'), type, name: '' })
     } else if (type === 'url') {
-        data.sources.push({ id: uid('src'), type, name: '', url: '', crawl: true, maxPages: 50 })
+        data.sources.push({ id: uid('src'), type, name: '', url: '', crawl: true, maxPages: 200 })
     } else {
         data.sources.push({ id: uid('src'), type, name: trans('Note'), text: '' })
     }
@@ -214,7 +214,7 @@ async function onFetchUrl(nodeId: string, source: KnowledgeSource): Promise<void
             url: source.url,
             title: source.title ?? '',
             crawl: source.crawl ?? true,
-            max_pages: source.maxPages ?? 50,
+            max_pages: source.maxPages ?? 200,
         })
         source.uploaded = true
         source.name = data?.name ?? source.url
@@ -318,7 +318,7 @@ function serialize(): FlowValue | null {
                 name: s.name,
                 title: s.title ?? '',
                 ...(s.type === 'text' ? { text: s.text ?? '' } : {}),
-                ...(s.type === 'url' ? { url: s.url ?? '', crawl: s.crawl ?? true, maxPages: s.maxPages ?? 50 } : {}),
+                ...(s.type === 'url' ? { url: s.url ?? '', crawl: s.crawl ?? true, maxPages: s.maxPages ?? 200 } : {}),
             }))
             return { name: n.data.name, sources }
         }
@@ -539,11 +539,6 @@ defineExpose({
                                         <input v-model="source.crawl" type="checkbox" class="rounded border-gray-300" />
                                         {{ trans('Crawl the whole section') }}
                                     </label>
-                                    <div v-if="source.crawl" class="flex items-center gap-1 mb-1">
-                                        <span class="text-[10px] text-gray-400">{{ trans('Max pages') }}</span>
-                                        <input v-model.number="source.maxPages" type="number" min="1" max="200" step="1"
-                                            class="nodrag w-16 text-[11px] border border-gray-200 rounded-md px-2 py-0.5 focus:outline-none focus:border-emerald-400" />
-                                    </div>
                                     <button type="button"
                                         class="nodrag w-full inline-flex items-center justify-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md py-1"
                                         :disabled="source.uploading"
