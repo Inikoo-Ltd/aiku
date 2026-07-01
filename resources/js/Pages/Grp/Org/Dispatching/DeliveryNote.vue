@@ -674,11 +674,7 @@ const processReturn = () => {
 					:key="index + note.label"
 					:noteData="note"
 					:updateRoute="routes.update"
-					:fetchRoute="{
-						name: 'grp.models.delivery_note.copy_notes',
-						parameters: { deliveryNote: props.delivery_note.id },
-						method: 'patch',
-					}" />
+				/>
 			</div>
 		</Transition>
 	</div>
