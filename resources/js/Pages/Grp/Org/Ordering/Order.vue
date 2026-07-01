@@ -241,8 +241,10 @@ const props = defineProps<{
     delivery_note?: {
         reference: string
     },
+    is_forbidden_delivery: boolean
+    is_forbidden_billing: boolean
     route_recalculate_vat: {
-        showButton?: bool,
+        showButton?: boolean,
         name: string,
         parameters: {
             order: string
@@ -1208,6 +1210,10 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
     <PageHeading :data="pageHead">
         <template #button-add-product="{ action }">
+            <!-- <pre>
+                {{is_forbidden_delivery}}
+                {{is_forbidden_billing}}
+            </pre> -->
             <div class="relative">
                 <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
