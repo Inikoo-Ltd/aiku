@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Api\Retina\Fulfilment\Resource;
+namespace App\Actions\Api\Retina\Resource;
 
 use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\StoredItem;
