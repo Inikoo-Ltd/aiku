@@ -5,7 +5,7 @@ namespace App\Actions\CRM\ChatAutomation;
 use App\Actions\CRM\ChatAutomation\Knowledge\SyncChatKnowledgeFromFlow;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatAutomationTriggerEnum;
-use App\Models\CRM\Livechat\ChatAutomation;
+use App\Models\Chat\ChatAutomation;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 

@@ -2,7 +2,7 @@
 
 namespace App\Actions\CRM\ChatAutomation\UI;
 
-use App\Actions\CRM\ChatSession\UI\ShowChatConversations;
+use App\Actions\Chat\ChatSession\UI\ShowChatConversations;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\CRM\Livechat\ChatAutomationTriggerEnum;

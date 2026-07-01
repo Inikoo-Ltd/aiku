@@ -4,7 +4,7 @@ namespace App\Actions\CRM\ChatAutomation\Knowledge;
 
 use App\Enums\CRM\Livechat\ChatKnowledgeSourceStatusEnum;
 use App\Enums\CRM\Livechat\ChatKnowledgeSourceTypeEnum;
-use App\Models\CRM\Livechat\ChatAutomation;
+use App\Models\Chat\ChatAutomation;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 

@@ -5,7 +5,7 @@ namespace App\Actions\CRM\ChatAutomation\UI;
 use App\Actions\OrgAction;
 use App\Http\Resources\CRM\Livechat\ChatAutomationResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\Livechat\ChatAutomation;
+use App\Models\Chat\ChatAutomation;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;

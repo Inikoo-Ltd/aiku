@@ -2,8 +2,8 @@
 
 namespace App\Actions\CRM\ChatAutomation\Knowledge;
 
-use App\Models\CRM\Livechat\ChatAutomation;
-use App\Models\CRM\Livechat\ChatKnowledgeChunk;
+use App\Models\Chat\ChatAutomation;
+use App\Models\Chat\ChatKnowledgeChunk;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Pgvector\Laravel\Distance;

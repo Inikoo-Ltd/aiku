@@ -3,8 +3,8 @@
 namespace App\Actions\CRM\ChatAutomation\Knowledge;
 
 use App\Actions\Helpers\AI\AskToAi;
-use App\Models\CRM\Livechat\ChatAutomation;
-use App\Models\CRM\Livechat\ChatKnowledgeChunk;
+use App\Models\Chat\ChatAutomation;
+use App\Models\Chat\ChatKnowledgeChunk;
 use Cloudstudio\Ollama\Facades\Ollama;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;

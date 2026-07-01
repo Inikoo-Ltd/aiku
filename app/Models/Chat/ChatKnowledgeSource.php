@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\CRM\Livechat;
+namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatKnowledgeSourceStatusEnum;
 use App\Enums\CRM\Livechat\ChatKnowledgeSourceTypeEnum;

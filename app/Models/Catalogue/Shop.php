@@ -103,7 +103,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Ordering\SalesChannel;
 use App\Models\HumanResources\WorkSchedule;
-use App\Models\CRM\Livechat\ChatAutomation;
+use App\Models\Chat\ChatAutomation;
 
 /**
  * App\Models\Catalogue\Shop

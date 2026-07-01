@@ -5,7 +5,7 @@ namespace App\Actions\CRM\ChatAutomation\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Http\Resources\CRM\Livechat\ChatAutomationResource;
-use App\Models\CRM\Livechat\ChatAutomation;
+use App\Models\Chat\ChatAutomation;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\CRM\Livechat;
+namespace App\Models\Chat;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

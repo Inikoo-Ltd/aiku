@@ -2,11 +2,11 @@
 
 namespace App\Actions\CRM\ChatAutomation;
 
-use App\Actions\CRM\ChatSession\SendChatMessage;
+use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Enums\CRM\Livechat\ChatAutomationTriggerEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
-use App\Models\CRM\Livechat\ChatAutomation;
-use App\Models\CRM\Livechat\ChatSession;
+use App\Models\Chat\ChatAutomation;
+use App\Models\Chat\ChatSession;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 

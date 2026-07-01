@@ -3,8 +3,8 @@
 namespace App\Actions\CRM\ChatAutomation\Knowledge;
 
 use App\Enums\CRM\Livechat\ChatKnowledgeSourceStatusEnum;
-use App\Models\CRM\Livechat\ChatKnowledgeChunk;
-use App\Models\CRM\Livechat\ChatKnowledgeSource;
+use App\Models\Chat\ChatKnowledgeChunk;
+use App\Models\Chat\ChatKnowledgeSource;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsJob;

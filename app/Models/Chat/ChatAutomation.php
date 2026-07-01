@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\CRM\Livechat;
+namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatAutomationTriggerEnum;
 use App\Models\Catalogue\Shop;

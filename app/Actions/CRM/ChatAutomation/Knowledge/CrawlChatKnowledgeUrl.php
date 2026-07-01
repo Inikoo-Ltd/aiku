@@ -3,7 +3,7 @@
 namespace App\Actions\CRM\ChatAutomation\Knowledge;
 
 use App\Enums\CRM\Livechat\ChatKnowledgeSourceStatusEnum;
-use App\Models\CRM\Livechat\ChatKnowledgeSource;
+use App\Models\Chat\ChatKnowledgeSource;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
