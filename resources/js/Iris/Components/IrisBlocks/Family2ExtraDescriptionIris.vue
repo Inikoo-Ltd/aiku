@@ -13,18 +13,18 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", {}) as any
-const activeTab = ref("about")
 const hasContent = (html?: string | null) => {
   if (!html) return false
-
+  
   const text = html
-    .replace(/<[^>]*>/g, '') // remove html tags
-    .replace(/&nbsp;/g, ' ')
-    .trim()
-
+  .replace(/<[^>]*>/g, '') // remove html tags
+  .replace(/&nbsp;/g, ' ')
+  .trim()
+  
   return text.length > 0
 }
 
+const activeTab = ref(hasContent(props.fieldValue?.family?.description_extra) ? "about" : "marketing")
 const tabs = computed(() =>
   [
     { key: "about", label: ctrans("About the Range") },
