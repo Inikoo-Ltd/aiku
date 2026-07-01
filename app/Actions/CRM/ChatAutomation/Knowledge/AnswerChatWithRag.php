@@ -60,10 +60,20 @@ class AnswerChatWithRag
             return ['answered' => false, 'text' => $fallback, 'chunk_ids' => []];
         }
 
+        [$noInfo, $answer] = $this->detachNoInfoMarker($answer);
+
         $answer = $this->stripMarkdown($answer);
 
-        if ($answered && $this->isFallback($answer, $fallback)) {
+        if ($noInfo || ($answered && $this->isFallback($answer, $fallback))) {
             $answered = false;
+        }
+
+        if (trim($answer) === '') {
+            return ['answered' => false, 'text' => $fallback, 'chunk_ids' => []];
+        }
+
+        if ($answered) {
+            $answer = $this->appendSourceLink($answer, $confident);
         }
 
         return [
@@ -71,6 +81,62 @@ class AnswerChatWithRag
             'text'      => $answer,
             'chunk_ids' => $answered ? $confident->pluck('id')->all() : [],
         ];
+    }
+
+    /**
+     * When retrieval returns a related-but-different page, the model deflects in the
+     * customer's own language, which no exact-string check can catch. It flags those
+     * non-answers with a [[NOINFO]] token so we can drop the deflection's source link
+     * and route the flow down its "not found" branch.
+     *
+     * @return array{0: bool, 1: string}
+     */
+    private function detachNoInfoMarker(string $answer): array
+    {
+        $cleaned = preg_replace('/\[+\s*NOINFO\s*\]+/i', '', $answer) ?? $answer;
+
+        return [$cleaned !== $answer, trim($cleaned)];
+    }
+
+    /**
+     * Guarantee that an answer grounded in a crawled page carries its source link,
+     * so the customer can always click through for the full detail, even when the
+     * model forgets to include the URL itself.
+     *
+     * @param  \Illuminate\Support\Collection<int, ChatKnowledgeChunk>  $chunks
+     */
+    private function appendSourceLink(string $answer, \Illuminate\Support\Collection $chunks): string
+    {
+        $url = $this->primarySourceUrl($chunks);
+
+        if ($url === '' || str_contains($answer, $url)) {
+            return $answer;
+        }
+
+        return $answer."\n\n".__('Source:').' '.$url;
+    }
+
+    /**
+     * The most relevant chunk drives the answer, so its page is the source to cite.
+     *
+     * @param  \Illuminate\Support\Collection<int, ChatKnowledgeChunk>  $chunks
+     */
+    private function primarySourceUrl(\Illuminate\Support\Collection $chunks): string
+    {
+        foreach ($chunks as $chunk) {
+            $url  = (string) ($chunk->metadata['source_url'] ?? '');
+            $name = (string) ($chunk->metadata['source_name'] ?? '');
+
+            if ($url === '' && (str_starts_with($name, 'http://') || str_starts_with($name, 'https://'))) {
+                $url = $name;
+            }
+
+            if ($url !== '') {
+                return $url;
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -242,7 +308,7 @@ class AnswerChatWithRag
     private function composeConversationalAnswer(string $persona, string $question, array $history): ?string
     {
         $system = implode(' ', array_filter([
-            'You are a friendly customer support assistant. Reply in the customer\'s language.',
+            'You are a friendly customer support assistant. Always reply in the SAME language as the customer\'s most recent message (the CUSTOMER line below), regardless of the language used earlier in the conversation.',
             'The customer has sent a short conversational message (like a greeting, thank-you, or farewell).',
             'Respond naturally and warmly in one or two short sentences. Do NOT mention knowledge bases, information availability, or topics you cover.',
             'Write in plain text only. No Markdown.',
@@ -282,9 +348,10 @@ class AnswerChatWithRag
         $rules = $confident
             ? [
                 'Answer ONLY using the KNOWLEDGE below. Do not invent facts, numbers, prices, steps, links, or images that are not in the KNOWLEDGE.',
-                'The KNOWLEDGE is retrieved by similarity, so it can be about a RELATED but DIFFERENT subject than what was asked (for example a different sales channel, product, or feature). If the KNOWLEDGE does not actually cover the exact thing the customer asked about, do NOT adapt or rename steps from a different subject and do NOT share its link. Instead say you do not have information about that specific topic yet.',
+                'The KNOWLEDGE is retrieved by similarity and usually contains several blocks about DIFFERENT topics; most of them may be unrelated to the question. Judge relevance by MEANING, not exact wording: a block answers the question even when the customer used different words, synonyms, shorthand, or made typos (for example "how do you handle damaged" matches "How do you handle damaged or faulty items?"). If at least one block genuinely answers the question, use it to answer fully and simply ignore the unrelated blocks.',
+                'Only when NONE of the blocks actually answers the question should you begin your reply with the exact token [[NOINFO]] and then, in the customer\'s language, say you do not have information about that specific topic yet. Never adapt or rename steps from a genuinely different subject to fake an answer, and never share a link that is not about the question.',
                 'Match the shape of your answer to what the customer actually asked. If they only want a link, reply with one short sentence plus the exact link. If it is a quick factual question, answer to the point in one or two sentences. But when they ask how to do something, or ask for step-by-step, give the full ordered steps from the KNOWLEDGE, do not hold back or deflect them to a link instead.',
-                'If a relevant KNOWLEDGE block starts with "SOURCE_URL:", you may share that exact URL as the tutorial/guide link so the customer can click it. Never invent or alter a URL, and only use a SOURCE_URL that is relevant to the question.',
+                'When your answer is based on a KNOWLEDGE block that starts with "SOURCE_URL:", always include that exact URL in your reply so the customer can click through for more detail. Never invent or alter a URL, and only use a SOURCE_URL that is relevant to the question.',
                 'KNOWLEDGE may include images written as "[Image: description - URL]" or as plain image URLs. The chat renders an image automatically whenever you include its URL, so to SHOW an image you simply put its exact image URL on its own line at the right place in your answer. Never say you cannot show or send images, and never replace an available image URL with a link to the article. When the customer asks for steps with images, place the relevant image URL on its own line right after the step it illustrates. Never invent or alter an image URL.',
             ]
             : [
@@ -297,7 +364,7 @@ class AnswerChatWithRag
             ];
 
         $system = implode(' ', array_filter(array_merge(
-            ['You are a friendly customer support assistant. Reply in the customer\'s language. Be warm, natural, and concise.'],
+            ['You are a friendly customer support assistant. Always reply in the SAME language as the customer\'s most recent message (the QUESTION below), regardless of the language used earlier in the conversation. Be warm, natural, and concise.'],
             $rules,
             [
                 'Write in plain text only. Do not use Markdown: no asterisks for bold or bullets, no "#" headings, no backticks.',
