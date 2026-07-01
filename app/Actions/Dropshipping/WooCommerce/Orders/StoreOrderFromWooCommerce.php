@@ -93,7 +93,7 @@ class StoreOrderFromWooCommerce extends OrgAction
      */
     public function digestWooCustomerClient(WooCommerceUser $wooCommerceUser, array $wooOrderData): CustomerClient
     {
-        $reference = trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name').' '.Arr::get($wooOrderData, 'shipping.company'));
+        $reference = trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name').' '.Arr::get($wooOrderData, 'shipping.company')) . $wooCommerceUser->customer_sales_channel_id;
 
         $customerClientID = DB::table('customer_clients')
             ->select('id')
