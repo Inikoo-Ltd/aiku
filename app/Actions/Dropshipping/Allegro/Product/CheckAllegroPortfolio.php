@@ -49,7 +49,7 @@ class CheckAllegroPortfolio
 
             $matches       = $result;
             $numberMatches = count($matches);
-            $matchesLabels = Arr::pluck($matches, 'title');
+            $matchesLabels = Arr::pluck($matches, 'name');
         }
 
         $matchData = [
