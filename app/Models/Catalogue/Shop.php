@@ -362,6 +362,16 @@ class Shop extends Model implements HasMedia, Auditable
             ->slugsShouldBeNoLongerThan(664);
     }
 
+    public function bannedBillingCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['billing']);
+    }
+
+    public function bannedDeliveryCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['delivery']);
+    }
+
     public function crmStats(): HasOne
     {
         return $this->hasOne(ShopCRMStats::class);

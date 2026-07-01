@@ -12,9 +12,9 @@ trait WithOrderForbiddenCountryCheck
         $billingAddress     = $order->billingAddress;
         $deliveryAddress    = $order->deliveryAddress;
 
-        $bannedCountries = $order->shop->banned_country_regions;
-        $bannedBillingCountries = array_filter($bannedCountries, fn ($item) => $item['billing']);
-        $bannedDeliveryCountries = array_filter($bannedCountries, fn ($item) => $item['delivery']);
+        $shop = $order->shop;
+        $bannedBillingCountries = $shop->bannedBillingCountries();
+        $bannedDeliveryCountries = $shop->bannedDeliveryCountries();
 
         // If any of those is true, would be banned
         return $this->isAddressForbidden($billingAddress, $bannedBillingCountries) || $this->isAddressForbidden($deliveryAddress, $bannedDeliveryCountries);
@@ -25,10 +25,9 @@ trait WithOrderForbiddenCountryCheck
         $billingAddress     = $order->billingAddress;
         $deliveryAddress    = $order->deliveryAddress;
 
-        $bannedCountries = $order->shop->banned_country_regions;
-        $bannedBillingCountries = array_filter($bannedCountries, fn ($item) => $item['billing']);
-        $bannedDeliveryCountries = array_filter($bannedCountries, fn ($item) => $item['delivery']);
-
+        $shop = $order->shop;
+        $bannedBillingCountries = $shop->bannedBillingCountries();
+        $bannedDeliveryCountries = $shop->bannedDeliveryCountries();
 
         return [
             'billing'   => $this->isAddressForbidden($billingAddress, $bannedBillingCountries),
