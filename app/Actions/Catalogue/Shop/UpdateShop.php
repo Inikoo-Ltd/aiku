@@ -644,6 +644,7 @@ class UpdateShop extends OrgAction
             ],
             'banned_countries.banned_list.*.billing'                  => ['required', 'boolean'],
             'banned_countries.banned_list.*.delivery'                 => ['required', 'boolean'],
+            'banned_countries.banned_list.*.ip_block'                 => ['required', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');
