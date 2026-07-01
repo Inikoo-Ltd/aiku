@@ -23,7 +23,7 @@ class RestrictCountryRegions
 
         $isBlocked = CheckIfCountryRegionsIsBlocked::run($request);
         if ($isBlocked) {
-            //abort(403);
+            abort(403);
         }
 
 

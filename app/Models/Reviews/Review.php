@@ -111,22 +111,24 @@ class Review extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'scope'         => ReviewScopeEnum::class,
-        'state'         => ReviewStateEnum::class,
-        'review_status' => ReviewStatusEnum::class,
-        'likes'         => 'integer',
-        'dislikes'      => 'integer',
-        'replay_likes'  => 'integer',
-        'replay_dislikes' => 'integer',
-        'meta'          => 'array',
-        'auto_approve_at'    => 'datetime',
-        'published_at'  => 'datetime',
-        'removed_at'    => 'datetime',
-        'reply_at'      => 'datetime',
+        'scope'             => ReviewScopeEnum::class,
+        'state'             => ReviewStateEnum::class,
+        'review_status'     => ReviewStatusEnum::class,
+        'likes'             => 'integer',
+        'dislikes'          => 'integer',
+        'replay_likes'      => 'integer',
+        'replay_dislikes'   => 'integer',
+        'meta'              => 'array',
+        'web_images'        => 'array',
+        'auto_approve_at'   => 'datetime',
+        'published_at'      => 'datetime',
+        'removed_at'        => 'datetime',
+        'reply_at'          => 'datetime',
     ];
 
     protected $attributes = [
-        'meta' => '{}',
+        'meta'              => '{}',
+        'web_images'        => '{}',
     ];
 
     public function getRouteKeyName(): string

@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 23-06-2025-13h-30m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -38,7 +38,7 @@ class IndexApiInvoices extends OrgAction
 
         if ($parent instanceof Shop) {
             $query->where('invoices.shop_id', $parent->id);
-        } elseif ($parent instanceof Customer) {
+        } else {
             $query->where('invoices.customer_id', $parent->id);
         }
 
@@ -53,7 +53,7 @@ class IndexApiInvoices extends OrgAction
         }
 
         return $query->defaultSort('-date')
-        ->select([
+            ->select([
                 'invoices.id',
                 'invoices.slug',
                 'invoices.reference',
@@ -68,22 +68,24 @@ class IndexApiInvoices extends OrgAction
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
                 'customers.name as customer_name',
-        ])
+            ])
             ->allowedSorts(['reference', 'net_amount', 'pay_status', 'date'])
             ->withBetweenDates(['created_at'])
             ->withPaginator(null, queryName: 'per_page')
             ->withQueryString();
     }
 
-    public function asController(Shop $shop, ActionRequest $request)
+    public function asController(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($shop, $this->validatedData);
     }
 
-    public function inCustomer(Shop $shop, Customer $customer, ActionRequest $request)
+    public function inCustomer(Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($customer, $this->validatedData);
     }
 
@@ -110,11 +112,11 @@ class IndexApiInvoices extends OrgAction
     public function rules(): array
     {
         return [
-            'reference' => ['nullable', 'string'],
+            'reference'  => ['nullable', 'string'],
             'customerId' => ['nullable', 'string'],
-            'page' => ['nullable', 'integer'],
-            'per_page' => ['nullable', 'integer'],
-            'sort' => ['nullable', 'string'],
+            'page'       => ['nullable', 'integer'],
+            'per_page'   => ['nullable', 'integer'],
+            'sort'       => ['nullable', 'string'],
         ];
     }
 
@@ -122,11 +124,11 @@ class IndexApiInvoices extends OrgAction
     {
         $request->merge(
             [
-                'reference' => $request->query('reference', null),
-                'customerId' => $request->query('customerId', null),
-                'page' => $request->query('page', 1),
-                'per_page' => $request->query('per_page', 50),
-                'sort' => $request->query('sort', 'id'),
+                'reference'  => $request->query('reference'),
+                'customerId' => $request->query('customerId'),
+                'page'       => $request->query('page', 1),
+                'per_page'   => $request->query('per_page', 50),
+                'sort'       => $request->query('sort', 'date'),
             ]
         );
     }

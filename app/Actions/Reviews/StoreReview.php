@@ -88,6 +88,9 @@ class StoreReview extends OrgAction
             if (!empty($videos)) {
                 $this->storeUploadedVideos($review, $videos);
             }
+
+            $this->storeReviewWebImages($review);
+
             SendNewReviewEmailToSubscribers::dispatch($review->id);
             return $review->refresh();
         });

@@ -8,9 +8,11 @@
 
 namespace App\Actions\Catalogue\Review\Traits;
 
+use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
+use App\Models\Helpers\Media;
 use App\Models\Reviews\Review;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -68,6 +70,37 @@ trait HasReviewCommonLogic
         ];
     }
 
+    public function storeReviewWebImages(Review $review): void
+    {
+        $webImagesData = [];
+
+        $mediaImages = Media::query()
+            ->where('model_type', (new Review())->getMorphClass())
+            ->where('model_id', $review->id)
+            ->where('collection_name', 'review_images')
+            ->get();
+
+        if ($mediaImages->isEmpty()) {
+            return;
+        }
+
+        foreach ($mediaImages as $media) {
+            $imageOriginal  = $media->getImage();
+            $imageGallery   = $media->getImage()->resize(0, 600);
+            $imageThumbnail = $media->getImage()->resize(0, 48);
+
+            array_push($webImagesData, [
+                'original'  => GetPictureSources::run($imageOriginal),
+                'gallery'   => GetPictureSources::run($imageGallery),
+                'thumbnail' => GetPictureSources::run($imageThumbnail),
+            ]);
+        }
+
+        $review->update([
+            'web_images'    => $webImagesData
+        ]);
+    }
+
     protected function storeUploadedImages(Model $review, array $images): void
     {
         foreach ($images as $image) {
@@ -107,7 +140,7 @@ trait HasReviewCommonLogic
     protected function resolveRatingMain(array $modelData, ?Review $review = null): float
     {
         $dimensionKeys          = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
-        $dimensionsWereProvided = collect($dimensionKeys)->contains(fn(string $key): bool => array_key_exists($key, $modelData));
+        $dimensionsWereProvided = collect($dimensionKeys)->contains(fn (string $key): bool => array_key_exists($key, $modelData));
 
         $rating            = data_get($modelData, 'rating');
         $ratingWasProvided = array_key_exists('rating', $modelData) && is_numeric($rating);
@@ -117,9 +150,9 @@ trait HasReviewCommonLogic
         }
 
         $detailedRatings = collect($dimensionKeys)
-            ->map(fn(string $key) => data_get($modelData, $key))
-            ->filter(fn($value): bool => is_numeric($value))
-            ->map(fn($value): float => (float)$value)
+            ->map(fn (string $key) => data_get($modelData, $key))
+            ->filter(fn ($value): bool => is_numeric($value))
+            ->map(fn ($value): float => (float)$value)
             ->values();
 
         if ($detailedRatings->isNotEmpty()) {

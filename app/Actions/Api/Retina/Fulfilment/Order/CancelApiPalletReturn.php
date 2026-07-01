@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 25-06-2025-15h-20m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -16,18 +16,21 @@ use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 
-class CancelApiOrder extends RetinaApiAction
+class CancelApiPalletReturn extends RetinaApiAction
 {
+    private PalletReturn $palletReturn;
+
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
         CancelPalletReturn::run($palletReturn, []);
+
         return $palletReturn;
     }
 
-    public function afterValidator($validator)
+    public function afterValidator($validator): void
     {
         if ($this->palletReturn->state != PalletReturnStateEnum::SUBMITTED) {
-            $validator->errors()->add('message', 'This Order is already in the "' . $this->palletReturn->state->value . '" state and cannot be updated.');
+            $validator->errors()->add('message', 'This Order is already in the "'.$this->palletReturn->state->value.'" state and cannot be updated.');
         }
     }
 
@@ -35,14 +38,16 @@ class CancelApiOrder extends RetinaApiAction
     public function jsonResponse(PalletReturn $palletReturn): JsonResponse
     {
         return response()->json([
-            'message' => __('Order cancelled successfully'),
+            'message'          => __('Order cancelled successfully'),
             'pallet_return_id' => $palletReturn->id,
         ]);
     }
 
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($request);
+
         return $this->handle($palletReturn);
     }
 }
