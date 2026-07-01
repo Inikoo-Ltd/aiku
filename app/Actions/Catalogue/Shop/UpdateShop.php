@@ -37,6 +37,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Ordering\SalesChannel;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateShop extends OrgAction
 {
@@ -51,7 +53,7 @@ class UpdateShop extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
+        return $request->user()->authTo(['org-admin.' . $this->organisation->id, 'shop-admin.' . $this->shop->id]);
     }
 
     public function handle(Shop $shop, array $modelData): Shop
@@ -89,8 +91,49 @@ class UpdateShop extends OrgAction
             );
         }
 
+        $bannedCountriesUpdated = false;
+        $oldBannedCountries = null;
+        $newBannedCountries = null;
         if (Arr::has($modelData, 'banned_countries')) {
-            data_set($modelData, 'banned_country_regions', Arr::pull($modelData, 'banned_countries'));
+            $newBannedCountriesFull = Arr::pull($modelData, 'banned_countries');
+            data_set($modelData, 'banned_country_regions', $newBannedCountriesFull);
+            $oldBannedCountriesFull = $shop->banned_country_regions ?? [];
+
+            if ($oldBannedCountriesFull !== $newBannedCountriesFull) {
+                $oldBannedCountries = [];
+                $newBannedCountries = [];
+
+                foreach ($newBannedCountriesFull as $key => $value) {
+                    $oldVal = $oldBannedCountriesFull[$key] ?? null;
+
+                    // Sort arrays by key to ensure consistent json_encode
+                    $valToCompare = is_array($value) ? $value : [];
+                    $oldToCompare = is_array($oldVal) ? $oldVal : [];
+                    ksort($valToCompare);
+                    ksort($oldToCompare);
+
+                    // Normalize boolean/string types for comparison
+                    $jsonNew = json_encode($valToCompare);
+                    $jsonOld = json_encode($oldToCompare);
+
+                    // Simple loose check to avoid type issues like "0" vs false, or "" vs null
+                    // If they are not loosely equal, or if json differs
+                    if ($oldToCompare != $valToCompare) {
+                        $oldBannedCountries[$key] = $oldVal;
+                        $newBannedCountries[$key] = $value;
+                    }
+                }
+                foreach ($oldBannedCountriesFull as $key => $value) {
+                    if (!array_key_exists($key, $newBannedCountriesFull)) {
+                        $oldBannedCountries[$key] = $value;
+                        $newBannedCountries[$key] = null;
+                    }
+                }
+
+                if (!empty($oldBannedCountries) || !empty($newBannedCountries)) {
+                    $bannedCountriesUpdated = true;
+                }
+            }
         }
 
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
@@ -398,6 +441,35 @@ class UpdateShop extends OrgAction
             // TODO Rehydrate Child Prices according to their master counterpart prices & rrp here
         }
 
+        if ($bannedCountriesUpdated) {
+            $oldFlattened = [];
+            $newFlattened = [];
+            $cast = fn ($v) => match($v) {
+                'true', '1' => true, 'false', '0' => false, default => $v
+            };
+
+            foreach ($oldBannedCountries as $code => $oldVal) {
+                $newVal = $newBannedCountries[$code] ?? null;
+                $keys = array_unique(array_merge(array_keys((array) $oldVal), array_keys((array) $newVal)));
+
+                foreach ($keys as $prop) {
+                    $o = $cast(((array) $oldVal)[$prop] ?? null);
+                    $n = $cast(((array) $newVal)[$prop] ?? null);
+
+                    if ($o != $n) {
+                        $oldFlattened["banned_country_{$code}_{$prop}"] = $o;
+                        $newFlattened["banned_country_{$code}_{$prop}"] = $n;
+                    }
+                }
+            }
+
+            $shop->auditCustomOld = $oldFlattened;
+            $shop->auditCustomNew = $newFlattened;
+            $shop->auditEvent = 'update';
+            $shop->isCustomEvent = true;
+            Event::dispatch(new AuditCustom($shop));
+        }
+
         return $shop;
     }
 
@@ -609,7 +681,7 @@ class UpdateShop extends OrgAction
             'review_visibility.visibility.public'                     => ['sometimes', 'boolean'],
             'review_publishing'                                       => ['sometimes', 'nullable', 'array'],
             'review_publishing.auto_publishing.mode'                  => ['sometimes', 'required', Rule::enum(ReviewAutoPublishingEnum::class)],
-            'review_publishing.auto_publishing.delay_hours'           => ['sometimes', 'nullable', 'integer', 'min:1', 'required_if:review_publishing.auto_publishing.mode,'.ReviewAutoPublishingEnum::DELAY->value],
+            'review_publishing.auto_publishing.delay_hours'           => ['sometimes', 'nullable', 'integer', 'min:1', 'required_if:review_publishing.auto_publishing.mode,' . ReviewAutoPublishingEnum::DELAY->value],
             'review_public_rating_threshold'                          => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'review_minimum_rating_to_show'                           => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'review_minimum_reviews_to_show'                          => ['sometimes', 'nullable', 'integer', 'min:0'],
@@ -630,7 +702,7 @@ class UpdateShop extends OrgAction
 
         $channelIds = SalesChannel::pluck('id');
         foreach ($channelIds as $id) {
-            $rules['sales_channel_'.$id] = ['sometimes', 'boolean'];
+            $rules['sales_channel_' . $id] = ['sometimes', 'boolean'];
         }
 
         if (!$this->strict) {
@@ -666,5 +738,4 @@ class UpdateShop extends OrgAction
     {
         return new ShopResource($shop);
     }
-
 }
