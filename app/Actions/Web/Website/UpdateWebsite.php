@@ -21,6 +21,7 @@ use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Web\Website;
 use App\Rules\IUnique;
+use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -66,6 +67,23 @@ class UpdateWebsite extends OrgAction
 
         if (Arr::has($modelData, "tax_number_is_required")) {
             data_set($shopUpdateData, "settings.registration.tax_number_is_required", Arr::pull($modelData, "tax_number_is_required"));
+        }
+
+        if (Arr::has($modelData, "banned_countries")) {
+            $bannedCountries = Arr::pull($modelData, 'banned_countries');
+
+            $currentBannedCountries = $website->blocked_country_regions;
+
+            // Normalize existing countries (Would replace from shop postcode if country on website and shop both exists)
+            foreach ($currentBannedCountries as $code => $country) {
+                if ($postcode = data_get($bannedCountries, "$code.postcode")) {
+                    data_set($currentBannedCountries, "$code.postcode", $postcode);
+                }
+                Arr::forget($bannedCountries, $code);
+            }
+
+            // Merge current banned countries with shop banned countries
+            data_set($modelData, 'blocked_country_regions', array_merge($currentBannedCountries, $bannedCountries));
         }
 
         if (!empty($shopUpdateData)) {
@@ -234,40 +252,57 @@ class UpdateWebsite extends OrgAction
                 ),
 
             ],
-            'name'                                       => ['sometimes', 'required', 'string', 'max:255'],
-            'launched_at'                                => ['sometimes', 'date'],
-            'state'                                      => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
-            'status'                                     => ['sometimes', 'boolean'],
-            'google_tag_id'                              => ['sometimes', 'nullable', 'string', 'regex:/^GTM-[A-Z0-9]+$/'],
-            'gsc_content'                                => ['sometimes', 'nullable', 'string', 'regex:/^[A-Za-z0-9_\-]+$/'],
-            'catalogue_template'                         => ['sometimes', 'array'],
-            'luigisbox_tracker_id'                       => ['sometimes', 'string', 'nullable', 'regex:/^\d{6}-\d{6,8}$/'],
-            'luigisbox_script_lbx'                       => ['sometimes', 'nullable', 'string'],
-            'luigisbox_lbx_code'                         => ['sometimes', 'nullable', 'string', 'regex:/^LBX-\d{6,8}$/'],
-            'luigisbox_private_key'                      => ['sometimes', 'nullable', 'string'],
-            'last_reindex_at'                            => ['sometimes', 'nullable', 'string'],
-            'jira_help_desk_widget'                      => ['sometimes', 'nullable', 'string'],
-            'return_policy'                              => ['sometimes', 'string'],
-            'image'                                      => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
-            'favicon'                                    => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
-            'marketing_opt_in_label'                     => ['sometimes', 'string'],
-            'marketing_opt_in_default'                   => ['sometimes', 'boolean'],
-            'script_website'                             => ['sometimes', 'nullable', 'string'],
-            'llms_txt'                                   => ['sometimes', 'nullable', File::types(['txt'])->max(50)], // 50KB max
-            'enable_chat'                                => ['sometimes', 'boolean'],
-            'description_has_overview'                   => ['sometimes', 'boolean'],
-            'welcome_message'                            => ['sometimes', 'nullable', 'string'],
-            'company_name_label'                         => ['sometimes', 'nullable', 'string'],
-            'company_name_placeholder'                   => ['sometimes', 'nullable', 'string'],
-            'tax_number_is_required'                     => ['sometimes', 'nullable','boolean'],
-            'title_recommender'                          => ['sometimes', 'nullable', 'string'],
-            'min_amt_shown_recommender'                  => ['sometimes', 'numeric', 'min:1'],
-            'max_amt_shown_recommender'                  => ['sometimes', 'numeric', 'min:1'],
-            'title_product_category_recommender'         => ['sometimes', 'nullable', 'string'],
-            'min_amt_shown_recommender_product_category' => ['sometimes', 'numeric', 'min:1'],
-            'max_amt_shown_recommender_product_category' => ['sometimes', 'numeric', 'min:1'],
-            'webpage_title_prefix'                       => ['sometimes', 'nullable', 'string'],
-            'webpage_title_suffix'                       => ['sometimes', 'nullable', 'string'],
+            'name'                                          => ['sometimes', 'required', 'string', 'max:255'],
+            'launched_at'                                   => ['sometimes', 'date'],
+            'state'                                         => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
+            'status'                                        => ['sometimes', 'boolean'],
+            'google_tag_id'                                 => ['sometimes', 'nullable', 'string', 'regex:/^GTM-[A-Z0-9]+$/'],
+            'gsc_content'                                   => ['sometimes', 'nullable', 'string', 'regex:/^[A-Za-z0-9_\-]+$/'],
+            'catalogue_template'                            => ['sometimes', 'array'],
+            'luigisbox_tracker_id'                          => ['sometimes', 'string', 'nullable', 'regex:/^\d{6}-\d{6,8}$/'],
+            'luigisbox_script_lbx'                          => ['sometimes', 'nullable', 'string'],
+            'luigisbox_lbx_code'                            => ['sometimes', 'nullable', 'string', 'regex:/^LBX-\d{6,8}$/'],
+            'luigisbox_private_key'                         => ['sometimes', 'nullable', 'string'],
+            'last_reindex_at'                               => ['sometimes', 'nullable', 'string'],
+            'jira_help_desk_widget'                         => ['sometimes', 'nullable', 'string'],
+            'return_policy'                                 => ['sometimes', 'string'],
+            'image'                                         => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
+            'favicon'                                       => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
+            'marketing_opt_in_label'                        => ['sometimes', 'string'],
+            'marketing_opt_in_default'                      => ['sometimes', 'boolean'],
+            'script_website'                                => ['sometimes', 'nullable', 'string'],
+            'llms_txt'                                      => ['sometimes', 'nullable', File::types(['txt'])->max(50)], // 50KB max
+            'enable_chat'                                   => ['sometimes', 'boolean'],
+            'description_has_overview'                      => ['sometimes', 'boolean'],
+            'welcome_message'                               => ['sometimes', 'nullable', 'string'],
+            'company_name_label'                            => ['sometimes', 'nullable', 'string'],
+            'company_name_placeholder'                      => ['sometimes', 'nullable', 'string'],
+            'tax_number_is_required'                        => ['sometimes', 'nullable','boolean'],
+            'title_recommender'                             => ['sometimes', 'nullable', 'string'],
+            'min_amt_shown_recommender'                     => ['sometimes', 'numeric', 'min:1'],
+            'max_amt_shown_recommender'                     => ['sometimes', 'numeric', 'min:1'],
+            'title_product_category_recommender'            => ['sometimes', 'nullable', 'string'],
+            'min_amt_shown_recommender_product_category'    => ['sometimes', 'numeric', 'min:1'],
+            'max_amt_shown_recommender_product_category'    => ['sometimes', 'numeric', 'min:1'],
+            'webpage_title_prefix'                          => ['sometimes', 'nullable', 'string'],
+            'webpage_title_suffix'                          => ['sometimes', 'nullable', 'string'],
+            'banned_countries'                              => ['sometimes', 'nullable', 'array'],
+            'banned_countries.*'                            => ['required', 'array'],
+            'banned_countries.*.postcode'                   => [
+                'sometimes', 
+                'string', 
+                'nullable',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+
+                    // Just to check whether valid regex or not. Would throw false if it's an invalid regex since preg_match would not compile
+                    if (@preg_match($value, '') === false) {
+                        $fail('Invalid Postcode regex');
+                    }
+                },
+            ],
         ];
 
         if (!$this->strict) {

@@ -372,6 +372,11 @@ class Shop extends Model implements HasMedia, Auditable
         return array_filter($this->banned_country_regions, fn ($item) => $item['delivery']);
     }
 
+    public function bannedIPCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['ip_block']);
+    }
+
     public function crmStats(): HasOne
     {
         return $this->hasOne(ShopCRMStats::class);
