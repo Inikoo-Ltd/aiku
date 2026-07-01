@@ -47,7 +47,7 @@ class CheckAllegroPortfolio
         if (!$hasValidProductId || !$productExistsInAllegro || !$hasVariantAtLocation) {
             $result = CheckIfProductExistInAllegro::run($allegroUser, $portfolio);
 
-            $matches       = Arr::get($result, 'data');
+            $matches       = $result;
             $numberMatches = count($matches);
             $matchesLabels = Arr::pluck($matches, 'title');
         }
@@ -68,7 +68,7 @@ class CheckAllegroPortfolio
 
         if ($hasVariantAtLocation) {
             $data = $portfolio->data;
-            data_set($data, 'allegro_product', Arr::get($result, 'data'));
+            data_set($data, 'allegro_product', $result);
 
             $dataToUpdate = [
                 'data' => $data
