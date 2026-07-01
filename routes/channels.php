@@ -6,13 +6,13 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatAssignment;
+use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
-use App\Models\SysAdmin\User;
-use App\Models\CRM\Livechat\ChatAgent;
-use App\Models\CRM\Livechat\ChatSession;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Broadcast;
-use App\Models\CRM\Livechat\ChatAssignment;
 
 Broadcast::channel('retina.pc-clone.{parentId}', function (int|string $shopifyUserId) {
     return true;

@@ -78,7 +78,8 @@ trait WithOutboxBuilder
                     if ($emailOngoingRun->email->liveSnapshot->layout != $emailTemplate->layout) {
                         $this->createSnapshot($emailOngoingRun, $emailTemplate);
                     }
-                    $outbox->update(
+                    UpdateOutbox::make()->action(
+                        $outbox,
                         [
                             'state' => OutboxStateEnum::ACTIVE
                         ]

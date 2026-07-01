@@ -83,7 +83,6 @@ use App\Actions\CRM\ChatAutomation\ToggleChatAutomation;
 use App\Actions\CRM\ChatAutomation\Knowledge\UploadChatKnowledgeFile;
 use App\Actions\CRM\ChatAutomation\Knowledge\FetchChatKnowledgeUrl;
 use App\Actions\CRM\ChatAutomation\Knowledge\PreviewChatRagAnswer;
-use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
@@ -1130,7 +1129,6 @@ Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mails
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
     Route::post('{emailTemplate:id}/images', UploadImagesToEmailTemplate::class)->name('images.store');
-    Route::post('{emailTemplate:id}/publish', PublishEmail::class)->name('content.publish');
 });
 
 Route::patch('/guest/{guest:id}', UpdateGuest::class)->name('guest.update');

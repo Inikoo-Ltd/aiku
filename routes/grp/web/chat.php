@@ -6,8 +6,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-use App\Actions\CRM\ChatSession\UI\ShowGroupChatDashboard;
-use App\Actions\CRM\Agent\UI\ShowGroupAgents;
+use App\Actions\Chat\Agent\UI\ShowGroupAgents;
+use App\Actions\Chat\ChatSession\UI\ShowGroupChatDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowGroupChatDashboard::class)->name('dashboard');

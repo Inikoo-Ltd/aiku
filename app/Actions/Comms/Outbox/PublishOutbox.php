@@ -8,9 +8,12 @@
 
 namespace App\Actions\Comms\Outbox;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreEmailSnapshot;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOutboxes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -67,9 +70,17 @@ class PublishOutbox extends OrgAction
 
         $this->update($email, $updateData);
 
-        return $this->update($outbox, [
+        $outbox = $this->update($outbox, [
             'state' => OutboxStateEnum::ACTIVE
         ]);
+
+        GroupHydrateOutboxes::dispatch($outbox->group);
+        OrganisationHydrateOutboxes::dispatch($outbox->organisation);
+        if ($outbox->shop_id) {
+            ShopHydrateOutboxes::dispatch($outbox->shop);
+        }
+
+        return $outbox;
     }
 
     public function rules(): array

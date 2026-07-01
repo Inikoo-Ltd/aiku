@@ -12,7 +12,7 @@ class RepairInvoiceTransactionBrandId implements ShouldQueue
 {
     use AsAction;
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'long-low-priority';
     protected int $chunkSize = 5000;
 
     public string $commandSignature = 'invoice-transactions:repair-brand-id

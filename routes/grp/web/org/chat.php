@@ -1,12 +1,12 @@
 <?php
 
-use App\Actions\CRM\ChatSession\GetActiveChatSessions;
-use App\Actions\CRM\ChatSession\GetChatDashboardVisitors;
-use App\Actions\CRM\ChatSession\GetChatVisitorsByCountry;
-use App\Actions\CRM\ChatSession\UI\ShowChatConversations;
-use App\Actions\CRM\ChatSession\UI\ShowChatDashboard;
-use App\Actions\CRM\ChatSession\ExportChatConversations;
-use App\Actions\CRM\ChatSession\UI\ShowOrgChatConversation;
+use App\Actions\Chat\ChatSession\ExportChatConversations;
+use App\Actions\Chat\ChatSession\GetActiveChatSessions;
+use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
+use App\Actions\Chat\ChatSession\GetChatVisitorsByCountry;
+use App\Actions\Chat\ChatSession\UI\ShowChatConversations;
+use App\Actions\Chat\ChatSession\UI\ShowChatDashboard;
+use App\Actions\Chat\ChatSession\UI\ShowOrgChatConversation;
 use App\Actions\CRM\ChatAutomation\UI\ShowChatAutomations;
 use App\Actions\CRM\ChatAutomation\UI\CreateChatAutomation;
 use App\Actions\CRM\ChatAutomation\UI\EditChatAutomation;

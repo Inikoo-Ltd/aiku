@@ -33,7 +33,7 @@ class GetFaireProducts extends OrgAction
 {
     public string $commandSignature = 'faire:products {shop} {min_hours?}';
 
-    public $jobQueue = 'default-long';
+    public $jobQueue = 'long-running';
 
     public function handle(Shop $shop, array $modelData, ?Command $command = null): void
     {

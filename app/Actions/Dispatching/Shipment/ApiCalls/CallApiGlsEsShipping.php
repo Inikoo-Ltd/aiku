@@ -493,7 +493,7 @@ class CallApiGlsEsShipping extends OrgAction
         $weight = $splitWeight ?? ($parent->effective_weight / 1000);
 
         $countryCode = Arr::get($parentResource, 'to_address.country_code');
-        if ($countryCode == 'ES') {
+        if ($countryCode == 'ES'  || $countryCode == 'PT') {
             $service = '1';
         } else {
             $service = '74';

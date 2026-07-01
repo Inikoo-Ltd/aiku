@@ -8,7 +8,10 @@
 
 namespace App\Actions\Comms\Outbox;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOutboxes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Http\Resources\Mail\OutboxesResource;
@@ -44,7 +47,17 @@ class UpdateOutbox extends OrgAction
             $modelData['send_time'] = $sendTimeWithTimezone;
         }
 
-        return $this->update($outbox, $modelData, ['data']);
+        $outbox = $this->update($outbox, $modelData, ['data']);
+
+        if (array_key_exists('state', $modelData) || array_key_exists('type', $modelData)) {
+            GroupHydrateOutboxes::dispatch($outbox->group);
+            OrganisationHydrateOutboxes::dispatch($outbox->organisation);
+            if ($outbox->shop_id) {
+                ShopHydrateOutboxes::dispatch($outbox->shop);
+            }
+        }
+
+        return $outbox;
     }
 
     public function rules(): array
