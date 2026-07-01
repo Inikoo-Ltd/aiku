@@ -27,12 +27,18 @@ class GetAddressDataForShop
 
         $forbiddenCountries = [];
 
+        $target = $shop;
+        // Handle if shop follow organisation banned countries
+        if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
+            $target = $shop->organisation;
+        };
+
         if ($excludeForbiddenBilling) {
-            $forbiddenCountries = array_merge($forbiddenCountries, $shop->bannedBillingCountries());
+            $forbiddenCountries = array_merge($forbiddenCountries, $target->bannedBillingCountries());
         }
 
         if ($excludeForbiddenDelivery) {
-            $forbiddenCountries = array_merge($forbiddenCountries, $shop->bannedDeliveryCountries());
+            $forbiddenCountries = array_merge($forbiddenCountries, $target->bannedDeliveryCountries());
         }
 
         // Only ban empty/null postcode (Since it means ban whole country). Will still show the other, validation is on BE

@@ -230,24 +230,12 @@ class EditOrganisationSettings extends OrgAction
                                 ]
                             ],
                         ],
-                        [
-                            'label' => __('Shipping'),
-                            'icon' => 'fa-light fa-truck',
-                            'fields' => [
-                                'forbidden_dispatch_countries' => [
-                                    'type' => 'multiselect-tags',
-                                    'label' => __('Forbidden Countries'),
-                                    'placeholder' => __('Select countries'),
-                                    'required' => true,
-                                    'value' => $organisation->forbidden_dispatch_countries ?? [],
-                                    'options' => GetCountriesOptions::run(),
-                                    'searchable' => true,
-                                    'mode' => 'tags',
-                                    'labelProp' => 'label',
-                                    'valueProp' => 'id'
-                                ]
-                            ],
-                        ],
+                        // [
+                        //     'label' => __('Shipping'),
+                        //     'icon' => 'fa-light fa-truck',
+                        //     'fields' => [
+                        //     ],
+                        // ],
                         [
                             'label' => __('Banned Countries') . ' (' . __('territories') . ')',
                             'icon' => 'fa-light fa-ban',

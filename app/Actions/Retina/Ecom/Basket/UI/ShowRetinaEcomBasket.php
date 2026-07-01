@@ -71,14 +71,6 @@ class ShowRetinaEcomBasket extends RetinaAction
             $insurance       = null;
         }
 
-
-
-        $isUnableDispatch = false;
-
-        if ($order && $order->deliveryAddress) {
-            $isUnableDispatch = in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? []));
-        }
-
         $grGifts = [
             'status'      => false,
             'is_eligible' => false,

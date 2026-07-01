@@ -11,10 +11,15 @@ trait WithOrderForbiddenCountryCheck
     {
         $billingAddress     = $order->billingAddress;
         $deliveryAddress    = $order->deliveryAddress;
-
+        
         $shop = $order->shop;
-        $bannedBillingCountries = $shop->bannedBillingCountries();
-        $bannedDeliveryCountries = $shop->bannedDeliveryCountries();
+        $target = $shop;
+        if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
+            $target = $shop->organisation;
+        };
+
+        $bannedBillingCountries = $target->bannedBillingCountries();
+        $bannedDeliveryCountries = $target->bannedDeliveryCountries();
 
         // If any of those is true, would be banned
         return $this->isAddressForbidden($billingAddress, $bannedBillingCountries) || $this->isAddressForbidden($deliveryAddress, $bannedDeliveryCountries);
@@ -26,8 +31,13 @@ trait WithOrderForbiddenCountryCheck
         $deliveryAddress    = $order->deliveryAddress;
 
         $shop = $order->shop;
-        $bannedBillingCountries = $shop->bannedBillingCountries();
-        $bannedDeliveryCountries = $shop->bannedDeliveryCountries();
+        $target = $shop;
+        if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
+            $target = $shop->organisation;
+        };
+
+        $bannedBillingCountries = $target->bannedBillingCountries();
+        $bannedDeliveryCountries = $target->bannedDeliveryCountries();
 
         return [
             'billing'   => $this->isAddressForbidden($billingAddress, $bannedBillingCountries),
