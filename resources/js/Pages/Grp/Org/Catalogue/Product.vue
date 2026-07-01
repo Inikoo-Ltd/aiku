@@ -49,6 +49,7 @@ import Dialog from "primevue/dialog"
 import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
+import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
 
 library.add(
     faFolder,

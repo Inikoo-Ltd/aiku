@@ -212,7 +212,7 @@ watch(
 					<FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" />
 				</button>
 
-				<div class="swiper-mask lg:px-12 px-0">
+				<div class="swiper-mask lg:px-12 px-2">
 					<Swiper
 						@swiper="
 							(s: any) => {
@@ -310,12 +310,14 @@ watch(
   display: none !important;
 }
 
-.swiper-inner.has-pagination {
-	padding-bottom: 2rem;
+:deep(.swiper-pagination) {
+	position: relative;
+	bottom: auto;
+	margin-top: 0.75rem;
 }
 
-:deep(.swiper-pagination) {
-	bottom: 0;
+:deep(.swiper-pagination.swiper-pagination-lock) {
+	display: none;
 }
 
 :deep(.swiper-pagination-bullet) {

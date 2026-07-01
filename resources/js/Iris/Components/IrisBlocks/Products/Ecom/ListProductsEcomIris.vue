@@ -488,7 +488,7 @@ watch(
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex space-x-6 w-fit overflow-x-auto mt-2 md:mt-0">
+                    <div class="flex space-x-6 w-fit max-w-full overflow-x-auto mt-2 md:mt-0">
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
                             class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
                             :class="[

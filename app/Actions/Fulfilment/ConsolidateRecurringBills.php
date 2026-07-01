@@ -18,7 +18,7 @@ class ConsolidateRecurringBills
 {
     use AsAction;
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'urgent';
 
     public string $commandSignature = 'current_recurring_bills:consolidate';
 

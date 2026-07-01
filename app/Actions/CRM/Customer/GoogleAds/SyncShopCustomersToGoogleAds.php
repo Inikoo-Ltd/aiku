@@ -35,7 +35,7 @@ class SyncShopCustomersToGoogleAds extends OrgAction
             ]);
         }
 
-        SyncCustomersToGoogleAds::run($shop);
+        SyncCustomersToGoogleAds::dispatch($shop);
 
         return $redirect->with('notification', [
             'status'      => 'success',

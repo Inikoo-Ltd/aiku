@@ -2,15 +2,15 @@
 
 namespace App\Events;
 
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use App\Models\CRM\Livechat\ChatMessage;
-use App\Models\CRM\WebUser;
-use Illuminate\Support\Str;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Models\Chat\ChatMessage;
+use App\Models\CRM\WebUser;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Str;
 
 class BroadcastChatListEvent implements ShouldBroadcastNow
 {

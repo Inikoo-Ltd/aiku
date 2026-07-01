@@ -8,10 +8,10 @@
 
 namespace App\Actions\SysAdmin\UI\Auth;
 
+use App\Actions\Chat\Agent\UpdateAgent;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\RedirectResponse;
-use App\Actions\CRM\Agent\UpdateAgent;
 use Lorisleiva\Actions\Concerns\AsController;
 
 class Logout

@@ -47,6 +47,7 @@ const fetchMoreReviews = async () => {
             data: [...reviewsData.value.data, ...fetchedReviews],
         }
         reviewSummary.value = data?.review_summary ?? reviewSummary.value
+        console.log('sdsdsd',data)
     } catch (error) {
         console.error(error)
     } finally {
@@ -55,19 +56,25 @@ const fetchMoreReviews = async () => {
 }
 
 const current = ref(0)
-const windowWidth = ref(window.innerWidth)
+const windowWidth = ref(1024) // default width for SSR
 
 const updateWindowWidth = () => {
-    windowWidth.value = window.innerWidth
+    if (typeof window !== "undefined") {
+        windowWidth.value = window.innerWidth
+    }
 }
 
+
 onMounted(() => {
+    updateWindowWidth() // get actual width after hydration
     window.addEventListener("resize", updateWindowWidth)
     fetchMoreReviews()
 })
 
 onBeforeUnmount(() => {
-    window.removeEventListener("resize", updateWindowWidth)
+     if (typeof window !== "undefined") {
+        window.removeEventListener("resize", updateWindowWidth)
+    }
 })
 
 const perPage = computed(() => {
@@ -180,7 +187,7 @@ const totalReviews = computed(() => reviewsData.value.meta?.total ?? 0)
 </script>
 
 <template>
-    <div class="editor-class overflow-hidden" v-if="isInitialLoading || minimum_reviews_to_show <= totalReviews">
+    <div class="editor-class overflow-hidden" v-if="isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length">
         <div v-if="isInitialLoading" class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary skeleton -->
             <div class="flex min-h-[150px] flex-col items-center justify-center gap-3 px-6 py-6 text-center lg:col-span-1">

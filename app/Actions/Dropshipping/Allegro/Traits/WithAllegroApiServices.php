@@ -24,6 +24,10 @@ trait WithAllegroApiServices
 
     public function restApi(string $method = 'GET', array $params = []): PendingRequest
     {
+        if($this->access_token_expire_in < now()->timestamp) {
+            $this->refreshAccessToken($this->refresh_token);
+        }
+
         $http = Http::withHeaders([
             'Authorization'  => 'Bearer ' . $this->access_token,
             'Accept'         => $this->allegroApiVersion,
@@ -439,8 +443,9 @@ trait WithAllegroApiServices
 
     public function getProductByEan(string $ean): array
     {
-        return $this->makeApiRequest('GET', '/sale/categories', [], [
-            'mode' => $ean
+        return $this->makeApiRequest('GET', '/sale/products', [], [
+            'mode' => "GTIN",
+            'phrase' => $ean
         ]);
     }
 

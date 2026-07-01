@@ -54,7 +54,7 @@ class CallApiGlsEsShipping extends OrgAction
         $totalWeight = $parent->effective_weight / 1000;
         $totalParcel = count($parent->parcels ?? []);
 
-        if ($totalWeight > $limit && ($countryCode !== 'ES' && $totalParcel > 1)) {
+        if ($totalWeight > $limit && ( !in_array($countryCode,['ES','PT'])  && $totalParcel > 1)) {
             return $this->splitByWeightLimit($parent, $shipper, $limit, $totalWeight);
         }
 
@@ -493,7 +493,7 @@ class CallApiGlsEsShipping extends OrgAction
         $weight = $splitWeight ?? ($parent->effective_weight / 1000);
 
         $countryCode = Arr::get($parentResource, 'to_address.country_code');
-        if ($countryCode == 'ES') {
+        if ($countryCode == 'ES'  || $countryCode == 'PT'  ) {
             $service = '1';
         } else {
             $service = '74';
@@ -530,7 +530,7 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
 
-        if (Arr::get($parentResource, 'cash_on_delivery')) {
+        if (Arr::get($parentResource, 'cash_on_delivery') && ($suffix === null || $suffix === 0)) {
             $amount               = Arr::get($parentResource, 'cash_on_delivery.amount');
             $amount               = str_replace('.', ',', (string)$amount);
             $shipmentData["reem"] = $amount;
