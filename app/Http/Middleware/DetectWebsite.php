@@ -9,12 +9,15 @@
 namespace App\Http\Middleware;
 
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Http\Middleware\Concerns\DetectsWebsite;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class DetectWebsite
 {
+    use DetectsWebsite;
+
     public function handle(Request $request, Closure $next): Response
     {
         $website = DetectWebsiteFromDomain::run($request->getHost());
@@ -22,20 +25,8 @@ class DetectWebsite
             abort(404, 'Not found');
         }
 
-        $websiteData = [
-            'domain'  => $website->domain,
-            'website' => $website
-        ];
-        if (!empty($website->blocked_country_regions)) {
-            $websiteData['has_blocked_country_regions'] = true;
-            $websiteData['blocked_countries']           = array_keys($website->blocked_country_regions);
-            $websiteData['blocked_country_regions']     = $website->blocked_country_regions;
-        }
-
-        $request->merge($websiteData);
+        $request->merge($this->getWebsiteBaseData($website));
 
         return $next($request);
     }
-
-
 }
