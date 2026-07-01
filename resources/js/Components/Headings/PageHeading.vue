@@ -79,7 +79,7 @@ const props = defineProps<{
 	dataToSubmit?: any
 	dataToSubmitIsDirty?: any
 	isButtonGroupWithBorder?: boolean
-	ignoreIsolate: boolean
+	ignoreIsolate?: boolean
 }>()
 
 const isButtonLoading = ref<boolean | string>(false)

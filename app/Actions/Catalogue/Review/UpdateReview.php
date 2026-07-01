@@ -72,6 +72,8 @@ class UpdateReview extends OrgAction
                 $this->storeUploadedVideos($review, $videos);
             }
 
+            $this->storeReviewWebImages($review);
+
             return $review->refresh()->load('media');
         });
 

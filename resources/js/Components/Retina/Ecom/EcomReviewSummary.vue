@@ -187,7 +187,7 @@ const isModalShippingAddress = ref(false)
 							:readonly="true"
 							:disabled="true"
 							:cancel="false"
-							class="scale-75 origin-right" />
+							class="scale-75 origin-right rating" />
 					</div>
 				</div>
 			</div>

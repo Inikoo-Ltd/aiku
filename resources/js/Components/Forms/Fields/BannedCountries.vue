@@ -18,6 +18,7 @@ interface BannedCountryRow {
     postcode: string | null
     billing: boolean
     delivery: boolean
+    ip_block: boolean
     read_only: boolean
 }
 
@@ -63,6 +64,7 @@ const buildRows = (): BannedCountryRow[] => {
         postcode: value?.postcode ?? "",
         billing: !!value?.billing,
         delivery: !!value?.delivery,
+        ip_block: !!value?.ip_block,
         read_only: !!value?.read_only,
     }))
 }
@@ -87,6 +89,7 @@ const syncForm = () => {
             postcode: row.postcode || null,
             billing: row.billing,
             delivery: row.delivery,
+            ip_block: row.ip_block,
             ...(row.read_only ? { read_only: true } : {}),
         }
     })
@@ -107,6 +110,7 @@ const addRow = () => {
         billing: false,
         delivery: true,
         read_only: false,
+        ip_block: false,
     })
 }
 
@@ -116,8 +120,8 @@ const removeRow = (index: number) => {
 
 // At least one of billing/delivery must stay true. Reverting the change the user
 // just made is the least surprising behaviour.
-const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery") => {
-    if (!row.billing && !row.delivery) {
+const onFlagChange = (row: BannedCountryRow, flag: "billing" | "delivery" | "ip_block") => {
+    if (!row.billing && !row.delivery && !row.ip_block) {
         row[flag] = true
     }
 }
@@ -246,7 +250,7 @@ const closeRegexTest = () => {
 
                 <Column xheader="ctrans('Postcode (regex)')" style="min-width: 12rem">
                     <template #header="{ column }">
-                        <div class="font-semibold">{{ctrans('Postcode (regex)')}} <VTooltip class="w-fit inline">
+                        <div class="font-semibold">{{ctrans('Banned Postcode (regex)')}} <VTooltip class="w-fit inline">
                                 <span class='opacity-50 hover:opacity-100'>
                                     <FontAwesomeIcon icon='fal fa-info-circle' xsize="xs" fixed-width aria-hidden='true' />
                                 </span>
@@ -269,7 +273,7 @@ const closeRegexTest = () => {
                             <InputText
                                 v-model="data.postcode"
                                 :disabled="data.read_only || isDisabled"
-                                placeholder="/^2/"
+                                placeholder=""
                                 class="w-full font-mono"
                                 :invalid="get(form, ['errors', `${fieldName}.banned_list.${data.country}.postcode`])"
                             />
@@ -292,9 +296,9 @@ const closeRegexTest = () => {
                     </template>
                 </Column>
 
-                <Column :header="ctrans('Billing / Delivery')" style="min-width: 12rem">
+                <Column :header="ctrans('Scoped')" style="min-width: 12rem">
                     <template #body="{ data }">
-                        <div class="flex items-center gap-6">
+                        <div class="flex items-center gap-4">
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input
                                     v-model="data.billing"
@@ -314,6 +318,17 @@ const closeRegexTest = () => {
                                     @change="onFlagChange(data, 'delivery')"
                                 />
                                 <span class="whitespace-nowrap">{{ ctrans("Delivery") }} <InformationIcon :information="ctrans('If active, delivery address that matched the postcode will be banned')" /></span>
+                            </label>
+
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    v-model="data.ip_block"
+                                    type="checkbox"
+                                    :disabled="data.read_only || isDisabled"
+                                    class="h-5 w-5 rounded cursor-pointer border-gray-300 hover:border-[--theme-color-0] text-[--theme-color-0] focus:ring-[--theme-color-0]"
+                                    @change="onFlagChange(data, 'ip_block')"
+                                />
+                                <span class="whitespace-nowrap">{{ ctrans("IP Block") }} <InformationIcon :information="ctrans('If active, IP location that matched the postcode will be banned')" /></span>
                             </label>
                         </div>
                     </template>

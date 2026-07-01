@@ -69,6 +69,8 @@ const props = defineProps<{
         overall_review: number
         average_review: number
     }
+    is_forbidden_delivery?: boolean
+    is_forbidden_billing?: boolean
 }>()
 
 const locale = inject('locale', {})
@@ -216,6 +218,7 @@ const onPayWithBalance = () => {
                 summary.products.payment.pay_amount > 0
                 && summary.products.payment.pay_amount <= summary?.customer?.balance
                 && props.order?.data?.state === 'submitted'
+                && (!props.is_forbidden_billing && !props.is_forbidden_delivery)
             " class="mt-1 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded px-2">
                 <div class="text-yellow-700">
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
@@ -229,6 +232,11 @@ const onPayWithBalance = () => {
                 <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
                     <LoadingIcon />
                 </div>
+            </div>
+
+            <div v-if="props.is_forbidden_billing || props.is_forbidden_delivery" class="w-72 pt-5 text-sm">
+                <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
+                <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
             </div>
 
 
@@ -380,7 +388,7 @@ const onPayWithBalance = () => {
                             :readonly="true"
                             :disabled="true"
                             :cancel="false"
-                            class="scale-75 origin-right" />
+                            class="scale-75 origin-right rating" />
                     </div>
                 </div>
             </div>
@@ -403,3 +411,10 @@ const onPayWithBalance = () => {
         </Modal>
     </div>
 </template>
+
+
+<style scoped>
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+	color: #f59e0b !important;
+}
+</style>
