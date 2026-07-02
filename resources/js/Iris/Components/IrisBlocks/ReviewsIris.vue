@@ -261,7 +261,7 @@ const reviewLink = computed(() => {
 
                     <div class="mt-3 flex items-end gap-1">
                         <span class="text-4xl font-bold leading-none">
-                            {{ parseFloat(reviewSummary).toFixed(1) }}
+                            {{ parseFloat(reviewSummary).toFixed(2) }}
                         </span>
 
                         <span class="pb-1 text-base text-gray-500">
