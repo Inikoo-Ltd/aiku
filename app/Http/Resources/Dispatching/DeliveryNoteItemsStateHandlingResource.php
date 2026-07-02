@@ -55,7 +55,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 ),
                 $this->packed_in
             );
-
+        //=== PERFORMANCE
+        // fining other stuff should free this
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
         $fullWarning      = [
             'disabled' => false,
@@ -67,7 +68,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 'message'  => __('The required quantity has already been fully picked.')
             ];
         }
-
+        //=== PERFORMANCE
+        // use select_raw in the query and inject this value
         $shopType = $request->shop?->type;
 
         $pickingLocations = DB::table('location_org_stocks')
@@ -115,7 +117,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
         $isPicked = $quantityToPick == 0;
         $isPacked = $isPicked && $this->quantity_packed == $this->quantity_picked;
 
-
+        //=== PERFORMANCE
+        // I think thi sjust need to be called if state is packed or more ask Aldo
         $pickings = Picking::where('delivery_note_item_id', $this->id)->with(['batchCode', 'orgStock.mainBatchCode'])->get();
 
         $warehouseArea = '';
@@ -143,6 +146,10 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
         if (floor($quantityToPick) == $quantityToPick && $packedIn > 1) {
             $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
         }
+
+
+        //=== PERFORMANCE
+        // This one can be fixed adding jsonb un_numbers into stocks or org_stocks (i think stocks is better) <-- We need to meaker hydrators and repairs
 
         /** @var DeliveryNoteItem $resource */
         $resource = $this->resource;
@@ -177,9 +184,15 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_code'               => $this->org_stock_code,
             'org_stock_slug'               => $this->org_stock_slug,
             'org_stock_name'               => $this->org_stock_name,
+
+            //=== PERFORMANCE
+            // DO we actually display this image? if really display need to create:  stocks or org_stocks  jsonb web_images (and follow what we do in products.web_images)
             'org_stock_image_thumbnail'    => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
             'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
             'pickings'                     => PickingResource::collection($pickings),
+
+            //=== PERFORMANCE
+            // create jsonb packings in delivery_note_items  (need hydrators::run and repairs)
             'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'                      => $fullWarning,
             'is_handled'                   => $this->is_handled,
@@ -242,12 +255,16 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'pickers_list_route' => [
                 'name'       => 'grp.json.employees.picker_users',
                 'parameters' => [
+                    //=== PERFORMANCE
+                    // use select_raw in the query and inject this value
                     'organisation' => $deliveryNoteItem->organisation->slug
                 ]
             ],
             'packers_list_route' => [
                 'name'       => 'grp.json.employees.packers',
                 'parameters' => [
+                    //=== PERFORMANCE
+                    // use select_raw in the query and inject this value
                     'organisation' => $deliveryNoteItem->organisation->slug
                 ]
             ],
