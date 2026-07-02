@@ -46,6 +46,14 @@ class ShowIrisCompanyReviews extends IrisAction
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
             'recommend_percent' => $recommendPercent,
+            'shop_profile'      => [
+                'name'    => $shop->name,
+                'email'   => $shop->email,
+                'phone'   => $shop->phone,
+                'logo'    => $shop->image ? $shop->imageSources(120, 120) : null,
+                'formatted_address' => $shop->address?->formatted_address,
+                'country' => $shop->country?->name,
+            ],
         ];
     }
 
