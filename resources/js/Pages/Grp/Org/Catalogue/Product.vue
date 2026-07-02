@@ -50,6 +50,7 @@ import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
+import ModalCreateStepDiscountProduct from '@/Components/Offers/ModalCreateStepDiscountProduct.vue'
 
 library.add(
     faFolder,
@@ -136,6 +137,7 @@ const props = defineProps<{
     product_id: number
 }>()
 
+const layout = inject('layout')
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const isOpenDialog = ref(false)
@@ -331,6 +333,13 @@ const saveProductReview = async () => {
                 :shop_data="props.shop_data"
                 :product_id="props.product_id"
                  />
+
+            <ModalCreateStepDiscountProduct
+                v-if="currentTab === 'offers' && layout?.app?.environment == 'local'"
+                v-tooltip="'Create New Offer'"
+                :shop_data="props.shop_data"
+                :product_id="props.product_id"
+            />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
