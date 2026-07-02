@@ -21,9 +21,12 @@ const props = defineProps<{
     tab?: string
 }>();
 
+const routeParams = route().params
+const routeCurrent = route().current()
+
 function warehouseAreaRoute(warehouseArea: WarehouseArea) {
-    console.log(route().current());
-    switch (route().current()) {
+    console.log(routeCurrent);
+    switch (routeCurrent) {
         case "grp.overview.inventory.warehouses-areas.index":
             return route(
                 "grp.org.warehouses.show.infrastructure.warehouse_areas.show",
@@ -38,8 +41,8 @@ function warehouseAreaRoute(warehouseArea: WarehouseArea) {
             return route(
                 "grp.org.warehouses.show.infrastructure.warehouse_areas.show",
                 [
-                    route().params["organisation"],
-                    route().params["warehouse"],
+                    routeParams["organisation"],
+                    routeParams["warehouse"],
                     warehouseArea.slug
                 ]
             );
@@ -49,7 +52,7 @@ function warehouseAreaRoute(warehouseArea: WarehouseArea) {
 }
 
 function locationsRoute(warehouseArea: WarehouseArea) {
-    switch (route().current()) {
+    switch (routeCurrent) {
         case "grp.overview.inventory.warehouses-areas.index":
             return route(
                 "grp.org.warehouses.show.infrastructure.warehouse_areas.show.locations.index",
@@ -64,8 +67,8 @@ function locationsRoute(warehouseArea: WarehouseArea) {
             return route(
                 "grp.org.warehouses.show.infrastructure.warehouse_areas.show.locations.index",
                 [
-                    route().params["organisation"],
-                    route().params["warehouse"],
+                    routeParams["organisation"],
+                    routeParams["warehouse"],
                     warehouseArea.slug
                 ]);
 
@@ -153,7 +156,7 @@ const submitOrderPosition = async () => {
         </div>
 
         <div>
-            {{ trans("Set picking order") }}
+            {{ ctrans("Set picking order") }}
         </div>
         <InputNumber
             v-if="selectedWarehouseArea"
