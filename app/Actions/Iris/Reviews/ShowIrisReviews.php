@@ -63,14 +63,18 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, $totalReviews),
+            'recommend_percent' => $this->recommendPercent($shop, $totalReviews, [
+                ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER,
+                ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY,
+            ]),
         ];
     }
 
     private function productTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $reviews   = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'reviews');
-        $avgReview = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::PRODUCT]);
+        $reviews      = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'reviews');
+        $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::PRODUCT]);
+        $totalReviews = $reviews->total();
 
         return [
             'type'              => 'product',
@@ -78,15 +82,16 @@ class ShowIrisReviews extends IrisAction
             'review_settings'   => $reviewSettings,
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
-            'total_reviews'     => $reviews->total(),
-            'recommend_percent' => 0,
+            'total_reviews'     => $totalReviews,
+            'recommend_percent' => $this->recommendPercent($shop, $totalReviews, [ReviewScopeEnum::PRODUCT]),
         ];
     }
 
     private function familyTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $reviews   = $indexer->handleFamilyScopeReviews(shop: $shop, prefix: 'reviews');
-        $avgReview = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::FAMILY]);
+        $reviews      = $indexer->handleFamilyScopeReviews(shop: $shop, prefix: 'reviews');
+        $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::FAMILY]);
+        $totalReviews = $reviews->total();
 
         return [
             'type'              => 'family',
@@ -94,8 +99,8 @@ class ShowIrisReviews extends IrisAction
             'review_settings'   => $reviewSettings,
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
-            'total_reviews'     => $reviews->total(),
-            'recommend_percent' => 0,
+            'total_reviews'     => $totalReviews,
+            'recommend_percent' => $this->recommendPercent($shop, $totalReviews, [ReviewScopeEnum::FAMILY]),
         ];
     }
 
@@ -112,11 +117,11 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, $totalReviews),
+            'recommend_percent' => $this->recommendPercent($shop, $totalReviews, [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER]),
         ];
     }
 
-    private function recommendPercent($shop, int $totalReviews): int
+    private function recommendPercent($shop, int $totalReviews, array $scopes): int
     {
         if ($totalReviews === 0) {
             return 0;
@@ -124,7 +129,7 @@ class ShowIrisReviews extends IrisAction
 
         $count = Review::query()
             ->where('shop_id', $shop->id)
-            ->whereIn('scope', [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER])
+            ->whereIn('scope', $scopes)
             ->where('state', ReviewStateEnum::PUBLISHED)
             ->where('is_public', true)
             ->where('review_status', ReviewStatusEnum::APPROVED)
