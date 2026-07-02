@@ -14,6 +14,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { router } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import Image from "@/Common/Components/Image.vue"
+import StarRating from "@/Iris/Components/StarRating.vue"
+import { ctrans } from "@/Composables/useTrans"
+import { faArrowRight } from "@fas"
 
 
 const props = defineProps<{
@@ -27,6 +30,7 @@ const minimum_reviews_to_show = inject<number>("minimum_reviews_to_show", 0)
 const allow_review_reaction = inject<number>("allow_review_reaction", 0)
 const allow_review_reply_reaction = inject<number>("allow_review_reply_reaction", 0)
 const show_staff_who_reply = inject<boolean>("show_staff_who_reply", false)
+const webpage_data = inject<boolean>("webpage_data", null)
 const layout = inject("layout", {})
 
 const fetchMoreReviews = async () => {
@@ -199,6 +203,22 @@ const openReview = (review: any) => {
     reviewModalVisible.value = true
 }
 
+const reviewLink = computed(() => {
+    switch (webpage_data.sub_type) {
+        case 'family':
+            return {
+                href: `/reviews/family/${webpage_data.model_slug}`,
+                text: ctrans('See All Reviews Family'),
+            }
+
+        case 'product':
+        default:
+            return {
+                href: `/reviews/product/${webpage_data.model_slug}`,
+                text: ctrans('See All Reviews Product'),
+            }
+    }
+})
 
 </script>
 
@@ -232,7 +252,7 @@ const openReview = (review: any) => {
 
         <div v-else class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary -->
-             <a href="/reviews">
+            <a href="/reviews">
                 <div
                     class="flex min-h-[150px] flex-col items-center justify-center px-6 py-6 text-center lg:col-span-1">
                     <div class="text-sm font-semibold uppercase tracking-wider text-gray-900">
@@ -241,7 +261,7 @@ const openReview = (review: any) => {
 
                     <div class="mt-3 flex items-end gap-1">
                         <span class="text-4xl font-bold leading-none">
-                            {{ parseInt(reviewSummary) }}
+                            {{ parseFloat(reviewSummary).toFixed(2) }}
                         </span>
 
                         <span class="pb-1 text-base text-gray-500">
@@ -249,14 +269,14 @@ const openReview = (review: any) => {
                         </span>
                     </div>
 
-                    <Rating :modelValue="parseInt(reviewSummary)" readonly :cancel="false" class="review-rating mt-3" />
+                    <StarRating :modelValue="parseFloat(reviewSummary)" class="review-rating mt-3 text-2xl" />
 
                     <div class="mt-3 text-xs text-gray-500">
                         {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
                     </div>
                 </div>
             </a>
-           
+
 
             <!-- Reviews -->
             <div class="relative lg:col-span-6">
@@ -275,6 +295,16 @@ const openReview = (review: any) => {
                 </button>
 
                 <div class="grid grid-cols-1 divide-gray-200 lg:grid-cols-4 2xl:grid-cols-5">
+                     <div class="col-span-5 flex justify-end">
+                        <a :href="reviewLink.href"
+                            class="group inline-flex items-center gap-2 text-sm font-medium hover:underline">
+                            {{ reviewLink.text }}
+
+                            <FontAwesomeIcon :icon="faArrowRight"
+                                class=" text-xs transition-transform group-hover:translate-x-1">
+                        </FontAwesomeIcon>
+                        </a>
+                    </div>
                     <div v-for="review in visibleReviews" :key="review.id" @click="openReview(review)"
                         class="flex min-h-[170px] flex-col px-5 py-5 transition hover:bg-gray-50">
                         <Rating :modelValue="review.rating" readonly :cancel="false" class="review-rating-small" />
@@ -319,81 +349,65 @@ const openReview = (review: any) => {
                             </div>
                         </div>
                     </div>
+                  
                 </div>
             </div>
         </div>
     </div>
 
 
-<Dialog
-    v-model:visible="reviewModalVisible"
-    modal
-    dismissableMask
-    :draggable="false"
-    :closable="false"
-    :style="{ width: '640px', maxWidth: '95vw' }"
-    :breakpoints="{ '640px': '100vw' }"
-    :pt="{
-        root: { class: 'overflow-hidden rounded-xl' },
-        header: { class: 'p-0' },
-        content: { class: 'p-0' }
-    }"
->
-    <template #header>
-        <div class="flex items-start gap-3 border-b border-gray-100 px-5 py-4 w-full">
-            <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 text-sm font-semibold text-white">
-                {{ selectedReview.name?.charAt(0)?.toUpperCase() ?? "?" }}
-            </div>
+    <Dialog v-model:visible="reviewModalVisible" modal dismissableMask :draggable="false" :closable="false"
+        :style="{ width: '640px', maxWidth: '95vw' }" :breakpoints="{ '640px': '100vw' }" :pt="{
+            root: { class: 'overflow-hidden rounded-xl' },
+            header: { class: 'p-0' },
+            content: { class: 'p-0' }
+        }">
+        <template #header>
+            <div class="flex items-start gap-3 border-b border-gray-100 px-5 py-4 w-full">
+                <div
+                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 text-sm font-semibold text-white">
+                    {{ selectedReview.name?.charAt(0)?.toUpperCase() ?? "?" }}
+                </div>
 
-            <div class="min-w-0 flex-1">
+                <div class="min-w-0 flex-1">
 
-                <div class="flex items-center gap-2">
-                    <div class="truncate text-sm font-semibold text-gray-900">
-                        {{ selectedReview.name }}
+                    <div class="flex items-center gap-2">
+                        <div class="truncate text-sm font-semibold text-gray-900">
+                            {{ selectedReview.name }}
+                        </div>
+
+                        <span class="text-xs text-gray-400">
+                            •
+                        </span>
+
+                        <span class="text-xs text-gray-500">
+                            {{ useFormatTime(selectedReview.date) }}
+                        </span>
                     </div>
 
-                    <span class="text-xs text-gray-400">
-                        •
-                    </span>
+                    <div class="mt-1 flex items-center gap-2">
+                        <Rating :modelValue="selectedReview.rating" readonly :cancel="false"
+                            class="review-rating-small rating" />
 
-                    <span class="text-xs text-gray-500">
-                        {{ useFormatTime(selectedReview.date) }}
-                    </span>
+                        <span class="text-xs font-medium text-gray-600">
+                            {{ selectedReview.rating }}/5
+                        </span>
+                    </div>
+
                 </div>
 
-                <div class="mt-1 flex items-center gap-2">
-                    <Rating
-                        :modelValue="selectedReview.rating"
-                        readonly
-                        :cancel="false"
-                        class="review-rating-small rating"
-                    />
-
-                    <span class="text-xs font-medium text-gray-600">
-                        {{ selectedReview.rating }}/5
-                    </span>
-                </div>
+                <button @click="reviewModalVisible = false"
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100">
+                    <FontAwesomeIcon :icon="faTimes" class="text-xs" />
+                </button>
 
             </div>
+        </template>
 
-            <button
-                @click="reviewModalVisible = false"
-                class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
-            >
-                <FontAwesomeIcon
-                    :icon="faTimes"
-                    class="text-xs"
-                />
-            </button>
-
-        </div>
-    </template>
-
-    <div class="px-5 pb-4">
-        <p class="whitespace-pre-line text-sm leading-6 text-gray-700">
-            {{ selectedReview.message }}
-        </p>
+        <div class="px-5 pb-4">
+            <p class="whitespace-pre-line text-sm leading-6 text-gray-700">
+                {{ selectedReview.message }}
+            </p>
             <div v-if="selectedReview.web_images?.length" class="flex gap-3">
                 <button v-for="(image, index) in selectedReview.web_images" :key="image.id ?? index" type="button"
                     class="group relative aspect-square w-12 h-12 cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
@@ -401,49 +415,38 @@ const openReview = (review: any) => {
                         class="h-full w-full flex items-center justify-center transition duration-300 group-hover:scale-105" />
                 </button>
             </div>
-   
-        <div
-            v-if="allow_review_reaction && layout?.iris?.is_logged_in"
-            class="mt-1 flex items-center justify-between border-b border-gray-100 pt-3"
-        >
-            <span class="text-xs text-gray-500">
-                Helpful?
-            </span>
-            <div class="flex items-center gap-2">
-                <button
-                    :disabled="reactingKeys[`${selectedReview.id}-review`]"
-                    @click="() => toggleReaction(selectedReview,'review',true)"
-                    :class="[
-                        'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
-                        reactions[selectedReview.id] === 'like'
-                            ? ' text-green-600'
-                            : 'text-gray-500 hover:bg-gray-100'
-                    ]"
-                >
-                    <FontAwesomeIcon :icon="faThumbsUp" />
-                    {{ selectedReview.likes ?? 0 }}
-                </button>
-                <button
-                    :disabled="reactingKeys[`${selectedReview.id}-review`]"
-                    @click="() => toggleReaction(selectedReview,'review',false)"
-                    :class="[
-                        'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
-                        reactions[selectedReview.id] === 'dislike'
-                            ? ' text-red-600'
-                            : 'text-gray-500 hover:bg-gray-100'
-                    ]"
-                >
-                    <FontAwesomeIcon :icon="faThumbsDown" />
-                    {{ selectedReview.dislikes ?? 0 }}
-                </button>
 
+            <div v-if="allow_review_reaction && layout?.iris?.is_logged_in"
+                class="mt-1 flex items-center justify-between border-b border-gray-100 pt-3">
+                <span class="text-xs text-gray-500">
+                    Helpful?
+                </span>
+                <div class="flex items-center gap-2">
+                    <button :disabled="reactingKeys[`${selectedReview.id}-review`]"
+                        @click="() => toggleReaction(selectedReview, 'review', true)" :class="[
+                            'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
+                            reactions[selectedReview.id] === 'like'
+                                ? ' text-green-600'
+                                : 'text-gray-500 hover:bg-gray-100'
+                        ]">
+                        <FontAwesomeIcon :icon="faThumbsUp" />
+                        {{ selectedReview.likes ?? 0 }}
+                    </button>
+                    <button :disabled="reactingKeys[`${selectedReview.id}-review`]"
+                        @click="() => toggleReaction(selectedReview, 'review', false)" :class="[
+                            'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
+                            reactions[selectedReview.id] === 'dislike'
+                                ? ' text-red-600'
+                                : 'text-gray-500 hover:bg-gray-100'
+                        ]">
+                        <FontAwesomeIcon :icon="faThumbsDown" />
+                        {{ selectedReview.dislikes ?? 0 }}
+                    </button>
+
+                </div>
             </div>
-        </div>
-        <div
-            v-if="selectedReview.reply"
-            class="mt-4 border-l-2 border-orange-300 pl-3"
-        >
-            <div class="mb-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
+            <div v-if="selectedReview.reply" class="mt-4 border-l-2 border-orange-300 pl-3">
+                <div class="mb-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
                     {{
                         show_staff_who_reply
                             ? selectedReview.reply_by
@@ -451,42 +454,37 @@ const openReview = (review: any) => {
                     }}
                 </div>
 
-            <p class="whitespace-pre-line text-sm leading-6 text-gray-700">
-                {{ selectedReview.reply }}
-            </p>
-            <div class="flex items-center w-full justify-end gap-2" v-if="allow_review_reply_reaction && layout?.iris?.is_logged_in">
-                <button
-                    :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
-                    @click="() => toggleReaction(selectedReview,'review_reply',true)"
-                    :class="[
-                        'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
-                        replyReactions[selectedReview.id] === 'like'
-                            ? ' text-green-600'
-                            : 'text-gray-500 hover:bg-gray-100'
-                    ]"
-                >
-                    <FontAwesomeIcon :icon="faThumbsUp" />
-                    {{ selectedReview.reply_likes ?? 0 }}
-                </button>
-                <button
-                    :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
-                    @click="() => toggleReaction(selectedReview,'review_reply',false)"
-                    :class="[
-                        'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
-                        replyReactions[selectedReview.id] === 'dislike'
-                            ? ' text-red-600'
-                            : 'text-gray-500 hover:bg-gray-100'
-                    ]"
-                >
-                    <FontAwesomeIcon :icon="faThumbsDown" />
-                    {{ selectedReview.reply_dislikes ?? 0 }}
-                </button>
+                <p class="whitespace-pre-line text-sm leading-6 text-gray-700">
+                    {{ selectedReview.reply }}
+                </p>
+                <div class="flex items-center w-full justify-end gap-2"
+                    v-if="allow_review_reply_reaction && layout?.iris?.is_logged_in">
+                    <button :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
+                        @click="() => toggleReaction(selectedReview, 'review_reply', true)" :class="[
+                            'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
+                            replyReactions[selectedReview.id] === 'like'
+                                ? ' text-green-600'
+                                : 'text-gray-500 hover:bg-gray-100'
+                        ]">
+                        <FontAwesomeIcon :icon="faThumbsUp" />
+                        {{ selectedReview.reply_likes ?? 0 }}
+                    </button>
+                    <button :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
+                        @click="() => toggleReaction(selectedReview, 'review_reply', false)" :class="[
+                            'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
+                            replyReactions[selectedReview.id] === 'dislike'
+                                ? ' text-red-600'
+                                : 'text-gray-500 hover:bg-gray-100'
+                        ]">
+                        <FontAwesomeIcon :icon="faThumbsDown" />
+                        {{ selectedReview.reply_dislikes ?? 0 }}
+                    </button>
 
+                </div>
             </div>
-        </div>
 
-    </div>
-</Dialog>
+        </div>
+    </Dialog>
 </template>
 
 

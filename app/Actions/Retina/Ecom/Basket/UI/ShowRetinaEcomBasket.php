@@ -127,6 +127,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                         'method'     => 'patch'
                     ],
                 ],
+                'is_basket_created'     => (bool) $order,
 
                 'voucher' => $order ? GetVoucherData::run($order->offer_voucher_id) : null,
                 'order'   => $order ? OrderResource::make($order)->resolve() : null,

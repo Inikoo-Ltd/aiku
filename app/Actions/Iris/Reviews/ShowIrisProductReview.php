@@ -12,7 +12,6 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
-use App\Http\Resources\Catalogue\IrisAllReviewsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Reviews\Review;
@@ -20,6 +19,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Catalogue\IrisAllReviewsResource;
 
 class ShowIrisProductReview extends IrisAction
 {
@@ -55,6 +55,7 @@ class ShowIrisProductReview extends IrisAction
                 'slug' => $product->slug,
                 'code' => $product->code,
             ],
+            'heading' => $product->name . " Reviews",
             'shop_profile'      => [
                 'name'              => $shop->name,
                 'email'             => $shop->email,
@@ -81,12 +82,15 @@ class ShowIrisProductReview extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
-        $indexer = IndexReviewsInIris::make();
+        $indexer         = IndexReviewsInIris::make();
+        $product         = $this->product;
+        $extraConditions = fn ($q) => $q->where('reviews.product_id', $product->id);
 
         return Inertia::render('AllReviews', $data)
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(
-                shop: $this->product->shop,
-                scopes: [ReviewScopeEnum::PRODUCT]
+                shop: $product->shop,
+                scopes: [ReviewScopeEnum::PRODUCT],
+                extraConditions: $extraConditions
             )($t->name('reviews')->pageName('reviewsPage')));
     }
 
