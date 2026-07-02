@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
+use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -52,6 +53,12 @@ class PayOrder extends OrgAction
             AttachPaymentToInvoice::make()->action($invoice, $payment, []);
         }
 
+
+        // TODO: This should be moved to a job, and the email should be sent only if the outbox is active and applicable
+        SendInvoicePaidEmailToCustomer::dispatch($order->customer, [
+            'order_id' => $order->id,
+            'amount'   => $payment->amount,
+        ]);
 
         return $payment;
     }
