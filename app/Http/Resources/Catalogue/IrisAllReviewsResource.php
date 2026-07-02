@@ -13,13 +13,15 @@ class IrisAllReviewsResource extends JsonResource
         $scope = $this->scope instanceof ReviewScopeEnum ? $this->scope->value : (string) $this->scope;
 
         $name = match ($scope) {
-            'product', 'family' => $this->product_name ?? null,
-            default             => maskName($this->contact_name),
+            'product' => $this->product_name ?? null,
+            'family'  => $this->family_name ?? null,
+            default   => maskName($this->contact_name),
         };
 
         $code = match ($scope) {
-            'product', 'family' => $this->product_slug ?? null,
-            default             => null,
+            'product' => $this->product_slug ?? null,
+            'family'  => $this->family_code ?? null,
+            default   => null,
         };
 
         return [

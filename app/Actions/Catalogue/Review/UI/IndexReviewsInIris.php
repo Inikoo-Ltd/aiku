@@ -24,7 +24,6 @@ use Closure;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -121,7 +120,7 @@ class IndexReviewsInIris extends OrgAction
 
         return $this->applyQueryOptions($query, $prefix, [
             AllowedFilter::callback('family', function ($query, $value) {
-                $query->where('reviews.product_id', (int) $value);
+                $query->where('reviews.product_category_id', (int) $value);
             }),
         ]);
     }
@@ -173,24 +172,21 @@ class IndexReviewsInIris extends OrgAction
         if ($withFamilyJoin) {
             $scopeCondition = $withProductJoin ? ReviewScopeEnum::FAMILY : null;
             $query->leftJoin('product_categories', function ($join) use ($scopeCondition) {
-                $join->on('product_categories.id', '=', 'reviews.product_id');
+                $join->on('product_categories.id', '=', 'reviews.product_category_id');
                 if ($scopeCondition) {
                     $join->where('reviews.scope', $scopeCondition);
                 }
             });
         }
 
-        if ($withProductJoin || $withFamilyJoin) {
-            if ($withProductJoin && $withFamilyJoin) {
-                $select[] = DB::raw('COALESCE(products.name, product_categories.name) as product_name');
-                $select[] = DB::raw('COALESCE(products.slug, product_categories.slug) as product_slug');
-            } elseif ($withProductJoin) {
-                $select[] = 'products.name as product_name';
-                $select[] = 'products.slug as product_slug';
-            } else {
-                $select[] = 'product_categories.name as product_name';
-                $select[] = 'product_categories.slug as product_slug';
-            }
+        if ($withProductJoin) {
+            $select[] = 'products.name as product_name';
+            $select[] = 'products.slug as product_slug';
+        }
+
+        if ($withFamilyJoin) {
+            $select[] = 'product_categories.name as family_name';
+            $select[] = 'product_categories.code as family_code';
         }
 
         if (auth()->check()) {
@@ -262,7 +258,7 @@ class IndexReviewsInIris extends OrgAction
         } elseif ($parent instanceof ProductCategory) {
             $shop = $parent->shop;
             $query->where('reviews.scope', ReviewScopeEnum::FAMILY)
-                ->where('reviews.product_id', $parent->id);
+                ->where('reviews.product_category_id', $parent->id);
         } else {
             $query->whereIn('reviews.scope', [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER]);
         }
