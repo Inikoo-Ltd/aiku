@@ -58,8 +58,7 @@ trait WithAllegroOAuth
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('Allegro OAuth error: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            return [];
         }
     }
 
@@ -303,6 +302,10 @@ trait WithAllegroOAuth
             'grant_type'    => 'refresh_token',
             'refresh_token' => $refreshToken,
         ]);
+
+        if(blank($result)) {
+            return [];
+        }
 
         $accessTokenExpiresAt = now()->addSeconds($result['expires_in'])->timestamp;
         $refreshTokenExpiresAt = isset($result['refresh_token'])
