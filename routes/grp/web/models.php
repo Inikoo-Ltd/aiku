@@ -154,6 +154,8 @@ use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProdu
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\Dropshipping\Tiktok\Product\MatchPortfolioToCurrentTiktokProduct;
+use App\Actions\Dropshipping\Tiktok\Product\StoreNewProductToCurrentTiktok;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
@@ -839,6 +841,9 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreNewProductToC
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product');
+Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product');
 
 Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class)->name('stored-items.pallets.update');
 Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('stored-items.move');
