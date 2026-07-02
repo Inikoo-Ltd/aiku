@@ -51,7 +51,11 @@ class IndexReviewsInIris extends OrgAction
         $query = $this->baseQuery(withProductJoin: true);
         $this->applyShopConditions($shop, $query, [ReviewScopeEnum::PRODUCT]);
 
-        return $this->applyQueryOptions($query, $prefix);
+        return $this->applyQueryOptions($query, $prefix, [
+            AllowedFilter::callback('product', function ($query, $value) {
+                $query->where('reviews.product_id', (int) $value);
+            }),
+        ]);
     }
 
     public function handleFamilyScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
@@ -59,7 +63,11 @@ class IndexReviewsInIris extends OrgAction
         $query = $this->baseQuery(withFamilyJoin: true);
         $this->applyShopConditions($shop, $query, [ReviewScopeEnum::FAMILY]);
 
-        return $this->applyQueryOptions($query, $prefix);
+        return $this->applyQueryOptions($query, $prefix, [
+            AllowedFilter::callback('family', function ($query, $value) {
+                $query->where('reviews.product_id', (int) $value);
+            }),
+        ]);
     }
 
     public function handleAllScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
@@ -167,7 +175,7 @@ class IndexReviewsInIris extends OrgAction
             ->where('reviews.review_status', ReviewStatusEnum::APPROVED);
     }
 
-    private function applyQueryOptions(QueryBuilder $query, ?string $prefix): LengthAwarePaginator
+    private function applyQueryOptions(QueryBuilder $query, ?string $prefix, array $extraFilters = []): LengthAwarePaginator
     {
         return $query
             ->allowedSorts([
@@ -185,9 +193,7 @@ class IndexReviewsInIris extends OrgAction
                 AllowedFilter::callback('rating', function ($query, $value) {
                     $query->whereRaw('FLOOR(reviews.rating_main) = ?', [(int) $value]);
                 }),
-                AllowedFilter::callback('product', function ($query, $value) {
-                    $query->where('reviews.product_id', (int) $value);
-                }),
+                ...$extraFilters,
             ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
