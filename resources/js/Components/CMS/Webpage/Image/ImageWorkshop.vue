@@ -99,7 +99,9 @@ const resolvedGap = computed(() => {
             <Image :src="image.source" :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`" :imageCover="true" :style="{
               ...getStyles(modelValue.value.layout?.properties, screenType),
               ...getStyles(image.properties, screenType)
-            }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }" />
+            }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }"
+              :height="getStyles(modelValue?.container?.properties, screenType, false)?.height"
+              :width="getStyles(modelValue?.container?.properties, screenType, false)?.width" />
           </component>
         </SwiperSlide>
       </Swiper>
@@ -117,7 +119,9 @@ const resolvedGap = computed(() => {
               :imageCover="true" class="w-full h-full aspect-square object-cover rounded-lg" :style="{
                 ...getStyles(modelValue.value.layout?.properties, screenType),
                 ...getStyles(image.properties, screenType)
-              }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }" />
+              }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }"
+              :height="getStyles(modelValue?.container?.properties, screenType, false)?.height"
+              :width="getStyles(modelValue?.container?.properties, screenType, false)?.width" />
             <div v-else
               class="flex items-center justify-center w-full h-32 bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">
               <font-awesome-icon :icon="['fas', 'image']" class="text-gray-500 text-4xl group-hover:text-gray-700" />
