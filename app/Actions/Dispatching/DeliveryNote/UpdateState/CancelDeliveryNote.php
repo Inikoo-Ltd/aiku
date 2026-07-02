@@ -168,11 +168,11 @@ class CancelDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, ?User $user, $modifyOrder = true): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote, $modifyOrder);
+        return $this->handle($deliveryNote, $user, $modifyOrder);
     }
 
     public function getCommandSignature(): string
