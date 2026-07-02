@@ -270,7 +270,7 @@ const updateCollection = (value: boolean) => {
         <!-- Section: amount of balance, charges, shipping, tax -->
         <div class="col-span-2 md:col-span-1">
             <div v-if="!order" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
-                <div class="">{{ trans("Current balance") }}:</div>
+                <div class="">{{ ctrans("Current balance") }}:</div>
                 <div>
                     {{ locale.currencyFormat(layout?.iris?.currency?.code, balance ?? 0) }}
                 </div>
@@ -281,6 +281,10 @@ const updateCollection = (value: boolean) => {
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
                     {{ trans("Order cancelled, any payments made have been returned to your balance") }}
                 </div>
+            </div>
+
+            <div v-else-if="order?.state === 'handling_blocked'">
+                <!-- INI-1521: hide payment status if handling_blocked -->
             </div>
 
             <template v-else-if="summary?.products?.payment?.pay_status != 'no_need' && !isInBasket">
