@@ -305,7 +305,7 @@ trait WithAllegroOAuth
         ]);
 
         $accessTokenExpiresAt = now()->addSeconds($result['expires_in'])->timestamp;
-        $refreshTokenExpiresAt = isset($tokenData['refresh_token'])
+        $refreshTokenExpiresAt = isset($result['refresh_token'])
             ? now()->addDays(90)->timestamp
             : null;
 
@@ -319,27 +319,6 @@ trait WithAllegroOAuth
         $this->refresh();
 
         return $result;
-    }
-
-    /**
-     * Convenience: refresh the token stored on $this->refresh_token and
-     * update $this->access_token / $this->refresh_token in place, then
-     * persist the new tokens by calling persistAllegroTokens() if defined.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function refreshAndPersistTokens(): array
-    {
-        $tokens = $this->refreshAccessToken($this->refresh_token);
-
-        $this->access_token  = $tokens['access_token'];
-        $this->refresh_token = $tokens['refresh_token'];
-
-        if (method_exists($this, 'persistAllegroTokens')) {
-            $this->persistAllegroTokens($tokens);
-        }
-
-        return $tokens;
     }
 
     // -------------------------------------------------------------------------
