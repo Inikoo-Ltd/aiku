@@ -251,6 +251,13 @@ trait WithAllegroApiServices
         ]);
     }
 
+    public function setOrderCancelled(string $orderId): array
+    {
+        return $this->makeApiRequest('PUT', "/order/checkout-forms/$orderId/fulfillment", [
+            'status' => 'CANCELLED',
+        ]);
+    }
+
     public function addOrderTracking(string $orderId, array $shipmentData): array
     {
         return $this->makeApiRequest('POST', "/order/checkout-forms/$orderId/shipments", [
