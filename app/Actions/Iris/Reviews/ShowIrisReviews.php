@@ -37,12 +37,19 @@ class ShowIrisReviews extends IrisAction
 
         $reviewSettings = Arr::get($shop->settings, 'reviews');
 
-        return match ($tab) {
+        $data = match ($tab) {
             'product' => $this->productTab($shop, $indexer, $shopProfile, $reviewSettings),
             'family'  => $this->familyTab($shop, $indexer, $shopProfile, $reviewSettings),
             'company' => $this->companyTab($shop, $indexer, $shopProfile, $reviewSettings),
             default   => $this->allTab($shop, $indexer, $shopProfile, $reviewSettings),
         };
+
+        return array_merge($data, [
+            'tabs' => [
+                'current'    => $tab,
+                'navigation' => $this->getTabNavigation(),
+            ],
+        ]);
     }
 
     private function allTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
@@ -141,6 +148,16 @@ class ShowIrisReviews extends IrisAction
             ->count();
 
         return (int) round(($recommendedCount / $totalReviews) * 100);
+    }
+
+    private function getTabNavigation(): array
+    {
+        return [
+            ['key' => 'all',     'label' => __('All Reviews')],
+            ['key' => 'company', 'label' => __('Company Reviews')],
+            ['key' => 'family',  'label' => __('Family Reviews')],
+            ['key' => 'product', 'label' => __('Product Reviews')],
+        ];
     }
 
     public function htmlResponse(array $data): Response
