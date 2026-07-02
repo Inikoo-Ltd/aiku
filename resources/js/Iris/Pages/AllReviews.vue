@@ -71,7 +71,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
         <!-- Hero -->
         <section class="bg-white border-b">
             <div class="max-w-7xl mx-auto px-8 py-10 lg:flex lg:items-start lg:justify-between">
-                <div class="lg:max-w-2xl">
+                <div class="lg:w-[65%]">
                     <h1 class="text-4xl font-bold text-gray-900">
                         {{ heroTitle }}
                     </h1>

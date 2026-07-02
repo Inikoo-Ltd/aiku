@@ -232,27 +232,31 @@ const openReview = (review: any) => {
 
         <div v-else class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary -->
-            <div class="flex min-h-[150px] flex-col items-center justify-center px-6 py-6 text-center lg:col-span-1">
-                <div class="text-sm font-semibold uppercase tracking-wider text-gray-900">
-                    {{ ctrans("Customer Rating") }}
+             <a href="/reviews">
+                <div
+                    class="flex min-h-[150px] flex-col items-center justify-center px-6 py-6 text-center lg:col-span-1">
+                    <div class="text-sm font-semibold uppercase tracking-wider text-gray-900">
+                        {{ ctrans("Customer Rating") }}
+                    </div>
+
+                    <div class="mt-3 flex items-end gap-1">
+                        <span class="text-4xl font-bold leading-none">
+                            {{ parseInt(reviewSummary) }}
+                        </span>
+
+                        <span class="pb-1 text-base text-gray-500">
+                            /5
+                        </span>
+                    </div>
+
+                    <Rating :modelValue="parseInt(reviewSummary)" readonly :cancel="false" class="review-rating mt-3" />
+
+                    <div class="mt-3 text-xs text-gray-500">
+                        {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
+                    </div>
                 </div>
-
-                <div class="mt-3 flex items-end gap-1">
-                    <span class="text-4xl font-bold leading-none">
-                        {{ parseInt(reviewSummary) }}
-                    </span>
-
-                    <span class="pb-1 text-base text-gray-500">
-                        /5
-                    </span>
-                </div>
-
-                <Rating :modelValue="parseInt(reviewSummary)" readonly :cancel="false" class="review-rating mt-3" />
-
-                <div class="mt-3 text-xs text-gray-500">
-                    {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
-                </div>
-            </div>
+            </a>
+           
 
             <!-- Reviews -->
             <div class="relative lg:col-span-6">
