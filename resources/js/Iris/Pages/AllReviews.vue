@@ -17,6 +17,7 @@ const props = defineProps<{
     total_reviews: number
     recommend_percent: number
     review_settings: object
+    heading : string
     tabs: {
         current: string
         navigation: { key: string; label: string }[]
@@ -59,7 +60,7 @@ const selectTab = (key: string) => {
 }
 const heroTitle = computed(
     () =>
-        `${props.shop_profile?.name ?? "Shop"} ${props.type === "product" ? "Product" : "Company"} Reviews`
+       props.heading ?  props.heading : `${props.shop_profile?.name ?? "Shop"} ${props.tabs.current != 'all' ? props.tabs.current : ''} Reviews`
 )
 const reviewItems = computed(() => props.reviews?.data ?? [])
 const hasReviews = computed(() => reviewItems.value.length > 0)
@@ -139,7 +140,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                             </span>
                             of customers recommend this
                             <span class="font-medium">
-                                {{ props.type === "product" ? "product" : "company" }}
+                                {{ $props.tabs.current != 'all' ? $props.tabs.current : 'company' }}
                             </span>
                         </p>
                     </div>
