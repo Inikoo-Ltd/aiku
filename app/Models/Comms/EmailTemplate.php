@@ -72,7 +72,7 @@ class EmailTemplate extends Model implements HasMedia, Auditable
     protected $casts = [
         'data'         => 'array',
         'layout'       => 'array',
-        'arguments'       => 'array',
+        'arguments'    => 'array',
         'state'        => EmailTemplateStateEnum::class,
         'builder'      => EmailTemplateBuilderEnum::class,
         'active_at'    => 'datetime',
@@ -80,8 +80,8 @@ class EmailTemplate extends Model implements HasMedia, Auditable
     ];
 
     protected $attributes = [
-        'data'   => '{}',
-        'layout' => '{}',
+        'data'      => '{}',
+        'layout'    => '{}',
         'arguments' => '{}',
     ];
 

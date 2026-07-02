@@ -86,7 +86,7 @@ const loadingRedirect = ref(false)
 					</div>
 				</div>
 
-				<div class="relative w-full h-auto">
+				<div class="relative w-full h-auto my-auto">
 					<div v-html="fieldValue?.text?.text" />
 				</div>
 			</div>

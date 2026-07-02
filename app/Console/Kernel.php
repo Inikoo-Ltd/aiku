@@ -27,6 +27,7 @@ use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
+use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
 use App\Actions\Reviews\AutoPublishReviews;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
@@ -72,6 +73,7 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
+
             $this->logSchedule(
                 $schedule->command(' offer:update_status_from_dates')->hourly()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'OfferUpdateStatusFromDates',
@@ -100,7 +102,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(MonitorWebsitesUptime::makeJob())->everyFiveMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                $schedule->job(MonitorWebsitesUptime::makeJob())->everyTwoMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'MonitorWebsitesUptime',
                 ),
                 name: 'MonitorWebsitesUptime',
@@ -314,6 +316,15 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'FetchEbayOrdersAfterHours',
                 type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('allegro:fetch-orders')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchAllegroOrders',
+                ),
+                name: 'FetchAllegroOrders',
+                type: 'command',
                 scheduledAt: now()->format('H:i')
             );
 
@@ -750,6 +761,16 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->job(FetchFirewallBlockedCountryEvents::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchFirewallBlockedCountryEvents',
+                ),
+                name: 'FetchFirewallBlockedCountryEvents',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
 
             $this->logSchedule(
                 $schedule->command('outboxes:redo_time_series --from=' . now()->subDays(1)->format('Y-m-d') . ' --to=' . now()->format('Y-m-d') . ' --async')

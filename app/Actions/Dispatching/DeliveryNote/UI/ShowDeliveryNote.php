@@ -18,6 +18,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
@@ -59,6 +60,7 @@ class ShowDeliveryNote extends OrgAction
 {
     use WithInertia;
     use GetPlatformLogo;
+    use WithOrderForbiddenCountryCheck;
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
@@ -680,6 +682,7 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ],
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
+            'is_forbidden_delivery'        => $this->isDeliveryForbiddenForShop($deliveryNote->shop, $deliveryNote->deliveryAddress),
             'picker'                       => $deliveryNote->pickerUser,
             'packer'                       => $deliveryNote->packerUser,
             'picked_bays'                  => $pickedBays,

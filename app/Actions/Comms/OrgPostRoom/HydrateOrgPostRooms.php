@@ -24,7 +24,6 @@ class HydrateOrgPostRooms extends HydrateModel
 
     public function handle(OrgPostRoom $orgPostRoom): void
     {
-        OrgPostRoomHydrateIntervals::run($orgPostRoom);
         OrgPostRoomHydrateOutboxes::run($orgPostRoom);
         OrgPostRoomHydrateRuns::run($orgPostRoom);
     }

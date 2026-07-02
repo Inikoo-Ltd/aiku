@@ -145,8 +145,7 @@ class ReviewIOImport implements ToCollection
             $review->update(
                 [
                     'is_online'     => true,
-                    'published_at'  => Carbon::createFromFormat(
-                            'd/m/Y H:i',
+                    'published_at'  => Carbon::parse(
                             $row[$isShopCSV ? 6 : 5]
                         ),
                     'review_status' => ReviewStatusEnum::APPROVED->value,

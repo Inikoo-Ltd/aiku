@@ -29,6 +29,7 @@ class PickingResource extends JsonResource
 {
     public function toArray($request): array
     {
+        //=== PERFORMANCE
         //todo: do this in a left join better
         $pickerName = __('Unknown');
         if ($this->picker) {

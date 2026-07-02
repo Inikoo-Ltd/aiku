@@ -11,21 +11,18 @@ namespace App\Actions\Dropshipping\Ebay\Orders;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedEbayAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Helpers\Address;
-use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class StoreOrderFromEbay extends OrgAction
 {
@@ -33,6 +30,7 @@ class StoreOrderFromEbay extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedEbayAddress;
+    use WithPayAndSubmitOrder;
 
     /**
      * @throws \Throwable
@@ -67,12 +65,7 @@ class StoreOrderFromEbay extends OrgAction
             );
         }
 
-        try {
-            PayOrderAsync::run($order);
-        } catch (Exception $e) {
-            Sentry::captureException($e);
-        }
-        SubmitOrder::run($order);
+        $order = $this->payAndSubmitOrder($order);
     }
 
     /**
