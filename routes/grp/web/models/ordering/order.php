@@ -10,8 +10,6 @@ use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
-use App\Actions\Dispatching\Picking\AssignPackerToPicking;
-use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Dispatching\Picking\SplitPicking;
@@ -114,9 +112,4 @@ Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
     Route::patch('update', UpdatePicking::class)->name('update');
     Route::delete('delete', DeletePicking::class)->name('delete');
     Route::post('split', SplitPicking::class)->name('split');
-
-    Route::name('assign.')->prefix('assign')->group(function () {
-        Route::patch('picker', AssignPickerToPicking::class)->name('picker');
-        Route::patch('packer', AssignPackerToPicking::class)->name('packer');
-    });
 });
