@@ -81,12 +81,15 @@ class ShowIrisProductReview extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
-        $indexer = IndexReviewsInIris::make();
+        $indexer         = IndexReviewsInIris::make();
+        $product         = $this->product;
+        $extraConditions = fn ($q) => $q->where('reviews.product_id', $product->id);
 
         return Inertia::render('AllReviews', $data)
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(
-                shop: $this->product->shop,
-                scopes: [ReviewScopeEnum::PRODUCT]
+                shop: $product->shop,
+                scopes: [ReviewScopeEnum::PRODUCT],
+                extraConditions: $extraConditions
             )($t->name('reviews')->pageName('reviewsPage')));
     }
 
