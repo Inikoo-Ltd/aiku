@@ -1443,7 +1443,25 @@ function handlingItemWithLocation($ctx): array
     return [$deliveryNote, $item->refresh(), $locationOrgStock];
 }
 
+test('picking upsert pick all split and delete', function () {
+    [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
 
+    \App\Actions\Dispatching\Picking\UpsertPicking::run($item, $los, ['quantity' => 3]);
+
+    $item->update(['locked_at' => null]);
+    \App\Actions\Dispatching\Picking\PickAllItem::run($item->refresh(), ['location_org_stock_id' => $los->id]);
+
+    $picking = StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $los->id,
+        'quantity'              => 2,
+    ]);
+
+    \App\Actions\Dispatching\Picking\SplitPicking::run($picking, 1.0);
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking->refresh(), $this->user);
+
+    expect(true)->toBeTrue();
+});
 
 test('picking waiting warehouse and crm flow', function () {
     $settings = $this->organisation->settings;
