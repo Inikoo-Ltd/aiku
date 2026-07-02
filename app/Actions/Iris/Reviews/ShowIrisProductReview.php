@@ -12,7 +12,7 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
-use App\Http\Resources\Catalogue\IrisAllReviewsResource;
+use App\Http\Resources\Catalogue\IrisContactNameReviewsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Reviews\Review;
@@ -65,7 +65,7 @@ class ShowIrisProductReview extends IrisAction
                 'country'           => $shop->country?->name,
             ],
             'review_settings'   => $reviewSettings,
-            'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
+            'reviews'           => IrisContactNameReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
             'recommend_percent' => $totalReviews > 0
