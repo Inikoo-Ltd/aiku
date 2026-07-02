@@ -77,7 +77,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                         {{ heroTitle }}
                     </h1>
 
-                    <div class="flex flex-wrap items-center gap-2 mt-6">
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
                          <StarRating :modelValue="parseFloat(averageRating)" class="text-4xl" />
                     </div>
 
@@ -178,13 +178,6 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                             <div>
                                 <div class="text-2xl font-bold text-gray-900">
                                     {{ props.shop_profile?.name ?? "Unknown Shop" }}
-                                </div>
-                                <div class="mt-1 text-sm text-gray-500">
-                                    {{
-                                        props.type === "product"
-                                            ? "Product reviews summary"
-                                            : "Company reviews summary"
-                                    }}
                                 </div>
                             </div>
                         </div>
