@@ -146,15 +146,14 @@ const rejectReview = (event: MouseEvent, item: any) => {
 
         <template #cell(message)="{ item }">
             <div class="space-y-1">
-                <div class="border-l-2 border-sky-600 pl-3 text-sm italic text-gray-500">
-                    <span class="font-medium not-italic text-sky-600">{{ trans('Message') }}:</span>
+                <div class="border-l-2 border-sky-600 pl-3 text-sm  ">
                     {{ item.message }}
                 </div>
                 <div
                     v-if="item.has_reply && item.existing_reply?.body"
                     class="border-l-2 border-gray-200 pl-3 text-sm italic text-gray-500"
                 >
-                    <span class="font-medium not-italic text-gray-400">{{ trans('Reply') }}:</span>
+                    <span class="font-medium italic text-gray-400">{{ trans('Reply') }}:</span>
                     {{ item.existing_reply.body }}
                 </div>
             </div>

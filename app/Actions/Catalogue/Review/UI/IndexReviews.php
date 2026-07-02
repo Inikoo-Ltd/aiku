@@ -113,7 +113,8 @@ class IndexReviews extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('customers.contact_name', $value);
+                $query->whereAnyWordStartWith('customers.contact_name', $value)
+                    ->orWhereWith('reviews.message', $value)->orWhereWith('reviews.reply_message', $value);
             });
         });
 
