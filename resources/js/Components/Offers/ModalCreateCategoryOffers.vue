@@ -50,8 +50,6 @@ const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(1)
 const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
-const allowanceType = ref<'percentage' | 'free'>('percentage')
-const freeQuantity = ref<number | null>(1)
 const offerCategoryId = ref<number | null>(null)
 const categoryType = ref<'department' | 'subdepartment' | 'family'>('department')
 const isLoadingSubmit = ref(false)
@@ -79,44 +77,25 @@ const categoryRoutes = computed(() => ({
 
 const activeCategoryRoute = computed(() => categoryRoutes.value[categoryType.value])
 
-const canUseFreeAllowance = computed(() => typeOffer.value === 'quantity' && (offerQtyItems.value ?? 0) > 1)
-const freeQuantityMax = computed(() => Math.max(1, (offerQtyItems.value ?? 1) - 1))
-
-const buildAllowancePayload = () => {
-    if (allowanceType.value === 'free') {
-        return {
-            allowance_type: 'free',
-            free_quantity: freeQuantity.value != null ? Math.floor(freeQuantity.value) : null,
-            percentage_off: null,
-        }
-    }
-
-    return {
-        allowance_type: 'percentage',
-        percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
-    }
-}
-
 const submitCategoryOffer = () => {
     // Section: Submit
     isLoadingSubmit.value = true
-    const payload = {
+    
+    axios.post(
+        route('grp.models.category_offer.store', {
+            shop: props.shop_data.id,
+        }),
+        {
             name: offerLabel.value,
             type: typeOffer.value,
             product_category_id: offerCategoryId.value || props.product_category_id,
             trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
             trigger_data_item_amount: offerAmount.value,
-            ...buildAllowancePayload(),
+            percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
             duration: dateType.value,
             start_at: formatDate(startDate.value),
             end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null
         }
-
-    axios.post(
-        route('grp.models.category_offer.store', {
-            shop: props.shop_data.id,
-        }),
-        payload
     )
     .then((response) => {
         notify({
@@ -185,8 +164,6 @@ const resetForm = () => {
     offerLabel.value = ''
     typeOffer.value = 'quantity'
     discountPercentage.value = null
-    allowanceType.value = 'percentage'
-    freeQuantity.value = 1
     offerQtyItems.value = 1
     offerAmount.value = 0
     categoryType.value = 'department'
@@ -202,12 +179,7 @@ const isFormInvalid = computed(() => {
 
     if (!offerLabel.value) return true
 
-    if (allowanceType.value === 'percentage' && !discountPercentage.value) return true
-
-    if (allowanceType.value === 'free') {
-        if (!freeQuantity.value) return true
-        if (freeQuantity.value > freeQuantityMax.value) return true
-    }
+    if (!discountPercentage.value) return true
 
     if (typeOffer.value === 'quantity' && !offerQtyItems.value) {
         return true
@@ -248,18 +220,6 @@ watch([startDate, endDate], () => {
 watch(categoryType, () => {
     if (!props.product_category_id) {
         offerCategoryId.value = null
-    }
-})
-
-watch(canUseFreeAllowance, (canUse) => {
-    if (!canUse) {
-        allowanceType.value = 'percentage'
-    }
-})
-
-watch(freeQuantityMax, (max) => {
-    if (freeQuantity.value != null && freeQuantity.value > max) {
-        freeQuantity.value = max
     }
 })
 
@@ -375,43 +335,9 @@ resetForm();
                         {{ trans('Discount') }}:
                     </div>
 
-                    <div v-if="canUseFreeAllowance" class="flex flex-wrap items-center gap-4">
-                        <label for="allowance-percentage"
-                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
-                            :class="allowanceType === 'percentage'
-                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
-                                : 'border-gray-200 hover:border-gray-300'">
-                            <RadioButton v-model="allowanceType" inputId="allowance-percentage" value="percentage" />
-                            <span>{{ trans('Percentage (%)') }}</span>
-                        </label>
 
-                        <label for="allowance-free"
-                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
-                            :class="allowanceType === 'free'
-                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
-                                : 'border-gray-200 hover:border-gray-300'">
-                            <RadioButton v-model="allowanceType" inputId="allowance-free" value="free" />
-                            <span>{{ trans('Get free items') }}</span>
-                        </label>
-                    </div>
-
-                    <div v-if="allowanceType === 'percentage'">
-                        <InputNumber v-model="discountPercentage" inputId="offer_discount"
-                            :placeholder="trans('Enter percentage')" suffix="%" :min="0" :max="100" class="w-full" />
-                    </div>
-
-                    <div v-else class="space-y-2">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span>{{ trans('Get') }}</span>
-                            <InputNumber v-model="freeQuantity" inputId="free_quantity" :min="1" :max="freeQuantityMax"
-                                class="w-40" inputClass="w-full"
-                                :suffix="' ' + ((freeQuantity ?? 0) > 1 ? trans('items') : trans('item'))" />
-                            <span>{{ trans('for free') }}</span>
-                        </div>
-                        <p class="text-sm text-gray-500">
-                            {{ trans('e.g. buy :buy, get :free free', { buy: String(offerQtyItems ?? 0), free: String(freeQuantity ?? 0) }) }}
-                        </p>
-                    </div>
+                    <InputNumber v-model="discountPercentage" inputId="offer_discount"
+                        :placeholder="trans('Enter percentage')" suffix="%" :min="0" :max="100" class="w-full" />
 
                 </div>
 
