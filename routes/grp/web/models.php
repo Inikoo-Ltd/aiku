@@ -153,6 +153,8 @@ use App\Actions\Dropshipping\Shopify\Product\MatchBulkPortfoliosToCurrentShopify
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
+use App\Actions\Dropshipping\Allegro\Product\MatchPortfolioToCurrentAllegroProduct;
+use App\Actions\Dropshipping\Allegro\Product\StoreNewProductToCurrentAllegro;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use App\Actions\Dropshipping\Tiktok\Product\MatchPortfolioToCurrentTiktokProduct;
 use App\Actions\Dropshipping\Tiktok\Product\StoreNewProductToCurrentTiktok;
@@ -844,6 +846,9 @@ Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreNewProductTo
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product');
 Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-allegro-product', MatchPortfolioToCurrentAllegroProduct::class)->name('portfolio.match_to_existing_allegro_product');
+Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product');
 
 Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class)->name('stored-items.pallets.update');
 Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('stored-items.move');

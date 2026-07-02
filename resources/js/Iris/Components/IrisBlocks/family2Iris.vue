@@ -445,7 +445,7 @@ const contentClass = computed(() =>
 }
 
 :deep(.offer .vd-triggers) {
-  @apply text-[10px] leading-tight opacity-80 truncate max-w-[65px];
+  @apply text-[10px] leading-tight opacity-80 max-w-[7rem] whitespace-normal overflow-visible;
 }
 
 .editor-class h1 {
