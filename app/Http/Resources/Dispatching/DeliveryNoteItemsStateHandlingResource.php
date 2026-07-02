@@ -187,6 +187,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 
             //=== PERFORMANCE
             // DO we actually display this image? if really display need to create:  stocks or org_stocks  jsonb web_images (and follow what we do in products.web_images)
+            // OR --- If vika only use this in a modal, remve this line, and ask vika to get the individual image by ajax when the modal is opened
             'org_stock_image_thumbnail'    => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
             'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
             'pickings'                     => PickingResource::collection($pickings),
