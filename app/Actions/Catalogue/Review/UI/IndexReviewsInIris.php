@@ -106,7 +106,7 @@ class IndexReviewsInIris extends OrgAction
             AllowedFilter::callback('product', function ($query, $value) {
                 $query->where('reviews.product_id', (int) $value);
             }),
-        ]);
+        ], ['products.name']);
     }
 
     public function handleFamilyScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
@@ -120,7 +120,7 @@ class IndexReviewsInIris extends OrgAction
             AllowedFilter::callback('family', function ($query, $value) {
                 $query->where('reviews.product_category_id', (int) $value);
             }),
-        ]);
+        ], ['product_categories.name']);
     }
 
     public function handleAllScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
@@ -130,7 +130,7 @@ class IndexReviewsInIris extends OrgAction
         $this->applyShopConditions($shop, $query, $scopes);
         $this->applyElementGroups($query, $shop, $scopes, $prefix);
 
-        return $this->applyQueryOptions($query, $prefix);
+        return $this->applyQueryOptions($query, $prefix, [], ['products.name', 'product_categories.name']);
     }
 
     private function baseQuery(bool $withProductJoin = false, bool $withFamilyJoin = false): QueryBuilder
@@ -222,19 +222,27 @@ class IndexReviewsInIris extends OrgAction
             ->where('reviews.review_status', ReviewStatusEnum::APPROVED);
     }
 
-    private function applyQueryOptions(QueryBuilder $query, ?string $prefix, array $extraFilters = []): LengthAwarePaginator
+    private function applyQueryOptions(QueryBuilder $query, ?string $prefix, array $extraFilters = [], array $extraSearchColumns = []): LengthAwarePaginator
     {
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
         return $query
             ->allowedSorts([
                 'id',
+                AllowedSort::field('created_at', 'reviews.published_at'),
                 AllowedSort::field('recent', 'reviews.published_at'),
                 AllowedSort::field('rating', 'reviews.rating_main'),
                 AllowedSort::field('helpful', 'reviews.likes'),
             ])
             ->allowedFilters([
-                AllowedFilter::callback('global', function ($query, $value) {
-                    $query->where(function ($query) use ($value) {
+                AllowedFilter::callback('global', function ($query, $value) use ($extraSearchColumns) {
+                    $query->where(function ($query) use ($value, $extraSearchColumns) {
                         $query->whereAnyWordStartWith('customers.contact_name', $value);
+                        foreach ($extraSearchColumns as $column) {
+                            $query->orWhereAnyWordStartWith($column, $value);
+                        }
                     });
                 }),
                 AllowedFilter::callback('rating', function ($query, $value) {
