@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 23-04-2026-16h-29m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -28,11 +28,12 @@ class DeletePickedBay extends OrgAction
 
     public function handle(PickedBay $pickedBay): PickedBay
     {
+        $warehouse = $pickedBay->warehouse;
         $pickedBay->delete();
 
-        WarehouseHydratePickedBays::dispatch($this->warehouse);
-        OrganisationHydratePickedBays::dispatch($this->organisation);
-        GroupHydratePickedBays::dispatch($this->group);
+        WarehouseHydratePickedBays::dispatch($warehouse);
+        OrganisationHydratePickedBays::dispatch($warehouse->organisation);
+        GroupHydratePickedBays::dispatch($warehouse->group);
 
         return $pickedBay;
     }
