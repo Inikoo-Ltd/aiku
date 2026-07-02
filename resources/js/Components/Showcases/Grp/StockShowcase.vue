@@ -71,9 +71,9 @@ console.log(props)
 
 
 <template>
-    <div class="grid md:grid-cols-4 gap-x-1 gap-y-4 p-6">
+    <div class="grid md:grid-cols-4 gap-6 p-6">
         <!-- Section: Trade Units -->
-        <div class="md:col-span-2 pr-6">
+        <div class="md:col-span-2">
             <div class="border rounded-lg overflow-hidden">
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-100 text-gray-600">
@@ -98,43 +98,38 @@ console.log(props)
             </div>
 
             <!-- Card: Stock Summary -->
-        <div class="border rounded mt-4 p-4 bg-white">
-            <!-- Out of Stock -->
-            <!-- <div class="border-b pb-2 mb-2">
-                <p class="font-semibold text-gray-600">Out of stock</p>
-            </div> -->
+            <div class="border rounded mt-4 p-4 bg-white">
+                <!-- Stock Value Section -->
+                <div class="space-y-2 pr-10">
+                    <div class="grid grid-cols-5 gap-x-3 items-center">
 
-            <!-- Stock Value Section -->
-            <div class="space-y-2 pr-10">
-                <div class="grid grid-cols-5 gap-x-3 items-center">
+                        <div class="col-span-2 xtext-right">
+                            {{ ctrans("Future delivered cost") }}
+                        </div>
+                        <div class="col-span-1 text-right">
+                            {{ ctrans("SKU value") }}
+                        </div>
 
-                    <div class="col-span-2 xtext-right">
-                        {{ ctrans("Future delivered cost") }}
-                    </div>
-                    <div class="col-span-1 text-right">
-                        {{ ctrans("SKU value") }}
-                    </div>
-
-                    <div class="col-span-2 text-right">
-                        {{ ctrans("Total stock value") }}
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-5 gap-x-3 items-center">
-
-                    <div class="col-span-2 xtext-right text-2xl font-semibold">
-                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.current_supplier_sku_cost || 0) }}
-                    </div>
-                    <div class="col-span-1 text-right text-2xl font-semibold">
-                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.sku_value || 0) }}
+                        <div class="col-span-2 text-right">
+                            {{ ctrans("Total stock value") }}
+                        </div>
                     </div>
 
-                    <div class="col-span-2 text-right text-2xl font-semibold">
-                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.total_stock_value || 0) }}
+                    <div class="grid grid-cols-5 gap-x-3 items-center">
+
+                        <div class="col-span-2 xtext-right text-2xl font-semibold">
+                            {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.current_supplier_sku_cost || 0) }}
+                        </div>
+                        <div class="col-span-1 text-right text-2xl font-semibold">
+                            {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.sku_value || 0) }}
+                        </div>
+
+                        <div class="col-span-2 text-right text-2xl font-semibold">
+                            {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.total_stock_value || 0) }}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         </div>
 
         <!-- Section: Stocks Management -->

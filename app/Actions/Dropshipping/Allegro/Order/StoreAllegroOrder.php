@@ -51,8 +51,8 @@ class StoreAllegroOrder extends RetinaAction
             'is_shipping_by_external'   => true,
             'platform_id'               => $customerSalesChannel->platform_id,
             'customer_sales_channel_id' => $allegroUser->customer_sales_channel_id,
-            'customer_reference'        => Arr::get($allegroOrders, 'user_id'),
             'platform_order_id'         => Arr::get($allegroOrders, 'id'),
+            'customer_notes'            => Arr::get($allegroOrders, 'note.text'),
             'delivery_address'          => $this->digestAllegroAddress($allegroOrders),
             'data'                      => ['allegro_order' => $allegroOrders]
         ];
@@ -72,7 +72,7 @@ class StoreAllegroOrder extends RetinaAction
             );
         }
 
-        $order = $this->payAndSubmitOrder($order);
+        $this->payAndSubmitOrder($order);
     }
 
     /**
@@ -148,7 +148,7 @@ class StoreAllegroOrder extends RetinaAction
                 if ($product) {
                     $orderedProducts[] = [
                         'historicAsset'           => $product->currentHistoricProduct,
-                        'quantity_ordered'        => Arr::get($item, 'offer.quantity'),
+                        'quantity_ordered'        => Arr::get($item, 'quantity'),
                         'platform_transaction_id' => $item['id']
                     ];
                 }

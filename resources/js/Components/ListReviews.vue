@@ -21,12 +21,22 @@ import { faEye, faEyeSlash, faFolder, faGameConsoleHandheld, faStar } from "@far
 import { inject, ref } from "vue"
 import Image from "@/Common/Components/Image.vue"
 
-const props = defineProps<{
-	data: any[] | TableTS
-	tab: string
-	readonly?: boolean
-	review_settings?: any
-}>()
+const props = withDefaults(
+	defineProps<{
+		data: any[] | TableTS
+		tab: string
+		readonly?: boolean
+		review_settings?: any
+		reaction_routes?: routeType
+		showTagVisibleType?: boolean
+	}>(),
+	{
+		showTagVisibleType:true,
+		reaction_routes:{
+			name : "retina.models.review.react"
+		}
+	}
+)
 
 const layout = inject("layout", {})
 
@@ -91,7 +101,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 	review[dislikeField] = (review[dislikeField] ?? 0) + (isLike ? 0 : 1)
 
 	router.post(
-		route("retina.models.review.react", { review: review.review_id }),
+		route(props.reaction_routes.name, { review: review.review_id }),
 		{
 			target: target,
 			type: isLike ? "like" : "dislike",
@@ -117,7 +127,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 </script>
 
 <template>
-	<div class="p-4">
+	<div class="p-4 px-0">
 		<GridProducts :resource="data" :preserve-scroll="true" :name="tab" :label="'reviews'"
 			:gridClass="'lg:grid-cols-1 xl:grid-cols-1 grid grid-cols-1 gap-0 rating'">
 			<template #card="{ item }">
@@ -138,7 +148,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 									<h3 class="truncate text-sm font-semibold text-gray-900">
 										{{ item.name }}
 									</h3>
-									<Tag rounded :severity="item?.review?.is_public ? 'success' : 'secondary'
+									<Tag v-if="showTagVisibleType" rounded :severity="item?.review?.is_public ? 'success' : 'secondary'
 										" class="text-[10px]">
 										<template #icon>
 											<FontAwesomeIcon :icon="item?.review?.is_public ? faEye : faEyeSlash
@@ -179,13 +189,14 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 
 						<!-- Images -->
 						<div v-if="item.review.review_images?.length" class="flex gap-3">
-							<button v-for="(image, index) in item.review.review_images" :key="image.id ?? index"
-								type="button"
-								class="group relative aspect-square w-12 h-12 cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
-								@click="openImagePreview(item.review.review_images, index)">
-								<Image :src="image.media_url" :alt="image.name" :imageCover="true"
-									class="h-full w-full flex items-center justify-center transition duration-300 group-hover:scale-105" />
-							</button>
+							<slot name="image-item" :item="item" :openImagePreview="openImagePreview" >
+								<button type="button" v-for="(image, index) in item.review.review_images" :key="image.id ?? index"
+									class="group relative aspect-square w-12 h-12 cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
+									@click="openImagePreview(item.review.review_images, index)">
+									<Image :src="image.media_url" :alt="image.name" :imageCover="true"
+										class="h-full w-full flex items-center justify-center transition duration-300 group-hover:scale-105" />
+								</button>
+							</slot>
 						</div>
 					</div>
 
@@ -294,9 +305,12 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 		<Dialog v-model:visible="showImagePreview" modal dismissableMask
 			class="w-full max-w-3xl !border-0 !bg-transparent !shadow-none">
 			<div class="relative flex w-full flex-col items-center justify-center">
+
 				<div class="mb-1 block max-h-[80vh] min-h-[400px] w-full rounded">
+				  <slot name="image-dialog" :images="previewImages[previewIndex]">
 					<Image :src="previewImages[previewIndex]?.media_url" :alt="previewImages[previewIndex]?.name"
 						:imageCover="true" :style="{ objectFit: 'contain' }" />
+				  </slot>
 				</div>
 
 				<template v-if="previewImages.length > 1">

@@ -31,16 +31,6 @@ class CheckAllegroChannel
             return;
         }
 
-        $isExpired = $allegroUser->access_token_expire_in && now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($allegroUser->access_token_expire_in));
-
-        if ($isExpired && $allegroUser->refresh_token) {
-            try {
-                $allegroUser->refreshAndPersistTokens();
-            } catch (\Exception $e) {
-                Sentry::captureException($e);
-            }
-        }
-
         try {
             $checkConnection = $allegroUser->getUserInfo();
 

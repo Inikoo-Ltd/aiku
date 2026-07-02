@@ -14,13 +14,12 @@ import { router, usePage } from "@inertiajs/vue3"
 import { debounce, forEach, findKey } from 'lodash-es'
 import qs from 'qs'
 import { trans } from 'laravel-vue-i18n'
-
+import TableElements from '@/Components/Table/TableElements.vue'
 
 // Table Components
 import Pagination from '@/Components/Table/Pagination.vue'
 import TableFilterSearch from '@/Components/Table/TableFilterSearch.vue'
 import TableWrapper from '@/Components/Table/TableWrapper.vue'
-import HeaderCell from '@/Components/Table/HeaderCell.vue'
 import Image from "@common/Components/Image.vue"
 
 // Product Components
@@ -28,8 +27,6 @@ import RecordCounter from './RecordCounter.vue'
 import EmptyState from './EmptyState.vue'
 import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 
-
-import { clone } from 'lodash-es'
 
 // Types
 import type { Product, QueryBuilderData } from './types'
@@ -375,28 +372,10 @@ function generateNewQueryString(): string {
     return (!query || query === pageName.value + '=1') ? '' : query
 }
 
-function sortBy(column) {
-    if (queryBuilderData.value.sort === column) {
-        queryBuilderData.value.sort = `-${column}`;
-    } else {
-        queryBuilderData.value.sort = column;
-    }
-
+function onSortChange(value: string): void {
+    queryBuilderData.value.sort = value || null;
     queryBuilderData.value.cursor = null;
     queryBuilderData.value.page = 1;
-}
-
-
-
-function header(key) {
-    const intKey = findDataKey('columns', key);
-    const columnData = clone(queryBuilderProps.value.columns[intKey]);
-
-    if (columnData) {
-        columnData.onSort = sortBy;
-    }
-
-    return columnData;
 }
 
 // ============================================================================
@@ -474,16 +453,32 @@ watch(queryBuilderData, async () => {
                             :value="getSearchInputValue('global')" :on-change="changeGlobalSearchValue"
                             :isVisiting="isVisiting" />
                     </div>
+                    
                 </div>
 
-                    <div v-if="showHeader">
-                        <slot v-for="column in queryBuilderProps.columns.filter(item => item.sortable)"
-                            :name="`header(${column.key})`" :header="column">
-                            <HeaderCell :key="`table-${name}-header-${column.key}`" :cell="header(column.key)"
-                                :type="columnsType[column.key]" :column="column" :resource="compResourceData">
-                            </HeaderCell>
-                        </slot>
+                    <div v-if="showHeader" class="flex items-center gap-2">
+                        <label :for="`grid-${name}-sort`" class="text-sm text-gray-500 whitespace-nowrap">{{ trans('Sort by') }}</label>
+                        <select
+                            :id="`grid-${name}-sort`"
+                            :value="queryBuilderData.sort || ''"
+                            @change="onSortChange(($event.target as HTMLSelectElement).value)"
+                            class="rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">{{ trans('Default') }}</option>
+                            <template v-for="column in queryBuilderProps.columns.filter((item: any) => item.sortable)"
+                                :key="`sort-option-${column.key}`">
+                                <option :value="column.key">{{ column.label }} ({{ trans('ascending') }})</option>
+                                <option :value="`-${column.key}`">{{ column.label }} ({{ trans('descending') }})</option>
+                            </template>
+                        </select>
                     </div>
+
+
+                       <!-- Filter: Checkbox element -->
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
+                    <TableElements :elements="queryBuilderProps.elementGroups"
+                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
+                        :tableName="props.name" />
+                </div>
 
             </div>
         </div>
