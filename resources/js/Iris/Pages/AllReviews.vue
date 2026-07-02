@@ -7,6 +7,7 @@ import type { Image as ImageProxy } from "@/types/Image"
 import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import { inject } from "vue"
+import StarRating from "@/Iris/Components/StarRating.vue"
 
 
 const props = defineProps<{
@@ -17,7 +18,7 @@ const props = defineProps<{
     total_reviews: number
     recommend_percent: number
     review_settings: object
-    heading : string
+    heading: string
     tabs: {
         current: string
         navigation: { key: string; label: string }[]
@@ -60,7 +61,7 @@ const selectTab = (key: string) => {
 }
 const heroTitle = computed(
     () =>
-       props.heading ?  props.heading : `${props.shop_profile?.name ?? "Shop"} ${props.tabs.current != 'all' ? props.tabs.current : ''} Reviews`
+        props.heading ? props.heading : `${props.shop_profile?.name ?? "Shop"} ${props.tabs.current != 'all' ? props.tabs.current : ''} Reviews`
 )
 const reviewItems = computed(() => props.reviews?.data ?? [])
 const hasReviews = computed(() => reviewItems.value.length > 0)
@@ -70,22 +71,14 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
     <div class="min-h-screen bg-gray-50">
         <!-- Hero -->
         <section class="bg-white border-b">
-            <div class="max-w-7xl mx-auto px-8 py-10 lg:flex lg:items-start lg:justify-between">
+            <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:flex lg:items-start lg:justify-between">
                 <div class="lg:w-[65%]">
-                    <h1 class="text-4xl font-bold text-gray-900">
+                    <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl">
                         {{ heroTitle }}
                     </h1>
 
-                    <div class="flex items-center gap-2 mt-6">
-                        <span v-for="star in ratingStars" :key="star" :class="star <= Math.round(averageRating)
-                            ? 'text-yellow-400'
-                            : 'text-gray-200'
-                            " class="text-4xl">
-                            ★
-                        </span>
-                        <span class="text-sm text-gray-500">
-                            ({{ averageRating.toFixed(1) }}/5)
-                        </span>
+                    <div class="flex flex-wrap items-center gap-2 mt-6">
+                         <StarRating :modelValue="parseFloat(averageRating)" class="text-4xl" />
                     </div>
 
                     <div class="mt-6 grid gap-4 sm:grid-cols-2">
@@ -112,24 +105,25 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                         </span>
 
                         <div class="relative mt-5 flex items-center justify-center">
-                            <svg class="h-36 w-36 -rotate-90">
+                            <svg viewBox="0 0 160 160"
+                                class="h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 -rotate-90 overflow-visible">
                                 <!-- Background -->
-                                <circle cx="72" cy="72" r="56" stroke="#E5E7EB" stroke-width="12" fill="none" />
+                                <circle cx="80" cy="80" r="60" stroke="#E5E7EB" stroke-width="12" fill="none" />
 
                                 <!-- Progress -->
-                                <circle cx="72" cy="72" r="56" stroke="currentColor" stroke-width="12" fill="none"
+                                <circle cx="80" cy="80" r="60" stroke="currentColor" stroke-width="12" fill="none"
                                     class="text-primary transition-all duration-700" stroke-linecap="round"
-                                    :stroke-dasharray="2 * Math.PI * 56" :stroke-dashoffset="(2 * Math.PI * 56) *
+                                    :stroke-dasharray="2 * Math.PI * 60" :stroke-dashoffset="(2 * Math.PI * 60) *
                                         (1 - (recommend_percent ?? 0) / 100)
                                         " />
                             </svg>
 
-                            <div class="absolute text-center">
-                                <div class="text-2xl font-bold text-primary">
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <div class="text-xl font-bold text-primary sm:text-2xl">
                                     {{ recommend_percent ?? 0 }}%
                                 </div>
-                                <div class="mt-1 text-[10px] text-gray-500">
-                                    Recommended
+                                <div class="mt-1 text-[10px] sm:text-xs text-gray-500">
+                                    {{ ctrans('Recommended') }}
                                 </div>
                             </div>
                         </div>
@@ -138,7 +132,8 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                             <span class="font-semibold text-gray-900">
                                 {{ recommend_percent ?? 0 }}%
                             </span>
-                            of customers recommend this
+                            {{ ctrans(' of customers recommend this') }}
+
                             <span class="font-medium">
                                 {{ $props.tabs.current != 'all' ? $props.tabs.current : 'company' }}
                             </span>
@@ -149,10 +144,11 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
 
             <!-- Tabs -->
             <div class="border-t bg-white">
-                
-                <div class="max-w-7xl mx-auto flex overflow-x-auto text-sm font-semibold text-gray-700">
+
+                <div
+                    class="max-w-7xl mx-auto flex overflow-x-auto px-4 text-sm font-semibold text-gray-700 sm:px-6 lg:px-8">
                     <button v-for="tab in tabs?.navigation" :key="tab.key" type="button"
-                        class="flex-1 whitespace-nowrap border-b-4 px-8 py-6 text-center transition hover:text-gray-900"
+                        class="flex-1 whitespace-nowrap border-b-4 px-5 py-4 text-center transition hover:text-gray-900 sm:px-8 sm:py-6"
                         :class="{
                             'border-primary text-primary': activeTab === tab.key,
                             'border-transparent': activeTab !== tab.key,
@@ -169,7 +165,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                 <!-- Left -->
                 <div class="lg:col-span-4">
                     <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-                        <div class="space-y-6 p-8 text-center">
+                        <div class="space-y-6 p-6 text-center sm:p-8">
                             <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gray-50">
                                 <Image v-if="props.shop_profile?.logo" :src="props.shop_profile.logo"
                                     :alt="props.shop_profile.name ?? 'Shop Logo'" :imageCover="true"
@@ -193,7 +189,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                             </div>
                         </div>
 
-                        <div class="space-y-4 border-t border-gray-100 px-8 py-8 text-gray-600">
+                        <div class="space-y-4 border-t border-gray-100 px-6 py-6 text-gray-600 sm:px-8 sm:py-8">
                             <div v-if="props.shop_profile?.formatted_address" class="flex items-start gap-3">
                                 <FontAwesomeIcon :icon="faLocationDot" class="mt-1 w-4 text-gray-400" />
                                 <span v-html="props.shop_profile.formatted_address"></span>

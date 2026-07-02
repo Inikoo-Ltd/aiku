@@ -67,7 +67,6 @@ class ShowIrisWebpage
         $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
 
         $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
-
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -82,6 +81,7 @@ class ShowIrisWebpage
                 'type'          => $webpage->type,
                 'sub_type'      => $webpage->sub_type,  // 'sub_department', 'department', 'product', 'category'
                 'model_type'    => $webpage->model_type,  // Product, ProductCategory, etc
+                'model_slug'   => $webpage->model?->slug,
                 'product_page'  => $webpage->model instanceof Product
                     ? ['department' => [
                         'name'          => $webpage->model->department?->name,

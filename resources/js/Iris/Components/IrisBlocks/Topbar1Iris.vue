@@ -258,9 +258,8 @@ const goToBundle = () => {
                 </Button>
             </LinkIris>
 
-            <LinkIris v-else href="/app/dropshipping/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris v-else="checkVisible(model?.favourite?.visible || null, isLoggedIn)" href="/app/dropshipping/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                     v-tooltip="trans('Reminder back in stock')"
                     type="transparent"
                     :loading="isLoading"
