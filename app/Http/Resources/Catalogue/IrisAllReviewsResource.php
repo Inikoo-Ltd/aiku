@@ -1,5 +1,10 @@
 <?php
 
+/*
+ * @Author: andiferdiawan (https://github.com/andiferdiawan)
+ * @Copyright: Copyright (c) 2026, andiferdiawan
+ */
+
 namespace App\Http\Resources\Catalogue;
 
 use App\Enums\Catalogue\Review\ReviewReactionTypeEnum;
@@ -12,23 +17,24 @@ class IrisAllReviewsResource extends JsonResource
     {
         $scope = $this->scope instanceof ReviewScopeEnum ? $this->scope->value : (string) $this->scope;
 
-        $name = match ($scope) {
-            'product' => $this->product_name ?? null,
-            'family'  => $this->family_name ?? null,
-            default   => maskName($this->contact_name),
+        $code = match ($scope) {
+            'product' => $this->product_code ?? null,
+            'family'  => $this->family_code ?? null,
+            default   => null,
         };
 
-        $code = match ($scope) {
+        $slug = match ($scope) {
             'product' => $this->product_slug ?? null,
-            'family'  => $this->family_code ?? null,
+            'family'  => $this->family_slug ?? null,
             default   => null,
         };
 
         return [
             'review_id'       => (int) $this->id,
             'scope'           => $scope,
-            'name'            => $name,
+            'name'            => maskName($this->contact_name),
             'code'            => $code,
+            'slug'            => $slug,
             'created_at'      => $this->published_at,
             'review'          => [
                 'review_id'     => (int) $this->id,
