@@ -248,6 +248,13 @@ class SendSesEmail
         foreach (Arr::get($emailData, 'Headers', []) as $key => $header) {
             $mail->addCustomHeader($key, $header);
         }
+
+        // TODO Update this to support attachments
+        // $attachmentPath = storage_path('media/1G/0C/60R30C1J6CSK0C1G/c2f21952.jpg');
+        // if (file_exists($attachmentPath)) {
+        //     $mail->addAttachment($attachmentPath);
+        // }
+
         $mail->isHTML();
         $mail->Subject = $emailData['Message']['Subject']['Data'];
         $mail->CharSet = 'UTF-8';
