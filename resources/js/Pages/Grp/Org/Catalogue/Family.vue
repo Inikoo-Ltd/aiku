@@ -29,6 +29,7 @@ import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
+import ModalCreateMixAndMatchOffer from '@/Components/Offers/ModalCreateMixAndMatchOffer.vue'
 import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
@@ -181,12 +182,19 @@ const showDialog = ref(false)
         </template>
 
         <template #otherBefore>
-            <ModalCreateCategoryOffers
-                v-if="currentTab === 'offers'"
-                :shop_data="props.shop_data"
-                :product_category_id="props.product_category_id"
-                v-tooltip="'Create New Offer'"
-            />
+            <template v-if="currentTab === 'offers'">
+                <ModalCreateCategoryOffers
+                    :shop_data="props.shop_data"
+                    :product_category_id="props.product_category_id"
+                    v-tooltip="'Create New Offer'"
+                />
+                <ModalCreateMixAndMatchOffer
+                    v-if="layout?.app?.environment == 'local'"
+                    :shop_data="props.shop_data"
+                    :product_category_id="props.product_category_id"
+                    v-tooltip="'Create Mix & Match Offer'"
+                />
+            </template>
           <!--   <ModalCreateCategoryReviews
                 v-if="currentTab === 'reviews'"
                 :product_category_id="props.product_category_id"
