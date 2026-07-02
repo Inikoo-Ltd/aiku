@@ -17,6 +17,10 @@ const props = defineProps<{
     total_reviews: number
     recommend_percent: number
     review_settings: object
+    tabs: {
+        current: string
+        navigation: { key: string; label: string }[]
+    }
     shop_profile?: {
         name: string
         email?: string
@@ -26,31 +30,23 @@ const props = defineProps<{
         country?: string
     }
 }>()
-
 const layout = inject("layout", {})
 const ratingStars = computed(() => Array.from({ length: 5 }, (_, index) => index + 1))
 const averageRating = computed(() => props.avg_review ?? 0)
 
-const tabs = [
-    { key: "all", label: "All Reviews" },
-    { key: "company", label: "Company Reviews" },
-    { key: "family", label: "Family Reviews" },
-    { key: "product", label: "Product Reviews" },
-] as const
 
-type TabKey = (typeof tabs)[number]["key"]
 
-const initialTab = (): TabKey => {
+const initialTab = (): string => {
     const paramTab = new URLSearchParams(window.location.search).get("tab")
-    if (paramTab && tabs.some((tab) => tab.key === paramTab)) {
-        return paramTab as TabKey
+    if (paramTab && props.tabs?.navigation?.some((tab) => tab.key === paramTab)) {
+        return paramTab
     }
-    return props.type === "product" ? "product" : "all"
+    return props.tabs?.current || "all"
 }
 
-const activeTab = ref<TabKey>(initialTab())
+const activeTab = ref<string>(initialTab())
 
-const selectTab = (key: TabKey) => {
+const selectTab = (key: string) => {
     if (activeTab.value === key) {
         return
     }
@@ -152,8 +148,9 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
 
             <!-- Tabs -->
             <div class="border-t bg-white">
+                
                 <div class="max-w-7xl mx-auto flex overflow-x-auto text-sm font-semibold text-gray-700">
-                    <button v-for="tab in tabs" :key="tab.key" type="button"
+                    <button v-for="tab in tabs?.navigation" :key="tab.key" type="button"
                         class="flex-1 whitespace-nowrap border-b-4 px-8 py-6 text-center transition hover:text-gray-900"
                         :class="{
                             'border-primary text-primary': activeTab === tab.key,

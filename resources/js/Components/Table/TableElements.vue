@@ -35,6 +35,7 @@ const props = defineProps<{
 	tableName: string
 	employeesRouteNames?: string[]
 	exclusiveFilters?: string[]
+	inPopover?: boolean
 }>()
 // console.log('element', props.elements)
 const emits = defineEmits<{
@@ -189,7 +190,54 @@ onMounted(() => {
 <template>
 	<!-- <pre>{{ elements }}</pre> -->
 
-	<Popover class="relative md:hidden px-3 pb-1">
+	<!-- Mobile: content rendered inline when already inside a parent popover -->
+	<div v-if="inPopover" class="md:hidden w-full">
+		<div
+			v-for="(element, elementScope, idxElement) in elements"
+			:key="`inline-${elementScope}${idxElement}`"
+			class="w-full"
+			:class="idxElement === 0 ? '' : 'mt-4'">
+			<div class="text-center py-1 bg-slate-300 text-gray-600">
+				{{ element.label }}
+			</div>
+			<!-- List of element (checkbox) -->
+			<div
+				class="max-w-96 grid grid-cols-2 rounded overflow-hidden w-full flex-wrap justify-end gap-0.5">
+				<div
+					v-for="(value, elementKey) of element.elements"
+					:key="`inline-${elementKey}${idxElement}`"
+					class="hover:bg-gray-100 flex items-center gap-x-1 px-3 py-2.5 cursor-pointer select-none"
+					:class="[
+						selectedFilters[elementScope]?.includes(elementKey)
+							? 'bg-gray-50'
+							: 'bg-white',
+					]"
+					@click="onClickCheckbox(elementKey, elementScope)"
+					@dblclick="onDoubleClickCheckbox(elementKey, elementScope)"
+					role="filter">
+					<FontAwesomeIcon
+						v-if="selectedFilters[elementScope]?.includes(elementKey)"
+						icon="fal fa-check-square"
+						aria-hidden="true" />
+					<FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
+					<div
+						:class="[
+							selectedFilters[elementScope]?.includes(elementKey)
+								? ''
+								: 'text-gray-400',
+						]"
+						class="space-x-1">
+						<span class="font-normal">{{ value[0] }}</span>
+						<span :class="[value[1] ? 'font-semibold' : 'text-gray-400']" class="">
+							({{ useLocaleStore().number(value[1]) }})
+						</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<Popover v-else class="relative md:hidden px-3 pb-1">
 		<!-- Button: Filter table -->
 		<PopoverButton
 			:as="Button"
