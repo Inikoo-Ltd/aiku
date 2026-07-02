@@ -24,6 +24,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -163,14 +164,21 @@ class IndexReviewsInIris extends OrgAction
             'reviews.reply_message as reply_message',
             'reviews.reply_at',
             'reply_users.contact_name as reply_by',
-            'products.name as product_name',
-            'products.slug as product_slug',
+            DB::raw("COALESCE(products.name, product_categories.name) as product_name"),
+            DB::raw("COALESCE(products.slug, product_categories.slug) as product_slug"),
         ];
 
         $query = QueryBuilder::for(Review::class)
             ->leftJoin('customers', 'customers.id', 'reviews.customer_id')
             ->leftJoin('users as reply_users', 'reviews.reply_by', '=', 'reply_users.id')
-            ->leftJoin('products', 'products.id', '=', 'reviews.product_id');
+            ->leftJoin('products', function ($join) {
+                $join->on('products.id', '=', 'reviews.product_id')
+                    ->where('reviews.scope', ReviewScopeEnum::PRODUCT);
+            })
+            ->leftJoin('product_categories', function ($join) {
+                $join->on('product_categories.id', '=', 'reviews.product_id')
+                    ->where('reviews.scope', ReviewScopeEnum::FAMILY);
+            });
 
         if ($isLoggedIn) {
             $user = auth()->user();
@@ -196,7 +204,7 @@ class IndexReviewsInIris extends OrgAction
 
         $query->select($select)
             ->where('reviews.shop_id', $shop->id)
-            ->where('reviews.scope', ReviewScopeEnum::PRODUCT)
+            ->whereIn('reviews.scope', [ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY])
             ->where('reviews.rating_main', '>=', $minRating)
             ->where('reviews.state', ReviewStateEnum::PUBLISHED)
             ->where('reviews.is_public', true)
@@ -241,7 +249,7 @@ class IndexReviewsInIris extends OrgAction
     {
         return Review::query()
             ->where('shop_id', $shop->id)
-            ->where('scope', ReviewScopeEnum::PRODUCT)
+            ->whereIn('scope', [ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY])
             ->where('state', ReviewStateEnum::PUBLISHED)
             ->where('is_public', true)
             ->where('review_status', ReviewStatusEnum::APPROVED)
