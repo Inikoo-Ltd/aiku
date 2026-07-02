@@ -289,8 +289,8 @@ class UpdateProductCategory extends OrgAction
             'set_main_webpage'              => ['sometimes', 'string'],
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
             'faq'                           => ['sometimes', 'array'],
-            'faq.*.question'                => ['sometimes', 'string'],
-            'faq.*.answer'                  => ['sometimes', 'string'],
+            'faq.*.question'                => ['sometimes', 'nullable', 'string'],
+            'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],
             'faq.*.source_question'         => ['sometimes', 'nullable', 'string'],
             'faq.*.source_answer'           => ['sometimes', 'nullable', 'string'],
         ];
