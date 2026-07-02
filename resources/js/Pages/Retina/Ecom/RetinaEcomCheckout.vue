@@ -103,7 +103,8 @@ const locale = inject("locale", aikuLocaleStructure)
             :summary
             :balance
             :order="order"
-            isInBasket
+            xisInBasket
+            isInCheckout
             class="md:px-4 !px-0"
         />
 
