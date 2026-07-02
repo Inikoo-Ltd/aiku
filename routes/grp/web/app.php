@@ -194,6 +194,8 @@ Route::middleware(
         ->name("devops.")
         ->group(__DIR__."/devops.php");
 
+    Route::group([], __DIR__."/workspace.php");
+
     Route::fallback(function () {
         $status = 404;
 
