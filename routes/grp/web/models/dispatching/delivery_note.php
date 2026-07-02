@@ -26,7 +26,6 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNo
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicking;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
 use App\Actions\Dispatching\PickedBay\ChangePickingBaysDeliveryNote;
 use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
@@ -65,7 +64,6 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('handling', StartHandlingDeliveryNote::class)->name('handling');
         Route::patch('handling-with-trolley', StartHandlingWithTrolleyDeliveryNote::class)->name('handling_with_trolley');
         Route::patch('change-trolley', ChangeTrolleyDeliveryNote::class)->name('change_trolley');
-        Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('handling-blocked', UpdateDeliveryNoteStateToHandlingBlocked::class)->name('handling_blocked');
         Route::patch('packing', StartPackingDeliveryNote::class)->name('packing');
         Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
