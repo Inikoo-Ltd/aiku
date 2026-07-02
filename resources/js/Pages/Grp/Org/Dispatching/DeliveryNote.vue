@@ -411,6 +411,14 @@ const processReturn = () => {
 	// })
 }
 
+watch(
+	(item) => props.tabs,
+	(item: TSTabs) => {
+		if (item.current !== currentTab.value) currentTab.value = item.current;
+	},
+	{ immediate: true }
+);
+
 </script>
 
 <template>

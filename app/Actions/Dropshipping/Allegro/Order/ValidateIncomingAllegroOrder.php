@@ -21,6 +21,10 @@ class ValidateIncomingAllegroOrder extends RetinaAction
 
     public function handle(AllegroUser $allegroUser, $order = []): void
     {
+        $allegroUser->debugWebhooks()->create([
+            'data' => $order
+        ]);
+
         $existingOrder = Order::where('customer_id', $allegroUser->customer_id)
             ->where('platform_order_id', Arr::get($order, 'id'))
             ->exists();
