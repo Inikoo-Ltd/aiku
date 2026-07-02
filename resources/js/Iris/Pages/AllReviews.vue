@@ -77,7 +77,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                         {{ heroTitle }}
                     </h1>
 
-                    <div class="flex flex-wrap items-center gap-2 mt-6">
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
                          <StarRating :modelValue="parseFloat(averageRating)" class="text-4xl" />
                     </div>
 
