@@ -212,10 +212,15 @@ const reviewLink = computed(() => {
             }
 
         case 'product':
-        default:
             return {
                 href: `/reviews/product/${webpage_data.model_slug}`,
                 text: ctrans('See All Reviews Product'),
+            }
+
+        default:
+            return {
+                href: '/reviews',
+                text: ctrans('See All Reviews'),
             }
     }
 })
