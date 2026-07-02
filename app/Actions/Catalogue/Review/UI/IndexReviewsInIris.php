@@ -123,6 +123,46 @@ class IndexReviewsInIris extends OrgAction
         ], ['product_categories.name']);
     }
 
+    public function handleSpecificProductReviews(Product $product, ?string $prefix = null): LengthAwarePaginator
+    {
+        $shop   = $product->shop;
+        $scopes = [ReviewScopeEnum::PRODUCT];
+        $query  = $this->baseQuery();
+        $this->applyShopConditions($shop, $query, $scopes);
+        $query->where('reviews.product_id', $product->id);
+        $this->applyElementGroups($query, $shop, $scopes, $prefix);
+
+        return $this->applyQueryOptions($query, $prefix);
+    }
+
+    public function handleSpecificFamilyReviews(ProductCategory $family, ?string $prefix = null): LengthAwarePaginator
+    {
+        $shop   = $family->shop;
+        $scopes = [ReviewScopeEnum::FAMILY];
+        $query  = $this->baseQuery();
+        $this->applyShopConditions($shop, $query, $scopes);
+        $query->where('reviews.product_category_id', $family->id);
+        $this->applyElementGroups($query, $shop, $scopes, $prefix);
+
+        return $this->applyQueryOptions($query, $prefix);
+    }
+
+    public function handleProductsInFamilyReviews(ProductCategory $family, ?string $prefix = null): LengthAwarePaginator
+    {
+        $shop   = $family->shop;
+        $scopes = [ReviewScopeEnum::PRODUCT];
+        $query  = $this->baseQuery(withProductJoin: true);
+        $this->applyShopConditions($shop, $query, $scopes);
+        $query->where('products.family_id', $family->id);
+        $this->applyElementGroups($query, $shop, $scopes, $prefix);
+
+        return $this->applyQueryOptions($query, $prefix, [
+            AllowedFilter::callback('product', function ($query, $value) {
+                $query->where('reviews.product_id', (int) $value);
+            }),
+        ], ['products.name']);
+    }
+
     public function handleAllScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
         $scopes = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER, ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY];
