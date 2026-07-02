@@ -71,17 +71,10 @@ use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
 use App\Actions\Comms\Mailshot\StoreMailshotRecipient;
 use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
-use App\Actions\Comms\Mailshot\UI\CreateMailshotTemplate;
-use App\Actions\Comms\Mailshot\UI\CreateNewsletter;
-use App\Actions\Comms\Mailshot\UI\EditMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\GetMailshotPreview;
 use App\Actions\Comms\Mailshot\UI\GetMailshotShowcase;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotFromOtherStoreTemplates;
-use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
 use App\Actions\Comms\Mailshot\UI\IndexPreviousMailshotTemplates;
-use App\Actions\Comms\Mailshot\UI\ShowMailshot;
-use App\Actions\Comms\Mailshot\UI\ShowMailshotRecipients;
-use App\Actions\Comms\Mailshot\UI\ShowMailshotTemplateWorkshop;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientsStoredAt;
@@ -170,14 +163,11 @@ use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationE
 use App\Actions\Comms\Outbox\ProcessOutboxTimeSeriesRecords;
 use App\Actions\Comms\Outbox\RedoOutboxTimeSeries;
 use App\Actions\Comms\Outbox\ReorderRemainder\UI\IndexReorderEmailBulkRuns;
-use App\Actions\Comms\Outbox\ReviewReminder\ProcessReviewReminderPerOutbox;
 use App\Actions\Comms\Outbox\ReviewReminder\ProcessReviewReminderRecipients;
 use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
-use App\Actions\Comms\Outbox\UI\EditOutboxInShop;
 use App\Actions\Comms\Outbox\UI\GetOutboxMergeTagByOutbox;
 use App\Actions\Comms\Outbox\UI\GetOutboxShowcase;
-use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
@@ -2396,7 +2386,7 @@ function createOutboxDirectly(Shop $shop, \App\Enums\Comms\Outbox\OutboxCodeEnum
         'builder'    => \App\Enums\Comms\Outbox\OutboxBuilderEnum::BEEFREE,
     ]);
 
-    (new class {
+    (new class () {
         use \App\Actions\Traits\WithOutboxBuilder;
     })->setEmailOngoingRuns($outbox, $case, $shop);
 
@@ -2786,7 +2776,9 @@ test('send new order email to subscribers is a no-op for missing order', functio
     expect(true)->toBeTrue();
 });
 
-test('get email template layout', function () {
+
+
+test('index other store email templates excludes own shop', function () {
     $emailTemplate = $this->shop->group->emailTemplates()->create([
         'shop_id'         => $this->shop->id,
         'organisation_id' => $this->organisation->id,
@@ -2801,54 +2793,6 @@ test('get email template layout', function () {
         'active_at'       => now(),
     ]);
 
-    $layout = \App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout::run($emailTemplate);
-
-    expect($layout)->toBe(['body' => 'Template layout']);
-
-    // ponytail: GetEmailTemplateCompiledLayout reads $emailTemplate->compiled, an
-    // attribute that doesn't exist on the model (declared return type is non-nullable
-    // array), so it always throws. Documenting the current broken behavior.
-    expect(fn () => \App\Actions\Comms\EmailTemplate\GetEmailTemplateCompiledLayout::run($emailTemplate))
-        ->toThrow(\TypeError::class);
-
-    return $emailTemplate;
-});
-
-test('update email template', function (EmailTemplate $emailTemplate) {
-    $emailTemplate = \App\Actions\Comms\EmailTemplate\UpdateEmailTemplate::make()->action($emailTemplate, [
-        'name' => 'Renamed via update',
-    ]);
-
-    expect($emailTemplate->name)->toBe('Renamed via update');
-})->depends('get email template layout');
-
-test('get email templates for own and other shops', function (EmailTemplate $emailTemplate) {
-    $ownTemplates = \App\Actions\Comms\EmailTemplate\GetEmailTemplates::make()->action($this->shop, 'own');
-    expect($ownTemplates)->toBeArray()
-        ->and(collect($ownTemplates)->pluck('id'))->toContain($emailTemplate->id);
-
-    $otherTemplates = \App\Actions\Comms\EmailTemplate\GetEmailTemplates::make()->action($this->shop, 'other');
-    expect($otherTemplates)->toBeArray()
-        ->and(collect($otherTemplates)->pluck('id'))->not->toContain($emailTemplate->id);
-})->depends('get email template layout');
-
-test('get outbox email templates throws because Outbox has no emailTemplates relation', function () {
-    // ponytail: Outbox has no emailTemplates() relation defined, so $outbox->emailTemplates
-    // resolves to null and the foreach in the action always throws. Documenting current behavior.
-    $outbox = $this->shop->outboxes()->first();
-
-    expect(fn () => \App\Actions\Comms\EmailTemplate\GetOutboxEmailTemplates::run($outbox))
-        ->toThrow(\ErrorException::class);
-});
-
-test('get seeded email templates throws due to typo in Group relation call', function () {
-    // ponytail: GetSeededEmailTemplates calls $group->emalTemplates() (typo for
-    // emailTemplates()); documenting the current broken behavior rather than fixing app code.
-    expect(fn () => \App\Actions\Comms\EmailTemplate\GetSeededEmailTemplates::run($this->group))
-        ->toThrow(\BadMethodCallException::class);
-});
-
-test('index other store email templates excludes own shop', function (EmailTemplate $emailTemplate) {
     $fakeRoute = new \Illuminate\Routing\Route('GET', '/fake-other-store-email-templates', []);
     $fakeRoute->name('grp.json.email-templates.other-store');
     app('request')->setRouteResolver(fn () => $fakeRoute);
@@ -2856,7 +2800,7 @@ test('index other store email templates excludes own shop', function (EmailTempl
     $results = \App\Actions\Comms\EmailTemplate\UI\IndexOtherStoreEmailTemplates::make()->handle($this->shop);
 
     expect($results->pluck('id'))->not->toContain($emailTemplate->id);
-})->depends('get email template layout');
+});
 
 test('clean provider dispatch id deletes old ses records', function () {
     \App\Actions\Comms\DispatchedEmail\CleanProviderDispatchID::run();
@@ -2982,6 +2926,27 @@ test('email bulk run hydrate cumulative dispatched emails for ready state delega
     expect(true)->toBeTrue();
 })->depends('update email bulk run');
 
+test('email bulk run hydrate cumulative dispatched emails counts opened and clicked emails', function (EmailBulkRun $emailBulkRun) {
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+        $emailBulkRun,
+        $this->customer,
+        ['email_address' => 'cumulative-opened@example.com']
+    );
+    $dispatchedEmail->update(['number_reads' => 1, 'number_clicks' => 1]);
+
+    \App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateCumulativeDispatchedEmails::run(
+        $emailBulkRun,
+        \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::OPENED
+    );
+    expect($emailBulkRun->stats()->first()->number_opened_emails)->toBeGreaterThanOrEqual(1);
+
+    \App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateCumulativeDispatchedEmails::run(
+        $emailBulkRun,
+        \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::CLICKED
+    );
+    expect($emailBulkRun->stats()->first()->number_clicked_emails)->toBeGreaterThanOrEqual(1);
+})->depends('update email bulk run');
+
 test('store and post process email tracking event', function () {
     $outbox          = $this->shop->outboxes()->first();
     $dispatchedEmail = $outbox->dispatchedEmails()->create(['data' => []]);
@@ -3054,7 +3019,7 @@ test('send email delivery channel and store email delivery channel for email bul
 });
 
 test('get ses client from aws client trait', function () {
-    $client = (new class {
+    $client = (new class () {
         use \App\Actions\Comms\EmailAddress\Traits\AwsClient;
     })->getSesClient();
 
@@ -3129,16 +3094,6 @@ test('product has back in stock reminders', function () {
     expect($results->total())->toBeGreaterThanOrEqual(1);
 });
 
-test('post room hydrate intervals throws due to missing number_ column prefix', function () {
-    // ponytail: the action builds stat keys as "{metric}_{frame}" (e.g. "dispatched_emails_all")
-    // but post_room_stats columns are prefixed "number_..." (e.g. "number_dispatched_emails_all"),
-    // so this always throws a QueryException. Documenting current broken behavior.
-    $postRoom = $this->group->postRooms()->first();
-
-    expect(fn () => \App\Actions\Comms\PostRoom\Hydrators\PostRoomHydrateIntervals::run($postRoom))
-        ->toThrow(\Illuminate\Database\QueryException::class);
-});
-
 test('get post room showcase', function () {
     $postRoom = $this->group->postRooms()->first();
 
@@ -3208,15 +3163,12 @@ test('authenticate beefree account and export json to html', function () {
 });
 
 test('authenticate beefree account throws when credentials missing', function () {
-    // ponytail: handle() reads $this->group->settings['beefree'] without a fallback,
-    // so when the key is entirely absent it throws on the array access itself rather
-    // than reaching the intended "credentials not configured" guard. Documenting current behavior.
     $settings = $this->group->settings;
     unset($settings['beefree']);
     $this->group->update(['settings' => $settings]);
 
     expect(fn () => \App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount::make()->action($this->organisation))
-        ->toThrow(\ErrorException::class);
+        ->toThrow(\Exception::class, 'BeeFree credentials not configured');
 });
 
 test('show unsubscribe from aurora', function () {

@@ -102,7 +102,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(MonitorWebsitesUptime::makeJob())->everyFiveMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                $schedule->job(MonitorWebsitesUptime::makeJob())->everyTwoMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'MonitorWebsitesUptime',
                 ),
                 name: 'MonitorWebsitesUptime',
