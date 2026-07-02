@@ -54,7 +54,7 @@ class ShowIrisReviews extends IrisAction
 
     private function allTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $reviews      = $indexer->handleAllScopeReviews(shop: $shop, prefix: 'reviews');
+        $reviews      = $indexer->handleAllScopeReviews(shop: $shop, prefix: 'all');
         $avgReview    = $indexer->avgByScopeReview($shop, [
             ReviewScopeEnum::SHOP,
             ReviewScopeEnum::ORDER,
@@ -79,7 +79,7 @@ class ShowIrisReviews extends IrisAction
 
     private function productTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $reviews      = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'reviews');
+        $reviews      = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'product');
         $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::PRODUCT]);
         $totalReviews = $reviews->total();
 
@@ -96,7 +96,7 @@ class ShowIrisReviews extends IrisAction
 
     private function familyTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $reviews      = $indexer->handleFamilyScopeReviews(shop: $shop, prefix: 'reviews');
+        $reviews      = $indexer->handleFamilyScopeReviews(shop: $shop, prefix: 'family');
         $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::FAMILY]);
         $totalReviews = $reviews->total();
 
@@ -113,7 +113,7 @@ class ShowIrisReviews extends IrisAction
 
     private function companyTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $reviews      = $indexer->handleCompanyScopeReviews(shop: $shop, prefix: 'reviews');
+        $reviews      = $indexer->handleCompanyScopeReviews(shop: $shop, prefix: 'company');
         $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER]);
         $totalReviews = $reviews->total();
 
