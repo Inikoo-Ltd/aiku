@@ -159,7 +159,9 @@ onMounted(async () => {
               "
               class="card relative isolate flex items-center justify-center overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
               <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
-                class="absolute inset-0 -z-10 w-full h-full object-cover" />
+                class="absolute inset-0 -z-10 w-full h-full object-cover"
+                :height="getStyles(modelValue?.carousel_data?.card_container?.properties, screenType, false)?.height"
+                :width="getStyles(modelValue?.carousel_data?.card_container?.properties, screenType, false)?.width" />
 
               <div class="absolute inset-0 flex flex-col justify-between p-6">
                 <div v-html="data.text" class="w-full"></div>
