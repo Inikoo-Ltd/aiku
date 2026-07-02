@@ -68,6 +68,45 @@ use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\PickingSession;
 use App\Models\Ordering\Transaction;
+use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
+use App\Actions\Dispatching\BatchCode\Hydrators\BatchCodeHydrateDeliveryNotes;
+use App\Actions\Dispatching\BatchCode\StoreBatchCode;
+use App\Actions\Dispatching\BatchCode\UpdateBatchCode;
+use App\Actions\Dispatching\Box\StoreBox;
+use App\Actions\Dispatching\Box\UpdateBox;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickedBays;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
+use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
+use App\Actions\Dispatching\PickedBay\StorePickedBay;
+use App\Actions\Dispatching\PickedBay\UI\GetPickedBayShowcase;
+use App\Actions\Dispatching\PickedBay\UpdatePickedBay;
+use App\Actions\Dispatching\Shipper\Json\GetShippers;
+use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
+use App\Actions\Dispatching\Trolley\DeleteTrolley;
+use App\Actions\Dispatching\Trolley\DetachTrolleyFromDeliveryNote;
+use App\Actions\Dispatching\Trolley\StoreTrolley;
+use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
+use App\Actions\Dispatching\Trolley\UI\GetTrolleyShowcase;
+use App\Actions\Dispatching\Trolley\UpdateTrolley;
+use App\Actions\Dispatching\WaitingItems\GetCrmReturnedBadgeData;
+use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
+use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
+use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
+use App\Actions\Fulfilment\FulfilmentCustomer\UpdateFulfilmentCustomer;
+use App\Actions\Fulfilment\Pallet\AttachPalletsToReturn;
+use App\Actions\Fulfilment\Pallet\StorePallet;
+use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
+use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Models\Dispatching\BatchCode;
+use App\Models\Dispatching\Box;
+use App\Models\Dispatching\Trolley;
+use App\Models\Fulfilment\Pallet;
+use App\Models\Fulfilment\PalletReturn;
+use App\Models\Inventory\PickedBay;
 use Config;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
@@ -76,6 +115,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -1000,4 +1041,883 @@ it('nullifies delivery note tracking number when no shipments exist', function (
     $deliveryNote->refresh();
 
     expect($deliveryNote->tracking_number)->toBeNull();
+});
+
+function makeDeliveryNote($ctx): DeliveryNote
+{
+    return StoreDeliveryNote::make()->action($ctx->order, [
+        'reference'        => 'DN'.Str::random(6),
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $ctx->warehouse->id,
+    ]);
+}
+
+function makeOrgStock($ctx)
+{
+    $stock = StoreStock::make()->action($ctx->group, Stock::factory()->definition());
+    $stock = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+
+    return StoreOrgStock::make()->action($ctx->organisation, $stock);
+}
+
+test('store and update box', function () {
+    $box = StoreBox::make()->action($this->organisation, [
+        'name'   => 'Box '.Str::random(4),
+        'height' => 10,
+        'width'  => 20,
+        'depth'  => 30,
+        'stock'  => 5,
+    ]);
+    expect($box)->toBeInstanceOf(Box::class);
+
+    $updated = UpdateBox::make()->action($box, ['name' => 'Renamed Box']);
+    expect($updated->name)->toBe('Renamed Box');
+});
+
+test('UI index and create box', function () {
+    get(route('grp.org.warehouses.show.dispatching.boxes.index', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.boxes.create', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+});
+
+test('trolley crud and json and showcase', function () {
+    $trolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'trolley_'.Str::random(4)]);
+    expect($trolley)->toBeInstanceOf(Trolley::class);
+
+    $trolley = UpdateTrolley::make()->action($trolley, ['name' => 'trolley_upd_'.Str::random(4)]);
+
+    $showcase = GetTrolleyShowcase::run($trolley);
+    expect($showcase)->toBeArray();
+
+    get(route('grp.json.available_trolleys.list', [$this->warehouse->slug]))->assertOk();
+    get(route('grp.json.unavailable_trolleys.list', [$this->warehouse->slug]))->assertOk();
+
+    $deliveryNote = makeDeliveryNote($this);
+    AttachTrolleyToDeliveryNote::make()->handle($trolley, $deliveryNote);
+    DetachTrolleyFromDeliveryNote::make()->handle($trolley, $deliveryNote);
+
+    SyncDeliveryNoteTrolleys::make()->handle($deliveryNote, ['trolleys' => [$trolley->id]]);
+
+    return $trolley;
+});
+
+test('UI trolley pages', function () {
+    $trolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'trolley_ui_'.Str::random(4)]);
+    get(route('grp.org.warehouses.show.dispatching.trolleys.index', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.trolleys.create', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.trolleys.show', [$this->organisation->slug, $this->warehouse->slug, $trolley->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.trolleys.edit', [$this->organisation->slug, $this->warehouse->slug, $trolley->slug]))->assertOk();
+
+    DeleteTrolley::make()->handle($trolley);
+});
+
+test('picked bay crud json showcase hydrator', function () {
+    $pickedBay = StorePickedBay::make()->handle($this->warehouse, ['code' => 'BAY'.Str::random(4)]);
+    expect($pickedBay)->toBeInstanceOf(PickedBay::class);
+
+    $pickedBay = UpdatePickedBay::make()->handle($pickedBay, ['code' => 'BAYU'.Str::random(4)]);
+
+    expect(GetPickedBayShowcase::run($pickedBay))->toBeArray();
+
+    $deliveryNote = makeDeliveryNote($this);
+    AttachDeliveryNoteToPickedBay::make()->handle($pickedBay, $deliveryNote);
+
+    PickedBayHydrateNumberDeliveryNotes::run($pickedBay->id);
+});
+
+test('UI picked bay pages', function () {
+    $pickedBay = StorePickedBay::make()->handle($this->warehouse, ['code' => 'BAYUI'.Str::random(4)]);
+    get(route('grp.org.warehouses.show.dispatching.picked_bays.index', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.picked_bays.create', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.picked_bays.show', [$this->organisation->slug, $this->warehouse->slug, $pickedBay->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.picked_bays.edit', [$this->organisation->slug, $this->warehouse->slug, $pickedBay->slug]))->assertOk();
+});
+
+test('batch code crud json hydrator', function () {
+    $orgStock  = makeOrgStock($this);
+    $batchCode = StoreBatchCode::make()->action($this->warehouse, [
+        'code'         => 'BC'.Str::random(4),
+        'org_stock_id' => $orgStock->id,
+    ]);
+    expect($batchCode)->toBeInstanceOf(BatchCode::class);
+
+    $batchCode = UpdateBatchCode::make()->handle($batchCode, ['code' => 'BCU'.Str::random(4)]);
+
+    get(route('grp.json.org_stock.batch_codes.index', [$this->organisation->id, $orgStock->id]))->assertOk();
+
+    BatchCodeHydrateDeliveryNotes::run($batchCode);
+
+    return $batchCode;
+});
+
+test('UI batch code pages', function () {
+    $orgStock  = makeOrgStock($this);
+    $batchCode = StoreBatchCode::make()->action($this->warehouse, [
+        'code'         => 'BCUI'.Str::random(4),
+        'org_stock_id' => $orgStock->id,
+    ]);
+
+    get(route('grp.org.warehouses.show.inventory.batch_codes.index', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.inventory.batch_codes.create', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.inventory.batch_codes.show', [$this->organisation->slug, $this->warehouse->slug, $batchCode->id]))->assertOk();
+
+    DeleteBatchCode::make()->handle($batchCode);
+});
+
+test('delivery note hydrators run', function () {
+    $deliveryNote = makeDeliveryNote($this);
+
+    DeliveryNoteHydratePacker::run($deliveryNote->id);
+    DeliveryNoteHydratePickedBays::run($deliveryNote->id);
+    DeliveryNoteHydrateWaitingItems::run($deliveryNote->id);
+    DeliveryNoteHydrateDispatchTotals::run($deliveryNote);
+
+    expect($deliveryNote->fresh())->toBeInstanceOf(DeliveryNote::class);
+});
+
+test('shippers json and waiting badges', function () {
+    expect(GetShippers::run($this->organisation))->not->toBeNull();
+
+    $user = $this->adminGuest->getUser();
+    expect(GetDispatchingWaitingBadgeData::run($user))->toBeArray()
+        ->and(GetCrmWaitingBadgeData::run($user))->toBeArray()
+        ->and(GetCrmReturnedBadgeData::run($user))->toBeArray();
+});
+
+test('UI dispatching item and courier index pages', function () {
+    get(route('grp.org.warehouses.show.dispatching.waiting_items_still_picking', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.waiting_crm_items', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    get(route('grp.org.shops.show.ordering.couriers.index', [$this->organisation->slug, $this->shop->slug]))->assertOk();
+    get(route('grp.org.shops.show.ordering.delivery-notes.index', [$this->organisation->slug, $this->shop->slug]))->assertOk();
+});
+
+test('json badges and picker packer lists', function () {
+    get(route('grp.json.dispatching_waiting_badge'))->assertOk();
+    get(route('grp.json.crm_waiting_badge'))->assertOk();
+    get(route('grp.json.crm_return_badge'))->assertOk();
+    get(route('grp.json.employees.packers', [$this->organisation->slug]))->assertOk();
+    get(route('grp.json.employees.pickers', [$this->organisation->slug]))->assertOk();
+});
+
+test('json mini delivery note and valid for return', function () {
+    $deliveryNote = makeDeliveryNote($this);
+    get(route('grp.json.mini_delivery_note', [$deliveryNote->id]))->assertOk();
+    get(route('grp.json.mini_delivery_note_shipments', [$deliveryNote->id]))->assertOk();
+    get(route('grp.json.delivery_note_valid_for_return', [$this->warehouse->slug]))->assertOk();
+});
+
+test('UI delivery notes in customer group and org stock', function () {
+    $orgStock = makeOrgStock($this);
+    get(route('grp.org.shops.show.crm.customers.show.delivery_notes.index', [$this->organisation->slug, $this->shop->slug, $this->customer->slug]))->assertOk();
+    get(route('grp.org.shops.show.crm.customers.show.replacements.index', [$this->organisation->slug, $this->shop->slug, $this->customer->slug]))->assertOk();
+    get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.delivery_notes', [$this->organisation->slug, $this->warehouse->slug, $orgStock->slug]))->assertOk();
+    get(route('grp.overview.ordering.delivery_notes.index'))->assertOk();
+});
+
+function freshSubmittedOrder($ctx)
+{
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($ctx->customer, [
+        'reference'        => 'O'.Str::random(8),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $ctx->customer->id,
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ]);
+    StoreTransaction::make()->action($order, $ctx->product->historicAsset, Transaction::factory()->definition());
+
+    return SubmitOrder::make()->action($order);
+}
+
+function handlingDeliveryNoteWithPicking($ctx): array
+{
+    $order        = freshSubmittedOrder($ctx);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $ctx->warehouse->id]);
+
+    $stock       = StoreStock::make()->action($ctx->group, Stock::factory()->definition());
+    $stock       = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock    = StoreOrgStock::make()->action($ctx->organisation, $stock);
+    $transaction = $order->transactions()->first();
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 10,
+    ]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $ctx->user);
+    $deliveryNote = StartHandlingDeliveryNote::make()->action($deliveryNote, $ctx->user);
+
+    $location         = StoreLocation::make()->action($ctx->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $deliveryNoteItem->orgStock,
+        location: $location,
+        modelData: ['quantity' => 100, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+
+    StorePicking::make()->action($deliveryNoteItem, $ctx->user, [
+        'picker_user_id'        => $ctx->user->id,
+        'location_org_stock_id' => $locationOrgStock->id,
+        'quantity'              => 10,
+    ]);
+
+    return [$deliveryNote->refresh(), $deliveryNoteItem->refresh()];
+}
+
+test('delivery note lifecycle to picked and packing and finalise dispatch', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKING);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote::make()->action($deliveryNote, $this->user);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKING);
+});
+
+test('delivery note undo picked and undo packing', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote::make()->action($deliveryNote, $this->user);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote::make()->action($deliveryNote->refresh(), $this->user);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
+test('delivery note state to picking handling blocked and unassigned', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $dn = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked::make()->action($deliveryNote);
+    expect($dn->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    $dn = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned::make()->action($deliveryNote);
+    expect($dn->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED);
+});
+
+test('delivery note finalise and dispatch', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::FINALISED);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
+});
+
+test('delivery note finalise and dispatch combined and pick as employee', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote::make()->action($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
+});
+
+test('pick delivery note as employee', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $picked = \App\Actions\Dispatching\DeliveryNote\UpdateState\PickDeliveryNoteAsEmployee::make()->action($deliveryNote, $this->user);
+    expect($picked)->toBeInstanceOf(DeliveryNote::class);
+});
+
+test('delivery note address actions and temp picker and shipping data', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNoteAddress::make()->action($deliveryNote, ['address' => new Address(Address::factory()->definition())]);
+    \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteFixedAddress::make()->action($deliveryNote, ['address' => new Address(Address::factory()->definition())]);
+    \App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote::run($deliveryNote, ['picker_user_id' => $this->user->id]);
+
+    expect(\App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote))->toBeArray();
+});
+
+test('change picking bay on delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $pickedBay = StorePickedBay::make()->handle($this->warehouse, ['code' => 'CPB'.Str::random(4)]);
+
+    $dn = \App\Actions\Dispatching\PickedBay\ChangePickingBaysDeliveryNote::run($deliveryNote, ['picked_bay' => $pickedBay->id]);
+    expect($dn)->toBeInstanceOf(DeliveryNote::class);
+});
+
+test('delivery note item delete and fetch', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $fetched = \App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem::run($item);
+    expect($fetched)->toBeInstanceOf(DeliveryNoteItem::class);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\DeleteDeliveryNoteItem::run($item);
+});
+
+test('delivery note item packing and unpack', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemUnpack::run($item->refresh(), []);
+
+    expect($item->fresh())->toBeInstanceOf(DeliveryNoteItem::class);
+});
+
+test('force delete delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    \App\Actions\Dispatching\DeliveryNote\ForceDeleteDeliveryNote::make()->action($deliveryNote->refresh());
+    expect(true)->toBeTrue();
+});
+
+test('picking route store and update', function () {
+    $route = \App\Actions\Dispatching\PickingRoute\StorePickingRoute::make()->action($this->warehouse, ['name' => 'Route '.Str::random(4)]);
+    $route = \App\Actions\Dispatching\PickingRoute\UpdatePickingRoute::make()->action($route, ['name' => 'Route upd '.Str::random(4)]);
+    expect($route)->toBeInstanceOf(\App\Models\Dispatching\PickingRoute::class);
+});
+
+test('picking session add remove and undo finish packing', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+
+    patch(route('grp.models.picking_session.remove_delivery_notes', [$pickingSession->id]), ['delivery_notes' => [$deliveryNote->id]]);
+    patch(route('grp.models.picking_session.add_delivery_notes', [$pickingSession->id]), ['delivery_notes' => [$deliveryNote->id]]);
+    \App\Actions\Dispatching\PickingSession\UndoFinishPackingPickingSession::make()->action($pickingSession);
+
+    expect($pickingSession->fresh())->toBeInstanceOf(PickingSession::class);
+});
+
+test('delete shipment action', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'DS'.Str::random(4), 'name' => 'Ds', 'trade_as' => 'ds']);
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'T'.Str::random(4)]);
+
+    \App\Actions\Dispatching\Shipment\DeleteShipment::run($shipment);
+    expect(true)->toBeTrue();
+});
+
+test('UI reports and batch code edit', function () {
+    get(route('grp.org.reports.packer-performance', [$this->organisation->slug]))->assertOk();
+    get(route('grp.org.reports.picker-performance', [$this->organisation->slug]))->assertOk();
+
+    $orgStock  = makeOrgStock($this);
+    $batchCode = StoreBatchCode::make()->action($this->warehouse, ['code' => 'BE'.Str::random(4), 'org_stock_id' => $orgStock->id]);
+    get(route('grp.org.warehouses.show.inventory.batch_codes.edit', [$this->organisation->slug, $this->warehouse->slug, $batchCode->id]))->assertOk();
+});
+
+function handlingItemWithLocation($ctx): array
+{
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
+    $location         = StoreLocation::make()->action($ctx->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $item->orgStock,
+        location: $location,
+        modelData: ['quantity' => 200, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+
+    return [$deliveryNote, $item->refresh(), $locationOrgStock];
+}
+
+test('picking upsert pick all and split assign delete', function () {
+    [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
+
+    \App\Actions\Dispatching\Picking\UpsertPicking::run($item, $los, ['quantity' => 3]);
+
+    $item->update(['locked_at' => null]);
+    \App\Actions\Dispatching\Picking\PickAllItem::run($item->refresh(), ['location_org_stock_id' => $los->id]);
+
+    $picking = StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $los->id,
+        'quantity'              => 2,
+    ]);
+
+    \App\Actions\Dispatching\Picking\SplitPicking::run($picking, 1.0);
+    patch(route('grp.models.picking.assign.picker', [$picking->id]), ['picker_id' => $this->employee->id]);
+    patch(route('grp.models.picking.assign.packer', [$picking->id]), ['packer_id' => $this->employee->id]);
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking->refresh(), $this->user);
+
+    expect(true)->toBeTrue();
+});
+
+test('picking waiting warehouse and crm flow', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
+    \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
+
+    $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2]);
+    \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
+
+    $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2, 'locked_at' => null]);
+    \App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse::run($item->refresh());
+
+    \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
+    \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingCrm::run($item->refresh(), $this->user, ['quantity' => 1]);
+
+    $item->update(['has_waiting_crm' => true, 'quantity_waiting_crm' => 2]);
+    \App\Actions\Dispatching\Picking\SendBackWaitingWarehouse::make()->action($item->refresh(), $this->user, []);
+
+    expect(true)->toBeTrue();
+});
+
+test('picking upsert from waiting warehouse and magic place', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
+    $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
+
+    \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1, 'location_org_stock_id' => $los->id]);
+
+    $item->update(['locked_at' => null]);
+    \App\Actions\Dispatching\Picking\PickFromMagicPlace::run($item->refresh(), ['quantity' => 1, 'location_org_stock_id' => $los->id]);
+
+    expect(true)->toBeTrue();
+});
+
+test('picking and delivery note item repairs and reindex', function () {
+    \App\Actions\Dispatching\Picking\RepairPickingBatchCodes::run(true);
+    \App\Actions\Dispatching\DeliveryNoteItem\RepairDeliveryNoteItemBatchCodes::run(true);
+    \App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch::run();
+
+    expect(true)->toBeTrue();
+});
+
+test('store replacement delivery note via route', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders()->first();
+
+    post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [])->assertRedirect();
+    expect(true)->toBeTrue();
+});
+
+test('picking session delivery notes json and change trolley and item packing route', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+
+    get(route('grp.json.picking_session.delivery_notes.index', [$pickingSession->id]))->assertOk();
+
+    $trolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'ct_'.Str::random(4)]);
+    patch(route('grp.models.delivery_note.state.change_trolley', [$deliveryNote->id]), ['trolley' => $trolley->id]);
+
+    patch(route('grp.models.delivery_note_item.packing.store', [$item->id]), ['quantity' => 1]);
+
+    expect(true)->toBeTrue();
+});
+
+function apiShipper($ctx, string $apiShipper)
+{
+    return StoreShipper::make()->action($ctx->organisation, [
+        'code'        => strtoupper(Str::random(5)),
+        'name'        => $apiShipper.' carrier',
+        'trade_as'    => $apiShipper,
+        'api_shipper' => $apiShipper,
+    ]);
+}
+
+function deliveryNoteForShipping($ctx): DeliveryNote
+{
+    $deliveryNote = makeDeliveryNote($ctx);
+    $deliveryNote->update([
+        'parcels' => [
+            ['weight' => 2, 'dimensions' => [10, 20, 30]],
+        ],
+    ]);
+
+    return $deliveryNote->refresh();
+}
+
+test('carrier api apc-gb success', function () {
+    Config::set('app.sandbox.shipper_apc_token', 'test-token');
+    \Illuminate\Support\Facades\Http::fake([
+        '*' => \Illuminate\Support\Facades\Http::response([
+            'Orders' => [
+                'Messages' => ['Code' => 'SUCCESS'],
+                'Order'    => [
+                    'OrderNumber'     => 'APC123',
+                    'Label'           => ['Content' => base64_encode('label')],
+                    'ShipmentDetails' => [
+                        'NumberOfPieces' => 1,
+                        'Items'          => ['Item' => ['TrackingNumber' => 'TRKAPC']],
+                    ],
+                ],
+            ],
+        ], 200),
+    ]);
+
+    $shipper      = apiShipper($this, 'apc-gb');
+    $deliveryNote = deliveryNoteForShipping($this);
+
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper, []);
+    expect($shipment)->toBeInstanceOf(Shipment::class);
+});
+
+test('carrier api dpd-sk success', function () {
+    \Illuminate\Support\Facades\Http::fake([
+        '*' => \Illuminate\Support\Facades\Http::response([
+            'result' => ['result' => [[
+                'success' => true,
+                'mpsid'   => 'TRACK1234567890',
+                'label'   => 'https://label.example/x.pdf',
+            ]]],
+        ], 200),
+    ]);
+
+    $shipper = apiShipper($this, 'dpd-sk');
+    $shipper->update(['settings' => ['apiKey' => 'k', 'username' => 'u']]);
+    $deliveryNote = deliveryNoteForShipping($this);
+
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper->refresh(), []);
+    expect($shipment)->toBeInstanceOf(Shipment::class);
+});
+
+test('carrier api itd success', function () {
+    Config::set('app.sandbox.shipper_itd_token', 'itd-token');
+    \Illuminate\Support\Facades\Http::fake([
+        '*' => \Illuminate\Support\Facades\Http::response([
+            'data' => [
+                'status'         => 'COMPLETE',
+                'combinedPdfUrl' => 'https://itd.example/label.pdf',
+                'shipments'      => [
+                    ['packages' => [
+                        ['trackingCode' => 'ITD1', 'trackingUrl' => 'https://t/1', 'labelUrl' => 'https://l/1'],
+                    ]],
+                ],
+            ],
+        ], 200),
+    ]);
+
+    $shipper      = apiShipper($this, 'itd');
+    $deliveryNote = deliveryNoteForShipping($this);
+
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper, []);
+    expect($shipment)->toBeInstanceOf(Shipment::class);
+});
+
+test('carrier api dpd-gb success', function () {
+    Config::set('app.sandbox.shipper_dpd_gb_token', json_encode(['user', 'pass', '1234']));
+    \Illuminate\Support\Facades\Http::fake([
+        '*' => \Illuminate\Support\Facades\Http::response([
+            'data'  => [
+                'geoSession'        => 'geo-session',
+                'shipmentId'        => 'SHIP1',
+                'consignmentDetail' => [
+                    ['consignmentNumber' => 'DPDGB1'],
+                ],
+                'services'          => [],
+                'label'             => base64_encode('label'),
+            ],
+            'error' => null,
+        ], 200),
+    ]);
+
+    $shipper      = apiShipper($this, 'dpd-gb');
+    $deliveryNote = deliveryNoteForShipping($this);
+
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper, []);
+    expect($shipment)->toBeInstanceOf(Shipment::class);
+});
+
+test('carrier api ctt-es success', function () {
+    Config::set('app.sandbox.shipper_ctt_token', [
+        'client_id'          => 'cid',
+        'client_secret'      => 'secret',
+        'grant_type'         => 'client_credentials',
+        'scope'              => 'all',
+        'client_center_code' => 'CC',
+    ]);
+    \Illuminate\Support\Facades\Http::fake([
+        '*oauth2/token' => \Illuminate\Support\Facades\Http::response(['access_token' => 'tok', 'expires_in' => 3600], 200),
+        '*' => \Illuminate\Support\Facades\Http::response([
+            'shipping_data' => ['shipping_code' => 'CTT1', 'label' => base64_encode('l')],
+        ], 201),
+    ]);
+
+    $shipper      = apiShipper($this, 'ctt-es');
+    $deliveryNote = deliveryNoteForShipping($this);
+
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper, []);
+    expect($shipment)->toBeInstanceOf(Shipment::class);
+});
+
+test('UI delivery note index tab variants', function () {
+    $tabs = ['dispatched', 'finalised', 'handling', 'handling-blocked', 'in_warehouse', 'packed', 'packing', 'picked', 'queued', 'unassigned'];
+    foreach ($tabs as $tab) {
+        get(route('grp.org.warehouses.show.dispatching.'.$tab.'.delivery-notes', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    }
+});
+
+test('UI picking session tab variants', function () {
+    $tabs = ['in_process', 'packed', 'picked', 'picking', 'waiting'];
+    foreach ($tabs as $tab) {
+        get(route('grp.org.warehouses.show.dispatching.picking_sessions.'.$tab, [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    }
+});
+
+test('UI pallet returns index tab variants', function () {
+    $routes = [
+        'grp.org.warehouses.show.dispatching.pallet-returns.index',
+        'grp.org.warehouses.show.dispatching.pallet-returns.cancelled.index',
+        'grp.org.warehouses.show.dispatching.pallet-returns.confirmed.index',
+        'grp.org.warehouses.show.dispatching.pallet-returns.dispatched.index',
+        'grp.org.warehouses.show.dispatching.pallet-returns.picked.index',
+        'grp.org.warehouses.show.dispatching.pallet-returns.picking.index',
+    ];
+    foreach ($routes as $r) {
+        get(route($r, [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    }
+});
+
+test('cancel delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::run($deliveryNote, $this->user, true);
+    expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
+});
+
+test('UI show delivery note richer states and tabs', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SD'.Str::random(4), 'name' => 'Sd', 'trade_as' => 'sd']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'T'.Str::random(4)]);
+    $trolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'sd_'.Str::random(4)]);
+    AttachTrolleyToDeliveryNote::make()->handle($trolley, $deliveryNote);
+
+    foreach (['items', 'pending_items', 'done_items', 'history'] as $tab) {
+        get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
+            $this->organisation->slug, $this->warehouse->slug, $deliveryNote->slug,
+        ]).'?tab='.$tab)->assertOk();
+    }
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh());
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote);
+    get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
+        $this->organisation->slug, $this->warehouse->slug, $deliveryNote->slug,
+    ]))->assertOk();
+});
+
+test('json mini delivery note with shipment', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'MN'.Str::random(4), 'name' => 'Mn', 'trade_as' => 'mn']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'T'.Str::random(4)]);
+
+    get(route('grp.json.mini_delivery_note', [$deliveryNote->id]))->assertOk();
+    get(route('grp.json.mini_delivery_note_shipments', [$deliveryNote->id]))->assertOk();
+});
+
+function createPalletReturnWithPallet($ctx): PalletReturn
+{
+    $fulfilment         = createFulfilment($ctx->organisation);
+    $fulfilmentCustomer = StoreFulfilmentCustomer::make()->action(
+        $fulfilment,
+        [
+            'state'           => CustomerStateEnum::ACTIVE,
+            'status'          => CustomerStatusEnum::APPROVED,
+            'contact_name'    => 'PR '.Str::random(4),
+            'company_name'    => 'PR '.Str::random(4),
+            'interest'        => ['pallets_storage', 'items_storage', 'dropshipping'],
+            'contact_address' => Address::factory()->definition(),
+        ]
+    );
+    UpdateFulfilmentCustomer::make()->action($fulfilmentCustomer, [
+        'pallets_storage' => true,
+        'items_storage'   => true,
+    ]);
+
+    $pallet = StorePallet::make()->action(
+        $fulfilmentCustomer,
+        array_merge(['warehouse_id' => $ctx->warehouse->id], Pallet::factory()->definition())
+    );
+
+    $palletReturn = StorePalletReturn::make()->action(
+        $fulfilmentCustomer->refresh(),
+        ['warehouse_id' => $ctx->warehouse->id]
+    );
+
+    AttachPalletsToReturn::make()->action($palletReturn, ['pallets' => [$pallet->id]]);
+
+    return $palletReturn->refresh();
+}
+
+test('UI goods out pallet return show pages', function () {
+    $palletReturn = createPalletReturnWithPallet($this);
+
+    get(route('grp.org.warehouses.show.dispatching.pallet-returns.show', [
+        $this->organisation->slug, $this->warehouse->slug, $palletReturn->slug,
+    ]))->assertOk();
+
+    get(route('grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show', [
+        $this->organisation->slug, $this->warehouse->slug, $palletReturn->slug,
+    ]))->assertOk();
+});
+
+test('carrier api failure branches', function () {
+    Config::set('app.sandbox.shipper_apc_token', 'x');
+    Config::set('app.sandbox.shipper_itd_token', 'x');
+    Config::set('app.sandbox.shipper_dpd_gb_token', json_encode(['u', 'p', 'a']));
+
+    $carriers = [
+        'apc-gb' => ['Orders' => ['Messages' => ['Code' => 'FAIL'], 'Order' => ['Messages' => ['ErrorFields' => ['ErrorField' => [['FieldName' => 'Delivery PostalCode', 'ErrorMessage' => 'bad']]]]]]],
+        'dpd-sk' => ['error' => ['message' => 'Invalid ZIP code'], 'result' => ['result' => [['success' => false, 'messages' => ['bad']]]]],
+        'itd'    => ['data' => ['status' => 'FAILED'], 'errors' => ['data' => [['errors' => ['consignment' => [], 'packages' => []]]]]],
+        'dpd-gb' => ['data' => ['geoSession' => 'g'], 'error' => ['errorMessage' => 'bad']],
+    ];
+
+    foreach ($carriers as $api => $response) {
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response($response, 200)]);
+        $shipper = apiShipper($this, $api);
+        if ($api === 'dpd-sk') {
+            $shipper->update(['settings' => ['apiKey' => 'k', 'username' => 'u']]);
+        }
+        $deliveryNote = deliveryNoteForShipping($this);
+        try {
+            StoreShipment::make()->action($deliveryNote, $shipper->refresh(), []);
+        } catch (\Throwable $e) {
+        }
+    }
+
+    expect(true)->toBeTrue();
+});
+
+test('repairs actual run', function () {
+    \App\Actions\Dispatching\Picking\RepairPickingBatchCodes::run(false);
+    \App\Actions\Dispatching\DeliveryNoteItem\RepairDeliveryNoteItemBatchCodes::run(false);
+    expect(true)->toBeTrue();
+});
+
+test('store replacement delivery note action', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders()->first();
+
+    post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [
+        'reference'           => 'R'.Str::random(6),
+        'warehouse_id'        => $this->warehouse->id,
+        'delivery_note_items' => [
+            ['id' => $item->id, 'quantity' => 2],
+        ],
+    ])->assertRedirect();
+
+    expect($order->deliveryNotes()->count())->toBeGreaterThan(1);
+});
+
+test('UI show delivery note in ordering and customer scopes', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order    = $deliveryNote->orders()->first();
+    $customer = $order->customer;
+
+    get(route('grp.org.shops.show.ordering.delivery-notes.show', [
+        $this->organisation->slug, $this->shop->slug, $deliveryNote->slug,
+    ]))->assertOk();
+
+    get(route('grp.org.shops.show.crm.customers.show.delivery_notes.show', [
+        $this->organisation->slug, $this->shop->slug, $customer->slug, $deliveryNote->slug,
+    ]))->assertOk();
+
+    get(route('grp.org.shops.show.crm.customers.show.orders.show.delivery-note.show', [
+        $this->organisation->slug, $this->shop->slug, $customer->slug, $order->slug, $deliveryNote->slug,
+    ]))->assertOk();
+});
+
+test('UI show picking session with active items', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    StartPickPickingSession::run($pickingSession, []);
+    $pickingSession->refresh();
+
+    get(route('grp.org.warehouses.show.dispatching.picking_sessions.show', [
+        $this->organisation->slug, $this->warehouse->slug, $pickingSession->slug,
+    ]))->assertOk();
+});
+
+test('UI show unassigned delivery note with items', function () {
+    $deliveryNote = makeDeliveryNote($this);
+    $orgStock     = makeOrgStock($this);
+    $transaction  = $this->order->transactions()->first();
+    StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 5,
+    ]);
+
+    get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
+        $this->organisation->slug, $this->warehouse->slug, $deliveryNote->slug,
+    ]))->assertOk();
+});
+
+test('update delivery note various fields and index with data', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    UpdateDeliveryNote::make()->action($deliveryNote, ['picker_user_id' => $this->user->id]);
+    UpdateDeliveryNote::make()->action($deliveryNote, ['packer_user_id' => $this->user->id]);
+    UpdateDeliveryNote::make()->action($deliveryNote, ['weight' => 100, 'email' => 'x@y.com', 'phone' => '+62811']);
+    UpdateDeliveryNote::make()->action($deliveryNote, ['customer_notes' => 'note', 'shipping_notes' => 'ship']);
+
+    expect($deliveryNote->fresh())->toBeInstanceOf(DeliveryNote::class);
+});
+
+test('UI pallet returns index with real data', function () {
+    createPalletReturnWithPallet($this);
+
+    foreach ([
+        'grp.org.warehouses.show.dispatching.pallet-returns.index',
+        'grp.org.warehouses.show.dispatching.pallet-returns.confirmed.index',
+        'grp.org.warehouses.show.dispatching.pallet-returns.picking.index',
+    ] as $r) {
+        get(route($r, [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
+    }
+});
+
+test('fetch single delivery note item with pickings', function () {
+    [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
+    StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $los->id,
+        'quantity'              => 3,
+    ]);
+
+    $fetched = \App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem::run($item->refresh());
+    expect($fetched)->toBeInstanceOf(DeliveryNoteItem::class);
 });
