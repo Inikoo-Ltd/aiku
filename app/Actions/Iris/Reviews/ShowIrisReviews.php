@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Http\Resources\Catalogue\IrisAllReviewsResource;
+use App\InertiaTable\InertiaTable;
 use App\Models\Reviews\Review;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -128,8 +129,13 @@ class ShowIrisReviews extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
+        $tableStructure = IndexReviewsInIris::make()->tableStructure();
+
         return Inertia::render('AllReviews', $data)
-            ->table(IndexReviewsInIris::make()->tableStructure(prefix: 'reviews'));
+            ->table(fn (InertiaTable $t) => $tableStructure($t->name('all')->pageName('reviewsPage')))
+            ->table(fn (InertiaTable $t) => $tableStructure($t->name('company')->pageName('reviewsPage')))
+            ->table(fn (InertiaTable $t) => $tableStructure($t->name('family')->pageName('reviewsPage')))
+            ->table(fn (InertiaTable $t) => $tableStructure($t->name('product')->pageName('reviewsPage')));
     }
 
     public function asController(ActionRequest $request): array

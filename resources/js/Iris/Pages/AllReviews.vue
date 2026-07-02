@@ -242,7 +242,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
 							<div class="mt-6">
 								<ListReviews
 									v-if="hasReviews"
-									:resource="props.reviews ?? {}"
+									:data="props.reviews"
 									:tab="activeTab"
 									:readonly="true" />
 
