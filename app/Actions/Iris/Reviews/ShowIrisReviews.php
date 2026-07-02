@@ -9,6 +9,7 @@ namespace App\Actions\Iris\Reviews;
 
 use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\IrisAction;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Http\Resources\Catalogue\IrisAllReviewsResource;
@@ -32,30 +33,70 @@ class ShowIrisReviews extends IrisAction
             'country'           => $shop->country?->name,
         ];
 
-        if ($tab === 'product') {
-            $reviews   = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'reviews');
-            $avgReview = $indexer->avgProductScopeReview($shop);
+        return match ($tab) {
+            'product' => $this->productTab($shop, $indexer, $shopProfile),
+            'family'  => $this->familyTab($shop, $indexer, $shopProfile),
+            'company' => $this->companyTab($shop, $indexer, $shopProfile),
+            default   => $this->allTab($shop, $indexer, $shopProfile),
+        };
+    }
 
-            return [
-                'type'          => 'product',
-                'shop_profile'  => $shopProfile,
-                'reviews'       => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
-                'avg_review'    => $avgReview ? round((float) $avgReview, 1) : 0.0,
-                'total_reviews' => $reviews->total(),
-                'recommend_percent' => 0,
-            ];
-        }
+    private function allTab($shop, IndexReviewsInIris $indexer, array $shopProfile): array
+    {
+        $reviews      = $indexer->handleAllScopeReviews(shop: $shop, prefix: 'reviews');
+        $avgReview    = $indexer->avgByScopeReview($shop, [
+            ReviewScopeEnum::SHOP,
+            ReviewScopeEnum::ORDER,
+            ReviewScopeEnum::PRODUCT,
+            ReviewScopeEnum::FAMILY,
+        ]);
+        $totalReviews = $reviews->total();
 
-        $reviews        = IndexReviewsInIris::run(parent: $shop, prefix: 'reviews');
-        $avgReview      = $indexer->avgReview($shop);
-        $totalReviews   = $reviews->total();
-        $recommendCount = Review::query()
-            ->where('shop_id', $shop->id)
-            ->where('state', ReviewStateEnum::PUBLISHED)
-            ->where('is_public', true)
-            ->where('review_status', ReviewStatusEnum::APPROVED)
-            ->where('rating_main', '>=', 4)
-            ->count();
+        return [
+            'type'              => 'all',
+            'shop_profile'      => $shopProfile,
+            'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
+            'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
+            'total_reviews'     => $totalReviews,
+            'recommend_percent' => $this->recommendPercent($shop, $totalReviews),
+        ];
+    }
+
+    private function productTab($shop, IndexReviewsInIris $indexer, array $shopProfile): array
+    {
+        $reviews   = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'reviews');
+        $avgReview = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::PRODUCT]);
+
+        return [
+            'type'              => 'product',
+            'shop_profile'      => $shopProfile,
+            'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
+            'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
+            'total_reviews'     => $reviews->total(),
+            'recommend_percent' => 0,
+        ];
+    }
+
+    private function familyTab($shop, IndexReviewsInIris $indexer, array $shopProfile): array
+    {
+        $reviews   = $indexer->handleFamilyScopeReviews(shop: $shop, prefix: 'reviews');
+        $avgReview = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::FAMILY]);
+
+        return [
+            'type'              => 'family',
+            'shop_profile'      => $shopProfile,
+            'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
+            'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
+            'total_reviews'     => $reviews->total(),
+            'recommend_percent' => 0,
+        ];
+    }
+
+    private function companyTab($shop, IndexReviewsInIris $indexer, array $shopProfile): array
+    {
+        $reviews      = $indexer->handleCompanyScopeReviews(shop: $shop, prefix: 'reviews');
+        $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER]);
+        $totalReviews = $reviews->total();
 
         return [
             'type'              => 'company',
@@ -63,8 +104,26 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $totalReviews > 0 ? (int) round(($recommendCount / $totalReviews) * 100) : 0,
+            'recommend_percent' => $this->recommendPercent($shop, $totalReviews),
         ];
+    }
+
+    private function recommendPercent($shop, int $totalReviews): int
+    {
+        if ($totalReviews === 0) {
+            return 0;
+        }
+
+        $count = Review::query()
+            ->where('shop_id', $shop->id)
+            ->whereIn('scope', [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER])
+            ->where('state', ReviewStateEnum::PUBLISHED)
+            ->where('is_public', true)
+            ->where('review_status', ReviewStatusEnum::APPROVED)
+            ->where('rating_main', '>=', 4)
+            ->count();
+
+        return (int) round(($count / $totalReviews) * 100);
     }
 
     public function htmlResponse(array $data): Response
@@ -77,7 +136,9 @@ class ShowIrisReviews extends IrisAction
     {
         $this->initialisation($request);
 
-        $tab = in_array($request->query('tab'), ['company', 'product']) ? $request->query('tab') : 'company';
+        $tab = in_array($request->query('tab'), ['all', 'product', 'family', 'company'])
+            ? $request->query('tab')
+            : 'all';
 
         return $this->handle($tab);
     }

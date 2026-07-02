@@ -243,11 +243,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
 								<ListReviews
 									v-if="hasReviews"
 									:resource="props.reviews ?? {}"
-									:tab="
-										props.type === 'product'
-											? 'product_reviews'
-											: 'company_reviews'
-									"
+									:tab="activeTab"
 									:readonly="true" />
 
 								<div
