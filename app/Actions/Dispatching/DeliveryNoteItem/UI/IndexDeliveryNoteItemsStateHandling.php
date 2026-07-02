@@ -105,8 +105,6 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                     ]
                 )->defaultSort('picking_position');
 
-            $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             $handler = $deliveryNote->picker_user_id;
 
@@ -129,6 +127,11 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                     $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
                 }
             }
+
+            $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+
         };
     }
 
