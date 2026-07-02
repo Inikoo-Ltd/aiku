@@ -312,8 +312,8 @@ class UpdateMasterProductCategory extends OrgAction
             'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
             'faq'                           => ['sometimes', 'array'],
-            'faq.*.question'                => ['sometimes', 'string'],
-            'faq.*.answer'                  => ['sometimes', 'string'],
+            'faq.*.question'                => ['sometimes', 'nullable', 'string'],
+            'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],
         ];
 
         if (!$this->strict) {
