@@ -55,10 +55,8 @@ class IndexReviewsInIris extends OrgAction
 
         $elements = [];
         foreach (range(5, 1) as $star) {
-            $elements[(string) $star] = [
-                'label' => $star === 1 ? __('1 Star') : __(':n Stars', ['n' => $star]),
-                'count' => (int) ($counts[$star] ?? 0),
-            ];
+            $label              = $star === 1 ? __('1 Star') : $star . ' ' . __('Stars');
+            $elements[(string) $star] = [$label, (int) ($counts[$star] ?? 0)];
         }
 
         return [
