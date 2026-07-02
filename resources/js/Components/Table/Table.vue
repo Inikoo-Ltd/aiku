@@ -11,7 +11,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { Link, router, usePage } from "@inertiajs/vue3";
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { computed, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
 import qs from 'qs'
 import clone from 'lodash-es/clone'
 import filter from 'lodash-es/filter'
@@ -182,6 +182,40 @@ const props = defineProps(
         memoizeRows : {   // Good for big and frequent update the rows (example: Picking Session, Delivery Note picking)
             type: Boolean,
             default: false,
+            required: false,
+        },
+        // Opt-in: only render the rows visible in the scroll viewport.
+        // Unlike memoizeRows, every rendered row stays fully reactive, so per-row actions work normally.
+        // Use this instead of memoizeRows when rows have their own action buttons that mutate row data.
+        virtualScroll: {
+            type: Boolean,
+            default: false,
+            required: false,
+        },
+        // Height of the scrollable viewport when virtualScroll is enabled.
+        virtualScrollHeight: {
+            type: String,
+            default: 'calc(100vh - 320px)',
+            required: false,
+        },
+        // Estimated row height in px, or a (item, index) => number function for variable-height rows.
+        virtualItemHeight: {
+            type: [Number, Function],
+            default: 90,
+            required: false,
+        },
+        virtualOverscan: {
+            type: Number,
+            default: 12,
+            required: false,
+        },
+        // Opt-in row memoization for the virtualScroll path (applied via v-memo). Receives (item, index)
+        // and must return every external reactive value the row's cells read (e.g. selected location,
+        // screen type); a row only re-renders when one of the returned values changes. Without it,
+        // every scroll tick re-renders all mounted rows.
+        virtualRowMemo: {
+            type: Function,
+            default: null,
             required: false,
         },
     });
@@ -662,6 +696,158 @@ defineExpose({
 
 const isLoading = ref<string | boolean>(false)
 
+const virtualHeightCache = new Map<number, number>()
+
+watch(compResourceData, () => {
+    virtualHeightCache.clear()
+    if (props.virtualScroll) {
+        nextTick(() => calculateVirtualWindow())
+    }
+})
+
+function virtualRowHeight(index: number): number {
+    if (typeof props.virtualItemHeight !== 'function') {
+        return props.virtualItemHeight
+    }
+
+    if (!virtualHeightCache.has(index)) {
+        virtualHeightCache.set(index, props.virtualItemHeight(compResourceData.value[index], index))
+    }
+
+    return virtualHeightCache.get(index)!
+}
+
+const virtualRowOffsets = computed(() => {
+    const offsets = [0]
+    let total = 0
+    for (let i = 0; i < compResourceData.value.length; i++) {
+        total += virtualRowHeight(i)
+        offsets.push(total)
+    }
+    return offsets
+})
+
+const virtualContainerRef = ref<HTMLElement | null>(null)
+const virtualWindow = ref({
+    start: 0,
+    end: Math.min(compResourceData.value?.length ?? 0, props.virtualOverscan + 20),
+})
+
+// Greatest index whose estimated top offset is at or above y
+function findRowIndexAtOffset(offsets: number[], y: number, total: number): number {
+    let low = 0
+    let high = total - 1
+    let result = 0
+    while (low <= high) {
+        const mid = (low + high) >> 1
+        if (offsets[mid] <= y) {
+            result = mid
+            low = mid + 1
+        } else {
+            high = mid - 1
+        }
+    }
+    return result
+}
+
+// Recompute which rows to mount from the real scroll position against the estimated offsets.
+// Estimated heights drift from the real rendered heights, so the bottom edge is pinned: once
+// the container is physically scrolled to its end the window always includes the last row,
+// otherwise the drift can push the computed range past the data and only spacers would render.
+const calculateVirtualWindow = () => {
+    const total = compResourceData.value?.length ?? 0
+    const el = virtualContainerRef.value
+
+    if (total === 0) {
+        virtualWindow.value = { start: 0, end: 0 }
+        return
+    }
+
+    if (!el) {
+        virtualWindow.value = { start: 0, end: Math.min(total, props.virtualOverscan + 20) }
+        return
+    }
+
+    const offsets = virtualRowOffsets.value
+    const viewportTop = el.scrollTop
+    const viewportBottom = viewportTop + el.clientHeight
+
+    let start: number
+    let end: number
+
+    if (viewportBottom >= el.scrollHeight - 2) {
+        end = total
+        start = total
+        let coveredHeight = 0
+        while (start > 0 && coveredHeight < el.clientHeight) {
+            start--
+            coveredHeight += offsets[start + 1] - offsets[start]
+        }
+    } else {
+        start = findRowIndexAtOffset(offsets, viewportTop, total)
+        end = start + 1
+        while (end < total && offsets[end] < viewportBottom) {
+            end++
+        }
+    }
+
+    virtualWindow.value = {
+        start: Math.max(0, start - props.virtualOverscan),
+        end: Math.min(total, end + props.virtualOverscan),
+    }
+}
+
+const virtualList = computed(() => {
+    const { start, end } = virtualWindow.value
+    return compResourceData.value.slice(start, end).map((data: any, i: number) => ({ data, index: start + i }))
+})
+
+let virtualScrollRafId: number | null = null
+const onVirtualScroll = () => {
+    if (virtualScrollRafId !== null) {
+        return
+    }
+
+    virtualScrollRafId = requestAnimationFrame(() => {
+        calculateVirtualWindow()
+        virtualScrollRafId = null
+    })
+}
+
+let virtualResizeObserver: ResizeObserver | null = null
+watch(virtualContainerRef, (el) => {
+    if (!props.virtualScroll) {
+        return
+    }
+
+    virtualResizeObserver?.disconnect()
+    if (el && typeof ResizeObserver !== 'undefined') {
+        virtualResizeObserver = new ResizeObserver(() => calculateVirtualWindow())
+        virtualResizeObserver.observe(el)
+    }
+    if (el) {
+        calculateVirtualWindow()
+    }
+})
+
+onUnmounted(() => {
+    virtualResizeObserver?.disconnect()
+})
+
+const virtualTopSpacerHeight = computed(() => {
+    const startIndex = virtualList.value[0]?.index ?? 0
+    return virtualRowOffsets.value[startIndex] ?? 0
+})
+
+const virtualBottomSpacerHeight = computed(() => {
+    const lastItem = virtualList.value[virtualList.value.length - 1]
+    const endIndex = lastItem ? lastItem.index + 1 : 0
+    const total = virtualRowOffsets.value[virtualRowOffsets.value.length - 1] ?? 0
+    return total - (virtualRowOffsets.value[endIndex] ?? total)
+})
+
+const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?? 0) + (props.isCheckBox ? 1 : 0))
+
 </script>
 
 <template>
@@ -852,8 +1038,11 @@ const isLoading = ref<string | boolean>(false)
             <slot name="tableWrapper" :meta="compResourceMeta">
                 <TableWrapper :result="compResourceMeta.total === 0" :class="{ 'mt-0': !hasOnlyData }">
                     <slot name="table">
+                        <div ref="virtualContainerRef"
+                            @scroll="virtualScroll ? onVirtualScroll() : undefined"
+                            :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
                         <table class="divide-y divide-gray-200 bg-white w-full">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
                                 <tr class="border-t border-gray-200 divide-x divide-gray-200">
                                     <slot v-if="isCheckBox" :name="`header-checkbox`"
                                         :header="{ value : compIsAllChecked , onClick : onClickSelectAll }">
@@ -879,11 +1068,115 @@ const isLoading = ref<string | boolean>(false)
 
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <slot name="body" :show="show">
+                                    <!-- Virtualized path (opt-in via virtualScroll): only rows in the scroll
+                                         viewport are mounted. Rows stay fully reactive unless the consumer passes
+                                         virtualRowMemo, which skips re-rendering rows whose listed deps are unchanged.
+                                         Spacer rows stand in for the rows above/below the rendered window. -->
+                                    <template v-if="virtualScroll">
+                                        <tr v-if="virtualTopSpacerHeight > 0" aria-hidden="true" class="bg-gray-50/70">
+                                            <td :colspan="virtualColSpan" :style="{ height: `${virtualTopSpacerHeight}px`, padding: 0, border: 'none' }">
+                                                <div class="h-full animate-pulse" :style="{ background: 'repeating-linear-gradient(to bottom, rgb(249 250 251) 0px, rgb(249 250 251) 59px, rgb(229 231 235) 59px, rgb(229 231 235) 60px)' }" />
+                                            </td>
+                                        </tr>
+
+                                        <!-- v-memo must live on the same element as v-for (the compiler crashes when it
+                                             sits on a template v-for), so the virtual path renders plain rows and does
+                                             not support useExpandTable. -->
+                                        <tr v-for="{ data: item, index: key } in virtualList"
+                                            :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
+                                            v-memo="virtualRowMemo ? virtualRowMemo(item, key) : [{}]"
+                                            class="" :class="[
+                                                    {
+                                                        'bg-gray-50': striped && key % 2,
+                                                    },
+                                                    selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
+                                                        ? 'bg-green-100/70'
+                                                        : striped
+                                                            ? 'bg-gray-200 hover:bg-gray-300'
+                                                            : rowColorFunction(item)
+                                                                ? rowColorFunction(item)
+                                                                : 'hover:bg-gray-50'
+                                                ]">
+                                                <td v-if="isCheckBox" key="checkbox" class="">
+                                                    <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
+                                                        <FontAwesomeIcon v-if="disabledCheckbox(item)"
+                                                            icon="fal fa-minus-square"
+                                                            class='text-gray-400 p-2 cursor-not-allowed text-lg mx-auto block'
+                                                            fixed-width aria-hidden='true' />
+                                                    </slot>
+
+                                                    <template v-else>
+                                                        <slot :name="`checkbox`" :checked="{props : props.isChecked(item), item :item.is_checked, row : selectRow[item[checkboxKey]]}" :data="item">
+                                                            <FontAwesomeIcon
+                                                                v-show="props.isChecked(item) || item.is_checked || selectRow[item[checkboxKey]]"
+                                                                @click="async () => (setLodash(selectRow, [item.id], false), setLodash(item, ['is_checked'], false), emits('onUnchecked', item))"
+                                                                icon='fas fa-check-square'
+                                                                class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
+                                                                fixed-width aria-hidden='true' />
+                                                            <FontAwesomeIcon
+                                                                v-show="!props.isChecked(item) && !item.is_checked && !selectRow[item[checkboxKey]]"
+                                                                @click="async () => (setLodash(selectRow, [item.id], true), setLodash(item, ['is_checked'], true), emits('onChecked', item))"
+                                                                icon='fal fa-square'
+                                                                class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
+                                                                fixed-width aria-hidden='true' />
+                                                        </slot>
+                                                    </template>
+                                                </td>
+
+                                                <td v-for="(column, index) in queryBuilderProps.columns"
+                                                    v-show="show(column.key)"
+                                                    :key="`table-${name}-row-${key}-column-${column.key}`"
+                                                    class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                        column.type === 'avatar' || column.type === 'icon'
+                                                            ? 'text-center min-w-fit px-3'
+                                                            : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
+                                                                ? 'text-right pl-3 pr-9 tabular-nums'
+                                                                : 'px-6',
+                                                        props.rowAlignTop ? 'align-top' : '',
+                                                        { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
+                                                        column.className
+                                                    ]">
+                                                    <slot :name="`cell(${column.key})`"
+                                                        :item="{ ...item, index: index, rowIndex : key, editingIndicator: { loading: false, isSucces: false, isFailed: false, editMode: false }, data : item }"
+                                                        :proxyItem="item" :tabName="name" class="">
+                                                        <template v-if="typeof item[column.key] == 'number' || column.type === 'number'">
+                                                            {{ locale.number(item[column.key]) }}
+                                                        </template>
+                                                        <template v-else-if="column.type === 'currency'">
+                                                            {{ locale.currencyFormat(item.currency_code, item[column.key]) }}
+                                                        </template>
+                                                        <template v-else-if="column.type === 'date'">
+                                                            <span v-tooltip="useFormatTime(item[column.key], { formatTime: 'hms' })" class="whitespace-nowrap">{{ useFormatTime(item[column.key]) }}</span>
+                                                        </template>
+                                                        <template v-else-if="column.type === 'date_hm'">
+                                                            <span class="whitespace-nowrap">{{ useFormatTime(item[column.key], { formatTime: 'hm' }) }}</span>
+                                                        </template>
+                                                        <template v-else-if="column.type === 'date_hms'">
+                                                            <span class="whitespace-nowrap">{{ useFormatTime(item[column.key], { formatTime: 'hms' }) }}</span>
+                                                        </template>
+                                                        <template v-else-if="column.type === 'icon'">
+                                                            <Icon v-if="item[column.key]?.icon || item[column.key]?.text || item[column.key]?.svg" :data="item[column.key]" />
+                                                            <FontAwesomeIcon v-else :icon="item[column.key]" class="" fixed-width aria-hidden="true" />
+                                                        </template>
+                                                        <template v-else>
+                                                            {{ item[column.key] }}
+                                                        </template>
+                                                    </slot>
+                                                </td>
+                                        </tr>
+
+                                        <tr v-if="virtualBottomSpacerHeight > 0" aria-hidden="true" class="bg-gray-50/70">
+                                            <td :colspan="virtualColSpan" :style="{ height: `${virtualBottomSpacerHeight}px`, padding: 0, border: 'none' }">
+                                                <div class="h-full animate-pulse" :style="{ background: 'repeating-linear-gradient(to bottom, rgb(249 250 251) 0px, rgb(249 250 251) 59px, rgb(229 231 235) 59px, rgb(229 231 235) 60px)' }" />
+                                            </td>
+                                        </tr>
+                                    </template>
+
                                     <!-- Memoized path (opt-in via memoizeRows): v-memo must sit on the v-for
                                          element so Vue can skip re-rendering rows whose data is unchanged. Uses the
                                          same cell() slots as the default path. Only safe when all row state lives in
                                          `item` (no checkbox/external row selection, no expand rows). -->
-                                    <template v-if="memoizeRows">
+                                    <template v-else-if="memoizeRows">
                                         <tr v-for="(item, key) in compResourceData"
                                             :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
                                             v-memo="[JSON.stringify(item)]"
@@ -1104,6 +1397,7 @@ const isLoading = ref<string | boolean>(false)
                                 </slot>
                             </tbody>
                         </table>
+                        </div>
                     </slot>
 
                     <!-- Pagination -->

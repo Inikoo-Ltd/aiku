@@ -66,6 +66,7 @@ use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSession;
 use App\Actions\Fulfilment\PickingSession\Json\GetPalletReturnsForPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemRow;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
@@ -248,6 +249,7 @@ Route::get('picking-session/{pickingSession:id}/delivery-notes', GetDeliveryNote
 Route::get('picking-session/{pickingSession:id}/pallet-returns', GetPalletReturnsForPickingSession::class)->name('picking_session.pallet_returns.index');
 
 Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
+Route::get('delivery-note-item/{deliveryNoteItem:id}/row', FetchDeliveryNoteItemRow::class)->name('delivery_note_item_row');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');
