@@ -48,6 +48,7 @@ use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
@@ -1383,10 +1384,14 @@ test('delivery note item packing and unpack', function () {
 });
 
 test('force delete delivery note', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNoteId = $deliveryNote->id;
+    $itemId         = $item->id;
 
     \App\Actions\Dispatching\DeliveryNote\ForceDeleteDeliveryNote::make()->action($deliveryNote->refresh());
-    expect(true)->toBeTrue();
+
+    expect(DeliveryNote::find($deliveryNoteId))->toBeNull()
+        ->and(DeliveryNoteItem::find($itemId))->toBeNull();
 });
 
 test('picking route store and update', function () {
@@ -1417,7 +1422,9 @@ test('delete shipment action', function () {
     $shipment = StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'T'.Str::random(4)]);
 
     \App\Actions\Dispatching\Shipment\DeleteShipment::run($shipment);
-    expect(true)->toBeTrue();
+
+    expect(Shipment::find($shipment->id))->toBeNull()
+        ->and($deliveryNote->shipments()->count())->toBe(0);
 });
 
 test('UI reports and batch code edit', function () {
@@ -1447,9 +1454,11 @@ test('picking upsert pick all split and delete', function () {
     [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
 
     \App\Actions\Dispatching\Picking\UpsertPicking::run($item, $los, ['quantity' => 3]);
+    expect($item->refresh()->pickings()->exists())->toBeTrue();
 
     $item->update(['locked_at' => null]);
     \App\Actions\Dispatching\Picking\PickAllItem::run($item->refresh(), ['location_org_stock_id' => $los->id]);
+    expect(intval($item->refresh()->quantity_picked))->toBeGreaterThanOrEqual(intval($item->quantity_required));
 
     $picking = StorePicking::make()->action($item->refresh(), $this->user, [
         'picker_user_id'        => $this->user->id,
@@ -1457,10 +1466,11 @@ test('picking upsert pick all split and delete', function () {
         'quantity'              => 2,
     ]);
 
-    \App\Actions\Dispatching\Picking\SplitPicking::run($picking, 1.0);
-    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking->refresh(), $this->user);
+    $split = \App\Actions\Dispatching\Picking\SplitPicking::run($picking, 1.0);
+    expect(floatval($split->quantity))->toBe(1.0);
 
-    expect(true)->toBeTrue();
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking->refresh(), $this->user);
+    expect(Picking::find($picking->id))->toBeNull();
 });
 
 test('picking waiting warehouse and crm flow', function () {
@@ -1470,22 +1480,27 @@ test('picking waiting warehouse and crm flow', function () {
 
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
-    \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
+    $waiting = \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
+    expect($waiting->has_waiting_warehouse)->toBeTrue()
+        ->and(intval($waiting->quantity_waiting_warehouse))->toBe(2);
+
     \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
 
     $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2]);
     \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
 
     $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2, 'locked_at' => null]);
-    \App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse::run($item->refresh());
+    $undone = \App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse::run($item->refresh());
+    expect($undone->has_waiting_warehouse)->toBeFalse();
 
-    \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
+    $crm = \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
+    expect($crm->has_waiting_crm)->toBeTrue();
+
     \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingCrm::run($item->refresh(), $this->user, ['quantity' => 1]);
 
     $item->update(['has_waiting_crm' => true, 'quantity_waiting_crm' => 2]);
-    \App\Actions\Dispatching\Picking\SendBackWaitingWarehouse::make()->action($item->refresh(), $this->user, []);
-
-    expect(true)->toBeTrue();
+    $sentBack = \App\Actions\Dispatching\Picking\SendBackWaitingWarehouse::make()->action($item->refresh(), $this->user, []);
+    expect($sentBack->has_waiting_crm)->toBeFalse();
 });
 
 test('picking upsert from waiting warehouse and magic place', function () {
@@ -1497,27 +1512,48 @@ test('picking upsert from waiting warehouse and magic place', function () {
     $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
 
     \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1, 'location_org_stock_id' => $los->id]);
+    expect($item->refresh()->pickings()->exists())->toBeTrue();
 
-    $item->update(['locked_at' => null]);
-    \App\Actions\Dispatching\Picking\PickFromMagicPlace::run($item->refresh(), ['quantity' => 1, 'location_org_stock_id' => $los->id]);
+    $item->update([
+        'has_waiting_warehouse'      => false,
+        'quantity_waiting_warehouse' => 0,
+        'quantity_required'          => 20,
+        'quantity_picked'            => 5,
+        'quantity_not_picked'        => 0,
+        'locked_at'                  => null,
+    ]);
+    // Magic pick creates a picking from a virtual place (no physical location_id).
+    // Only quantity + picker_user_id are validated fields, so that is all the real flow passes.
+    $magicPicking = \App\Actions\Dispatching\Picking\PickFromMagicPlace::run($item->refresh(), [
+        'quantity'       => 3,
+        'picker_user_id' => $this->user->id,
+    ]);
 
-    expect(true)->toBeTrue();
+    expect($magicPicking)->toBeInstanceOf(Picking::class)
+        ->and($magicPicking->type)->toBe(PickingTypeEnum::MAGIC_PICK)
+        ->and($magicPicking->location_id)->toBeNull()
+        ->and(floatval($magicPicking->quantity))->toBe(3.0);
 });
 
 test('picking and delivery note item repairs and reindex', function () {
-    \App\Actions\Dispatching\Picking\RepairPickingBatchCodes::run(true);
-    \App\Actions\Dispatching\DeliveryNoteItem\RepairDeliveryNoteItemBatchCodes::run(true);
-    \App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch::run();
+    $pickingRepairs = \App\Actions\Dispatching\Picking\RepairPickingBatchCodes::run(true);
+    $itemRepairs    = \App\Actions\Dispatching\DeliveryNoteItem\RepairDeliveryNoteItemBatchCodes::run(true);
 
-    expect(true)->toBeTrue();
+    expect($pickingRepairs)->toBeInt()->toBeGreaterThanOrEqual(0)
+        ->and($itemRepairs)->toBeInt()->toBeGreaterThanOrEqual(0);
+
+    \App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch::run();
 });
 
-test('store replacement delivery note via route', function () {
+test('store replacement delivery note route rejects empty payload', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
-    $order = $deliveryNote->orders()->first();
+    $order         = $deliveryNote->orders()->first();
+    $notesBefore   = $order->deliveryNotes()->count();
 
-    post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [])->assertRedirect();
-    expect(true)->toBeTrue();
+    post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [])
+        ->assertSessionHasErrors(['delivery_note_items']);
+
+    expect($order->deliveryNotes()->count())->toBe($notesBefore);
 });
 
 test('picking session delivery notes json and change trolley and item packing route', function () {
@@ -1532,10 +1568,11 @@ test('picking session delivery notes json and change trolley and item packing ro
 
     $trolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'ct_'.Str::random(4)]);
     patch(route('grp.models.delivery_note.state.change_trolley', [$deliveryNote->id]), ['trolley' => $trolley->id]);
+    expect($deliveryNote->refresh()->trolleys()->count())->toBeGreaterThan(0);
 
+    $packedBefore = intval($item->refresh()->quantity_packed);
     patch(route('grp.models.delivery_note_item.packing.store', [$item->id]), ['quantity' => 1]);
-
-    expect(true)->toBeTrue();
+    expect(intval($item->refresh()->quantity_packed))->toBeGreaterThanOrEqual($packedBefore);
 });
 
 function apiShipper($ctx, string $apiShipper)
@@ -1799,6 +1836,7 @@ test('carrier api failure branches', function () {
         'dpd-gb' => ['data' => ['geoSession' => 'g'], 'error' => ['errorMessage' => 'bad']],
     ];
 
+    $outcomes = [];
     foreach ($carriers as $api => $response) {
         \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response($response, 200)]);
         $shipper = apiShipper($this, $api);
@@ -1807,18 +1845,26 @@ test('carrier api failure branches', function () {
         }
         $deliveryNote = deliveryNoteForShipping($this);
         try {
-            StoreShipment::make()->action($deliveryNote, $shipper->refresh(), []);
+            $shipment          = StoreShipment::make()->action($deliveryNote, $shipper->refresh(), []);
+            $outcomes[$api]    = $shipment->tracking;
         } catch (\Throwable $e) {
+            $outcomes[$api] = 'rejected';
         }
     }
 
-    expect(true)->toBeTrue();
+    // Every carrier's failure branch ran to a definite outcome, and none produced a real tracking number.
+    expect($outcomes)->toHaveKeys(['apc-gb', 'dpd-sk', 'itd', 'dpd-gb']);
+    foreach ($outcomes as $tracking) {
+        expect((string) $tracking)->not->toMatch('/^(TRK|ITD|DPD|APC|CTT)/');
+    }
 });
 
 test('repairs actual run', function () {
-    \App\Actions\Dispatching\Picking\RepairPickingBatchCodes::run(false);
-    \App\Actions\Dispatching\DeliveryNoteItem\RepairDeliveryNoteItemBatchCodes::run(false);
-    expect(true)->toBeTrue();
+    $pickingRepairs = \App\Actions\Dispatching\Picking\RepairPickingBatchCodes::run(false);
+    $itemRepairs    = \App\Actions\Dispatching\DeliveryNoteItem\RepairDeliveryNoteItemBatchCodes::run(false);
+
+    expect($pickingRepairs)->toBeInt()->toBeGreaterThanOrEqual(0)
+        ->and($itemRepairs)->toBeInt()->toBeGreaterThanOrEqual(0);
 });
 
 test('store replacement delivery note action', function () {
