@@ -12,7 +12,6 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
-use App\Http\Resources\Catalogue\IrisContactNameReviewsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Reviews\Review;
@@ -20,6 +19,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Catalogue\IrisAllReviewsResource;
 
 class ShowIrisFamilyReview extends IrisAction
 {
@@ -81,7 +81,7 @@ class ShowIrisFamilyReview extends IrisAction
 
         return [
             'type'              => 'family',
-            'reviews'           => IrisContactNameReviewsResource::collection($reviews)->response()->getData(true),
+            'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
             'recommend_percent' => $this->recommendPercent($totalReviews, function ($q) use ($shop, $family, $minRating) {
@@ -112,7 +112,7 @@ class ShowIrisFamilyReview extends IrisAction
 
         return [
             'type'              => 'product',
-            'reviews'           => IrisContactNameReviewsResource::collection($reviews)->response()->getData(true),
+            'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
             'recommend_percent' => $this->recommendPercent($totalReviews, function ($q) use ($shop, $family, $minRating) {
