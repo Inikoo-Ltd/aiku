@@ -141,13 +141,22 @@ class ShowIrisReviews extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
-        $tableStructure = IndexReviewsInIris::make()->tableStructure();
+        $indexer = IndexReviewsInIris::make();
+        $shop    = $this->shop;
 
         return Inertia::render('AllReviews', $data)
-            ->table(fn (InertiaTable $t) => $tableStructure($t->name('all')->pageName('reviewsPage')))
-            ->table(fn (InertiaTable $t) => $tableStructure($t->name('company')->pageName('reviewsPage')))
-            ->table(fn (InertiaTable $t) => $tableStructure($t->name('family')->pageName('reviewsPage')))
-            ->table(fn (InertiaTable $t) => $tableStructure($t->name('product')->pageName('reviewsPage')));
+            ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
+                ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER, ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY,
+            ])($t->name('all')->pageName('reviewsPage')))
+            ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
+                ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER,
+            ])($t->name('company')->pageName('reviewsPage')))
+            ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
+                ReviewScopeEnum::FAMILY,
+            ])($t->name('family')->pageName('reviewsPage')))
+            ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
+                ReviewScopeEnum::PRODUCT,
+            ])($t->name('product')->pageName('reviewsPage')));
     }
 
     public function asController(ActionRequest $request): array
