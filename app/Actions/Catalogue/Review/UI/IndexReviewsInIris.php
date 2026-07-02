@@ -230,11 +230,13 @@ class IndexReviewsInIris extends OrgAction
         if ($withProductJoin) {
             $select[] = 'products.name as product_name';
             $select[] = 'products.slug as product_slug';
+            $select[] = 'products.code as product_code';
         }
 
         if ($withFamilyJoin) {
             $select[] = 'product_categories.name as family_name';
             $select[] = 'product_categories.code as family_code';
+            $select[] = 'product_categories.slug as family_slug';
         }
 
         if (auth()->check()) {
