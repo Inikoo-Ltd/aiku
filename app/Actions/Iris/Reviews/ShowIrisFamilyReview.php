@@ -32,8 +32,8 @@ class ShowIrisFamilyReview extends IrisAction
         $reviewSettings = Arr::get($shop->settings, 'reviews');
 
         $data = match ($tab) {
-            'product' => $this->productTab($family, $indexer, $reviewSettings),
-            default   => $this->familyTab($family, $indexer, $reviewSettings),
+            'product' => $this->productTab($family, $indexer),
+            default   => $this->familyTab($family, $indexer),
         };
 
         return array_merge($data, [
@@ -62,7 +62,7 @@ class ShowIrisFamilyReview extends IrisAction
         ]);
     }
 
-    private function familyTab(ProductCategory $family, IndexReviewsInIris $indexer, mixed $reviewSettings): array
+    private function familyTab(ProductCategory $family, IndexReviewsInIris $indexer): array
     {
         $shop         = $family->shop;
         $minRating    = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
@@ -92,7 +92,7 @@ class ShowIrisFamilyReview extends IrisAction
         ];
     }
 
-    private function productTab(ProductCategory $family, IndexReviewsInIris $indexer, mixed $reviewSettings): array
+    private function productTab(ProductCategory $family, IndexReviewsInIris $indexer): array
     {
         $shop         = $family->shop;
         $minRating    = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
@@ -149,11 +149,15 @@ class ShowIrisFamilyReview extends IrisAction
         return Inertia::render('AllReviews', $data)
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(
                 shop: $family->shop,
-                scopes: [ReviewScopeEnum::FAMILY]
+                scopes: [ReviewScopeEnum::FAMILY],
+                extraConditions: fn ($q) => $q->where('reviews.product_category_id', $family->id)
             )($t->name('family')->pageName('familyPage')))
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(
                 shop: $family->shop,
-                scopes: [ReviewScopeEnum::PRODUCT]
+                scopes: [ReviewScopeEnum::PRODUCT],
+                extraConditions: fn ($q) => $q
+                    ->join('products as p_count', 'p_count.id', '=', 'reviews.product_id')
+                    ->where('p_count.family_id', $family->id)
             )($t->name('product')->pageName('productPage')));
     }
 
