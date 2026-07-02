@@ -81,8 +81,8 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
 
                     <div class="flex items-center gap-2 mt-6">
                         <span v-for="star in ratingStars" :key="star" :class="star <= Math.round(averageRating)
-                                ? 'text-yellow-400'
-                                : 'text-gray-200'
+                            ? 'text-yellow-400'
+                            : 'text-gray-200'
                             " class="text-4xl">
                             ★
                         </span>
@@ -108,18 +108,45 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                     </div>
                 </div>
 
-                <div
-                    class="mt-10 flex flex-col items-center rounded-3xl border border-gray-200 bg-gray-50 p-6 shadow-sm lg:mt-0 lg:min-w-[220px]">
-                    <div class="text-sm text-gray-500">Recommend Rate</div>
-                    <div class="mt-4 flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-sm">
-                        <span class="text-4xl font-bold text-primary">
-                            {{ recommend_percent ?? 0 }}%
+                <div class="mt-10 lg:mt-0 lg:min-w-[260px] rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <div class="flex flex-col items-center">
+                        <span class="text-sm font-medium text-gray-500">
+                            {{ ctrans('Recommend Rate') }}
                         </span>
+
+                        <div class="relative mt-5 flex items-center justify-center">
+                            <svg class="h-36 w-36 -rotate-90">
+                                <!-- Background -->
+                                <circle cx="72" cy="72" r="56" stroke="#E5E7EB" stroke-width="12" fill="none" />
+
+                                <!-- Progress -->
+                                <circle cx="72" cy="72" r="56" stroke="currentColor" stroke-width="12" fill="none"
+                                    class="text-primary transition-all duration-700" stroke-linecap="round"
+                                    :stroke-dasharray="2 * Math.PI * 56" :stroke-dashoffset="(2 * Math.PI * 56) *
+                                        (1 - (recommend_percent ?? 0) / 100)
+                                        " />
+                            </svg>
+
+                            <div class="absolute text-center">
+                                <div class="text-2xl font-bold text-primary">
+                                    {{ recommend_percent ?? 0 }}%
+                                </div>
+                                <div class="mt-1 text-[10px] text-gray-500">
+                                    Recommended
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="mt-6 max-w-[180px] text-center text-sm leading-6 text-gray-600">
+                            <span class="font-semibold text-gray-900">
+                                {{ recommend_percent ?? 0 }}%
+                            </span>
+                            of customers recommend this
+                            <span class="font-medium">
+                                {{ props.type === "product" ? "product" : "company" }}
+                            </span>
+                        </p>
                     </div>
-                    <p class="mt-4 text-center text-sm text-gray-600">
-                        of reviewers recommend this
-                        {{ props.type === "product" ? "product" : "company" }}
-                    </p>
                 </div>
             </div>
 
@@ -162,7 +189,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                                     {{
                                         props.type === "product"
                                             ? "Product reviews summary"
-                                    : "Company reviews summary"
+                                            : "Company reviews summary"
                                     }}
                                 </div>
                             </div>
@@ -198,18 +225,12 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                         <div class="mt-10">
                             <h3 class="text-xl font-semibold text-gray-900">Recent reviews</h3>
                             <div class="mt-0">
-                                <ListReviews 
-                                    v-if="hasReviews" 
-                                    :data="props.reviews" 
-                                    :tab="activeTab"
-                                    :readonly="!layout?.iris?.is_logged_in" 
-                                    :showTagVisibleType="false"
-                                    :review_settings :reaction_routes="{
+                                <ListReviews v-if="hasReviews" :data="props.reviews" :tab="activeTab"
+                                    :readonly="!layout?.iris?.is_logged_in" :showTagVisibleType="false" :review_settings
+                                    :reaction_routes="{
                                         name: 'iris.models.review.react'
-                                    }"
-                                    >
+                                    }">
                                     <template #image-item="{ item, openImagePreview }">
-
                                         <button type="button" v-for="(image, index) in item.review.review_images"
                                             :key="image.id ?? index"
                                             class="group relative aspect-square w-12 h-12 cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
@@ -218,6 +239,10 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                                             <Image :src="image.original" :alt="image.name" :imageCover="true"
                                                 class="h-full w-full flex items-center justify-center transition duration-300 group-hover:scale-105" />
                                         </button>
+                                    </template>
+                                    <template #image-dialog="{ images }">
+                                        <Image :src="images.original" :alt="images.name" :imageCover="true"
+                                            :style="{ objectFit: 'contain' }" />
                                     </template>
                                 </ListReviews>
 

@@ -63,7 +63,7 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, $totalReviews, [
+            'recommend_percent' => $this->recommendPercent($shop, [
                 ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER,
                 ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY,
             ]),
@@ -83,7 +83,7 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, $totalReviews, [ReviewScopeEnum::PRODUCT]),
+            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::PRODUCT]),
         ];
     }
 
@@ -100,7 +100,7 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, $totalReviews, [ReviewScopeEnum::FAMILY]),
+            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::FAMILY]),
         ];
     }
 
@@ -117,26 +117,30 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, $totalReviews, [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER]),
+            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER]),
         ];
     }
 
-    private function recommendPercent($shop, int $totalReviews, array $scopes): int
+    private function recommendPercent($shop, array $scopes): int
     {
-        if ($totalReviews === 0) {
-            return 0;
-        }
-
-        $count = Review::query()
+        $baseQuery = Review::query()
             ->where('shop_id', $shop->id)
             ->whereIn('scope', $scopes)
             ->where('state', ReviewStateEnum::PUBLISHED)
             ->where('is_public', true)
-            ->where('review_status', ReviewStatusEnum::APPROVED)
+            ->where('review_status', ReviewStatusEnum::APPROVED);
+
+        $totalReviews = (clone $baseQuery)->count();
+
+        if ($totalReviews === 0) {
+            return 0;
+        }
+
+        $recommendedCount = (clone $baseQuery)
             ->where('rating_main', '>=', 4)
             ->count();
 
-        return (int) round(($count / $totalReviews) * 100);
+        return (int) round(($recommendedCount / $totalReviews) * 100);
     }
 
     public function htmlResponse(array $data): Response

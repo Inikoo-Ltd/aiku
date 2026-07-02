@@ -305,9 +305,12 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 		<Dialog v-model:visible="showImagePreview" modal dismissableMask
 			class="w-full max-w-3xl !border-0 !bg-transparent !shadow-none">
 			<div class="relative flex w-full flex-col items-center justify-center">
+
 				<div class="mb-1 block max-h-[80vh] min-h-[400px] w-full rounded">
+				  <slot name="image-dialog" :images="previewImages[previewIndex]">
 					<Image :src="previewImages[previewIndex]?.media_url" :alt="previewImages[previewIndex]?.name"
 						:imageCover="true" :style="{ objectFit: 'contain' }" />
+				  </slot>
 				</div>
 
 				<template v-if="previewImages.length > 1">
