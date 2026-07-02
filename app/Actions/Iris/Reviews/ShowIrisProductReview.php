@@ -55,6 +55,7 @@ class ShowIrisProductReview extends IrisAction
                 'slug' => $product->slug,
                 'code' => $product->code,
             ],
+            'heading' => $product->name . " Reviews",
             'shop_profile'      => [
                 'name'              => $shop->name,
                 'email'             => $shop->email,
