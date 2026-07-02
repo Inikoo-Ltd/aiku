@@ -74,6 +74,8 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                     :alt="data.image.alt || 'Image preview'"
                                     class="absolute inset-0 w-full h-full object-cover"
                                     :imgAttributes="data.image.attributes"
+                                    :height="getStyles(modelValue?.image?.container?.properties, screenType, false)?.height"
+                                    :width="getStyles(modelValue?.image?.container?.properties, screenType, false)?.width"
                                     />
                             </div>
 
