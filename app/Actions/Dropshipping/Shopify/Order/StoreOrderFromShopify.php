@@ -11,11 +11,10 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
@@ -24,12 +23,10 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
-use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class StoreOrderFromShopify extends OrgAction
 {
@@ -37,6 +34,7 @@ class StoreOrderFromShopify extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedShopifyAddress;
+    use WithPayAndSubmitOrder;
 
     /**
      * @throws \Throwable
@@ -117,13 +115,7 @@ class StoreOrderFromShopify extends OrgAction
                 return $order->refresh();
             });
 
-            try {
-                PayOrderAsync::run($order);
-            } catch (Exception $e) {
-                Sentry::captureException($e);
-            }
-
-            SubmitOrder::run($order);
+            $order = $this->payAndSubmitOrder($order);
         }
     }
 

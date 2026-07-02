@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\GetRetinaPaymentMethods;
@@ -29,15 +30,19 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
 {
     use IsOrder;
     use CalculatesPaymentWithBalance;
+    use WithOrderForbiddenCountryCheck;
 
     public function handle(Order $order, Customer $customer): array
     {
+        if ($this->isForbidden($order)) {
+            abort(403, __('Order billing or delivery address is marked as forbidden'));
+        }
+
         $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);
 
         $order = FixMiscalculatedTransactionAmounts::run($order, true);
 
         $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
-
 
         return [
             'order'          => $order,
@@ -58,7 +63,6 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     {
         /** @var Order $order */
         $order = Arr::get($checkoutData, 'order');
-
 
         $paymentAmounts = $this->calculatePaymentWithBalance(
             $order->total_amount,

@@ -11,10 +11,9 @@ namespace App\Actions\Dropshipping\Allegro\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -27,7 +26,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class StoreAllegroOrder extends RetinaAction
 {
@@ -35,6 +33,7 @@ class StoreAllegroOrder extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedTiktokAddress;
+    use WithPayAndSubmitOrder;
 
     /**
      * @throws \Throwable
@@ -73,13 +72,7 @@ class StoreAllegroOrder extends RetinaAction
             );
         }
 
-        try {
-            PayOrderAsync::run($order);
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-        }
-
-        SubmitOrder::run($order);
+        $order = $this->payAndSubmitOrder($order);
     }
 
     /**

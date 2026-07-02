@@ -11,12 +11,11 @@ namespace App\Actions\Dropshipping\Tiktok\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -36,6 +35,7 @@ class StoreTiktokOrder extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedTiktokAddress;
+    use WithPayAndSubmitOrder;
 
     public function handle(TiktokUser $tiktokUser, array $tiktokOrders): void
     {
@@ -89,13 +89,7 @@ class StoreTiktokOrder extends RetinaAction
             // CancelOrder::run($order);
         }
 
-        try {
-            PayOrderAsync::run($order);
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-        }
-
-        SubmitOrder::run($order);
+        $order = $this->payAndSubmitOrder($order);
     }
 
     /**

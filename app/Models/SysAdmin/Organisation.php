@@ -147,7 +147,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property array<array-key, mixed> $opening_hours
  * @property int $late_grace_period_minutes
- * @property string $banned_country_regions
+ * @property array $banned_country_regions
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
@@ -336,6 +336,16 @@ class Organisation extends Model implements HasMedia, Auditable
         return [
             'sysadmin',
         ];
+    }
+
+    public function bannedBillingCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['billing']);
+    }
+
+    public function bannedDeliveryCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['delivery']);
     }
 
     public function employees(): HasMany

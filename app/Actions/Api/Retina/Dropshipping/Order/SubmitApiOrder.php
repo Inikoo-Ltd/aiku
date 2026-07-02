@@ -10,22 +10,20 @@
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\RetinaApiAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class SubmitApiOrder extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
+    use WithPayAndSubmitOrder;
 
     /**
      * @throws \Throwable
@@ -44,13 +42,7 @@ class SubmitApiOrder extends RetinaApiAction
             ], 409);
         }
 
-        try {
-            PayOrderAsync::run($order);
-        } catch (Exception $e) {
-            Sentry::captureException($e);
-        }
-
-        return SubmitOrder::make()->action($order);
+        return $this->payAndSubmitOrder($order);
     }
 
     public function jsonResponse(JsonResponse|Order $result): OrderApiResource|\Illuminate\Http\Resources\Json\JsonResource|JsonResponse
