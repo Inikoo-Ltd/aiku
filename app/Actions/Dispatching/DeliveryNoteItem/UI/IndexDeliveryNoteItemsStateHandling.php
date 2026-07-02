@@ -53,6 +53,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query->with('orgStock.tradeUnits');
 
         $query->leftjoin('shops', 'shops.id', '=', 'delivery_note_items.shop_id');
+
         return $query
             ->defaultSort(['locations.sort_code', 'org_stocks.code'])
             ->select([
@@ -121,17 +122,16 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             if (!$deliveryNote || !$allowAction) {
                 $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            } else {
-                $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-                if ($isEditable) {
-                    $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
-                }
+            } elseif ($isEditable) {
+                $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
             }
 
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
-
+            if ($deliveryNote && $allowAction) {
+                $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
+            }
         };
     }
 
