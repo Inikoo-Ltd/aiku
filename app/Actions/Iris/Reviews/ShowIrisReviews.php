@@ -21,12 +21,15 @@ class ShowIrisReviews extends IrisAction
 {
     public function handle(string $tab): array
     {
-        $shop    = $this->shop;
-        $indexer = IndexReviewsInIris::make();
-
-        $tabs = [
-            'current'    => $tab,
-            'navigation' => $this->getTabNavigation(),
+        $shop        = $this->shop;
+        $indexer     = IndexReviewsInIris::make();
+        $shopProfile = [
+            'name'              => $shop->name,
+            'email'             => $shop->email,
+            'phone'             => $shop->phone,
+            'logo'              => $shop->image ? $shop->imageSources(120, 120) : null,
+            'formatted_address' => $shop->address?->formatted_address,
+            'country'           => $shop->country?->name,
         ];
 
         if ($tab === 'product') {
@@ -34,14 +37,12 @@ class ShowIrisReviews extends IrisAction
             $avgReview = $indexer->avgProductScopeReview($shop);
 
             return [
-                'tabs'          => $tabs,
-                'shop'          => [
-                    'name'  => $shop->name,
-                    'phone' => $shop->phone,
-                ],
+                'type'          => 'product',
+                'shop_profile'  => $shopProfile,
                 'reviews'       => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
                 'avg_review'    => $avgReview ? round((float) $avgReview, 1) : 0.0,
                 'total_reviews' => $reviews->total(),
+                'recommend_percent' => 0,
             ];
         }
 
@@ -57,24 +58,12 @@ class ShowIrisReviews extends IrisAction
             ->count();
 
         return [
-            'tab'               => 'company',
-            'tabs'              => $tabs,
-            'shop'              => [
-                'name'  => $shop->name,
-                'phone' => $shop->phone,
-            ],
+            'type'              => 'company',
+            'shop_profile'      => $shopProfile,
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
             'recommend_percent' => $totalReviews > 0 ? (int) round(($recommendCount / $totalReviews) * 100) : 0,
-        ];
-    }
-
-    public function getTabNavigation(): array
-    {
-        return [
-            ['key' => 'company', 'label' => __('Company Reviews')],
-            ['key' => 'product', 'label' => __('Product Reviews')],
         ];
     }
 
