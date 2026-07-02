@@ -9,8 +9,10 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
 
 trait WithOrderForbiddenCountryCheck
 {
@@ -31,14 +33,14 @@ trait WithOrderForbiddenCountryCheck
         ];
     }
 
+    public function isDeliveryForbiddenForShop(Shop $shop, ?Address $deliveryAddress): bool
+    {
+        return $this->isAddressForbidden($deliveryAddress, $this->getBannedCountriesTarget($shop)->bannedDeliveryCountries());
+    }
+
     protected function getBannedCountriesData(Order $order): array
     {
-        $shop   = $order->shop;
-        $target = $shop;
-
-        if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
-            $target = $shop->organisation;
-        }
+        $target = $this->getBannedCountriesTarget($order->shop);
 
         return [
             'billingAddress'          => $order->billingAddress,
@@ -46,6 +48,15 @@ trait WithOrderForbiddenCountryCheck
             'bannedBillingCountries'  => $target->bannedBillingCountries(),
             'bannedDeliveryCountries' => $target->bannedDeliveryCountries(),
         ];
+    }
+
+    protected function getBannedCountriesTarget(Shop $shop): Shop|Organisation
+    {
+        if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
+            return $shop->organisation;
+        }
+
+        return $shop;
     }
 
     public function isAddressForbidden(?Address $address, array $bannedCountries): bool

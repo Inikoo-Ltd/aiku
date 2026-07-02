@@ -1590,7 +1590,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 border rounded min-w-52"
                                 :class="is_forbidden_delivery ? 'border-red-500 bg-red-50' : 'ring-gray-300'"
                             >
-                                <div v-if="is_forbidden_delivery" v-tooltip="ctrans('Delivery to this address was banned (listed in Shop settings). You can submit the order anyway.')" class="absolute top-2 right-2">
+                                <div v-if="is_forbidden_delivery" v-tooltip="ctrans('Delivery to this address was banned (listed in Shop settings)') + ' ' + (state === 'creating' ? ctrans('You can submit the order anyway') : '')" class="absolute top-2 right-2">
                                     <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
                                 </div>
                                 <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>

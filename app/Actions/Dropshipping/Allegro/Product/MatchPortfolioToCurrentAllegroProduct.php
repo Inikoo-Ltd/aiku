@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\Tiktok\Product;
+namespace App\Actions\Dropshipping\Allegro\Product;
 
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\Portfolio;
@@ -14,22 +14,22 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MatchPortfolioToCurrentTiktokProduct extends OrgAction
+class MatchPortfolioToCurrentAllegroProduct extends OrgAction
 {
     use AsAction;
 
     public function handle(Portfolio $portfolio, array $modelData): void
     {
-        $tiktokUserId = Arr::get($modelData, 'platform_product_id');
+        $allegroProductId = Arr::get($modelData, 'platform_product_id');
 
         $portfolio->update([
-            'platform_product_id' => $tiktokUserId,
-            'platform_product_variant_id' => $tiktokUserId
+            'platform_product_id'         => $allegroProductId,
+            'platform_product_variant_id' => $allegroProductId
         ]);
 
         $portfolio->refresh();
 
-        CheckTiktokPortfolio::run($portfolio);
+        CheckAllegroPortfolio::run($portfolio);
     }
 
     public function rules(): array

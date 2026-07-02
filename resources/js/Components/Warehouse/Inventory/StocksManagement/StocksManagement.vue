@@ -673,17 +673,17 @@ const onAddLocationShow = () => {
 
         <!-- Action Buttons -->
         <!-- TODO ENABLE ON PRODUCTION  -->
-        <div class="flex justify-between border-t pt-3 gap-2" v-if="layout.app.environment === 'local'">
-            <Button @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.EDIT_LOCATION)" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" />
+        <div class="grid grid-cols-2 lg:grid-cols-4 border-t pt-3 gap-2" v-if="layout.app.environment === 'local'">
+            <Button @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" full />
+            <Button @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" full />
+            <Button @click="openModal(MODALS.EDIT_LOCATION)" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" full />
+            <Button @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" full />
         </div>
-        <div class="flex justify-between border-t pt-3 gap-2" v-else>
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
+        <div class="grid grid-cols-2 lg:grid-cols-4 border-t pt-3 gap-2" v-else>
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" full />
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" full v-if="layout.app.environment === 'local'"/>
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" full />
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" full v-if="layout.app.environment === 'local'"/>
         </div>
 
         <!-- Popover: Notes -->

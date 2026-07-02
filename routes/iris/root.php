@@ -106,8 +106,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
         //system
         Route::get('/catalogue', ShowIrisCatalogue::class)->name('catalogue_iris');
-        /* Route::get('/company-reviews', ShowIrisCompanyReviews::class)->name('company_reviews');
-        Route::get('/product-reviews', ShowIrisProductReviews::class)->name('product_reviews'); */
+        Route::get('/reviews', ShowIrisCompanyReviews::class)->name('company_reviews');
+       /*  Route::get('/product-reviews', ShowIrisProductReviews::class)->name('product_reviews'); */
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
