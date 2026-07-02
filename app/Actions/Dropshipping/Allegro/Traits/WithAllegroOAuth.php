@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Sentry;
 
 trait WithAllegroOAuth
 {
@@ -203,8 +204,9 @@ trait WithAllegroOAuth
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('Allegro Device Flow error: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            Sentry::captureException($e);
+
+            return [];
         }
     }
 
@@ -258,10 +260,11 @@ trait WithAllegroOAuth
                     Arr::get($body, 'error_description') ?? $error ?? 'Device authorization failed'
                 );
             } catch (ValidationException $e) {
-                throw $e;
+                Sentry::captureException($e);
             } catch (\Exception $e) {
-                Log::error('Allegro Device Flow polling error: ' . $e->getMessage());
-                throw ValidationException::withMessages(['message' => $e->getMessage()]);
+                Sentry::captureException($e);
+
+                return [];
             }
         }
 
@@ -361,8 +364,9 @@ trait WithAllegroOAuth
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('Allegro DCR error: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            Sentry::captureException($e);
+
+            return [];
         }
     }
 }
