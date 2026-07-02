@@ -140,7 +140,7 @@ const props = defineProps<{
         name: string
         discount: string
     } | null
-
+    is_basket_created: boolean
 }>()
 
 
@@ -827,7 +827,7 @@ const onChangeInsurance = async (val: boolean) => {
     </div>
 
     <!-- Section: Recommendations -->
-    <Teleport xv-if="layout.app.environment !== 'production'" to="#retina-end-of-main" :disabled="!isTeleportReady" :key="teleportKey">
+    <Teleport v-if="is_basket_created" xv-if="layout.app.environment !== 'production'" to="#retina-end-of-main" :disabled="!isTeleportReady" :key="teleportKey">
         <div class="w-full mt-2 pt-4 border-t border-gray-300 border-dashed"
             :class="layout.leftSidebar.show ? 'max-w-[calc(1280px-200px)]' : 'max-w-[calc(1280px-(56px-0.5rem))]'"
         >

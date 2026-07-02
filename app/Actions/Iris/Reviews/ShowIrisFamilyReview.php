@@ -43,6 +43,7 @@ class ShowIrisFamilyReview extends IrisAction
                 'slug' => $family->slug,
                 'code' => $family->code,
             ],
+            'heading' => $family->name . " Reviews",
             'shop_profile' => [
                 'name'              => $shop->name,
                 'email'             => $shop->email,
