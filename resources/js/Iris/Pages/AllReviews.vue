@@ -179,13 +179,6 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                                 <div class="text-2xl font-bold text-gray-900">
                                     {{ props.shop_profile?.name ?? "Unknown Shop" }}
                                 </div>
-                                <div class="mt-1 text-sm text-gray-500">
-                                    {{
-                                        props.type === "product"
-                                            ? "Product reviews summary"
-                                            : "Company reviews summary"
-                                    }}
-                                </div>
                             </div>
                         </div>
 
