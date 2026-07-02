@@ -1,250 +1,293 @@
 <script setup lang="ts">
-import ListReviews from '@/Components/ListReviews.vue'
-import Image from '@/Common/Components/Image.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faPhone, faEnvelope, faLocationDot, faGlobe } from '@fortawesome/free-solid-svg-icons'
-import type { Image as ImageProxy } from '@/types/Image'
-import { computed } from 'vue'
+import ListReviews from "@/Components/ListReviews.vue"
+import Image from "@/Common/Components/Image.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faPhone, faEnvelope, faLocationDot, faGlobe } from "@fortawesome/free-solid-svg-icons"
+import type { Image as ImageProxy } from "@/types/Image"
+import { computed, ref } from "vue"
+import { router } from "@inertiajs/vue3"
 
 const props = defineProps<{
-    type?: 'company' | 'product'
-    webpage_slug?: string
-    reviews?: { data?: any[]; meta?: { total?: number } }
-    avg_review?: number
-    total_reviews: number
-    recommend_percent: number
-    shop_profile?: {
-        name: string
-        email?: string
-        phone?: string
-        logo?: ImageProxy | null
-        formatted_address?: string
-        country?: string
-    }
+	type?: "company" | "product"
+	webpage_slug?: string
+	reviews?: { data?: any[]; meta?: { total?: number } }
+	avg_review?: number
+	total_reviews: number
+	recommend_percent: number
+	shop_profile?: {
+		name: string
+		email?: string
+		phone?: string
+		logo?: ImageProxy | null
+		formatted_address?: string
+		country?: string
+	}
 }>()
 
 const ratingStars = computed(() => Array.from({ length: 5 }, (_, index) => index + 1))
 const averageRating = computed(() => props.avg_review ?? 0)
-const activeTab = computed(() => (props.type === 'product' ? 'product' : 'company'))
+
+const tabs = [
+    { key: "all", label: "All Reviews" },
+	{ key: "company", label: "Company Reviews" },
+	{ key: "family", label: "Family Reviews" },
+	{ key: "product", label: "Product Reviews" },
+] as const
+
+type TabKey = (typeof tabs)[number]["key"]
+
+const initialTab = (): TabKey => {
+	const paramTab = new URLSearchParams(window.location.search).get("tab")
+	if (paramTab && tabs.some((tab) => tab.key === paramTab)) {
+		return paramTab as TabKey
+	}
+	return props.type === "product" ? "product" : "all"
+}
+
+const activeTab = ref<TabKey>(initialTab())
+
+const selectTab = (key: TabKey) => {
+	if (activeTab.value === key) {
+		return
+	}
+	activeTab.value = key
+	router.get(
+		window.location.pathname,
+		{ tab: key },
+		{ preserveState: true, preserveScroll: true, replace: true }
+	)
+}
 const heroTitle = computed(
-    () => `${props.shop_profile?.name ?? 'Shop'} ${props.type === 'product' ? 'Product' : 'Company'} Reviews`
+	() =>
+		`${props.shop_profile?.name ?? "Shop"} ${props.type === "product" ? "Product" : "Company"} Reviews`
 )
 const reviewItems = computed(() => props.reviews?.data ?? [])
 const hasReviews = computed(() => reviewItems.value.length > 0)
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-50">
-        <!-- Hero -->
-        <section class="bg-white border-b">
-            <div class="max-w-7xl mx-auto px-8 py-10 lg:flex lg:items-start lg:justify-between">
-                <div class="lg:max-w-2xl">
-                    <h1 class="text-4xl font-bold text-gray-900">
-                        {{ heroTitle }}
-                    </h1>
+	<div class="min-h-screen bg-gray-50">
+		<!-- Hero -->
+		<section class="bg-white border-b">
+			<div class="max-w-7xl mx-auto px-8 py-10 lg:flex lg:items-start lg:justify-between">
+				<div class="lg:max-w-2xl">
+					<h1 class="text-4xl font-bold text-gray-900">
+						{{ heroTitle }}
+					</h1>
 
-                    <div class="flex items-center gap-2 mt-6">
-                        <span
-                            v-for="star in ratingStars"
-                            :key="star"
-                            :class="star <= Math.round(averageRating) ? 'text-yellow-400' : 'text-gray-200'"
-                            class="text-4xl"
-                        >
-                            ★
-                        </span>
-                        <span class="text-sm text-gray-500">
-                            ({{ averageRating.toFixed(1) }}/5)
-                        </span>
-                    </div>
+					<div class="flex items-center gap-2 mt-6">
+						<span
+							v-for="star in ratingStars"
+							:key="star"
+							:class="
+								star <= Math.round(averageRating)
+									? 'text-yellow-400'
+									: 'text-gray-200'
+							"
+							class="text-4xl">
+							★
+						</span>
+						<span class="text-sm text-gray-500">
+							({{ averageRating.toFixed(1) }}/5)
+						</span>
+					</div>
 
-                    <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                        <div class="rounded-3xl bg-gray-50 p-6 shadow-sm">
-                            <div class="text-sm text-gray-500">Average Rating</div>
-                            <div class="mt-2 text-3xl font-bold text-gray-900">
-                                {{ avg_review?.toFixed(1) ?? '0.0' }}/5
-                            </div>
-                        </div>
+					<div class="mt-6 grid gap-4 sm:grid-cols-2">
+						<div class="rounded-3xl bg-gray-50 p-6 shadow-sm">
+							<div class="text-sm text-gray-500">Average Rating</div>
+							<div class="mt-2 text-3xl font-bold text-gray-900">
+								{{ avg_review?.toFixed(1) ?? "0.0" }}/5
+							</div>
+						</div>
 
-                        <div class="rounded-3xl bg-gray-50 p-6 shadow-sm">
-                            <div class="text-sm text-gray-500">Total Reviews</div>
-                            <div class="mt-2 text-3xl font-bold text-gray-900">
-                                {{ total_reviews ?? 0 }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+						<div class="rounded-3xl bg-gray-50 p-6 shadow-sm">
+							<div class="text-sm text-gray-500">Total Reviews</div>
+							<div class="mt-2 text-3xl font-bold text-gray-900">
+								{{ total_reviews ?? 0 }}
+							</div>
+						</div>
+					</div>
+				</div>
 
-                <div class="mt-10 flex flex-col items-center rounded-3xl border border-gray-200 bg-gray-50 p-6 shadow-sm lg:mt-0 lg:min-w-[220px]">
-                    <div class="text-sm text-gray-500">Recommend Rate</div>
-                    <div class="mt-4 flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-sm">
-                        <span class="text-4xl font-bold text-teal-600">
-                            {{ recommend_percent ?? 0 }}%
-                        </span>
-                    </div>
-                    <p class="mt-4 text-center text-sm text-gray-600">
-                        of reviewers recommend this {{ props.type === 'product' ? 'product' : 'company' }}
-                    </p>
-                </div>
-            </div>
+				<div
+					class="mt-10 flex flex-col items-center rounded-3xl border border-gray-200 bg-gray-50 p-6 shadow-sm lg:mt-0 lg:min-w-[220px]">
+					<div class="text-sm text-gray-500">Recommend Rate</div>
+					<div
+						class="mt-4 flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-sm">
+						<span class="text-4xl font-bold text-primary">
+							{{ recommend_percent ?? 0 }}%
+						</span>
+					</div>
+					<p class="mt-4 text-center text-sm text-gray-600">
+						of reviewers recommend this
+						{{ props.type === "product" ? "product" : "company" }}
+					</p>
+				</div>
+			</div>
 
-            <!-- Tabs -->
-            <div class="border-t bg-white">
-                <div class="max-w-7xl mx-auto flex overflow-x-auto text-sm font-semibold text-gray-700">
-                    <button
-                        type="button"
-                        class="flex-1 whitespace-nowrap border-b-4 px-8 py-6 text-left transition hover:text-gray-900"
-                        :class="{ 'border-teal-600 text-teal-600': activeTab === 'company', 'border-transparent': activeTab !== 'company' }"
-                    >
-                        Company Reviews
-                    </button>
+			<!-- Tabs -->
+			<div class="border-t bg-white">
+				<div
+					class="max-w-7xl mx-auto flex overflow-x-auto text-sm font-semibold text-gray-700">
+					<button
+						v-for="tab in tabs"
+						:key="tab.key"
+						type="button"
+						class="flex-1 whitespace-nowrap border-b-4 px-8 py-6 text-center transition hover:text-gray-900"
+						:class="{
+							'border-primary text-primary': activeTab === tab.key,
+							'border-transparent': activeTab !== tab.key,
+						}"
+						@click="selectTab(tab.key)">
+						{{ tab.label }}
+					</button>
+				</div>
+			</div>
+		</section>
 
-                    <button
-                        type="button"
-                        class="flex-1 whitespace-nowrap border-b-4 px-8 py-6 text-left transition hover:text-gray-900"
-                        :class="{ 'border-teal-600 text-teal-600': activeTab === 'product', 'border-transparent': activeTab !== 'product' }"
-                    >
-                        Product Reviews
-                    </button>
-                </div>
-            </div>
-        </section>
+		<!-- Content -->
+		<section class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+			<div class="grid gap-10 lg:grid-cols-12">
+				<!-- Left -->
+				<div class="lg:col-span-4">
+					<div
+						class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+						<div class="space-y-6 p-8 text-center">
+							<div
+								class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gray-50">
+								<Image
+									v-if="props.shop_profile?.logo"
+									:src="props.shop_profile.logo"
+									:alt="props.shop_profile.name ?? 'Shop Logo'"
+									:imageCover="true"
+									class="h-full w-full" />
+								<span v-else class="text-3xl font-bold text-gray-400">
+									{{ props.shop_profile?.name?.charAt(0)?.toUpperCase() ?? "?" }}
+								</span>
+							</div>
 
-        <!-- Content -->
-        <section class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-            <div class="grid gap-10 lg:grid-cols-12">
-                <!-- Left -->
-                <div class="lg:col-span-4">
-                    <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-                        <div class="space-y-6 p-8 text-center">
-                            <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gray-50">
-                                <Image
-                                    v-if="props.shop_profile?.logo"
-                                    :src="props.shop_profile.logo"
-                                    :alt="props.shop_profile.name ?? 'Shop Logo'"
-                                    :imageCover="true"
-                                    class="h-full w-full"
-                                />
-                                <span
-                                    v-else
-                                    class="text-3xl font-bold text-gray-400"
-                                >
-                                    {{ props.shop_profile?.name?.charAt(0)?.toUpperCase() ?? '?' }}
-                                </span>
-                            </div>
+							<div>
+								<div class="text-2xl font-bold text-gray-900">
+									{{ props.shop_profile?.name ?? "Unknown Shop" }}
+								</div>
+								<div class="mt-1 text-sm text-gray-500">
+									{{
+										props.type === "product"
+											? "Product reviews summary"
+											: "Company reviews summary"
+									}}
+								</div>
+							</div>
+						</div>
 
-                            <div>
-                                <div class="text-2xl font-bold text-gray-900">
-                                    {{ props.shop_profile?.name ?? 'Unknown Shop' }}
-                                </div>
-                                <div class="mt-1 text-sm text-gray-500">
-                                    {{ props.type === 'product' ? 'Product reviews summary' : 'Company reviews summary' }}
-                                </div>
-                            </div>
-                        </div>
+						<div class="space-y-4 border-t border-gray-100 px-8 py-8 text-gray-600">
+							<div
+								v-if="props.shop_profile?.formatted_address"
+								class="flex items-start gap-3">
+								<FontAwesomeIcon
+									:icon="faLocationDot"
+									class="mt-1 w-4 text-gray-400" />
+								<span v-html="props.shop_profile.formatted_address"></span>
+							</div>
 
-                        <div class="space-y-4 border-t border-gray-100 px-8 py-8 text-gray-600">
-                            <div v-if="props.shop_profile?.formatted_address" class="flex items-start gap-3">
-                                <FontAwesomeIcon :icon="faLocationDot" class="mt-1 w-4 text-gray-400" />
-                                <span v-html="props.shop_profile.formatted_address"></span>
-                            </div>
+							<div v-if="props.shop_profile?.country" class="flex items-start gap-3">
+								<FontAwesomeIcon :icon="faGlobe" class="mt-1 w-4 text-gray-400" />
+								<span>{{ props.shop_profile.country }}</span>
+							</div>
 
-                            <div v-if="props.shop_profile?.country" class="flex items-start gap-3">
-                                <FontAwesomeIcon :icon="faGlobe" class="mt-1 w-4 text-gray-400" />
-                                <span>{{ props.shop_profile.country }}</span>
-                            </div>
+							<div v-if="props.shop_profile?.phone" class="flex items-start gap-3">
+								<FontAwesomeIcon :icon="faPhone" class="mt-1 w-4 text-gray-400" />
+								<span>{{ props.shop_profile.phone }}</span>
+							</div>
 
-                            <div v-if="props.shop_profile?.phone" class="flex items-start gap-3">
-                                <FontAwesomeIcon :icon="faPhone" class="mt-1 w-4 text-gray-400" />
-                                <span>{{ props.shop_profile.phone }}</span>
-                            </div>
+							<div v-if="props.shop_profile?.email" class="flex items-start gap-3">
+								<FontAwesomeIcon
+									:icon="faEnvelope"
+									class="mt-1 w-4 text-gray-400" />
+								<span>{{ props.shop_profile.email }}</span>
+							</div>
+						</div>
+					</div>
+				</div>
 
-                            <div v-if="props.shop_profile?.email" class="flex items-start gap-3">
-                                <FontAwesomeIcon :icon="faEnvelope" class="mt-1 w-4 text-gray-400" />
-                                <span>{{ props.shop_profile.email }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+				<!-- Right -->
+				<div class="lg:col-span-8">
+					<div
+						class="overflow-hidden rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
+						<div class="text-center">
+							<h2 class="text-3xl font-bold text-gray-900">Write your review</h2>
+							<p class="mt-2 text-sm text-gray-500">
+								Share your experience with this
+								{{ props.type === "product" ? "product" : "company" }}.
+							</p>
+						</div>
 
-                <!-- Right -->
-                <div class="lg:col-span-8">
-                    <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-                        <div class="text-center">
-                            <h2 class="text-3xl font-bold text-gray-900">Write your review</h2>
-                            <p class="mt-2 text-sm text-gray-500">
-                                Share your experience with this {{ props.type === 'product' ? 'product' : 'company' }}.
-                            </p>
-                        </div>
+						<div class="mt-8 grid grid-cols-5 gap-3">
+							<button
+								v-for="star in ratingStars"
+								:key="star"
+								type="button"
+								class="flex h-16 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-4xl text-gray-300 transition hover:border-primary hover:text-primary">
+								★
+							</button>
+						</div>
 
-                        <div class="mt-8 grid grid-cols-5 gap-3">
-                            <button
-                                v-for="star in ratingStars"
-                                :key="star"
-                                type="button"
-                                class="flex h-16 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-4xl text-gray-300 transition hover:border-teal-400 hover:text-yellow-400"
-                            >
-                                ★
-                            </button>
-                        </div>
+						<div class="mt-10">
+							<h3 class="text-xl font-semibold text-gray-900">Recent reviews</h3>
+							<p class="mt-2 text-sm text-gray-500">
+								{{ total_reviews }} reviews available for this
+								{{ props.type === "product" ? "product" : "company" }}.
+							</p>
 
-                        <div class="mt-10">
-                            <h3 class="text-xl font-semibold text-gray-900">Recent reviews</h3>
-                            <p class="mt-2 text-sm text-gray-500">
-                                {{ total_reviews }} reviews available for this {{ props.type === 'product' ? 'product' : 'company' }}.
-                            </p>
+							<div class="mt-6">
+								<ListReviews
+									v-if="hasReviews"
+									:resource="props.reviews ?? {}"
+									:tab="
+										props.type === 'product'
+											? 'product_reviews'
+											: 'company_reviews'
+									"
+									:readonly="true" />
 
-                            <div class="mt-6">
-                                <ListReviews
-                                v-if="hasReviews"
-                                :resource="props.reviews ?? {}"
-                                :tab="props.type === 'product' ? 'product_reviews' : 'company_reviews'"
-                                :readonly="true"
-                            />
-
-                                <div v-else class="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
-                                    No reviews have been published yet.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <!--  <ListReviews 
-    :review_settings="review_settings" 
-    :data="props.reviews" 
-    :tab="'reviews'"
-  /> -->
+								<div
+									v-else
+									class="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
+									No reviews have been published yet.
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+	</div>
 </template>
-
-
 
 <style scoped>
 :deep(.review-rating .p-rating) {
-    gap: 2px;
+	gap: 2px;
 }
 
 :deep(.review-rating-small .p-rating) {
-    gap: 2px;
+	gap: 2px;
 }
 
 :deep(.review-rating .p-rating-item-icon) {
-    color: #f59e0b;
-    font-size: 1rem;
+	color: #f59e0b;
+	font-size: 1rem;
 }
 
 :deep(.review-rating-small .p-rating-item-icon) {
-    color: #f59e0b;
-    font-size: 0.8rem;
+	color: #f59e0b;
+	font-size: 0.8rem;
 }
 
 :deep(.p-rating-item) {
-    margin-right: 1px;
+	margin-right: 1px;
 }
 
 :deep(.rating .p-rating-option-active .p-rating-icon) {
-    color: #f59e0b !important;
+	color: #f59e0b !important;
 }
 </style>
