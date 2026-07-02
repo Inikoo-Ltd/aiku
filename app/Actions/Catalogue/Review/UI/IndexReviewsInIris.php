@@ -14,11 +14,13 @@ use App\Enums\Catalogue\Review\ReviewReactionTargetEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
+use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Reviews\Review;
 use App\Services\QueryBuilder;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
@@ -39,7 +41,9 @@ class IndexReviewsInIris extends OrgAction
 
         $select = [
                 'reviews.id',
+                'reviews.scope',
                 'reviews.rating_main',
+                'reviews.is_public',
                 'customers.contact_name',
                 'reviews.message',
                 'reviews.published_at',
@@ -49,6 +53,7 @@ class IndexReviewsInIris extends OrgAction
                 'reviews.replay_dislikes',
                 'reviews.web_images',
                 'reviews.reply_message as reply',
+                'reviews.reply_at',
                 'reply_users.contact_name as reply_by',
             ];
 
@@ -144,7 +149,9 @@ class IndexReviewsInIris extends OrgAction
 
         $select = [
             'reviews.id',
+            'reviews.scope',
             'reviews.rating_main',
+            'reviews.is_public',
             'customers.contact_name',
             'reviews.message',
             'reviews.published_at',
@@ -153,7 +160,8 @@ class IndexReviewsInIris extends OrgAction
             'reviews.replay_likes',
             'reviews.replay_dislikes',
             'reviews.web_images',
-            'reviews.reply_message as reply',
+            'reviews.reply_message as reply_message',
+            'reviews.reply_at',
             'reply_users.contact_name as reply_by',
             'products.name as product_name',
             'products.slug as product_slug',
@@ -212,6 +220,21 @@ class IndexReviewsInIris extends OrgAction
             ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    public function tableStructure(?string $prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table->name($prefix)->pageName("{$prefix}Page");
+            }
+
+            $table->withGlobalSearch();
+
+            $table->column(key: 'name', label: __('Reviewer'), canBeHidden: false, sortable: false)
+                ->column(key: 'review', label: __('Review'), canBeHidden: false, sortable: false)
+                ->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true);
+        };
     }
 
     public function avgProductScopeReview(Shop $shop): string|null
