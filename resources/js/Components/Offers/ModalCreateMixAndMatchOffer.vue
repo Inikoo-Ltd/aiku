@@ -3,7 +3,6 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ref, computed, watch, nextTick } from 'vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import { ctrans } from '@/Composables/useTrans'
 import InformationIcon from '../Utils/InformationIcon.vue'
@@ -11,6 +10,11 @@ import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
 import axios from 'axios'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faLayerGroup } from "@fas"
+
+library.add(faLayerGroup)
 
 const props = defineProps<{
     shop_data: {
