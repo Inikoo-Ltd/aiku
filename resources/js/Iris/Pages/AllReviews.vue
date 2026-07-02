@@ -14,6 +14,7 @@ const props = defineProps<{
 	avg_review?: number
 	total_reviews: number
 	recommend_percent: number
+    review_settings : object
 	shop_profile?: {
 		name: string
 		email?: string
@@ -242,9 +243,11 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
 							<div class="mt-6">
 								<ListReviews
 									v-if="hasReviews"
-									:resource="props.reviews ?? {}"
+									:data="props.reviews"
 									:tab="activeTab"
-									:readonly="true" />
+									:readonly="true" 
+                                    :review_settings
+                                    />
 
 								<div
 									v-else
