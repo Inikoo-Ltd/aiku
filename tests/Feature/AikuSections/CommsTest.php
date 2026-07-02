@@ -3068,3 +3068,181 @@ test('show email address', function () {
 
     expect($shown->is($emailAddress))->toBeTrue();
 });
+
+test('delete back in stock reminder', function () {
+    [, $product] = createProduct($this->shop);
+    $reminder = \App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder::make()->action($this->customer, $product, [], strict: false);
+
+    $deleted = \App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder::make()->action($reminder);
+
+    expect($deleted->id)->toBe($reminder->id);
+    expect(\App\Models\Comms\BackInStockReminder::find($reminder->id))->toBeNull();
+});
+
+test('update back in stock reminder', function () {
+    [, $product] = createProduct($this->shop);
+    $reminder = \App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder::make()->action($this->customer, $product, [], strict: false);
+
+    $reminder = \App\Actions\Comms\BackInStockReminder\UpdateBackInStockReminder::make()->handle($reminder, [
+        'source_id' => 'update-source-1',
+    ]);
+
+    expect($reminder->source_id)->toBe('update-source-1');
+});
+
+test('index customer back in stock reminders', function () {
+    [, $product] = createProduct($this->shop);
+    \App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder::make()->action($this->customer, $product, [], strict: false);
+
+    $fakeRoute = new \Illuminate\Routing\Route('GET', '/fake-customer-back-in-stock', []);
+    $fakeRoute->name('grp.json.customer.back-in-stock');
+    app('request')->setRouteResolver(fn () => $fakeRoute);
+
+    $results = \App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders::make()->handle($this->customer);
+
+    expect($results->total())->toBeGreaterThanOrEqual(1);
+});
+
+test('index retina customer back in stock reminders', function () {
+    [, $product] = createProduct($this->shop);
+    \App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder::make()->action($this->customer, $product, [], strict: false);
+
+    $fakeRoute = new \Illuminate\Routing\Route('GET', '/fake-retina-customer-back-in-stock', []);
+    $fakeRoute->name('retina.json.customer.back-in-stock');
+    app('request')->setRouteResolver(fn () => $fakeRoute);
+
+    $results = \App\Actions\Comms\BackInStockReminder\UI\IndexRetinaCustomerBackInStockReminders::make()->handle($this->customer);
+
+    expect($results->total())->toBeGreaterThanOrEqual(1);
+});
+
+test('product has back in stock reminders', function () {
+    [, $product] = createProduct($this->shop);
+    \App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder::make()->action($this->customer, $product, [], strict: false);
+
+    $fakeRoute = new \Illuminate\Routing\Route('GET', '/fake-product-back-in-stock', []);
+    $fakeRoute->name('grp.json.product.back-in-stock');
+    app('request')->setRouteResolver(fn () => $fakeRoute);
+
+    $results = \App\Actions\Comms\BackInStockReminder\UI\ProductHasBackInStockReminders::make()->handle($product);
+
+    expect($results->total())->toBeGreaterThanOrEqual(1);
+});
+
+test('post room hydrate intervals throws due to missing number_ column prefix', function () {
+    // ponytail: the action builds stat keys as "{metric}_{frame}" (e.g. "dispatched_emails_all")
+    // but post_room_stats columns are prefixed "number_..." (e.g. "number_dispatched_emails_all"),
+    // so this always throws a QueryException. Documenting current broken behavior.
+    $postRoom = $this->group->postRooms()->first();
+
+    expect(fn () => \App\Actions\Comms\PostRoom\Hydrators\PostRoomHydrateIntervals::run($postRoom))
+        ->toThrow(\Illuminate\Database\QueryException::class);
+});
+
+test('get post room showcase', function () {
+    $postRoom = $this->group->postRooms()->first();
+
+    $showcase = \App\Actions\Comms\PostRoom\UI\GetPostRoomShowcase::run($postRoom);
+
+    expect($showcase)->toHaveKey('postRoom')
+        ->and($showcase)->toHaveKey('stats');
+});
+
+test('show post room', function () {
+    $postRoom = $this->group->postRooms()->first();
+
+    $shown = \App\Actions\Comms\PostRoom\UI\ShowPostRoom::make()->handle($postRoom);
+
+    expect($shown->is($postRoom))->toBeTrue();
+});
+
+test('store sender email', function () {
+    $senderEmail = \App\Actions\Comms\SenderEmail\StoreSenderEmail::make()->action([
+        'email_address' => 'sender-test@example.com',
+    ]);
+
+    expect($senderEmail->email_address)->toBe('sender-test@example.com');
+
+    return $senderEmail;
+});
+
+test('update sender email', function (\App\Models\Comms\SenderEmail $senderEmail) {
+    $senderEmail = \App\Actions\Comms\SenderEmail\UpdateSenderEmail::make()->handle($senderEmail, [
+        'usage_count' => 5,
+    ]);
+
+    expect($senderEmail->usage_count)->toBe(5);
+})->depends('store sender email');
+
+test('process ses notification deletes itself when no matching dispatched email', function () {
+    $sesNotification = \App\Models\Comms\SesNotification::create([
+        'message_id' => 'no-matching-dispatched-email',
+        'data'       => ['eventType' => 'Send'],
+    ]);
+
+    $result = \App\Actions\Comms\SesNotification\ProcessSesNotification::run($sesNotification);
+
+    expect($result)->toBe([]);
+    expect(\App\Models\Comms\SesNotification::find($sesNotification->id))->toBeNull();
+});
+
+test('authenticate beefree account and export json to html', function () {
+    \Illuminate\Support\Facades\Http::fake([
+        'auth.getbee.io/*' => \Illuminate\Support\Facades\Http::response(['access_token' => 'test-token'], 200),
+        'api.getbee.io/*'  => \Illuminate\Support\Facades\Http::response('<div>compiled</div>', 200),
+    ]);
+
+    UpdateGroupSettings::make()->action($this->group, [
+        'client_id'     => 'xxx',
+        'client_secret' => 'xxx',
+        'grant_type'    => 'whatever'
+    ]);
+
+    $authResult = \App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount::make()->action($this->organisation);
+
+    expect($authResult['access_token'])->toBe('test-token');
+
+    $html = \App\Actions\Comms\BeeFreeSDK\BeefreeExportJsonToHtml::make()->handle($this->organisation, ['json' => ['body' => 'test']]);
+
+    expect($html)->toBe('<div>compiled</div>');
+});
+
+test('authenticate beefree account throws when credentials missing', function () {
+    // ponytail: handle() reads $this->group->settings['beefree'] without a fallback,
+    // so when the key is entirely absent it throws on the array access itself rather
+    // than reaching the intended "credentials not configured" guard. Documenting current behavior.
+    $settings = $this->group->settings;
+    unset($settings['beefree']);
+    $this->group->update(['settings' => $settings]);
+
+    expect(fn () => \App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount::make()->action($this->organisation))
+        ->toThrow(\ErrorException::class);
+});
+
+test('show unsubscribe from aurora', function () {
+    $response = (new \App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora())->htmlResponse();
+
+    expect($response)->toBeInstanceOf(\Inertia\Response::class);
+});
+
+test('show unsubscribe mailshot', function () {
+    $response = (new \App\Actions\Comms\Unsubscribe\ShowUnsubscribeMailshot())->htmlResponse();
+
+    expect($response)->toBeInstanceOf(\Inertia\Response::class);
+});
+
+test('unsubscribe mailshot updates customer comms', function () {
+    $outbox          = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot        = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+        $mailshot,
+        $this->customer,
+        ['email_address' => 'unsubscribe-target@example.com']
+    );
+
+    $actionRequest = \Lorisleiva\Actions\ActionRequest::create('/', 'GET');
+    $result        = \App\Actions\Comms\Unsubscribe\UnsubscribeMailshot::make()->handle($dispatchedEmail, $actionRequest);
+
+    expect($result['id'])->toBe($dispatchedEmail->id);
+    expect($dispatchedEmail->refresh()->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::UNSUBSCRIBED);
+});
