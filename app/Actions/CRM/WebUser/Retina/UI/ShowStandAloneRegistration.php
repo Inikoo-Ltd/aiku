@@ -15,6 +15,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Helpers\Country\UI\GetAddressDataForShop;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Illuminate\Http\RedirectResponse;
@@ -28,12 +29,13 @@ class ShowStandAloneRegistration extends IrisAction
         $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->get();
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
+        $countriesAddressData = GetAddressDataForShop::run($shop, excludeForbiddenBilling: true, excludeForbiddenDelivery: false);
 
         $webUser = $request->user();
         return Inertia::render(
             'Auth/StandAloneRegistration',
             [
-                'countriesAddressData' => GetAddressData::run(),
+                'countriesAddressData' => $countriesAddressData,
                 'requiresPhoneNumber' => Arr::get($this->shop->settings, 'registration.require_phone_number', false),
                 'polls' => $pollsResource,
                 'client' => $webUser,

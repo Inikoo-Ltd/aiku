@@ -78,7 +78,8 @@ const props = defineProps<{
     }
     updateOrderRoute: routeType
     isCollection?: boolean
-    is_unable_dispatch?: boolean
+    is_forbidden_delivery?: boolean
+    is_forbidden_billing?: boolean
     order: {
 
     }
@@ -231,6 +232,9 @@ onMounted(() => {
                 </div>
             </div>
 
+            <div v-if="is_forbidden_billing" class="text-red-500 mt-3 text-xs">
+                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}
+            </div>
         </div>
 
         <div class="col-span-2 mb-2 md:mb-0 pl-1.5 md:pl-3">
@@ -274,7 +278,7 @@ onMounted(() => {
                             <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
                         </div>
                     </dd>
-                    <div v-if="is_unable_dispatch" class="text-red-500 mt-2 text-xs">
+                    <div v-if="is_forbidden_delivery" class="text-red-500 mt-2 text-xs">
                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
                     </div>
                 </div>

@@ -108,7 +108,8 @@ const props = defineProps<{
     is_in_basket: boolean
     contact_address: Address | null
     address_management: AddressManagement
-    is_unable_dispatch: boolean
+    is_forbidden_delivery: boolean
+    is_forbidden_billing: boolean
     charges: {
         premium_dispatch?: ChargeResource
         extra_packing?: ChargeResource
@@ -599,7 +600,8 @@ const onChangeInsurance = async (val: boolean) => {
         :summary
         :balance
         :address_management
-        :is_unable_dispatch
+        :is_forbidden_delivery
+        :is_forbidden_billing
         :contact_address
         :currency_code="order?.currency_code"
         :isInBasket="true"
@@ -770,7 +772,7 @@ const onChangeInsurance = async (val: boolean) => {
             
             <div class="border-t flex justify-end py-5 px-4 md:px-8">
                 <!-- Section: button Place Order & button Checkout -->
-                <div v-if="!is_unable_dispatch || order.is_collection" class="w-full md:w-72">
+                <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || order.is_collection" class="w-full md:w-72">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink
@@ -809,7 +811,8 @@ const onChangeInsurance = async (val: boolean) => {
                     />
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
-                    <div class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
+                    <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
+                    <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
                 </div>
             </div>
         </div>

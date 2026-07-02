@@ -24,15 +24,11 @@ import Image from "@/Common/Components/Image.vue"
 const props = defineProps<{
 	data: any[] | TableTS
 	tab: string
-	updateRoute: routeType
-	state?: string
 	readonly?: boolean
 	review_settings?: any
 }>()
 
 const layout = inject("layout", {})
-
-console.log("d", props)
 
 const scopeIcon = (scope: string) => {
 	switch (scope) {
