@@ -23,12 +23,10 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteWebpage extends OrgAction
 {
-    use AsAction;
     use WithAttributes;
 
     private Webpage $webpage;
