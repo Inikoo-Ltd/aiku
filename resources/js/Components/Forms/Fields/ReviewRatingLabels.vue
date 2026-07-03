@@ -3,6 +3,9 @@ import { computed, ref } from 'vue'
 import { get, set } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 import InputText from 'primevue/inputtext'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faPen } from '@far'
+
 
 const props = defineProps<{
     form: any
@@ -101,19 +104,22 @@ const stopEditingLabelTab = (): void => {
                                 {{ getLabelTabValue(context.key) }}
                             </template>
                         </span>
-                        <span class="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                            {{ countDimensions(context.key) }} {{ trans('Ratings') }}
-                        </span>
+                        
                     </div>
                 </button>
 
                 <button
                     type="button"
-                    class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    class="rounded-full  border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                     @click.stop="editLabelTab(context.key)"
                 >
-                    {{ trans('Edit') }}
+                <FontAwesomeIcon :icon="faPen" class="h-3 w-3 pr-1" />   
+                {{ trans('label') }}
                 </button>
+
+                <span class="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                            {{ countDimensions(context.key) }} {{ trans('Ratings') }}
+                        </span>
             </div>
 
             <div v-show="activeContext === context.key" class="border-t border-gray-200 px-4 py-4">
