@@ -311,7 +311,7 @@ task('deploy:log-app-deployment', function () {
 
 
 desc('Artisan Setup guess language');
-task('artisan:translations:setup-guess-language', artisan('deploy:translations:setup-guess-language'))->select('env=prod');
+task('artisan:translations:setup-guess-language', artisan('translations:setup-guess-language'))->select('env=prod');
 
 
 desc('Setup guess language');
