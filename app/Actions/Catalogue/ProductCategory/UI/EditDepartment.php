@@ -145,6 +145,14 @@ class EditDepartment extends OrgAction
                                             'languages'     => $languages,
                                             'mode'          => 'single',
                                             'value'         => $department->faq,
+                                            'routeGetInternalLink' => [
+                                                'name' => 'grp.org.shops.show.web.webpages.index',
+                                                'parameters' => [
+                                                    'shop' => $department->shop->slug,
+                                                    'organisation' => $department->organisation->slug,
+                                                    'website' => $department->shop->website?->slug
+                                                ]
+                                            ],
                                             'toogle'        => [
                                                'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
