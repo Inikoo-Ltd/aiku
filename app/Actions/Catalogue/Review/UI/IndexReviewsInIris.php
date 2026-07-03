@@ -191,6 +191,7 @@ class IndexReviewsInIris extends OrgAction
             'reviews.rating_main',
             'reviews.is_public',
             'customers.contact_name',
+            'customers.location',
             'reviews.message',
             'reviews.published_at',
             'reviews.likes',

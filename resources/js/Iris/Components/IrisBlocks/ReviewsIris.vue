@@ -17,6 +17,7 @@ import Image from "@/Common/Components/Image.vue"
 import StarRating from "@/Iris/Components/StarRating.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { faArrowRight } from "@fas"
+import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 
 
 const props = defineProps<{
@@ -224,7 +225,7 @@ const reviewLink = computed(() => {
             }
     }
 })
-
+console.log('plm',layout)
 </script>
 
 <template>
@@ -324,8 +325,11 @@ const reviewLink = computed(() => {
                         <p class="mt-2 h-20 overflow-hidden text-xs leading-5 text-gray-600 line-clamp-4">
                             {{ review.message }}
                         </p>
-
-                        <div class="mt-auto flex items-center justify-between pt-4">
+                        
+                        <div class="mt-auto text-[11px] text-gray-400 w-fit">
+                            <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location[1] != layout?.iris?.shop?.location[1]" />
+                        </div>
+                        <div class="flex items-center justify-between">
                             <div class="text-[11px] text-gray-400">
                                 {{ useFormatTime(review.date) }}
                             </div>
@@ -361,6 +365,8 @@ const reviewLink = computed(() => {
             </div>
         </div>
     </div>
+
+
 
 
     <Dialog v-model:visible="reviewModalVisible" modal dismissableMask :draggable="false" :closable="false"

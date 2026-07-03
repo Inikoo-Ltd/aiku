@@ -35,6 +35,7 @@ class IrisAllReviewsResource extends JsonResource
             'name'            => maskName($this->contact_name),
             'code'            => $code,
             'slug'            => $slug,
+            'location'        => is_string($this->location) ? json_decode($this->location, true) : $this->location,
             'created_at'      => $this->published_at,
             'review'          => [
                 'review_id'     => (int) $this->id,
