@@ -79,9 +79,10 @@ class ShowIrisReviews extends IrisAction
 
     private function productTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $reviews      = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'product');
-        $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::PRODUCT]);
-        $totalReviews = $reviews->total();
+        $includeOtherShops = $indexer->includesOtherShops($shop);
+        $reviews           = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'product');
+        $avgReview         = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::PRODUCT], $includeOtherShops);
+        $totalReviews      = $reviews->total();
 
         return [
             'type'              => 'product',
@@ -90,15 +91,16 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::PRODUCT]),
+            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::PRODUCT], $includeOtherShops),
         ];
     }
 
     private function familyTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $reviews      = $indexer->handleFamilyScopeReviews(shop: $shop, prefix: 'family');
-        $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::FAMILY]);
-        $totalReviews = $reviews->total();
+        $includeOtherShops = $indexer->includesOtherShops($shop);
+        $reviews           = $indexer->handleFamilyScopeReviews(shop: $shop, prefix: 'family');
+        $avgReview         = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::FAMILY], $includeOtherShops);
+        $totalReviews      = $reviews->total();
 
         return [
             'type'              => 'family',
@@ -107,7 +109,7 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::FAMILY]),
+            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::FAMILY], $includeOtherShops),
         ];
     }
 
@@ -128,10 +130,14 @@ class ShowIrisReviews extends IrisAction
         ];
     }
 
-    private function recommendPercent($shop, array $scopes): int
+    private function recommendPercent($shop, array $scopes, bool $includeOtherShops = false): int
     {
         $baseQuery = Review::query()
-            ->where('shop_id', $shop->id)
+            ->when(
+                    !$includeOtherShops, 
+                    fn ($query) => $query->where('shop_id', $shop->id),
+                    fn ($query) => $query->where('organisation_id', $shop->organisation_id)
+            )
             ->whereIn('scope', $scopes)
             ->where('state', ReviewStateEnum::PUBLISHED)
             ->where('is_public', true)
@@ -162,8 +168,9 @@ class ShowIrisReviews extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
-        $indexer = IndexReviewsInIris::make();
-        $shop    = $this->shop;
+        $indexer           = IndexReviewsInIris::make();
+        $shop              = $this->shop;
+        $includeOtherShops = $indexer->includesOtherShops($shop);
 
         return Inertia::render('AllReviews', $data)
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
@@ -174,10 +181,10 @@ class ShowIrisReviews extends IrisAction
             ])($t->name('company')->pageName('reviewsPage')))
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
                 ReviewScopeEnum::FAMILY,
-            ])($t->name('family')->pageName('reviewsPage')))
+            ], includeOtherShops: $includeOtherShops)($t->name('family')->pageName('reviewsPage')))
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
                 ReviewScopeEnum::PRODUCT,
-            ])($t->name('product')->pageName('reviewsPage')));
+            ], includeOtherShops: $includeOtherShops)($t->name('product')->pageName('reviewsPage')));
     }
 
     public function asController(ActionRequest $request): array
