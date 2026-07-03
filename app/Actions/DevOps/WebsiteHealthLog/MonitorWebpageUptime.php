@@ -20,15 +20,26 @@ class MonitorWebpageUptime
 
     protected function handle(string $url): array
     {
-        try {
-            $response     = Http::timeout(5)->get($url);
-            $isUp         = $response->successful();
-            $statusCode   = $response->status();
-            $errorMessage = $isUp ? null : 'Received status code: '.$statusCode;
-        } catch (\Exception $e) {
-            $isUp         = false;
-            $statusCode   = null;
-            $errorMessage = $e->getMessage();
+        $timeouts = [2, 5, 10];
+        $isUp = false;
+        $statusCode = null;
+        $errorMessage = null;
+
+        foreach ($timeouts as $timeout) {
+            try {
+                $response     = Http::timeout($timeout)->get($url);
+                $isUp         = $response->successful();
+                $statusCode   = $response->status();
+                $errorMessage = $isUp ? null : 'Received status code: ' . $statusCode;
+
+                if ($isUp) {
+                    break;
+                }
+            } catch (\Exception $e) {
+                $isUp         = false;
+                $statusCode   = null;
+                $errorMessage = $e->getMessage();
+            }
         }
 
         if (!$isUp) {
@@ -93,7 +104,7 @@ class MonitorWebpageUptime
                 'content' => $message,
             ]);
         } catch (\Exception $e) {
-            $command?->error('Failed to send Discord notification: '.$e->getMessage());
+            $command?->error('Failed to send Discord notification: ' . $e->getMessage());
         }
     }
 }

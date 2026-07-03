@@ -63,7 +63,7 @@ class UpdateFaireOrder extends OrgAction
             }
             foreach ($order->deliveryNotes as $deliveryNote) {
                 if ($deliveryNote->state != DeliveryNoteStateEnum::CANCELLED) {
-                    CancelDeliveryNote::run($deliveryNote, null);
+                    CancelDeliveryNote::run($deliveryNote, null, false);
                 }
             }
 
@@ -274,7 +274,7 @@ class UpdateFaireOrder extends OrgAction
 
     public function getCategoryTaxCategory(Order $order, array $orderFaireData): TaxCategory
     {
-        $tax = 0;
+        $tax  = 0;
         $isRe = false;
         foreach (Arr::get($orderFaireData, 'payout_costs.taxes', []) as $taxData) {
             if (Arr::get($taxData, 'tax_type') == 'RECARGO' && Arr::get($taxData, 'value.amount_minor', 0) > 0) {
@@ -299,6 +299,7 @@ class UpdateFaireOrder extends OrgAction
                 isRe: $isRe,
             );
         }
+
         return $taxCategory;
     }
 
