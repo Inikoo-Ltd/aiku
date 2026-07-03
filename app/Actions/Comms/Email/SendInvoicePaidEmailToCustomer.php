@@ -33,6 +33,8 @@ class SendInvoicePaidEmailToCustomer extends OrgAction
                 'content'  => GetInvoicePdfContent::run($invoice),
                 'filename' => $invoice->slug.'.pdf',
             ];
+
+            $additionalData['download_invoice_pdf_link'] = $invoice->shop->website->getUrl().'/app/invoices/'.$invoice->slug.'/pdf';
         }
 
         return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::INVOICE_PAID, $additionalData, attachments: $attachments);
