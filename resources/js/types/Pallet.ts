@@ -38,11 +38,6 @@ export interface Pallet {
     updateLocationRoute: routeType
     storeStoredItemRoute: routeType
     index: number
-    editingIndicator: {
-        loading: boolean
-        isSucces: boolean
-        isFailed: boolean
-    }
 }
 
 export interface PalletCustomer {

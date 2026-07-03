@@ -1137,7 +1137,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                         column.className
                                                     ]">
                                                     <slot :name="`cell(${column.key})`"
-                                                        :item="{ ...item, index: index, rowIndex : key, editingIndicator: { loading: false, isSucces: false, isFailed: false, editMode: false }, data : item }"
+                                                        :item="{ ...item, index: index, rowIndex : key, data : item }"
                                                         :proxyItem="item" :tabName="name" class="">
                                                         <template v-if="typeof item[column.key] == 'number' || column.type === 'number'">
                                                             {{ locale.number(item[column.key]) }}
@@ -1204,7 +1204,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                     column.className
                                                 ]">
                                                 <slot :name="`cell(${column.key})`"
-                                                    :item="{ ...item, index: index, rowIndex : key, editingIndicator: { loading: false, isSucces: false, isFailed: false, editMode: false }, data : item }"
+                                                    :item="{ ...item, index: index, rowIndex : key, data : item }"
                                                     :proxyItem="item" :tabName="name">
                                                     <template v-if="typeof item[column.key] == 'number' || column.type === 'number'">
                                                         {{ locale.number(item[column.key]) }}
@@ -1294,7 +1294,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                     column.className
                                                 ]">
                                                 <slot :name="`cell(${column.key})`"
-                                                    :item="{ ...item, index: index, rowIndex : key, editingIndicator: { loading: false, isSucces: false, isFailed: false, editMode: false }, data : item }"
+                                                    :item="{ ...item, index: index, rowIndex : key, data : item }"
                                                     :proxyItem="item" :tabName="name" class="">
                                                     <template
                                                         v-if="typeof item[column.key] == 'number' || column.type === 'number'">
@@ -1367,7 +1367,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                     column.className
                                                 ]">
                                                 <slot :name="`footerRows-cell(${column.key})`"
-                                                    :item="{ ...item, index: index, rowIndex : key, editingIndicator: { loading: false, isSucces: false, isFailed: false, editMode: false }, data : item }"
+                                                    :item="{ ...item, index: index, rowIndex : key, data : item }"
                                                     :tabName="name" class="">
                                                     <template
                                                         v-if="typeof item[column.key] == 'number' || column.type === 'number'">
