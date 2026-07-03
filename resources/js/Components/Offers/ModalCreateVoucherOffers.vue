@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, inject } from "vue"
 import { DatePicker, InputNumber, RadioButton } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -15,6 +15,7 @@ import Toggle from "../Pure/Toggle.vue"
 import PureMultiselectInfiniteScroll from "../Pure/PureMultiselectInfiniteScroll.vue"
 import { faSpinnerThird, faCheckCircle, faTimesCircle } from "@fas"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 library.add(faSpinnerThird, faCheckCircle, faTimesCircle)
 const props = defineProps<{
 	shop_data: {
@@ -29,6 +30,8 @@ const props = defineProps<{
 		}
 	}
 }>()
+
+const layout = inject("layout", layoutStructure)
 
 const isOpenModal = ref(false)
 const openModal = () => {
@@ -508,31 +511,36 @@ const isFormInvalid = computed(() => {
 
 				<!-- voucher type -->
 				<div class="space-y-3">
-					<label class="font-semibold flex items-center gap-x-1">
-						<FontAwesomeIcon
-							icon="fas fa-asterisk"
-							class="font-light text-xs text-red-400 align-middle" />
-						{{ trans("Voucher type") }}
-					</label>
-
-					<div class="flex flex-nowrap gap-2">
-						<label
-							v-for="opt in offerTypeOptions"
-							:key="opt.value"
-							:for="`offer-type-${opt.value}`"
-							class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-sm whitespace-nowrap"
-							:class="
-								offerType === opt.value
-									? 'border-green-500 bg-green-50 text-green-700 font-semibold'
-									: 'border-gray-200 hover:border-gray-300'
-							">
-							<RadioButton
-								v-model="offerType"
-								:value="opt.value"
-								:inputId="`offer-type-${opt.value}`" />
-							<span>{{ trans(opt.label) }}</span>
+					<template v-if="layout.app.environment === 'local'">
+						<label class="font-semibold flex items-center gap-x-1">
+							<FontAwesomeIcon
+								icon="fas fa-asterisk"
+								class="font-light text-xs text-red-400 align-middle" />
+							{{ trans("Voucher type") }}
+							<span class="inline-flex items-center rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-600">
+								{{ trans('Local only') }}
+							</span>
 						</label>
-					</div>
+
+						<div class="flex flex-nowrap gap-2">
+							<label
+								v-for="opt in offerTypeOptions"
+								:key="opt.value"
+								:for="`offer-type-${opt.value}`"
+								class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-sm whitespace-nowrap"
+								:class="
+									offerType === opt.value
+										? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+										: 'border-gray-200 hover:border-gray-300'
+								">
+								<RadioButton
+									v-model="offerType"
+									:value="opt.value"
+									:inputId="`offer-type-${opt.value}`" />
+								<span>{{ trans(opt.label) }}</span>
+							</label>
+						</div>
+					</template>
 
 					<!-- Section: Discount -->
 					<div v-if="isPercentageOff">

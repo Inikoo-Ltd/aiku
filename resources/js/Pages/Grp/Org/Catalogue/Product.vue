@@ -334,12 +334,19 @@ const saveProductReview = async () => {
                 :product_id="props.product_id"
                  />
 
-            <ModalCreateStepDiscountProduct
+            <div
                 v-if="currentTab === 'offers' && layout?.app?.environment == 'local'"
-                v-tooltip="'Create New Offer'"
-                :shop_data="props.shop_data"
-                :product_id="props.product_id"
-            />
+                class="relative inline-flex"
+            >
+                <ModalCreateStepDiscountProduct
+                    v-tooltip="'Create New Offer'"
+                    :shop_data="props.shop_data"
+                    :product_id="props.product_id"
+                />
+                <span class="pointer-events-none absolute -top-2 -right-1.5 z-10 rounded bg-red-500 px-1 py-px text-[10px] font-bold leading-none text-white shadow">
+                    {{ trans('Local') }}
+                </span>
+            </div>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
