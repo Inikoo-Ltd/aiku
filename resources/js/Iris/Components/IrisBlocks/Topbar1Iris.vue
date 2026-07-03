@@ -258,7 +258,7 @@ const goToBundle = () => {
                 </Button>
             </LinkIris>
 
-            <LinkIris v-else="checkVisible(model?.favourite?.visible || null, isLoggedIn)" href="/app/dropshipping/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris v-if="isLoggedIn" href="/app/dropshipping/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
                     v-tooltip="trans('Reminder back in stock')"
                     type="transparent"
@@ -311,9 +311,9 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Register -->
-            <LinkIris href="/app/register" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris  v-if="(checkVisible(model?.register?.visible || null, isLoggedIn))" href="/app/register" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-if="(checkVisible(model?.register?.visible || null, isLoggedIn))"
+                   
                     :loading="isLoading"
                     icon="fal fa-user-plus"
                     type="transparent"
@@ -331,9 +331,8 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Login -->
-            <LinkIris :href="urlLoginWithRedirect()" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris   v-if="checkVisible(model?.login?.visible || null, isLoggedIn)" :href="urlLoginWithRedirect()" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
                     :loading="isLoading"
                     icon="fal fa-sign-in"
                     type="transparent"
