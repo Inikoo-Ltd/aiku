@@ -27,7 +27,6 @@ use App\Models\Ordering\Order;
 use App\Models\Reviews\Traits\IsReviews;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
@@ -53,7 +52,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property \Illuminate\Support\Carbon|null $auto_approve_at
  * @property bool $is_public
  * @property string|null $message
- * @property string $web_images
+ * @property array<array-key, mixed> $web_images
  * @property int|null $language_id
  * @property ReviewStatusEnum $review_status
  * @property bool $approved

@@ -6,7 +6,7 @@ use App\Models\Helpers\Address;
 
 function makeForbiddenCountryCheckAction()
 {
-    return new class {
+    return new class () {
         use WithOrderForbiddenCountryCheck;
     };
 }

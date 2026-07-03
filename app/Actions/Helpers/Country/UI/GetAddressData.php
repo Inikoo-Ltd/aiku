@@ -26,12 +26,12 @@ class GetAddressData
             // Handle if shop follow organisation banned countries
             if (data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false)) {
                 $target = $shop->organisation;
-            };
-            
+            }
+
             $countries = Country::where('status', true)
                 ->where('show_in_address', true)
                 ->when(
-                    !$ignoreForbiddenDispatchCountries, 
+                    !$ignoreForbiddenDispatchCountries,
                     fn ($q) => $q->whereNotIn('id', $target->bannedDeliveryCountries() ?? [])
                 )
                 ->get();

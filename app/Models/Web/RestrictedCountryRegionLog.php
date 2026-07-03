@@ -14,8 +14,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $ip_geolocation_id
  * @property bool $was_blocked
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon $last_request_at
  * @property int $number_requests
+ * @property-read \App\Models\Web\IpGeolocation $ipGeolocation
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedCountryRegionLog newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedCountryRegionLog newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedCountryRegionLog query()
+ * @mixin \Eloquent
  */
 class RestrictedCountryRegionLog extends Model
 {

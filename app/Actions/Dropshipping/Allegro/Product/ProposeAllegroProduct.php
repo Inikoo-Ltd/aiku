@@ -13,7 +13,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
