@@ -10,16 +10,13 @@
 namespace App\Actions\Reviews\Import;
 
 use App\Actions\Reviews\StoreReview;
-use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Language;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Review;
-use App\Models\SysAdmin\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\RemembersRowNumber;
@@ -27,8 +24,8 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 
 class ReviewIOImport implements ToCollection
 {
-    private Shop $shop;
     use RemembersRowNumber;
+    private Shop $shop;
 
     public function __construct(Shop $shop)
     {
@@ -44,20 +41,39 @@ class ReviewIOImport implements ToCollection
             ->get()
             ->keyBy('email');
 
-        $language = Language::where('code', 'en')->first();
+        $language_id = $this->shop->language_id;
 
         $first = true;
         $isShopCSV = false;
+
+        $orderColumnPos = null;
+        $customerEmailColumnPos = null;
+
         foreach ($collection as $row) {
             if ($first) {
                 $first = false;
 
-                $isShopCSV = $row[0] === 'nps';
+                $arrayRow = $row->toArray();
+                $isShopCSV = in_array('nps', $arrayRow);
+                // To get column number, handling different ReviewIO format that idk how and why they gave us that way
+                $columnNumber = array_flip($arrayRow);
+
+                $orderColumnPos                 = data_get($columnNumber, 'order_id');
+                $customerEmailColumnPos         = data_get($columnNumber, 'email');
+                $reviewCommentColumnPos         = data_get($columnNumber, 'comments');
+                $widgetFingerprintColumnPos     = data_get($columnNumber, 'widget_fingerprint');
+                $ratingColumnPos                = data_get($columnNumber, 'rating');
+                $replyColumnPos                 = data_get($columnNumber, 'reply');
+                $createdDateColumnPos           = data_get($columnNumber, 'date_created');
+                $productSkuColumnPos            = data_get($columnNumber, 'product_sku');
+                $publishedImageColumnPos        = data_get($columnNumber, 'published_images');
+                $publishedVideoColumnPos        = data_get($columnNumber, 'published_videos');
+
                 continue;
             }
 
             /** @var Customer $customer */
-            $customer = $customers->get($row[$isShopCSV ? 8 : 10]);
+            $customer = $customers->get($row[$customerEmailColumnPos]);
 
             if (!$customer) {
                 continue;
@@ -65,28 +81,28 @@ class ReviewIOImport implements ToCollection
 
             $scope = $this->shop;
 
-            $orderColumn = $row[$isShopCSV ? 1 : 0];
-            $order = Order::where('customer_id', $customer->id)->where('reference',  )->first();
+            $orderColumn = $row[$orderColumnPos];
+            $order = Order::where('customer_id', $customer->id)->where('reference', $orderColumn)->first();
             if ($order) {
                 $scope = $order;
             }
 
-            $reviewComment = $row[2];
-            // Generate manually if doesn't exists. Idk, Raul would need to take a look at this later. 
+            $reviewComment = $row[$reviewCommentColumnPos];
+            // Generate manually if doesn't exists. Idk, Raul would need to take a look at this later.
             // I used widget fingerprint currently as it is the most unique column that exists on both Product & Shop CSV, but it is nullable, and there's no other unique column
             // So created custom checksum for this.
-            $externalId = $row[$isShopCSV ? 10 : 23] ?? hash('sha256', "reviewIO.{$orderColumn}.{$reviewComment}");
+            $externalId = $row[$widgetFingerprintColumnPos] ?? hash('sha256', "reviewIO.{$orderColumn}.{$reviewComment}");
             $review = Review::where('external_id', $externalId)->first();
 
             if ($review) {
                 continue;
             }
-        
+
             $reviewData = array_filter([
                 'order_id'          => $order?->id,
                 'customer_id'       => $customer->id,
-                'language_id'       => $language->id,
-                'rating'            => $row[3],
+                'language_id'       => $language_id,
+                'rating'            => $row[$ratingColumnPos],
                 'message'           => is_scalar($reviewComment) ? (string) $reviewComment : '',
                 'external_id'       => $externalId,
             ]);
@@ -97,39 +113,39 @@ class ReviewIOImport implements ToCollection
 
             if ($isShopCSV) {
                 $replyData = [
-                    'replied'           => (bool) $row[15],
-                    'reply_message'     => $row[15]
+                    'replied'           => (bool) $row[$replyColumnPos],
+                    'reply_message'     => $row[$replyColumnPos]
                 ];
 
                 $meta = [
                     'source'                  => 'ReviewIO',
-                    'review_created'          => $row[6],
+                    'review_created'          => $row[$createdDateColumnPos],
                 ];
 
                 $webImages = [
-                    'main'      => explode(';', $row[18]),
-                    'videos'    => explode(';', $row[20]),
+                    'main'      => explode(';', $row[$publishedImageColumnPos]),
+                    'videos'    => explode(';', $row[$publishedVideoColumnPos]),
                 ];
             } else {
-                $product = Product::where('shop_id', $this->shop->id)->where('code', $row[11])->first();
+                $product = Product::where('shop_id', $this->shop->id)->where('code', $row[$productSkuColumnPos])->first();
 
                 if ($product) {
                     $scope = $product;
                 }
 
                 $replyData = [
-                    'replied'           => (bool) $row[29],
-                    'reply_message'     => $row[29]
+                    'replied'           => (bool) $row[$replyColumnPos],
+                    'reply_message'     => $row[$replyColumnPos]
                 ];
 
                 $meta = [
                     'source'                  => 'ReviewIO',
-                    'review_created'          => $row[5],
+                    'review_created'          => $row[$createdDateColumnPos],
                 ];
 
                 $webImages = [
-                    'main'      => explode(';', $row[32]),
-                    'videos'    => explode(';', $row[34]),
+                    'main'      => explode(';', $row[$publishedImageColumnPos]),
+                    'videos'    => explode(';', $row[$publishedVideoColumnPos]),
                 ];
             }
 
@@ -141,13 +157,13 @@ class ReviewIOImport implements ToCollection
             }
 
             $review = StoreReview::make()->action($scope, $reviewData);
-                
+
             $review->update(
                 [
                     'is_online'     => true,
                     'published_at'  => Carbon::parse(
-                            $row[$isShopCSV ? 6 : 5]
-                        ),
+                        $row[$createdDateColumnPos]
+                    ),
                     'review_status' => ReviewStatusEnum::APPROVED->value,
                     'auto_approved' => true,
                     'approved'      => true,
@@ -169,7 +185,7 @@ class ReviewIOImport implements ToCollection
     }
 
     // DO NOT DELETE, STILL NEED TO CHECK LATER
-    
+
     // # SHOP CSV
     // "nps", // 0
     // "order_id", // 1
@@ -196,7 +212,7 @@ class ReviewIOImport implements ToCollection
     // "source", // 22
     // "address", // 23
     // "branch", // 24
-    
+
     // # PRODUCT CSV
     // "order_id", // 0
     // "review_title", // 1
