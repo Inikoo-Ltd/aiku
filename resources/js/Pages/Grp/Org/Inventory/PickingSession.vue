@@ -141,7 +141,7 @@ const handleModalSuccess = () => {
                     {{
                         isFulfilmentSession
                             ? trans('Add/remove Pallet Returns')
-                            : trans('Add/remove Delivery Notes')
+                            : ctrans('Add Delivery Notes')
                     }}
                 </Button>
                 <Button
@@ -151,8 +151,8 @@ const handleModalSuccess = () => {
                 >
                     {{
                         isFulfilmentSession
-                            ? trans('Remove Pallet Returns')
-                            : trans('Remove Delivery Notes')
+                            ? ctrans('Remove Pallet Returns')
+                            : ctrans('Remove Delivery Notes')
                     }}
                 </Button>
             </div>
