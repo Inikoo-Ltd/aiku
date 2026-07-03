@@ -126,7 +126,7 @@ trait WithRetinaRegistration
         $country       = Country::find($request->input('contact_address.country_id'));
         $postcode      = $request->input('contact_address.postal_code');
         
-        $bannedCountry = data_get($this->shop->banned_country_regions ?? [], $country->code, null);
+        $bannedCountry = data_get($this->shop->banned_country_regions ?? [], $country?->code, null);
         
         if (data_get($bannedCountry, 'billing', false)) {
             $postcodeRegex = data_get($bannedCountry, 'postcode');
