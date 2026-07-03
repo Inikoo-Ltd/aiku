@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 03 Jul 2026 18:35:30 Malaysia Time, Kuala Lumpur, Malaysia
@@ -38,7 +39,6 @@ class GetReviewableReviews extends IrisAction
             ->with([
                 'customer:id,name,contact_name,slug',
                 'media:id,name,file_name,mime_type,size',
-                'replies',
             ]);
 
         $this->ratingLabels = ReviewsResource::ratingLabelsFor($reviewable);

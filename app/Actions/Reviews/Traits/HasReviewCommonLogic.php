@@ -18,28 +18,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
-use Lorisleiva\Actions\ActionRequest;
 
 trait HasReviewCommonLogic
 {
-    public function prepareForValidation(ActionRequest $request): void
+    public function prepareForValidation(): void
     {
         $nullableKeys = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e', 'customer_id'];
 
-        $updates = [];
         foreach ($nullableKeys as $key) {
-            if (!$request->has($key)) {
+            if (!$this->has($key)) {
                 continue;
             }
 
-            $value = $request->input($key);
+            $value = $this->get($key);
             if ($value === '' || $value === 'null') {
-                $updates[$key] = null;
+                $this->set($key, null);
             }
-        }
-
-        if ($updates !== []) {
-            $request->merge($updates);
         }
     }
 
@@ -75,7 +69,7 @@ trait HasReviewCommonLogic
         $webImagesData = [];
 
         $mediaImages = Media::query()
-            ->where('model_type', (new Review())->getMorphClass())
+            ->where('model_type', new Review()->getMorphClass())
             ->where('model_id', $review->id)
             ->where('collection_name', 'review_images')
             ->get();
@@ -89,15 +83,15 @@ trait HasReviewCommonLogic
             $imageGallery   = $media->getImage()->resize(0, 600);
             $imageThumbnail = $media->getImage()->resize(0, 48);
 
-            array_push($webImagesData, [
+            $webImagesData[] = [
                 'original'  => GetPictureSources::run($imageOriginal),
                 'gallery'   => GetPictureSources::run($imageGallery),
                 'thumbnail' => GetPictureSources::run($imageThumbnail),
-            ]);
+            ];
         }
 
         $review->update([
-            'web_images'    => $webImagesData
+            'web_images' => $webImagesData
         ]);
     }
 
@@ -140,7 +134,7 @@ trait HasReviewCommonLogic
     protected function resolveRatingMain(array $modelData, ?Review $review = null): float
     {
         $dimensionKeys          = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
-        $dimensionsWereProvided = collect($dimensionKeys)->contains(fn (string $key): bool => array_key_exists($key, $modelData));
+        $dimensionsWereProvided = collect($dimensionKeys)->contains(fn(string $key): bool => array_key_exists($key, $modelData));
 
         $rating            = data_get($modelData, 'rating');
         $ratingWasProvided = array_key_exists('rating', $modelData) && is_numeric($rating);
@@ -150,9 +144,9 @@ trait HasReviewCommonLogic
         }
 
         $detailedRatings = collect($dimensionKeys)
-            ->map(fn (string $key) => data_get($modelData, $key))
-            ->filter(fn ($value): bool => is_numeric($value))
-            ->map(fn ($value): float => (float)$value)
+            ->map(fn(string $key) => data_get($modelData, $key))
+            ->filter(fn($value): bool => is_numeric($value))
+            ->map(fn($value): float => (float)$value)
             ->values();
 
         if ($detailedRatings->isNotEmpty()) {

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 03 Jul 2026 18:35:30 Malaysia Time, Kuala Lumpur, Malaysia
@@ -183,7 +184,6 @@ class GetReviews
             ReviewScopeEnum::PRODUCT->value => Product::query()->find($reviewableId),
             ReviewScopeEnum::SHOP->value    => Shop::query()->find($reviewableId),
             ReviewScopeEnum::FAMILY->value  => ProductCategory::query()->find($reviewableId),
-            ReviewScopeEnum::ORDER->value   => Order::query()->find($reviewableId),
             default                         => null,
         };
 

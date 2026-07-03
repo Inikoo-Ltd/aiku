@@ -25,7 +25,7 @@ class TranslateReview implements ShouldBeUnique
 
     public function getJobUniqueId(Review $review, bool $override = false): string
     {
-        return $review->id.'-'.$override ? 'o' : 'n';
+        return $review->id.'-'.($override ? 'o' : 'n');
     }
 
     public function handle(Review $review, bool $override = false): Review
@@ -51,9 +51,9 @@ class TranslateReview implements ShouldBeUnique
             }
         }
 
-        $currentTranslations     = $review->translations;
-        $translations['message'] = $currentTranslations;
-        $review->update(['translations' => $translations]);
+        $currentTranslations            = $review->translations;
+        $currentTranslations['message'] = $translations;
+        $review->update(['translations' => $currentTranslations]);
 
         return $review;
     }
