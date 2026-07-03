@@ -27,11 +27,11 @@ enum RetinaOrderTabsEnum: string
                 'icon'  => 'fal fa-bars',
             ],
 
-             RetinaOrderTabsEnum::REVIEWS => [
-                'title' => __('Reviews'),
-                'icon'  => 'fal fa-stars',
-                'type'  => 'icon',
-                'align' => 'right',
+            RetinaOrderTabsEnum::REVIEWS => [
+               'title' => __('Reviews'),
+               'icon'  => 'fal fa-stars',
+               'type'  => 'icon',
+               'align' => 'right',
             ],
         };
     }

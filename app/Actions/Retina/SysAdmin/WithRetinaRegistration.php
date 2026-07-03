@@ -125,9 +125,9 @@ trait WithRetinaRegistration
 
         $country       = Country::find($request->input('contact_address.country_id'));
         $postcode      = $request->input('contact_address.postal_code');
-        
-        $bannedCountry = data_get($this->shop->banned_country_regions ?? [], $country->code, null);
-        
+
+        $bannedCountry = data_get($this->shop->banned_country_regions ?? [], $country?->code, null);
+
         if (data_get($bannedCountry, 'billing', false)) {
             $postcodeRegex = data_get($bannedCountry, 'postcode');
 
@@ -135,20 +135,23 @@ trait WithRetinaRegistration
                 // If have postcode regex, check for postcode (Postcode must be present to validate the Forbidden region)
                 if (!$postcode) {
                     $validator->errors()->add(
-                        'contact_address', __('Postcode must be present for the selected Country')
+                        'contact_address',
+                        __('Postcode must be present for the selected Country')
                     );
                 }
 
                 // Check whether regex match or not
                 if (preg_match($postcodeRegex, $postcode)) {
                     $validator->errors()->add(
-                        'contact_address', __('Forbidden country is being selected. Registration is forbidden for users from the selected region.')
+                        'contact_address',
+                        __('Forbidden country is being selected. Registration is forbidden for users from the selected region.')
                     );
                 }
             } else {
                 // If don't have postcode Regex, ban the country al-together
                 $validator->errors()->add(
-                    'contact_address', __('Forbidden country is being selected. Registration is forbidden for users from the selected region.')
+                    'contact_address',
+                    __('Forbidden country is being selected. Registration is forbidden for users from the selected region.')
                 );
             }
         }

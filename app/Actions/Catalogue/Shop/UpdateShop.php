@@ -97,7 +97,7 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'banned_country_regions', Arr::get($bannedCountries, 'banned_list', []));
             data_set($modelData, 'settings.banned_countries.is_follow_organisation_banned_list', (bool)Arr::get($bannedCountries, 'is_follow_organisation_banned_list', false));
 
-            $bannedIPCountries = array_filter(data_get($bannedCountries, 'banned_list', []), fn($item) => $item['ip_block']);
+            $bannedIPCountries = array_filter(data_get($bannedCountries, 'banned_list', []), fn ($item) => $item['ip_block']);
 
             if ($shop->website) {
                 SyncWebsiteBlockedCountries::run($shop->website, $bannedIPCountries);
@@ -218,6 +218,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'gads_login_customer_id');
         data_forget($modelData, 'gads_user_list_id');
         data_forget($modelData, 'portal_link');
+        data_forget($modelData, 'bank_transfer_instructions_for_email');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];

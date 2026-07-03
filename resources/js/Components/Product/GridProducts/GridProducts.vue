@@ -446,7 +446,8 @@ watch(
 		:class="{ 'opacity-75': isVisiting || isParentLoading }">
 		<!-- Header Section -->
 		<div class="py-2 sm:py-0 my-0">
-			<div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">
+			<div
+				class="flex flex-wrap justify-between items-center gap-y-2 gap-x-2 px-3 sm:px-4">
 				<!-- Left Section: Counter and Search -->
 				<div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
 					<!-- Record Counter -->
@@ -473,18 +474,18 @@ watch(
 					</div>
 				</div>
 
-				<div class="flex gap-3">
-					<div v-if="showHeader" class="flex items-center gap-2">
+				<div class="flex flex-wrap items-center gap-2 sm:gap-3">
+					<div v-if="showHeader" class="flex items-center gap-2 min-w-0">
 						<label
 							:for="`grid-${name}-sort`"
-							class="text-sm text-gray-500 whitespace-nowrap"
+							class="hidden sm:inline text-sm text-gray-500 whitespace-nowrap"
 							>{{ trans("Sort by") }}</label
 						>
 						<select
 							:id="`grid-${name}-sort`"
 							:value="queryBuilderData.sort || ''"
 							@change="onSortChange(($event.target as HTMLSelectElement).value)"
-							class="rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+							class="min-w-0 max-w-[45vw] sm:max-w-none rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
 							<option value="">{{ trans("Default") }}</option>
 							<template
 								v-for="column in queryBuilderProps.columns.filter(
@@ -540,7 +541,10 @@ watch(
 
 		<!-- Products Grid -->
 		<TableWrapper :result="compResourceMeta?.total === 0" class="mt-2">
-			<div v-if="compResourceData.length > 0" class="gap-4 p-4" :class="gridClass">
+			<div
+				v-if="compResourceData.length > 0"
+				class="gap-2 p-2 sm:gap-4 sm:p-4"
+				:class="gridClass">
 				<!-- Product Cards -->
 				<div
 					v-for="(item, index) in compResourceData"

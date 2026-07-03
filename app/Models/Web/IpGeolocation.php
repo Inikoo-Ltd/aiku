@@ -14,9 +14,15 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $ip
  * @property string $country
  * @property string|null $city
- * @property string $postcode
- * @property float|null $latitude
- * @property float|null $longitude
+ * @property string|null $postcode
+ * @property numeric|null $latitude
+ * @property numeric|null $longitude
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IpGeolocation newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IpGeolocation newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IpGeolocation query()
+ * @mixin \Eloquent
  */
 class IpGeolocation extends Model
 {

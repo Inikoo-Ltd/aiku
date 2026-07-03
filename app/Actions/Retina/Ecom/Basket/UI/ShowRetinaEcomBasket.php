@@ -81,9 +81,9 @@ class ShowRetinaEcomBasket extends RetinaAction
             $grGifts = $this->getGrGifts($order);
             $orderBanStatus = $this->isForbiddenDetailed($order);
         }
-            
+
         \Sentry\traceMetrics()->count('visit.basket.ecom', 1, ['shop' => $this->shop->slug]);
-        
+
 
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
