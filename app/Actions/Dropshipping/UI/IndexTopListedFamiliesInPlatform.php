@@ -1,6 +1,11 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 03 Jul 2026 22:40:30 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\CRM\Platform\UI;
+namespace App\Actions\Dropshipping\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;

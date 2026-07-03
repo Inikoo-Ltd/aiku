@@ -7,7 +7,7 @@
  * copyright 2025
  */
 
-namespace App\Actions\CRM\Platform\UI;
+namespace App\Actions\Dropshipping\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Dropshipping\Customers\UI\IndexCustomers;
