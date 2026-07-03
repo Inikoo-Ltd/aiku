@@ -499,7 +499,7 @@ class EditShop extends OrgAction
                                     ['label' => __('Show Dispatch Totals (SKO & Units)'), 'key' => 'show_dispatch_totals'],
                                 ];
 
-                                return array_map(fn($col) => [
+                                return array_map(fn ($col) => [
                                     'label' => $col['label'],
                                     'key'   => $col['key'],
                                     'value' => (bool)Arr::get($savedColumns, $col['key'], false),
@@ -891,10 +891,10 @@ class EditShop extends OrgAction
             ->where('model_type', 'shop')
             ->where('model_id', $shop->id)
             ->get()
-            ->groupBy(fn($item) => $item->review_context instanceof ReviewContextEnum
+            ->groupBy(fn ($item) => $item->review_context instanceof ReviewContextEnum
                 ? $item->review_context->value
                 : (string)$item->review_context)
-            ->map(fn($items) => $items->mapWithKeys(fn($item) => [
+            ->map(fn ($items) => $items->mapWithKeys(fn ($item) => [
                 $item->dimension instanceof ReviewRatingDimensionEnum
                     ? $item->dimension->value
                     : (string)$item->dimension => $item->label,
@@ -904,7 +904,7 @@ class EditShop extends OrgAction
         $emptyDimensions = array_fill_keys(ReviewRatingDimensionEnum::values(), '');
 
         return collect(ReviewContextEnum::values())
-            ->mapWithKeys(fn(string $context) => [
+            ->mapWithKeys(fn (string $context) => [
                 $context => [...$emptyDimensions, ...($stored[$context] ?? [])],
             ])
             ->all();

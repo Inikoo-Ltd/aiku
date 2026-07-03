@@ -8,13 +8,9 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
-use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
-use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;

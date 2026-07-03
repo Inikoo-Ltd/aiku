@@ -50,7 +50,7 @@ class BlockCountriesInCloudflare
         $otherRules = array_values(
             array_filter(
                 $currentRules,
-                fn($rule) => ($rule['description'] ?? null) !== $this->countryBlockDescription
+                fn ($rule) => ($rule['description'] ?? null) !== $this->countryBlockDescription
             )
         );
 
@@ -62,7 +62,7 @@ class BlockCountriesInCloudflare
             $countryList = implode(
                 ' ',
                 array_map(
-                    fn($c) => '"'.strtoupper($c).'"',
+                    fn ($c) => '"'.strtoupper($c).'"',
                     $countryCodes
                 )
             );
@@ -90,8 +90,8 @@ class BlockCountriesInCloudflare
                 $website,
                 [
                     'country' => $countryCode
-                ]
-                , true
+                ],
+                true
             );
         }
 

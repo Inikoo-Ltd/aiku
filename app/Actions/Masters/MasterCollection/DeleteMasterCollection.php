@@ -37,7 +37,7 @@ class DeleteMasterCollection extends GrpAction
                 ->childrenCollections
                 ->each(function ($collection) use ($forceDelete, $command) {
                     $command?->line('Deleting collection '.$collection->name);
-                    DeleteCollection::make()->action($collection, $forceDelete,$command);
+                    DeleteCollection::make()->action($collection, $forceDelete, $command);
                 });
 
             if ($forceDelete) {

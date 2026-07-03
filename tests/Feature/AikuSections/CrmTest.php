@@ -74,7 +74,6 @@ use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
 use App\Actions\CRM\Customer\UI\GetCustomerTimeline;
 use App\Models\Helpers\Country;
-use App\Models\Helpers\Query;
 use App\Models\Ordering\Order;
 use App\Models\Web\Website;
 use Illuminate\Http\UploadedFile;
@@ -1247,4 +1246,3 @@ test('sync customers to google ads uploads hashed identifiers', function () {
             && $matchedMember !== null;
     });
 });
-

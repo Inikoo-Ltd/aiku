@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 01 Jul 2026 15:46:05 Malaysia Time, Kuala Lumpur, Malaysia
@@ -20,11 +21,11 @@ class SyncWebsiteBlockedCountries
         $currentBlockedCountryRegions = $website->blocked_country_regions;
 
 
-        $currentCountryWithRegionsData = array_filter($currentBlockedCountryRegions, fn($item) => !empty($item['postcode']));
-        $currentCountryOnly            = array_filter($currentBlockedCountryRegions, fn($item) => empty($item['postcode']));
+        $currentCountryWithRegionsData = array_filter($currentBlockedCountryRegions, fn ($item) => !empty($item['postcode']));
+        $currentCountryOnly            = array_filter($currentBlockedCountryRegions, fn ($item) => empty($item['postcode']));
 
-        $newCountryWithRegionsData = array_filter($bannedCountries, fn($item) => !empty($item['postcode']));
-        $newCountryWithCountryOnly = array_filter($bannedCountries, fn($item) => empty($item['postcode']));
+        $newCountryWithRegionsData = array_filter($bannedCountries, fn ($item) => !empty($item['postcode']));
+        $newCountryWithCountryOnly = array_filter($bannedCountries, fn ($item) => empty($item['postcode']));
 
 
         foreach (array_diff(array_keys($currentCountryOnly), array_keys($newCountryWithCountryOnly)) as $countryToRemove) {
@@ -44,8 +45,8 @@ class SyncWebsiteBlockedCountries
                     $website,
                     [
                         'country' => $countryCode
-                    ]
-                    , true
+                    ],
+                    true
                 );
             }
         }

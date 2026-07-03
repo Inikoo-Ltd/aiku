@@ -158,7 +158,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'timelines' => $finalTimeline,
 
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
-                
+
                 'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
                 'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
 

@@ -8,9 +8,7 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
-use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
-use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
