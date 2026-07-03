@@ -12,7 +12,6 @@ import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
 import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
 import { useStructuredData } from "@/Iris/Composables/useStructuredData"
-/* import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue" */
 import ReviewsIris from "../Components/IrisBlocks/ReviewsIris.vue"
 library.add(faCheck, faPlus, faMinus)
 

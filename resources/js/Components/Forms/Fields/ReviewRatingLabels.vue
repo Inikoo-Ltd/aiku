@@ -12,7 +12,7 @@ const props = defineProps<{
 const contexts = [
     { key: 'product', label: 'Product Reviews' },
     { key: 'order', label: 'Order Reviews' },
-    { key: 'family', label: 'Category Reviews' },
+    { key: 'family', label: 'Family Reviews' },
     // { key: 'shop', label: 'Shop Reviews' },
 ]
 
