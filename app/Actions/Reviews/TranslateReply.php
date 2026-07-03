@@ -35,8 +35,14 @@ class TranslateReply
 
 
         $languages = Shop::where('is_aiku', true)->where('state', ShopStateEnum::OPEN)->pluck('language_id')->unique();
+        $existing = $review->translations['reply_message'] ?? [];
         $translations = [];
         foreach ($languages as $shopLanguageId) {
+            if (!$override && !empty($existing[$shopLanguageId])) {
+                $translations[$shopLanguageId] = $existing[$shopLanguageId];
+
+                continue;
+            }
             $shopLanguage = Language::find($shopLanguageId);
             $translation  = Translate::run($review->reply_message, $review->shop->language, $shopLanguage);
             if ($translation) {
