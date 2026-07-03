@@ -5,20 +5,29 @@ namespace App\Actions\Workspace\Task;
 use App\Models\Workspace\Task;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\Rule;
+use App\Actions\GrpAction;
+// use App\Actions\Traits\Authorisations\WithWorkspaceEditAuthorisation;
 
-class DeleteTask
+class DeleteTask extends GrpAction
 {
-    use AsAction;
+    // use WithWorkspaceEditAuthorisation;
 
     public function asController(ActionRequest $request, Task $task)
     {
-        $this->handle($task);
+        $this->initialisation(app('group'), $request);
 
-        return redirect()->back()->with('success', __('Task deleted successfully.'));
+        return $this->handle($task);
     }
 
     public function handle(Task $task): bool
     {
         return $task->delete();
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return redirect()->back()->with('success', __('Task deleted successfully'));
     }
 }

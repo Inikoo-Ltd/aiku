@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::create('workspace_notes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->cascadeOnDelete();
+            $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete();
             $table->string('title');
             $table->text('content')->nullable();
             $table->timestampsTz();

@@ -11,11 +11,12 @@ return new class extends Migration
     {
         Schema::create('workspace_tasks', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->string('status')->default('Pending');
             $table->foreignId('assigner_id')->nullable()->constrained('employees')->nullOnDelete();
             $table->foreignId('assignee_id')->nullable()->constrained('employees')->nullOnDelete();
+            $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete();
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->string('status')->default('pending');
             $table->timestampsTz();
             $table->softDeletesTz();
         });

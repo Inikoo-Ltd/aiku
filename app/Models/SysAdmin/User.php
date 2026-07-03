@@ -234,6 +234,17 @@ class User extends Authenticatable implements HasMedia, Auditable
         return $this->morphedByMany(Employee::class, 'model', 'user_has_models')->withTimestamps();
     }
 
+    public function employee(?Group $group = null): ?Employee
+    {
+        $group ??= app('group');
+
+        if(!$group){
+            return null;
+        }
+
+        return $this->employees()->where('employees.group_id', $group->id)->first();
+    }
+
     public function guests(): MorphToMany
     {
         return $this->morphedByMany(Guest::class, 'model', 'user_has_models')->withTimestamps();

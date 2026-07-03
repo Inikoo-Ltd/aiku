@@ -102,37 +102,39 @@ class GetGroupNavigation
             ],
         ];
 
-        $groupNavigation['workspace'] = [
-            'label'   => __('Tasks & Notes'),
-            'tooltip' => __('Tasks & Notes'),
-            'icon'    => ['fal', 'fa-tasks'],
-            'root'    => 'grp.workspace.',
-            'route'   => [
-                'name' => 'grp.workspace.tasks.index',
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label'   => __('Tasks'),
-                        'tooltip' => __('Tasks'),
-                        'icon'    => ['fal', 'fa-tasks'],
-                        'root'    => 'grp.workspace.tasks.',
-                        'route'   => [
-                            'name' => 'grp.workspace.tasks.index',
+        if($user()->authTo('group-workspace.view')){
+            $groupNavigation['workspace'] = [
+                'label'   => __('Tasks & Notes'),
+                'tooltip' => __('Tasks & Notes'),
+                'icon'    => ['fal', 'fa-tasks'],
+                'root'    => 'grp.workspace.',
+                'route'   => [
+                    'name' => 'grp.workspace.tasks.index',
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label'   => __('Tasks'),
+                            'tooltip' => __('Tasks'),
+                            'icon'    => ['fal', 'fa-tasks'],
+                            'root'    => 'grp.workspace.tasks.',
+                            'route'   => [
+                                'name' => 'grp.workspace.tasks.index',
+                            ],
                         ],
-                    ],
-                    [
-                        'label'   => __('Notes'),
-                        'tooltip' => __('Notes'),
-                        'icon'    => ['fal', 'fa-sticky-note'],
-                        'root'    => 'grp.workspace.notes.',
-                        'route'   => [
-                            'name' => 'grp.workspace.notes.index',
+                        [
+                            'label'   => __('Notes'),
+                            'tooltip' => __('Notes'),
+                            'icon'    => ['fal', 'fa-sticky-note'],
+                            'root'    => 'grp.workspace.notes.',
+                            'route'   => [
+                                'name' => 'grp.workspace.notes.index',
+                            ],
                         ],
                     ],
                 ],
-            ],
-        ];
+            ];
+        }
 
         $groupNavigation['devops'] = [
             'label'   => __('Devops'),
