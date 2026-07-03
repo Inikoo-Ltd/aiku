@@ -102,6 +102,10 @@ use App\Actions\Fulfilment\Pallet\StorePallet;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Imports\Dispatching\BatchCodeImport;
+use App\Models\Helpers\Upload;
+use App\Models\Helpers\UploadRecord;
 use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\Box;
 use App\Models\Dispatching\Trolley;
@@ -109,6 +113,7 @@ use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Inventory\PickedBay;
 use Config;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
@@ -1964,4 +1969,69 @@ test('fetch single delivery note item with pickings', function () {
 
     $fetched = \App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem::run($item->refresh());
     expect($fetched)->toBeInstanceOf(DeliveryNoteItem::class);
+});
+
+function makeBatchCodeUploadRecord(Upload $upload): UploadRecord
+{
+    return $upload->records()->create([
+        'values' => [],
+        'status' => UploadRecordStatusEnum::PROCESSING,
+    ]);
+}
+
+test('imports a batch code successfully when sku exists', function () {
+    $upload = Upload::create([
+        'group_id'          => $this->warehouse->group_id,
+        'organisation_id'   => $this->warehouse->organisation_id,
+        'model'             => 'BatchCode',
+        'parent_type'       => $this->warehouse->getMorphClass(),
+        'parent_id'         => $this->warehouse->id,
+        'original_filename' => 'test.xlsx',
+        'filename'          => 'test.xlsx',
+        'filesize'          => 0,
+        'number_rows'       => 0,
+        'number_success'    => 0,
+        'number_fails'      => 0,
+    ]);
+    $import = new BatchCodeImport($this->warehouse, $upload);
+
+    [$stocks] = createStocks($this->warehouse->group);
+    [$orgStock] = createOrgStocks($this->organisation, [$stocks]);
+
+    $row          = new Collection(['code' => 'BC-001', 'sku' => $orgStock->code, 'expiry_date' => null]);
+    $uploadRecord = makeBatchCodeUploadRecord($upload);
+
+    $import->storeModel($row, $uploadRecord);
+
+    $uploadRecord->refresh();
+
+    expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::COMPLETE->value)
+        ->and(BatchCode::where('code', 'BC-001')->exists())->toBeTrue();
+});
+
+test('marks record as failed with a clear message when sku is not found', function () {
+    $upload = Upload::create([
+        'group_id'          => $this->warehouse->group_id,
+        'organisation_id'   => $this->warehouse->organisation_id,
+        'model'             => 'BatchCode',
+        'parent_type'       => $this->warehouse->getMorphClass(),
+        'parent_id'         => $this->warehouse->id,
+        'original_filename' => 'test.xlsx',
+        'filename'          => 'test.xlsx',
+        'filesize'          => 0,
+        'number_rows'       => 0,
+        'number_success'    => 0,
+        'number_fails'      => 0,
+    ]);
+    $import = new BatchCodeImport($this->warehouse, $upload);
+
+    $row          = new Collection(['code' => 'BC-002', 'sku' => 'NON-EXISTENT-SKU', 'expiry_date' => null]);
+    $uploadRecord = makeBatchCodeUploadRecord($upload);
+
+    $import->storeModel($row, $uploadRecord);
+
+    $uploadRecord->refresh();
+
+    expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::FAILED->value)
+        ->and($uploadRecord->errors)->toContain("SKU 'NON-EXISTENT-SKU' not found.");
 });

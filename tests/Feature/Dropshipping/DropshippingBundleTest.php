@@ -275,12 +275,10 @@ test('update bundle products updates existing item quantity', function () {
 
 test('bundle action rules return expected keys', function () {
     expect(StoreBundle::make()->rules())
-        ->toHaveKeys(['products', 'products.*.product_id', 'products.*.quantity']);
-
-    expect(UpdateBundle::make()->rules())
-        ->toHaveKeys(['payloadItems', 'products']);
-
-    expect(StoreOrUpdateBundle::make()->rules())
+        ->toHaveKeys(['products', 'products.*.product_id', 'products.*.quantity'])
+        ->and(UpdateBundle::make()->rules())
+        ->toHaveKeys(['payloadItems', 'products'])
+        ->and(StoreOrUpdateBundle::make()->rules())
         ->toBeArray();
 
     $calcRules = CalculateBundleItemPriceDetails::make()->rules();

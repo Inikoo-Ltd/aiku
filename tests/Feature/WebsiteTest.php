@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Web\Banner\DeleteBanner;
 use App\Actions\Web\Banner\StoreBanner;
 use App\Actions\Web\Banner\UpdateBanner;
@@ -27,13 +28,17 @@ use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
+use App\Enums\UI\Web\WebsiteTabsEnum;
+use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
+use App\Models\Analytics\AikuScopedSection;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Snapshot;
 use App\Models\Helpers\SnapshotStats;
@@ -49,8 +54,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
+use function Pest\Laravel\get;
 
 beforeAll(function () {
     loadDB();
@@ -74,6 +82,8 @@ beforeEach(function () {
     ReindexWebpageLuigiData::mock()
         ->shouldReceive('getJobUniqueId')
         ->andReturn(1);
+
+    $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 });
 
 test('create b2b website', function () {
@@ -376,6 +386,452 @@ test('web sitemap creation', function () {
     $this->artisan('sitemaps:create')->assertExitCode(0);
 
 });
+
+// UI
+
+test('UI index websites in organisation', function () {
+    $response = get(
+        route('grp.org.websites.index', [$this->organisation->slug])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Websites')
+            ->has('title')
+            ->has('breadcrumbs', 2)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", "websites")->etc()
+            )
+            ->has('data');
+    });
+})->depends('create b2b website');
+
+test('UI show fulfilment website', function (Website $website) {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route('grp.org.fulfilments.show.web.websites.show', [
+            $this->organisation->slug,
+            $this->fulfilment,
+            $website->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Website')
+            ->has('title')
+            ->has('breadcrumbs', 2);
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI show fulfilment website (tab showcase)', function (Website $website) {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route('grp.org.fulfilments.show.web.websites.show', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug,
+            'tab' => WebsiteTabsEnum::SHOWCASE->value
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Website')
+            ->has('title')
+            ->has(
+                "tabs",
+                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::SHOWCASE->value)->etc()
+            )
+            ->has(WebsiteTabsEnum::SHOWCASE->value)
+            ->has('breadcrumbs', 2);
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI show fulfilment website (tab external links)', function (Website $website) {
+    $response = get(
+        route('grp.org.fulfilments.show.web.websites.show', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug,
+            'tab' => WebsiteTabsEnum::EXTERNAL_LINKS->value
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Website')
+            ->has('title')
+            ->has(
+                "tabs",
+                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::EXTERNAL_LINKS->value)->etc()
+            )
+            ->has(WebsiteTabsEnum::EXTERNAL_LINKS->value)
+            ->has('breadcrumbs', 2);
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI index webpages in fulfilment website', function (Website $website) {
+    $response = get(
+        route('grp.org.fulfilments.show.web.webpages.index', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Webpages')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('data.data', 7);
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI show fulfilment website workshop', function (Website $website) {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route('grp.org.fulfilments.show.web.websites.workshop', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Workshop/WebsiteWorkshop')
+            ->where('title', "Website's workshop")
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", "Workshop")->etc()
+            )
+            ->has('breadcrumbs', 2)
+            ->has('tabs');
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI show fulfilment website workshop (header)', function (Website $website) {
+    $response = get(
+        route('grp.org.fulfilments.show.web.websites.workshop.header', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Workshop/Header/HeaderWorkshop')
+            ->where('title', "Website Header's Workshop")
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", "Header's Workshop")->etc()
+            )
+            ->has('breadcrumbs', 0)
+            ->has('uploadImageRoute')
+            ->has('autosaveRoute')
+            ->has('route_list')
+            ->has('data')
+            ->has('web_block_types');
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI show fulfilment website workshop (footer)', function (Website $website) {
+    $response = get(
+        route('grp.org.fulfilments.show.web.websites.workshop.footer', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($website) {
+        $page
+            ->component('Org/Web/Workshop/Footer/FooterWorkshop')
+            ->where('title', "footer")
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", $website->code)->etc()
+            )
+            ->has('breadcrumbs', 0)
+            ->has('uploadImageRoute')
+            ->has('autosaveRoute')
+            ->has('data')
+            ->has('webBlockTypes');
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI website workshop menu', function (Website $website) {
+    $response = get(
+        route('grp.org.shops.show.web.websites.workshop.menu', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $website->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Workshop/Menu/MenuWorkshop')
+            ->where('title', "Website Menu's Workshop")
+            ->has('breadcrumbs')
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", "Menu's Workshop")->etc()
+            )
+            ->has('autosaveRoute')
+            ->has('data')
+            ->has('webBlockTypes')
+            ->has('uploadImageRoute');
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI edit fulfilment website', function (Website $website, Banner $banner) {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route('grp.org.fulfilments.show.web.websites.edit', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug,
+            $banner->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('navigation')
+            ->has('breadcrumbs', 2)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", 'Settings')->etc()
+            )
+            ->has('formData');
+    });
+})->depends('launch fulfilment website from command', 'UI store fulfilment banner');
+
+test('UI store fulfilment banner', function (Website $website) {
+    $banner = StoreBanner::make()->action($website, [
+        'name' => 'fulfilmentBanner',
+        'type' => BannerTypeEnum::LANDSCAPE,
+        'ratio' => '16/9',
+    ]);
+    $banner->refresh();
+
+    expect($banner)->toBeInstanceOf(Banner::class)
+        ->and($banner->name)->toBe('fulfilmentBanner');
+
+    return $banner;
+})->depends('launch fulfilment website from command');
+
+test('UI create banner', function (Website $website) {
+    $response = get(
+        route('grp.org.shops.show.web.banners.create', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $website->slug,
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->where('title', 'New banner')
+            ->has('breadcrumbs', 4)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", 'Banner')->etc()
+            )
+            ->has('formData');
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI index fulfilment banners', function (Website $website) {
+    $response = get(
+        route('grp.org.fulfilments.show.web.banners.index', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Banners/Banners')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", "banners")->etc()
+            )
+            ->has('data');
+    });
+})->depends('launch fulfilment website from command');
+
+test('UI show fulfilment banner', function (Website $website, Banner $banner) {
+    $response = get(
+        route('grp.org.fulfilments.show.web.banners.show', [
+            $this->organisation->slug,
+            $this->fulfilment,
+            $website->slug,
+            $banner->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($banner) {
+        $page
+            ->component('Org/Web/Banners/Banner')
+            ->has('title')
+            ->has('navigation')
+            ->has('breadcrumbs', 1)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", $banner->name)->etc()
+            )
+            ->has('tabs');
+    });
+})->depends('launch fulfilment website from command', 'UI store fulfilment banner');
+
+test('UI edit fulfilment banner', function (Website $website, Banner $banner) {
+    $this->withoutExceptionHandling();
+    $oldState = $banner->state;
+    if ($banner->state != BannerStateEnum::LIVE) {
+        $banner->update(['state' => BannerStateEnum::LIVE->value]);
+    }
+
+    $response = get(
+        route('grp.org.fulfilments.show.web.banners.edit', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug,
+            $banner->slug,
+            'section' => 'properties'
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($banner) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('breadcrumbs', 1)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", $banner->name)->etc()
+            )
+            ->has('formData');
+    });
+
+    $banner->update(['state' => $oldState]);
+})->depends('launch fulfilment website from command', 'UI store fulfilment banner');
+
+test('UI show fulfilment banner workshop', function (Website $website, Banner $banner) {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route('grp.org.fulfilments.show.web.banners.workshop', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $website->slug,
+            $banner->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Banners/BannerWorkshop')
+            ->has('title')
+            ->has('navigation')
+            ->has('breadcrumbs', 1)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", "Banner's workshop")->etc()
+            )
+            ->has('publishRoute')
+            ->has('imagesUploadRoute')
+            ->has('galleryRoute')
+            ->has('banner');
+    });
+})->depends('launch fulfilment website from command', 'UI store fulfilment banner');
+
+test('UI delete banner in shop', function (Website $website) {
+    $this->withoutExceptionHandling();
+    $banner = StoreBanner::make()->action($website, [
+        'name' => 'delete shop banner',
+        'type' => BannerTypeEnum::LANDSCAPE,
+        'ratio' => '16/9',
+    ]);
+
+    $response = delete(
+        route('grp.models.shop.website.banner.delete', [
+            $this->shop->id,
+            $website->id,
+            $banner->id,
+        ])
+    );
+    $response->assertRedirect(
+        route('grp.org.shops.show.web.banners.index', [
+            'organisation' => $this->organisation->slug,
+            'shop'         => $this->shop->slug,
+            'website'      => $website->slug,
+            'banner'       => $banner->slug
+        ])
+    );
+})->depends('create b2b website');
+
+test('UI show webpage in shop website', function (Website $website, Webpage $webpage) {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route('grp.org.shops.show.web.webpages.show', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $website->slug,
+            $webpage->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($webpage) {
+        $page
+            ->component('Org/Web/Webpage')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", $webpage->code)->etc()
+            )
+            ->has('tabs');
+    });
+})->depends('create b2b website', 'create webpage');
+
+test('UI show webpage workshop in shop website', function (Website $website, Webpage $webpage) {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route('grp.org.shops.show.web.webpages.workshop', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $website->slug,
+            $webpage->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($webpage) {
+        $page
+            ->component('Org/Web/WebpageWorkshop')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", $webpage->code)->etc()
+            )
+            ->has('webpage')
+            ->has('webBlockTypes');
+    });
+})->depends('create b2b website', 'create webpage');
+
+test('UI get section route show shop website', function (Website $website) {
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.web.websites.show', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+        'website'      => $website->slug
+    ]);
+    expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
+        ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_WEBSITE->value)
+        ->and($sectionScope->model_slug)->toBe($this->shop->slug);
+})->depends('create b2b website');
+
+// Cloudflare: mutate website slugs, so keep last to avoid stale slugs in UI tests above
 
 it('correctly picks zone kind ruleset when multiple exist', function () {
 
