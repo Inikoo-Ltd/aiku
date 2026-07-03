@@ -185,7 +185,6 @@ const onRowAction = async (
     const method = (routeTarget.method || 'post').toLowerCase()
     const url = route(routeTarget.name, routeTarget.parameters)
 
-    console.log('wwwwwwwwwwwwwwww', routeTarget.name)
     rowActionLoading[rowId] = actionKey
     try {
         if (method === 'delete') {

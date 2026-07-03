@@ -177,16 +177,9 @@ const props = defineProps(
             default: false,
             required: false,
         },
-        // Opt-in: skip re-rendering rows whose data is unchanged (via v-memo). Only safe when the
-        // row's rendered state lives entirely in `item` (no external row state like checkbox selection).
-        memoizeRows : {   // Good for big and frequent update the rows (example: Picking Session, Delivery Note picking)
-            type: Boolean,
-            default: false,
-            required: false,
-        },
-        // Opt-in: only render the rows visible in the scroll viewport.
-        // Unlike memoizeRows, every rendered row stays fully reactive, so per-row actions work normally.
-        // Use this instead of memoizeRows when rows have their own action buttons that mutate row data.
+        // Opt-in: only render the rows visible in the scroll viewport. Every rendered row stays fully
+        // reactive, so per-row actions work normally. Good for big tables with per-row action buttons
+        // that mutate row data (example: Picking Session, Delivery Note picking).
         virtualScroll: {
             type: Boolean,
             default: false,
@@ -1172,67 +1165,6 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                         </tr>
                                     </template>
 
-                                    <!-- Memoized path (opt-in via memoizeRows): v-memo must sit on the v-for
-                                         element so Vue can skip re-rendering rows whose data is unchanged. Uses the
-                                         same cell() slots as the default path. Only safe when all row state lives in
-                                         `item` (no checkbox/external row selection, no expand rows). -->
-                                    <template v-else-if="memoizeRows">
-                                        <tr v-for="(item, key) in compResourceData"
-                                            :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
-                                            v-memo="[JSON.stringify(item)]"
-                                            class=""
-                                            :class="[
-                                                { 'bg-gray-50': striped && key % 2 },
-                                                striped
-                                                    ? 'bg-gray-200 hover:bg-gray-300'
-                                                    : rowColorFunction(item)
-                                                        ? rowColorFunction(item)
-                                                        : 'hover:bg-gray-50'
-                                            ]">
-                                            <td v-for="(column, index) in queryBuilderProps.columns"
-                                                v-show="show(column.key)"
-                                                :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full"
-                                                :class="[
-                                                    column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'
-                                                        : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'
-                                                            : 'px-6',
-                                                    props.rowAlignTop ? 'align-top' : '',
-                                                    { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
-                                                    column.className
-                                                ]">
-                                                <slot :name="`cell(${column.key})`"
-                                                    :item="{ ...item, index: index, rowIndex : key, data : item }"
-                                                    :proxyItem="item" :tabName="name">
-                                                    <template v-if="typeof item[column.key] == 'number' || column.type === 'number'">
-                                                        {{ locale.number(item[column.key]) }}
-                                                    </template>
-                                                    <template v-else-if="column.type === 'currency'">
-                                                        {{ locale.currencyFormat(item.currency_code, item[column.key]) }}
-                                                    </template>
-                                                    <template v-else-if="column.type === 'date'">
-                                                        <span v-tooltip="useFormatTime(item[column.key], { formatTime: 'hms' })" class="whitespace-nowrap">{{ useFormatTime(item[column.key]) }}</span>
-                                                    </template>
-                                                    <template v-else-if="column.type === 'date_hm'">
-                                                        <span class="whitespace-nowrap">{{ useFormatTime(item[column.key], { formatTime: 'hm' }) }}</span>
-                                                    </template>
-                                                    <template v-else-if="column.type === 'date_hms'">
-                                                        <span class="whitespace-nowrap">{{ useFormatTime(item[column.key], { formatTime: 'hms' }) }}</span>
-                                                    </template>
-                                                    <template v-else-if="column.type === 'icon'">
-                                                        <Icon v-if="item[column.key]?.icon || item[column.key]?.text || item[column.key]?.svg" :data="item[column.key]" />
-                                                        <FontAwesomeIcon v-else :icon="item[column.key]" class="" fixed-width aria-hidden="true" />
-                                                    </template>
-                                                    <template v-else>
-                                                        {{ item[column.key] }}
-                                                    </template>
-                                                </slot>
-                                            </td>
-                                        </tr>
-                                    </template>
-
                                     <template v-for="(item, key) in props.resource.data"
                                         v-else
                                         :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
@@ -1374,7 +1306,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                         {{ locale.number(item[column.key]) }}
                                                     </template>
                                                     <template v-else-if="column.type === 'currency'">
-                                                        {{ locale.currencyFormat(item.currency_code || 'usd', item[column.key]) }}
+                                                        {{ locale.currencyFormat(item.currency_code || '', item[column.key]) }}
                                                     </template>
                                                     <template v-else>
                                                         {{ item[column.key] }}
