@@ -18,6 +18,7 @@ use App\Models\Helpers\Language;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Review;
 use App\Models\SysAdmin\User;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 
@@ -61,6 +62,7 @@ class TrustPilotImport implements ToCollection
 
             $replyData = [];
             $replay    = $row[10];
+            $parsedDate = Carbon::parse($row[1]);
 
             if ($replay) {
                 $user     = null;
@@ -94,7 +96,7 @@ class TrustPilotImport implements ToCollection
             $meta = [
                 'source'                  => 'TrustPilot',
                 'review_consumer_user_id' => $row[2],
-                'review_created'          => $row[1],
+                'review_created'          => $parsedDate,
             ];
 
             $reviewData = [
@@ -114,7 +116,8 @@ class TrustPilotImport implements ToCollection
             $review->update(
                 [
                     'is_online'     => true,
-                    'published_at'  => $row[1],
+                    'published_at'  => $parsedDate,
+                    'created_at'    => $parsedDate,
                     'review_status' => ReviewStatusEnum::APPROVED->value,
                     'auto_approved' => true,
                     'approved'      => true,
