@@ -9,6 +9,7 @@
 namespace App\Actions\Reviews;
 
 use App\Actions\Helpers\Translations\Translate;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
@@ -33,7 +34,7 @@ class TranslateReply
         }
 
 
-        $languages    = Shop::where('is_aiku', true)->where('state', ShopStateEnum::OPEN)->pluck('language_id')->unique();
+        $languages = Shop::where('is_aiku', true)->where('state', ShopStateEnum::OPEN)->pluck('language_id')->unique();
         $translations = [];
         foreach ($languages as $shopLanguageId) {
             $shopLanguage = Language::find($shopLanguageId);
@@ -67,12 +68,18 @@ class TranslateReply
 
         $reviews->whereNotNull('reply_message');
 
+        $reviews = Review::query()->whereIn(
+            'scope',
+            [ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY]
+        )->whereNotNull('reply_message')
+            ->orderByDesc('created_at');
+
 
         $totalReviews = $reviews->count();
 
         $command->info("Processing $totalReviews reviews...");
 
-        
+
         $progressBar = $command->getOutput()->createProgressBar($totalReviews);
         $progressBar->setFormat('very_verbose');
         $progressBar->start();
