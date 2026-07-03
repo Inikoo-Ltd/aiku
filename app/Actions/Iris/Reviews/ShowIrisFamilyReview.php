@@ -7,12 +7,13 @@
 
 namespace App\Actions\Iris\Reviews;
 
-use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\IrisAction;
+use App\Actions\Reviews\UI\IndexReviewsInIris;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
+use App\Http\Resources\Catalogue\IrisAllReviewsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Reviews\Review;
@@ -20,7 +21,6 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Catalogue\IrisAllReviewsResource;
 
 class ShowIrisFamilyReview extends IrisAction
 {
@@ -36,7 +36,7 @@ class ShowIrisFamilyReview extends IrisAction
             'product' => $this->productTab($family, $indexer),
             default   => $this->familyTab($family, $indexer),
         };
-        
+
         $labels = $this->shop->getCustomReviewCategoryLabel();
 
         return array_merge($data, [
@@ -61,11 +61,11 @@ class ShowIrisFamilyReview extends IrisAction
                 'navigation' => [
                     [
                         'key' => 'family',
-                        'label' => data_get($labels,  ReviewContextEnum::FAMILY->value)
+                        'label' => data_get($labels, ReviewContextEnum::FAMILY->value)
                     ],
                     [
                         'key' => 'product',
-                        'label' => data_get($labels,  ReviewContextEnum::PRODUCT->value)
+                        'label' => data_get($labels, ReviewContextEnum::PRODUCT->value)
                     ],
                 ],
             ],

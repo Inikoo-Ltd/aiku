@@ -2,7 +2,6 @@
 
 namespace App\Actions\Reviews\UI;
 
-use App\Actions\Catalogue\Review\UI\IndexReviews;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Http\Resources\Catalogue\ReviewsResource;
@@ -27,7 +26,7 @@ class IndexOverallReviews extends OrgAction
         $tabLabels = $shop->getCustomReviewCategoryLabel();
         $alternateName = data_get($tabLabels, ReviewContextEnum::ORDER->value);
         $displayAlternateName = $alternateName && $title != $alternateName;
-        
+
         return Inertia::render('Org/Catalogue/ShopReviews', [
             'title'       => $title,
             'breadcrumbs' => $this->getBreadcrumbs(

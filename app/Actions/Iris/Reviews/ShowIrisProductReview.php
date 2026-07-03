@@ -7,12 +7,13 @@
 
 namespace App\Actions\Iris\Reviews;
 
-use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\IrisAction;
+use App\Actions\Reviews\UI\IndexReviewsInIris;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
+use App\Http\Resources\Catalogue\IrisAllReviewsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Reviews\Review;
@@ -20,7 +21,6 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Catalogue\IrisAllReviewsResource;
 
 class ShowIrisProductReview extends IrisAction
 {
@@ -71,7 +71,7 @@ class ShowIrisProductReview extends IrisAction
 
         $recommendedCount = $recommendBase->where('rating_main', '>=', 4)->count();
         $labels = $this->shop->getCustomReviewCategoryLabel();
-        
+
         return [
             'type'              => 'product',
             'product'           => [
@@ -101,7 +101,7 @@ class ShowIrisProductReview extends IrisAction
                 'navigation' => [
                     [
                         'key' => 'reviews',
-                        'label' => data_get($labels,  ReviewContextEnum::PRODUCT->value)
+                        'label' => data_get($labels, ReviewContextEnum::PRODUCT->value)
                     ],
                 ],
             ],

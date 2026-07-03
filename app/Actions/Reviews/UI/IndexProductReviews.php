@@ -2,7 +2,6 @@
 
 namespace App\Actions\Reviews\UI;
 
-use App\Actions\Catalogue\Review\UI\IndexReviews;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Http\Resources\Catalogue\ReviewsResource;

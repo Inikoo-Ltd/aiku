@@ -9,8 +9,8 @@
 
 namespace App\Actions\Iris\Reviews;
 
-use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\IrisAction;
+use App\Actions\Reviews\UI\IndexReviewsInIris;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Models\Catalogue\Product;

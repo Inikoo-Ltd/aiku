@@ -9,18 +9,25 @@
 namespace App\Actions\Reviews;
 
 use App\Actions\Helpers\Translations\Translate;
-use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use App\Models\Reviews\Review;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\AsCommand;
 
-class TranslateReply
+class TranslateReply implements ShouldBeUnique
 {
     use AsAction;
-    use AsCommand;
+
+    public string $jobQueue = 'hydrators-slave-low-priority';
+
+
+    public function getJobUniqueId(Review $review, bool $override = false): string
+    {
+        return $review->id.'-'.$override ? 'o' : 'n';
+    }
+
 
     public function handle(Review $review, bool $override = false): Review
     {
@@ -34,8 +41,8 @@ class TranslateReply
         }
 
 
-        $languages = Shop::where('is_aiku', true)->where('state', ShopStateEnum::OPEN)->pluck('language_id')->unique();
-        $existing = $review->translations['reply_message'] ?? [];
+        $languages    = Shop::where('is_aiku', true)->where('state', ShopStateEnum::OPEN)->pluck('language_id')->unique();
+        $existing     = $review->translations['reply_message'] ?? [];
         $translations = [];
         foreach ($languages as $shopLanguageId) {
             if (!$override && !empty($existing[$shopLanguageId])) {
@@ -74,10 +81,7 @@ class TranslateReply
 
         $reviews->whereNotNull('reply_message');
 
-        $reviews = Review::query()->whereIn(
-            'scope',
-            [ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY]
-        )->whereNotNull('reply_message')
+        $reviews = Review::query()->whereNotNull('reply_message')
             ->orderByDesc('created_at');
 
 
@@ -94,8 +98,7 @@ class TranslateReply
 
         $reviews->chunk(100, function ($reviewsChunk) use (&$processed, &$detected, $override, $progressBar) {
             foreach ($reviewsChunk as $review) {
-                $this->handle($review, $override);
-
+                TranslateReply::dispatch($review, $override);
                 $processed++;
                 $progressBar->advance();
             }

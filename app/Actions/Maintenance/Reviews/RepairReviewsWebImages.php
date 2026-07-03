@@ -2,7 +2,7 @@
 
 namespace App\Actions\Maintenance\Reviews;
 
-use App\Actions\Catalogue\Review\Traits\HasReviewCommonLogic;
+use App\Actions\Reviews\Traits\HasReviewCommonLogic;
 use App\Models\Helpers\Media;
 use App\Models\Reviews\Review;
 use Illuminate\Console\Command;

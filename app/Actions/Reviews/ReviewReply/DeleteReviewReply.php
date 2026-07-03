@@ -1,6 +1,11 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 03 Jul 2026 18:49:56 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Catalogue\ReviewReply;
+namespace App\Actions\Reviews\ReviewReply;
 
 use App\Actions\OrgAction;
 use App\Models\Reviews\Review;
@@ -18,6 +23,10 @@ class DeleteReviewReply extends OrgAction
             'reply_at'      => null,
             'reply_by'      => null,
         ]);
+
+        $translations = $review->translations;
+        unset($translations['reply_message']);
+        $review->update(['translations' => $translations]);
 
         return $review->refresh();
     }

@@ -1,8 +1,14 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 03 Jul 2026 18:49:56 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Catalogue\ReviewReply;
+namespace App\Actions\Reviews\ReviewReply;
 
 use App\Actions\OrgAction;
+use App\Actions\Reviews\TranslateReply;
 use App\Models\Reviews\Review;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -15,7 +21,7 @@ class UpdateReviewReply extends OrgAction
             'reply_message' => $modelData['body'],
             'reply_at'      => now(),
         ]);
-
+        TranslateReply::dispatch($review);
         return $review->refresh();
     }
 

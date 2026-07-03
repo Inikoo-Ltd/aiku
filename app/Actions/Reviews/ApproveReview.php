@@ -1,9 +1,14 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 03 Jul 2026 18:35:30 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Catalogue\Review;
+namespace App\Actions\Reviews;
 
-use App\Actions\Catalogue\Review\Traits\HasReviewHydrators;
 use App\Actions\OrgAction;
+use App\Actions\Reviews\Traits\HasReviewHydrators;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Models\Reviews\Review;

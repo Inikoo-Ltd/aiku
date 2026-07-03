@@ -7,7 +7,7 @@
  * Copyright 2026
 */
 
-namespace App\Actions\Catalogue\Review\UI;
+namespace App\Actions\Reviews\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewReactionTargetEnum;

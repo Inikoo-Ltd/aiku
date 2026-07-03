@@ -7,8 +7,8 @@
 
 namespace App\Actions\Iris\Reviews;
 
-use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\IrisAction;
+use App\Actions\Reviews\UI\IndexReviewsInIris;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
@@ -135,9 +135,9 @@ class ShowIrisReviews extends IrisAction
     {
         $baseQuery = Review::query()
             ->when(
-                    !$includeOtherShops, 
-                    fn ($query) => $query->where('shop_id', $shop->id),
-                    fn ($query) => $query->where('organisation_id', $shop->organisation_id)
+                !$includeOtherShops,
+                fn ($query) => $query->where('shop_id', $shop->id),
+                fn ($query) => $query->where('organisation_id', $shop->organisation_id)
             )
             ->whereIn('scope', $scopes)
             ->where('state', ReviewStateEnum::PUBLISHED)
@@ -162,7 +162,7 @@ class ShowIrisReviews extends IrisAction
         $labels = $this->shop->getCustomReviewCategoryLabel();
         return [
             [
-                'key' => 'all', 
+                'key' => 'all',
                 'label' => __('All Reviews')
             ],
             [
@@ -171,11 +171,11 @@ class ShowIrisReviews extends IrisAction
             ],
             [
                 'key' => 'family',
-                'label' => data_get($labels,  ReviewContextEnum::FAMILY->value)
+                'label' => data_get($labels, ReviewContextEnum::FAMILY->value)
             ],
             [
                 'key' => 'product',
-                'label' => data_get($labels,  ReviewContextEnum::PRODUCT->value)
+                'label' => data_get($labels, ReviewContextEnum::PRODUCT->value)
             ],
         ];
     }

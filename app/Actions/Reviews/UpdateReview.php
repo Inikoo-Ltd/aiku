@@ -6,11 +6,11 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\Review;
+namespace App\Actions\Reviews;
 
-use App\Actions\Catalogue\Review\Traits\HasReviewCommonLogic;
-use App\Actions\Catalogue\Review\Traits\HasReviewHydrators;
 use App\Actions\OrgAction;
+use App\Actions\Reviews\Traits\HasReviewCommonLogic;
+use App\Actions\Reviews\Traits\HasReviewHydrators;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Models\Reviews\Review;
 use Illuminate\Http\JsonResponse;
@@ -35,6 +35,8 @@ class UpdateReview extends OrgAction
      */
     public function handle(Review $review, array $modelData): Review
     {
+        $oldMessage = $review->message;
+
         $updatedReview = DB::transaction(function () use ($review, $modelData) {
             $images = Arr::pull($modelData, 'images');
             $videos = Arr::pull($modelData, 'videos');
@@ -42,26 +44,25 @@ class UpdateReview extends OrgAction
             $newState = data_get($modelData, 'state', $review->state?->value);
 
             $review->update([
-                'customer_id'   => data_get($modelData, 'customer_id', $review->customer_id),
-                'state'         => $newState,
-                'review_status' => data_get($modelData, 'review_status', $review->review_status?->value),
-                'approved'      => data_get($modelData, 'approved', $review->approved),
-                'auto_approved' => data_get($modelData, 'auto_approved', $review->auto_approved),
-                'published_at'  => $this->resolvePublishedAt($newState, $review, $modelData),
-                'removed_at'    => $this->resolveRemovedAt($newState, $review, $modelData),
-                'rating_main'   => $this->resolveRatingMain($modelData, $review),
-                'rating_a'      => data_get($modelData, 'rating_a', $review->rating_a),
-                'rating_b'      => data_get($modelData, 'rating_b', $review->rating_b),
-                'rating_c'      => data_get($modelData, 'rating_c', $review->rating_c),
-                'rating_d'      => data_get($modelData, 'rating_d', $review->rating_d),
-                'rating_e'      => data_get($modelData, 'rating_e', $review->rating_e),
-                'title'         => data_get($modelData, 'title', $review->title),
-                'message'       => data_get($modelData, 'message', $review->message),
-                'auto_approve_at'    => data_get($modelData, 'auto_approve_at', $review->auto_approve_at),
-                'is_public'     => data_get($modelData, 'is_public', $review->is_public),
-                'order_id'      => data_get($modelData, 'order_id', $review->order_id),
-                'likes'         => data_get($modelData, 'likes', $review->likes),
-                'meta'          => data_get($modelData, 'meta', $review->meta ?? []),
+                'customer_id'     => data_get($modelData, 'customer_id', $review->customer_id),
+                'state'           => $newState,
+                'review_status'   => data_get($modelData, 'review_status', $review->review_status?->value),
+                'approved'        => data_get($modelData, 'approved', $review->approved),
+                'auto_approved'   => data_get($modelData, 'auto_approved', $review->auto_approved),
+                'published_at'    => $this->resolvePublishedAt($newState, $review, $modelData),
+                'removed_at'      => $this->resolveRemovedAt($newState, $review, $modelData),
+                'rating_main'     => $this->resolveRatingMain($modelData, $review),
+                'rating_a'        => data_get($modelData, 'rating_a', $review->rating_a),
+                'rating_b'        => data_get($modelData, 'rating_b', $review->rating_b),
+                'rating_c'        => data_get($modelData, 'rating_c', $review->rating_c),
+                'rating_d'        => data_get($modelData, 'rating_d', $review->rating_d),
+                'rating_e'        => data_get($modelData, 'rating_e', $review->rating_e),
+                'message'         => data_get($modelData, 'message', $review->message),
+                'auto_approve_at' => data_get($modelData, 'auto_approve_at', $review->auto_approve_at),
+                'is_public'       => data_get($modelData, 'is_public', $review->is_public),
+                'order_id'        => data_get($modelData, 'order_id', $review->order_id),
+                'likes'           => data_get($modelData, 'likes', $review->likes),
+                'meta'            => data_get($modelData, 'meta', $review->meta ?? []),
             ]);
 
             if (is_array($images)) {
@@ -76,6 +77,11 @@ class UpdateReview extends OrgAction
 
             return $review->refresh()->load('media');
         });
+
+
+        if($oldMessage !== $updatedReview->message){
+            TranslateReview::dispatch($updatedReview);
+        }
 
         $this->reviewHydrators($updatedReview);
 

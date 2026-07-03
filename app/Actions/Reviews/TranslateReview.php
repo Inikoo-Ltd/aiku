@@ -9,18 +9,24 @@
 namespace App\Actions\Reviews;
 
 use App\Actions\Helpers\Translations\Translate;
-use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use App\Models\Reviews\Review;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\AsCommand;
 
-class TranslateReview
+class TranslateReview implements ShouldBeUnique
 {
     use AsAction;
-    use AsCommand;
+
+    public string $jobQueue = 'hydrators-slave-low-priority';
+
+
+    public function getJobUniqueId(Review $review, bool $override = false): string
+    {
+        return $review->id.'-'.$override ? 'o' : 'n';
+    }
 
     public function handle(Review $review, bool $override = false): Review
     {
@@ -62,10 +68,7 @@ class TranslateReview
         $override = $command->option('override');
 
 
-        $reviews = Review::query()->whereIn(
-            'scope',
-            [ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY]
-        )->orderByDesc('created_at');
+        $reviews = Review::query()->orderByDesc('created_at');
 
         $totalReviews = $reviews->count();
 
@@ -79,8 +82,7 @@ class TranslateReview
 
         $reviews->chunk(100, function ($reviewsChunk) use (&$processed, &$detected, $override, $progressBar) {
             foreach ($reviewsChunk as $review) {
-                $this->handle($review, $override);
-
+                TranslateReview::dispatch($review, $override);
                 $processed++;
                 $progressBar->advance();
             }

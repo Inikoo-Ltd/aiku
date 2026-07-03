@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\Review\Traits;
+namespace App\Actions\Reviews\Traits;
 
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
