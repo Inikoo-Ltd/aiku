@@ -368,6 +368,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.reviews.show_staff_who_reply', (bool)Arr::pull($modelData, 'review_show_staff_who_reply'));
         }
 
+        if (Arr::exists($modelData, 'review_add_other_shops')) {
+            data_set($modelData, 'settings.reviews.add_other_shops', (bool)Arr::pull($modelData, 'review_add_other_shops'));
+        }
+
         if (Arr::exists($modelData, 'review_approval_required')) {
             data_set($modelData, 'settings.reviews.data.approval_required', (bool)Arr::pull($modelData, 'review_approval_required'));
         }
@@ -625,6 +629,7 @@ class UpdateShop extends OrgAction
             'review_minimum_rating_to_show'                           => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'review_minimum_reviews_to_show'                          => ['sometimes', 'nullable', 'integer', 'min:0'],
             'review_show_staff_who_reply'                             => ['sometimes', 'boolean'],
+            'review_add_other_shops'                                  => ['sometimes', 'boolean'],
             'review_approval_required'                                => ['sometimes', 'boolean'],
             'review_hours_after_dispatched'                           => ['sometimes', 'nullable', 'integer', 'min:1'],
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
