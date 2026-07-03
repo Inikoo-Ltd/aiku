@@ -215,9 +215,9 @@ class ProposeAllegroProduct
             'sku'      => ['sku', 'code', 'reference'],
             'condition' => ['condition', 'stan'],
             'description' => ['opis', 'opis produktu'],
-            'capacity' => ['capacity', 'capacity (ml)', 'capacity (ml)', 'capacity (ml)'],
-            'essential_oil_type' => ['essential oil type', 'essential oil type', 'essential oil type'],
-            'tariff_code' => ['tariff code', 'tariff code', 'tariff code', 'customs tariff code']
+            'capacity' => ['capacity', 'capacity (ml)'],
+            'essential_oil_type' => ['essential oil type'],
+            'tariff_code' => ['tariff code', 'customs tariff code']
         ];
 
         foreach ($keywordMap as $attribute => $keywords) {
