@@ -861,37 +861,36 @@ class ShowDeliveryNote extends OrgAction
         // TODO: RAUL REVIEW RESOURCE JUST UNCOMMENT THIS IF YOU WANNA SEE THE PERFORMANCE (memory & speed)
         // TODO: If you want to see this more detailed, ddRawSql inside the resources manually and use EXPLAIN ANALYZE($query)
 
-        $benchmark = function (Closure $fn) {
-            gc_collect_cycles();
+        // $benchmark = function (Closure $fn) {
+        //     gc_collect_cycles();
 
-            $start = hrtime(true);
-            $startMemory = memory_get_usage(false);
-            $startPeak = memory_get_peak_usage(false);
+        //     $start = hrtime(true);
+        //     $startMemory = memory_get_usage(false);
+        //     $startPeak = memory_get_peak_usage(false);
 
-            $fn();
+        //     $fn();
 
-            return [
-                'time_ms' => round((hrtime(true) - $start) / 1e6, 3),
-                'memory_kb' => round((memory_get_usage(false) - $startMemory) / 1024, 2),
-                'peak_mb' => round((memory_get_peak_usage(false) - $startPeak) / 1024 / 1024, 2),
-            ];
-        };
+        //     return [
+        //         'time_ms' => round((hrtime(true) - $start) / 1e6, 3),
+        //         'memory_kb' => round((memory_get_usage(false) - $startMemory) / 1024, 2),
+        //         'peak_mb' => round((memory_get_peak_usage(false) - $startPeak) / 1024 / 1024, 2),
+        //     ];
+        // };
 
-        dd([
-            'Unassigned'    => [
-                'old' => [],
-                'new' => [],
-            ],
-            'Handling'      => [
-                'old' => $benchmark(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
-                'new' => $benchmark(fn () => DeliveryNoteItemsStateHandlingResourceV2::collection(IndexDeliveryNoteItemsStateHandlingV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
-            ],
-            'Normal'        => [
-                'old' => $benchmark(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
-                'new' => $benchmark(fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
-            ]
-        ]);
-
+        // dd([
+        //     'Unassigned'    => [
+        //         'old' => [],
+        //         'new' => [],
+        //     ],
+        //     'Handling'      => [
+        //         'old' => $benchmark(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+        //         'new' => $benchmark(fn () => DeliveryNoteItemsStateHandlingResourceV2::collection(IndexDeliveryNoteItemsStateHandlingV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+        //     ],
+        //     'Normal'        => [
+        //         'old' => $benchmark(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+        //         'new' => $benchmark(fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+        //     ]
+        // ]);
 
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
