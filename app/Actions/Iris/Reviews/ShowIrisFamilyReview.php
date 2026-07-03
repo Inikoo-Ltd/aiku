@@ -9,6 +9,7 @@ namespace App\Actions\Iris\Reviews;
 
 use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\IrisAction;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
@@ -35,6 +36,8 @@ class ShowIrisFamilyReview extends IrisAction
             'product' => $this->productTab($family, $indexer),
             default   => $this->familyTab($family, $indexer),
         };
+        
+        $labels = $this->shop->getCustomReviewCategoryLabel();
 
         return array_merge($data, [
             'family'       => [
@@ -56,8 +59,14 @@ class ShowIrisFamilyReview extends IrisAction
             'tabs'            => [
                 'current'    => $tab,
                 'navigation' => [
-                    ['key' => 'family',  'label' => __('Family Reviews')],
-                    ['key' => 'product', 'label' => __('Product Reviews')],
+                    [
+                        'key' => 'family',
+                        'label' => data_get($labels,  ReviewContextEnum::FAMILY->value)
+                    ],
+                    [
+                        'key' => 'product',
+                        'label' => data_get($labels,  ReviewContextEnum::PRODUCT->value)
+                    ],
                 ],
             ],
         ]);

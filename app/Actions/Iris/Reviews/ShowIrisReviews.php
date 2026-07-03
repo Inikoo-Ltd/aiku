@@ -9,6 +9,7 @@ namespace App\Actions\Iris\Reviews;
 
 use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\IrisAction;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
@@ -158,11 +159,24 @@ class ShowIrisReviews extends IrisAction
 
     private function getTabNavigation(): array
     {
+        $labels = $this->shop->getCustomReviewCategoryLabel();
         return [
-            ['key' => 'all',     'label' => __('All Reviews')],
-            ['key' => 'company', 'label' => __('Company Reviews')],
-            ['key' => 'family',  'label' => __('Family Reviews')],
-            ['key' => 'product', 'label' => __('Product Reviews')],
+            [
+                'key' => 'all', 
+                'label' => __('All Reviews')
+            ],
+            [
+                'key' => 'company',
+                'label' => data_get($labels, ReviewContextEnum::ORDER->value)
+            ],
+            [
+                'key' => 'family',
+                'label' => data_get($labels,  ReviewContextEnum::FAMILY->value)
+            ],
+            [
+                'key' => 'product',
+                'label' => data_get($labels,  ReviewContextEnum::PRODUCT->value)
+            ],
         ];
     }
 

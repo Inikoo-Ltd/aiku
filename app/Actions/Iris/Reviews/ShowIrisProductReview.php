@@ -9,6 +9,7 @@ namespace App\Actions\Iris\Reviews;
 
 use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\IrisAction;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
@@ -69,7 +70,8 @@ class ShowIrisProductReview extends IrisAction
         }
 
         $recommendedCount = $recommendBase->where('rating_main', '>=', 4)->count();
-
+        $labels = $this->shop->getCustomReviewCategoryLabel();
+        
         return [
             'type'              => 'product',
             'product'           => [
@@ -97,7 +99,10 @@ class ShowIrisProductReview extends IrisAction
             'tabs'              => [
                 'current'    => 'reviews',
                 'navigation' => [
-                    ['key' => 'reviews', 'label' => __('Product Reviews')],
+                    [
+                        'key' => 'reviews',
+                        'label' => data_get($labels,  ReviewContextEnum::PRODUCT->value)
+                    ],
                 ],
             ],
         ];
