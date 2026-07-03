@@ -39,6 +39,9 @@ const averageRating = computed(() => props.avg_review ?? 0)
 
 
 const initialTab = (): string => {
+    if (typeof window === "undefined") {
+        return props.tabs?.current || "all"
+    }
     const paramTab = new URLSearchParams(window.location.search).get("tab")
     if (paramTab && props.tabs?.navigation?.some((tab) => tab.key === paramTab)) {
         return paramTab
