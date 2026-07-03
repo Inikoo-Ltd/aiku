@@ -364,8 +364,7 @@ const changeGlobalSearchValue = debounce((value?: string) => {
 const immediateSearch = (value: string) => {
     changeGlobalSearchValue.cancel()
     changeSearchInputValue('global', value)
-    debouncedFilter.cancel()
-    visit(location.pathname + '?' + generateNewQueryString())
+    immediateVisit()
 }
 
 const cancelVisitIfInProgress = () => {
@@ -585,12 +584,27 @@ const debouncedFilter = debounce(() => {
 
 let isMounted = false;
 
+// Set by immediateVisit() so the queryBuilderData watcher skips the debounced visit it would
+// otherwise schedule for the same mutation, preventing a duplicate request.
+let skipNextDebouncedVisit = false;
+
 watch(queryBuilderData, async () => {
         if (!isMounted) return;
+        if (skipNextDebouncedVisit) {
+            skipNextDebouncedVisit = false;
+            return;
+        }
         debouncedFilter();
     },
     {deep: true},
 );
+
+// Visit right away instead of waiting for the debounce (e.g. header sort click).
+const immediateVisit = () => {
+    skipNextDebouncedVisit = true;
+    debouncedFilter.cancel();
+    visit(location.pathname + '?' + generateNewQueryString());
+};
 
 const inertiaListener = () => {
     updates.value++;
@@ -615,6 +629,8 @@ function sortBy(column) {
 
     queryBuilderData.value.cursor = null;
     queryBuilderData.value.page = 1;
+
+    immediateVisit();
 }
 
 function show(key) {
@@ -1192,6 +1208,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                 </template>
                                             </td>
 
+                                            <!-- Rows: main data -->
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
