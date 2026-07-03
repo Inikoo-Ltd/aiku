@@ -43,6 +43,15 @@ const closeModal = () => {
 	resetForm()
 }
 const isLoadingSubmit = ref(false)
+
+type VoucherType = "percentage_off" | "discounted_shipping"
+const offerType = ref<VoucherType>("percentage_off")
+const offerTypeOptions: { value: VoucherType; label: string }[] = [
+	{ value: "percentage_off", label: "Percentage off" },
+	{ value: "discounted_shipping", label: "Discounted shipping" },
+]
+const isPercentageOff = computed(() => offerType.value === "percentage_off")
+
 const discountPercentage = ref<number | null>(null)
 const offerVoucher = ref("")
 const offerLabel = ref("")
@@ -202,12 +211,12 @@ const submitVoucherOffer = () => {
 	const payload = {
 		voucher: offerVoucher.value,
 		name: offerLabel.value,
-		type: "amount",
+		type: offerType.value,
 		offer_amount: offerAmount.value,
 		start_at: formatDate(startDate.value),
 		end_at: formatDate(endDate.value),
 		can_customer_reuse: reuseCustomer.value,
-		percentage_off: discountPercentage.value,
+		percentage_off: isPercentageOff.value ? discountPercentage.value : null,
 		target_type: targetPayload?.target_type ?? null,
 		target_id: targetPayload?.target_id ?? null,
 	}
@@ -261,6 +270,7 @@ watch(target, () => {
 })
 
 function resetForm() {
+	offerType.value = "percentage_off"
 	offerLabel.value = ""
 	offerVoucher.value = ""
 	voucherExists.value = null
@@ -292,8 +302,10 @@ const isVoucherInfoInvalid = computed(() => {
 const isFormInvalid = computed(() => {
 	if (isVoucherInfoInvalid.value) return true
 
-	const pct = discountPercentage.value
-	if (pct === null || pct === undefined || pct <= 0 || pct > 100) return true
+	if (isPercentageOff.value) {
+		const pct = discountPercentage.value
+		if (pct === null || pct === undefined || pct <= 0 || pct > 100) return true
+	}
 
 	return buildTargetPayload() === null
 })
@@ -491,8 +503,39 @@ const isFormInvalid = computed(() => {
 							labelProp="name" />
 					</div>
 
+					
+				</div>
+
+				<!-- voucher type -->
+				<div class="space-y-3">
+					<label class="font-semibold flex items-center gap-x-1">
+						<FontAwesomeIcon
+							icon="fas fa-asterisk"
+							class="font-light text-xs text-red-400 align-middle" />
+						{{ trans("Voucher type") }}
+					</label>
+
+					<div class="flex flex-nowrap gap-2">
+						<label
+							v-for="opt in offerTypeOptions"
+							:key="opt.value"
+							:for="`offer-type-${opt.value}`"
+							class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-sm whitespace-nowrap"
+							:class="
+								offerType === opt.value
+									? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+									: 'border-gray-200 hover:border-gray-300'
+							">
+							<RadioButton
+								v-model="offerType"
+								:value="opt.value"
+								:inputId="`offer-type-${opt.value}`" />
+							<span>{{ trans(opt.label) }}</span>
+						</label>
+					</div>
+
 					<!-- Section: Discount -->
-					<div>
+					<div v-if="isPercentageOff">
 						<div class="font-medium mb-2 flex items-center gap-x-1">
 							<FontAwesomeIcon
 								icon="fas fa-asterisk"
@@ -503,7 +546,7 @@ const isFormInvalid = computed(() => {
 						<InputNumber
 							v-model="discountPercentage"
 							inputId="offer_discount"
-							:placeholder="ctrans('Enter percentage 0-99')" 
+							:placeholder="ctrans('Enter percentage 0-99')"
 							suffix="%"
 							:min="0"
 							:max="100"
