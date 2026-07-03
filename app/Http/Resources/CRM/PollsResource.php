@@ -29,6 +29,7 @@ class PollsResource extends JsonResource
         }
 
         return [
+            'created_at'               => $poll->created_at,
             'id'                       => $poll->id,
             'slug'                     => $poll->slug,
             'name'                     => $poll->name,

@@ -218,6 +218,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'gads_login_customer_id');
         data_forget($modelData, 'gads_user_list_id');
         data_forget($modelData, 'portal_link');
+        data_forget($modelData, 'bank_transfer_instructions_for_email');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
