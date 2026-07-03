@@ -52,6 +52,7 @@ use App\Actions\Chat\ChatSession\TranslateSessionMessages;
 use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
 use App\Actions\Chat\ChatSession\UpdateChatSession;
+use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
@@ -73,6 +74,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
 use Illuminate\Http\JsonResponse;
@@ -2100,4 +2102,59 @@ test('UI Show group agents listing', function () {
     $response = get(route('grp.chat.agents.show'));
 
     $response->assertOk();
+});
+
+it('can render chat sessions index in CRM', function () {
+    $this->withoutExceptionHandling();
+
+    setPermissionsTeamId($this->shop->group_id);
+    SeedShopPermissions::run($this->shop);
+    $crmViewPermission = Permission::where('name', "crm.{$this->shop->id}.view")->first();
+    if ($crmViewPermission) {
+        $this->user->givePermissionTo($crmViewPermission);
+    }
+    $this->user->refresh();
+    actingAs($this->user);
+
+    $response = get(route('grp.org.shops.show.crm.chat_sessions.index', [
+        $this->organisation->slug,
+        $this->shop->slug,
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Shop/CRM/ChatSessions')
+            ->has('data');
+    });
+});
+
+it('can render chat session detail', function () {
+    $this->withoutExceptionHandling();
+
+    $chatSession = ChatSession::where('shop_id', $this->shop->id)->first()
+        ?? StoreChatSession::make()->handle([
+            'language_id' => 68,
+            'priority'    => ChatPriorityEnum::NORMAL->value,
+            'shop_id'     => $this->shop->id,
+        ]);
+
+    setPermissionsTeamId($this->shop->group_id);
+    SeedShopPermissions::run($this->shop);
+    $crmViewPermission = Permission::where('name', "crm.{$this->shop->id}.view")->first();
+    if ($crmViewPermission) {
+        $this->user->givePermissionTo($crmViewPermission);
+    }
+    $this->user->refresh();
+    actingAs($this->user);
+
+    $response = get(route('grp.org.shops.show.crm.chat_sessions.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $chatSession->id,
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Shop/CRM/ChatSession')
+            ->has('chatSession')
+            ->has('messages');
+    });
 });
