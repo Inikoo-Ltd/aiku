@@ -909,11 +909,18 @@ class EditShop extends OrgAction
 
         $emptyDimensions = array_fill_keys(ReviewRatingDimensionEnum::values(), '');
 
-        return collect(ReviewContextEnum::values())
+        $tabLabels = $shop->getCustomReviewCategoryLabel();
+        $reviewLabel = collect(ReviewContextEnum::values())
             ->mapWithKeys(fn (string $context) => [
-                $context => [...$emptyDimensions, ...($stored[$context] ?? [])],
+                $context => [
+                    ...$emptyDimensions, 
+                    ...($stored[$context] ?? []),
+                    'label_tab' => data_get($tabLabels, $context)
+                ],
             ])
             ->all();
+            
+        return $reviewLabel;
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
