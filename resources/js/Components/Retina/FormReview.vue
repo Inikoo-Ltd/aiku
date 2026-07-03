@@ -5,7 +5,6 @@ import Rating from "primevue/rating"
 import Textarea from "primevue/textarea"
 import Icon from "@/Components/Icon.vue"
 import type { Image as ImageProxy } from "@/types/Image"
-import { trans } from "laravel-vue-i18n"
 import PureMultiselectInfiniteScroll from "../Pure/PureMultiselectInfiniteScroll.vue"
 import Image from "@/Common/Components/Image.vue"
 import Toggle from '@/Components/Pure/Toggle.vue'
@@ -120,7 +119,7 @@ const handleFileInputChange = (event: Event) => {
 	const totalSelectedBytes = selectedFiles.reduce((acc, file) => acc + file.size, 0)
 
 	if (selectedFiles.length > maxImageCount) {
-		fileErrors.value = trans("Please upload no more than {count} images.", {
+		fileErrors.value = ctrans("Please upload no more than {count} images.", {
 			count: maxImageCount,
 		})
 		input.value = ""
@@ -128,7 +127,7 @@ const handleFileInputChange = (event: Event) => {
 	}
 
 	if (totalSelectedBytes > maxTotalBytes) {
-		fileErrors.value = trans("Total image size must not exceed {size}.", { size: "20 MB" })
+		fileErrors.value = ctrans("Total image size must not exceed {size}.", { size: "20 MB" })
 		input.value = ""
 		return
 	}
@@ -272,13 +271,13 @@ watch(
 					class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
 					<div>
 						<div class="text-sm font-medium text-gray-800">
-							{{ trans("Make this review public") }}
+							{{ ctrans("Make this review public") }}
 						</div>
 						<div class="text-[11px] text-gray-500">
 							{{
 								form.is_public
-									? trans("Visible to everyone on the store.")
-									: trans("Only visible to the shop, kept private.")
+									? ctrans("Visible to everyone on the store.")
+									: ctrans("Only visible to the shop, kept private.")
 							}}
 						</div>
 					</div>
@@ -287,7 +286,7 @@ watch(
 
 				<div v-if="use_customer" class="space-y-2">
 					<label class="text-sm font-medium text-gray-800">
-						{{ trans("Customer") }}
+						{{ ctrans("Customer") }}
 					</label>
 
 					<PureMultiselectInfiniteScroll v-model="form.customer_id" :disabled="disabled" :fetchRoute="{
@@ -297,16 +296,16 @@ watch(
 							shop: route().params.shop,
 						},
 					}" label="name" trackBy="id" valueProp="id" searchable :canClear="true" :closeOnSelect="true"
-						:placeholder="trans('Select customer')" />
+						:placeholder="ctrans('Select customer')" />
 				</div>
 
 				<div class="space-y-2 rounded-2xl border border-gray-200 bg-white p-4">
 					<label class="text-sm font-medium text-gray-800">
-						{{ trans("Your Review") }}
+						{{ ctrans("Your Review") }}
 					</label>
 
 					<Textarea v-model="form.message" rows="6" :autoResize="true" :disabled="disabled"
-						:placeholder="trans('Tell people what you liked or disliked...')" class="w-full rounded-xl" />
+						:placeholder="ctrans('Tell people what you liked or disliked...')" class="w-full rounded-xl" />
 
 					<div v-if="fieldError('message')" class="text-xs text-red-500">
 						{{ fieldError("message") }}
@@ -318,7 +317,7 @@ watch(
 
 					<p class="text-xs text-gray-500">
 						{{
-							trans(
+							ctrans(
 								"Upload up to 3 images, total max 20 MB. Accepted formats: JPG, PNG, GIF."
 							)
 						}}
@@ -332,7 +331,7 @@ watch(
 									icon: 'fal fa-images',
 									class: 'text-sm text-gray-500',
 								}" />
-								{{ trans("Choose images") }}
+								{{ ctrans("Choose images") }}
 							</button>
 
 							<button type="button" @click="clearImages" :disabled="disabled || selectedImageCount === 0"
@@ -341,7 +340,7 @@ watch(
 									icon: 'fal fa-times',
 									class: 'text-sm text-gray-500',
 								}" />
-								{{ trans("Clear all") }}
+								{{ ctrans("Clear all") }}
 							</button>
 						</div>
 
@@ -376,7 +375,7 @@ watch(
 							</div>
 
 							<button type="button" @click="removeImage(index)" :disabled="disabled"
-								class="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-sm transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+								class="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-sm ctransition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
 								<Icon :data="{ icon: 'fal fa-times', class: 'text-xs' }" />
 							</button>
 						</div>
@@ -408,11 +407,11 @@ watch(
 							class="flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4">
 							<div>
 								<h2 class="text-lg font-semibold text-gray-900">
-									{{ trans("Write a Review") }}
+									{{ ctrans("Write a Review") }}
 								</h2>
 
 								<p class="mt-0.5 text-sm text-gray-500">
-									{{ trans("Share your experience with this ") }} {{ props.modelValue?.scope}}
+									{{ ctrans("Share your experience with this ") }} {{ props.modelValue?.scope}}
 								</p>
 							</div>
 
@@ -428,7 +427,7 @@ watch(
 									</div>
 
 									<div class="mt-1 text-[11px] text-gray-500">
-										{{ trans("Average Rating") }}
+										{{ ctrans("Average Rating") }}
 									</div>
 								</div>
 
@@ -446,7 +445,7 @@ watch(
 
 						<div v-if="activeRatings.length" class="space-y-1 rounded-2xl bg-white">
 							<div v-for="item in activeRatings" :key="item.dimension"
-								class="rating flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 transition-all duration-200 hover:border-gray-200 hover:bg-white sm:flex-row sm:items-center sm:justify-between">
+								class="rating flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 ctransition-all duration-200 hover:border-gray-200 hover:bg-white sm:flex-row sm:items-center sm:justify-between">
 								<div class="flex items-center gap-3">
 									<div
 										class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-[11px] font-bold uppercase text-white">
@@ -459,7 +458,7 @@ watch(
 										</div>
 
 										<div v-if="item.required" class="mt-1 text-[11px] text-red-500">
-											{{ trans("Required") }}
+											{{ ctrans("Required") }}
 										</div>
 
 										<div v-if="fieldError(item.field)" class="mt-1 text-[11px] text-red-500">
@@ -479,17 +478,17 @@ watch(
 					<div class="rounded-2xl border border-gray-200 bg-white p-4">
 						<div class="border-b border-gray-100 pb-4">
 							<h2 class="text-lg font-semibold text-gray-900">
-								{{ trans("Write a Review") }}
+								{{ ctrans("Write a Review") }}
 							</h2>
 
 							<p class="mt-0.5 text-sm text-gray-500">
-								{{ trans("Share your experience with this ") }} {{ props.modelValue?.scope}}
+								{{ ctrans("Share your experience with this ") }} {{ props.modelValue?.scope}}
 							</p>
 						</div>
 
 						<div v-if="activeRatings.length" class="mt-4 space-y-2">
 							<div v-for="item in activeRatings" :key="item.dimension"
-								class="rating flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 transition-all duration-200 hover:border-gray-200 hover:bg-white sm:flex-row sm:items-center sm:justify-between">
+								class="rating flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 ctransition-all duration-200 hover:border-gray-200 hover:bg-white sm:flex-row sm:items-center sm:justify-between">
 								<div class="flex items-center gap-3">
 									<div
 										class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-[11px] font-bold uppercase text-white">
@@ -502,7 +501,7 @@ watch(
 										</div>
 
 										<div v-if="item.required" class="mt-1 text-[11px] text-red-500">
-											{{ trans("Required") }}
+											{{ ctrans("Required") }}
 										</div>
 
 										<div v-if="fieldError(item.field)" class="mt-1 text-[11px] text-red-500">
