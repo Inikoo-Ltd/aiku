@@ -56,8 +56,9 @@ class PayOrder extends OrgAction
 
         // TODO: This should be moved to a job, and the email should be sent only if the outbox is active and applicable
         SendInvoicePaidEmailToCustomer::dispatch($order->customer, [
-            'order_id' => $order->id,
-            'amount'   => $payment->amount,
+            'order_id'   => $order->id,
+            'amount'     => $payment->amount,
+            'invoice_id' => $invoice?->id,
         ]);
 
         return $payment;

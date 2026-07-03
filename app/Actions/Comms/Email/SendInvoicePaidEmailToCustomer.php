@@ -9,13 +9,14 @@
 
 namespace App\Actions\Comms\Email;
 
+use App\Actions\Accounting\Invoice\GetInvoicePdfContent;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\Customer;
 use App\Actions\Comms\Traits\WithSendCustomerOutboxEmail;
 
-// TOOO: This class is not used anywhere, consider removing it if not needed
 class SendInvoicePaidEmailToCustomer extends OrgAction
 {
     use WithSendCustomerOutboxEmail;
@@ -24,7 +25,16 @@ class SendInvoicePaidEmailToCustomer extends OrgAction
 
     public function handle(Customer $customer, array $additionalData = []): DispatchedEmail|null
     {
-        // data_set($additionalData, "customer_name", $customer->name);
-        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::INVOICE_PAID, $additionalData);
+        $attachments = [];
+
+        $invoice = Invoice::find($additionalData['invoice_id'] ?? null);
+        if ($invoice) {
+            $attachments[] = [
+                'content'  => GetInvoicePdfContent::run($invoice),
+                'filename' => $invoice->slug.'.pdf',
+            ];
+        }
+
+        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::INVOICE_PAID, $additionalData, attachments: $attachments);
     }
 }

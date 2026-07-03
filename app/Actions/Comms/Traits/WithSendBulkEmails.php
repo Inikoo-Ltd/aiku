@@ -37,7 +37,8 @@ trait WithSendBulkEmails
         ?string $senderName = null,
         bool $isTest = false,
         bool $debug = false,
-        ?string $previewText = null
+        ?string $previewText = null,
+        array $attachments = []
     ): DispatchedEmail {
         $html = $emailHtmlBody;
         $html = $this->processStyles($html);
@@ -91,7 +92,8 @@ trait WithSendBulkEmails
             unsubscribeUrl: $unsubscribeUrl,
             senderName: $senderName,
             isTest: $isTest,
-            debug: $debug
+            debug: $debug,
+            attachments: $attachments
         );
     }
 
