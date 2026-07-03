@@ -25,7 +25,7 @@ import { notify } from "@kyvg/vue3-notification"
 const locale = inject("locale", aikuLocaleStructure)
 
 const props = defineProps<{
-    data: TableTS
+    data?: TableTS
     tab?: string
     offerCampaign?: {}
 }>()
