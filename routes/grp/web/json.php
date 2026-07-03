@@ -64,6 +64,7 @@ use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSessio
 use App\Actions\Fulfilment\PickingSession\Json\GetPalletReturnsForPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemRow;
+use App\Actions\Dispatching\PickingSession\Json\FetchPickingSessionItemRow;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
@@ -242,6 +243,7 @@ Route::get('mini-delivery-note/{deliveryNote:id}', GetMiniDeliveryNote::class)->
 Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNoteShipments::class)->name('mini_delivery_note_shipments');
 
 Route::get('picking-session/{pickingSession:id}/delivery-notes', GetDeliveryNotesForPickingSession::class)->name('picking_session.delivery_notes.index');
+Route::get('picking-session/{pickingSession:id}/item-row', FetchPickingSessionItemRow::class)->name('picking_session_item_row');
 Route::get('picking-session/{pickingSession:id}/pallet-returns', GetPalletReturnsForPickingSession::class)->name('picking_session.pallet_returns.index');
 
 Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
