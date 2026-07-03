@@ -20,7 +20,7 @@ class TranslateReply implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'hydrators-slave-low-priority';
+    public string $jobQueue = 'translate';
 
 
     public function getJobUniqueId(Review $review, bool $override = false): string

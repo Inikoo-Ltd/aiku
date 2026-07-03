@@ -27,17 +27,18 @@ class TranslateChatMessage
 
     public int $jobTimeout = 300;
     public int $jobTries = 1;
+    public string $jobQueue = 'translate';
 
     public function handle(
         int $messageId,
         ?int $targetLanguageId = null,
         ?string $requestFrom = null
     ): void {
-
         $message = ChatMessage::find($messageId);
 
         if (!$message) {
             Log::warning('Message not found', ['id' => $messageId]);
+
             return;
         }
 
@@ -45,7 +46,7 @@ class TranslateChatMessage
             return;
         }
 
-        $textToProcess = (string) ($message->original_text ?? $message->message_text ?? '');
+        $textToProcess = (string)($message->original_text ?? $message->message_text ?? '');
         if (trim($textToProcess) === '') {
             return;
         }
@@ -71,7 +72,6 @@ class TranslateChatMessage
         }
 
         $this->performTranslation($message, $textToProcess, $targetLangId, $requestFrom);
-
     }
 
     /**
@@ -87,9 +87,9 @@ class TranslateChatMessage
      */
     protected function handleUserLanguageDetection(ChatMessage $message, ChatSession $session, string $text): void
     {
-
         if ($message->original_language_id) {
             $this->updateSessionLanguage($session, $message->original_language_id);
+
             return;
         }
 
@@ -110,7 +110,7 @@ class TranslateChatMessage
     {
         if ($session->active_user_language_id !== $languageId) {
             $session->update([
-                'user_language_id' => $languageId,
+                'user_language_id'        => $languageId,
                 'active_user_language_id' => $languageId
             ]);
         }
@@ -126,7 +126,6 @@ class TranslateChatMessage
         }
 
         if ($this->isUserMessage($message)) {
-
             $activeAgent = $session->assignments()
                 ->where('status', ChatAssignmentStatusEnum::ACTIVE)
                 ->latest()
@@ -157,15 +156,15 @@ class TranslateChatMessage
      */
     protected function performTranslation(ChatMessage $message, string $text, int $targetLangId, ?string $requestFrom = null): void
     {
-        $targetLang = Language::find($targetLangId);
+        $targetLang   = Language::find($targetLangId);
         $originalLang = Language::find($message->original_language_id);
 
         if (!$targetLang) {
             return;
         }
 
-        $targetCode = (string) ($targetLang->code ?? '');
-        $sourceCode = (string) ($originalLang?->code ?? 'en');
+        $targetCode = (string)($targetLang->code ?? '');
+        $sourceCode = (string)($originalLang?->code ?? 'en');
 
         if ($targetCode === '') {
             return;
@@ -176,7 +175,7 @@ class TranslateChatMessage
         if ($translatedText && $translatedText !== $text) {
             ChatMessageTranslation::updateOrCreate(
                 [
-                    'chat_message_id' => $message->id,
+                    'chat_message_id'    => $message->id,
                     'target_language_id' => $targetLang->id,
                 ],
                 [
@@ -207,6 +206,7 @@ class TranslateChatMessage
         } catch (Throwable $e) {
             Log::error($e->getMessage());
             Sentry::captureException($e);
+
             return null;
         }
     }
@@ -215,9 +215,8 @@ class TranslateChatMessage
     private function performTranslationHelper(string $text, string $sourceCode, string $targetCode): ?string
     {
         try {
-            $text = (string) $text;
-            $sourceCode = strtolower(trim((string) $sourceCode));
-            $targetCode = strtolower(trim((string) $targetCode));
+            $sourceCode = strtolower(trim($sourceCode));
+            $targetCode = strtolower(trim($targetCode));
 
             if (trim($text) === '' || $sourceCode === $targetCode) {
                 return $text;
@@ -235,12 +234,14 @@ class TranslateChatMessage
                     'from' => $sourceCode,
                     'to'   => $targetCode,
                 ]);
+
                 return $text;
             }
 
             return Translate::run($text, $languageFrom, $languageTo);
         } catch (Throwable $e) {
             Sentry::captureException($e);
+
             return $text;
         }
     }

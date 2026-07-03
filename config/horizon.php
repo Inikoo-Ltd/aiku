@@ -219,7 +219,7 @@ return [
         ],
         'hydrators-slave-low-priority'      => [
             'connection'      => 'redis',
-            'queue'           => ['hydrators-slave-low-priority'],
+            'queue'           => ['hydrators-slave-low-priority','translate'],
             'balance'         => 'auto',
             'maxProcesses'    => 2,
             'maxTime'         => 0,

@@ -20,6 +20,8 @@ class TranslateModel
 {
     use AsAction;
 
+    public string $jobQueue = 'translate';
+
     public function handle(ProductCategory|Product $model, array $translationData, bool $overwrite = false): void
     {
         $english      = Language::where('code', 'en')->first();
