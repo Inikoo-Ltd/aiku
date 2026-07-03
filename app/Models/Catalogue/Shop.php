@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\Catalogue\Shop\Traits\WithReviewIOApi;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -166,7 +167,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property int|null $seeder_shop_id
  * @property string|null $proforma_footer
  * @property \Illuminate\Support\Carbon|null $migrated_to_aiku_on
- * @property array $banned_country_regions
+ * @property array<array-key, mixed> $banned_country_regions
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -375,6 +376,13 @@ class Shop extends Model implements HasMedia, Auditable
     public function bannedIPCountries(): array
     {
         return array_filter($this->banned_country_regions, fn ($item) => $item['ip_block']);
+    }
+
+    public function getCustomReviewCategoryLabel(): array
+    {
+        return collect(ReviewContextEnum::labels())->mapWithKeys(fn ($item, $key) => [
+                $key => data_get($this->settings, "reviews.rating_labels.$key.label_tab") ?? $item
+            ])->toArray();
     }
 
     public function crmStats(): HasOne

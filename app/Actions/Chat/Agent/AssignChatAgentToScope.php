@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 30 Jun 2026 21:09:14 Malaysia Time, Kuala Lumpur, Malaysia
@@ -54,7 +55,7 @@ class AssignChatAgentToScope extends OrgAction
         }
     }
 
-    public function asController(array $data, ChatAgent $agent)
+    public function asController(array $data, ChatAgent $agent): null
     {
         return $this->handle($data, $agent);
     }

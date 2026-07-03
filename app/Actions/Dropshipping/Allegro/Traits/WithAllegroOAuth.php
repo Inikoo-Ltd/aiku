@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\Allegro\Traits;
 use App\Actions\Dropshipping\Allegro\User\UpdateAllegroUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Sentry;
 
@@ -306,7 +305,7 @@ trait WithAllegroOAuth
             'refresh_token' => $refreshToken,
         ]);
 
-        if(blank($result)) {
+        if (blank($result)) {
             return [];
         }
 

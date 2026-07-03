@@ -26,7 +26,7 @@ class UpdateAllegroUser extends RetinaAction
         /** @var AllegroUser $allegroUser */
         $allegroUser = $this->update($allegroUser, $modelData);
 
-        if($isNeedCheck) {
+        if ($isNeedCheck) {
             CheckAllegroChannel::run($allegroUser);
         }
 

@@ -12,6 +12,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * @property int $id
+ * @property int $org_stock_history_id
+ * @property int $org_stock_id
+ * @property int $location_id
+ * @property \Illuminate\Support\Carbon $date
+ * @property float $actual_quantity_in_locations Stock at en of day, allow negative values
+ * @property float $quantity_in_locations Stock at the end of the day, min value zero
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property numeric $org_stock_value
+ * @property numeric $grp_stock_value
+ * @property int|null $organisation_stock_history_id
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStockHistory newModelQuery()

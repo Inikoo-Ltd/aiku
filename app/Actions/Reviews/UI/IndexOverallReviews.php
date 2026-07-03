@@ -4,6 +4,7 @@ namespace App\Actions\Reviews\UI;
 
 use App\Actions\Catalogue\Review\UI\IndexReviews;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -22,18 +23,23 @@ class IndexOverallReviews extends OrgAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
+        $title = __('Overall Reviews');
+        $tabLabels = $shop->getCustomReviewCategoryLabel();
+        $alternateName = data_get($tabLabels, ReviewContextEnum::ORDER->value);
+        $displayAlternateName = $alternateName && $title != $alternateName;
+        
         return Inertia::render('Org/Catalogue/ShopReviews', [
-            'title'       => __('Overall Reviews'),
+            'title'       => $title,
             'breadcrumbs' => $this->getBreadcrumbs(
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
             'pageHead' => [
-                'title' => __('Overall Reviews'),
+                'title' => $title . ($displayAlternateName ? " ($alternateName)" : ''),
                 'model' => __('Shop'),
                 'icon'  => [
                     'icon'  => ['fal', 'fa-star'],
-                    'title' => __('All Reviews'),
+                    'title' => $title . ($displayAlternateName ? " ($alternateName)" : ''),
                 ],
             ],
             'data' => [

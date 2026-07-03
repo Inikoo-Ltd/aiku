@@ -26,7 +26,7 @@ function scheduledEventsById(Schedule $schedule): array
 
 function rebuildSchedule(): Schedule
 {
-    $schedule = new Schedule;
+    $schedule = new Schedule();
     $kernel = app(Kernel::class);
     $reflection = new ReflectionMethod(Kernel::class, 'schedule');
     $reflection->setAccessible(true);

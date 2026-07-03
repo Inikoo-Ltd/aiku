@@ -31,12 +31,27 @@ if (!function_exists('maskName')) {
             return '';
         }
 
-        $parts = preg_split('/\s+/', trim($name));
+        $parts = array_values(array_filter(
+            preg_split('/\s+/', trim($name))
+        ));
 
-        return collect($parts)
-            ->filter()
-            ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
-            ->implode('');
+        if (empty($parts)) {
+            return '';
+        }
+
+        if (count($parts) === 1) {
+            return mb_convert_case(
+                mb_substr($parts[0], 0, 2),
+                MB_CASE_TITLE,
+                'UTF-8'
+            );
+        }
+
+        return sprintf(
+            '%s %s',
+            $parts[0],
+            mb_strtoupper(mb_substr($parts[1], 0, 1))
+        );
     }
 }
 
