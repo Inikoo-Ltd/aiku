@@ -20,6 +20,7 @@ import { faCircle, faDotCircle, faReply } from "@fas"
 import { faEye, faEyeSlash, faFolder, faGameConsoleHandheld, faStar } from "@far"
 import { inject, ref } from "vue"
 import Image from "@/Common/Components/Image.vue"
+import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 
 const props = withDefaults(
 	defineProps<{
@@ -147,9 +148,9 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 							<div class="flex items-start justify-between gap-4">
 								<div class="min-w-0">
 									<div class="flex flex-wrap items-center gap-2">
-										<h3 class="truncate text-sm font-semibold text-gray-900">
+										<span class="truncate text-sm font-semibold text-gray-900">
 											{{ item.name }}
-										</h3>
+										</span>
 
 										<Tag v-if="showTagVisibleType" rounded
 											:severity="item.review.is_public ? 'success' : 'secondary'"
@@ -175,9 +176,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 							<!-- Row 2 -->
 							<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
 								<span>{{ item.code }}</span>
-
 								<FontAwesomeIcon :icon="faCircle" class="text-[5px]" />
-
 								<span>{{ useFormatTime(item.created_at) }}</span>
 							</div>
 						</div>
@@ -235,6 +234,11 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 								</span>
 							</button>
 						</div>
+
+						  
+                        <div class="mt-auto text-[11px] text-gray-400 w-fit">
+                            <AddressLocation :data="item['location']" :use_flag="item?.location[1] != layout?.iris?.shop?.location[1]" />
+                        </div>
 					</div>
 
 					<!-- Reply -->

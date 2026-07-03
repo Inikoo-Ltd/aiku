@@ -15,6 +15,7 @@ class ReviewsInIrisResource extends JsonResource
         return [
             'id'                => $review->id,
             'name'              => maskName($review->contact_name),
+            'customer_location' => is_string($review->location) ? json_decode($review->location, true) : $review->location,
             'rating'            => $review->rating_main,
             'message'           => $review->message,
             'date'              => $review->published_at,

@@ -179,7 +179,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                             'scope' => ReviewScopeEnum::PRODUCT->value,
                             'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
                         ])
-                    : Inertia::lazy(fn() => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
+                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
                         ->additional([
                             'pageHead' => [
                                 'model' => __(''),
