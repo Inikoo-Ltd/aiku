@@ -72,7 +72,9 @@ class TranslateReply
 
         $command->info("Processing $totalReviews reviews...");
 
+        
         $progressBar = $command->getOutput()->createProgressBar($totalReviews);
+        $progressBar->setFormat('very_verbose');
         $progressBar->start();
 
         $processed = 0;

@@ -9,6 +9,7 @@
 namespace App\Actions\Reviews;
 
 use App\Actions\Helpers\Translations\Translate;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
@@ -23,7 +24,6 @@ class TranslateReview
 
     public function handle(Review $review, bool $override = false): Review
     {
-
         if (!$review->language_id) {
             $review = DetectReviewLanguage::run($review);
         }
@@ -39,7 +39,7 @@ class TranslateReview
             }
         }
 
-        $currentTranslations = $review->translations;
+        $currentTranslations     = $review->translations;
         $translations['message'] = $currentTranslations;
         $review->update(['translations' => $translations]);
 
@@ -55,14 +55,18 @@ class TranslateReview
     {
         $override = $command->option('override');
 
-        $reviews = Review::query();
 
+        $reviews = Review::query()->whereIn(
+            'scope',
+            [ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY]
+        )->orderByDesc('created_at');
 
         $totalReviews = $reviews->count();
 
         $command->info("Processing $totalReviews reviews...");
 
         $progressBar = $command->getOutput()->createProgressBar($totalReviews);
+        $progressBar->setFormat('very_verbose');
         $progressBar->start();
 
         $processed = 0;
