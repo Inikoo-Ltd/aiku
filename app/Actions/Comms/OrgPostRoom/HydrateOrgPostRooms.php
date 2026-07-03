@@ -11,7 +11,6 @@
 namespace App\Actions\Comms\OrgPostRoom;
 
 use App\Actions\Comms\OrgPostRoom\Hydrators\OrgPostRoomHydrateRuns;
-use App\Actions\Comms\OrgPostRoom\Hydrators\OrgPostRoomHydrateIntervals;
 use App\Actions\Comms\OrgPostRoom\Hydrators\OrgPostRoomHydrateOutboxes;
 use App\Actions\HydrateModel;
 use App\Models\Comms\OrgPostRoom;

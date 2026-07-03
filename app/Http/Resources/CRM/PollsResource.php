@@ -36,6 +36,7 @@ class PollsResource extends JsonResource
             'label'                    => $poll->label,
             'position'                 => $poll->position,
             'number_customers'         => $poll->number_customers ?? 0,
+            'type_value'               => $poll->type->value,
             'type'                     => $poll->type->label(),
             'type_icon'                => $poll->type->stateIcon(),
             'percentage'               => round($percentage, 3) . '%',

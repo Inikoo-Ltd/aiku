@@ -147,7 +147,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property array<array-key, mixed> $opening_hours
  * @property int $late_grace_period_minutes
- * @property array $banned_country_regions
+ * @property array<array-key, mixed> $banned_country_regions
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
