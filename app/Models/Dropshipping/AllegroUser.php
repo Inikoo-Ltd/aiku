@@ -3,7 +3,6 @@
 namespace App\Models\Dropshipping;
 
 use App\Actions\Dropshipping\Allegro\Traits\WithAllegroApiServices;
-use App\Models\DebugWebhooks;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

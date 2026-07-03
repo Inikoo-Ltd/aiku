@@ -1,27 +1,31 @@
 <?php
 
-namespace App\Models;
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 16 Apr 2026 22:35:50 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Models\SysAdmin;
 
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
  * @property \Illuminate\Support\Carbon $failed_at
- * @property int $website_id
  * @property string $username
- * @property int|null $web_user_id
- * @property string $source A: aiku login form, G: google login
+ * @property int|null $user_id
  * @property string|null $os
  * @property string|null $device
  * @property string|null $browser
  * @property string|null $ip_address
  * @property array<array-key, mixed>|null $location
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserFailedLogin newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserFailedLogin newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserFailedLogin query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserFailedLogIn newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserFailedLogIn newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserFailedLogIn query()
  * @mixin \Eloquent
  */
-class WebUserFailedLogin extends Model
+class UserFailedLogIn extends Model
 {
     public $timestamps = false;
 
@@ -35,4 +39,6 @@ class WebUserFailedLogin extends Model
     protected $attributes = [
         'location' => '{}',
     ];
+
+
 }

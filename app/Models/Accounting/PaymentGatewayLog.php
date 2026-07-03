@@ -6,11 +6,10 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Models;
+namespace App\Models\Accounting;
 
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStateEnum;
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStatusEnum;
-use App\Models\Accounting\Payment;
 use App\Models\SysAdmin\Group;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

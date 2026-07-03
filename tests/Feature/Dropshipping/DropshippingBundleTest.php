@@ -19,10 +19,10 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Bundle;
-use App\Models\BundleItem;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\Bundle;
+use App\Models\Dropshipping\BundleItem;
 
 use function Pest\Laravel\actingAs;
 

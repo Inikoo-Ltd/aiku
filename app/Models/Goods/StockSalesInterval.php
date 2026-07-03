@@ -6,9 +6,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Models;
+namespace App\Models\Goods;
 
-use App\Models\Goods\Stock;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

@@ -1,9 +1,13 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 04 Jul 2026 00:34:27 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Models;
+namespace App\Models\Dropshipping;
 
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,7 +32,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read Model|\Eloquent $bundleable
  * @property-read Customer|null $customer
  * @property-read CustomerSalesChannel|null $customerSalesChannel
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BundleItem> $items
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\BundleItem> $items
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Bundle newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Bundle newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Bundle query()

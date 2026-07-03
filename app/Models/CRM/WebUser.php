@@ -17,13 +17,12 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasEmail;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
 use App\Models\Traits\InCustomer;
 use App\Models\Traits\IsUserable;
 use App\Models\Web\Website;
-use App\Models\WebUserFailedLogin;
-use App\Models\WebUserLogin;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -36,7 +35,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Sluggable\SlugOptions;
-use App\Models\Traits\HasHistory;
 
 /**
  * App\Models\CRM\WebUser

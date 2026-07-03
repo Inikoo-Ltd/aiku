@@ -16,9 +16,9 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
-use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Bundle;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteBundle extends OrgAction
