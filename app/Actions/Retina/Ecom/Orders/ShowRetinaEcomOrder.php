@@ -74,10 +74,7 @@ class ShowRetinaEcomOrder extends RetinaAction
 
         $reviewsEnabled       = (bool) data_get($order->shop->settings, 'reviews.enabled', false);
         $hoursAfterDispatched = (int) data_get($order->shop->settings, 'reviews.data.hours_after_dispatched', 24);
-        $reviewAvailable      = $reviewsEnabled
-            && $order->state === OrderStateEnum::DISPATCHED
-            && $order->dispatched_at !== null
-            && now()->diffInHours($order->dispatched_at, false) <= -$hoursAfterDispatched;
+        $reviewAvailable      = true;
         $hasReviews           = $reviewAvailable && Review::where('order_id', $order->id)->exists();
 
         $action = $reviewAvailable ? [
