@@ -176,7 +176,7 @@ class ProposeAllegroProduct
 
         return [
             'name'        => $portfolio->customer_product_name ?? null,
-            'brand'       => 'Ancient Wisdom' ?? null,
+            'brand'       => 'Ancient Wisdom',
             'type'        => $product->family?->name ?? null,
             'color'       => $product->color ?? null,
             'size'        => $product->size ?? null,
