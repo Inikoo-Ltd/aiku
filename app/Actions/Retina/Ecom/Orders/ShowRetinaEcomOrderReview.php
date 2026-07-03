@@ -124,6 +124,14 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                 RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value
                     ? fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
                         ->additional([
+                            'pageHead' => [
+                                'model' => __(''),
+                                'title' => __('Family review'),
+                                 'icon' => [
+                                    'icon'  => 'fal fa-folder',
+                                    'title' => __('Family review')
+                                ],
+                            ],
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
                             'context'       => ReviewContextEnum::FAMILY->value,
@@ -132,6 +140,14 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                         ])
                     : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
                         ->additional([
+                            'pageHead' => [
+                                'model' => __(''),
+                                'title' => __('Family review'),
+                                  'icon' => [
+                                    'icon'  => 'fal fa-folder',
+                                    'title' => __('Family review')
+                                ],
+                            ],
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
                             'context'       => ReviewContextEnum::FAMILY->value,
@@ -142,14 +158,30 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                 RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value
                     ? fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
                         ->additional([
-                            'order_id'      => $order->id,
-                            'shop_id'       => $order->shop_id,
-                            'context'       => ReviewContextEnum::PRODUCT->value,
-                            'scope'         => ReviewScopeEnum::PRODUCT->value,
+                            'pageHead' => [
+                                'model' => __(''),
+                                'title' => __('Products review'),
+                                  'icon' => [
+                                    'icon'  => 'fal fa-cube',
+                                    'title' => __('Products review')
+                                ],
+                            ],
+                            'order_id' => $order->id,
+                            'shop_id' => $order->shop_id,
+                            'context' => ReviewContextEnum::PRODUCT->value,
+                            'scope' => ReviewScopeEnum::PRODUCT->value,
                             'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
                         ])
-                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
+                    : Inertia::lazy(fn() => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
                         ->additional([
+                            'pageHead' => [
+                                'model' => __(''),
+                                'title' => __('Products review'),
+                                'icon' => [
+                                    'icon'  => 'fal fa-cube',
+                                    'title' => __('Products review')
+                                ],
+                            ],
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
                             'context'       => ReviewContextEnum::PRODUCT->value,
@@ -199,6 +231,14 @@ class ShowRetinaEcomOrderReview extends RetinaAction
             : [];
 
         return [
+            'pageHead'    => [
+                'model'         => __(''),
+                'title'         => __('Overall review'),
+                'icon' => [
+                    'icon'  => 'fal fa-star',
+                    'title' => __('Overall review')
+                ],
+            ],
             'review_id'       => $existingReview?->id,
             'status'          => $existingReview?->review_status?->value,
             'rating'          => $existingReview?->rating_main !== null ? (float) $existingReview->rating_main : null,
