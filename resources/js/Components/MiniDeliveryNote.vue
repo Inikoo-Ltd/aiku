@@ -17,7 +17,7 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faPrint } from "@fal"
 import { faCubes } from "@fas"
-import { router } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
 import { inject, ref, toRaw } from "vue"
 import { set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
@@ -311,22 +311,26 @@ onMounted(() => {
                     </ul>
                 </div>
 
-                <div
-                    v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
-                    <ShipmentSection
-                        :shipments="shipments?.shipment?.shipments ?? []"
-                        :shipments_routes="shipments?.shipment?.shipments_routes"
-                        :address="data?.delivery_note?.address"
-                        @addSuccsess="getDataShipment()"
-                        @editAddressSuccsess="getDataDeliveryNote()"
-                        @deleteSuccsess="getDataShipment()"
-                        :shipping_fields_update_route="{
-                            name: 'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
-                            parameters: {
-                                deliveryNote: props.deliveryNote.delivery_note_id
-                            }
-                        }"
-                    />
+                <div v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
+                    <div :class="usePage()?.props?.errors?.shipment ? 'errorShake' : ''">
+                        <ShipmentSection
+                            :shipments="shipments?.shipment?.shipments ?? []"
+                            :shipments_routes="shipments?.shipment?.shipments_routes"
+                            :address="data?.delivery_note?.address"
+                            @addSuccsess="getDataShipment()"
+                            @editAddressSuccsess="getDataDeliveryNote()"
+                            @deleteSuccsess="getDataShipment()"
+                            :shipping_fields_update_route="{
+                                name: 'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
+                                parameters: {
+                                    deliveryNote: props.deliveryNote.delivery_note_id
+                                }
+                            }"
+                        />
+                    </div>
+                    <p v-if="usePage()?.props?.errors?.shipment" class="mt-2 text-red-500 text-xs italic">
+                        *{{ usePage()?.props?.errors?.shipment }}
+                    </p>
                 </div>
             </div>
         </BoxStatPallet>
