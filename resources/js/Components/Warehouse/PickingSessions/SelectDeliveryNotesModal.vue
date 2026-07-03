@@ -48,7 +48,7 @@ const fetchDeliveryNotes = async () => {
     const params: Record<string, string> = { mode: props.mode }
 
     if (orgState?.currentType === 'shop' && orgState.currentShop) {
-        params.shop = orgState.currentShop
+        // params.shop = orgState.currentShop  // Should no need filter by shop, because have search input
     } else if (orgState?.currentType === 'fulfilment' && orgState.currentFulfilment) {
         params.fulfilment = orgState.currentFulfilment
     }
