@@ -313,7 +313,7 @@ console.log('plm',layout)
                     <FontAwesomeIcon v-else :icon="faChevronRight" class="text-[10px] text-gray-600" />
                 </button>
 
-                <div class="grid grid-cols-1 divide-gray-200 lg:grid-cols-4 2xl:grid-cols-5">
+                <div class="grid grid-cols-1 divide-gray-200 lg:grid-cols-4 2xl:grid-cols-5 px-8 lg:px-0">
                     <div v-for="review in visibleReviews" :key="review.id" @click="openReview(review)"
                         class="flex min-h-[170px] flex-col px-5 py-5 transition hover:bg-gray-50">
                         <Rating :modelValue="review.rating" readonly :cancel="false" class="review-rating-small" />
