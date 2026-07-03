@@ -173,6 +173,7 @@ class StoreProductToAllegro extends RetinaAction
                 'external' => [
                     'id' => (string) $portfolio->id
                 ],
+                'language' => 'en-US',
                 'description' => [
                     'sections' => [
                         [

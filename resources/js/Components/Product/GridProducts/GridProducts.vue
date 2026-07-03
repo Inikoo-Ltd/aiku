@@ -596,7 +596,9 @@ watch(
 				:meta="compResourceMeta"
 				:exportLinks="queryBuilderProps?.exportLinks"
 				:per-page-options="queryBuilderProps?.perPageOptions"
-				:on-per-page-change="onPerPageChange" />
+				:on-per-page-change="onPerPageChange" 
+				:max-pages="3"
+			/>
 		</TableWrapper>
 	</fieldset>
 </template>
