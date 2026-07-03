@@ -20,7 +20,7 @@ class TranslateModel
 {
     use AsAction;
 
-    public string $jobQueue = 'translate';
+    public string $jobQueue = 'translate-model';
 
     public function handle(ProductCategory|Product $model, array $translationData, bool $overwrite = false): void
     {

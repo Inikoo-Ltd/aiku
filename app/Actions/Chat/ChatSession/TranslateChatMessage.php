@@ -27,7 +27,7 @@ class TranslateChatMessage
 
     public int $jobTimeout = 300;
     public int $jobTries = 1;
-    public string $jobQueue = 'translate';
+    public string $jobQueue = 'translate-chat';
 
     public function handle(
         int $messageId,
