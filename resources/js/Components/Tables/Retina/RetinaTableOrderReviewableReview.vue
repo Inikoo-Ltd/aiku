@@ -17,6 +17,7 @@ import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 
 library.add(faStar, falStar)
 
@@ -114,7 +115,9 @@ const saveReview = async () => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" :key="tab" class="mt-5">
+   <PageHeading :data="data.pageHead"> </PageHeading>
+   
+    <Table :resource="data" :name="tab" :key="tab" class="mt-5 pt-5">
         <template #cell(image)="{ item }">
             <div class="flex relative w-8 aspect-square overflow-hidden">
                 <Image :src="item.image?.thumbnail" class="w-full h-full object-contain" />
