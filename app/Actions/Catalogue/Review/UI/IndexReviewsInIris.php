@@ -37,13 +37,21 @@ class IndexReviewsInIris extends OrgAction
         return $this->applyQueryOptions($query, $prefix);
     }
 
-    protected function getElementGroups(Shop $shop, array $scopes, ?callable $extraConditions = null): array
+    public function includesOtherShops(Shop $shop): bool
+    {
+        return (bool) Arr::get($shop->settings, 'reviews.add_other_shops', false);
+    }
+
+    protected function getElementGroups(Shop $shop, array $scopes, ?callable $extraConditions = null, bool $includeOtherShops = false): array
     {
         $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
 
         $countQuery = Review::query()
             ->selectRaw('FLOOR(rating_main) as star, COUNT(*) as count')
-            ->where('reviews.shop_id', $shop->id)
+            ->when(!$includeOtherShops, 
+                fn ($query) => $query->where('reviews.shop_id', $shop->id),
+                fn ($query) => $query->where('reviews.organisation_id', $shop->organisation_id)
+            )
             ->whereIn('reviews.scope', $scopes)
             ->where('reviews.rating_main', '>=', $minRating)
             ->where('reviews.state', ReviewStateEnum::PUBLISHED)
@@ -78,9 +86,9 @@ class IndexReviewsInIris extends OrgAction
         ];
     }
 
-    private function applyElementGroups(QueryBuilder $query, Shop $shop, array $scopes, ?string $prefix, ?callable $extraConditions = null): void
+    private function applyElementGroups(QueryBuilder $query, Shop $shop, array $scopes, ?string $prefix, ?callable $extraConditions = null, bool $includeOtherShops = false): void
     {
-        foreach ($this->getElementGroups($shop, $scopes, $extraConditions) as $key => $elementGroup) {
+        foreach ($this->getElementGroups($shop, $scopes, $extraConditions, $includeOtherShops) as $key => $elementGroup) {
             $query->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
@@ -102,10 +110,11 @@ class IndexReviewsInIris extends OrgAction
 
     public function handleProductScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
-        $scopes = [ReviewScopeEnum::PRODUCT];
-        $query  = $this->baseQuery(withProductJoin: true);
-        $this->applyShopConditions($shop, $query, $scopes);
-        $this->applyElementGroups($query, $shop, $scopes, $prefix);
+        $scopes            = [ReviewScopeEnum::PRODUCT];
+        $includeOtherShops = $this->includesOtherShops($shop);
+        $query             = $this->baseQuery(withProductJoin: true);
+        $this->applyShopConditions($shop, $query, $scopes, $includeOtherShops);
+        $this->applyElementGroups($query, $shop, $scopes, $prefix, null, $includeOtherShops);
 
         return $this->applyQueryOptions($query, $prefix, [
             AllowedFilter::callback('product', function ($query, $value) {
@@ -116,10 +125,11 @@ class IndexReviewsInIris extends OrgAction
 
     public function handleFamilyScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
-        $scopes = [ReviewScopeEnum::FAMILY];
-        $query  = $this->baseQuery(withFamilyJoin: true);
-        $this->applyShopConditions($shop, $query, $scopes);
-        $this->applyElementGroups($query, $shop, $scopes, $prefix);
+        $scopes            = [ReviewScopeEnum::FAMILY];
+        $includeOtherShops = $this->includesOtherShops($shop);
+        $query             = $this->baseQuery(withFamilyJoin: true);
+        $this->applyShopConditions($shop, $query, $scopes, $includeOtherShops);
+        $this->applyElementGroups($query, $shop, $scopes, $prefix, null, $includeOtherShops);
 
         return $this->applyQueryOptions($query, $prefix, [
             AllowedFilter::callback('family', function ($query, $value) {
@@ -130,41 +140,69 @@ class IndexReviewsInIris extends OrgAction
 
     public function handleSpecificProductReviews(Product $product, ?string $prefix = null): LengthAwarePaginator
     {
-        $shop            = $product->shop;
-        $scopes          = [ReviewScopeEnum::PRODUCT];
-        $extraConditions = fn ($q) => $q->where('reviews.product_id', $product->id);
-        $query           = $this->baseQuery(withProductJoin: true);
-        $this->applyShopConditions($shop, $query, $scopes);
-        $query->where('reviews.product_id', $product->id);
-        $this->applyElementGroups($query, $shop, $scopes, $prefix, $extraConditions);
+        $shop              = $product->shop;
+        $scopes            = [ReviewScopeEnum::PRODUCT];
+        $includeOtherShops = $this->includesOtherShops($shop) && $product->master_product_id;
+        $query             = $this->baseQuery(withProductJoin: true);
+        $this->applyShopConditions($shop, $query, $scopes, $includeOtherShops);
+
+        if ($includeOtherShops) {
+            $extraConditions = fn ($q) => $q->where('reviews.master_product_id', $product->master_product_id);
+            $query->where('reviews.master_product_id', $product->master_product_id);
+        } else {
+            $extraConditions = fn ($q) => $q->where('reviews.product_id', $product->id);
+            $query->where('reviews.product_id', $product->id);
+        }
+
+        $this->applyElementGroups($query, $shop, $scopes, $prefix, $extraConditions, $includeOtherShops);
 
         return $this->applyQueryOptions($query, $prefix);
     }
 
     public function handleSpecificFamilyReviews(ProductCategory $family, ?string $prefix = null): LengthAwarePaginator
     {
-        $shop            = $family->shop;
-        $scopes          = [ReviewScopeEnum::FAMILY];
-        $extraConditions = fn ($q) => $q->where('reviews.product_category_id', $family->id);
-        $query           = $this->baseQuery(withFamilyJoin: true);
-        $this->applyShopConditions($shop, $query, $scopes);
-        $query->where('reviews.product_category_id', $family->id);
-        $this->applyElementGroups($query, $shop, $scopes, $prefix, $extraConditions);
+        $shop              = $family->shop;
+        $scopes            = [ReviewScopeEnum::FAMILY];
+        $includeOtherShops = $this->includesOtherShops($shop) && $family->master_product_category_id;
+        $query             = $this->baseQuery(withFamilyJoin: true);
+        $this->applyShopConditions($shop, $query, $scopes, $includeOtherShops);
+
+        if ($includeOtherShops) {
+            $extraConditions = fn ($q) => $q->where('reviews.master_product_category_id', $family->master_product_category_id);
+            $query->where('reviews.master_product_category_id', $family->master_product_category_id);
+        } else {
+            $extraConditions = fn ($q) => $q->where('reviews.product_category_id', $family->id);
+            $query->where('reviews.product_category_id', $family->id);
+        }
+
+        $this->applyElementGroups($query, $shop, $scopes, $prefix, $extraConditions, $includeOtherShops);
 
         return $this->applyQueryOptions($query, $prefix);
     }
 
     public function handleProductsInFamilyReviews(ProductCategory $family, ?string $prefix = null): LengthAwarePaginator
     {
-        $shop            = $family->shop;
-        $scopes          = [ReviewScopeEnum::PRODUCT];
-        $extraConditions = fn ($q) => $q
-            ->join('products as p_count', 'p_count.id', '=', 'reviews.product_id')
-            ->where('p_count.family_id', $family->id);
-        $query           = $this->baseQuery(withProductJoin: true);
-        $this->applyShopConditions($shop, $query, $scopes);
-        $query->where('products.family_id', $family->id);
-        $this->applyElementGroups($query, $shop, $scopes, $prefix, $extraConditions);
+        $shop              = $family->shop;
+        $scopes            = [ReviewScopeEnum::PRODUCT];
+        $includeOtherShops = $this->includesOtherShops($shop) && $family->master_product_category_id;
+        $query             = $this->baseQuery(withProductJoin: true);
+        $this->applyShopConditions($shop, $query, $scopes, $includeOtherShops);
+
+        if ($includeOtherShops) {
+            $extraConditions = fn ($q) => $q
+                ->join('products as p_count', 'p_count.id', '=', 'reviews.product_id')
+                ->join('product_categories as f_count', 'f_count.id', '=', 'p_count.family_id')
+                ->where('f_count.master_product_category_id', $family->master_product_category_id);
+            $query->join('product_categories as review_family', 'review_family.id', '=', 'products.family_id')
+                ->where('review_family.master_product_category_id', $family->master_product_category_id);
+        } else {
+            $extraConditions = fn ($q) => $q
+                ->join('products as p_count', 'p_count.id', '=', 'reviews.product_id')
+                ->where('p_count.family_id', $family->id);
+            $query->where('products.family_id', $family->id);
+        }
+
+        $this->applyElementGroups($query, $shop, $scopes, $prefix, $extraConditions, $includeOtherShops);
 
         return $this->applyQueryOptions($query, $prefix, [
             AllowedFilter::callback('product', function ($query, $value) {
@@ -263,12 +301,17 @@ class IndexReviewsInIris extends OrgAction
         return $query->select($select);
     }
 
-    private function applyShopConditions(Shop $shop, QueryBuilder $query, array $scopes): void
+    private function applyShopConditions(Shop $shop, QueryBuilder $query, array $scopes, bool $includeOtherShops = false): void
     {
         $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
 
-        $query->where('reviews.shop_id', $shop->id)
-            ->whereIn('reviews.scope', $scopes)
+        if (!$includeOtherShops) {
+            $query->where('reviews.shop_id', $shop->id);
+        } else {
+            $query->where('reviews.organisation_id', $shop->organisation_id);
+        }
+
+        $query->whereIn('reviews.scope', $scopes)
             ->where('reviews.rating_main', '>=', $minRating)
             ->where('reviews.state', ReviewStateEnum::PUBLISHED)
             ->where('reviews.is_public', true)
@@ -309,23 +352,42 @@ class IndexReviewsInIris extends OrgAction
 
     private function applyWhereQuery(Shop|ProductCategory|Product $parent, EloquentBuilder|QueryBuilder $query): void
     {
-        $shop = $parent;
+        $shop              = $parent;
+        $includeOtherShops = false;
+
         if ($parent instanceof Product) {
-            $shop = $parent->shop;
-            $query->where('reviews.scope', ReviewScopeEnum::PRODUCT)
-                ->where('reviews.product_id', $parent->id);
+            $shop              = $parent->shop;
+            $includeOtherShops = $this->includesOtherShops($shop) && $parent->master_product_id;
+            $query->where('reviews.scope', ReviewScopeEnum::PRODUCT);
+
+            if ($includeOtherShops) {
+                $query->where('reviews.master_product_id', $parent->master_product_id);
+            } else {
+                $query->where('reviews.product_id', $parent->id);
+            }
         } elseif ($parent instanceof ProductCategory) {
-            $shop = $parent->shop;
-            $query->where('reviews.scope', ReviewScopeEnum::FAMILY)
-                ->where('reviews.product_category_id', $parent->id);
+            $shop              = $parent->shop;
+            $includeOtherShops = $this->includesOtherShops($shop) && $parent->master_product_category_id;
+            $query->where('reviews.scope', ReviewScopeEnum::FAMILY);
+
+            if ($includeOtherShops) {
+                $query->where('reviews.master_product_category_id', $parent->master_product_category_id);
+            } else {
+                $query->where('reviews.product_category_id', $parent->id);
+            }
         } else {
             $query->whereIn('reviews.scope', [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER]);
         }
 
         $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
 
-        $query->where('reviews.shop_id', $shop->id)
-            ->where('reviews.rating_main', '>=', $minRating)
+        if (!$includeOtherShops) {
+            $query->where('reviews.shop_id', $shop->id);
+        } else {
+            $query->where('reviews.organisation_id', $shop->organisation_id);
+        }
+
+        $query->where('reviews.rating_main', '>=', $minRating)
             ->where('reviews.state', ReviewStateEnum::PUBLISHED)
             ->where('reviews.is_public', true)
             ->where('reviews.review_status', ReviewStatusEnum::APPROVED);
@@ -339,12 +401,16 @@ class IndexReviewsInIris extends OrgAction
         return $query->avg('rating_main');
     }
 
-    public function avgByScopeReview(Shop $shop, array $scopes): string|null
+    public function avgByScopeReview(Shop $shop, array $scopes, bool $includeOtherShops = false): string|null
     {
         $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
 
         return Review::query()
-            ->where('shop_id', $shop->id)
+            ->when(
+                !$includeOtherShops, 
+                fn ($query) => $query->where('shop_id', $shop->id),
+                fn ($query) => $query->where('reviews.organisation_id', $shop->organisation_id)
+            )
             ->whereIn('scope', $scopes)
             ->where('rating_main', '>=', $minRating)
             ->where('state', ReviewStateEnum::PUBLISHED)
@@ -353,9 +419,9 @@ class IndexReviewsInIris extends OrgAction
             ->avg('rating_main');
     }
 
-    public function tableStructure(?string $prefix = null, ?Shop $shop = null, array $scopes = [], ?callable $extraConditions = null): Closure
+    public function tableStructure(?string $prefix = null, ?Shop $shop = null, array $scopes = [], ?callable $extraConditions = null, bool $includeOtherShops = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $shop, $scopes, $extraConditions) {
+        return function (InertiaTable $table) use ($prefix, $shop, $scopes, $extraConditions, $includeOtherShops) {
             if ($prefix) {
                 $table->name($prefix)->pageName("{$prefix}Page");
             }
@@ -367,7 +433,7 @@ class IndexReviewsInIris extends OrgAction
                 ->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true);
 
             if ($shop && !empty($scopes)) {
-                foreach ($this->getElementGroups($shop, $scopes, $extraConditions) as $key => $elementGroup) {
+                foreach ($this->getElementGroups($shop, $scopes, $extraConditions, $includeOtherShops) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
                         label: $elementGroup['label'],

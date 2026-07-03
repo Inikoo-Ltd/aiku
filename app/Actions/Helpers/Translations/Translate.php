@@ -33,12 +33,7 @@ class Translate extends OrgAction
                 return $text ?? '';
             }
 
-
-            if (app()->environment('local') && !config('app.sandbox.translate')) {
-                return $text;
-            }
-
-            $cacheKey = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
+            $cacheKey          = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
             $cachedTranslation = Cache::get($cacheKey);
             if ($cachedTranslation !== null) {
                 if ($broadcastRandomString != null) {
@@ -48,7 +43,9 @@ class Translate extends OrgAction
                 return $cachedTranslation;
             }
 
-
+            if (app()->environment('local') && !config('app.sandbox.translate')) {
+                return $text;
+            }
             $translationEngineService   = new TranslationEngineService();
             $translationWorkflowService = new TranslationWorkflowService($translationEngineService);
 
