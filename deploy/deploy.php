@@ -102,9 +102,6 @@ task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod'
 desc('Refresh vue after deployment');
 task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
 
-desc('Log deployment');
-task('artisan:log-app-deployment', artisan('deploy:record-deployment --commit={{release_revision}}'))->select('env=prod');
-
 
 desc('Refresh vue after deployment');
 task('deploy:refresh-vue', function () {
@@ -298,6 +295,10 @@ task('deploy:view-cache', function () {
     artisan('view:cache', ['skipIfNoEnv', 'showOutput'])();
 });
 
+desc('Log deployment');
+task('artisan:log-app-deployment', artisan('deploy:record-deployment --commit={{release_revision}}'))->select('env=prod');
+
+
 desc('Log app deployment');
 task('deploy:log-app-deployment', function () {
     if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
@@ -305,9 +306,19 @@ task('deploy:log-app-deployment', function () {
 
         return;
     }
-
     invoke('artisan:log-app-deployment');
 });
+
+
+desc('Artisan Setup guess language');
+task('artisan:translations:setup-guess-language', artisan('deploy:translations:setup-guess-language'))->select('env=prod');
+
+
+desc('Setup guess language');
+task('deploy:translations:setup-guess-language', function () {
+    invoke('artisan:translations:setup-guess-language');
+});
+
 
 desc('Deploys your project');
 task('deploy', [
@@ -333,4 +344,5 @@ task('deploy', [
     'deploy:refresh-vue',
     'deploy:flush-varnish',
     'deploy:log-app-deployment',
+    'deploy:translations:setup-guess-language',
 ]);
