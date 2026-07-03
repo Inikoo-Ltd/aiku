@@ -24,13 +24,13 @@ class StoreReviewReaction extends OrgAction
     public function handle(Review $review, array $modelData): ReviewReaction
     {
         $reviewReaction = $review->reactions()->create($modelData);
-        
+
         $this->hydrateReactions($review);
 
         return $reviewReaction;
     }
 
-    public function rules(): array 
+    public function rules(): array
     {
         return [
             'customer_id'   => ['required', 'exists:customers,id'],

@@ -11,9 +11,7 @@ namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
-use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageForWorkshopResource;
-use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;

@@ -57,7 +57,7 @@ class RepairShopForbiddenCountries
             fn ($q) => $q->where('shop_id', $shopId)
         )
             ->get();
-        
+
         foreach ($shops as $shop) {
             $this->handle($shop, $command);
         }

@@ -162,6 +162,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CustomerSalesChannel> $customerSalesChannels
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
+ * @property-read Collection<int, ReviewReaction> $dislikeReactions
  * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
  * @property-read EbayUser|null $ebayUser
  * @property-read Collection<int, Product> $exclusiveProducts
@@ -172,6 +173,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, Media> $images
  * @property-read \App\Models\CRM\CustomerInterest|null $interests
  * @property-read Collection<int, Invoice> $invoices
+ * @property-read Collection<int, ReviewReaction> $likeReactions
  * @property-read Collection<int, MagentoUser> $magentoUsers
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, MitSavedCard> $mitSavedCard
@@ -185,6 +187,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Asset> $products
  * @property-read Collection<int, \App\Models\CRM\Prospect> $prospects
  * @property-read Collection<int, ReturnDeliveryNote> $returnDeliveryNotes
+ * @property-read Collection<int, ReviewReaction> $reviewReactions
  * @property-read Collection<int, Review> $reviews
  * @property-read Media|null $seoImage
  * @property-read Shop|null $shop
