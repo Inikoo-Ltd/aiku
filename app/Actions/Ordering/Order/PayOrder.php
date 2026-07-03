@@ -14,6 +14,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
@@ -55,11 +56,13 @@ class PayOrder extends OrgAction
 
 
         // TODO: This should be moved to a job, and the email should be sent only if the outbox is active and applicable
-        SendInvoicePaidEmailToCustomer::dispatch($order->customer, [
-            'order_id'   => $order->id,
-            'amount'     => $payment->amount,
-            'invoice_id' => $invoice?->id,
-        ]);
+        if ($invoice && $invoice->pay_status == InvoicePayStatusEnum::PAID) {
+            SendInvoicePaidEmailToCustomer::dispatch($order->customer, [
+                'order_id'   => $order->id,
+                'amount'     => $payment->amount,
+                'invoice_id' => $invoice->id,
+            ]);
+        }
 
         return $payment;
     }
