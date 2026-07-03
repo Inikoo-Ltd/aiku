@@ -329,6 +329,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('allegro:fetch-cancelled-orders')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchCancelledAllegroOrders',
+                ),
+                name: 'FetchCancelledAllegroOrders',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('fetch:woo-orders')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'FetchWooOrders',
                 ),

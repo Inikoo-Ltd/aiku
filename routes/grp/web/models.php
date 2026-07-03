@@ -422,6 +422,7 @@ use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
+use App\Actions\Helpers\Dashboard\BreakDashboardTimeSeriesCache;
 use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
@@ -435,6 +436,8 @@ use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
+
+Route::post('dashboard/break-cache', BreakDashboardTimeSeriesCache::class)->name('dashboard.break_cache');
 
 Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('profile.app-login-qrcode');
 

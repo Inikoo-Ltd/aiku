@@ -20,7 +20,7 @@ trait WithOrderForbiddenCountryCheck
     {
         $data = $this->getBannedCountriesData($order);
 
-        return $this->isAddressForbidden($data['billingAddress'], $data['bannedBillingCountries']) || $this->isAddressForbidden($data['deliveryAddress'], $data['bannedDeliveryCountries']);
+        return $this->isAddressForbidden($data['billingAddress'], $data['bannedBillingCountries']) || $this->isAddressForbidden($data['deliveryAddress'], $data['bannedDeliveryCountries'], (bool) $order->collection_address_id);
     }
 
     public function isForbiddenDetailed(Order $order): array
@@ -29,7 +29,7 @@ trait WithOrderForbiddenCountryCheck
 
         return [
             'billing'  => $this->isAddressForbidden($data['billingAddress'], $data['bannedBillingCountries']),
-            'delivery' => $this->isAddressForbidden($data['deliveryAddress'], $data['bannedDeliveryCountries']),
+            'delivery' => $this->isAddressForbidden($data['deliveryAddress'], $data['bannedDeliveryCountries'], (bool) $order->collection_address_id),
         ];
     }
 
@@ -59,8 +59,13 @@ trait WithOrderForbiddenCountryCheck
         return $shop;
     }
 
-    public function isAddressForbidden(?Address $address, array $bannedCountries): bool
+    public function isAddressForbidden(?Address $address, array $bannedCountries, bool $skipCheck = false): bool
     {
+        // For is_collection
+        if ($skipCheck) {
+            return false;
+        }
+
         // Allow if no address is present
         if (!$address) {
             return false;
