@@ -134,10 +134,6 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                                 <div class="text-xl font-bold text-primary sm:text-2xl">
                                     {{ recommend_percent ?? 0 }}%
                                 </div>
-
-                                <div class="mt-1 text-xs text-gray-500">
-                                    {{ ctrans('Recommended') }}
-                                </div>
                             </div>
                         </div>
 
