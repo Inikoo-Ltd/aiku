@@ -820,6 +820,12 @@ class EditShop extends OrgAction
                             'information' => __('Show the name of the staff member who replied to a review.'),
                             'value'       => Arr::get($shop->settings, 'reviews.show_staff_who_reply', false),
                         ],
+                        'review_add_other_shops'    => [
+                            'type'        => 'toggle',
+                            'label'       => __('Add Other Shops Reviews'),
+                            'information' => __('Applicable family and product reviews'),
+                            'value'       => Arr::get($shop->settings, 'reviews.add_other_shops', false),
+                        ],
                     ],
                 ]
             ],
@@ -903,11 +909,18 @@ class EditShop extends OrgAction
 
         $emptyDimensions = array_fill_keys(ReviewRatingDimensionEnum::values(), '');
 
-        return collect(ReviewContextEnum::values())
+        $tabLabels = $shop->getCustomReviewCategoryLabel();
+        $reviewLabel = collect(ReviewContextEnum::values())
             ->mapWithKeys(fn (string $context) => [
-                $context => [...$emptyDimensions, ...($stored[$context] ?? [])],
+                $context => [
+                    ...$emptyDimensions, 
+                    ...($stored[$context] ?? []),
+                    'label_tab' => data_get($tabLabels, $context)
+                ],
             ])
             ->all();
+            
+        return $reviewLabel;
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

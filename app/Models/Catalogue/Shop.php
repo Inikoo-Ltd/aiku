@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\Catalogue\Shop\Traits\WithReviewIOApi;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -375,6 +376,13 @@ class Shop extends Model implements HasMedia, Auditable
     public function bannedIPCountries(): array
     {
         return array_filter($this->banned_country_regions, fn ($item) => $item['ip_block']);
+    }
+
+    public function getCustomReviewCategoryLabel(): array
+    {
+        return collect(ReviewContextEnum::labels())->mapWithKeys(fn ($item, $key) => [
+                $key => data_get($this->settings, "reviews.rating_labels.$key.label_tab") ?? $item
+            ])->toArray();
     }
 
     public function crmStats(): HasOne

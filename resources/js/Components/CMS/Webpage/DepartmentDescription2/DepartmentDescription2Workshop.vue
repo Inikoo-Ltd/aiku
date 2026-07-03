@@ -248,7 +248,7 @@ const responsiveClasses = computed(() => ({
 </script>
 
 <template>
-	<div :id="modelValue?.id ? modelValue?.id : 'department-1-iris' + indexBlock" component="department-1-iris">
+	<div :id="modelValue?.id ? modelValue?.id : 'department-1-iris' + indexBlock" component="department-1-iris" class="pt-2">
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue?.container?.properties, screenType),
