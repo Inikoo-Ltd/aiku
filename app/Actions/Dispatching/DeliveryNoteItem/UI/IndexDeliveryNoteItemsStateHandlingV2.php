@@ -97,6 +97,42 @@ class IndexDeliveryNoteItemsStateHandlingV2 extends OrgAction
                     ->whereNotNull('trade_units.un_number')
                     ->where('trade_units.un_number', '<>', 'None')
                     ->selectRaw('jsonb_object_agg(trade_units.proper_shipping_name, trade_units.un_number)'),
+                'location_org_stocks' => DB::table('location_org_stocks')
+                    ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
+                    ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
+                    ->selectRaw("
+                        jsonb_agg(
+                            jsonb_build_object(
+                                'id', location_org_stocks.id,
+                                'quantity', location_org_stocks.quantity,
+                                'type', location_org_stocks.type,
+                                'location_id', locations.id,
+                                'location_slug', locations.slug,
+                                'location_code', locations.code,
+                                'org_stock_packed_in', org_stocks.packed_in,
+                                'pickings_data', (
+                                    SELECT concat(
+                                        coalesce(sum(quantity), 0),
+                                        ';',
+                                        coalesce(string_agg(id::char, ','), '')
+                                    )
+                                    FROM pickings
+                                    WHERE pickings.location_id = location_org_stocks.location_id
+                                    AND pickings.org_stock_id = location_org_stocks.org_stock_id
+                                AND pickings.type = 'pick'
+                                    AND pickings.delivery_note_item_id = delivery_note_items.id
+                                )
+                            )
+                            ORDER BY
+                                CASE
+                                    WHEN shops.type = 'b2b'
+                                        THEN location_org_stocks.default_wholesale_picking_location::int
+                                    ELSE
+                                        location_org_stocks.default_dropshipping_picking_location::int
+                                END DESC,
+                                picking_priority
+                        )
+                    ")
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])

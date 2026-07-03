@@ -14,6 +14,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandlingV2;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassignedV2;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsV2;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Helpers\Country\UI\GetAddressData;
@@ -36,7 +37,7 @@ use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResourceV2;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResourceV2;
-use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
+use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResourceV2;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -1062,8 +1063,8 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+                    fn () => DeliveryNoteItemsStateUnassignedResourceV2::collection(IndexDeliveryNoteItemsStateUnassignedV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
+                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResourceV2::collection(IndexDeliveryNoteItemsStateUnassignedV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {

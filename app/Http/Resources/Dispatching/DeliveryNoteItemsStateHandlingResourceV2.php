@@ -71,45 +71,7 @@ class DeliveryNoteItemsStateHandlingResourceV2 extends JsonResource
             ];
         }
 
-        $pickingLocations = DB::table('location_org_stocks')
-            ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
-            ->where('org_stock_id', $this->org_stock_id)
-            ->select([
-                'location_org_stocks.id',
-                'location_org_stocks.quantity',
-                'location_org_stocks.type',
-                'locations.id as location_id',
-                'locations.code as location_code',
-                'locations.slug as location_slug',
-                'location_org_stocks.default_wholesale_picking_location',
-                'location_org_stocks.default_dropshipping_picking_location',
-            ])
-            ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
-            ->selectRaw(
-                '(
-                    SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
-                    WHERE pickings.location_id = location_org_stocks.location_id
-                    AND pickings.org_stock_id = location_org_stocks.org_stock_id
-                    AND pickings.type = ? AND pickings.delivery_note_item_id = ?
-                ) as pickings_data',
-                ['pick', $this->id]
-            )
-            ->when(
-                $this->shop_type,
-                function ($q) {
-                    if ($this->shop_type == 'b2b') {
-                        $q->orderBy('location_org_stocks.default_wholesale_picking_location', 'desc');
-                    } elseif ($this->shop_type == 'dropshipping') {
-                        $q->orderBy('location_org_stocks.default_dropshipping_picking_location', 'desc');
-                    }
-                    $q->orderBy('picking_priority');
-                },
-                function ($q) {
-                    $q->orderBy('picking_priority');
-                }
-            )
-            ->get();
-
+        $pickingLocations = @json_decode($this->location_org_stocks) ?? [];
         $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked - $this->quantity_waiting_warehouse - $this->quantity_waiting_crm);
 
 
