@@ -39,8 +39,7 @@ class DetectLanguageWithAI extends OrgAction
         }
 
         try {
-            /** @noinspection SpellCheckingInspection */
-            $driverName = config('auto-translations.default_driver', 'chatgpt5');
+            $driverName = config('auto-translations.default_driver_detect_language', 'gpt-5-nano');
 
             $driverConfig = config("auto-translations.drivers.$driverName");
 
