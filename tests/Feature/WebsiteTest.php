@@ -18,6 +18,7 @@ use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
 use App\Actions\Web\Announcement\StoreAnnouncement;
 use App\Actions\Web\Announcement\UpdateAnnouncement;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
@@ -72,9 +73,11 @@ use App\Models\Web\Webpage;
 use App\Models\Web\WebpageStats;
 use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Lorisleiva\Actions\ActionRequest;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -1203,6 +1206,55 @@ test('update webpage canonical url', function (Webpage $webpage) {
 
     expect($canonicalUrl)->toBeString();
 })->depends('create webpage');
+
+test('update webpage canonical url bans stale varnish objects', function (Webpage $webpage) {
+    config()->set('iris.cache.varnish', true);
+    config()->set('iris.cache.varnish_hosts', ['http://varnish.test']);
+    Http::fake();
+
+    $webpage->update(['canonical_url' => 'https://v2.stale-domain.test/old-path']);
+
+    $canonicalUrl = UpdateWebpageCanonicalUrl::run($webpage, false);
+
+    expect($canonicalUrl)->not->toBe('https://v2.stale-domain.test/old-path');
+
+    Http::assertSent(fn ($request) => $request->hasHeader('x-ban-webpage', (string)$webpage->id));
+    Http::assertSent(
+        fn ($request) => $request->hasHeader('x-ban-host', 'v2.stale-domain.test')
+            && $request->hasHeader('x-ban-url', '/old-path')
+    );
+    Http::assertSent(fn ($request) => $request->hasHeader('x-ban-host', parse_url($canonicalUrl, PHP_URL_HOST)));
+})->depends('create webpage');
+
+test('iris webpage renders when canonical differs only by trailing slash', function (Website $website) {
+    config()->set('iris.cache.webpage_path.ttl', 0);
+    config()->set('iris.cache.webpage.ttl', 0);
+
+    $website->storefront->update(['canonical_url' => 'https://'.$website->domain.'/']);
+
+    $request = ActionRequest::createFrom(Request::create('https://'.$website->domain));
+    $request->merge(['website' => $website]);
+
+    $result = ShowIrisWebpage::make()->handle(null, [], $request);
+
+    expect($result)->toBeArray()
+        ->and($result['status'])->toBe('ok');
+})->depends('launch website');
+
+test('iris webpage redirects to trimmed canonical url', function (Website $website) {
+    config()->set('iris.cache.webpage_path.ttl', 0);
+    config()->set('iris.cache.webpage.ttl', 0);
+
+    $website->storefront->update(['canonical_url' => 'https://www.'.$website->domain.'/']);
+
+    $request = ActionRequest::createFrom(Request::create('https://'.$website->domain));
+    $request->merge(['website' => $website]);
+
+    $result = ShowIrisWebpage::make()->handle(null, [], $request);
+
+    expect($result)->toBe('https://www.'.$website->domain)
+        ->and($request->attributes->get('iris_redirect_webpage_id'))->toBe($website->storefront->id);
+})->depends('launch website');
 
 test('process website time series records', function (Website $website) {
     ProcessWebsiteTimeSeriesRecords::run(
