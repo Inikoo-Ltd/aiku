@@ -59,11 +59,12 @@ use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshopPreview;
+use App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors;
 use Illuminate\Support\Facades\Route;
 
 Route::name('websites.')->group(function () {
     Route::get('/', [IndexWebsites::class, 'inShop'])->name('index');
-    Route::get('/create', [CreateWebsite::class, 'inShop'])->name('create');
+    Route::get('/create', CreateWebsite::class)->name('create');
 
     Route::prefix('{website}')
         ->group(function () {
@@ -184,5 +185,5 @@ Route::prefix('{website}/crawls')->name('crawls.')->group(function () {
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('', ShowWebsiteAnalyticsDashboard::class)->name('dashboard');
     Route::get('web-user-requests', IndexWebUserRequests::class)->name('web_user_requests.index');
-    Route::get('visitors', [\App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors::class, 'asController'])->name('visitors.index');
+    Route::get('visitors', IndexWebsiteVisitors::class)->name('visitors.index');
 });

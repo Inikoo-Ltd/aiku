@@ -9,6 +9,21 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Analytics\GetSectionRoute;
+use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\ProductCategory;
+use App\Actions\Web\Announcement\DeleteAnnouncement;
+use App\Actions\Web\Announcement\PublishAnnouncement;
+use App\Actions\Web\Announcement\StoreAnnouncement;
+use App\Actions\Web\Announcement\UpdateAnnouncement;
+use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
+use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
+use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
+use App\Actions\Web\Website\SaveWebsiteSitemap;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Models\Web\Announcement;
 use App\Actions\Web\Banner\DeleteBanner;
 use App\Actions\Web\Banner\StoreBanner;
 use App\Actions\Web\Banner\UpdateBanner;
@@ -19,10 +34,15 @@ use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
+use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\StoreWebpage;
+use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
+use App\Actions\Web\Website\PublishWebsiteMarginal;
+use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -35,6 +55,7 @@ use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
@@ -116,6 +137,8 @@ test('launch website', function (Website $website) {
         ->and($home->live_at)->toBeInstanceOf(Carbon::class)
         ->and($home->stats->number_snapshots)->toBe(2)
         ->and($home->stats->number_deployments)->toBe(1);
+
+    return $website;
 })->depends('create b2b website');
 
 
@@ -829,6 +852,393 @@ test('UI get section route show shop website', function (Website $website) {
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_WEBSITE->value)
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
+})->depends('create b2b website');
+
+test('UI store announcement', function (Website $website) {
+    $announcement = StoreAnnouncement::make()->action($website, [
+        'name' => 'test announcement',
+    ]);
+
+    $website->refresh();
+
+    expect($announcement)->toBeInstanceOf(Announcement::class)
+        ->and($announcement->name)->toBe('test announcement')
+        ->and($website->webStats->number_announcements)->toBe($website->announcements()->count());
+
+    return $announcement;
+})->depends('create b2b website');
+
+test('UI blueprint returns 404 for a non catalogue webpage', function (Website $website, Webpage $webpage) {
+    $website->refresh();
+
+    $response = get(
+        route('grp.org.shops.show.web.webpages.show.blueprint.show', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $website->slug,
+            $webpage->slug,
+        ])
+    );
+
+    $response->assertNotFound();
+})->depends('create b2b website', 'create webpage');
+
+test('UI smoke shop web GET routes', function (Website $website, Webpage $webpage, Redirect $redirect, \App\Models\Web\Announcement $announcement) {
+    $website->refresh();
+    $webpage->refresh();
+
+    $org   = $this->organisation->slug;
+    $shop  = $this->shop->slug;
+    $w     = $website->slug;
+
+    $base        = [$org, $shop, $w];
+    $withWebpage = [$org, $shop, $w, $webpage->slug];
+
+    $routes = [
+        'grp.org.shops.show.web.websites.index'              => [$org, $shop],
+        'grp.org.shops.show.web.websites.create'             => [$org, $shop],
+        'grp.org.shops.show.web.websites.show'               => $base,
+        'grp.org.shops.show.web.websites.edit'               => $base,
+        'grp.org.shops.show.web.websites.workshop'           => $base,
+        'grp.org.shops.show.web.websites.workshop.header'    => $base,
+        'grp.org.shops.show.web.websites.workshop.footer'    => $base,
+        'grp.org.shops.show.web.websites.workshop.menu'      => $base,
+        'grp.org.shops.show.web.websites.workshop.sidebar'   => $base,
+        'grp.org.shops.show.web.websites.workshop.preview'   => $base,
+        'grp.org.shops.show.web.websites.restricted_country' => $base,
+        'grp.org.shops.show.web.analytics.dashboard'         => $base,
+        'grp.org.shops.show.web.analytics.visitors.index'    => $base,
+        'grp.org.shops.show.web.announcements.index'         => $base,
+        'grp.org.shops.show.web.announcements.create'        => $base,
+        'grp.org.shops.show.web.announcements.show'          => [$org, $shop, $w, $announcement->ulid],
+        'grp.org.shops.show.web.announcements.edit'          => [$org, $shop, $w, $announcement->ulid],
+        'grp.org.shops.show.web.announcements.workshop'      => [$org, $shop, $w, $announcement->ulid],
+        'grp.org.shops.show.web.banners.index'               => $base,
+        'grp.org.shops.show.web.blogs.index'                 => $base,
+        'grp.org.shops.show.web.blogs.create'                => $base,
+        'grp.org.shops.show.web.crawls.index'                => $base,
+        'grp.org.shops.show.web.redirect.index'              => $base,
+        'grp.org.shops.show.web.redirect.export'             => $base,
+        'grp.org.shops.show.web.redirect.show'               => [$org, $shop, $w, $redirect->id],
+        'grp.org.shops.show.web.redirect.edit'               => [$org, $shop, $w, $redirect->id],
+        'grp.org.shops.show.web.webpages.index'              => $base,
+        'grp.org.shops.show.web.webpages.create'             => $base,
+        'grp.org.shops.show.web.webpages.export'             => $base,
+        'grp.org.shops.show.web.webpages.tree'               => $base,
+        'grp.org.shops.show.web.webpages.show'               => $withWebpage,
+        'grp.org.shops.show.web.webpages.edit'               => $withWebpage,
+        'grp.org.shops.show.web.webpages.workshop'           => $withWebpage,
+        'grp.org.shops.show.web.webpages.preview'            => $withWebpage,
+        'grp.org.shops.show.web.webpages.redirect.create'    => $withWebpage,
+        'grp.org.shops.show.web.webpages.show.webpages.index' => $withWebpage,
+        // Excluded: webpages.show.blueprint.show only renders for ProductCategory-backed webpages
+        // (it now 404s for the plain content webpage used here).
+    ];
+
+    $failures = [];
+    foreach ($routes as $name => $params) {
+        $status = get(route($name, $params))->status();
+        if ($status >= 400) {
+            $failures[] = "$name => $status";
+        }
+    }
+
+    expect($failures)->toBe([]);
+})->depends('launch website', 'create webpage', 'store redirect', 'UI store announcement');
+
+test('UI smoke fulfilment web GET routes', function (Website $website) {
+    $website->refresh();
+    $webpage = $website->webpages()->first();
+
+    $org = $this->organisation->slug;
+    $ful = $this->fulfilment->slug;
+    $w   = $website->slug;
+
+    $base        = [$org, $ful, $w];
+    $withWebpage = [$org, $ful, $w, $webpage->slug];
+
+    $routes = [
+        'grp.org.fulfilments.show.web.websites.index'             => [$org, $ful],
+        'grp.org.fulfilments.show.web.websites.create'            => [$org, $ful],
+        'grp.org.fulfilments.show.web.websites.show'              => $base,
+        'grp.org.fulfilments.show.web.websites.edit'             => $base,
+        'grp.org.fulfilments.show.web.websites.workshop'         => $base,
+        'grp.org.fulfilments.show.web.websites.workshop.header'  => $base,
+        'grp.org.fulfilments.show.web.websites.workshop.footer'  => $base,
+        'grp.org.fulfilments.show.web.websites.workshop.menu'    => $base,
+        'grp.org.fulfilments.show.web.websites.workshop.sidebar' => $base,
+        'grp.org.fulfilments.show.web.websites.workshop.preview' => $base,
+        'grp.org.fulfilments.show.web.websites.restricted_country' => $base,
+        'grp.org.fulfilments.show.web.analytics.dashboard'       => $base,
+        'grp.org.fulfilments.show.web.analytics.visitors.index'  => $base,
+        'grp.org.fulfilments.show.web.banners.index'             => $base,
+        'grp.org.fulfilments.show.web.crawls.index'              => $base,
+        'grp.org.fulfilments.show.web.redirect.index'            => $base,
+        'grp.org.fulfilments.show.web.redirect.export'           => $base,
+        'grp.org.fulfilments.show.web.webpages.index'            => $base,
+        'grp.org.fulfilments.show.web.webpages.create'           => $base,
+        'grp.org.fulfilments.show.web.webpages.export'           => $base,
+        'grp.org.fulfilments.show.web.webpages.tree'             => $base,
+        'grp.org.fulfilments.show.web.webpages.show'             => $withWebpage,
+        'grp.org.fulfilments.show.web.webpages.edit'             => $withWebpage,
+        'grp.org.fulfilments.show.web.webpages.workshop'         => $withWebpage,
+        'grp.org.fulfilments.show.web.webpages.preview'          => $withWebpage,
+        'grp.org.fulfilments.show.web.webpages.redirect.create'  => $withWebpage,
+        'grp.org.fulfilments.show.web.webpages.show.webpages.index' => $withWebpage,
+        'grp.org.fulfilments.show.web.webpages.index.type.content'   => $base,
+        'grp.org.fulfilments.show.web.webpages.index.type.info'      => $base,
+        'grp.org.fulfilments.show.web.webpages.index.type.operations' => $base,
+    ];
+
+    $failures = [];
+    foreach ($routes as $name => $params) {
+        $status = get(route($name, $params))->status();
+        if ($status >= 400) {
+            $failures[] = "$name => $status";
+        }
+    }
+
+    expect($failures)->toBe([]);
+})->depends('launch fulfilment website from command');
+
+test('update announcement', function (Website $website) {
+    $announcement = StoreAnnouncement::make()->action($website, ['name' => 'to update']);
+
+    UpdateAnnouncement::make()->handle($announcement, ['name' => 'updated name']);
+    $announcement->refresh();
+
+    expect($announcement->name)->toBe('updated name')
+        ->and($announcement->is_dirty)->toBeTrue();
+})->depends('create b2b website');
+
+test('delete announcement', function (Website $website) {
+    $announcement = StoreAnnouncement::make()->action($website, ['name' => 'to delete']);
+
+    DeleteAnnouncement::make()->handle($announcement);
+
+    expect(Announcement::find($announcement->id))->toBeNull();
+})->depends('create b2b website');
+
+test('create catalogue webpages', function (Website $website) {
+    createProduct($this->shop);
+
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $family     = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->first();
+    $product    = $this->shop->products()->first();
+
+    $subDepartment = StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::SUB_DEPARTMENT->value]
+    ));
+
+    $departmentWebpage    = StoreProductCategoryWebpage::make()->action($department);
+    $familyWebpage        = StoreProductCategoryWebpage::make()->action($family);
+    $subDepartmentWebpage = StoreProductCategoryWebpage::make()->action($subDepartment);
+    $productWebpage       = StoreProductWebpage::make()->action($product);
+
+    $blogWebpage = StoreWebpage::make()->action($website, array_merge(
+        Webpage::factory()->definition(),
+        ['type' => WebpageTypeEnum::BLOG->value, 'sub_type' => WebpageSubTypeEnum::BLOG->value]
+    ));
+
+    expect($departmentWebpage)->toBeInstanceOf(Webpage::class)
+        ->and($familyWebpage)->toBeInstanceOf(Webpage::class)
+        ->and($subDepartmentWebpage)->toBeInstanceOf(Webpage::class)
+        ->and($blogWebpage->type)->toBe(WebpageTypeEnum::BLOG)
+        ->and($productWebpage->model_type)->toBe('Product');
+
+    return compact('department', 'family', 'subDepartment', 'product', 'departmentWebpage', 'familyWebpage', 'subDepartmentWebpage', 'productWebpage', 'blogWebpage');
+})->depends('launch website');
+
+test('UI smoke catalogue webpage routes', function (Website $website, array $cat) {
+    $website->refresh();
+
+    $org  = $this->organisation->slug;
+    $shop = $this->shop->slug;
+    $w    = $website->slug;
+
+    $base    = [$org, $shop, $w];
+    $dept    = [$org, $shop, $w, $cat['departmentWebpage']->slug];
+    $fam     = [$org, $shop, $w, $cat['familyWebpage']->slug];
+    $subDept = [$org, $shop, $w, $cat['subDepartmentWebpage']->slug];
+
+    $routes = [
+        'grp.org.shops.show.web.webpages.index.type.catalogue'                      => $base,
+        'grp.org.shops.show.web.webpages.index.sub_type.department'                 => $base,
+        'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview' => $base,
+        'grp.org.shops.show.web.webpages.index.sub_type.family'                     => $base,
+        'grp.org.shops.show.web.webpages.index.sub_type.product'                    => $base,
+        'grp.org.shops.show.web.webpages.index.sub_type.sub_department'             => $base,
+        'grp.org.shops.show.web.webpages.index.sub_type.department.families'        => $dept,
+        'grp.org.shops.show.web.webpages.index.sub_type.department.products'        => $dept,
+        'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments' => $dept,
+        'grp.org.shops.show.web.webpages.index.sub_type.family.products'            => $fam,
+        'grp.org.shops.show.web.webpages.index.sub_type.sub_department.families'    => $subDept,
+        'grp.org.shops.show.web.webpages.index.sub_type.sub_department.products'    => $subDept,
+        'grp.org.shops.show.web.webpages.index.type.content'                        => $base,
+        'grp.org.shops.show.web.webpages.index.type.info'                           => $base,
+        'grp.org.shops.show.web.webpages.index.type.operations'                     => $base,
+        'grp.org.shops.show.web.webpages.index.redirect-options'                    => [$org, $shop, $w, $cat['departmentWebpage']->slug],
+        'grp.org.shops.show.web.blogs.create'                                       => $base,
+        'grp.org.shops.show.web.webpages.show.blueprint.show'                       => $dept,
+        'grp.org.shops.show.web.blogs.show'                                         => [$org, $shop, $w, $cat['blogWebpage']->slug],
+        'grp.org.shops.show.web.blogs.edit'                                         => [$org, $shop, $w, $cat['blogWebpage']->slug],
+        'grp.org.shops.show.web.blogs.workshop'                                     => [$org, $shop, $w, $cat['blogWebpage']->slug],
+    ];
+
+    $failures = [];
+    foreach ($routes as $name => $params) {
+        $status = get(route($name, $params))->status();
+        if ($status >= 400) {
+            $failures[] = "$name => $status";
+        }
+    }
+
+    foreach (['departmentWebpage', 'familyWebpage', 'subDepartmentWebpage', 'productWebpage'] as $key) {
+        foreach (['grp.org.shops.show.web.webpages.show', 'grp.org.shops.show.web.webpages.workshop'] as $name) {
+            $status = get(route($name, [$org, $shop, $w, $cat[$key]->slug]))->status();
+            if ($status >= 400) {
+                $failures[] = "$name ($key) => $status";
+            }
+        }
+    }
+
+    expect($failures)->toBe([]);
+})->depends('launch website', 'create catalogue webpages');
+
+test('UI smoke iris storefront routes', function (Website $website, array $cat) {
+    $website->refresh();
+    DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($website->domain);
+
+    $host = 'http://'.$website->domain;
+
+    $routes = [
+        '/',
+        '/catalogue',
+        '/catalogue/department/'.$cat['department']->slug,
+        '/catalogue/family/'.$cat['family']->slug,
+        '/catalogue/sub-department/'.$cat['subDepartment']->slug,
+        '/catalogue/products/'.$cat['product']->slug,
+        '/blog',
+        '/hello_robot',
+        '/llms.txt',
+        '/search',
+        '/warming_base.txt',
+        '/warming_families.txt',
+        '/warming_products.txt',
+    ];
+
+    $failures = [];
+    foreach ($routes as $path) {
+        $status = get($host.$path)->getStatusCode();
+        if ($status >= 400) {
+            $failures[] = "$path => $status";
+        }
+    }
+
+    expect($failures)->toBe([]);
+})->depends('launch website', 'create catalogue webpages');
+
+test('update webpage', function (Website $website) {
+    $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    $updated = UpdateWebpage::make()->action($webpage, ['seo_data' => ['description' => 'updated seo']]);
+
+    expect($updated)->toBeInstanceOf(Webpage::class)
+        ->and($updated->id)->toBe($webpage->id);
+})->depends('launch website');
+
+test('store redirect from webpage', function (Webpage $webpage) {
+    $path = 'legacy-'.uniqid();
+    $redirect = StoreRedirectFromWebpage::make()->action($webpage, [
+        'type'      => RedirectTypeEnum::PERMANENT->value,
+        'from_path' => $path,
+        'from_url'  => 'https://'.$webpage->website->domain.'/'.$path,
+    ]);
+
+    expect($redirect)->toBeInstanceOf(Redirect::class)
+        ->and($redirect->to_webpage_id)->toBe($webpage->id)
+        ->and($redirect->type)->toBe(RedirectTypeEnum::PERMANENT);
+})->depends('create webpage');
+
+test('autosave website marginals', function (Website $website) {
+    request()->setUserResolver(fn () => $this->user);
+    $publisher = ['publisher_id' => $this->user->id, 'publisher_type' => $this->user->getMorphClass()];
+
+    $marginals = [
+        'header', 'footer', 'menu', 'sidebar', 'department', 'sub_department',
+        'family', 'families_overview', 'families_description', 'departments_description',
+        'product', 'products', 'collection',
+    ];
+
+    foreach ($marginals as $marginal) {
+        AutosaveWebsiteMarginal::make()->action($website, $marginal, array_merge(['layout' => ['blocks' => []]], $publisher));
+    }
+
+    $website->refresh();
+
+    expect($website->unpublishedHeaderSnapshot->layout)->toHaveKey('header')
+        ->and($website->unpublishedFooterSnapshot->layout)->toHaveKey('footer');
+})->depends('launch website');
+
+test('publish website marginal header', function (Website $website) {
+    request()->setUserResolver(fn () => $this->user);
+    AutosaveWebsiteMarginal::make()->action($website, 'header', ['layout' => ['blocks' => []]]);
+
+    PublishWebsiteMarginal::make()->action($website, 'header', ['layout' => ['blocks' => []]]);
+
+    $website->refresh();
+
+    expect($website->liveHeaderSnapshot)->not->toBeNull();
+})->depends('launch website');
+
+test('save website sitemap', function (Website $website) {
+    $count = SaveWebsiteSitemap::run($website);
+
+    expect($count)->toBeInt()->toBeGreaterThanOrEqual(0);
+})->depends('launch website');
+
+test('update webpage canonical url', function (Webpage $webpage) {
+    $canonicalUrl = UpdateWebpageCanonicalUrl::run($webpage);
+
+    expect($canonicalUrl)->toBeString();
+})->depends('create webpage');
+
+test('process website time series records', function (Website $website) {
+    ProcessWebsiteTimeSeriesRecords::run(
+        $website->id,
+        TimeSeriesFrequencyEnum::DAILY,
+        '2026-01-01',
+        '2026-01-07'
+    );
+
+    expect($website->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->exists())->toBeTrue();
+})->depends('launch website');
+
+test('process webpage time series records', function (Webpage $webpage) {
+    ProcessWebpageTimeSeriesRecords::run(
+        $webpage->id,
+        TimeSeriesFrequencyEnum::DAILY,
+        '2026-01-01',
+        '2026-01-07'
+    );
+
+    expect($webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->exists())->toBeTrue();
+})->depends('create webpage');
+
+test('publish announcement', function (Website $website) {
+    $announcement = StoreAnnouncement::make()->action($website, ['name' => 'to publish']);
+    UpdateAnnouncement::make()->handle($announcement, ['fields' => ['title' => 'hi']]);
+    $announcement->refresh();
+
+    request()->setUserResolver(fn () => $this->user);
+    PublishAnnouncement::make()->handle($announcement, [
+        'text'                 => 'hello world',
+        'container_properties' => [],
+    ]);
+    $announcement->refresh();
+
+    expect($announcement->live_snapshot_id)->not->toBeNull();
 })->depends('create b2b website');
 
 // Cloudflare: mutate website slugs, so keep last to avoid stale slugs in UI tests above

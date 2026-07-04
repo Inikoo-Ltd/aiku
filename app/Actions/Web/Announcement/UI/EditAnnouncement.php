@@ -52,12 +52,12 @@ class EditAnnouncement extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
                 'title'       => __('Announcement'),
                 'pageHead'    => [
+                    'breadcrumbs' => $this->getBreadcrumbs(
+                        $request->route()->getName(),
+                        $request->route()->originalParameters()
+                    ),
                     'title'   => $announcement->name,
                     'model' => __('Edit'),
                     'icon'    => [
