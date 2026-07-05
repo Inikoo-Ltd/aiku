@@ -94,50 +94,27 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
         foreach ($this->transactions as $transaction) {
             if (property_exists($transaction, 'with_offer')) {
-                $discountsRatio = 1 - ($transaction->discounted_percentage ?? 0);
-
-                DB::table('transactions')->where('id', $transaction->id)
-                    ->update(
-                        [
-                            'gross_amount'            => $transaction->gross_amount,
-                            'net_amount'              => $transaction->net_amount,
-                            'current_discount_factor' => $discountsRatio,
-                            'offers_data'             => [
-                                'v' => 1,
-                                'o' => [
-                                    'oc'  => $transaction->offer_campaign_id,
-                                    'o'   => $transaction->offer_id,
-                                    'oa'  => $transaction->offer_allowance_id,
-                                    't'   => $transaction->allowance_type,
-                                    'p'   => percentage($transaction->discounted_percentage, 1),
-                                    'l'   => $transaction->offer_label,
-                                    'st'  => $transaction->sub_trigger,
-                                    'sto' => $transaction->sub_trigger_offer_id,
-                                    'f'   => $transaction->free_items_value ?? 0,
-                                    'nf'  => $transaction->number_of_free_items ?? 0
-
-                                ]
-                            ]
+                $this->updateTransactionDiscount(
+                    $order,
+                    $transaction,
+                    $transaction->discounted_percentage,
+                    $transaction->discounted_amount,
+                    [
+                        'v' => 1,
+                        'o' => [
+                            'oc'  => $transaction->offer_campaign_id,
+                            'o'   => $transaction->offer_id,
+                            'oa'  => $transaction->offer_allowance_id,
+                            't'   => $transaction->allowance_type,
+                            'p'   => percentage($transaction->discounted_percentage, 1),
+                            'l'   => $transaction->offer_label,
+                            'st'  => $transaction->sub_trigger,
+                            'sto' => $transaction->sub_trigger_offer_id,
+                            'f'   => $transaction->free_items_value ?? 0,
+                            'nf'  => $transaction->number_of_free_items ?? 0
                         ]
-                    );
-
-                DB::table('transaction_has_offer_allowances')->insert([
-                    'order_id'              => $order->id,
-                    'transaction_id'        => $transaction->id,
-                    'model_type'            => $transaction->model_type,
-                    'model_id'              => $transaction->model_id,
-                    'offer_campaign_id'     => $transaction->offer_campaign_id,
-                    'offer_id'              => $transaction->offer_id,
-                    'offer_allowance_id'    => $transaction->offer_allowance_id,
-                    'discounted_amount'     => $transaction->discounted_amount,
-                    'discounted_percentage' => $transaction->discounted_percentage,
-                    'free_items_value'      => $transaction->free_items_value ?? 0,
-                    'number_of_free_items'  => $transaction->number_of_free_items ?? 0,
-                    'created_at'            => now(),
-                    'updated_at'            => now(),
-                    'data'                  => '{}'
-
-                ]);
+                    ]
+                );
             }
         }
 
@@ -173,39 +150,16 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         ) {
             DB::table('transaction_has_offer_allowances')->where('is_gift', false)->where('transaction_id', $transactionWithSubmittedDiscount->id)->delete();
 
-
             $percentageOff    = 1 - $transactionWithSubmittedDiscount->submitted_discount_factor;
             $discountedAmount = round((float)$transactionWithSubmittedDiscount->gross_amount * $percentageOff, 2);
 
-
-            DB::table('transactions')->where('id', $transactionWithSubmittedDiscount->id)
-                ->update(
-                    [
-
-                        'net_amount'              => $transactionWithSubmittedDiscount->gross_amount - $discountedAmount,
-                        'current_discount_factor' => $transactionWithSubmittedDiscount->submitted_discount_factor,
-                        'offers_data'             => $transactionWithSubmittedDiscount->submitted_offers_data
-                    ]
-                );
-
-
-            DB::table('transaction_has_offer_allowances')->insert([
-                'order_id'              => $order->id,
-                'transaction_id'        => $transactionWithSubmittedDiscount->id,
-                'model_type'            => $transactionWithSubmittedDiscount->model_type,
-                'model_id'              => $transactionWithSubmittedDiscount->model_id,
-                'offer_campaign_id'     => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.oc'),
-                'offer_id'              => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.o'),
-                'offer_allowance_id'    => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.oa'),
-                'discounted_amount'     => $discountedAmount,
-                'discounted_percentage' => $percentageOff,
-                'free_items_value'      => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.f', 0),
-                'number_of_free_items'  => Arr::get($transactionWithSubmittedDiscount->submitted_offers_data, 'o.nf', 0),
-                'created_at'            => now(),
-                'updated_at'            => now(),
-                'data'                  => '{}'
-
-            ]);
+            $this->updateTransactionDiscount(
+                $order,
+                $transactionWithSubmittedDiscount,
+                $percentageOff,
+                $discountedAmount,
+                $transactionWithSubmittedDiscount->submitted_offers_data
+            );
         }
     }
 
@@ -598,38 +552,72 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
             // Apply only if undefined or lower than the new percentage
             if ($current === null || (is_numeric($current) && (float)$current < $percentageOff)) {
-                $discountedAmount = round((float)$transaction->gross_amount * $percentageOff, 2);
-
-                $transaction->with_offer            = true;
-                $transaction->discounted_percentage = $percentageOff;
-                $transaction->net_amount            = $transaction->gross_amount - $discountedAmount;
-                $transaction->discounted_amount     = $discountedAmount;
-                $transaction->offer_id              = $allowanceData->offer_id;
-                $transaction->offer_campaign_id     = $allowanceData->offer_campaign_id;
-                $transaction->offer_allowance_id    = $allowanceData->id;
-                $transaction->offer_label           = $offerData['offer_label'];
-                $transaction->allowance_type        = 'percentage';
-                $transaction->sub_trigger           = Arr::get($offerData, 'sub_trigger');
-                $transaction->sub_trigger_offer_id  = Arr::get($offerData, 'sub_trigger_offer_id');
+                $this->applyOfferToTransaction(
+                    $transaction,
+                    $percentageOff,
+                    $offerData['offer_label'],
+                    $allowanceData,
+                    Arr::get($offerData, 'sub_trigger'),
+                    Arr::get($offerData, 'sub_trigger_offer_id')
+                );
             }
         }
     }
 
     private function applyDiscretionaryOffer(object $transaction, float $percentageOff, string $label, OfferAllowance $allowance): void
     {
+        $this->applyOfferToTransaction($transaction, $percentageOff, $label, $allowance);
+    }
+
+    private function applyOfferToTransaction(
+        object $transaction,
+        float $percentageOff,
+        string $label,
+        object $allowance,
+        ?string $subTrigger = null,
+        ?int $subTriggerOfferId = null
+    ): void {
         $discountedAmount = round((float)$transaction->gross_amount * $percentageOff, 2);
 
         $transaction->with_offer            = true;
         $transaction->discounted_percentage = $percentageOff;
-        $transaction->net_amount            = $transaction->gross_amount - $discountedAmount;
+        $transaction->net_amount            = (float)$transaction->gross_amount - $discountedAmount;
         $transaction->discounted_amount     = $discountedAmount;
         $transaction->offer_id              = $allowance->offer_id;
         $transaction->offer_campaign_id     = $allowance->offer_campaign_id;
         $transaction->offer_allowance_id    = $allowance->id;
         $transaction->offer_label           = $label;
         $transaction->allowance_type        = 'percentage';
-        $transaction->sub_trigger           = null;
-        $transaction->sub_trigger_offer_id  = null;
+        $transaction->sub_trigger           = $subTrigger;
+        $transaction->sub_trigger_offer_id  = $subTriggerOfferId;
+    }
+
+    private function updateTransactionDiscount(Order $order, object $transaction, float $discountedPercentage, float $discountedAmount, array $offersData): void
+    {
+        DB::table('transactions')->where('id', $transaction->id)
+            ->update([
+                'gross_amount'            => $transaction->gross_amount,
+                'net_amount'              => (float)$transaction->gross_amount - $discountedAmount,
+                'current_discount_factor' => 1 - $discountedPercentage,
+                'offers_data'             => $offersData,
+            ]);
+
+        DB::table('transaction_has_offer_allowances')->insert([
+            'order_id'              => $order->id,
+            'transaction_id'        => $transaction->id,
+            'model_type'            => $transaction->model_type,
+            'model_id'              => $transaction->model_id,
+            'offer_campaign_id'     => Arr::get($offersData, 'o.oc'),
+            'offer_id'              => Arr::get($offersData, 'o.o'),
+            'offer_allowance_id'    => Arr::get($offersData, 'o.oa'),
+            'discounted_amount'     => $discountedAmount,
+            'discounted_percentage' => $discountedPercentage,
+            'free_items_value'      => Arr::get($offersData, 'o.f', 0),
+            'number_of_free_items'  => Arr::get($offersData, 'o.nf', 0),
+            'created_at'            => now(),
+            'updated_at'            => now(),
+            'data'                  => '{}',
+        ]);
     }
 
     public function processDiscretionaryOffers(Order $order): void
