@@ -53,6 +53,7 @@ use App\Actions\Discounts\TransactionHasOfferAllowance\UpdateTransactionHasOffer
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
@@ -1252,6 +1253,23 @@ describe('calculate order discounts', function () {
 
         $transaction->refresh();
         expect((float)$transaction->net_amount)->toBe(160.0);
+    });
+
+    test('UpdateTransaction applies current discount factor to net amount before discounts are recalculated', function () {
+        $order       = Order::first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->current_discount_factor)->toBe(0.4);
+
+        CalculateOrderTotalAmounts::mock()->shouldIgnoreMissing();
+
+        UpdateTransaction::run($transaction, [
+            'quantity_ordered' => 3,
+        ]);
+
+        $transaction->refresh();
+        expect((float)$transaction->gross_amount)->toBe(300.0)
+            ->and((float)$transaction->net_amount)->toBe(120.0);
     });
 });
 
