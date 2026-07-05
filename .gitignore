@@ -126,3 +126,4 @@ laradumps.yaml
 /lines_by_author_report.txt.formatted
 /lines_of_code_by_author.txt
 /actions_by_folder_report.txt.formatted
+/app_actions_dashboard.html
