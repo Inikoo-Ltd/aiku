@@ -101,7 +101,7 @@ trait WithGetIrisReviewsTrait
             'reviews.reply_message as reply',
             'reply_users.contact_name as reply_by',
             'reviews.created_at',
-            DB::raw("'{$shop->language_id}' as language_id")
+            DB::raw("'$shop->language_id' as language_id")
         ];
 
         if (auth()->check()) {
