@@ -753,8 +753,9 @@ console.log(props)
                 <div class="flex flex-wrap gap-4">
                     <img
                         v-for="logo in fieldValue.paymentData"
-                        :key="logo.code"
+                        :key="logo.value"
                         :src="logo.image"
+                        :alt="ctrans('Logo of :paymentLabel', { paymentLabel: logo.name })"
                         class="h-4"
                     />
                 </div>
