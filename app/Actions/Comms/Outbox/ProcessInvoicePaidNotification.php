@@ -32,16 +32,14 @@ class ProcessInvoicePaidNotification extends OrgAction
         }
         //   // TODO: This should be moved to a job, and the email should be sent only if the outbox is active and applicable
         if ($invoice && in_array($invoice->pay_detailed_status, [InvoicePayDetailedStatusEnum::PAID, InvoicePayDetailedStatusEnum::OVERPAID])
-            && $payment->paymentAccount->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
+            && in_array($payment->paymentAccount->type, [PaymentAccountTypeEnum::CASH_ON_DELIVERY])) {
+            $customer = $invoice->customer;
 
-            \Log::info('Processing invoice paid notification', ['invoice_id' => $invoice->id, 'payment_id' => $payment->id]);
-
-            // SendInvoicePaidEmailToCustomer::dispatch($invoice->order->customer, [
-            //     'order_id'   => $invoice->order->id,
-            //     'amount'     => $invoice->amount,
-            //     'invoice_id' => $invoice->id,
-            // ]);
+            SendInvoicePaidEmailToCustomer::dispatch($customer, [
+                'order_id'   => $invoice->order_id,
+                'amount'     => null,
+                'invoice_id' => $invoice->id,
+            ]);
         }
-
     }
 }
