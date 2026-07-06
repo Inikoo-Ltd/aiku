@@ -537,5 +537,5 @@ const setError = (e) => {
 			</div>
 		</slot>
 	</div>
-	<hr class="border-gray-300" />
+	<hr class="border-gray-300 !my-0" />
 </template>
