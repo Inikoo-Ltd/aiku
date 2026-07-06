@@ -23,7 +23,9 @@ class GetWebBlockFamilyDescription
     public function handle(Webpage $webpage, array $webBlock): array
     {
         $this->setFamilyDescriptionData($webpage, $webBlock);
+        $permissions =  [];
 
+        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         return $webBlock;
     }
 }

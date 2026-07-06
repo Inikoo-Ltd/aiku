@@ -34,6 +34,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { set } from "lodash-es"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { faUserPlus } from "@far";
+import GoldReward from "@/Components/Utils/GoldReward.vue"
 
 library.add(
 	faPresentation,

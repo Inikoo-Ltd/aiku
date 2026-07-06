@@ -61,7 +61,7 @@ class GetWebBlockSubDepartments
             ],
         ];
 
-        $permissions = [];
+        $permissions = [''];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $webpage->model->name);

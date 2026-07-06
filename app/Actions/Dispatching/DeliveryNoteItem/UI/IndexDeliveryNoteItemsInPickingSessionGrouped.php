@@ -20,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
 {
-    public function handle(PickingSession $parent, $prefix = null): LengthAwarePaginator
+    public function handle(PickingSession $parent, $prefix = null, ?int $deliveryNoteId = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -36,6 +36,10 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
         $query = QueryBuilder::for(DeliveryNote::class);
         $query->leftjoin('picking_session_has_delivery_notes', 'picking_session_has_delivery_notes.delivery_note_id', '=', 'delivery_notes.id');
         $query->where('picking_session_has_delivery_notes.picking_session_id', $parent->id);
+
+        if ($deliveryNoteId) {
+            $query->where('delivery_notes.id', $deliveryNoteId);
+        }
 
         return $query
             ->select([

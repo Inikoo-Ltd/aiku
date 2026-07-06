@@ -1,10 +1,11 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 05 Jun 2025 15:37:41 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * Author Louis Perez
+ * Created on 03-07-2026-15h-12m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
@@ -15,11 +16,12 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
+class IndexDeliveryNoteItemsStateUnassignedV2 extends OrgAction
 {
-    public function handle(DeliveryNote $deliveryNote, $prefix = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
+    public function handle(DeliveryNote $deliveryNote, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -35,10 +37,6 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.delivery_note_id', $deliveryNote->id);
-
-        if ($deliveryNoteItemId) {
-            $query->where('delivery_note_items.id', $deliveryNoteItemId);
-        }
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
             ->with('orgStock.tradeUnits');
@@ -56,6 +54,17 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
                 'org_stocks.name as org_stock_name',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in'
+            ])
+            ->addSelect([
+                'un_numbers' => DB::table('trade_units')
+                    ->join('model_has_trade_units', function ($join) {
+                        $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
+                            ->where('model_has_trade_units.model_type', 'OrgStock');
+                    })
+                    ->whereColumn('model_has_trade_units.model_id', 'org_stocks.id')
+                    ->whereNotNull('trade_units.un_number')
+                    ->where('trade_units.un_number', '<>', 'None')
+                    ->selectRaw('jsonb_object_agg(trade_units.proper_shipping_name, trade_units.un_number)'),
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required'])
             ->allowedFilters([$globalSearch])

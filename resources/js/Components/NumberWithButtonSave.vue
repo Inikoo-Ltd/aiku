@@ -97,6 +97,7 @@ const onSaveViaForm = async () => {
 				route(props.routeSubmit?.name, props.routeSubmit?.parameters),
 				{
 					[props.keySubmit || "quantity"]: form.quantity,
+					...props.additionalData,
 				}
 			)
 
@@ -105,7 +106,7 @@ const onSaveViaForm = async () => {
 			formDefaultValue.value.quantity = form.quantity
 			// console.log('ee axios', form.processing)
 		} catch (error) {
-			console.log("ERR1", errors);
+			console.log("ERR1", error);
 			emits("onError", error?.response?.data)
 			notify({
 				title: trans("Something went wrong"),
