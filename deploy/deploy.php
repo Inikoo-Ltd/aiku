@@ -251,7 +251,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 
     if ($shouldRestartSSR) {
-        run("sudo supervisorctl restart inertia-ssr-production");
+        run("sudo /usr/bin/supervisorctl restart inertia-ssr-production");
     }
 })->select('env=prod');
 
@@ -340,7 +340,7 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
-    //'deploy:restart-ssr-by-supervisorctl',
+//    'deploy:restart-ssr-by-supervisorctl',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
     'deploy:log-app-deployment',
