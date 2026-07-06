@@ -41,6 +41,7 @@ class PrepareProspectMailshotRecipients
 
         $queryBuilder = $queryBuilder->select('id', 'email');
         $queryBuilder->orderBy('prospects.id', 'asc');
+        $queryBuilder->limit(1000);
 
         $mailshotId = $mailshot->id;
 
