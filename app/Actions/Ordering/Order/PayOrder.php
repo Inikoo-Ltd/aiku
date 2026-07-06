@@ -11,10 +11,8 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
-use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
-use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
@@ -24,6 +22,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 
 class PayOrder extends OrgAction
 {
@@ -52,16 +51,8 @@ class PayOrder extends OrgAction
         $invoice = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
         if ($invoice) {
             AttachPaymentToInvoice::make()->action($invoice, $payment, []);
-        }
 
-
-        // TODO: This should be moved to a job, and the email should be sent only if the outbox is active and applicable
-        if ($invoice && $invoice->pay_status == InvoicePayStatusEnum::PAID) {
-            SendInvoicePaidEmailToCustomer::dispatch($order->customer, [
-                'order_id'   => $order->id,
-                'amount'     => $payment->amount,
-                'invoice_id' => $invoice->id,
-            ]);
+            ProcessInvoicePaidNotification::dispatch($invoice->id, $payment->id);
         }
 
         return $payment;
