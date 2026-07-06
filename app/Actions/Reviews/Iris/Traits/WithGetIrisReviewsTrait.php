@@ -25,17 +25,19 @@ trait WithGetIrisReviewsTrait
         if ($parent instanceof Shop) {
             $shop = $parent;
             $scopes = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER];
+            $setting = Arr::get($shop->settings, 'reviews.validation_scope.shop', []);
         } else {
             $shop = $parent->shop;
 
             if ($parent instanceof Product) {
                 $scopes = [ReviewScopeEnum::PRODUCT];
+                $setting = Arr::get($shop->settings, 'reviews.validation_scope.product', []);
             } elseif ($parent instanceof ProductCategory) {
                 $scopes = [ReviewScopeEnum::FAMILY];
+                $setting = Arr::get($shop->settings, 'reviews.validation_scope.family', []);
             }
         }
 
-        $setting = Arr::get($shop->settings, 'reviews.validation_scope.product', []);
         $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
 
         $queryBuilder = QueryBuilder::for(Review::class);

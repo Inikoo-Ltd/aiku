@@ -26,7 +26,7 @@ class ShowIrisReviews extends IrisAction
     public function handle(string $tab): array
     {
         $shop        = $this->shop;
-        $indexer     = IndexReviewsInIris::make();
+        $indexer     = IndexReviewsInIris::make($this->shop);
         $shopProfile = [
             'name'              => $shop->name,
             'email'             => $shop->email,
@@ -182,7 +182,7 @@ class ShowIrisReviews extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
-        $indexer           = IndexReviewsInIris::make();
+        $indexer           = IndexReviewsInIris::make($this->shop);
         $shop              = $this->shop;
         $includeOtherShops = $indexer->includesOtherShops($shop);
 

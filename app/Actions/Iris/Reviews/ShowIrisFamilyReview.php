@@ -29,7 +29,7 @@ class ShowIrisFamilyReview extends IrisAction
     public function handle(ProductCategory $family, string $tab): array
     {
         $shop           = $family->shop;
-        $indexer        = IndexReviewsInIris::make();
+        $indexer        = IndexReviewsInIris::make($family);
         $reviewSettings = Arr::get($shop->settings, 'reviews');
 
         $data = match ($tab) {
@@ -193,7 +193,7 @@ class ShowIrisFamilyReview extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
-        $indexer           = IndexReviewsInIris::make();
+        $indexer           = IndexReviewsInIris::make($this->family);
         $family            = $this->family;
         $includeOtherShops = $indexer->includesOtherShops($family->shop) && $family->master_product_category_id;
 

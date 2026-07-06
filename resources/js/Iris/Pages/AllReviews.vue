@@ -272,7 +272,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                             Recent reviews
                         </h3>
 
-                        <div class="mt-6">
+                        <div class="mt-6">     
 
                             <ListReviews  :data="props.reviews" :tab="activeTab"
                                 :readonly="!layout?.iris?.is_logged_in" :showTagVisibleType="false" :review_settings

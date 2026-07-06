@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 import { get } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 import Toggle from '@/Components/Pure/Toggle.vue'
@@ -22,6 +22,8 @@ const props = defineProps<{
     fieldData?: any
 }>()
 
+const layout = inject("layout", {})
+
 const scopeOptions: ScopeOption[] = [
     { value: 'organisation', label: trans('This organisation only') },
     { value: 'group', label: trans('All') },
@@ -36,12 +38,16 @@ const rowLabels: Record<string, string> = {
 const initialValue: ScopeRow[] = Array.isArray(props.form[props.fieldName]) ? props.form[props.fieldName] : []
 
 const rows = ref<ScopeRow[]>(
-    initialValue.map((row) => ({
-        context: row.context,
-        label: rowLabels[row.context] ?? row.context,
-        enabled: row.enabled ?? false,
-        scope: row.scope ?? scopeOptions[0].value,
-    }))
+    initialValue.map((row) => {
+        const scope = row.scope ?? ''
+
+        return {
+            context: row.context,
+            label: rowLabels[row.context] ?? row.context,
+            enabled: scope !== '',
+            scope,
+        }
+    })
 )
 
 const syncForm = () => {
@@ -49,18 +55,16 @@ const syncForm = () => {
         context: row.context,
         label: row.label,
         enabled: row.enabled,
-        scope: row.scope,
+        scope: row.scope || null,
     }))
 }
 
 watch(rows, syncForm, { deep: true })
 
 const selectScope = (row: ScopeRow, value: string, on: boolean): void => {
-    if (on) {
-        row.scope = value
-    }
+    row.scope = on ? value : ''
+    row.enabled = row.scope !== ''
 }
-
 const fieldNameString = computed(() => props.fieldName)
 </script>
 
@@ -73,7 +77,7 @@ const fieldNameString = computed(() => props.fieldName)
                         <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500">
                             {{ trans('Type') }}
                         </th>
-                        <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500">
+                        <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500" v-if="layout?.app?.environment == 'local'">
                             {{ trans('Include') }}
                         </th>
                         <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500"></th>
@@ -84,11 +88,11 @@ const fieldNameString = computed(() => props.fieldName)
                         <td class="px-3 py-3 font-medium text-gray-700">
                             {{ row.label }}
                         </td>
-                        <td class="px-3 py-3">
-                            <Toggle v-model="row.enabled" :classes="row.enabled ? '!bg-indigo-500' : ''" />
+                        <td class="px-3 py-3" v-if="layout?.app?.environment == 'local'">
+                            <Toggle v-model="row.enabled" :classes="row.enabled ? '!bg-indigo-500' : ''" disabled/>
                         </td>
                         <td class="px-3 py-3">
-                            <div v-if="row.enabled" class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
                                 <div class="flex items-center gap-2">
                                     <Toggle
                                         :modelValue="row.scope === scopeOptions[0].value"
