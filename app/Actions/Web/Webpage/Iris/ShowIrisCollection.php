@@ -49,6 +49,7 @@ class ShowIrisCollection extends IrisAction
                 'mini_breadcrumbs' => array_filter([
                     [
                         'label'   => $collection->name,
+                        'url'     => route('iris.catalogue.collection.show', ['collection' => $collection->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.collection.show',
                             'parameters' => [

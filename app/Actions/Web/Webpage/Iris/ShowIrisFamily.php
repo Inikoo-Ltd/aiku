@@ -49,6 +49,7 @@ class ShowIrisFamily extends IrisAction
                 'mini_breadcrumbs' => array_filter([
                     $family->department ? [
                         'label'   => $family->department->name,
+                        'url'     => route('iris.catalogue.department.show', ['department' => $family->department->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.department.show',
                             'parameters' => [
@@ -60,6 +61,7 @@ class ShowIrisFamily extends IrisAction
                     ] : [],
                     $family->subDepartment ? [
                         'label'   => $family->subDepartment->name,
+                        'url'     => route('iris.catalogue.sub_department.show', ['subDepartment' => $family->subDepartment->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.sub_department.show',
                             'parameters' => [
@@ -71,6 +73,7 @@ class ShowIrisFamily extends IrisAction
                     ] : [],
                     [
                         'label'   => $family->name,
+                        'url'     => route('iris.catalogue.family.show', ['family' => $family->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.family.show',
                             'parameters' => [

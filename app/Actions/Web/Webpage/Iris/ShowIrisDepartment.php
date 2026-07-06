@@ -53,6 +53,7 @@ class ShowIrisDepartment extends IrisAction
                 'mini_breadcrumbs' => array_filter([
                     [
                         'label'   => $department->name,
+                        'url'     => route('iris.catalogue.department.show', ['department' => $department->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.department.show',
                             'parameters' => [
