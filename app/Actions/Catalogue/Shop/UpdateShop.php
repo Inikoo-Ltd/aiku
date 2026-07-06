@@ -649,7 +649,7 @@ class UpdateShop extends OrgAction
             'review_validation_scope.*.context'                       => ['sometimes', 'required', 'string'],
             'review_validation_scope.*.label'                         => ['sometimes', 'nullable', 'string'],
             'review_validation_scope.*.enabled'                       => ['sometimes', 'boolean'],
-            'review_validation_scope.*.scope'                         => ['sometimes', 'required', Rule::enum(ReviewValidationScopeEnum::class)],
+            'review_validation_scope.*.scope'                         => ['sometimes', 'nullable', Rule::enum(ReviewValidationScopeEnum::class)],
             'review_approval_required'                                => ['sometimes', 'boolean'],
             'review_hours_after_dispatched'                           => ['sometimes', 'nullable', 'integer', 'min:1'],
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
