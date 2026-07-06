@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 06 Jul 2026 13:48:18 Malaysia Time, Kuala Lumpur, Malaysia
@@ -7,35 +8,52 @@
 
 namespace App\Actions\Reviews\Iris;
 
+use App\Actions\IrisAction;
+use App\Actions\Reviews\Iris\Traits\WithGetIrisReviewsTrait;
 use App\Http\Resources\Catalogue\ReviewsInIrisResource;
-use App\Http\Resources\Inventory\LocationsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetIrisReviews
+class GetIrisReviews extends IrisAction
 {
     use AsAction;
+    use WithGetIrisReviewsTrait;
 
-    public function handle(Webpage $webpage): ?LengthAwarePaginator
+    public function handle(Webpage $webpage): array
     {
-        $model = $webpage->model;
+        $model = $webpage->shop;
+        if ($webpage->model) {
+            $model = $webpage->model;
+        }
 
         if ($model instanceof Product) {
-            GetIrisProductReviews::run($model);
+            $reviews = GetIrisProductReviews::run($model);
         } elseif ($model instanceof ProductCategory) {
-           // GetIrisProductCategoryReviews::run($model);
+            $reviews = GetIrisProductCategoryReviews::run($model);
         } else {
-           // GetIrisShopReviews::run($webpage->shop);
+            $reviews = GetIrisShopReviews::run($webpage->shop);
         }
-        return null;
+
+        $avgReview = $this->getBaseQuery($model)->avg('rating_main');
+
+        return [
+            'reviews'                           => ReviewsInIrisResource::collection($reviews)->response()->getData(true),
+            'review_summary'                    => $avgReview ?? 0,
+        ];
     }
 
-    public function jsonResponse(LengthAwarePaginator $reviews): AnonymousResourceCollection
+    public function jsonResponse(array $reviewData): array
     {
-        return ReviewsInIrisResource::collection($reviews);
+        return $reviewData;
+    }
+
+    public function asController(Webpage $webpage, ActionRequest $request)
+    {
+        $this->initialisation($request);
+
+        return $this->handle($webpage);
     }
 }

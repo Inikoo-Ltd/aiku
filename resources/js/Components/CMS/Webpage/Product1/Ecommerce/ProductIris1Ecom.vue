@@ -128,7 +128,7 @@ const emits = defineEmits<{
 
 const product = ref(props.product)
 const layout = inject("layout", {})
-const webpage_slug = inject("webpage_slug", {})
+const webpage_id = inject("webpage_id", {})
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 
@@ -764,7 +764,7 @@ console.log(props)
 
     </div>
 
-    <ReviewsIris  :webpage_slug="webpage_slug"/>
+    <ReviewsIris  :webpage_id="webpage_id"/>
 
 
 </template>

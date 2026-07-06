@@ -117,6 +117,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
 
     Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
-    Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews');
+    Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new');
 
 });

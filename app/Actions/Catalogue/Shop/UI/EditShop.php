@@ -825,7 +825,6 @@ class EditShop extends OrgAction
                             'type'        => 'review_validation_scope',
                             'label'       => __('Include other shops'),
                             'information' => __('Here you can configure whether you want to include other shops reviews.'),
-                            'options'     => ReviewValidationScopeEnum::selectOptions(),
                             'value'       => $this->loadReviewValidationScopes($shop),
                         ],
                     ],

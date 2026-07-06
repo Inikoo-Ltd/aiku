@@ -12,7 +12,7 @@ import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
 import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
 import { useStructuredData } from "@/Iris/Composables/useStructuredData"
-import ReviewsIris from "../Components/IrisBlocks/ReviewsIris.vue"
+import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 library.add(faCheck, faPlus, faMinus)
 
 const props = defineProps<{
@@ -48,7 +48,7 @@ const structuredDataScript = ref<HTMLScriptElement | null>(null)
 const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
 
 provide('webpage_data', props.webpage_data)
-provide('webpage_slug', props.webpage_slug)
+provide('webpage_id', props.webpage_id)
 provide('minimum_reviews_to_show', props.minimum_reviews_to_show)
 provide('allow_review_reaction', props.allow_review_reaction)
 provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
                 v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)">
                 <div>
                  <!--    <ReviewByStore :code="'review-by-store'" /> -->
-                     <ReviewsIris :webpage_slug="webpage_id" />
+                     <ReviewsIris :webpage_id="webpage_id" />
                 </div>
             </div>
 

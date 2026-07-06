@@ -1,28 +1,29 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 06 Jul 2026 13:52:27 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
- */
+ * Author Louis Perez
+ * Created on 06-07-2026-14h-27m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
 
 namespace App\Actions\Reviews\Iris;
 
 use App\Actions\Reviews\Iris\Traits\WithGetIrisReviewsTrait;
 use App\Enums\Catalogue\Review\ReviewReactionTargetEnum;
-use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetIrisProductReviews
+class GetIrisShopReviews
 {
     use AsObject;
     use WithGetIrisReviewsTrait;
 
-    public function handle(Product $product, $prefix = null): LengthAwarePaginator
+    public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -30,9 +31,7 @@ class GetIrisProductReviews
             });
         });
 
-        $shop = $product->shop;
-
-        $queryBuilder = $this->getBaseQuery($product);
+        $queryBuilder = $this->getBaseQuery($shop);
 
         $allowedSort = [
             'rating_main',
