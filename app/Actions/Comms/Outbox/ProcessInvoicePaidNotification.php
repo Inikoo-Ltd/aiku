@@ -36,8 +36,6 @@ class ProcessInvoicePaidNotification extends OrgAction
             $customer = $invoice->customer;
 
             SendInvoicePaidEmailToCustomer::dispatch($customer, [
-                'order_id'   => $invoice->order_id,
-                'amount'     => null,
                 'invoice_id' => $invoice->id,
             ]);
         }
